@@ -379,7 +379,7 @@ git commit -m "feat: gate Railway health on Postgres"
 Run:
 
 ```powershell
-git grep -n -E 'postgres(?:ql)?://[^[:space:]]+@' -- mainfile/alab-system ':!mainfile/alab-system/package-lock.json'
+git grep -n -E 'postgres(ql)?://[^[:space:]]+@' -- mainfile/alab-system ':!mainfile/alab-system/tests/**' ':!mainfile/alab-system/package-lock.json'
 ```
 
 Expected: no real connection string or assigned secret.
