@@ -12,3 +12,11 @@ test("development HMR accepts the LAN origin from the standalone app root", () =
     /turbopack:\s*\{[\s\S]*?root:\s*__dirname/,
   );
 });
+
+test("development uses webpack to avoid the Turbopack client manifest failure", () => {
+  const packageJson = JSON.parse(
+    readFileSync(join(process.cwd(), "package.json"), "utf8"),
+  );
+
+  assert.equal(packageJson.scripts.dev, "next dev --webpack");
+});
