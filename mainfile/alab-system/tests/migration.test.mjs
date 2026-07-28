@@ -75,6 +75,31 @@ test("landing content includes styles for every lower-page section", () => {
   }
 });
 
+test("landing hero has a mobile-only reference composition", () => {
+  const mobileStylesPath = join(
+    root,
+    "app",
+    "_content",
+    "landing-mobile-styles.ts",
+  );
+  const component = readFileSync(
+    join(root, "app", "_components", "landing-page.tsx"),
+    "utf8",
+  );
+
+  assert.equal(existsSync(mobileStylesPath), true);
+
+  const mobileStyles = readFileSync(mobileStylesPath, "utf8");
+  assert.match(mobileStyles, /@media \(max-width: 640px\)/);
+  assert.match(mobileStyles, /\.hero__content\s*\{[\s\S]*?display:\s*contents/);
+  assert.match(mobileStyles, /\.hero__visual\s*\{[\s\S]*?order:\s*5/);
+  assert.match(mobileStyles, /\.hero__trust\s*\{[\s\S]*?order:\s*6/);
+  assert.match(mobileStyles, /\.hero__actions\s*\{[\s\S]*?order:\s*7/);
+  assert.match(mobileStyles, /url\("\/images\/bg images\.png"\)/);
+  assert.match(mobileStyles, /@media \(max-width: 370px\)/);
+  assert.match(component, /landingMobileStyles/);
+});
+
 test("login content preserves the source form, imagery, and home route", () => {
   const contentPath = join(root, "app", "_content", "login-content.ts");
   const routePath = join(root, "app", "login", "page.tsx");
