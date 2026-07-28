@@ -17,13 +17,35 @@ test("the Next.js application is committed as regular files, not a gitlink", () 
 
 test("the repository root exposes Railway build and start commands", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8"));
+  const appPackageJson = JSON.parse(
+    await readFile(`${APP_DIRECTORY}/package.json`, "utf8"),
+  );
 
-  assert.deepEqual(packageJson.workspaces, ["mainfile/alab-system"]);
-  assert.equal(packageJson.scripts.build, "npm run build --workspace=alab-system");
+  assert.equal(packageJson.workspaces, undefined);
+  assert.equal(
+    packageJson.scripts.postinstall,
+    "npm ci --prefix mainfile/alab-system",
+  );
+  assert.equal(packageJson.scripts.dev, "npm run dev --prefix mainfile/alab-system");
+  assert.equal(packageJson.scripts.build, "npm run build --prefix mainfile/alab-system");
   assert.equal(packageJson.scripts.start, "node scripts/start.mjs");
   assert.equal(packageJson.engines.node, ">=20.9.0");
-  assert.equal(packageJson.overrides.postcss, "8.5.24");
-  assert.equal(packageJson.overrides.sharp, "0.35.3");
+  assert.equal(appPackageJson.overrides.postcss, "8.5.24");
+  assert.equal(appPackageJson.overrides.sharp, "0.35.3");
+});
+
+test("the standalone app lockfile installs Next beside the app", async () => {
+  const lockfile = await readFile(
+    `${APP_DIRECTORY}/package-lock.json`,
+    "utf8",
+  ).catch(() => "");
+
+  assert.notEqual(lockfile, "", "the app package-lock.json is missing");
+  const packageLock = JSON.parse(lockfile);
+  assert.ok(
+    packageLock.packages["node_modules/next"],
+    "the app lockfile does not include Next",
+  );
 });
 
 test("the production launcher forwards Railway's host and port", async () => {
