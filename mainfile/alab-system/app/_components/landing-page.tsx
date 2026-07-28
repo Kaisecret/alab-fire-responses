@@ -6,6 +6,7 @@ import {
   landingMarkup,
   landingStyles,
 } from "../_content/landing-content";
+import { landingMobileStyles } from "../_content/landing-mobile-styles";
 
 export function LandingPage() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -102,7 +103,7 @@ export function LandingPage() {
 
   return (
     <>
-      <style>{landingStyles}</style>
+      <style>{`${landingStyles}\n${landingMobileStyles}`}</style>
       <div
         ref={rootRef}
         className="landing-page-root"
