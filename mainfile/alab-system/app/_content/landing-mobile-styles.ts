@@ -1,5 +1,9 @@
 export const landingMobileStyles = String.raw`
   @media (max-width: 640px) {
+    :root {
+      --header-h: 4.4rem;
+    }
+
     .landing-page-root {
       background: #eeeae6;
     }
@@ -12,8 +16,8 @@ export const landingMobileStyles = String.raw`
     }
 
     .brand {
-      width: clamp(6.5rem, 28vw, 7.75rem);
-      height: 3.7rem;
+      width: clamp(5.9rem, 25vw, 6.8rem);
+      height: 3.2rem;
     }
 
     .header-actions {
@@ -21,16 +25,16 @@ export const landingMobileStyles = String.raw`
     }
 
     .login-button {
-      min-width: 5.4rem;
-      min-height: 2.75rem;
-      padding: 0.62rem 0.85rem;
+      min-width: 5.1rem;
+      min-height: 2.5rem;
+      padding: 0.5rem 0.7rem;
       border-radius: 0.75rem;
       font-size: 0.82rem;
     }
 
     .menu-toggle {
-      width: 2.75rem;
-      height: 2.75rem;
+      width: 2.5rem;
+      height: 2.5rem;
       background: transparent;
     }
 
@@ -55,7 +59,7 @@ export const landingMobileStyles = String.raw`
 
     .eyebrow {
       order: 1;
-      margin: clamp(2.3rem, 9vw, 3.5rem) 0 1rem;
+      margin: clamp(3rem, 11vw, 4rem) 0 1rem;
       font-size: clamp(0.72rem, 3.25vw, 0.88rem);
       letter-spacing: 0.025em;
     }
@@ -125,17 +129,17 @@ export const landingMobileStyles = String.raw`
     .phone {
       z-index: 3;
       top: auto;
-      bottom: -1.9rem;
-      left: clamp(-3.7rem, -9vw, -2rem);
-      width: clamp(18rem, 68vw, 27rem);
+      bottom: -2.6rem;
+      left: clamp(-3.2rem, -8vw, -1.8rem);
+      width: clamp(16rem, 60vw, 24rem);
       filter: drop-shadow(0 1.4rem 1.8rem rgb(46 19 12 / 26%));
     }
 
     .firefighter {
       z-index: 2;
-      right: clamp(-6.4rem, -14vw, -3.8rem);
-      bottom: -1rem;
-      width: clamp(20rem, 75vw, 29rem);
+      right: clamp(-5.8rem, -13vw, -3.4rem);
+      bottom: -1.8rem;
+      width: clamp(17.5rem, 66vw, 25rem);
       filter: drop-shadow(-0.7rem 1rem 1.6rem rgb(46 19 12 / 22%));
     }
 
@@ -206,13 +210,13 @@ export const landingMobileStyles = String.raw`
     }
 
     .brand {
-      width: 6.15rem;
-      height: 3.35rem;
+      width: 5.65rem;
+      height: 3rem;
     }
 
     .login-button {
       width: auto;
-      min-width: 4.85rem;
+      min-width: 4.6rem;
       padding-inline: 0.65rem;
     }
 
@@ -221,8 +225,8 @@ export const landingMobileStyles = String.raw`
     }
 
     .menu-toggle {
-      width: 2.55rem;
-      height: 2.55rem;
+      width: 2.35rem;
+      height: 2.35rem;
       padding: 0.55rem;
     }
 
@@ -235,14 +239,15 @@ export const landingMobileStyles = String.raw`
     }
 
     .phone {
-      bottom: -1.5rem;
-      left: -3.2rem;
-      width: 17.5rem;
+      bottom: -2.2rem;
+      left: -2.7rem;
+      width: 15.75rem;
     }
 
     .firefighter {
-      right: -5.4rem;
-      width: 19.5rem;
+      right: -4.8rem;
+      bottom: -1.6rem;
+      width: 17.25rem;
     }
 
     .hero__trust {

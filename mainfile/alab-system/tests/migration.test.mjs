@@ -97,6 +97,19 @@ test("landing hero has a mobile-only reference composition", () => {
   assert.match(mobileStyles, /\.hero__actions\s*\{[\s\S]*?order:\s*7/);
   assert.match(mobileStyles, /url\("\/images\/bg images\.png"\)/);
   assert.match(mobileStyles, /@media \(max-width: 370px\)/);
+  assert.match(mobileStyles, /--header-h:\s*4\.4rem/);
+  assert.match(
+    mobileStyles,
+    /\.eyebrow\s*\{[\s\S]*?margin:\s*clamp\(3rem,\s*11vw,\s*4rem\)/,
+  );
+  assert.match(
+    mobileStyles,
+    /\.phone\s*\{[\s\S]*?bottom:\s*-2\.6rem[\s\S]*?width:\s*clamp\(16rem,\s*60vw,\s*24rem\)/,
+  );
+  assert.match(
+    mobileStyles,
+    /\.firefighter\s*\{[\s\S]*?bottom:\s*-1\.8rem[\s\S]*?width:\s*clamp\(17\.5rem,\s*66vw,\s*25rem\)/,
+  );
   assert.match(component, /landingMobileStyles/);
 });
 
