@@ -98,8 +98,8 @@ export const landingMobileStyles = String.raw`
     .hero__visual {
       position: relative;
       order: 5;
-      min-height: clamp(25rem, 118vw, 39rem);
-      margin: 1.7rem calc(var(--page-pad) * -1) 0;
+      min-height: clamp(18rem, 82vw, 27rem);
+      margin: 1rem calc(var(--page-pad) * -1) 0;
       overflow: hidden;
       background-image:
         linear-gradient(
@@ -128,18 +128,19 @@ export const landingMobileStyles = String.raw`
 
     .phone {
       z-index: 3;
-      top: auto;
-      bottom: -2.6rem;
-      left: clamp(-3.2rem, -8vw, -1.8rem);
-      width: clamp(16rem, 60vw, 24rem);
+      top: 0.5rem;
+      bottom: auto;
+      left: clamp(-2.2rem, -5vw, -1rem);
+      width: clamp(12rem, 50vw, 20rem);
       filter: drop-shadow(0 1.4rem 1.8rem rgb(46 19 12 / 26%));
     }
 
     .firefighter {
       z-index: 2;
-      right: clamp(-5.8rem, -13vw, -3.4rem);
-      bottom: -1.8rem;
-      width: clamp(17.5rem, 66vw, 25rem);
+      top: 3rem;
+      right: clamp(-4rem, -9vw, -2rem);
+      bottom: auto;
+      width: clamp(13.5rem, 56vw, 22rem);
       filter: drop-shadow(-0.7rem 1rem 1.6rem rgb(46 19 12 / 22%));
     }
 
@@ -235,23 +236,25 @@ export const landingMobileStyles = String.raw`
     }
 
     .hero__visual {
-      min-height: 24rem;
+      min-height: 17.5rem;
     }
 
     .phone {
-      bottom: -2.2rem;
-      left: -2.7rem;
-      width: 15.75rem;
+      top: 0.5rem;
+      bottom: auto;
+      left: -1.5rem;
+      width: 11.5rem;
     }
 
     .firefighter {
-      right: -4.8rem;
-      bottom: -1.6rem;
-      width: 17.25rem;
+      top: 3.2rem;
+      right: -2.8rem;
+      bottom: auto;
+      width: 13rem;
     }
 
     .hero__trust {
-      margin-top: -3.3rem;
+      margin-top: -2.8rem;
       padding-inline: 0.35rem;
     }
 
