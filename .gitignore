@@ -1,0 +1,6 @@
+/node_modules/
+**/.next/
+
+# Local environment and debug output
+.env*
+*.log

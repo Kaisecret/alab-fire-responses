@@ -1,0 +1,6 @@
+html,
+body {
+  min-width: 20rem;
+  min-height: 100%;
+  margin: 0;
+}
