@@ -48,6 +48,27 @@ test("the standalone app lockfile installs Next beside the app", async () => {
   );
 });
 
+test("the standalone lockfile includes optional peers required by Railway npm 10", async () => {
+  const packageLock = JSON.parse(
+    await readFile(`${APP_DIRECTORY}/package-lock.json`, "utf8"),
+  );
+
+  const requiredPackages = {
+    "node_modules/@emnapi/core": "1.10.0",
+    "node_modules/@emnapi/runtime": "1.11.3",
+    "node_modules/@unrs/resolver-binding-wasm32-wasi/node_modules/@emnapi/runtime":
+      "1.10.0",
+  };
+
+  for (const [path, version] of Object.entries(requiredPackages)) {
+    assert.equal(
+      packageLock.packages[path]?.version,
+      version,
+      `missing Railway npm 10 lock entry: ${path}@${version}`,
+    );
+  }
+});
+
 test("the production launcher forwards Railway's host and port", async () => {
   const launcher = await readFile("scripts/start.mjs", "utf8");
 
