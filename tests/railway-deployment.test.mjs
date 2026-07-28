@@ -65,5 +65,8 @@ test("Railway configuration uses the root commands and health check", async () =
   assert.equal(railway.build.builder, "RAILPACK");
   assert.equal(railway.build.buildCommand, "npm run build");
   assert.equal(railway.deploy.startCommand, "npm start");
-  assert.equal(railway.deploy.healthcheckPath, "/");
+  assert.equal(
+    railway.deploy.healthcheckPath,
+    "/api/health/database",
+  );
 });
