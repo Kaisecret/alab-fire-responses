@@ -1,27 +1,32 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
 const root = process.cwd();
 const images = [
-  "BFPBACK.png",
-  "bg images.png",
-  "ChatGPT Image Jul 28, 2026, 02_33_55 AM.png",
-  "FAVICON.png",
-  "Hero section.png",
-  "LOGO FIRE.png",
-  "logo white tint.png",
-  "Logo.png",
-  "panay.png",
-  "phone.png",
-  "side pic for login.png",
+  "BFPBACK.webp",
+  "bg images.webp",
+  "ChatGPT Image Jul 28, 2026, 02_33_55 AM.webp",
+  "FAVICON.webp",
+  "Hero section.webp",
+  "LOGO FIRE.webp",
+  "logo white tint.webp",
+  "Logo.webp",
+  "panay.webp",
+  "phone.webp",
+  "side pic for login.webp",
 ];
 
-test("all original images are exposed by the Next.js public directory", () => {
+test("all public images are exposed as WebP", () => {
   for (const image of images) {
     assert.equal(existsSync(join(root, "public", "images", image)), true, image);
   }
+
+  const nonWebpImages = readdirSync(join(root, "public", "images")).filter(
+    (image) => !image.toLowerCase().endsWith(".webp"),
+  );
+  assert.deepEqual(nonWebpImages, []);
 });
 
 test("landing content preserves the complete source structure", () => {
@@ -45,9 +50,9 @@ test("landing content preserves the complete source structure", () => {
   }
 
   assert.match(content, /Provincial Fire Response/);
-  assert.equal(content.includes("/images/phone.png"), true);
-  assert.equal(content.includes("/images/BFPBACK.png"), true);
-  assert.equal(content.includes('url(\\"/images/bg images.png\\")'), true);
+  assert.equal(content.includes("/images/phone.webp"), true);
+  assert.equal(content.includes("/images/BFPBACK.webp"), true);
+  assert.equal(content.includes('url(\\"/images/bg images.webp\\")'), true);
   assert.equal(content.includes('href=\\"/login\\"'), true);
   assert.equal(content.includes("../login.html"), false);
 });
@@ -95,7 +100,7 @@ test("landing hero has a mobile-only reference composition", () => {
   assert.match(mobileStyles, /\.hero__visual\s*\{[\s\S]*?order:\s*5/);
   assert.match(mobileStyles, /\.hero__trust\s*\{[\s\S]*?order:\s*6/);
   assert.match(mobileStyles, /\.hero__actions\s*\{[\s\S]*?order:\s*7/);
-  assert.match(mobileStyles, /url\("\/images\/bg images\.png"\)/);
+  assert.match(mobileStyles, /url\("\/images\/bg images\.webp"\)/);
   assert.match(mobileStyles, /@media \(max-width: 370px\)/);
   assert.match(mobileStyles, /--header-h:\s*4\.4rem/);
   assert.match(
@@ -128,8 +133,8 @@ test("login content preserves the source form, imagery, and home route", () => {
   assert.match(content, />Welcome</);
   assert.match(content, /id=\\?"username\\?"/);
   assert.match(content, /id=\\?"password\\?"/);
-  assert.equal(content.includes("/images/side pic for login.png"), true);
-  assert.equal(content.includes("/images/Logo.png"), true);
+  assert.equal(content.includes("/images/side pic for login.webp"), true);
+  assert.equal(content.includes("/images/Logo.webp"), true);
   assert.equal(content.includes('href=\\"/\\"'), true);
   assert.equal(content.includes("BFP/index.html"), false);
   assert.equal(content.includes("var(--font-plus-jakarta)"), true);
@@ -145,9 +150,6 @@ test("shared layout identifies ALAB and uses the original favicon", () => {
 
   assert.match(layout, /ALAB/);
   assert.doesNotMatch(layout, /Create Next App/);
+  assert.match(layout, /\/images\/FAVICON\.webp/);
   assert.equal(existsSync(iconPath), true, "ALAB app icon is missing");
-  assert.deepEqual(
-    readFileSync(iconPath),
-    readFileSync(join(root, "public", "images", "FAVICON.png")),
-  );
 });

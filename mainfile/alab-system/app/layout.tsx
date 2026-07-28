@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description:
     "ALAB connects communities and the Bureau of Fire Protection through fast, coordinated emergency response across Antique.",
   icons: {
-    icon: "/images/FAVICON.png",
+    icon: "/images/FAVICON.webp",
   },
 };
 

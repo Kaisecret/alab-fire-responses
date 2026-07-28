@@ -25,17 +25,17 @@
 **Files:**
 - Modify: `package.json`
 - Create: `tests/migration.test.mjs`
-- Create: `public/images/BFPBACK.png`
-- Create: `public/images/bg images.png`
-- Create: `public/images/ChatGPT Image Jul 28, 2026, 02_33_55 AM.png`
-- Create: `public/images/FAVICON.png`
-- Create: `public/images/Hero section.png`
-- Create: `public/images/LOGO FIRE.png`
-- Create: `public/images/logo white tint.png`
-- Create: `public/images/Logo.png`
-- Create: `public/images/panay.png`
-- Create: `public/images/phone.png`
-- Create: `public/images/side pic for login.png`
+- Create: `public/images/BFPBACK.webp`
+- Create: `public/images/bg images.webp`
+- Create: `public/images/ChatGPT Image Jul 28, 2026, 02_33_55 AM.webp`
+- Create: `public/images/FAVICON.webp`
+- Create: `public/images/Hero section.webp`
+- Create: `public/images/LOGO FIRE.webp`
+- Create: `public/images/logo white tint.webp`
+- Create: `public/images/Logo.webp`
+- Create: `public/images/panay.webp`
+- Create: `public/images/phone.webp`
+- Create: `public/images/side pic for login.webp`
 
 **Interfaces:**
 - Consumes: source assets from `../../BFP/images`
@@ -53,17 +53,17 @@ import test from "node:test";
 
 const root = process.cwd();
 const images = [
-  "BFPBACK.png",
-  "bg images.png",
-  "ChatGPT Image Jul 28, 2026, 02_33_55 AM.png",
-  "FAVICON.png",
-  "Hero section.png",
-  "LOGO FIRE.png",
-  "logo white tint.png",
-  "Logo.png",
-  "panay.png",
-  "phone.png",
-  "side pic for login.png",
+  "BFPBACK.webp",
+  "bg images.webp",
+  "ChatGPT Image Jul 28, 2026, 02_33_55 AM.webp",
+  "FAVICON.webp",
+  "Hero section.webp",
+  "LOGO FIRE.webp",
+  "logo white tint.webp",
+  "Logo.webp",
+  "panay.webp",
+  "phone.webp",
+  "side pic for login.webp",
 ];
 
 test("all original images are exposed by the Next.js public directory", () => {
@@ -127,8 +127,8 @@ test("landing content preserves the complete source structure", () => {
     assert.match(content, new RegExp(`id="${id}"`));
   }
   assert.match(content, /Provincial Fire Response/);
-  assert.match(content, /\\/images\\/phone\\.png/);
-  assert.match(content, /\\/images\\/BFPBACK\\.png/);
+  assert.match(content, /\\/images\\/phone\\.webp/);
+  assert.match(content, /\\/images\\/BFPBACK\\.webp/);
   assert.match(content, /href=\\"\\/login\\"/);
   assert.doesNotMatch(content, /\\.\\.\\/login\\.html/);
 });
@@ -322,8 +322,8 @@ test("login content preserves the source form and imagery", () => {
   assert.match(content, /Welcome Back/);
   assert.match(content, /id="email"/);
   assert.match(content, /id="password"/);
-  assert.match(content, /\\/images\\/side pic for login\\.png/);
-  assert.match(content, /\\/images\\/Logo\\.png/);
+  assert.match(content, /\\/images\\/side pic for login\\.webp/);
+  assert.match(content, /\\/images\\/Logo\\.webp/);
   assert.match(content, /href=\\"\\/\\"/);
   assert.doesNotMatch(content, /BFP\\/index\\.html/);
   assert.equal(existsSync(join(root, "app", "login", "page.tsx")), true);
@@ -453,7 +453,7 @@ git commit -m "feat: migrate ALAB login page to Next.js"
 - Test: `tests/migration.test.mjs`
 
 **Interfaces:**
-- Consumes: both completed routes and `/images/FAVICON.png`
+- Consumes: both completed routes and `/images/FAVICON.webp`
 - Produces: shared document metadata, favicon, clean baseline styles, and a production-valid Next.js app
 
 - [ ] **Step 1: Add layout contract assertions**
@@ -487,7 +487,7 @@ body {
 }
 ```
 
-Set default metadata in `app/layout.tsx` to ALAB and use `/images/FAVICON.png` as the icon. Keep `lang="en"`.
+Set default metadata in `app/layout.tsx` to ALAB and use `/images/FAVICON.webp` as the icon. Keep `lang="en"`.
 
 - [ ] **Step 4: Run all automated verification**
 
