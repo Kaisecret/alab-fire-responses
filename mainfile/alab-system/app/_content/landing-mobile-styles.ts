@@ -108,7 +108,7 @@ export const landingMobileStyles = String.raw`
           rgb(255 248 241 / 8%) 22%,
           rgb(92 29 13 / 8%) 100%
         ),
-        url("/images/bg images.png");
+        url("/images/bg images.webp");
       background-position: center, 73% center;
       background-size: cover, cover;
       isolation: isolate;
