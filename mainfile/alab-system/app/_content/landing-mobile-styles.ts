@@ -59,7 +59,7 @@ export const landingMobileStyles = String.raw`
 
     .eyebrow {
       order: 1;
-      margin: clamp(3rem, 11vw, 4rem) 0 1rem;
+      margin: clamp(2rem, 7vw, 2.75rem) 0 0.75rem;
       font-size: clamp(0.72rem, 3.25vw, 0.88rem);
       letter-spacing: 0.025em;
     }
@@ -67,7 +67,7 @@ export const landingMobileStyles = String.raw`
     .hero h1 {
       order: 2;
       max-width: 36rem;
-      font-size: clamp(1.95rem, 8.2vw, 3.25rem);
+      font-size: clamp(1.75rem, 7.3vw, 2.8rem);
       letter-spacing: -0.035em;
       line-height: 1.08;
       text-wrap: balance;
@@ -85,21 +85,21 @@ export const landingMobileStyles = String.raw`
     .hero__rule {
       order: 3;
       width: 8.4rem;
-      margin: 1.5rem 0 1.25rem;
+      margin: 1rem 0 0.8rem;
     }
 
     .hero__copy {
       order: 4;
       max-width: 35rem;
-      font-size: clamp(0.98rem, 4.15vw, 1.15rem);
-      line-height: 1.58;
+      font-size: clamp(0.88rem, 3.7vw, 1.02rem);
+      line-height: 1.42;
     }
 
     .hero__visual {
       position: relative;
       order: 5;
-      min-height: clamp(18rem, 82vw, 27rem);
-      margin: 1rem calc(var(--page-pad) * -1) 0;
+      min-height: clamp(12.5rem, 52vw, 18rem);
+      margin: 0.45rem calc(var(--page-pad) * -1) 0;
       overflow: hidden;
       background-image:
         linear-gradient(
@@ -128,19 +128,19 @@ export const landingMobileStyles = String.raw`
 
     .phone {
       z-index: 3;
-      top: 0.5rem;
+      top: 0;
       bottom: auto;
       left: clamp(-2.2rem, -5vw, -1rem);
-      width: clamp(12rem, 50vw, 20rem);
+      width: clamp(9.5rem, 42vw, 16rem);
       filter: drop-shadow(0 1.4rem 1.8rem rgb(46 19 12 / 26%));
     }
 
     .firefighter {
       z-index: 2;
-      top: 3rem;
+      top: 1.4rem;
       right: clamp(-4rem, -9vw, -2rem);
       bottom: auto;
-      width: clamp(13.5rem, 56vw, 22rem);
+      width: clamp(11rem, 48vw, 18rem);
       filter: drop-shadow(-0.7rem 1rem 1.6rem rgb(46 19 12 / 22%));
     }
 
@@ -149,8 +149,8 @@ export const landingMobileStyles = String.raw`
       z-index: 8;
       order: 6;
       width: auto;
-      margin: -3.8rem 0 0;
-      padding: 0.9rem 0.55rem;
+      margin: -2.2rem 0 0;
+      padding: 0.7rem 0.55rem;
       border: 1px solid rgb(217 27 16 / 8%);
       border-radius: 1rem;
       background: rgb(255 253 250 / 94%);
@@ -186,16 +186,16 @@ export const landingMobileStyles = String.raw`
       order: 7;
       width: 100%;
       max-width: none;
-      margin-top: 1.25rem;
+      margin-top: 0.8rem;
       align-items: stretch;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.55rem;
     }
 
     .hero__actions .button {
       width: 100%;
       min-width: 0;
-      min-height: 3.65rem;
+      min-height: 3.1rem;
       border-radius: 0.8rem;
       font-size: clamp(0.76rem, 3.3vw, 0.92rem);
     }
@@ -236,25 +236,25 @@ export const landingMobileStyles = String.raw`
     }
 
     .hero__visual {
-      min-height: 17.5rem;
+      min-height: 12rem;
     }
 
     .phone {
-      top: 0.5rem;
+      top: 0;
       bottom: auto;
-      left: -1.5rem;
-      width: 11.5rem;
+      left: -1.2rem;
+      width: 9rem;
     }
 
     .firefighter {
-      top: 3.2rem;
-      right: -2.8rem;
+      top: 1.25rem;
+      right: -2.3rem;
       bottom: auto;
-      width: 13rem;
+      width: 10.5rem;
     }
 
     .hero__trust {
-      margin-top: -2.8rem;
+      margin-top: -2rem;
       padding-inline: 0.35rem;
     }
 
@@ -270,6 +270,51 @@ export const landingMobileStyles = String.raw`
     .hero__trust-label {
       white-space: normal;
       line-height: 1.12;
+    }
+  }
+
+  @media (max-width: 640px) and (max-height: 750px) {
+    .eyebrow {
+      margin-top: 1.35rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(1.58rem, 6.8vw, 2.15rem);
+    }
+
+    .hero__rule {
+      margin-block: 0.75rem 0.65rem;
+    }
+
+    .hero__copy {
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .hero__visual {
+      min-height: 11.25rem;
+    }
+
+    .phone {
+      width: 8.75rem;
+    }
+
+    .firefighter {
+      top: 1rem;
+      width: 10.25rem;
+    }
+
+    .hero__trust {
+      margin-top: -1.75rem;
+      padding-block: 0.5rem;
+    }
+
+    .hero__actions {
+      margin-top: 0.6rem;
+    }
+
+    .hero__actions .button {
+      min-height: 2.85rem;
     }
   }
 `;

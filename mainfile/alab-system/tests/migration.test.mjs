@@ -100,19 +100,19 @@ test("landing hero has a mobile-only reference composition", () => {
   assert.match(mobileStyles, /--header-h:\s*4\.4rem/);
   assert.match(
     mobileStyles,
-    /\.eyebrow\s*\{[\s\S]*?margin:\s*clamp\(3rem,\s*11vw,\s*4rem\)/,
+    /\.eyebrow\s*\{[\s\S]*?margin:\s*clamp\(2rem,\s*7vw,\s*2\.75rem\)/,
   );
   assert.match(
     mobileStyles,
-    /\.hero__visual\s*\{[\s\S]*?min-height:\s*clamp\(18rem,\s*82vw,\s*27rem\)[\s\S]*?margin:\s*1rem/,
+    /@media \(max-width: 640px\) and \(max-height: 750px\)/,
   );
   assert.match(
     mobileStyles,
-    /\.phone\s*\{[\s\S]*?top:\s*0\.5rem[\s\S]*?bottom:\s*auto[\s\S]*?width:\s*clamp\(12rem,\s*50vw,\s*20rem\)/,
+    /\.hero__visual\s*\{[\s\S]*?min-height:\s*clamp\(12\.5rem,\s*52vw,\s*18rem\)/,
   );
   assert.match(
     mobileStyles,
-    /\.firefighter\s*\{[\s\S]*?top:\s*3rem[\s\S]*?bottom:\s*auto[\s\S]*?width:\s*clamp\(13\.5rem,\s*56vw,\s*22rem\)/,
+    /\.hero__actions \.button\s*\{[\s\S]*?min-height:\s*3\.1rem/,
   );
   assert.match(component, /landingMobileStyles/);
 });
