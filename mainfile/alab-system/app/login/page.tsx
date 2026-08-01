@@ -1,18 +1,5 @@
-import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { redirect } from "next/navigation";
 
-import { LoginPage } from "../_components/login-page";
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-plus-jakarta",
-});
-
-export const metadata: Metadata = {
-  title: "Resident Login - ALAB",
-};
-
-export default function LoginRoute() {
-  return <LoginPage fontVariableClassName={plusJakartaSans.variable} />;
+export default function LoginRedirectRoute() {
+  redirect("/resident/login");
 }
