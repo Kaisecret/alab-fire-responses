@@ -60,7 +60,7 @@ export function LoginPage({
     };
     const handleRegister = (event: Event) => {
       event.preventDefault();
-      window.alert("Registration portal opening soon.");
+      window.location.assign("/resident/signup");
     };
 
     toggle.addEventListener("click", handleToggle);

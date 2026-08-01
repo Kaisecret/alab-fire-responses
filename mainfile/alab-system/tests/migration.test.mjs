@@ -9,6 +9,7 @@ const images = [
   "bg images.webp",
   "ChatGPT Image Jul 28, 2026, 02_33_55 AM.webp",
   "FAVICON.webp",
+  "for sign up.webp",
   "Hero section.webp",
   "LOGO FIRE.webp",
   "logo white tint.webp",
