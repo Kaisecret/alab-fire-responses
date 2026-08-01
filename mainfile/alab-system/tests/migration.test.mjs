@@ -9,6 +9,7 @@ const images = [
   "bg images.webp",
   "ChatGPT Image Jul 28, 2026, 02_33_55 AM.webp",
   "FAVICON.webp",
+  "for sign up.webp",
   "Hero section.webp",
   "LOGO FIRE.webp",
   "logo white tint.webp",
@@ -53,7 +54,8 @@ test("landing content preserves the complete source structure", () => {
   assert.equal(content.includes("/images/phone.webp"), true);
   assert.equal(content.includes("/images/BFPBACK.webp"), true);
   assert.equal(content.includes('url(\\"/images/bg images.webp\\")'), true);
-  assert.equal(content.includes('href=\\"/login\\"'), true);
+  assert.equal(content.includes('href=\\"/resident/login\\"'), true);
+  assert.equal(content.includes('href=\\"/login\\"'), false);
   assert.equal(content.includes("../login.html"), false);
 });
 
@@ -124,24 +126,39 @@ test("landing hero has a mobile-only reference composition", () => {
 
 test("login content preserves the source form, imagery, and home route", () => {
   const contentPath = join(root, "app", "_content", "login-content.ts");
-  const routePath = join(root, "app", "login", "page.tsx");
+  const routePath = join(root, "app", "resident", "login", "page.tsx");
+  const oldRoutePath = join(root, "app", "login", "page.tsx");
+  const componentPath = join(root, "app", "_components", "login-page.tsx");
 
   assert.equal(existsSync(contentPath), true, "login content module is missing");
-  assert.equal(existsSync(routePath), true, "login route is missing");
+  assert.equal(existsSync(routePath), true, "resident login route is missing");
+  assert.equal(existsSync(oldRoutePath), true, "legacy login redirect is missing");
+  assert.equal(existsSync(componentPath), true, "login component is missing");
 
   const content = readFileSync(contentPath, "utf8");
+  const component = readFileSync(componentPath, "utf8");
   assert.match(content, />Welcome</);
+  assert.match(content, /Resident or Citizen Reporter/);
+  assert.match(content, /resident fire reporting/i);
   assert.match(content, /id=\\?"username\\?"/);
   assert.match(content, /id=\\?"password\\?"/);
   assert.equal(content.includes("/images/side pic for login.webp"), true);
   assert.equal(content.includes("/images/Logo.webp"), true);
   assert.equal(content.includes('href=\\"/\\"'), true);
+  assert.equal(content.includes('action=\\"/resident\\"'), true);
   assert.equal(content.includes("BFP/index.html"), false);
   assert.equal(content.includes("var(--font-plus-jakarta)"), true);
+  assert.doesNotMatch(content, /Municipal BFP login/i);
+  assert.doesNotMatch(content, /Provincial BFP login/i);
+  assert.match(component, /window\.location\.assign\("\/resident"\)/);
 
   const route = readFileSync(routePath, "utf8");
+  assert.match(route, /Resident Login - ALAB/);
   assert.match(route, /next\/font\/google/);
   assert.doesNotMatch(route, /fonts\.googleapis\.com/);
+
+  const oldRoute = readFileSync(oldRoutePath, "utf8");
+  assert.match(oldRoute, /redirect\("\/resident\/login"\)/);
 });
 
 test("shared layout identifies ALAB and uses the original favicon", () => {

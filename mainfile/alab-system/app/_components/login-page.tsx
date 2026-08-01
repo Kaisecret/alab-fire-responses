@@ -48,7 +48,7 @@ export function LoginPage({
       eye.innerHTML = isPassword ? visibleEye : hiddenEye;
     };
     const goHome = () => {
-      window.location.assign("/");
+      window.location.assign("/resident");
     };
     const handleSubmit = (event: SubmitEvent) => {
       event.preventDefault();
@@ -60,7 +60,7 @@ export function LoginPage({
     };
     const handleRegister = (event: Event) => {
       event.preventDefault();
-      window.alert("Registration portal opening soon.");
+      window.location.assign("/resident/signup");
     };
 
     toggle.addEventListener("click", handleToggle);
