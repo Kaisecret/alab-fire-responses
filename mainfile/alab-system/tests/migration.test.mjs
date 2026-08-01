@@ -125,21 +125,31 @@ test("landing hero has a mobile-only reference composition", () => {
 test("login content preserves the source form, imagery, and home route", () => {
   const contentPath = join(root, "app", "_content", "login-content.ts");
   const routePath = join(root, "app", "login", "page.tsx");
+  const componentPath = join(root, "app", "_components", "login-page.tsx");
 
   assert.equal(existsSync(contentPath), true, "login content module is missing");
   assert.equal(existsSync(routePath), true, "login route is missing");
+  assert.equal(existsSync(componentPath), true, "login component is missing");
 
   const content = readFileSync(contentPath, "utf8");
+  const component = readFileSync(componentPath, "utf8");
   assert.match(content, />Welcome</);
+  assert.match(content, /Resident or Citizen Reporter/);
+  assert.match(content, /resident fire reporting/i);
   assert.match(content, /id=\\?"username\\?"/);
   assert.match(content, /id=\\?"password\\?"/);
   assert.equal(content.includes("/images/side pic for login.webp"), true);
   assert.equal(content.includes("/images/Logo.webp"), true);
   assert.equal(content.includes('href=\\"/\\"'), true);
+  assert.equal(content.includes('action=\\"/resident\\"'), true);
   assert.equal(content.includes("BFP/index.html"), false);
   assert.equal(content.includes("var(--font-plus-jakarta)"), true);
+  assert.doesNotMatch(content, /Municipal BFP login/i);
+  assert.doesNotMatch(content, /Provincial BFP login/i);
+  assert.match(component, /window\.location\.assign\("\/resident"\)/);
 
   const route = readFileSync(routePath, "utf8");
+  assert.match(route, /Resident Login - ALAB/);
   assert.match(route, /next\/font\/google/);
   assert.doesNotMatch(route, /fonts\.googleapis\.com/);
 });

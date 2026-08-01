@@ -48,7 +48,7 @@ export function LoginPage({
       eye.innerHTML = isPassword ? visibleEye : hiddenEye;
     };
     const goHome = () => {
-      window.location.assign("/");
+      window.location.assign("/resident");
     };
     const handleSubmit = (event: SubmitEvent) => {
       event.preventDefault();

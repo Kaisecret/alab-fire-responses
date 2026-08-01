@@ -10,7 +10,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Login - ALAB Provincial Fire Response",
+  title: "Resident Login - ALAB",
 };
 
 export default function LoginRoute() {
