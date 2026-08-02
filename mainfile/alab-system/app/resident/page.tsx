@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
-import { ResidentModule } from "../_components/resident-module";
+import { ResidentHomePage } from "../_components/resident-home-page";
 
 export const metadata: Metadata = {
-  title: "Resident Module - ALAB",
+  title: "Resident Home - ALAB",
   description:
     "Resident fire reporting and report-status module for ALAB Provincial Fire Response.",
 };
 
 export default function ResidentRoute() {
-  return <ResidentModule />;
+  return <ResidentHomePage />;
 }
