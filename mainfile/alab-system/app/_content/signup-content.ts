@@ -1021,7 +1021,7 @@ export const signupMarkup = `<main class="signup-container">
                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                     <circle cx="12" cy="7" r="4"/>
                                 </svg>
-                                <input type="text" class="form-input" placeholder="First Name" required id="firstName">
+                                <input type="text" class="form-input" placeholder="First Name" required id="firstName" maxlength="50">
                             </div>
                         </div>
                         <div class="form-group">
@@ -1030,7 +1030,7 @@ export const signupMarkup = `<main class="signup-container">
                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                     <circle cx="12" cy="7" r="4"/>
                                 </svg>
-                                <input type="text" class="form-input" placeholder="Last Name" required id="lastName">
+                                <input type="text" class="form-input" placeholder="Last Name" required id="lastName" maxlength="50">
                             </div>
                         </div>
                     </div>
@@ -1041,7 +1041,7 @@ export const signupMarkup = `<main class="signup-container">
                                 <rect x="2" y="4" width="20" height="16" rx="2"/>
                                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                             </svg>
-                            <input type="email" class="form-input" placeholder="Email Address" required id="email">
+                            <input type="email" class="form-input" placeholder="Email Address" required id="email" maxlength="100">
                         </div>
                     </div>
 
@@ -1050,7 +1050,7 @@ export const signupMarkup = `<main class="signup-container">
                             <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                             </svg>
-                            <input type="tel" class="form-input" placeholder="Phone Number" required id="phone">
+                            <input type="tel" class="form-input" placeholder="Phone Number (e.g., 09123456789)" required id="phone" maxlength="11" minlength="11" pattern="09[0-9]{9}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);">
                         </div>
                     </div>
 
@@ -1132,7 +1132,7 @@ export const signupMarkup = `<main class="signup-container">
                                 <line x1="19" y1="8" x2="19" y2="14"/>
                                 <line x1="22" y1="11" x2="16" y2="11"/>
                             </svg>
-                            <input type="text" class="form-input" placeholder="Sitio or Purok" id="sitio">
+                            <input type="text" class="form-input" placeholder="Sitio or Purok" id="sitio" maxlength="100">
                         </div>
                     </div>
 
@@ -1142,7 +1142,7 @@ export const signupMarkup = `<main class="signup-container">
                                 <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
                                 <circle cx="12" cy="10" r="3"/>
                             </svg>
-                            <textarea class="form-input" placeholder="Complete Address" required id="address"></textarea>
+                            <textarea class="form-input" placeholder="Complete Address" required id="address" maxlength="200"></textarea>
                         </div>
                     </div>
 
@@ -1153,7 +1153,7 @@ export const signupMarkup = `<main class="signup-container">
                                 <path d="m3 9 9 4.5L21 9"/>
                                 <path d="M12 13.5V21"/>
                             </svg>
-                            <input type="text" class="form-input" placeholder="Nearby Landmark (Optional)" id="landmark">
+                            <input type="text" class="form-input" placeholder="Nearby Landmark (Optional)" id="landmark" maxlength="100">
                         </div>
                     </div>
 
@@ -1260,7 +1260,7 @@ export const signupMarkup = `<main class="signup-container">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                 <circle cx="12" cy="7" r="4"/>
                             </svg>
-                            <input type="text" class="form-input" placeholder="Choose a Username" required id="username">
+                            <input type="text" class="form-input" placeholder="Choose a Username" required id="username" maxlength="30">
                         </div>
                     </div>
 
@@ -1270,7 +1270,7 @@ export const signupMarkup = `<main class="signup-container">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                             </svg>
-                            <input type="password" class="form-input" placeholder="Create Password" required id="signupPassword">
+                            <input type="password" class="form-input" placeholder="Create Password" required id="signupPassword" minlength="8" maxlength="50">
                             <button type="button" class="toggle-password" id="togglePass1" aria-label="Toggle password">
                                 <svg class="eye-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
@@ -1293,7 +1293,7 @@ export const signupMarkup = `<main class="signup-container">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                             </svg>
-                            <input type="password" class="form-input" placeholder="Confirm Password" required id="confirmPassword">
+                            <input type="password" class="form-input" placeholder="Confirm Password" required id="confirmPassword" minlength="8" maxlength="50">
                             <button type="button" class="toggle-password" id="togglePass2" aria-label="Toggle password">
                                 <svg class="eye-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>

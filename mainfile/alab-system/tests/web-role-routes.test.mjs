@@ -7,7 +7,7 @@ const root = process.cwd();
 
 test("web app exposes top-level role module routes", () => {
   const routes = [
-    ["resident", "ResidentModule", "Resident Module - ALAB"],
+    ["resident", "ResidentHomePage", "Resident Home - ALAB"],
     ["municipal-bfp", "MunicipalBfpModule", "Municipal BFP Module - ALAB"],
     [
       "provincial-bfp",
