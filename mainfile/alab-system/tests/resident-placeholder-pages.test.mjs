@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
@@ -37,4 +37,24 @@ test("resident mobile navigation remains inside narrow zoomed viewports", () => 
     source,
     /\.mobile-nav-fab-wrapper\s*\{[\s\S]*?flex:\s*1 1 0;[\s\S]*?min-width:\s*0/,
   );
+});
+
+test("resident routes disable mobile browser zoom without changing other modules", () => {
+  const layoutPath = join(root, "app", "resident", "layout.tsx");
+  assert.equal(existsSync(layoutPath), true, "resident viewport layout is missing");
+
+  const layout = readFileSync(layoutPath, "utf8");
+  const styles = readFileSync(
+    join(root, "app", "_content", "resident-home-content.ts"),
+    "utf8",
+  );
+
+  assert.match(layout, /export const viewport:\s*Viewport/);
+  assert.match(layout, /width:\s*"device-width"/);
+  assert.match(layout, /initialScale:\s*1/);
+  assert.match(layout, /minimumScale:\s*1/);
+  assert.match(layout, /maximumScale:\s*1/);
+  assert.match(layout, /userScalable:\s*false/);
+  assert.match(layout, /viewportFit:\s*"cover"/);
+  assert.match(styles, /\.dashboard-page-root\s*\{[\s\S]*?touch-action:\s*pan-x pan-y/);
 });

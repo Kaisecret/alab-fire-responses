@@ -654,6 +654,7 @@ export const homeStyles = `
             background-color: var(--card-bg);
             padding-bottom: 5rem; /* space for bottom nav */
             overflow-x: clip;
+            touch-action: pan-x pan-y;
         }
 
         .header-nav {
