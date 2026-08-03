@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "postinstall": "npm ci --prefix mainfile/alab-system",
+    "postinstall": "npm install --prefix mainfile/alab-system",
     "dev": "npm run dev --prefix mainfile/alab-system",
     "build": "npm run build --prefix mainfile/alab-system",
     "start": "node scripts/start.mjs",

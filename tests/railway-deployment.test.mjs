@@ -24,7 +24,7 @@ test("the repository root exposes Railway build and start commands", async () =>
   assert.equal(packageJson.workspaces, undefined);
   assert.equal(
     packageJson.scripts.postinstall,
-    "npm ci --prefix mainfile/alab-system",
+    "npm install --prefix mainfile/alab-system",
   );
   assert.equal(packageJson.scripts.dev, "npm run dev --prefix mainfile/alab-system");
   assert.equal(packageJson.scripts.build, "npm run build --prefix mainfile/alab-system");
@@ -48,25 +48,14 @@ test("the standalone app lockfile installs Next beside the app", async () => {
   );
 });
 
-test("the standalone lockfile includes optional peers required by Railway npm 10", async () => {
-  const packageLock = JSON.parse(
-    await readFile(`${APP_DIRECTORY}/package-lock.json`, "utf8"),
+test("Railway postinstall avoids strict nested ci for platform optional packages", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8"));
+
+  assert.equal(packageJson.scripts.postinstall.includes("npm ci"), false);
+  assert.equal(
+    packageJson.scripts.postinstall,
+    `npm install --prefix ${APP_DIRECTORY}`,
   );
-
-  const requiredPackages = {
-    "node_modules/@emnapi/core": "1.10.0",
-    "node_modules/@emnapi/runtime": "1.11.3",
-    "node_modules/@unrs/resolver-binding-wasm32-wasi/node_modules/@emnapi/runtime":
-      "1.10.0",
-  };
-
-  for (const [path, version] of Object.entries(requiredPackages)) {
-    assert.equal(
-      packageLock.packages[path]?.version,
-      version,
-      `missing Railway npm 10 lock entry: ${path}@${version}`,
-    );
-  }
 });
 
 test("the production launcher forwards Railway's host and port", async () => {
