@@ -419,6 +419,61 @@ export const reportFireStyles = `
         .mobile-nav-fab img { width: 3.2rem; height: 3.2rem; margin-top: 0.3rem; object-fit: contain; filter: brightness(0) invert(1); }
         .mobile-nav-fab span { font-size: 0.55rem; font-weight: 700; margin-top: -0.8rem; }
     }
+
+    /* TABLET ADJUSTMENTS */
+    @media (min-width: 768px) and (max-width: 950px) {
+        .report-page-root { background-color: var(--card-bg); padding-bottom: 6rem; }
+        .report-container {
+            margin: 2rem auto;
+            max-width: 750px;
+            width: 92%;
+            padding: 0;
+        }
+        .main-form-card {
+            background: var(--bg-white);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .mobile-warning {
+            max-width: 750px;
+            width: 92%;
+            margin: 1.5rem auto 2rem auto;
+            box-sizing: border-box;
+        }
+        .warning-banner {
+            margin: 0 0 2rem 0;
+            padding: 1.5rem;
+        }
+        .step-section {
+            margin: 0 0 2rem 0;
+        }
+        .two-col-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .location-box {
+            flex-direction: row;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+        .map-preview {
+            width: 100px;
+            height: 80px;
+        }
+        .type-grid {
+            grid-template-columns: repeat(5, 1fr);
+        }
+        .mobile-bottom-nav {
+            justify-content: center;
+            gap: 2rem;
+        }
+        .mobile-nav-item, .mobile-nav-fab-wrapper {
+            width: auto;
+            min-width: 4.5rem;
+        }
+    }
 `;
 
 export const reportFireMarkup = `

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 const root = process.cwd();
-const residentPages = ["reports", "guide", "profile"];
+const residentPages = ["guide", "profile"];
 
 test("resident placeholder pages close their HTML template literals", () => {
   for (const page of residentPages) {
@@ -16,6 +16,48 @@ test("resident placeholder pages close their HTML template literals", () => {
     assert.match(source, /^`;$/m, `${page} page has an unterminated template`);
     assert.doesNotMatch(source, /^\\`;$/m, `${page} page escapes its closing backtick`);
   }
+});
+
+test("resident reports use the complete list and detail modules", () => {
+  const reportsRoute = readFileSync(
+    join(root, "app", "resident", "reports", "page.tsx"),
+    "utf8",
+  );
+  const detailRoutePath = join(
+    root,
+    "app",
+    "resident",
+    "reports",
+    "[id]",
+    "page.tsx",
+  );
+  const reportsContentPath = join(
+    root,
+    "app",
+    "_content",
+    "resident-reports-content.ts",
+  );
+  const detailContentPath = join(
+    root,
+    "app",
+    "_content",
+    "resident-report-detail-content.ts",
+  );
+
+  assert.equal(existsSync(detailRoutePath), true, "report detail route is missing");
+  assert.equal(existsSync(reportsContentPath), true, "reports content is missing");
+  assert.equal(existsSync(detailContentPath), true, "report detail content is missing");
+  assert.match(reportsRoute, /resident-reports-content/);
+
+  const detailRoute = readFileSync(detailRoutePath, "utf8");
+  const reportsContent = readFileSync(reportsContentPath, "utf8");
+  const detailContent = readFileSync(detailContentPath, "utf8");
+
+  assert.match(detailRoute, /resident-report-detail-content/);
+  assert.match(reportsContent, /\/resident\/reports\/FR-2026-003/);
+  assert.match(reportsContent, /\/resident\/reports\/FR-2026-001/);
+  assert.match(reportsContent, /\/resident\/reports\/FR-2026-002/);
+  assert.match(detailContent, /href="\/resident\/reports"/);
 });
 
 test("resident mobile navigation remains inside narrow zoomed viewports", () => {
