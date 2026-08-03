@@ -7,6 +7,9 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(max-width: 1024px)", color: "#DD2213" },
+  ],
 };
 
 export default function ResidentLayout({

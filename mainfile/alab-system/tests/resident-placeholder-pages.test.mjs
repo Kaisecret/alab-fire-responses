@@ -56,5 +56,8 @@ test("resident routes disable mobile browser zoom without changing other modules
   assert.match(layout, /maximumScale:\s*1/);
   assert.match(layout, /userScalable:\s*false/);
   assert.match(layout, /viewportFit:\s*"cover"/);
+  assert.match(layout, /themeColor:\s*\[/);
+  assert.match(layout, /media:\s*"\(max-width: 1024px\)"/);
+  assert.match(layout, /color:\s*"#DD2213"/);
   assert.match(styles, /\.dashboard-page-root\s*\{[\s\S]*?touch-action:\s*pan-x pan-y/);
 });
