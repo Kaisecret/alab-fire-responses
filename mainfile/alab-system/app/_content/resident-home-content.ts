@@ -653,6 +653,7 @@ export const homeStyles = `
         .dashboard-page-root {
             background-color: var(--card-bg);
             padding-bottom: 5rem; /* space for bottom nav */
+            overflow-x: clip;
         }
 
         .header-nav {
@@ -866,12 +867,15 @@ export const homeStyles = `
             position: fixed;
             bottom: 0;
             left: 0;
-            width: 100%;
+            right: 0;
+            width: auto;
+            max-width: 100vw;
             background: white;
             border-top: 1px solid var(--border-color);
-            padding: 0.8rem 1rem 1.4rem;
+            padding: 0.8rem 1rem calc(1.4rem + env(safe-area-inset-bottom, 0px));
             justify-content: space-between;
             align-items: flex-end;
+            overflow: visible;
             z-index: 100;
         }
 
@@ -884,7 +888,9 @@ export const homeStyles = `
             font-size: 0.8rem;
             font-weight: 600;
             text-decoration: none;
-            width: 20%;
+            flex: 1 1 0;
+            min-width: 0;
+            width: auto;
         }
 
         .mobile-nav-item.active {
@@ -898,7 +904,9 @@ export const homeStyles = `
 
         .mobile-nav-fab-wrapper {
             position: relative;
-            width: 20%;
+            flex: 1 1 0;
+            min-width: 0;
+            width: auto;
             display: flex;
             justify-content: center;
         }
