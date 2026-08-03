@@ -1090,7 +1090,7 @@ export const homeMarkup = `
                 
                 <div class="header-profile-menu desktop-only">
                     <button class="header-profile-btn" aria-haspopup="true">
-                        <img src="/images/user_avatar_placeholder.png" alt="Profile" onerror="this.src='https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=1e293b&color=fff&size=150'">
+                        <img src="/images/user_avatar_placeholder.webp" alt="Profile" onerror="this.src='https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=1e293b&color=fff&size=150'">
                     </button>
                     <div class="profile-dropdown">
                         <a href="/resident/profile" class="profile-dropdown-item">

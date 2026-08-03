@@ -895,7 +895,7 @@ export const profileMarkup = `
                 
                 <div class="header-profile-menu desktop-only">
                     <button class="header-profile-btn" aria-haspopup="true">
-                        <img src="/images/user_avatar_placeholder.png" alt="Profile" onerror="this.src='https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=1e293b&color=fff&size=150'">
+                        <img src="/images/user_avatar_placeholder.webp" alt="Profile" onerror="this.src='https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=1e293b&color=fff&size=150'">
                     </button>
                     <div class="profile-dropdown">
                         <a href="/resident/profile" class="profile-dropdown-item">
@@ -928,7 +928,7 @@ export const profileMarkup = `
             <!-- HEADER SECTION -->
             <div class="profile-header-card">
                 <div class="profile-avatar-container">
-                    <img src="/images/user_avatar_placeholder.png" alt="Juan Dela Cruz" class="profile-avatar" onerror="this.src='https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=1e293b&color=fff&size=200'">
+                    <img src="/images/user_avatar_placeholder.webp" alt="Juan Dela Cruz" class="profile-avatar" onerror="this.src='https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=1e293b&color=fff&size=200'">
                     <button class="profile-camera-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     </button>

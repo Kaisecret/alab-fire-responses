@@ -7,6 +7,8 @@ const root = process.cwd();
 const images = [
   "BFPBACK.webp",
   "bg images.webp",
+  "burning-house.webp",
+  "ChatGPT Image Aug 3, 2026, 09_51_05 PM.webp",
   "ChatGPT Image Jul 28, 2026, 02_33_55 AM.webp",
   "FAVICON.webp",
   "fire logo.webp",
@@ -18,6 +20,10 @@ const images = [
   "panay.webp",
   "phone.webp",
   "side pic for login.webp",
+  "step1_calm.webp",
+  "step2_exit.webp",
+  "step3_phone.webp",
+  "step4_firefighter.webp",
 ];
 
 test("all public images are exposed as WebP", () => {
