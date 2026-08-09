@@ -41,6 +41,7 @@ const DEFAULT_OPERATIONAL_VISIBILITY: OperationalLayerVisibility = {
 
 const interactiveMapLayerIds = [
   'alab-building-footprints',
+  'alab-building-extrusion',
   'alab-road-network',
   'alab-public-place-points',
   'antique-public-structures-points',
@@ -442,6 +443,37 @@ function addMapDetailLayers(map: Map) {
           0.62,
         ],
         'fill-outline-color': '#b9c9c1',
+      },
+    }, firstRoadLayer);
+  }
+
+  if (!map.getLayer('alab-building-extrusion')) {
+    map.addLayer({
+      id: 'alab-building-extrusion',
+      type: 'fill-extrusion',
+      source: 'openmaptiles',
+      'source-layer': 'building',
+      minzoom: 13,
+      filter: ['==', ['get', 'render_min_height'], 0],
+      layout: {
+        'fill-extrusion-rounded-corner-distance': 2,
+      },
+      paint: {
+        'fill-extrusion-color': [
+          'interpolate',
+          ['linear'],
+          ['get', 'render_height'],
+          0,
+          '#7da7b8',
+          20,
+          alabPalette.station,
+          80,
+          '#0b3d62',
+        ],
+        'fill-extrusion-height': ['get', 'render_height'],
+        'fill-extrusion-base': ['get', 'render_min_height'],
+        'fill-extrusion-opacity': 0.84,
+        'fill-extrusion-vertical-gradient': true,
       },
     }, firstRoadLayer);
   }
@@ -859,6 +891,7 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
         minZoom: 8,
         maxZoom: 19,
         maxBounds: ANTIQUE_BOUNDS,
+        canvasContextAttributes: { antialias: true },
         attributionControl: false,
       });
 

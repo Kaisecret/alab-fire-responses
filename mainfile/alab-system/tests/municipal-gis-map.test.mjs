@@ -96,6 +96,17 @@ test("municipal GIS map does not wash out the satellite imagery", () => {
   assert.doesNotMatch(map, /mbfp-antique-map-wash/);
 });
 
+test("municipal GIS map adds rounded 3D building extrusions at close zoom", () => {
+  const mapPath = join(root, "app", "_components", "antique-gis-map.tsx");
+  const map = readFileSync(mapPath, "utf8");
+
+  assert.match(map, /fill-extrusion/);
+  assert.match(map, /building-extrusion/);
+  assert.match(map, /fill-extrusion-rounded-corner-distance/);
+  assert.match(map, /render_height/);
+  assert.match(map, /fill-extrusion-height/);
+});
+
 test("municipal GIS controls expose operational layer visibility", () => {
   const pagePath = join(root, "app", "municipal-bfp", "gis-map", "page.tsx");
   const page = readFileSync(pagePath, "utf8");
