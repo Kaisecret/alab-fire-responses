@@ -23,6 +23,28 @@ test("municipal GIS page renders a Leaflet map focused on Antique", () => {
   assert.match(map, /Province of Antique/);
 });
 
+test("municipal GIS map includes the complete Antique extent and Caluya", () => {
+  const mapPath = join(root, "app", "_components", "antique-gis-map.tsx");
+  const map = readFileSync(mapPath, "utf8");
+
+  assert.match(map, /10\.2712376/);
+  assert.match(map, /12\.2794760/);
+  assert.match(map, /121\.1450673/);
+  assert.match(map, /122\.3323830/);
+  assert.match(map, /ANTIQUE_RELATION_ID\s*=\s*1506746/);
+  assert.match(map, /map\.fitBounds\(ANTIQUE_BOUNDS/);
+});
+
+test("municipal GIS map loads detail automatically without municipality selection", () => {
+  const mapPath = join(root, "app", "_components", "antique-gis-map.tsx");
+  const map = readFileSync(mapPath, "utf8");
+
+  assert.match(map, /tileLayer\(OSM_TILE_URL/);
+  assert.match(map, /maxZoom:\s*19/);
+  assert.match(map, /addAntiqueResetControl/);
+  assert.doesNotMatch(map, /antiqueMunicipalities|municipality-selector|<select/);
+});
+
 test("municipal GIS Leaflet markers keep the ALAB incident palette", () => {
   const mapPath = join(root, "app", "_components", "antique-gis-map.tsx");
   const map = readFileSync(mapPath, "utf8");
@@ -63,9 +85,23 @@ test("municipal GIS map loads Antique public structures for the province overvie
   assert.match(map, /overpass\.kumi\.systems\/api\/interpreter/);
   assert.match(map, /amenity.*school.*hospital.*fire_station/);
   assert.match(map, /office.*government/);
+  assert.match(map, /map_to_area->\.antique/);
+  assert.match(map, /nwr\(area\.antique\)/);
+  assert.match(map, /emergency.*assembly_point/);
+  assert.match(map, /social_facility.*shelter/);
   assert.match(map, /out center tags/);
-  assert.match(map, /getZoom\(\) >= 9\.5/);
+  assert.match(map, /getZoom\(\) >= 12/);
   assert.match(map, /Schools & public facilities/);
+});
+
+test("municipal GIS map stores the exact Antique boundary locally", () => {
+  const boundaryPath = join(root, "public", "data", "antique-boundary.geojson");
+
+  assert.equal(existsSync(boundaryPath), true);
+  const boundary = readFileSync(boundaryPath, "utf8");
+  assert.match(boundary, /"name":"Province of Antique"/);
+  assert.match(boundary, /"osmRelationId":1506746/);
+  assert.match(boundary, /"MultiPolygon"|"Polygon"/);
 });
 
 test("municipal GIS Leaflet map includes the supplied reference controls", () => {
@@ -74,8 +110,8 @@ test("municipal GIS Leaflet map includes the supplied reference controls", () =>
 
   assert.match(map, /control\.zoom/);
   assert.match(map, /control\.scale/);
-  assert.match(map, /nearby-shelters/);
-  assert.match(map, /antiqueMunicipalities/);
+  assert.match(map, /addAntiqueResetControl/);
+  assert.doesNotMatch(map, /nearby-shelters|antiqueMunicipalities/);
 });
 
 test("municipal GIS map does not wash out the satellite imagery", () => {
