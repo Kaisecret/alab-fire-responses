@@ -733,10 +733,64 @@ const dashboardStyles = `
 
   @media (max-width: 768px) {
     .mbfp-dash {
-      padding: 0.8rem;
+      padding: 0.75rem;
     }
     .mbfp-stats-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.65rem;
+    }
+    .mbfp-stat-card {
+      min-width: 0;
+      padding: 0.8rem 0.65rem;
+      gap: 0.55rem;
+      align-items: flex-start;
+    }
+    .mbfp-stat-icon {
+      width: 2.3rem;
+      height: 2.3rem;
+      font-size: 0.9rem;
+    }
+    .mbfp-stat-label {
+      font-size: 0.62rem;
+      line-height: 1.25;
+    }
+    .mbfp-stat-value {
+      font-size: 1.35rem;
+    }
+    .mbfp-grid,
+    .mbfp-card,
+    .mbfp-col-left,
+    .mbfp-col-right {
+      min-width: 0;
+    }
+    .mbfp-card-body {
+      overflow-x: auto;
+    }
+    .mbfp-incident-table {
+      min-width: 580px;
+    }
+    .mbfp-quick-actions {
       grid-template-columns: 1fr;
+    }
+    .mbfp-qa-btn.full-width {
+      grid-column: auto;
+    }
+    .mbfp-verif-item {
+      align-items: flex-start;
+      padding: 0.75rem;
+    }
+    .mbfp-verif-info,
+    .mbfp-resource-info {
+      min-width: 0;
+    }
+    .mbfp-emergency-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.7rem;
+    }
+    .mbfp-emergency-btn {
+      width: 100%;
+      justify-content: center;
     }
     .mbfp-dispatch-grid {
       grid-template-columns: 1fr;

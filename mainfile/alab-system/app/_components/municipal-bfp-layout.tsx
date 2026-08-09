@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type NavItem = { label: string; href: string; icon: string; exact?: boolean; badge?: number };
 const sidebarNav: NavItem[] = [
@@ -372,6 +372,12 @@ const layoutStyles = `
     color: #9ca3af;
   }
 
+  .mbfp-mobile-menu-toggle,
+  .mbfp-sidebar-close,
+  .mbfp-sidebar-backdrop {
+    display: none;
+  }
+
   /* ========== PROFILE DROPDOWN ========== */
   .mbfp-profile-wrapper {
     position: relative;
@@ -470,31 +476,138 @@ const layoutStyles = `
 
   @media (max-width: 768px) {
     .mbfp-sidebar {
-      width: 60px;
-      min-width: 60px;
+      width: min(84vw, 300px);
+      min-width: min(84vw, 300px);
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      box-shadow: 12px 0 28px rgba(15, 23, 42, 0.18);
     }
-    .mbfp-sidebar-logo-text,
-    .mbfp-sidebar-link span,
-    .mbfp-sidebar-municipality,
-    .mbfp-sidebar-badge {
-      display: none;
+    .mbfp-sidebar.mobile-open {
+      transform: translateX(0);
+    }
+    .mbfp-sidebar-logo {
+      justify-content: space-between;
+      padding: 0.55rem 0.75rem;
+    }
+    .mbfp-sidebar-logo-img {
+      width: 150px;
+      height: 60px;
+    }
+    .mbfp-sidebar-close {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.6rem;
+      background: #ffffff;
+      color: #4b5563;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .mbfp-sidebar-nav {
+      padding: 0.75rem 0;
     }
     .mbfp-sidebar-link {
-      justify-content: center;
-      padding: 0.7rem 0;
+      justify-content: flex-start;
+      padding: 0.85rem 1rem;
+      margin-left: -4px;
+      font-size: 0.84rem;
     }
     .mbfp-sidebar-icon {
-      font-size: 1.1rem;
+      font-size: 0.95rem;
+    }
+    .mbfp-sidebar-municipality {
+      display: flex;
+      padding: 1rem 0.75rem;
     }
     .mbfp-main-area {
-      margin-left: 60px;
-      width: calc(100% - 60px);
+      margin-left: 0;
+      width: 100%;
+    }
+    .mbfp-header-inner {
+      padding: 0.5rem 0.75rem;
+      gap: 0.5rem;
+    }
+    .mbfp-header-left {
+      min-width: 0;
+      gap: 0.5rem;
+    }
+    .mbfp-mobile-menu-toggle {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.6rem;
+      background: #ffffff;
+      color: #4b5563;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .mbfp-header-logo {
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
     }
     .mbfp-header-titles {
+      min-width: 0;
+    }
+    .mbfp-header-title {
       display: none;
+    }
+    .mbfp-header-subtitle {
+      white-space: nowrap;
+      font-size: 0.68rem;
     }
     .mbfp-header-user-info {
       display: none;
+    }
+    .mbfp-header-user-chevron {
+      display: none;
+    }
+    .mbfp-header-location,
+    .mbfp-search-btn {
+      display: none;
+    }
+    .mbfp-header-right {
+      gap: 0.35rem;
+    }
+    .mbfp-header-user {
+      margin-left: 0;
+      padding: 0.1rem;
+    }
+    .mbfp-profile-dropdown {
+      width: min(240px, calc(100vw - 1.5rem));
+    }
+    .mbfp-sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 95;
+      border: 0;
+      background: rgba(15, 23, 42, 0.42);
+      cursor: pointer;
+      display: block;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+    .mbfp-sidebar-backdrop.visible {
+      display: block;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    .mbfp-footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.35rem;
+      padding: 0.75rem;
+      font-size: 0.65rem;
     }
   }
 `;
@@ -502,6 +615,24 @@ const layoutStyles = `
 export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isMobileNavOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMobileNavOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileNavOpen]);
+
+  const closeMobileNav = () => setIsMobileNavOpen(false);
 
   const isActive = (item: typeof sidebarNav[0]) => {
     if (item.exact) {
@@ -532,7 +663,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
 
       <div className="mbfp-layout">
         {/* ===== SIDEBAR ===== */}
-        <aside className="mbfp-sidebar">
+        <aside id="mbfp-sidebar" className={`mbfp-sidebar ${isMobileNavOpen ? 'mobile-open' : ''}`}>
           {/* Logo */}
           <div className="mbfp-sidebar-logo">
             <img
@@ -540,6 +671,14 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
               alt="ALAB Logo"
               className="mbfp-sidebar-logo-img"
             />
+            <button
+              type="button"
+              className="mbfp-sidebar-close"
+              aria-label="Close navigation menu"
+              onClick={closeMobileNav}
+            >
+              <i className="fa-solid fa-xmark" />
+            </button>
           </div>
 
           {/* Navigation */}
@@ -549,16 +688,26 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                 key={item.href}
                 href={item.href}
                 className={`mbfp-sidebar-link ${isActive(item) ? 'active' : ''}`}
+                onClick={closeMobileNav}
               >
                 <i className={`${item.icon} mbfp-sidebar-icon`} />
                 <span>{item.label}</span>
                 {item.badge && (
                   <span className="mbfp-sidebar-badge">{item.badge}</span>
                 )}
-              </Link>
-            ))}
-          </nav>
+            </Link>
+          ))}
+        </nav>
         </aside>
+
+        <button
+          type="button"
+          className={`mbfp-sidebar-backdrop ${isMobileNavOpen ? 'visible' : ''}`}
+          aria-label="Close navigation menu"
+          aria-hidden={!isMobileNavOpen}
+          tabIndex={isMobileNavOpen ? 0 : -1}
+          onClick={closeMobileNav}
+        />
 
         {/* ===== MAIN AREA ===== */}
         <div className="mbfp-main-area">
@@ -567,6 +716,16 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
             <div className="mbfp-header-inner">
               {/* Left: System title */}
               <div className="mbfp-header-left">
+                <button
+                  type="button"
+                  className="mbfp-mobile-menu-toggle"
+                  aria-label="Open navigation menu"
+                  aria-controls="mbfp-sidebar"
+                  aria-expanded={isMobileNavOpen}
+                  onClick={() => setIsMobileNavOpen(true)}
+                >
+                  <i className="fa-solid fa-bars" />
+                </button>
                 <img
                   src="/images/FAVICON.webp"
                   alt="ALAB"
@@ -595,7 +754,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                   <span className="mbfp-header-notif-badge">2</span>
                 </button>
 
-                <button className="mbfp-header-icon-btn" title="Search">
+                <button className="mbfp-header-icon-btn mbfp-search-btn" title="Search">
                   <i className="fa-solid fa-magnifying-glass" />
                 </button>
 
