@@ -1,13 +1,5 @@
-import type { Metadata } from "next";
+import { MunicipalBfpDashboard } from "../_components/municipal-bfp-dashboard";
 
-import { MunicipalBfpModule } from "../_components/municipal-bfp-module";
-
-export const metadata: Metadata = {
-  title: "Municipal BFP Module - ALAB",
-  description:
-    "Municipal BFP incident verification, resource management, and response coordination module.",
-};
-
-export default function MunicipalBfpRoute() {
-  return <MunicipalBfpModule />;
+export default function MunicipalBfpDashboardPage() {
+  return <MunicipalBfpDashboard />;
 }
