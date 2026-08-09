@@ -25,11 +25,12 @@ const ANTIQUE_CENTER: [number, number] = [11.2753568, 121.7387252];
 const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ANTIQUE_BOUNDARY_URL = '/data/antique-boundary.geojson';
 const PUBLIC_STRUCTURE_OVERPASS_ENDPOINTS = [
-  'https://overpass.kumi.systems/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
   'https://overpass-api.de/api/interpreter',
 ] as const;
 const PUBLIC_STRUCTURE_OVERPASS_QUERY = `
-[out:json][timeout:30];
+[out:json][timeout:40];
 rel(${ANTIQUE_RELATION_ID});
 map_to_area->.antique;
 (
@@ -341,7 +342,7 @@ async function loadPublicStructures(
 ) {
   for (const endpoint of PUBLIC_STRUCTURE_OVERPASS_ENDPOINTS) {
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 28000);
+    const timeoutId = window.setTimeout(() => controller.abort(), 45000);
 
     try {
       const response = await fetch(endpoint, {

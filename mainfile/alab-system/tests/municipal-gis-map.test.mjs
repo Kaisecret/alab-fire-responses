@@ -82,7 +82,9 @@ test("municipal GIS map loads Antique public structures for the province overvie
   const map = readFileSync(mapPath, "utf8");
 
   assert.match(map, /publicStructuresLayer/);
-  assert.match(map, /overpass\.kumi\.systems\/api\/interpreter/);
+  assert.match(map, /maps\.mail\.ru\/osm\/tools\/overpass\/api\/interpreter[\s\S]*overpass\.private\.coffee\/api\/interpreter/);
+  assert.doesNotMatch(map, /overpass\.kumi\.systems/);
+  assert.match(map, /window\.setTimeout\(\(\) => controller\.abort\(\), 45000\)/);
   assert.match(map, /amenity.*school.*hospital.*fire_station/);
   assert.match(map, /office.*government/);
   assert.match(map, /map_to_area->\.antique/);
