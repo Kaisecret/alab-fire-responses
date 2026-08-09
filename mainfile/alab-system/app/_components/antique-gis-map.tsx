@@ -1,25 +1,28 @@
 'use client';
 
-import 'maplibre-gl/dist/maplibre-gl.css';
+import 'leaflet/dist/leaflet.css';
 
 import { useEffect, useRef } from 'react';
 import type { FeatureCollection, LineString, Point, Polygon } from 'geojson';
-import type { GeoJSONSource, LngLatBoundsLike, Map, MapGeoJSONFeature, Marker } from 'maplibre-gl';
+import type {
+  CircleMarker,
+  LayerGroup,
+  LatLngBoundsExpression,
+  Map as LeafletMap,
+} from 'leaflet';
 
 export type OperationalLayer = 'incident' | 'station' | 'water';
 
 export type OperationalLayerVisibility = Record<OperationalLayer, boolean>;
 
-const ANTIQUE_BOUNDS: LngLatBoundsLike = [
-  [121.62, 10.28],
-  [122.48, 11.9],
+const ANTIQUE_BOUNDS: LatLngBoundsExpression = [
+  [10.28, 121.62],
+  [11.9, 122.48],
 ];
 
-const ANTIQUE_CENTER: [number, number] = [122.04, 11.08];
-const ANTIQUE_CAPITAL: [number, number] = [121.941, 10.752];
-const OSM_VECTOR_TILES_URL = process.env.NEXT_PUBLIC_OSM_VECTOR_TILES_URL ?? 'https://tiles.openfreemap.org/planet';
-const ESRI_SATELLITE_TILES_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-const TERRAIN_DEM_TILES_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+const ANTIQUE_CENTER: [number, number] = [11.08, 122.04];
+const ANTIQUE_CAPITAL: [number, number] = [10.752, 121.941];
+const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const PUBLIC_STRUCTURE_OVERPASS_ENDPOINTS = [
   'https://overpass.kumi.systems/api/interpreter',
   'https://overpass-api.de/api/interpreter',
@@ -39,36 +42,12 @@ const DEFAULT_OPERATIONAL_VISIBILITY: OperationalLayerVisibility = {
   water: true,
 };
 
-const interactiveMapLayerIds = [
-  'alab-building-footprints',
-  'alab-building-extrusion',
-  'alab-road-network',
-  'alab-public-place-points',
-  'antique-public-structures-points',
-  'antique-public-structures-labels',
-  'antique-point',
-  'antique-label',
-  'antique-municipality-points',
-  'antique-municipality-labels',
-  'road_motorway',
-  'road_trunk_primary',
-  'road_secondary_tertiary',
-  'road_minor',
-  'road_service_track',
-  'road_link',
-  'poi_r1',
-  'poi_r7',
-  'poi_r20',
-];
-
 const alabPalette = {
   incident: '#D00F09',
   station: '#1565C0',
   water: '#00838f',
-  land: '#eef8f1',
-  waterBase: '#dceff8',
-  road: '#d9e1dd',
   text: '#1f2937',
+  road: '#4b5563',
 };
 
 const antiqueBoundary: FeatureCollection<Polygon, { name: string }> = {
@@ -120,6 +99,109 @@ const recommendedRoute: FeatureCollection<LineString, { name: string }> = {
   ],
 };
 
+const antiquePoint = {
+  name: 'San Jose de Buenavista',
+  label: 'Provincial capital of Antique',
+  coordinates: ANTIQUE_CAPITAL,
+};
+
+const antiqueMunicipalities = [
+  { name: 'San Jose', coordinates: [10.752, 121.941] as [number, number] },
+  { name: 'Hamtic', coordinates: [10.7, 121.98] as [number, number] },
+  { name: 'Sibalom', coordinates: [10.7889, 122.0175] as [number, number] },
+  { name: 'Bugasong', coordinates: [11.0059, 122.0474] as [number, number] },
+  { name: 'Culasi', coordinates: [11.4257, 122.0561] as [number, number] },
+  { name: 'Pandan', coordinates: [11.716, 122.095] as [number, number] },
+  { name: 'Tibiao', coordinates: [11.3008, 122.0633] as [number, number] },
+  { name: 'Anini-y', coordinates: [10.4639, 122.0263] as [number, number] },
+];
+
+type MapPoint = {
+  id: string;
+  type: OperationalLayer;
+  label: string;
+  coordinates: [number, number];
+  title: string;
+};
+
+const mapPoints: MapPoint[] = [
+  {
+    id: 'incident-sibalom',
+    type: 'incident',
+    label: 'Sibalom',
+    coordinates: [10.89, 122.06],
+    title: 'Structure Fire',
+  },
+  {
+    id: 'incident-patnongon',
+    type: 'incident',
+    label: 'Patnongon',
+    coordinates: [10.91, 122.02],
+    title: 'Residential Fire',
+  },
+  {
+    id: 'incident-bugasong',
+    type: 'incident',
+    label: 'Bugasong',
+    coordinates: [11.05, 122.07],
+    title: 'Grass Fire',
+  },
+  {
+    id: 'incident-culasi',
+    type: 'incident',
+    label: 'Culasi',
+    coordinates: [11.43, 122.06],
+    title: 'Brush Fire',
+  },
+  {
+    id: 'station-san-jose',
+    type: 'station',
+    label: 'San Jose BFP',
+    coordinates: [10.75, 121.94],
+    title: 'Fire Station',
+  },
+  {
+    id: 'station-pandan',
+    type: 'station',
+    label: 'Pandan BFP',
+    coordinates: [11.72, 122.09],
+    title: 'Fire Station',
+  },
+  {
+    id: 'water-tibiao',
+    type: 'water',
+    label: 'Tibiao',
+    coordinates: [11.29, 122.04],
+    title: 'Water Source',
+  },
+  {
+    id: 'water-hamtic',
+    type: 'water',
+    label: 'Hamtic',
+    coordinates: [10.7, 121.98],
+    title: 'Water Source',
+  },
+  {
+    id: 'water-laua-an',
+    type: 'water',
+    label: 'Laua-an',
+    coordinates: [11.14, 122.1],
+    title: 'Water Source',
+  },
+];
+
+const markerCounts = {
+  incident: mapPoints.filter((point) => point.type === 'incident').length,
+  station: mapPoints.filter((point) => point.type === 'station').length,
+  water: mapPoints.filter((point) => point.type === 'water').length,
+};
+
+const pointColors: Record<OperationalLayer, string> = {
+  incident: alabPalette.incident,
+  station: alabPalette.station,
+  water: alabPalette.water,
+};
+
 type PublicStructureProperties = {
   name: string;
   category: string;
@@ -138,151 +220,10 @@ type OverpassElement = {
   tags?: Record<string, string>;
 };
 
-const emptyPublicStructures: PublicStructureCollection = {
-  type: 'FeatureCollection',
-  features: [],
+type OperationalMarker = {
+  point: MapPoint;
+  marker: CircleMarker;
 };
-
-const antiquePoint: FeatureCollection<Point, { name: string; label: string }> = {
-  type: 'FeatureCollection',
-  features: [
-    {
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: ANTIQUE_CAPITAL },
-      properties: {
-        name: 'San Jose de Buenavista',
-        label: 'Provincial capital of Antique',
-      },
-    },
-  ],
-};
-
-const antiqueMunicipalities: FeatureCollection<Point, { name: string }> = {
-  type: 'FeatureCollection',
-  features: [
-    ['San Jose', [121.941, 10.752]],
-    ['Hamtic', [121.98, 10.7]],
-    ['Sibalom', [122.0175, 10.7889]],
-    ['Bugasong', [122.0474, 11.0059]],
-    ['Culasi', [122.0561, 11.4257]],
-    ['Pandan', [122.095, 11.716]],
-    ['Tibiao', [122.0633, 11.3008]],
-    ['Anini-y', [122.0263, 10.4639]],
-  ].map(([name, coordinates]) => ({
-    type: 'Feature' as const,
-    geometry: { type: 'Point' as const, coordinates: coordinates as [number, number] },
-    properties: { name: name as string },
-  })),
-};
-
-type MapPoint = {
-  id: string;
-  type: 'incident' | 'station' | 'water';
-  label: string;
-  coordinates: [number, number];
-  icon: string;
-  title: string;
-};
-
-const mapPoints: MapPoint[] = [
-  {
-    id: 'incident-sibalom',
-    type: 'incident',
-    label: 'Sibalom',
-    coordinates: [122.06, 10.89],
-    icon: 'fa-location-dot',
-    title: 'Structure Fire',
-  },
-  {
-    id: 'incident-patnongon',
-    type: 'incident',
-    label: 'Patnongon',
-    coordinates: [122.02, 10.91],
-    icon: 'fa-location-dot',
-    title: 'Residential Fire',
-  },
-  {
-    id: 'incident-bugasong',
-    type: 'incident',
-    label: 'Bugasong',
-    coordinates: [122.07, 11.05],
-    icon: 'fa-location-dot',
-    title: 'Grass Fire',
-  },
-  {
-    id: 'incident-culasi',
-    type: 'incident',
-    label: 'Culasi',
-    coordinates: [122.06, 11.43],
-    icon: 'fa-location-dot',
-    title: 'Brush Fire',
-  },
-  {
-    id: 'station-san-jose',
-    type: 'station',
-    label: 'San Jose BFP',
-    coordinates: [121.94, 10.75],
-    icon: 'fa-house-fire',
-    title: 'Fire Station',
-  },
-  {
-    id: 'station-pandan',
-    type: 'station',
-    label: 'Pandan BFP',
-    coordinates: [122.09, 11.72],
-    icon: 'fa-house-fire',
-    title: 'Fire Station',
-  },
-  {
-    id: 'water-tibiao',
-    type: 'water',
-    label: 'Tibiao',
-    coordinates: [122.04, 11.29],
-    icon: 'fa-droplet',
-    title: 'Water Source',
-  },
-  {
-    id: 'water-hamtic',
-    type: 'water',
-    label: 'Hamtic',
-    coordinates: [121.98, 10.7],
-    icon: 'fa-droplet',
-    title: 'Water Source',
-  },
-  {
-    id: 'water-laua-an',
-    type: 'water',
-    label: 'Laua-an',
-    coordinates: [122.1, 11.14],
-    icon: 'fa-droplet',
-    title: 'Water Source',
-  },
-];
-
-type PointType = MapPoint['type'];
-
-const pointColors: Record<PointType, string> = {
-  incident: alabPalette.incident,
-  station: alabPalette.station,
-  water: alabPalette.water,
-};
-
-const markerCounts = {
-  incident: mapPoints.filter((point) => point.type === 'incident').length,
-  station: mapPoints.filter((point) => point.type === 'station').length,
-  water: mapPoints.filter((point) => point.type === 'water').length,
-};
-
-function createMarkerElement(point: MapPoint) {
-  const marker = document.createElement('button');
-  marker.type = 'button';
-  marker.className = `mbfp-antique-marker ${point.type}`;
-  marker.title = `${point.title}: ${point.label}`;
-  marker.setAttribute('aria-label', `${point.title} in ${point.label}`);
-  marker.style.setProperty('--marker-color', pointColors[point.type]);
-  marker.innerHTML = `<i class="fa-solid ${point.icon}" aria-hidden="true"></i><span>${point.label}</span>`;
-  return marker;
-}
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (character) => ({
@@ -292,57 +233,6 @@ function escapeHtml(value: string) {
     '"': '&quot;',
     "'": '&#39;',
   })[character] ?? character);
-}
-
-function getFeatureProperty(feature: MapGeoJSONFeature, keys: string[]) {
-  const properties = feature.properties as Record<string, unknown> | undefined;
-
-  for (const key of keys) {
-    const value = properties?.[key];
-    if (typeof value === 'string' && value.trim()) return value.trim();
-  }
-
-  return '';
-}
-
-function getFeatureTitle(feature: MapGeoJSONFeature) {
-  const sourceLayer = feature.sourceLayer ?? '';
-
-  if (sourceLayer === 'building') return 'Mapped building';
-  if (sourceLayer === 'transportation') return 'Road';
-  if (feature.source === 'antique-point') {
-    return getFeatureProperty(feature, ['name']) || 'Antique capital';
-  }
-  if (feature.source === 'antique-municipalities') {
-    return getFeatureProperty(feature, ['name']) || 'Antique municipality';
-  }
-  if (feature.source === 'antique-public-structures') {
-    return getFeatureProperty(feature, ['name']) || 'Public facility';
-  }
-  return getFeatureProperty(feature, ['name_en', 'name']) || 'Public place';
-}
-
-function getFeatureCategory(feature: MapGeoJSONFeature) {
-  const sourceLayer = feature.sourceLayer ?? '';
-  if (sourceLayer === 'building') return 'OpenStreetMap building footprint';
-  if (sourceLayer === 'transportation') {
-    return getFeatureProperty(feature, ['class', 'subclass']) || 'Mapped road';
-  }
-  if (feature.source === 'antique-point') return 'Provincial capital';
-  if (feature.source === 'antique-municipalities') return 'Antique municipality';
-  if (feature.source === 'antique-public-structures') {
-    return getFeatureProperty(feature, ['category']) || 'OpenStreetMap public facility';
-  }
-
-  return getFeatureProperty(feature, ['class', 'subclass']) || 'OpenStreetMap place';
-}
-
-function createFeaturePopupHtml(feature: MapGeoJSONFeature) {
-  const name = getFeatureProperty(feature, ['name_en', 'name']);
-  const title = getFeatureTitle(feature);
-  const category = getFeatureCategory(feature);
-
-  return `<div class="mbfp-map-popup"><strong>${escapeHtml(name || title)}</strong><span>${escapeHtml(category)}</span>${name ? `<small>${escapeHtml(title)}</small>` : ''}</div>`;
 }
 
 function getPublicStructureCategory(tags: Record<string, string>) {
@@ -382,14 +272,80 @@ function createPublicStructureCollection(elements: OverpassElement[]): PublicStr
         },
         geometry: {
           type: 'Point' as const,
-          coordinates,
+          coordinates: coordinates as [number, number],
         },
       }];
     }),
   };
 }
 
-async function loadPublicStructures(map: Map, isActive: () => boolean) {
+function publicStructureColor(category: string) {
+  if (['school', 'college', 'university', 'kindergarten', 'library'].includes(category)) {
+    return alabPalette.station;
+  }
+
+  if (['hospital', 'clinic'].includes(category)) return alabPalette.incident;
+  if (['fire station', 'police', 'government', 'townhall'].includes(category)) return '#b45309';
+  return alabPalette.water;
+}
+
+function publicStructurePopup(properties: PublicStructureProperties) {
+  const name = properties.name || 'Public facility';
+  return `<div class="mbfp-map-popup"><strong>${escapeHtml(name)}</strong><span>${escapeHtml(properties.category)}</span><small>OpenStreetMap</small></div>`;
+}
+
+function addNearbySheltersControl(leaflet: typeof import('leaflet'), map: LeafletMap) {
+  const NearbySheltersControl = leaflet.Control.extend({
+    options: { position: 'bottomright' },
+    onAdd: () => {
+      const wrapper = leaflet.DomUtil.create('div', 'leaflet-control-nearby-shelters');
+      const button = leaflet.DomUtil.create('button', '', wrapper);
+      button.type = 'button';
+      button.title = 'Show nearby fire stations';
+      button.setAttribute('aria-label', 'Show nearby fire stations');
+      button.innerHTML = '<i class="fa-solid fa-house-fire" aria-hidden="true"></i><span>Nearby shelters</span>';
+
+      leaflet.DomEvent.disableClickPropagation(wrapper);
+      leaflet.DomEvent.on(button, 'click', () => {
+        const stations = mapPoints
+          .filter((point) => point.type === 'station')
+          .map((point) => point.coordinates);
+        map.fitBounds(stations, { padding: [42, 42], maxZoom: 12, animate: true });
+      });
+
+      return wrapper;
+    },
+  });
+
+  new NearbySheltersControl().addTo(map);
+}
+
+function applyOperationalLayerVisibility(
+  map: LeafletMap,
+  markers: OperationalMarker[],
+  visibility: OperationalLayerVisibility,
+) {
+  markers.forEach(({ point, marker }) => {
+    if (visibility[point.type]) {
+      marker.addTo(map);
+    } else {
+      marker.removeFrom(map);
+    }
+  });
+}
+
+function updatePublicStructureVisibility(map: LeafletMap, layer: LayerGroup) {
+  const shouldShow = map.getZoom() >= 9.5;
+  if (shouldShow && !map.hasLayer(layer)) layer.addTo(map);
+  if (!shouldShow && map.hasLayer(layer)) map.removeLayer(layer);
+}
+
+async function loadPublicStructures(
+  leaflet: typeof import('leaflet'),
+  map: LeafletMap,
+  layer: LayerGroup,
+  isActive: () => boolean,
+) {
   for (const endpoint of PUBLIC_STRUCTURE_OVERPASS_ENDPOINTS) {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 18000);
@@ -409,391 +365,30 @@ async function loadPublicStructures(map: Map, isActive: () => boolean) {
       const payload = await response.json() as { elements?: OverpassElement[] };
       if (!isActive() || !Array.isArray(payload.elements)) return;
 
-      const source = map.getSource('antique-public-structures') as GeoJSONSource | undefined;
-      source?.setData(createPublicStructureCollection(payload.elements));
+      layer.clearLayers();
+      createPublicStructureCollection(payload.elements).features.forEach((feature) => {
+        const properties = feature.properties;
+        leaflet.circleMarker(
+          [feature.geometry.coordinates[1], feature.geometry.coordinates[0]],
+          {
+            radius: 4,
+            color: '#ffffff',
+            weight: 1.3,
+            fillColor: publicStructureColor(properties.category),
+            fillOpacity: 0.92,
+          },
+        )
+          .bindPopup(publicStructurePopup(properties), { maxWidth: 240 })
+          .addTo(layer);
+      });
+      updatePublicStructureVisibility(map, layer);
       return;
     } catch {
-      // The vector POI layer remains available if the public-data request is unavailable.
+      // The OSM tile map and operational layers remain available if this request fails.
     } finally {
       window.clearTimeout(timeoutId);
     }
   }
-}
-
-function addMapDetailLayers(map: Map) {
-  const firstRoadLayer = map.getLayer('road_motorway_link_casing') ? 'road_motorway_link_casing' : undefined;
-  const firstPlaceLayer = map.getLayer('poi_r20') ? 'poi_r20' : undefined;
-
-  if (!map.getLayer('alab-building-footprints')) {
-    map.addLayer({
-      id: 'alab-building-footprints',
-      type: 'fill',
-      source: 'openmaptiles',
-      'source-layer': 'building',
-      minzoom: 13,
-      paint: {
-        'fill-color': '#ffffff',
-        'fill-opacity': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          13,
-          0.28,
-          17,
-          0.62,
-        ],
-        'fill-outline-color': '#b9c9c1',
-      },
-    }, firstRoadLayer);
-  }
-
-  if (!map.getLayer('alab-building-extrusion')) {
-    map.addLayer({
-      id: 'alab-building-extrusion',
-      type: 'fill-extrusion',
-      source: 'openmaptiles',
-      'source-layer': 'building',
-      minzoom: 13,
-      filter: ['==', ['get', 'render_min_height'], 0],
-      layout: {
-        'fill-extrusion-rounded-corner-distance': 2,
-      },
-      paint: {
-        'fill-extrusion-color': [
-          'interpolate',
-          ['linear'],
-          ['get', 'render_height'],
-          0,
-          '#7da7b8',
-          20,
-          alabPalette.station,
-          80,
-          '#0b3d62',
-        ],
-        'fill-extrusion-height': ['get', 'render_height'],
-        'fill-extrusion-base': ['get', 'render_min_height'],
-        'fill-extrusion-opacity': 0.84,
-        'fill-extrusion-vertical-gradient': true,
-      },
-    }, firstRoadLayer);
-  }
-
-  if (!map.getLayer('alab-road-network')) {
-    map.addLayer({
-      id: 'alab-road-network',
-      type: 'line',
-      source: 'openmaptiles',
-      'source-layer': 'transportation',
-      minzoom: 10,
-      filter: [
-        'match',
-        ['get', 'class'],
-        ['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'minor', 'service', 'track', 'path'],
-        true,
-        false,
-      ],
-      paint: {
-        'line-color': '#aabeb5',
-        'line-opacity': 0.55,
-        'line-width': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          10,
-          0.7,
-          16,
-          2.4,
-        ],
-      },
-    }, firstRoadLayer);
-  }
-
-  if (!map.getLayer('alab-public-place-points')) {
-    map.addLayer({
-      id: 'alab-public-place-points',
-      type: 'circle',
-      source: 'openmaptiles',
-      'source-layer': 'poi',
-      minzoom: 11,
-      filter: [
-        'all',
-        ['has', 'name'],
-        ['match', ['get', 'class'], ['hospital', 'school', 'fire_station', 'government', 'police', 'townhall', 'clinic', 'community_centre', 'place_of_worship', 'fuel'], true, false],
-      ],
-      paint: {
-        'circle-color': '#00838f',
-        'circle-opacity': 0.82,
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 2.5, 17, 4],
-        'circle-stroke-color': '#ffffff',
-        'circle-stroke-width': 1.2,
-      },
-    }, firstPlaceLayer);
-  }
-}
-
-function addPublicStructureLayers(map: Map) {
-  if (!map.getSource('antique-public-structures')) {
-    map.addSource('antique-public-structures', {
-      type: 'geojson',
-      data: emptyPublicStructures,
-    });
-  }
-
-  if (!map.getLayer('antique-public-structures-points')) {
-    map.addLayer({
-      id: 'antique-public-structures-points',
-      type: 'circle',
-      source: 'antique-public-structures',
-      minzoom: 8,
-      paint: {
-        'circle-color': [
-          'match',
-          ['get', 'category'],
-          ['school', 'college', 'university', 'kindergarten', 'library'],
-          alabPalette.station,
-          ['hospital', 'clinic'],
-          alabPalette.incident,
-          ['fire station', 'police', 'government', 'townhall'],
-          '#b45309',
-          alabPalette.water,
-        ],
-        'circle-opacity': 0.88,
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 3.2, 13, 5.4],
-        'circle-stroke-color': '#ffffff',
-        'circle-stroke-width': 1.4,
-      },
-    });
-  }
-
-  if (!map.getLayer('antique-public-structures-labels')) {
-    map.addLayer({
-      id: 'antique-public-structures-labels',
-      type: 'symbol',
-      source: 'antique-public-structures',
-      minzoom: 10,
-      filter: ['all', ['has', 'name'], ['!=', ['get', 'name'], '']],
-      layout: {
-        'text-field': ['get', 'name'],
-        'text-font': ['Open Sans Regular'],
-        'text-size': 11,
-        'text-anchor': 'top',
-        'text-offset': [0, 1.1],
-        'text-optional': true,
-      },
-      paint: {
-        'text-color': alabPalette.text,
-        'text-halo-color': '#ffffff',
-        'text-halo-width': 1.4,
-      },
-    });
-  }
-}
-
-function addAntiqueReferenceLayers(map: Map) {
-  if (!map.getSource('antique-point')) {
-    map.addSource('antique-point', {
-      type: 'geojson',
-      data: antiquePoint,
-    });
-  }
-
-  if (!map.getSource('antique-municipalities')) {
-    map.addSource('antique-municipalities', {
-      type: 'geojson',
-      data: antiqueMunicipalities,
-    });
-  }
-
-  if (!map.getLayer('antique-municipality-points')) {
-    map.addLayer({
-      id: 'antique-municipality-points',
-      type: 'circle',
-      source: 'antique-municipalities',
-      minzoom: 8,
-      paint: {
-        'circle-radius': 3.8,
-        'circle-color': alabPalette.station,
-        'circle-opacity': 0.84,
-        'circle-stroke-color': '#ffffff',
-        'circle-stroke-width': 1.2,
-      },
-    });
-  }
-
-  if (!map.getLayer('antique-municipality-labels')) {
-    map.addLayer({
-      id: 'antique-municipality-labels',
-      type: 'symbol',
-      source: 'antique-municipalities',
-      minzoom: 8,
-      layout: {
-        'text-field': ['get', 'name'],
-        'text-font': ['Open Sans Regular'],
-        'text-size': 11,
-        'text-offset': [0, 1.05],
-        'text-anchor': 'top',
-        'text-optional': true,
-      },
-      paint: {
-        'text-color': alabPalette.text,
-        'text-halo-color': '#ffffff',
-        'text-halo-width': 1.5,
-      },
-    });
-  }
-
-  if (!map.getLayer('antique-point')) {
-    map.addLayer({
-      id: 'antique-point',
-      type: 'circle',
-      source: 'antique-point',
-      minzoom: 8,
-      paint: {
-        'circle-radius': 8,
-        'circle-color': alabPalette.incident,
-        'circle-stroke-width': 2.5,
-        'circle-stroke-color': '#ffffff',
-      },
-    });
-  }
-
-  if (!map.getLayer('antique-label')) {
-    map.addLayer({
-      id: 'antique-label',
-      type: 'symbol',
-      source: 'antique-point',
-      minzoom: 8,
-      layout: {
-        'text-field': ['get', 'name'],
-        'text-font': ['Open Sans Regular'],
-        'text-size': 14,
-        'text-offset': [0, 1.25],
-        'text-anchor': 'top',
-        'text-optional': true,
-      },
-      paint: {
-        'text-color': alabPalette.text,
-        'text-halo-color': '#ffffff',
-        'text-halo-width': 1.8,
-      },
-    });
-  }
-}
-
-function addMapFeatureInteractions(map: Map, Popup: typeof import('maplibre-gl').Popup) {
-  const availableLayerIds = interactiveMapLayerIds.filter((layerId) => map.getLayer(layerId));
-
-  for (const layerId of availableLayerIds) {
-    map.on('mouseenter', layerId, () => {
-      map.getCanvas().style.cursor = 'pointer';
-    });
-    map.on('mouseleave', layerId, () => {
-      map.getCanvas().style.cursor = '';
-    });
-  }
-
-  if (!availableLayerIds.length) return;
-
-  map.on('click', (event) => {
-    const features = map.queryRenderedFeatures(event.point, { layers: availableLayerIds });
-    const feature = features.find((candidate) => candidate.sourceLayer === 'building'
-      || candidate.sourceLayer === 'transportation'
-      || candidate.sourceLayer === 'poi'
-      || candidate.source === 'antique-point'
-      || candidate.source === 'antique-municipalities'
-      || candidate.source === 'antique-public-structures');
-
-    if (!feature) return;
-
-    new Popup({ closeButton: true, closeOnClick: true, maxWidth: '260px' })
-      .setLngLat(event.lngLat)
-      .setHTML(createFeaturePopupHtml(feature))
-      .addTo(map);
-  });
-}
-
-function addOperationalLayers(map: Map) {
-  if (!map.getSource('antique-boundary')) {
-    map.addSource('antique-boundary', {
-      type: 'geojson',
-      data: antiqueBoundary,
-    });
-  }
-
-  if (!map.getLayer('antique-boundary-fill')) {
-    map.addLayer({
-      id: 'antique-boundary-fill',
-      type: 'fill',
-      source: 'antique-boundary',
-      paint: {
-        'fill-color': alabPalette.incident,
-        'fill-opacity': 0.05,
-      },
-    });
-  }
-
-  if (!map.getLayer('antique-boundary-line')) {
-    map.addLayer({
-      id: 'antique-boundary-line',
-      type: 'line',
-      source: 'antique-boundary',
-      paint: {
-        'line-color': alabPalette.incident,
-        'line-width': 2,
-        'line-opacity': 0.55,
-      },
-    });
-  }
-
-  if (!map.getSource('recommended-route')) {
-    map.addSource('recommended-route', {
-      type: 'geojson',
-      data: recommendedRoute,
-    });
-  }
-
-  if (!map.getLayer('recommended-route-line')) {
-    map.addLayer({
-      id: 'recommended-route-line',
-      type: 'line',
-      source: 'recommended-route',
-      paint: {
-        'line-color': '#4b5563',
-        'line-width': 3,
-        'line-dasharray': [1.2, 1.1],
-        'line-opacity': 0.75,
-      },
-    });
-  }
-}
-
-function refreshBoundaryData(map: Map) {
-  const source = map.getSource('antique-boundary') as GeoJSONSource | undefined;
-  source?.setData(antiqueBoundary);
-}
-
-function tintBaseMap(map: Map) {
-  if (map.getLayer('alab-background')) {
-    map.setPaintProperty('alab-background', 'background-color', alabPalette.land);
-  }
-
-  if (map.getLayer('osm-raster-fallback')) {
-    map.setPaintProperty('osm-raster-fallback', 'raster-opacity', 0.92);
-  }
-}
-
-type OperationalMarker = {
-  point: MapPoint;
-  marker: Marker;
-};
-
-function applyOperationalLayerVisibility(
-  markers: OperationalMarker[],
-  visibility: OperationalLayerVisibility,
-) {
-  markers.forEach(({ point, marker }) => {
-    marker.getElement().style.display = visibility[point.type] ? '' : 'none';
-  });
 }
 
 type AntiqueGisMapProps = {
@@ -802,13 +397,15 @@ type AntiqueGisMapProps = {
 
 export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }: AntiqueGisMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<Map | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
   const markersRef = useRef<OperationalMarker[]>([]);
   const visibleLayersRef = useRef(visibleLayers);
 
   useEffect(() => {
     visibleLayersRef.current = visibleLayers;
-    applyOperationalLayerVisibility(markersRef.current, visibleLayers);
+    if (mapRef.current) {
+      applyOperationalLayerVisibility(mapRef.current, markersRef.current, visibleLayers);
+    }
   }, [visibleLayers]);
 
   useEffect(() => {
@@ -817,129 +414,119 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
     async function initializeMap() {
       if (!containerRef.current || mapRef.current) return;
 
-      const maplibregl = await import('maplibre-gl');
-
+      const leafletModule = await import('leaflet');
+      const leaflet = leafletModule.default;
       if (!isMounted || !containerRef.current) return;
 
-      const map = new maplibregl.Map({
-        container: containerRef.current,
-        style: {
-          version: 8,
-          glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-          sources: {
-            osm: {
-              type: 'raster',
-              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-              tileSize: 256,
-              attribution: '&copy; OpenStreetMap contributors',
-            },
-            openmaptiles: {
-              type: 'vector',
-              url: OSM_VECTOR_TILES_URL,
-              attribution: '&copy; OpenFreeMap &middot; &copy; OpenStreetMap contributors',
-            },
-            'esri-satellite': {
-              type: 'raster',
-              tiles: [ESRI_SATELLITE_TILES_URL],
-              tileSize: 256,
-              attribution: 'Tiles &copy; Esri',
-            },
-            'terrain-dem': {
-              type: 'raster-dem',
-              tiles: [TERRAIN_DEM_TILES_URL],
-              tileSize: 256,
-              encoding: 'terrarium',
-            },
-          },
-          layers: [
-            {
-              id: 'alab-background',
-              type: 'background',
-              paint: {
-                'background-color': alabPalette.land,
-              },
-            },
-            {
-              id: 'osm-raster-fallback',
-              type: 'raster',
-              source: 'osm',
-              paint: {
-                'raster-opacity': 0.92,
-                'raster-saturation': -0.32,
-                'raster-contrast': -0.08,
-                'raster-brightness-min': 0.08,
-                'raster-brightness-max': 0.96,
-              },
-            },
-            {
-              id: 'esri-satellite-layer',
-              type: 'raster',
-              source: 'esri-satellite',
-              paint: {
-                'raster-opacity': 0.34,
-                'raster-saturation': -0.12,
-                'raster-contrast': 0.05,
-              },
-            },
-          ],
-        },
+      const map = leaflet.map(containerRef.current, {
         center: ANTIQUE_CENTER,
         zoom: 8.4,
-        pitch: 22,
-        bearing: -8,
-        maxPitch: 62,
         minZoom: 8,
         maxZoom: 19,
         maxBounds: ANTIQUE_BOUNDS,
-        canvasContextAttributes: { antialias: true },
-        attributionControl: false,
+        maxBoundsViscosity: 0.86,
+        zoomControl: false,
+        preferCanvas: true,
+      });
+      mapRef.current = map;
+
+      leaflet.tileLayer(OSM_TILE_URL, {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+      leaflet.control.zoom({ position: 'topright' }).addTo(map);
+      leaflet.control.scale({ position: 'bottomleft', imperial: false, maxWidth: 120 }).addTo(map);
+      addNearbySheltersControl(leaflet, map);
+
+      leaflet.geoJSON(antiqueBoundary, {
+        style: {
+          color: alabPalette.incident,
+          weight: 2,
+          opacity: 0.68,
+          fillColor: alabPalette.incident,
+          fillOpacity: 0.035,
+        },
+      }).bindPopup('<strong>Province of Antique</strong><br/>Operational fire response coverage').addTo(map);
+
+      leaflet.geoJSON(recommendedRoute, {
+        style: {
+          color: alabPalette.road,
+          weight: 3,
+          opacity: 0.76,
+          dashArray: '7 7',
+        },
+      }).bindPopup('<strong>Recommended Route</strong>').addTo(map);
+
+      const municipalityLayer = leaflet.layerGroup().addTo(map);
+      antiqueMunicipalities.forEach((municipality) => {
+        leaflet.circleMarker(municipality.coordinates, {
+          radius: 4,
+          color: '#ffffff',
+          weight: 1.4,
+          fillColor: alabPalette.station,
+          fillOpacity: 0.96,
+        })
+          .bindTooltip(municipality.name, {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -3],
+            className: 'leaflet-municipality-label',
+          })
+          .bindPopup(`<strong>${escapeHtml(municipality.name)}</strong><br/>Antique municipality`)
+          .addTo(municipalityLayer);
       });
 
-      mapRef.current = map;
-      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-      map.addControl(new maplibregl.FullscreenControl(), 'top-right');
-      map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
-      map.addControl(new maplibregl.AttributionControl({
-        compact: true,
-        customAttribution: '&copy; OpenFreeMap &middot; &copy; OpenStreetMap contributors &middot; Tiles &copy; Esri',
-      }), 'bottom-right');
+      leaflet.circleMarker(antiquePoint.coordinates, {
+        radius: 8,
+        color: '#ffffff',
+        weight: 2.5,
+        fillColor: alabPalette.incident,
+        fillOpacity: 1,
+      })
+        .bindTooltip(antiquePoint.name, {
+          permanent: true,
+          direction: 'top',
+          offset: [0, -7],
+          className: 'leaflet-capital-label',
+        })
+        .bindPopup(`<strong>${antiquePoint.name}</strong><br/>${antiquePoint.label}`)
+        .addTo(map);
 
-      map.on('load', () => {
-        map.setTerrain({ source: 'terrain-dem', exaggeration: 1.15 });
-        tintBaseMap(map);
-        addMapDetailLayers(map);
-        addAntiqueReferenceLayers(map);
-        addPublicStructureLayers(map);
-        addOperationalLayers(map);
-        refreshBoundaryData(map);
-        addMapFeatureInteractions(map, maplibregl.Popup);
-        void loadPublicStructures(map, () => isMounted);
+      const publicStructuresLayer = leaflet.layerGroup();
+      map.on('zoomend', () => updatePublicStructureVisibility(map, publicStructuresLayer));
+      updatePublicStructureVisibility(map, publicStructuresLayer);
+      void loadPublicStructures(leaflet, map, publicStructuresLayer, () => isMounted);
 
-        markersRef.current = mapPoints.map((point) => {
-          const marker = new maplibregl.Marker({
-            element: createMarkerElement(point),
-            anchor: 'bottom',
-            offset: [0, -4],
+      markersRef.current = mapPoints.map((point) => {
+        const marker = leaflet.circleMarker(point.coordinates, {
+          radius: point.type === 'incident' ? 7 : 6,
+          color: '#ffffff',
+          weight: 2.5,
+          fillColor: pointColors[point.type],
+          fillOpacity: 0.98,
+        })
+          .bindTooltip(point.label, {
+            direction: 'top',
+            offset: [0, -8],
+            className: 'leaflet-operational-label',
           })
-            .setLngLat(point.coordinates)
-            .addTo(map);
+          .bindPopup(`<strong>${escapeHtml(point.title)}</strong><br/>${escapeHtml(point.label)}`)
+          .addTo(map);
 
-          return { point, marker };
-        });
-        applyOperationalLayerVisibility(markersRef.current, visibleLayersRef.current);
+        return { point, marker };
+      });
+      applyOperationalLayerVisibility(map, markersRef.current, visibleLayersRef.current);
 
-        map.fitBounds(ANTIQUE_BOUNDS, {
-          padding: { top: 42, right: 42, bottom: 42, left: 42 },
-          duration: 0,
-        });
+      map.fitBounds(ANTIQUE_BOUNDS, {
+        padding: [24, 24],
+        animate: false,
       });
     }
 
-    initializeMap();
+    void initializeMap();
 
     return () => {
       isMounted = false;
-      markersRef.current.forEach(({ marker }) => marker.remove());
       markersRef.current = [];
       mapRef.current?.remove();
       mapRef.current = null;
@@ -948,10 +535,10 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
 
   return (
     <div className="mbfp-antique-map-shell">
-      <div ref={containerRef} className="mbfp-antique-map" aria-label="Province of Antique GIS map" />
+      <div ref={containerRef} className="mbfp-antique-map" aria-label="Province of Antique Leaflet GIS map" />
       <div className="mbfp-antique-map-title">
         <span>Province of Antique</span>
-        <small>Operational fire response coverage</small>
+        <small>OpenStreetMap operational coverage</small>
       </div>
       <div className="mbfp-gis-legend">
         <div className="mbfp-gis-legend-item">
