@@ -142,3 +142,12 @@ test("municipal GIS controls expose operational layer visibility", () => {
   assert.match(page, /onClick/);
   assert.match(page, /All Layers/);
 });
+
+test("municipal GIS map keeps reset and legend controls usable on mobile", () => {
+  const pagePath = join(root, "app", "municipal-bfp", "gis-map", "page.tsx");
+  const page = readFileSync(pagePath, "utf8");
+
+  assert.match(page, /leaflet-control-antique-reset/);
+  assert.match(page, /@media \(max-width: 768px\)[\s\S]*mbfp-gis-legend/);
+  assert.match(page, /@media \(max-width: 768px\)[\s\S]*leaflet-control-antique-reset/);
+});
