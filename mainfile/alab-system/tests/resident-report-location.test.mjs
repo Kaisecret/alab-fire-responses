@@ -130,3 +130,11 @@ test("resident location keeps the place summary visible above the street map", (
   assert.match(content, /Municipality checking/);
   assert.match(content, /OpenStreetMap street map/);
 });
+
+test("resident location card cannot collapse on mobile", () => {
+  const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
+
+  assert.match(content, /@media \(max-width: 950px\)[\s\S]*\.location-box\[data-location-card\][\s\S]*min-height:\s*26rem/);
+  assert.match(content, /@media \(max-width: 950px\)[\s\S]*\.location-box\[data-location-card\]\s+\.location-details[\s\S]*display:\s*flex/);
+  assert.match(content, /@media \(max-width: 950px\)[\s\S]*\.map-preview\[data-location-map-surface\][\s\S]*display:\s*block/);
+});

@@ -625,8 +625,42 @@ export const reportFireStyles = `
         .type-grid { grid-template-columns: repeat(3, 1fr); }
         
         .location-box { flex-direction: column; gap: 1rem; }
-        .location-box[data-location-card] { gap: 0; }
-        .map-preview[data-location-map-surface] { height: 12rem; min-height: 12rem; flex-basis: 12rem; }
+        .location-box[data-location-card] {
+            display: flex !important;
+            flex-direction: column;
+            min-height: 26rem;
+            gap: 0;
+            overflow: hidden;
+            border: 1px solid #d9e2ec;
+            background: #ffffff;
+        }
+        .location-box[data-location-card] .location-details {
+            display: flex !important;
+            width: 100%;
+            min-height: 13rem;
+            padding: 1rem;
+        }
+        .location-box[data-location-card] .location-result:not([hidden]) {
+            display: flex !important;
+        }
+        .location-box[data-location-card] .action-btn-row {
+            margin-top: 0.85rem;
+        }
+        .map-preview[data-location-map-surface] {
+            display: block !important;
+            width: 100%;
+            height: 13rem;
+            min-height: 13rem;
+            flex: 0 0 13rem;
+            background: #dbeafe;
+        }
+        .location-map,
+        .location-map.leaflet-container {
+            display: block !important;
+            width: 100%;
+            height: 100%;
+            min-height: 13rem;
+        }
         .action-btn-row { flex-wrap: wrap; }
 
         .form-footer { margin: 1rem; flex-direction: column; gap: 0.8rem; }
