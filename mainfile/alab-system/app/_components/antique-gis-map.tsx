@@ -916,7 +916,6 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
   return (
     <div className="mbfp-antique-map-shell">
       <div ref={containerRef} className="mbfp-antique-map" aria-label="Province of Antique GIS map" />
-      <div className="mbfp-antique-map-wash" />
       <div className="mbfp-antique-map-title">
         <span>Province of Antique</span>
         <small>Operational fire response coverage</small>

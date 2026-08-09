@@ -86,6 +86,16 @@ test("municipal GIS map includes the supplied Antique satellite reference detail
   assert.match(map, /antique-municipalities/);
 });
 
+test("municipal GIS map does not wash out the satellite imagery", () => {
+  const pagePath = join(root, "app", "municipal-bfp", "gis-map", "page.tsx");
+  const mapPath = join(root, "app", "_components", "antique-gis-map.tsx");
+  const page = readFileSync(pagePath, "utf8");
+  const map = readFileSync(mapPath, "utf8");
+
+  assert.doesNotMatch(page, /mbfp-antique-map-wash/);
+  assert.doesNotMatch(map, /mbfp-antique-map-wash/);
+});
+
 test("municipal GIS controls expose operational layer visibility", () => {
   const pagePath = join(root, "app", "municipal-bfp", "gis-map", "page.tsx");
   const page = readFileSync(pagePath, "utf8");
