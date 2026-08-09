@@ -3,8 +3,10 @@ import test from "node:test";
 import {
   chooseBetterReading,
   classifyAccuracy,
+  isWithinAntiqueBounds,
+  resolveNearestLandmark,
   resolvePhilippineAddress,
-} from "../app/resident/report-fire/location-logic.mts";
+} from "../app/resident/report-fire/location-logic.ts";
 
 test("keeps the most accurate GPS reading", () => {
   const bacolod = {
@@ -22,6 +24,12 @@ test("keeps the most accurate GPS reading", () => {
 
   assert.deepEqual(chooseBetterReading(bacolod, hamtic), hamtic);
   assert.deepEqual(chooseBetterReading(hamtic, bacolod), hamtic);
+
+  const falselyPreciseBacolod = { ...bacolod, accuracy: 20, timestamp: 3 };
+  const credibleHamtic = { ...hamtic, accuracy: 45, timestamp: 4 };
+  assert.equal(isWithinAntiqueBounds(falselyPreciseBacolod), false);
+  assert.equal(isWithinAntiqueBounds(credibleHamtic), true);
+  assert.deepEqual(chooseBetterReading(falselyPreciseBacolod, credibleHamtic), credibleHamtic);
 });
 
 test("classifies precise, approximate, and poor accuracy", () => {
@@ -52,4 +60,25 @@ test("prioritizes an explicit barangay and validates Antique", () => {
     municipality: "Hamtic",
     isAntique: true,
   });
+});
+
+test("selects the nearest mapped landmark from reverse-geocode data", () => {
+  assert.equal(resolveNearestLandmark({
+    name: "Hamtic Municipal Hall",
+    address: { road: "Rizal Street" },
+  }), "Hamtic Municipal Hall");
+
+  assert.equal(resolveNearestLandmark({
+    address: {
+      amenity: "Hamtic Central School",
+      road: "Tito Navarro Street",
+    },
+  }), "Hamtic Central School");
+
+  assert.equal(resolveNearestLandmark({
+    address: {
+      road: "Tito Navarro Street",
+      village: "Caridad",
+    },
+  }), "Tito Navarro Street");
 });

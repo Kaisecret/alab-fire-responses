@@ -341,30 +341,162 @@ export const reportFireStyles = `
         clip-path: polygon(50% 100%, 0 40%, 0 0, 100% 0, 100% 40%);
     }
 
-    .location-box[data-location-card] { position: relative; min-height: 9.7rem; }
-    .location-details { min-width: 0; }
-    .location-details h4 { display: flex; align-items: center; gap: 0.4rem; }
+    .location-box[data-location-card] {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        padding: 0;
+        gap: 0;
+        overflow: hidden;
+        background: #ffffff;
+        border-color: #d9e2ec;
+    }
+    .location-box[data-location-card] .location-details {
+        min-width: 0;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .location-box[data-location-card] .location-details h4 {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.32rem;
+        color: #172033;
+    }
+    .location-box[data-location-card] .location-details p {
+        margin-bottom: 0.28rem;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
     .location-heading-icon { width: 1.1rem; height: 1.1rem; color: var(--primary-red); flex-shrink: 0; }
-    .location-status { font-size: 0.7rem; color: #b45309; background: #fff7ed; padding: 0.2rem 0.5rem; border-radius: 1rem; font-weight: 700; }
-    .location-status.is-success { color: #15803d; background: #dcfce7; }
-    .location-status.is-error { color: #b91c1c; background: #fee2e2; }
-    .location-error { color: #b91c1c; font-size: 0.72rem; line-height: 1.3; margin-bottom: 0.65rem; }
-    .map-preview[data-location-preview] { width: 140px; height: 100px; flex: 0 0 140px; background: #e5edf3; border: 1px solid #fecaca; }
-    .location-map { width: 100%; height: 100%; position: relative; overflow: hidden; }
-    .location-map .leaflet-container { width: 100%; height: 100%; font-family: 'Inter', sans-serif; background: #dbeafe; }
+    .location-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 9rem;
+        min-height: 1.65rem;
+        padding: 0.25rem 0.5rem;
+        border: 1px solid #fed7aa;
+        border-radius: 1rem;
+        background: #fff7ed;
+        color: #9a3412;
+        font-size: 0.66rem;
+        font-weight: 800;
+        line-height: 1.1;
+        text-align: center;
+        white-space: normal;
+        transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    }
+    .location-status.is-locating,
+    .location-status.is-improving { color: #9a3412; background: #fff7ed; border-color: #fed7aa; }
+    .location-status.is-confirmed,
+    .location-status.is-adjusted { color: #166534; background: #dcfce7; border-color: #bbf7d0; }
+    .location-status.is-approximate,
+    .location-status.is-adjusting { color: #854d0e; background: #fef9c3; border-color: #fde68a; }
+    .location-status.is-low-accuracy,
+    .location-status.is-outside,
+    .location-status.is-error { color: #b91c1c; background: #fee2e2; border-color: #fecaca; }
+    .location-error {
+        width: 100%;
+        margin: 0 0 0.7rem;
+        padding-left: 0.55rem;
+        border-left: 2px solid #dc2626;
+        color: #b91c1c;
+        font-size: 0.72rem;
+        line-height: 1.35;
+    }
+    .location-box[data-location-card] .accuracy {
+        display: inline-flex;
+        align-items: center;
+        min-height: 1.5rem;
+        margin: 0.25rem 0 0.72rem;
+        padding: 0.22rem 0.45rem;
+        border-radius: 0.3rem;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 0.7rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .location-box[data-location-state="confirmed"] .accuracy,
+    .location-box[data-location-state="adjusted"] .accuracy { color: #166534; background: #ecfdf5; }
+    .location-box[data-location-state="approximate"] .accuracy { color: #854d0e; background: #fefce8; }
+    .map-preview[data-location-map-surface] {
+        width: 100%;
+        height: 11rem;
+        min-height: 11rem;
+        flex: 0 0 11rem;
+        border: 0;
+        border-bottom: 1px solid #d9e2ec;
+        border-radius: 0;
+        background: #dbeafe;
+        overflow: hidden;
+        position: relative;
+    }
+    .location-map,
+    .location-map.leaflet-container { width: 100%; height: 100%; min-height: inherit; font-family: 'Inter', sans-serif; background: #dbeafe; }
+    .location-map .leaflet-control-zoom { border: 0; border-radius: 0.4rem; overflow: hidden; box-shadow: 0 4px 12px rgba(15,23,42,0.18); }
+    .location-map .leaflet-control-zoom a { width: 1.9rem; height: 1.9rem; line-height: 1.9rem; border: 0; color: #172033; background: rgba(255,255,255,0.96); }
+    .location-map .leaflet-control-zoom a:hover { color: var(--primary-red); background: #ffffff; }
     .location-map .leaflet-control-attribution { max-width: 100%; padding: 0 0.15rem; font-size: 0.38rem; line-height: 1.1; }
-    .location-map-overlay { position: absolute; inset: 0; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem; color: var(--primary-red); background: rgba(255,255,255,0.82); font-size: 0.62rem; font-weight: 700; transition: opacity 0.25s ease, visibility 0.25s ease; pointer-events: none; }
+    .location-map-overlay {
+        position: absolute;
+        right: 0.55rem;
+        bottom: 0.55rem;
+        left: 0.55rem;
+        z-index: 700;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-height: 2.35rem;
+        padding: 0.4rem 0.65rem;
+        border: 1px solid rgba(255,255,255,0.82);
+        border-radius: 0.4rem;
+        color: var(--primary-red);
+        background: rgba(255,255,255,0.94);
+        box-shadow: 0 4px 12px rgba(15,23,42,0.16);
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-align: center;
+        transition: opacity 0.22s ease, visibility 0.22s ease;
+        pointer-events: none;
+    }
     .location-map-overlay.is-hidden { opacity: 0; visibility: hidden; }
-    .location-map-pulse { width: 1.2rem; height: 1.2rem; border: 3px solid var(--primary-red); border-radius: 50%; box-shadow: 0 0 0 0 rgba(211,18,18,0.38); animation: location-pulse 1.5s ease-out infinite; }
-    .location-map-marker { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 2px solid #ffffff; border-radius: 50%; background: var(--primary-red); box-shadow: 0 3px 8px rgba(15,23,42,0.35); overflow: hidden; }
-    .location-map-marker img { width: 1.7rem; height: 1.7rem; object-fit: contain; filter: brightness(0) invert(1); }
+    .location-map-pulse { width: 0.82rem; height: 0.82rem; border: 2px solid var(--primary-red); border-radius: 50%; box-shadow: 0 0 0 0 rgba(211,18,18,0.38); animation: location-pulse 1.35s ease-out infinite; flex-shrink: 0; }
+    .location-map-marker-wrapper { background: transparent; border: 0; }
+    .location-map-marker { display: grid; place-items: center; width: 2.38rem; height: 2.38rem; border: 2px solid #ffffff; border-radius: 50%; background: var(--primary-red); box-shadow: 0 4px 10px rgba(15,23,42,0.34); overflow: hidden; }
+    .location-map-marker img { width: 1.72rem; height: 1.72rem; object-fit: contain; filter: brightness(0) invert(1); }
     @keyframes location-pulse { 0% { box-shadow: 0 0 0 0 rgba(211,18,18,0.42); transform: scale(0.86); } 70% { box-shadow: 0 0 0 0.9rem rgba(211,18,18,0); transform: scale(1); } 100% { box-shadow: 0 0 0 0 rgba(211,18,18,0); transform: scale(0.86); } }
-    .location-address { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.2rem 0 0.45rem; }
-    .location-address-row { display: flex; align-items: center; gap: 0.35rem; color: var(--text-dark); font-size: 0.76rem; line-height: 1.2; }
-    .location-address-row svg { width: 0.85rem; height: 0.85rem; color: var(--primary-red); flex-shrink: 0; }
-    .location-address-row strong { font-weight: 700; }
+    .location-address { display: flex; flex-direction: column; gap: 0.32rem; width: 100%; margin: 0.2rem 0 0.35rem; }
+    .location-address-row { display: flex; align-items: flex-start; gap: 0.38rem; color: var(--text-dark); font-size: 0.74rem; line-height: 1.25; }
+    .location-address-row svg { width: 0.86rem; height: 0.86rem; margin-top: 0.05rem; color: var(--primary-red); flex-shrink: 0; }
+    .location-address-row strong { min-width: 0; font-weight: 750; overflow-wrap: anywhere; }
     .map-preview[data-location-preview]::after { display: none; }
-    .btn-small-outline:disabled { opacity: 0.6; cursor: wait; }
+    .location-box[data-location-card] .action-btn-row { width: 100%; margin-top: auto; flex-wrap: wrap; }
+    .location-box[data-location-card] .btn-small-outline { flex: 1 1 6.5rem; justify-content: center; min-height: 2.25rem; padding: 0.4rem 0.5rem; font-size: 0.72rem; }
+    .landmark-box { min-height: 12.5rem; padding: 1rem; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0.8rem; }
+    .landmark-heading { display: flex; align-items: flex-start; gap: 0.75rem; }
+    .landmark-icon { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; flex: 0 0 2.4rem; border-radius: 0.45rem; color: #ffffff; background: var(--primary-red); box-shadow: 0 5px 12px rgba(211,18,18,0.2); }
+    .landmark-icon svg { width: 1.25rem; height: 1.25rem; }
+    .landmark-copy { min-width: 0; }
+    .landmark-status { display: block; margin-bottom: 0.24rem; color: #64748b; font-size: 0.68rem; font-weight: 750; text-transform: uppercase; }
+    .landmark-name { margin: 0; color: #172033; font-size: 0.92rem; font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
+    .landmark-helper { margin: 0; color: var(--text-muted); font-size: 0.75rem; line-height: 1.4; }
+    .landmark-box .action-btn-row { width: 100%; margin-top: auto; flex-wrap: wrap; }
+    .landmark-box .btn-small-outline { flex: 1 1 7rem; justify-content: center; min-height: 2.35rem; }
+    .landmark-box[data-landmark-state="confirmed"] .landmark-icon { background: #15803d; }
+    .landmark-box[data-landmark-state="unavailable"] .landmark-icon { background: #64748b; box-shadow: none; }
+    .btn-small-outline:disabled { opacity: 0.55; cursor: wait; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .location-map-pulse { animation: none; }
+        .location-map-overlay, .location-status { transition: none; }
+    }
 
     .action-btn-row { display: flex; gap: 0.5rem; }
     .btn-small-outline {
@@ -486,7 +618,8 @@ export const reportFireStyles = `
         .type-grid { grid-template-columns: repeat(3, 1fr); }
         
         .location-box { flex-direction: column; gap: 1rem; }
-        .map-preview[data-location-preview] { width: 100%; height: 150px; flex: 0 0 auto; }
+        .location-box[data-location-card] { gap: 0; }
+        .map-preview[data-location-map-surface] { height: 12rem; min-height: 12rem; flex-basis: 12rem; }
         .action-btn-row { flex-wrap: wrap; }
 
         .form-footer { margin: 1rem; flex-direction: column; gap: 0.8rem; }
@@ -552,7 +685,7 @@ export const reportFireStyles = `
             justify-content: space-between;
             gap: 0.5rem;
         }
-        .map-preview[data-location-preview] { width: 140px; height: 100px; flex-basis: 140px; }
+        .map-preview[data-location-map-surface] { height: 11rem; min-height: 11rem; flex-basis: 11rem; }
         .type-grid {
             grid-template-columns: repeat(5, 1fr);
         }
@@ -714,7 +847,15 @@ export const reportFireMarkup = `
                             </div>
                             <span class="location-status" data-location-status>LOCATING...</span>
                         </div>
-                        <div class="location-box" data-location-card data-location-latitude="" data-location-longitude="" data-location-barangay="" data-location-municipality="">
+                        <div class="location-box" data-location-card data-location-latitude="" data-location-longitude="" data-location-accuracy="" data-location-barangay="" data-location-municipality="" data-location-province="" data-location-valid="false" data-location-state="locating">
+                            <div class="map-preview" data-location-preview data-location-map-panel data-location-map-surface>
+                                <div class="location-map" data-location-map aria-label="Detected fire location map">
+                                    <div class="location-map-overlay" data-location-map-overlay aria-live="polite">
+                                        <span class="location-map-pulse" aria-hidden="true"></span>
+                                        <span data-location-map-label>Locating you...</span>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="location-details">
                                 <h4>
                                     <svg class="location-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
@@ -732,14 +873,6 @@ export const reportFireMarkup = `
                                     <button type="button" class="btn-small-outline" data-location-refresh><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Detect my location</button>
                                 </div>
                             </div>
-                            <div class="map-preview" data-location-preview>
-                                <div class="location-map" data-location-map aria-label="Detected location map">
-                                    <div class="location-map-overlay is-locating" data-location-map-overlay>
-                                        <span class="location-map-pulse" aria-hidden="true"></span>
-                                        <span data-location-map-label>Locating you...</span>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -747,14 +880,18 @@ export const reportFireMarkup = `
                         <div class="step-title">
                             <div class="step-number">2</div> NEAREST LANDMARK
                         </div>
-                        <div class="location-box" style="flex-direction:column; justify-content:flex-start; gap:0.8rem;">
-                            <div class="location-details">
-                                <h4>Nearest Landmark</h4>
-                                <p>Suggested: San Jose Public Market</p>
+                        <div class="location-box landmark-box" data-nearest-landmark data-landmark-state="waiting">
+                            <div class="landmark-heading">
+                                <span class="landmark-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg></span>
+                                <div class="landmark-copy">
+                                    <span class="landmark-status" data-landmark-status>Waiting for location</span>
+                                    <h4 class="landmark-name" data-landmark-name>Finding a nearby mapped place...</h4>
+                                </div>
                             </div>
+                            <p class="landmark-helper">Suggested from the closest named place or road in OpenStreetMap.</p>
                             <div class="action-btn-row">
-                                <button class="btn-small-outline"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Correct</button>
-                                <button class="btn-small-outline"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Change</button>
+                                <button type="button" class="btn-small-outline" data-landmark-confirm disabled><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Correct</button>
+                                <button type="button" class="btn-small-outline" data-landmark-change disabled><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Change</button>
                             </div>
                         </div>
                     </div>

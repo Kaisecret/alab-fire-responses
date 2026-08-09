@@ -17,11 +17,38 @@ export type ResolvedAddress = {
   isAntique: boolean;
 };
 
+export type ReverseGeocodePlace = {
+  name?: string;
+  address?: Record<string, string>;
+};
+
+const ANTIQUE_BOUNDS = {
+  south: 10.2712376,
+  west: 121.1450673,
+  north: 12.279476,
+  east: 122.332383,
+};
+
+export function isWithinAntiqueBounds(reading: LocationReading): boolean {
+  return reading.latitude >= ANTIQUE_BOUNDS.south
+    && reading.latitude <= ANTIQUE_BOUNDS.north
+    && reading.longitude >= ANTIQUE_BOUNDS.west
+    && reading.longitude <= ANTIQUE_BOUNDS.east;
+}
+
 export function chooseBetterReading(
   current: LocationReading | null,
   candidate: LocationReading,
 ): LocationReading {
-  return !current || candidate.accuracy < current.accuracy ? candidate : current;
+  if (!current) return candidate;
+
+  const currentIsInAntique = isWithinAntiqueBounds(current);
+  const candidateIsInAntique = isWithinAntiqueBounds(candidate);
+  if (currentIsInAntique !== candidateIsInAntique) {
+    return candidateIsInAntique ? candidate : current;
+  }
+
+  return candidate.accuracy < current.accuracy ? candidate : current;
 }
 
 export function classifyAccuracy(accuracy: number): LocationQuality {
@@ -48,4 +75,24 @@ export function resolvePhilippineAddress(address: Record<string, string>): Resol
     || address.state?.trim().toLowerCase() === 'antique';
 
   return { barangay, municipality, isAntique };
+}
+
+export function resolveNearestLandmark(place: ReverseGeocodePlace): string {
+  const address = place.address ?? {};
+  const candidates = [
+    place.name,
+    address.amenity,
+    address.shop,
+    address.tourism,
+    address.historic,
+    address.leisure,
+    address.office,
+    address.building,
+    address.road,
+  ];
+
+  return candidates.find((value) => {
+    const normalized = value?.trim().toLowerCase();
+    return Boolean(normalized && !['yes', 'no', 'building', 'house'].includes(normalized));
+  })?.trim() ?? '';
 }

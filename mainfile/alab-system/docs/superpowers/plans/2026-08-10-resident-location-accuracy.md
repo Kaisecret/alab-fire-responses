@@ -22,7 +22,7 @@
 ### Task 1: Add Tested Location Selection Rules
 
 **Files:**
-- Create: `mainfile/alab-system/app/resident/report-fire/location-logic.mts`
+- Create: `mainfile/alab-system/app/resident/report-fire/location-logic.ts`
 - Create: `mainfile/alab-system/tests/resident-location-logic.test.mjs`
 
 **Interfaces:**
@@ -38,7 +38,7 @@ import {
   chooseBetterReading,
   classifyAccuracy,
   resolvePhilippineAddress,
-} from "../app/resident/report-fire/location-logic.mts";
+} from "../app/resident/report-fire/location-logic.ts";
 
 test("keeps the most accurate GPS reading", () => {
   const bacolod = { latitude: 10.6765, longitude: 122.9509, accuracy: 4200, timestamp: 1 };
@@ -78,7 +78,7 @@ Run from `mainfile/alab-system`:
 node --test tests/resident-location-logic.test.mjs
 ```
 
-Expected: FAIL with `ERR_MODULE_NOT_FOUND` for `location-logic.mts`.
+Expected: FAIL with `ERR_MODULE_NOT_FOUND` for `location-logic.ts`.
 
 - [ ] **Step 3: Implement the pure rules**
 
@@ -138,7 +138,7 @@ Expected: 3 tests pass, 0 fail.
 - [ ] **Step 5: Commit locally**
 
 ```bash
-git add app/resident/report-fire/location-logic.mts tests/resident-location-logic.test.mjs
+git add app/resident/report-fire/location-logic.ts tests/resident-location-logic.test.mjs
 git commit -m "test: define resident location accuracy rules"
 ```
 
@@ -150,7 +150,7 @@ git commit -m "test: define resident location accuracy rules"
 - Test: `mainfile/alab-system/app/_content/resident-report-fire-content.ts`
 
 **Interfaces:**
-- Consumes: constants and helpers from Task 1's `location-logic.mts` module.
+- Consumes: constants and helpers from Task 1's `location-logic.ts` module.
 - Produces: regression contracts for `watchPosition`, cleanup, accuracy visualization, manual adjustment, and scoped status styles.
 
 - [ ] **Step 1: Replace the one-shot contract with failing progressive-location assertions**
