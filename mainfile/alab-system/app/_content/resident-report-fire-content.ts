@@ -341,6 +341,19 @@ export const reportFireStyles = `
         clip-path: polygon(50% 100%, 0 40%, 0 0, 100% 0, 100% 40%);
     }
 
+    .location-box[data-location-card] { position: relative; min-height: 9.7rem; }
+    .location-details { min-width: 0; }
+    .location-details h4 { display: flex; align-items: center; gap: 0.4rem; }
+    .location-heading-icon { width: 1.1rem; height: 1.1rem; color: var(--primary-red); flex-shrink: 0; }
+    .location-status { font-size: 0.7rem; color: #b45309; background: #fff7ed; padding: 0.2rem 0.5rem; border-radius: 1rem; font-weight: 700; }
+    .location-status.is-success { color: #15803d; background: #dcfce7; }
+    .location-status.is-error { color: #b91c1c; background: #fee2e2; }
+    .location-error { color: #b91c1c; font-size: 0.72rem; line-height: 1.3; margin-bottom: 0.65rem; }
+    .map-preview[data-location-preview] { display: grid; place-items: center; background: #fff5f5; border: 1px solid #fecaca; }
+    .map-preview[data-location-preview]::after { display: none; }
+    .map-preview[data-location-preview] img { width: 3.1rem; height: 3.1rem; object-fit: contain; }
+    .btn-small-outline:disabled { opacity: 0.6; cursor: wait; }
+
     .action-btn-row { display: flex; gap: 0.5rem; }
     .btn-small-outline {
         padding: 0.4rem 0.8rem; border: 1px solid var(--border-color); background: var(--bg-white);
@@ -690,19 +703,23 @@ export const reportFireMarkup = `
                             <div style="display:flex; align-items:center; gap:0.5rem;">
                                 <div class="step-number">1</div> LOCATION
                             </div>
-                            <span style="font-size:0.7rem; color:#16a34a; background:#dcfce7; padding:0.2rem 0.5rem; border-radius:1rem;">● AUTO DETECTED</span>
+                            <span class="location-status" data-location-status>LOCATING...</span>
                         </div>
-                        <div class="location-box">
+                        <div class="location-box" data-location-card data-location-latitude="" data-location-longitude="">
                             <div class="location-details">
-                                <h4>Location Detected</h4>
-                                <p>Brgy. 5, San Jose de Buenavista</p>
-                                <div class="accuracy">Accuracy: Good</div>
+                                <h4>
+                                    <svg class="location-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                    <span data-location-title>Detecting location</span>
+                                </h4>
+                                <p data-location-text>Allow location access in your browser to attach your position.</p>
+                                <div class="accuracy" data-location-accuracy>Waiting for permission...</div>
+                                <div class="location-error" data-location-error hidden></div>
                                 <div class="action-btn-row">
-                                    <button class="btn-small-outline"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Adjust Pin</button>
-                                    <button class="btn-small-outline"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button>
+                                    <button type="button" class="btn-small-outline" data-location-adjust><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Adjust Pin</button>
+                                    <button type="button" class="btn-small-outline" data-location-refresh><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Detect my location</button>
                                 </div>
                             </div>
-                            <div class="map-preview"></div>
+                            <div class="map-preview" data-location-preview aria-hidden="true"><img src="/images/fire logo.webp" alt="ALAB fire response location" /></div>
                         </div>
                     </div>
 
