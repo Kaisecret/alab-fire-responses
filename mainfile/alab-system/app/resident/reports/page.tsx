@@ -4,6 +4,9 @@ import { reportsStyles, reportsMarkup } from "../../_content/resident-reports-co
 
 export default function ReportsPage() {
   return (
-    <div dangerouslySetInnerHTML={{ __html: "<style>" + reportsStyles + "</style>" + reportsMarkup }} />
+    <>
+      <style>{reportsStyles}</style>
+      <div dangerouslySetInnerHTML={{ __html: reportsMarkup }} />
+    </>
   );
 }

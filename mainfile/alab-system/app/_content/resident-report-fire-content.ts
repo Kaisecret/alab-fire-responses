@@ -907,11 +907,10 @@ export const reportFireMarkup = `
                                 </div>
                             </div>
                             <div class="map-preview" data-location-preview data-location-map-panel data-location-map-surface>
-                                <div class="location-map" data-location-map aria-label="OpenStreetMap street map with detected fire location">
-                                    <div class="location-map-overlay" data-location-map-overlay aria-live="polite">
-                                        <span class="location-map-pulse" aria-hidden="true"></span>
-                                        <span data-location-map-label>Locating you...</span>
-                                    </div>
+                                <div class="location-map" data-location-map aria-label="OpenStreetMap street map with detected fire location"></div>
+                                <div class="location-map-overlay" data-location-map-overlay aria-live="polite">
+                                    <span class="location-map-pulse" aria-hidden="true"></span>
+                                    <span data-location-map-label>Locating you...</span>
                                 </div>
                             </div>
                         </div>

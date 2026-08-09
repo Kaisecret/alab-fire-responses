@@ -4,6 +4,9 @@ import { reportDetailStyles, reportDetailMarkup } from "../../../_content/reside
 
 export default function ReportDetailPage() {
   return (
-    <div dangerouslySetInnerHTML={{ __html: "<style>" + reportDetailStyles + "</style>" + reportDetailMarkup }} />
+    <>
+      <style>{reportDetailStyles}</style>
+      <div dangerouslySetInnerHTML={{ __html: reportDetailMarkup }} />
+    </>
   );
 }

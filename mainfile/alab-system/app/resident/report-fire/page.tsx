@@ -581,6 +581,9 @@ export default function ResidentReportFirePage() {
   }, []);
 
   return (
-    <div ref={rootRef} dangerouslySetInnerHTML={{ __html: '<style>' + reportFireStyles + '</style>' + reportFireMarkup }} />
+    <>
+      <style>{reportFireStyles}</style>
+      <div ref={rootRef} dangerouslySetInnerHTML={{ __html: reportFireMarkup }} />
+    </>
   );
 }

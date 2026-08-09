@@ -37,6 +37,9 @@ export function ResidentHomePage() {
   }, []);
 
   return (
-    <div dangerouslySetInnerHTML={{ __html: "<style>" + homeStyles + "</style>" + homeMarkup }} />
+    <>
+      <style>{homeStyles}</style>
+      <div dangerouslySetInnerHTML={{ __html: homeMarkup }} />
+    </>
   );
 }

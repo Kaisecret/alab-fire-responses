@@ -138,3 +138,18 @@ test("resident location card cannot collapse on mobile", () => {
   assert.match(content, /@media \(max-width: 950px\)[\s\S]*\.location-box\[data-location-card\]\s+\.location-details[\s\S]*display:\s*flex/);
   assert.match(content, /@media \(max-width: 950px\)[\s\S]*\.map-preview\[data-location-map-surface\][\s\S]*display:\s*block/);
 });
+
+test("resident report refresh keeps styles and map overlay outside Leaflet-owned DOM", () => {
+  const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
+  const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
+  const mapSurfaceStart = content.indexOf('data-location-map-surface');
+  const mapStart = content.indexOf('data-location-map aria-label', mapSurfaceStart);
+  const mapClose = content.indexOf('</div>', mapStart);
+  const overlayStart = content.indexOf('data-location-map-overlay', mapSurfaceStart);
+
+  assert.match(page, /<style>\{reportFireStyles\}<\/style>/);
+  assert.doesNotMatch(page, /'<style>' \+ reportFireStyles \+ '<\/style>'/);
+  assert.ok(mapSurfaceStart >= 0, "location map surface is present");
+  assert.ok(mapStart > mapSurfaceStart, "Leaflet map target is inside the map surface");
+  assert.ok(overlayStart > mapClose, "location overlay must be a sibling outside the Leaflet map target");
+});
