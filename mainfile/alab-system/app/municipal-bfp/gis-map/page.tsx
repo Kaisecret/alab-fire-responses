@@ -1,6 +1,11 @@
 'use client';
 
-import { AntiqueGisMap } from '../../_components/antique-gis-map';
+import { useState } from 'react';
+import {
+  AntiqueGisMap,
+  type OperationalLayer,
+  type OperationalLayerVisibility,
+} from '../../_components/antique-gis-map';
 
 const styles = `
   .mbfp-page { padding: 1.2rem 1.5rem 2rem; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -14,7 +19,7 @@ const styles = `
   .mbfp-gis-ctrl i { font-size: 0.85rem; }
   .mbfp-antique-map-shell { width: 100%; height: calc(100vh - 200px); min-height: 500px; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; position: relative; overflow: hidden; background: #eef8f1; }
   .mbfp-antique-map { position: absolute; inset: 0; }
-  .mbfp-antique-map-wash { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(135deg, rgba(211,47,47,0.08), transparent 32%), radial-gradient(circle at 25% 25%, rgba(22,101,192,0.08), transparent 36%), radial-gradient(circle at 78% 72%, rgba(0,131,143,0.1), transparent 34%); mix-blend-mode: multiply; }
+  .mbfp-antique-map-wash { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(135deg, rgba(211,47,47,0.035), transparent 32%), radial-gradient(circle at 25% 25%, rgba(22,101,192,0.035), transparent 36%), radial-gradient(circle at 78% 72%, rgba(0,131,143,0.045), transparent 34%); mix-blend-mode: multiply; }
   .mbfp-antique-map-title { position: absolute; top: 14px; left: 14px; z-index: 3; display: flex; flex-direction: column; gap: 0.1rem; background: rgba(255,255,255,0.92); border: 1px solid rgba(229,231,235,0.9); border-radius: 0.55rem; padding: 0.55rem 0.75rem; box-shadow: 0 8px 20px rgba(31,41,55,0.1); }
   .mbfp-antique-map-title span { font-size: 0.82rem; font-weight: 800; color: #1f2937; }
   .mbfp-antique-map-title small { font-size: 0.62rem; font-weight: 600; color: #6b7280; }
@@ -31,6 +36,12 @@ const styles = `
   .mbfp-gis-legend-item { display: flex; align-items: center; gap: 0.4rem; }
   .mbfp-gis-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
   .mbfp-gis-route-line { border-top: 2px dashed #4b5563; width: 16px; display: inline-block; }
+  .mbfp-gis-building-key { width: 10px; height: 10px; border: 1px solid #b9c9c1; background: #ffffff; display: inline-block; }
+  .mbfp-gis-place-key { width: 10px; height: 10px; border-radius: 50%; background: #00838f; border: 1px solid #ffffff; box-shadow: 0 0 0 1px #00838f; display: inline-block; }
+  .mbfp-map-popup { display: flex; flex-direction: column; gap: 0.2rem; font-family: 'Plus Jakarta Sans', sans-serif; color: #1f2937; }
+  .mbfp-map-popup strong { font-size: 0.78rem; }
+  .mbfp-map-popup span { color: #00838f; font-size: 0.65rem; font-weight: 700; text-transform: capitalize; }
+  .mbfp-map-popup small { color: #6b7280; font-size: 0.62rem; }
 
   /* New Layout Styles */
   .mbfp-layout-grid {
@@ -291,6 +302,29 @@ const styles = `
 `;
 
 export default function GisMapPage() {
+  const [visibleLayers, setVisibleLayers] = useState<OperationalLayerVisibility>({
+    incident: true,
+    station: true,
+    water: true,
+  });
+  const allLayersVisible = Object.values(visibleLayers).every(Boolean);
+
+  const toggleLayer = (layer: OperationalLayer) => {
+    setVisibleLayers((current) => ({
+      ...current,
+      [layer]: !current[layer],
+    }));
+  };
+
+  const toggleAllLayers = () => {
+    const nextVisibility = !allLayersVisible;
+    setVisibleLayers({
+      incident: nextVisibility,
+      station: nextVisibility,
+      water: nextVisibility,
+    });
+  };
+
   return (
     <>
       <style>{styles}</style>
@@ -298,15 +332,35 @@ export default function GisMapPage() {
         <div className="mbfp-page-header">
           <h1><i className="fa-solid fa-map-location-dot" /> GIS Map</h1>
           <div className="mbfp-gis-controls">
-            <button className="mbfp-gis-ctrl active"><i className="fa-solid fa-fire" /> Incidents</button>
-            <button className="mbfp-gis-ctrl"><i className="fa-solid fa-house-fire" /> Stations</button>
-            <button className="mbfp-gis-ctrl"><i className="fa-solid fa-droplet" /> Water Sources</button>
-            <button className="mbfp-gis-ctrl"><i className="fa-solid fa-layer-group" /> All Layers</button>
+            <button
+              type="button"
+              className={`mbfp-gis-ctrl ${visibleLayers.incident ? 'active' : ''}`}
+              aria-pressed={visibleLayers.incident}
+              onClick={() => toggleLayer('incident')}
+            ><i className="fa-solid fa-fire" /> Incidents</button>
+            <button
+              type="button"
+              className={`mbfp-gis-ctrl ${visibleLayers.station ? 'active' : ''}`}
+              aria-pressed={visibleLayers.station}
+              onClick={() => toggleLayer('station')}
+            ><i className="fa-solid fa-house-fire" /> Stations</button>
+            <button
+              type="button"
+              className={`mbfp-gis-ctrl ${visibleLayers.water ? 'active' : ''}`}
+              aria-pressed={visibleLayers.water}
+              onClick={() => toggleLayer('water')}
+            ><i className="fa-solid fa-droplet" /> Water Sources</button>
+            <button
+              type="button"
+              className={`mbfp-gis-ctrl ${allLayersVisible ? 'active' : ''}`}
+              aria-pressed={allLayersVisible}
+              onClick={toggleAllLayers}
+            ><i className="fa-solid fa-layer-group" /> All Layers</button>
           </div>
         </div>
 
         <div className="mbfp-layout-grid">
-          <AntiqueGisMap />
+          <AntiqueGisMap visibleLayers={visibleLayers} />
 
           <div className="mbfp-side-card">
             <div className="mbfp-side-card-header">

@@ -39,3 +39,27 @@ test("municipal GIS MapLibre markers keep the ALAB incident palette", () => {
   assert.match(map, /Fire Station \(\{markerCounts\.station\}\)/);
   assert.match(map, /Water Source \(\{markerCounts\.water\}\)/);
 });
+
+test("municipal GIS map uses OSM vector detail layers for Antique", () => {
+  const mapPath = join(root, "app", "_components", "antique-gis-map.tsx");
+  const map = readFileSync(mapPath, "utf8");
+
+  assert.match(map, /https:\/\/tiles\.openfreemap\.org\/styles\/liberty/);
+  assert.match(map, /maxZoom:\s*19/);
+  assert.match(map, /['"]source-layer['"]:\s*'building'/);
+  assert.match(map, /['"]source-layer['"]:\s*'transportation'/);
+  assert.match(map, /['"]source-layer['"]:\s*'poi'/);
+  assert.match(map, /queryRenderedFeatures/);
+  assert.match(map, /Mapped buildings/);
+  assert.match(map, /Public places/);
+});
+
+test("municipal GIS controls expose operational layer visibility", () => {
+  const pagePath = join(root, "app", "municipal-bfp", "gis-map", "page.tsx");
+  const page = readFileSync(pagePath, "utf8");
+
+  assert.match(page, /useState/);
+  assert.match(page, /aria-pressed/);
+  assert.match(page, /onClick/);
+  assert.match(page, /All Layers/);
+});

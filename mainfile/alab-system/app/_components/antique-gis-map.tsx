@@ -4,7 +4,11 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useEffect, useRef } from 'react';
 import type { FeatureCollection, LineString, Polygon } from 'geojson';
-import type { GeoJSONSource, LngLatBoundsLike, Map, Marker } from 'maplibre-gl';
+import type { GeoJSONSource, LngLatBoundsLike, Map, MapGeoJSONFeature, Marker } from 'maplibre-gl';
+
+export type OperationalLayer = 'incident' | 'station' | 'water';
+
+export type OperationalLayerVisibility = Record<OperationalLayer, boolean>;
 
 const ANTIQUE_BOUNDS: LngLatBoundsLike = [
   [121.62, 10.28],
@@ -12,6 +16,27 @@ const ANTIQUE_BOUNDS: LngLatBoundsLike = [
 ];
 
 const ANTIQUE_CENTER: [number, number] = [122.04, 11.08];
+const OSM_STYLE_URL = process.env.NEXT_PUBLIC_OSM_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/liberty';
+
+const DEFAULT_OPERATIONAL_VISIBILITY: OperationalLayerVisibility = {
+  incident: true,
+  station: true,
+  water: true,
+};
+
+const interactiveMapLayerIds = [
+  'alab-building-footprints',
+  'alab-public-place-points',
+  'road_motorway',
+  'road_trunk_primary',
+  'road_secondary_tertiary',
+  'road_minor',
+  'road_service_track',
+  'road_link',
+  'poi_r1',
+  'poi_r7',
+  'poi_r20',
+];
 
 const alabPalette = {
   incident: '#D00F09',
@@ -181,6 +206,162 @@ function createMarkerElement(point: MapPoint) {
   return marker;
 }
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character] ?? character);
+}
+
+function getFeatureProperty(feature: MapGeoJSONFeature, keys: string[]) {
+  const properties = feature.properties as Record<string, unknown> | undefined;
+
+  for (const key of keys) {
+    const value = properties?.[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+
+  return '';
+}
+
+function getFeatureTitle(feature: MapGeoJSONFeature) {
+  const sourceLayer = feature.sourceLayer ?? '';
+
+  if (sourceLayer === 'building') return 'Mapped building';
+  if (sourceLayer === 'transportation') return 'Road';
+  return getFeatureProperty(feature, ['name_en', 'name']) || 'Public place';
+}
+
+function getFeatureCategory(feature: MapGeoJSONFeature) {
+  const sourceLayer = feature.sourceLayer ?? '';
+  if (sourceLayer === 'building') return 'OpenStreetMap building footprint';
+  if (sourceLayer === 'transportation') {
+    return getFeatureProperty(feature, ['class', 'subclass']) || 'Mapped road';
+  }
+
+  return getFeatureProperty(feature, ['class', 'subclass']) || 'OpenStreetMap place';
+}
+
+function createFeaturePopupHtml(feature: MapGeoJSONFeature) {
+  const name = getFeatureProperty(feature, ['name_en', 'name']);
+  const title = getFeatureTitle(feature);
+  const category = getFeatureCategory(feature);
+
+  return `<div class="mbfp-map-popup"><strong>${escapeHtml(name || title)}</strong><span>${escapeHtml(category)}</span>${name ? `<small>${escapeHtml(title)}</small>` : ''}</div>`;
+}
+
+function addMapDetailLayers(map: Map) {
+  const firstRoadLayer = map.getLayer('road_motorway_link_casing') ? 'road_motorway_link_casing' : undefined;
+  const firstPlaceLayer = map.getLayer('poi_r20') ? 'poi_r20' : undefined;
+
+  if (!map.getLayer('alab-building-footprints')) {
+    map.addLayer({
+      id: 'alab-building-footprints',
+      type: 'fill',
+      source: 'openmaptiles',
+      'source-layer': 'building',
+      minzoom: 13,
+      paint: {
+        'fill-color': '#ffffff',
+        'fill-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          13,
+          0.28,
+          17,
+          0.62,
+        ],
+        'fill-outline-color': '#b9c9c1',
+      },
+    }, firstRoadLayer);
+  }
+
+  if (!map.getLayer('alab-road-network')) {
+    map.addLayer({
+      id: 'alab-road-network',
+      type: 'line',
+      source: 'openmaptiles',
+      'source-layer': 'transportation',
+      minzoom: 10,
+      filter: [
+        'match',
+        ['get', 'class'],
+        ['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'minor', 'service', 'track', 'path'],
+        true,
+        false,
+      ],
+      paint: {
+        'line-color': '#aabeb5',
+        'line-opacity': 0.55,
+        'line-width': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          10,
+          0.7,
+          16,
+          2.4,
+        ],
+      },
+    }, firstRoadLayer);
+  }
+
+  if (!map.getLayer('alab-public-place-points')) {
+    map.addLayer({
+      id: 'alab-public-place-points',
+      type: 'circle',
+      source: 'openmaptiles',
+      'source-layer': 'poi',
+      minzoom: 13,
+      filter: [
+        'all',
+        ['has', 'name'],
+        ['match', ['get', 'class'], ['hospital', 'school', 'fire_station', 'government', 'police', 'townhall', 'clinic', 'community_centre', 'place_of_worship', 'fuel'], true, false],
+      ],
+      paint: {
+        'circle-color': '#00838f',
+        'circle-opacity': 0.82,
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 2.5, 17, 4],
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1.2,
+      },
+    }, firstPlaceLayer);
+  }
+}
+
+function addMapFeatureInteractions(map: Map, Popup: typeof import('maplibre-gl').Popup) {
+  const availableLayerIds = interactiveMapLayerIds.filter((layerId) => map.getLayer(layerId));
+
+  for (const layerId of availableLayerIds) {
+    map.on('mouseenter', layerId, () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', layerId, () => {
+      map.getCanvas().style.cursor = '';
+    });
+  }
+
+  if (!availableLayerIds.length) return;
+
+  map.on('click', (event) => {
+    const features = map.queryRenderedFeatures(event.point, { layers: availableLayerIds });
+    const feature = features.find((candidate) => candidate.sourceLayer === 'building'
+      || candidate.sourceLayer === 'transportation'
+      || candidate.sourceLayer === 'poi');
+
+    if (!feature) return;
+
+    new Popup({ closeButton: true, closeOnClick: true, maxWidth: '260px' })
+      .setLngLat(event.lngLat)
+      .setHTML(createFeaturePopupHtml(feature))
+      .addTo(map);
+  });
+}
+
 function addOperationalLayers(map: Map) {
   if (!map.getSource('antique-boundary')) {
     map.addSource('antique-boundary', {
@@ -250,25 +431,32 @@ function tintBaseMap(map: Map) {
     }
 
     if (layer.type === 'raster') {
-      map.setPaintProperty(layer.id, 'raster-saturation', -0.35);
-      map.setPaintProperty(layer.id, 'raster-contrast', -0.12);
-      map.setPaintProperty(layer.id, 'raster-brightness-min', 0.08);
-      map.setPaintProperty(layer.id, 'raster-brightness-max', 0.94);
+      map.setPaintProperty(layer.id, 'raster-opacity', 0.3);
     }
 
     if (layer.type === 'fill' && /water/i.test(layer.id)) {
       map.setPaintProperty(layer.id, 'fill-color', alabPalette.waterBase);
     }
 
-    if (layer.type === 'fill' && /land|park|wood|grass|earth/i.test(layer.id)) {
+    if (layer.type === 'fill' && /land|park|wood|grass|earth|residential/i.test(layer.id)) {
       map.setPaintProperty(layer.id, 'fill-color', alabPalette.land);
     }
 
-    if (layer.type === 'line' && /road|street|path|track/i.test(layer.id)) {
-      map.setPaintProperty(layer.id, 'line-color', alabPalette.road);
+    if (layer.id === 'building' && layer.type === 'fill') {
+      map.setPaintProperty(layer.id, 'fill-color', '#ffffff');
+      map.setPaintProperty(layer.id, 'fill-outline-color', '#b9c9c1');
+      map.setLayerZoomRange(layer.id, 13, 20);
     }
 
-    if (layer.type === 'symbol' && /label|place|name/i.test(layer.id)) {
+    if (layer.id === 'building-3d') {
+      map.setLayoutProperty(layer.id, 'visibility', 'none');
+    }
+
+    if (layer.type === 'line' && /road|street|path|track|bridge|tunnel/i.test(layer.id)) {
+      map.setPaintProperty(layer.id, 'line-color', layer.id.includes('casing') ? '#b8c8c0' : '#ffffff');
+    }
+
+    if (layer.type === 'symbol' && /label|place|name|poi|highway/i.test(layer.id)) {
       map.setPaintProperty(layer.id, 'text-color', alabPalette.text);
       map.setPaintProperty(layer.id, 'text-halo-color', '#ffffff');
       map.setPaintProperty(layer.id, 'text-halo-width', 1.2);
@@ -276,10 +464,34 @@ function tintBaseMap(map: Map) {
   }
 }
 
-export function AntiqueGisMap() {
+type OperationalMarker = {
+  point: MapPoint;
+  marker: Marker;
+};
+
+function applyOperationalLayerVisibility(
+  markers: OperationalMarker[],
+  visibility: OperationalLayerVisibility,
+) {
+  markers.forEach(({ point, marker }) => {
+    marker.getElement().style.display = visibility[point.type] ? '' : 'none';
+  });
+}
+
+type AntiqueGisMapProps = {
+  visibleLayers?: OperationalLayerVisibility;
+};
+
+export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }: AntiqueGisMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
-  const markersRef = useRef<Marker[]>([]);
+  const markersRef = useRef<OperationalMarker[]>([]);
+  const visibleLayersRef = useRef(visibleLayers);
+
+  useEffect(() => {
+    visibleLayersRef.current = visibleLayers;
+    applyOperationalLayerVisibility(markersRef.current, visibleLayers);
+  }, [visibleLayers]);
 
   useEffect(() => {
     let isMounted = true;
@@ -293,64 +505,41 @@ export function AntiqueGisMap() {
 
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: {
-          version: 8,
-          glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-          sources: {
-            osm: {
-              type: 'raster',
-              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-              tileSize: 256,
-              attribution: '&copy; OpenStreetMap contributors',
-            },
-          },
-          layers: [
-            {
-              id: 'alab-background',
-              type: 'background',
-              paint: {
-                'background-color': alabPalette.land,
-              },
-            },
-            {
-              id: 'osm-muted-raster',
-              type: 'raster',
-              source: 'osm',
-              paint: {
-                'raster-saturation': -0.35,
-                'raster-contrast': -0.12,
-                'raster-brightness-min': 0.08,
-                'raster-brightness-max': 0.94,
-              },
-            },
-          ],
-        },
+        style: OSM_STYLE_URL,
         center: ANTIQUE_CENTER,
         zoom: 8.4,
         minZoom: 8,
-        maxZoom: 15,
+        maxZoom: 19,
         maxBounds: ANTIQUE_BOUNDS,
         attributionControl: false,
       });
 
       mapRef.current = map;
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-      map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+      map.addControl(new maplibregl.AttributionControl({
+        compact: true,
+        customAttribution: '&copy; OpenFreeMap &middot; &copy; OpenStreetMap contributors',
+      }), 'bottom-right');
 
       map.on('load', () => {
         tintBaseMap(map);
+        addMapDetailLayers(map);
         addOperationalLayers(map);
         refreshBoundaryData(map);
+        addMapFeatureInteractions(map, maplibregl.Popup);
 
-        markersRef.current = mapPoints.map((point) => (
-          new maplibregl.Marker({
+        markersRef.current = mapPoints.map((point) => {
+          const marker = new maplibregl.Marker({
             element: createMarkerElement(point),
             anchor: 'bottom',
             offset: [0, -4],
           })
             .setLngLat(point.coordinates)
-            .addTo(map)
-        ));
+            .addTo(map);
+
+          return { point, marker };
+        });
+        applyOperationalLayerVisibility(markersRef.current, visibleLayersRef.current);
 
         map.fitBounds(ANTIQUE_BOUNDS, {
           padding: { top: 42, right: 42, bottom: 42, left: 42 },
@@ -363,7 +552,7 @@ export function AntiqueGisMap() {
 
     return () => {
       isMounted = false;
-      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current.forEach(({ marker }) => marker.remove());
       markersRef.current = [];
       mapRef.current?.remove();
       mapRef.current = null;
@@ -394,6 +583,14 @@ export function AntiqueGisMap() {
         <div className="mbfp-gis-legend-item">
           <span className="mbfp-gis-route-line" />
           Recommended Route
+        </div>
+        <div className="mbfp-gis-legend-item">
+          <span className="mbfp-gis-building-key" />
+          Mapped buildings
+        </div>
+        <div className="mbfp-gis-legend-item">
+          <span className="mbfp-gis-place-key" />
+          Public places
         </div>
       </div>
     </div>
