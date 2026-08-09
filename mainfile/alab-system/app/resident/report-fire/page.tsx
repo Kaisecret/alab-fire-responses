@@ -66,23 +66,39 @@ export default function ResidentReportFirePage() {
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) return;
+    if (!root) return undefined;
 
+    return initializeLocationLogic(root);
+  }, []);
+
+  return (
+    <>
+      <style>{reportFireStyles}</style>
+      <div ref={rootRef} dangerouslySetInnerHTML={{ __html: reportFireMarkup }} />
+    </>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * All DOM-dependent location logic extracted here so it only
+ * runs once the innerHTML elements are guaranteed to exist.
+ * ───────────────────────────────────────────────────────────── */
+function initializeLocationLogic(root: HTMLElement): () => void {
     const card = root.querySelector<HTMLElement>('[data-location-card]');
     const refresh = root.querySelector<HTMLButtonElement>('[data-location-refresh]');
     const adjust = root.querySelector<HTMLButtonElement>('[data-location-adjust]');
-    if (!card || !refresh) return;
+    if (!card || !refresh) return () => {};
     const locationCard: HTMLElement = card;
     const refreshButton: HTMLButtonElement = refresh;
 
     const status = root.querySelector<HTMLElement>('[data-location-status]');
     const title = root.querySelector<HTMLElement>('[data-location-title]');
     const text = root.querySelector<HTMLElement>('[data-location-text]');
-    const accuracy = root.querySelector<HTMLElement>('[data-location-accuracy]');
+    const accuracy = root.querySelector<HTMLElement>('.accuracy[data-location-accuracy]');
     const errorText = root.querySelector<HTMLElement>('[data-location-error]');
     const address = root.querySelector<HTMLElement>('[data-location-address]');
-    const barangay = root.querySelector<HTMLElement>('[data-location-barangay]');
-    const municipality = root.querySelector<HTMLElement>('[data-location-municipality]');
+    const barangay = root.querySelector<HTMLElement>('[data-location-place] [data-location-barangay]');
+    const municipality = root.querySelector<HTMLElement>('[data-location-place] [data-location-municipality]');
     const coordinates = root.querySelector<HTMLElement>('[data-location-coordinates]');
     const mapElement = root.querySelector<HTMLElement>('[data-location-map]');
     const mapOverlay = root.querySelector<HTMLElement>('[data-location-map-overlay]');
@@ -578,12 +594,4 @@ export default function ResidentReportFirePage() {
       accuracyCircle = null;
       leaflet = null;
     };
-  }, []);
-
-  return (
-    <>
-      <style>{reportFireStyles}</style>
-      <div ref={rootRef} dangerouslySetInnerHTML={{ __html: reportFireMarkup }} />
-    </>
-  );
 }

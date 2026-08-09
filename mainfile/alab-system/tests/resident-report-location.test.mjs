@@ -119,6 +119,35 @@ test("resident location shows the place and coordinates after detection", () => 
   assert.doesNotMatch(page, /Best accuracy/);
 });
 
+test("resident location updates visible labels without replacing the whole card", () => {
+  const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
+
+  assert.ok(
+    page.includes("querySelector<HTMLElement>('[data-location-place] [data-location-barangay]')"),
+    "barangay UI updates must target the inner label, not the card storage attribute",
+  );
+  assert.ok(
+    page.includes("querySelector<HTMLElement>('[data-location-place] [data-location-municipality]')"),
+    "municipality UI updates must target the inner label, not the card storage attribute",
+  );
+  assert.ok(
+    page.includes("querySelector<HTMLElement>('.accuracy[data-location-accuracy]')"),
+    "accuracy UI updates must target the inner label, not the card storage attribute",
+  );
+  assert.ok(
+    !page.includes("querySelector<HTMLElement>('[data-location-barangay]')"),
+    "generic barangay selector matches the outer card and can replace the map markup",
+  );
+  assert.ok(
+    !page.includes("querySelector<HTMLElement>('[data-location-municipality]')"),
+    "generic municipality selector matches the outer card and can replace the map markup",
+  );
+  assert.ok(
+    !page.includes("querySelector<HTMLElement>('[data-location-accuracy]')"),
+    "generic accuracy selector matches the outer card and can replace the map markup",
+  );
+});
+
 test("resident location keeps the place summary visible above the street map", () => {
   const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
   const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
