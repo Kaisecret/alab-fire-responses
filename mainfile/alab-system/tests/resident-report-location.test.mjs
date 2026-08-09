@@ -81,15 +81,15 @@ test("resident location exposes stable map and correction states", () => {
   assert.match(content, /data-location-map-panel/);
 });
 
-test("resident location renders a stable map-first surface", () => {
+test("resident location renders the address above a stable map surface", () => {
   const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
-  const cardStart = content.indexOf('data-location-card');
+  const cardStart = content.indexOf('<div class="location-box" data-location-card');
   const mapStart = content.indexOf('data-location-map-surface', cardStart);
   const detailsStart = content.indexOf('class="location-details"', cardStart);
 
   assert.ok(cardStart >= 0, "location card hook is present");
   assert.ok(mapStart > cardStart, "location map surface is inside the card");
-  assert.ok(mapStart < detailsStart, "the map renders before location details");
+  assert.ok(detailsStart < mapStart, "location details render before the map");
   assert.match(content, /\.map-preview\[data-location-map-surface\][\s\S]*height:\s*11rem/);
 });
 
@@ -108,9 +108,10 @@ test("resident location shows the place and coordinates after detection", () => 
   const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
 
   assert.match(page, /data-location-coordinates/);
-  assert.match(page, /Location detected on the map/);
+  assert.match(page, /Fire report location/);
   assert.match(page, /accuracy\.hidden = true/);
   assert.match(page, /Latitude/);
   assert.match(page, /Longitude/);
   assert.doesNotMatch(page, /Accurate within about/);
+  assert.doesNotMatch(page, /Location detected on the map/);
 });

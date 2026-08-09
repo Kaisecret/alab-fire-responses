@@ -351,6 +351,8 @@ export const reportFireStyles = `
         overflow: hidden;
         background: #ffffff;
         border-color: #d9e2ec;
+        align-items: stretch;
+        justify-content: flex-start;
     }
     .location-box[data-location-card] .location-details {
         min-width: 0;
@@ -430,7 +432,7 @@ export const reportFireStyles = `
         min-height: 11rem;
         flex: 0 0 11rem;
         border: 0;
-        border-bottom: 1px solid #d9e2ec;
+        border-top: 1px solid #d9e2ec;
         border-radius: 0;
         background: #dbeafe;
         overflow: hidden;
@@ -853,14 +855,6 @@ export const reportFireMarkup = `
                             <span class="location-status" data-location-status>LOCATING...</span>
                         </div>
                         <div class="location-box" data-location-card data-location-latitude="" data-location-longitude="" data-location-accuracy="" data-location-barangay="" data-location-municipality="" data-location-province="" data-location-valid="false" data-location-state="locating">
-                            <div class="map-preview" data-location-preview data-location-map-panel data-location-map-surface>
-                                <div class="location-map" data-location-map aria-label="Detected fire location map">
-                                    <div class="location-map-overlay" data-location-map-overlay aria-live="polite">
-                                        <span class="location-map-pulse" aria-hidden="true"></span>
-                                        <span data-location-map-label>Locating you...</span>
-                                    </div>
-                                </div>
-                            </div>
                             <div class="location-details">
                                 <h4>
                                     <svg class="location-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
@@ -876,6 +870,14 @@ export const reportFireMarkup = `
                                 <div class="action-btn-row">
                                     <button type="button" class="btn-small-outline" data-location-adjust><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Adjust Pin</button>
                                     <button type="button" class="btn-small-outline" data-location-refresh><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Detect my location</button>
+                                </div>
+                            </div>
+                            <div class="map-preview" data-location-preview data-location-map-panel data-location-map-surface>
+                                <div class="location-map" data-location-map aria-label="Detected fire location map">
+                                    <div class="location-map-overlay" data-location-map-overlay aria-live="polite">
+                                        <span class="location-map-pulse" aria-hidden="true"></span>
+                                        <span data-location-map-label>Locating you...</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -320,7 +320,7 @@ export default function ResidentReportFirePage() {
             mappedLandmark || 'No named landmark is mapped nearby',
             mappedLandmark ? 'Nearest mapped place' : 'You can adjust the fire pin',
           );
-          if (title) title.textContent = source === 'manual' ? 'Pin adjusted in Antique' : 'Location detected in Antique';
+          if (title) title.textContent = source === 'manual' ? 'Fire report pin' : 'Fire report location';
           if (text) {
             text.hidden = true;
             text.textContent = placeSummary;
@@ -329,7 +329,7 @@ export default function ResidentReportFirePage() {
             accuracy.hidden = true;
             accuracy.textContent = source === 'manual'
               ? 'Pin selected manually'
-              : 'Location detected on the map';
+              : 'GPS position selected';
           }
           showError('');
         }
