@@ -9,7 +9,6 @@ import type {
   LayerGroup,
   LatLngBoundsExpression,
   Map as LeafletMap,
-  Marker,
 } from 'leaflet';
 
 export type OperationalLayer = 'incident' | 'station' | 'water';
@@ -278,11 +277,6 @@ function publicStructureIcon(leaflet: typeof import('leaflet'), category: string
   });
 }
 
-function publicStructureTooltip(properties: PublicStructureProperties) {
-  const name = properties.name || properties.category;
-  return `${escapeHtml(name)}<small>${escapeHtml(properties.category)}</small>`;
-}
-
 function publicStructurePopup(properties: PublicStructureProperties) {
   const name = properties.name || 'Public facility';
   return `<div class="mbfp-map-popup"><strong>${escapeHtml(name)}</strong><span>${escapeHtml(properties.category)}</span><small>OpenStreetMap</small></div>`;
@@ -361,22 +355,6 @@ function updatePublicStructureVisibility(map: LeafletMap, layer: LayerGroup) {
   const shouldShow = map.getZoom() >= 12;
   if (shouldShow && !map.hasLayer(layer)) layer.addTo(map);
   if (!shouldShow && map.hasLayer(layer)) map.removeLayer(layer);
-
-  const showLabels = map.getZoom() >= 14;
-  layer.eachLayer((item) => {
-    const marker = item as Marker;
-    if (typeof marker.getTooltip !== 'function') return;
-
-    const tooltip = marker.getTooltip();
-    if (!tooltip) return;
-
-    tooltip.options.permanent = showLabels;
-    if (showLabels && shouldShow) {
-      marker.openTooltip();
-    } else {
-      marker.closeTooltip();
-    }
-  });
 }
 
 async function loadPublicStructures(
@@ -416,15 +394,6 @@ async function loadPublicStructures(
           },
         )
           .bindPopup(publicStructurePopup(properties), { maxWidth: 240 });
-
-        if (properties.name) {
-          marker.bindTooltip(publicStructureTooltip(properties), {
-            direction: 'top',
-            offset: [0, -14],
-            className: 'mbfp-facility-label',
-            permanent: true,
-          });
-        }
 
         marker.addTo(layer);
       });

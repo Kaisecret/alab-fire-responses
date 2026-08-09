@@ -89,16 +89,17 @@ test("municipal GIS map uses satellite imagery with an Antique street-map fallba
   assert.match(map, /Sources: Esri/);
 });
 
-test("municipal GIS public facilities become readable at close zoom", () => {
+test("municipal GIS public facility details appear only after a structure is selected", () => {
   const mapPath = join(root, "app", "_components", "antique-gis-map.tsx");
   const pagePath = join(root, "app", "municipal-bfp", "gis-map", "page.tsx");
   const map = readFileSync(mapPath, "utf8");
   const page = readFileSync(pagePath, "utf8");
 
   assert.match(map, /leaflet\.divIcon/);
-  assert.match(map, /permanent:\s*true/);
-  assert.match(map, /getZoom\(\) >= 14/);
-  assert.match(page, /mbfp-facility-label/);
+  assert.match(map, /bindPopup\(publicStructurePopup/);
+  assert.match(map, /getZoom\(\) >= 12/);
+  assert.doesNotMatch(map, /permanent:\s*true/);
+  assert.doesNotMatch(page, /mbfp-facility-label/);
 });
 
 test("municipal GIS map loads Antique public structures for the province overview", () => {

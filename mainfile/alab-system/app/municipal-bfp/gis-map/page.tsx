@@ -45,8 +45,6 @@ const styles = `
   .mbfp-facility-marker-wrap { border: 0; background: transparent; }
   .mbfp-facility-marker { width: 1.5rem; height: 1.5rem; display: grid; place-items: center; border: 2px solid #ffffff; border-radius: 50%; background: var(--facility-color); color: #ffffff; box-shadow: 0 3px 7px rgba(15,23,42,0.35); }
   .mbfp-facility-marker i { font-size: 0.68rem; line-height: 1; }
-  .leaflet-tooltip.mbfp-facility-label { border: none; border-radius: 0.25rem; padding: 0.22rem 0.38rem; color: #1f2937; background: rgba(255,255,255,0.96); box-shadow: 0 2px 7px rgba(31,41,55,0.18); font-size: 0.64rem; font-weight: 800; white-space: nowrap; }
-  .leaflet-tooltip.mbfp-facility-label small { display: block; margin-top: 0.06rem; color: #00838f; font-size: 0.55rem; font-weight: 700; text-transform: capitalize; }
   .leaflet-popup-content { margin: 0.75rem 0.85rem; }
   .leaflet-popup-content-wrapper { border-radius: 0.55rem; box-shadow: 0 8px 24px rgba(31,41,55,0.18); }
   .mbfp-gis-legend { position: absolute; bottom: 12px; left: 12px; background: rgba(255,255,255,0.95); border-radius: 0.5rem; padding: 0.6rem 0.8rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.68rem; font-weight: 600; color: #4b5563; }
