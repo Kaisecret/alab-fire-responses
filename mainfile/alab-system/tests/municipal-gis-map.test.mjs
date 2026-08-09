@@ -56,7 +56,34 @@ test("municipal GIS map uses OSM vector detail layers for Antique", () => {
   assert.match(map, /alab-road-network/);
   assert.match(map, /queryRenderedFeatures/);
   assert.match(map, /Mapped buildings/);
-  assert.match(map, /Public places/);
+  assert.match(map, /Schools & public facilities/);
+});
+
+test("municipal GIS map loads Antique public structures for the province overview", () => {
+  const mapPath = join(root, "app", "_components", "antique-gis-map.tsx");
+  const map = readFileSync(mapPath, "utf8");
+
+  assert.match(map, /antique-public-structures/);
+  assert.match(map, /overpass\.kumi\.systems\/api\/interpreter/);
+  assert.match(map, /amenity.*school.*hospital.*fire_station/);
+  assert.match(map, /office.*government/);
+  assert.match(map, /out center tags/);
+  assert.match(map, /minzoom:\s*8/);
+  assert.match(map, /Schools & public facilities/);
+});
+
+test("municipal GIS map includes the supplied Antique satellite reference details", () => {
+  const mapPath = join(root, "app", "_components", "antique-gis-map.tsx");
+  const map = readFileSync(mapPath, "utf8");
+
+  assert.match(map, /esri-satellite/);
+  assert.match(map, /raster-dem/);
+  assert.match(map, /setTerrain/);
+  assert.match(map, /FullscreenControl/);
+  assert.match(map, /ScaleControl/);
+  assert.match(map, /antique-point/);
+  assert.match(map, /antique-label/);
+  assert.match(map, /antique-municipalities/);
 });
 
 test("municipal GIS controls expose operational layer visibility", () => {

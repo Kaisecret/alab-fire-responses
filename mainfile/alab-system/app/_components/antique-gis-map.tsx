@@ -3,7 +3,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useEffect, useRef } from 'react';
-import type { FeatureCollection, LineString, Polygon } from 'geojson';
+import type { FeatureCollection, LineString, Point, Polygon } from 'geojson';
 import type { GeoJSONSource, LngLatBoundsLike, Map, MapGeoJSONFeature, Marker } from 'maplibre-gl';
 
 export type OperationalLayer = 'incident' | 'station' | 'water';
@@ -16,7 +16,22 @@ const ANTIQUE_BOUNDS: LngLatBoundsLike = [
 ];
 
 const ANTIQUE_CENTER: [number, number] = [122.04, 11.08];
+const ANTIQUE_CAPITAL: [number, number] = [121.941, 10.752];
 const OSM_VECTOR_TILES_URL = process.env.NEXT_PUBLIC_OSM_VECTOR_TILES_URL ?? 'https://tiles.openfreemap.org/planet';
+const ESRI_SATELLITE_TILES_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const TERRAIN_DEM_TILES_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+const PUBLIC_STRUCTURE_OVERPASS_ENDPOINTS = [
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+] as const;
+const PUBLIC_STRUCTURE_OVERPASS_QUERY = `
+[out:json][timeout:25];
+(
+  nwr["amenity"~"school|college|university|hospital|fire_station|police|clinic|townhall|community_centre|place_of_worship|marketplace|social_facility|library|kindergarten"](10.28,121.62,11.9,122.48);
+  nwr["office"="government"](10.28,121.62,11.9,122.48);
+);
+out center tags;
+`;
 
 const DEFAULT_OPERATIONAL_VISIBILITY: OperationalLayerVisibility = {
   incident: true,
@@ -28,6 +43,12 @@ const interactiveMapLayerIds = [
   'alab-building-footprints',
   'alab-road-network',
   'alab-public-place-points',
+  'antique-public-structures-points',
+  'antique-public-structures-labels',
+  'antique-point',
+  'antique-label',
+  'antique-municipality-points',
+  'antique-municipality-labels',
   'road_motorway',
   'road_trunk_primary',
   'road_secondary_tertiary',
@@ -96,6 +117,61 @@ const recommendedRoute: FeatureCollection<LineString, { name: string }> = {
       },
     },
   ],
+};
+
+type PublicStructureProperties = {
+  name: string;
+  category: string;
+  source: 'OpenStreetMap';
+  osmId: string;
+};
+
+type PublicStructureCollection = FeatureCollection<Point, PublicStructureProperties>;
+
+type OverpassElement = {
+  type: 'node' | 'way' | 'relation';
+  id: number;
+  lat?: number;
+  lon?: number;
+  center?: { lat: number; lon: number };
+  tags?: Record<string, string>;
+};
+
+const emptyPublicStructures: PublicStructureCollection = {
+  type: 'FeatureCollection',
+  features: [],
+};
+
+const antiquePoint: FeatureCollection<Point, { name: string; label: string }> = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: ANTIQUE_CAPITAL },
+      properties: {
+        name: 'San Jose de Buenavista',
+        label: 'Provincial capital of Antique',
+      },
+    },
+  ],
+};
+
+const antiqueMunicipalities: FeatureCollection<Point, { name: string }> = {
+  type: 'FeatureCollection',
+  features: [
+    ['San Jose', [121.941, 10.752]],
+    ['Hamtic', [121.98, 10.7]],
+    ['Sibalom', [122.0175, 10.7889]],
+    ['Bugasong', [122.0474, 11.0059]],
+    ['Culasi', [122.0561, 11.4257]],
+    ['Pandan', [122.095, 11.716]],
+    ['Tibiao', [122.0633, 11.3008]],
+    ['Anini-y', [122.0263, 10.4639]],
+  ].map(([name, coordinates]) => ({
+    type: 'Feature' as const,
+    geometry: { type: 'Point' as const, coordinates: coordinates as [number, number] },
+    properties: { name: name as string },
+  })),
 };
 
 type MapPoint = {
@@ -233,6 +309,15 @@ function getFeatureTitle(feature: MapGeoJSONFeature) {
 
   if (sourceLayer === 'building') return 'Mapped building';
   if (sourceLayer === 'transportation') return 'Road';
+  if (feature.source === 'antique-point') {
+    return getFeatureProperty(feature, ['name']) || 'Antique capital';
+  }
+  if (feature.source === 'antique-municipalities') {
+    return getFeatureProperty(feature, ['name']) || 'Antique municipality';
+  }
+  if (feature.source === 'antique-public-structures') {
+    return getFeatureProperty(feature, ['name']) || 'Public facility';
+  }
   return getFeatureProperty(feature, ['name_en', 'name']) || 'Public place';
 }
 
@@ -241,6 +326,11 @@ function getFeatureCategory(feature: MapGeoJSONFeature) {
   if (sourceLayer === 'building') return 'OpenStreetMap building footprint';
   if (sourceLayer === 'transportation') {
     return getFeatureProperty(feature, ['class', 'subclass']) || 'Mapped road';
+  }
+  if (feature.source === 'antique-point') return 'Provincial capital';
+  if (feature.source === 'antique-municipalities') return 'Antique municipality';
+  if (feature.source === 'antique-public-structures') {
+    return getFeatureProperty(feature, ['category']) || 'OpenStreetMap public facility';
   }
 
   return getFeatureProperty(feature, ['class', 'subclass']) || 'OpenStreetMap place';
@@ -252,6 +342,81 @@ function createFeaturePopupHtml(feature: MapGeoJSONFeature) {
   const category = getFeatureCategory(feature);
 
   return `<div class="mbfp-map-popup"><strong>${escapeHtml(name || title)}</strong><span>${escapeHtml(category)}</span>${name ? `<small>${escapeHtml(title)}</small>` : ''}</div>`;
+}
+
+function getPublicStructureCategory(tags: Record<string, string>) {
+  const category = tags.amenity
+    ?? tags.office
+    ?? tags.building
+    ?? tags.tourism
+    ?? tags.historic
+    ?? tags.leisure
+    ?? 'public facility';
+
+  return category.replace(/_/g, ' ');
+}
+
+function createPublicStructureCollection(elements: OverpassElement[]): PublicStructureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: elements.flatMap((element) => {
+      const coordinates = element.lon !== undefined && element.lat !== undefined
+        ? [element.lon, element.lat]
+        : element.center
+          ? [element.center.lon, element.center.lat]
+          : null;
+
+      if (!coordinates) return [];
+
+      const tags = element.tags ?? {};
+      const name = tags.name ?? tags['name:en'] ?? tags.official_name ?? '';
+
+      return [{
+        type: 'Feature' as const,
+        properties: {
+          name,
+          category: getPublicStructureCategory(tags),
+          source: 'OpenStreetMap' as const,
+          osmId: `${element.type}/${element.id}`,
+        },
+        geometry: {
+          type: 'Point' as const,
+          coordinates,
+        },
+      }];
+    }),
+  };
+}
+
+async function loadPublicStructures(map: Map, isActive: () => boolean) {
+  for (const endpoint of PUBLIC_STRUCTURE_OVERPASS_ENDPOINTS) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 18000);
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        },
+        body: new URLSearchParams({ data: PUBLIC_STRUCTURE_OVERPASS_QUERY }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) continue;
+
+      const payload = await response.json() as { elements?: OverpassElement[] };
+      if (!isActive() || !Array.isArray(payload.elements)) return;
+
+      const source = map.getSource('antique-public-structures') as GeoJSONSource | undefined;
+      source?.setData(createPublicStructureCollection(payload.elements));
+      return;
+    } catch {
+      // The vector POI layer remains available if the public-data request is unavailable.
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  }
 }
 
 function addMapDetailLayers(map: Map) {
@@ -317,7 +482,7 @@ function addMapDetailLayers(map: Map) {
       type: 'circle',
       source: 'openmaptiles',
       'source-layer': 'poi',
-      minzoom: 13,
+      minzoom: 11,
       filter: [
         'all',
         ['has', 'name'],
@@ -331,6 +496,155 @@ function addMapDetailLayers(map: Map) {
         'circle-stroke-width': 1.2,
       },
     }, firstPlaceLayer);
+  }
+}
+
+function addPublicStructureLayers(map: Map) {
+  if (!map.getSource('antique-public-structures')) {
+    map.addSource('antique-public-structures', {
+      type: 'geojson',
+      data: emptyPublicStructures,
+    });
+  }
+
+  if (!map.getLayer('antique-public-structures-points')) {
+    map.addLayer({
+      id: 'antique-public-structures-points',
+      type: 'circle',
+      source: 'antique-public-structures',
+      minzoom: 8,
+      paint: {
+        'circle-color': [
+          'match',
+          ['get', 'category'],
+          ['school', 'college', 'university', 'kindergarten', 'library'],
+          alabPalette.station,
+          ['hospital', 'clinic'],
+          alabPalette.incident,
+          ['fire station', 'police', 'government', 'townhall'],
+          '#b45309',
+          alabPalette.water,
+        ],
+        'circle-opacity': 0.88,
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 3.2, 13, 5.4],
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1.4,
+      },
+    });
+  }
+
+  if (!map.getLayer('antique-public-structures-labels')) {
+    map.addLayer({
+      id: 'antique-public-structures-labels',
+      type: 'symbol',
+      source: 'antique-public-structures',
+      minzoom: 10,
+      filter: ['all', ['has', 'name'], ['!=', ['get', 'name'], '']],
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-font': ['Open Sans Regular'],
+        'text-size': 11,
+        'text-anchor': 'top',
+        'text-offset': [0, 1.1],
+        'text-optional': true,
+      },
+      paint: {
+        'text-color': alabPalette.text,
+        'text-halo-color': '#ffffff',
+        'text-halo-width': 1.4,
+      },
+    });
+  }
+}
+
+function addAntiqueReferenceLayers(map: Map) {
+  if (!map.getSource('antique-point')) {
+    map.addSource('antique-point', {
+      type: 'geojson',
+      data: antiquePoint,
+    });
+  }
+
+  if (!map.getSource('antique-municipalities')) {
+    map.addSource('antique-municipalities', {
+      type: 'geojson',
+      data: antiqueMunicipalities,
+    });
+  }
+
+  if (!map.getLayer('antique-municipality-points')) {
+    map.addLayer({
+      id: 'antique-municipality-points',
+      type: 'circle',
+      source: 'antique-municipalities',
+      minzoom: 8,
+      paint: {
+        'circle-radius': 3.8,
+        'circle-color': alabPalette.station,
+        'circle-opacity': 0.84,
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1.2,
+      },
+    });
+  }
+
+  if (!map.getLayer('antique-municipality-labels')) {
+    map.addLayer({
+      id: 'antique-municipality-labels',
+      type: 'symbol',
+      source: 'antique-municipalities',
+      minzoom: 8,
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-font': ['Open Sans Regular'],
+        'text-size': 11,
+        'text-offset': [0, 1.05],
+        'text-anchor': 'top',
+        'text-optional': true,
+      },
+      paint: {
+        'text-color': alabPalette.text,
+        'text-halo-color': '#ffffff',
+        'text-halo-width': 1.5,
+      },
+    });
+  }
+
+  if (!map.getLayer('antique-point')) {
+    map.addLayer({
+      id: 'antique-point',
+      type: 'circle',
+      source: 'antique-point',
+      minzoom: 8,
+      paint: {
+        'circle-radius': 8,
+        'circle-color': alabPalette.incident,
+        'circle-stroke-width': 2.5,
+        'circle-stroke-color': '#ffffff',
+      },
+    });
+  }
+
+  if (!map.getLayer('antique-label')) {
+    map.addLayer({
+      id: 'antique-label',
+      type: 'symbol',
+      source: 'antique-point',
+      minzoom: 8,
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-font': ['Open Sans Regular'],
+        'text-size': 14,
+        'text-offset': [0, 1.25],
+        'text-anchor': 'top',
+        'text-optional': true,
+      },
+      paint: {
+        'text-color': alabPalette.text,
+        'text-halo-color': '#ffffff',
+        'text-halo-width': 1.8,
+      },
+    });
   }
 }
 
@@ -352,7 +666,10 @@ function addMapFeatureInteractions(map: Map, Popup: typeof import('maplibre-gl')
     const features = map.queryRenderedFeatures(event.point, { layers: availableLayerIds });
     const feature = features.find((candidate) => candidate.sourceLayer === 'building'
       || candidate.sourceLayer === 'transportation'
-      || candidate.sourceLayer === 'poi');
+      || candidate.sourceLayer === 'poi'
+      || candidate.source === 'antique-point'
+      || candidate.source === 'antique-municipalities'
+      || candidate.source === 'antique-public-structures');
 
     if (!feature) return;
 
@@ -489,6 +806,18 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
               url: OSM_VECTOR_TILES_URL,
               attribution: '&copy; OpenFreeMap &middot; &copy; OpenStreetMap contributors',
             },
+            'esri-satellite': {
+              type: 'raster',
+              tiles: [ESRI_SATELLITE_TILES_URL],
+              tileSize: 256,
+              attribution: 'Tiles &copy; Esri',
+            },
+            'terrain-dem': {
+              type: 'raster-dem',
+              tiles: [TERRAIN_DEM_TILES_URL],
+              tileSize: 256,
+              encoding: 'terrarium',
+            },
           },
           layers: [
             {
@@ -510,10 +839,23 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
                 'raster-brightness-max': 0.96,
               },
             },
+            {
+              id: 'esri-satellite-layer',
+              type: 'raster',
+              source: 'esri-satellite',
+              paint: {
+                'raster-opacity': 0.34,
+                'raster-saturation': -0.12,
+                'raster-contrast': 0.05,
+              },
+            },
           ],
         },
         center: ANTIQUE_CENTER,
         zoom: 8.4,
+        pitch: 22,
+        bearing: -8,
+        maxPitch: 62,
         minZoom: 8,
         maxZoom: 19,
         maxBounds: ANTIQUE_BOUNDS,
@@ -522,17 +864,23 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
 
       mapRef.current = map;
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+      map.addControl(new maplibregl.FullscreenControl(), 'top-right');
+      map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
       map.addControl(new maplibregl.AttributionControl({
         compact: true,
-        customAttribution: '&copy; OpenFreeMap &middot; &copy; OpenStreetMap contributors',
+        customAttribution: '&copy; OpenFreeMap &middot; &copy; OpenStreetMap contributors &middot; Tiles &copy; Esri',
       }), 'bottom-right');
 
       map.on('load', () => {
+        map.setTerrain({ source: 'terrain-dem', exaggeration: 1.15 });
         tintBaseMap(map);
         addMapDetailLayers(map);
+        addAntiqueReferenceLayers(map);
+        addPublicStructureLayers(map);
         addOperationalLayers(map);
         refreshBoundaryData(map);
         addMapFeatureInteractions(map, maplibregl.Popup);
+        void loadPublicStructures(map, () => isMounted);
 
         markersRef.current = mapPoints.map((point) => {
           const marker = new maplibregl.Marker({
@@ -596,7 +944,7 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
         </div>
         <div className="mbfp-gis-legend-item">
           <span className="mbfp-gis-place-key" />
-          Public places
+          Schools & public facilities
         </div>
       </div>
     </div>
