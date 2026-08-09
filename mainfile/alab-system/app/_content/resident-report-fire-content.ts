@@ -476,6 +476,11 @@ export const reportFireStyles = `
     .location-address-row { display: flex; align-items: flex-start; gap: 0.38rem; color: var(--text-dark); font-size: 0.74rem; line-height: 1.25; }
     .location-address-row svg { width: 0.86rem; height: 0.86rem; margin-top: 0.05rem; color: var(--primary-red); flex-shrink: 0; }
     .location-address-row strong { min-width: 0; font-weight: 750; overflow-wrap: anywhere; }
+    .location-result:not([hidden]) { display: flex; margin: 0.45rem 0 0.65rem; padding: 0.7rem 0.75rem; border: 1px solid #fecaca; border-radius: 0.45rem; background: #fff7f7; gap: 0.5rem; }
+    .location-result .location-address-row { gap: 0.45rem; }
+    .location-result-place strong { color: #172033; font-size: 0.8rem; }
+    .location-place-separator { color: #64748b; font-weight: 700; }
+    .location-result-coordinates strong { color: #475569; font-size: 0.72rem; font-weight: 700; }
     .map-preview[data-location-preview]::after { display: none; }
     .location-box[data-location-card] .action-btn-row { width: 100%; margin-top: auto; flex-wrap: wrap; }
     .location-box[data-location-card] .btn-small-outline { flex: 1 1 6.5rem; justify-content: center; min-height: 2.25rem; padding: 0.4rem 0.5rem; font-size: 0.72rem; }
@@ -861,12 +866,11 @@ export const reportFireMarkup = `
                                     <svg class="location-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
                                     <span data-location-title>Detecting location</span>
                                 </h4>
-                                <p data-location-text>Allow location access in your browser to attach your position.</p>
-                                <div class="location-address" data-location-address hidden>
-                                    <div class="location-address-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><strong data-location-barangay>Barangay --</strong></div>
-                                    <div class="location-address-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V5l7-3 7 3v16"/><path d="M9 21v-5h6v5"/></svg><strong data-location-municipality>Municipality --</strong></div>
-                                    <div class="location-address-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="9"/></svg><strong data-location-coordinates>Latitude -- · Longitude --</strong></div>
+                                <div class="location-address location-result" data-location-address data-location-result hidden>
+                                    <div class="location-address-row location-result-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><strong data-location-place><span data-location-barangay>Barangay --</span><span class="location-place-separator">, </span><span data-location-municipality>Municipality --</span></strong></div>
+                                    <div class="location-address-row location-result-coordinates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="9"/></svg><strong data-location-coordinates>Latitude -- | Longitude --</strong></div>
                                 </div>
+                                <p data-location-text>Allow location access in your browser to attach your position.</p>
                                 <div class="accuracy" data-location-accuracy>Waiting for permission...</div>
                                 <div class="location-error" data-location-error hidden></div>
                                 <div class="action-btn-row">

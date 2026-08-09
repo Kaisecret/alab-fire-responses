@@ -19,6 +19,8 @@ test("resident fire report requests browser location and updates the scoped loca
   assert.match(content, /data-location-status/);
   assert.match(content, /data-location-text/);
   assert.match(content, /data-location-accuracy/);
+  assert.match(content, /data-location-result/);
+  assert.match(content, /data-location-place/);
   assert.match(content, /data-location-coordinates/);
   assert.match(content, /\/images\/fire logo\.webp/);
 });
@@ -107,6 +109,7 @@ test("resident location shows the place and coordinates after detection", () => 
 
   assert.match(page, /data-location-coordinates/);
   assert.match(page, /Location detected on the map/);
+  assert.match(page, /accuracy\.hidden = true/);
   assert.match(page, /Latitude/);
   assert.match(page, /Longitude/);
   assert.doesNotMatch(page, /Accurate within about/);

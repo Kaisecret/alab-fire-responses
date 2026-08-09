@@ -61,11 +61,6 @@ function barangayLabel(value: string) {
   return /\bbarangay\b/i.test(value) ? value : `Barangay ${value}`;
 }
 
-function municipalityLabel(value: string) {
-  if (!value) return 'Municipality name unavailable';
-  return /\bmunicipality\b/i.test(value) ? value : `Municipality of ${value}`;
-}
-
 export default function ResidentReportFirePage() {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -192,12 +187,14 @@ export default function ResidentReportFirePage() {
       locationCard.dataset.locationLongitude = reading.longitude.toFixed(6);
       locationCard.dataset.locationAccuracy = String(Math.round(reading.accuracy));
       if (text) {
+        text.hidden = false;
         text.textContent = `Coordinates: ${reading.latitude.toFixed(5)}, ${reading.longitude.toFixed(5)}`;
       }
       if (coordinates) {
-        coordinates.textContent = `Latitude ${reading.latitude.toFixed(5)} · Longitude ${reading.longitude.toFixed(5)}`;
+        coordinates.textContent = `Latitude ${reading.latitude.toFixed(5)} | Longitude ${reading.longitude.toFixed(5)}`;
       }
       if (accuracy) {
+        accuracy.hidden = false;
         const rounded = Math.max(1, Math.round(reading.accuracy));
         accuracy.textContent = rounded >= 1000
           ? `Best accuracy: +/- ${(rounded / 1000).toFixed(1)} km`
@@ -290,13 +287,14 @@ export default function ResidentReportFirePage() {
 
         const resolved = resolvePhilippineAddress(payload.address ?? {});
         const mappedLandmark = resolveNearestLandmark(payload);
+        const placeSummary = `${barangayLabel(resolved.barangay)}, ${resolved.municipality || 'Municipality unavailable'}`;
         locationCard.dataset.locationBarangay = resolved.barangay;
         locationCard.dataset.locationMunicipality = resolved.municipality;
         locationCard.dataset.locationProvince = resolved.isAntique ? 'Antique' : '';
         if (barangay) barangay.textContent = barangayLabel(resolved.barangay);
-        if (municipality) municipality.textContent = municipalityLabel(resolved.municipality);
+        if (municipality) municipality.textContent = resolved.municipality || 'Municipality unavailable';
         if (coordinates) {
-          coordinates.textContent = `Latitude ${reading.latitude.toFixed(5)} · Longitude ${reading.longitude.toFixed(5)}`;
+          coordinates.textContent = `Latitude ${reading.latitude.toFixed(5)} | Longitude ${reading.longitude.toFixed(5)}`;
         }
         if (address) address.hidden = false;
 
@@ -305,7 +303,10 @@ export default function ResidentReportFirePage() {
           setState('outside');
           setLandmark('unavailable', 'No Antique landmark selected', 'Location is outside Antique');
           if (title) title.textContent = 'Location is outside Antique';
-          if (text) text.textContent = `${barangayLabel(resolved.barangay)}, ${resolved.municipality || 'Municipality unavailable'}`;
+          if (text) {
+            text.hidden = false;
+            text.textContent = placeSummary;
+          }
           showError(
             resolved.municipality
               ? `Detected near ${resolved.municipality}, outside Antique. Keep GPS on and try again, or adjust the pin in Antique.`
@@ -320,8 +321,12 @@ export default function ResidentReportFirePage() {
             mappedLandmark ? 'Nearest mapped place' : 'You can adjust the fire pin',
           );
           if (title) title.textContent = source === 'manual' ? 'Pin adjusted in Antique' : 'Location detected in Antique';
-          if (text) text.textContent = `${barangayLabel(resolved.barangay)}, ${resolved.municipality || 'Municipality unavailable'}`;
+          if (text) {
+            text.hidden = true;
+            text.textContent = placeSummary;
+          }
           if (accuracy) {
+            accuracy.hidden = true;
             accuracy.textContent = source === 'manual'
               ? 'Pin selected manually'
               : 'Location detected on the map';
@@ -342,6 +347,8 @@ export default function ResidentReportFirePage() {
         setLandmark('unavailable', 'Landmark lookup unavailable', 'Try detecting your location again');
         if (title) title.textContent = 'Could not verify Antique location';
         if (address) address.hidden = true;
+        if (text) text.hidden = false;
+        if (accuracy) accuracy.hidden = false;
         showError('Your coordinates were detected, but the Antique address could not be verified. Try again or adjust the pin.');
         setMapOverlay(false, 'Address unavailable');
       } finally {
@@ -361,6 +368,8 @@ export default function ResidentReportFirePage() {
         setState('low-accuracy');
         setLandmark('unavailable', 'Waiting for a more accurate location', 'Landmark not selected');
         if (title) title.textContent = 'Location is still too approximate';
+        if (text) text.hidden = false;
+        if (accuracy) accuracy.hidden = false;
         showError('The current reading is too broad for a fire report. Keep GPS on, move near a window, then try again or adjust the pin.');
         setMapOverlay(false, 'Low accuracy');
         return;
@@ -425,7 +434,9 @@ export default function ResidentReportFirePage() {
         : 'Location unavailable';
       if (text) text.textContent = 'Allow precise location access to attach your position to this report.';
       if (accuracy) accuracy.textContent = 'No verified location attached';
+      if (accuracy) accuracy.hidden = false;
       setLandmark('unavailable', 'Location is needed first', 'Landmark not selected');
+      if (text) text.hidden = false;
       showError(locationErrorCopy(error));
       setMapOverlay(false, 'Location unavailable');
     }
@@ -444,7 +455,9 @@ export default function ResidentReportFirePage() {
       locationCard.dataset.locationMunicipality = '';
       locationCard.dataset.locationProvince = '';
       if (address) address.hidden = true;
-      if (coordinates) coordinates.textContent = 'Latitude -- · Longitude --';
+      if (coordinates) coordinates.textContent = 'Latitude -- | Longitude --';
+      if (text) text.hidden = false;
+      if (accuracy) accuracy.hidden = false;
       setLandmark('waiting', 'Finding a nearby mapped place...', 'Waiting for location');
       showError('');
 
@@ -453,6 +466,7 @@ export default function ResidentReportFirePage() {
         if (title) title.textContent = 'Location unavailable';
         if (text) text.textContent = 'This browser does not support location detection.';
         if (accuracy) accuracy.textContent = 'No verified location attached';
+        if (accuracy) accuracy.hidden = false;
         setLandmark('unavailable', 'Location is not available', 'Landmark not selected');
         setMapOverlay(false, 'Location unavailable');
         return;
@@ -479,6 +493,7 @@ export default function ResidentReportFirePage() {
         setState('error');
         if (title) title.textContent = 'Location timed out';
         if (accuracy) accuracy.textContent = 'No verified location attached';
+        if (accuracy) accuracy.hidden = false;
         setLandmark('unavailable', 'No location was detected', 'Landmark not selected');
         showError('No GPS reading arrived. Turn on precise location, move near a window, and try again.');
         setMapOverlay(false, 'Location timed out');
