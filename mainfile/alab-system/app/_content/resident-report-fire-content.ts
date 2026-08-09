@@ -860,12 +860,12 @@ export const reportFireMarkup = `
                                     <svg class="location-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
                                     <span data-location-title>Detecting location</span>
                                 </h4>
-                                <div class="location-address location-result" data-location-address data-location-result hidden>
-                                    <div class="location-address-row location-result-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><strong data-location-place><span data-location-barangay>Barangay --</span><span class="location-place-separator">, </span><span data-location-municipality>Municipality --</span></strong></div>
+                                <div class="location-address location-result" data-location-address data-location-result>
+                                    <div class="location-address-row location-result-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><strong data-location-place><span data-location-barangay>Barangay checking</span><span class="location-place-separator">, </span><span data-location-municipality>Municipality checking</span></strong></div>
                                     <div class="location-address-row location-result-coordinates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="9"/></svg><strong data-location-coordinates>Latitude -- | Longitude --</strong></div>
                                 </div>
-                                <p data-location-text>Allow location access in your browser to attach your position.</p>
-                                <div class="accuracy" data-location-accuracy>Waiting for permission...</div>
+                                <p data-location-text hidden>Barangay checking, Municipality checking</p>
+                                <div class="accuracy" data-location-accuracy hidden></div>
                                 <div class="location-error" data-location-error hidden></div>
                                 <div class="action-btn-row">
                                     <button type="button" class="btn-small-outline" data-location-adjust><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Adjust Pin</button>
@@ -873,7 +873,7 @@ export const reportFireMarkup = `
                                 </div>
                             </div>
                             <div class="map-preview" data-location-preview data-location-map-panel data-location-map-surface>
-                                <div class="location-map" data-location-map aria-label="Detected fire location map">
+                                <div class="location-map" data-location-map aria-label="OpenStreetMap street map with detected fire location">
                                     <div class="location-map-overlay" data-location-map-overlay aria-live="polite">
                                         <span class="location-map-pulse" aria-hidden="true"></span>
                                         <span data-location-map-label>Locating you...</span>

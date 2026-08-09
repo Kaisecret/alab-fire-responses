@@ -109,9 +109,24 @@ test("resident location shows the place and coordinates after detection", () => 
 
   assert.match(page, /data-location-coordinates/);
   assert.match(page, /Fire report location/);
-  assert.match(page, /accuracy\.hidden = true/);
+  assert.match(page, /showLocationSummary/);
+  assert.match(page, /Barangay/);
   assert.match(page, /Latitude/);
   assert.match(page, /Longitude/);
   assert.doesNotMatch(page, /Accurate within about/);
   assert.doesNotMatch(page, /Location detected on the map/);
+  assert.doesNotMatch(page, /GPS position selected/);
+  assert.doesNotMatch(page, /Best accuracy/);
+});
+
+test("resident location keeps the place summary visible above the street map", () => {
+  const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
+  const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
+
+  assert.match(page, /showLocationSummary\(reading/);
+  assert.match(page, /showLocationSummary\([\s\S]*reading[\s\S]*barangayLabel\(resolved\.barangay\)[\s\S]*resolved\.municipality/);
+  assert.doesNotMatch(page, /address\.hidden = true;/);
+  assert.match(content, /Barangay checking/);
+  assert.match(content, /Municipality checking/);
+  assert.match(content, /OpenStreetMap street map/);
 });
