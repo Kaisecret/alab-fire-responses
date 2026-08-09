@@ -46,6 +46,20 @@ test("the standalone app lockfile installs Next beside the app", async () => {
     packageLock.packages["node_modules/next"],
     "the app lockfile does not include Next",
   );
+  assert.ok(
+    packageLock.packages["node_modules/@emnapi/core"],
+    "the app lockfile is missing the Linux WASM core used during Railway installs",
+  );
+  assert.ok(
+    packageLock.packages["node_modules/@emnapi/runtime"],
+    "the app lockfile is missing the Linux WASM runtime used during Railway installs",
+  );
+  assert.ok(
+    packageLock.packages[
+      "node_modules/@unrs/resolver-binding-wasm32-wasi/node_modules/@emnapi/runtime"
+    ],
+    "the app lockfile is missing the nested Linux WASM runtime",
+  );
 });
 
 test("the production launcher forwards Railway's host and port", async () => {
