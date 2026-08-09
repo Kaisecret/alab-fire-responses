@@ -349,9 +349,21 @@ export const reportFireStyles = `
     .location-status.is-success { color: #15803d; background: #dcfce7; }
     .location-status.is-error { color: #b91c1c; background: #fee2e2; }
     .location-error { color: #b91c1c; font-size: 0.72rem; line-height: 1.3; margin-bottom: 0.65rem; }
-    .map-preview[data-location-preview] { display: grid; place-items: center; background: #fff5f5; border: 1px solid #fecaca; }
+    .map-preview[data-location-preview] { width: 140px; height: 100px; flex: 0 0 140px; background: #e5edf3; border: 1px solid #fecaca; }
+    .location-map { width: 100%; height: 100%; position: relative; overflow: hidden; }
+    .location-map .leaflet-container { width: 100%; height: 100%; font-family: 'Inter', sans-serif; background: #dbeafe; }
+    .location-map .leaflet-control-attribution { max-width: 100%; padding: 0 0.15rem; font-size: 0.38rem; line-height: 1.1; }
+    .location-map-overlay { position: absolute; inset: 0; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem; color: var(--primary-red); background: rgba(255,255,255,0.82); font-size: 0.62rem; font-weight: 700; transition: opacity 0.25s ease, visibility 0.25s ease; pointer-events: none; }
+    .location-map-overlay.is-hidden { opacity: 0; visibility: hidden; }
+    .location-map-pulse { width: 1.2rem; height: 1.2rem; border: 3px solid var(--primary-red); border-radius: 50%; box-shadow: 0 0 0 0 rgba(211,18,18,0.38); animation: location-pulse 1.5s ease-out infinite; }
+    .location-map-marker { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 2px solid #ffffff; border-radius: 50%; background: var(--primary-red); box-shadow: 0 3px 8px rgba(15,23,42,0.35); overflow: hidden; }
+    .location-map-marker img { width: 1.7rem; height: 1.7rem; object-fit: contain; filter: brightness(0) invert(1); }
+    @keyframes location-pulse { 0% { box-shadow: 0 0 0 0 rgba(211,18,18,0.42); transform: scale(0.86); } 70% { box-shadow: 0 0 0 0.9rem rgba(211,18,18,0); transform: scale(1); } 100% { box-shadow: 0 0 0 0 rgba(211,18,18,0); transform: scale(0.86); } }
+    .location-address { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.2rem 0 0.45rem; }
+    .location-address-row { display: flex; align-items: center; gap: 0.35rem; color: var(--text-dark); font-size: 0.76rem; line-height: 1.2; }
+    .location-address-row svg { width: 0.85rem; height: 0.85rem; color: var(--primary-red); flex-shrink: 0; }
+    .location-address-row strong { font-weight: 700; }
     .map-preview[data-location-preview]::after { display: none; }
-    .map-preview[data-location-preview] img { width: 3.1rem; height: 3.1rem; object-fit: contain; }
     .btn-small-outline:disabled { opacity: 0.6; cursor: wait; }
 
     .action-btn-row { display: flex; gap: 0.5rem; }
@@ -474,7 +486,7 @@ export const reportFireStyles = `
         .type-grid { grid-template-columns: repeat(3, 1fr); }
         
         .location-box { flex-direction: column; gap: 1rem; }
-        .map-preview { width: 100%; height: 120px; }
+        .map-preview[data-location-preview] { width: 100%; height: 150px; flex: 0 0 auto; }
         .action-btn-row { flex-wrap: wrap; }
 
         .form-footer { margin: 1rem; flex-direction: column; gap: 0.8rem; }
@@ -540,10 +552,7 @@ export const reportFireStyles = `
             justify-content: space-between;
             gap: 0.5rem;
         }
-        .map-preview {
-            width: 100px;
-            height: 80px;
-        }
+        .map-preview[data-location-preview] { width: 140px; height: 100px; flex-basis: 140px; }
         .type-grid {
             grid-template-columns: repeat(5, 1fr);
         }
@@ -705,13 +714,17 @@ export const reportFireMarkup = `
                             </div>
                             <span class="location-status" data-location-status>LOCATING...</span>
                         </div>
-                        <div class="location-box" data-location-card data-location-latitude="" data-location-longitude="">
+                        <div class="location-box" data-location-card data-location-latitude="" data-location-longitude="" data-location-barangay="" data-location-municipality="">
                             <div class="location-details">
                                 <h4>
                                     <svg class="location-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
                                     <span data-location-title>Detecting location</span>
                                 </h4>
                                 <p data-location-text>Allow location access in your browser to attach your position.</p>
+                                <div class="location-address" data-location-address hidden>
+                                    <div class="location-address-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><strong data-location-barangay>Barangay --</strong></div>
+                                    <div class="location-address-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V5l7-3 7 3v16"/><path d="M9 21v-5h6v5"/></svg><strong data-location-municipality>Municipality --</strong></div>
+                                </div>
                                 <div class="accuracy" data-location-accuracy>Waiting for permission...</div>
                                 <div class="location-error" data-location-error hidden></div>
                                 <div class="action-btn-row">
@@ -719,7 +732,14 @@ export const reportFireMarkup = `
                                     <button type="button" class="btn-small-outline" data-location-refresh><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Detect my location</button>
                                 </div>
                             </div>
-                            <div class="map-preview" data-location-preview aria-hidden="true"><img src="/images/fire logo.webp" alt="ALAB fire response location" /></div>
+                            <div class="map-preview" data-location-preview>
+                                <div class="location-map" data-location-map aria-label="Detected location map">
+                                    <div class="location-map-overlay is-locating" data-location-map-overlay>
+                                        <span class="location-map-pulse" aria-hidden="true"></span>
+                                        <span data-location-map-label>Locating you...</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

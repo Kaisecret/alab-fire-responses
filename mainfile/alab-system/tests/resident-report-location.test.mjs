@@ -31,3 +31,22 @@ test("resident fire report keeps a retry path when location permission is unavai
   assert.match(page, /POSITION_UNAVAILABLE/);
   assert.match(page, /TIMEOUT/);
 });
+
+test("resident fire report resolves barangay and municipality beside a live locating map", () => {
+  const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
+  const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
+  const route = readFileSync(join(root, "app", "api", "geocode", "reverse", "route.ts"), "utf8");
+
+  assert.match(page, /\/api\/geocode\/reverse/);
+  assert.match(route, /nominatim\.openstreetmap\.org\/reverse/);
+  assert.match(route, /Number/);
+  assert.match(page, /village|suburb|neighbourhood/);
+  assert.match(page, /municipality|city|town/);
+  assert.match(page, /setView/);
+  assert.match(page, /divIcon/);
+  assert.match(content, /data-location-map/);
+  assert.match(content, /data-location-barangay/);
+  assert.match(content, /data-location-municipality/);
+  assert.match(content, /data-location-map-overlay/);
+  assert.match(content, /location-map-pulse|location-pulse/);
+});

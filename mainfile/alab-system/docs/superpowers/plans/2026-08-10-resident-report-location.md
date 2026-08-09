@@ -4,7 +4,7 @@
 
 **Goal:** Automatically request and display a resident's browser location in the existing fire-report location step while preserving the rest of the report UI.
 
-**Architecture:** Keep the report's existing HTML-string content module and add data hooks to its location card. Convert the page wrapper into a small client component that owns a scoped `useEffect`, calls the browser Geolocation API, updates only those hooks, and cleans up its event listeners on unmount. Coordinates remain in the location card's data attributes for the current report flow, with a readable coordinate fallback instead of adding a geocoder dependency.
+**Architecture:** Keep the report's existing HTML-string content module and add data hooks to its location card. Convert the page wrapper into a small client component that owns a scoped `useEffect`, calls the browser Geolocation API, updates only those hooks, initializes a Leaflet mini-map, and cleans up listeners/map resources on unmount. After a successful position, make one Nominatim reverse lookup for barangay and municipality labels, retaining coordinates as the fallback.
 
 **Tech Stack:** Next.js App Router, React client component, browser Geolocation API, existing inline report CSS, Node test runner with static contract tests.
 
@@ -13,7 +13,8 @@
 - Change only the resident fire-report location step and its client behavior.
 - Replace the placeholder location icon with the existing project fire/location icon treatment.
 - Preserve the landmark, fire-type, description, photo, navigation, and submission UI.
-- Do not add a persistent map, third-party geocoder, or new location data source.
+- Use one Nominatim reverse lookup per successful detection to resolve barangay and municipality labels from OpenStreetMap.
+- Show a lightweight Leaflet mini-map with a locating pulse and a project-styled position marker.
 - Handle denied, unavailable, and timed-out location as recoverable UI states.
 
 ---
