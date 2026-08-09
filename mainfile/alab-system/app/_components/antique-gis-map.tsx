@@ -9,6 +9,7 @@ import type {
   LayerGroup,
   LatLngBoundsExpression,
   Map as LeafletMap,
+  Marker,
 } from 'leaflet';
 
 export type OperationalLayer = 'incident' | 'station' | 'water';
@@ -23,6 +24,10 @@ const ANTIQUE_BOUNDS: LatLngBoundsExpression = [
 
 const ANTIQUE_CENTER: [number, number] = [11.2753568, 121.7387252];
 const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const SATELLITE_TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const SATELLITE_REFERENCE_TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+const ESRI_IMAGERY_ATTRIBUTION = 'Sources: Esri, DigitalGlobe, GeoEye, i-cubed, USDA FSA, USGS, AEX, Getmapping, Aerogrid, IGN, IGP, swisstopo, and the GIS User Community';
+const ESRI_REFERENCE_ATTRIBUTION = 'Sources: Esri, HERE, Garmin, FAO, NOAA, USGS, EPA, NPS';
 const ANTIQUE_BOUNDARY_URL = '/data/antique-boundary.geojson';
 const PUBLIC_STRUCTURE_OVERPASS_ENDPOINTS = [
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
@@ -254,6 +259,30 @@ function publicStructureColor(category: string) {
   return alabPalette.water;
 }
 
+function publicStructureIcon(leaflet: typeof import('leaflet'), category: string) {
+  const iconClass = ['school', 'college', 'university', 'kindergarten', 'library'].includes(category)
+    ? 'fa-school'
+    : ['hospital', 'clinic'].includes(category)
+      ? 'fa-hospital'
+      : ['fire station', 'police', 'government', 'townhall'].includes(category)
+        ? 'fa-building-columns'
+        : ['assembly point', 'shelter', 'community centre', 'social facility'].includes(category)
+          ? 'fa-house-flag'
+          : 'fa-landmark';
+
+  return leaflet.divIcon({
+    className: 'mbfp-facility-marker-wrap',
+    html: `<span class="mbfp-facility-marker" style="--facility-color: ${publicStructureColor(category)}"><i class="fa-solid ${iconClass}" aria-hidden="true"></i></span>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+}
+
+function publicStructureTooltip(properties: PublicStructureProperties) {
+  const name = properties.name || properties.category;
+  return `${escapeHtml(name)}<small>${escapeHtml(properties.category)}</small>`;
+}
+
 function publicStructurePopup(properties: PublicStructureProperties) {
   const name = properties.name || 'Public facility';
   return `<div class="mbfp-map-popup"><strong>${escapeHtml(name)}</strong><span>${escapeHtml(properties.category)}</span><small>OpenStreetMap</small></div>`;
@@ -332,6 +361,22 @@ function updatePublicStructureVisibility(map: LeafletMap, layer: LayerGroup) {
   const shouldShow = map.getZoom() >= 12;
   if (shouldShow && !map.hasLayer(layer)) layer.addTo(map);
   if (!shouldShow && map.hasLayer(layer)) map.removeLayer(layer);
+
+  const showLabels = map.getZoom() >= 14;
+  layer.eachLayer((item) => {
+    const marker = item as Marker;
+    if (typeof marker.getTooltip !== 'function') return;
+
+    const tooltip = marker.getTooltip();
+    if (!tooltip) return;
+
+    tooltip.options.permanent = showLabels;
+    if (showLabels && shouldShow) {
+      marker.openTooltip();
+    } else {
+      marker.closeTooltip();
+    }
+  });
 }
 
 async function loadPublicStructures(
@@ -362,18 +407,26 @@ async function loadPublicStructures(
       layer.clearLayers();
       createPublicStructureCollection(payload.elements).features.forEach((feature) => {
         const properties = feature.properties;
-        leaflet.circleMarker(
+        const marker = leaflet.marker(
           [feature.geometry.coordinates[1], feature.geometry.coordinates[0]],
           {
-            radius: 4,
-            color: '#ffffff',
-            weight: 1.3,
-            fillColor: publicStructureColor(properties.category),
-            fillOpacity: 0.92,
+            icon: publicStructureIcon(leaflet, properties.category),
+            title: properties.name || properties.category,
+            alt: properties.name || properties.category,
           },
         )
-          .bindPopup(publicStructurePopup(properties), { maxWidth: 240 })
-          .addTo(layer);
+          .bindPopup(publicStructurePopup(properties), { maxWidth: 240 });
+
+        if (properties.name) {
+          marker.bindTooltip(publicStructureTooltip(properties), {
+            direction: 'top',
+            offset: [0, -14],
+            className: 'mbfp-facility-label',
+            permanent: true,
+          });
+        }
+
+        marker.addTo(layer);
       });
       updatePublicStructureVisibility(map, layer);
       return;
@@ -424,10 +477,23 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
       });
       mapRef.current = map;
 
-      leaflet.tileLayer(OSM_TILE_URL, {
+      const streetLayer = leaflet.tileLayer(OSM_TILE_URL, {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      });
+      const satelliteLayer = leaflet.tileLayer(SATELLITE_TILE_URL, {
+        maxZoom: 19,
+        attribution: ESRI_IMAGERY_ATTRIBUTION,
       }).addTo(map);
+      const referenceLayer = leaflet.tileLayer(SATELLITE_REFERENCE_TILE_URL, {
+        maxZoom: 19,
+        attribution: ESRI_REFERENCE_ATTRIBUTION,
+      }).addTo(map);
+      leaflet.control.layers(
+        { Satellite: satelliteLayer, 'Street map': streetLayer },
+        { 'Place labels': referenceLayer },
+        { position: 'topright', collapsed: true },
+      ).addTo(map);
       leaflet.control.zoom({ position: 'topright' }).addTo(map);
       addAntiqueResetControl(leaflet, map);
       leaflet.control.scale({ position: 'bottomleft', imperial: false, maxWidth: 120 }).addTo(map);
@@ -488,7 +554,7 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
       <div ref={containerRef} className="mbfp-antique-map" aria-label="Province of Antique Leaflet GIS map" />
       <div className="mbfp-antique-map-title">
         <span>Province of Antique</span>
-        <small>OpenStreetMap operational coverage</small>
+        <small>Satellite imagery + OSM facility reference</small>
       </div>
       <div className="mbfp-gis-legend">
         <div className="mbfp-gis-legend-item">
@@ -509,7 +575,7 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
         </div>
         <div className="mbfp-gis-legend-item">
           <span className="mbfp-gis-building-key" />
-          Mapped buildings
+          Mapped buildings &amp; satellite roofs
         </div>
         <div className="mbfp-gis-legend-item">
           <span className="mbfp-gis-place-key" />
