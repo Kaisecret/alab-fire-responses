@@ -19,6 +19,7 @@ test("resident fire report requests browser location and updates the scoped loca
   assert.match(content, /data-location-status/);
   assert.match(content, /data-location-text/);
   assert.match(content, /data-location-accuracy/);
+  assert.match(content, /data-location-coordinates/);
   assert.match(content, /\/images\/fire logo\.webp/);
 });
 
@@ -99,4 +100,14 @@ test("resident location derives the nearest landmark from the detected point", (
   assert.match(content, /data-landmark-name/);
   assert.match(content, /data-landmark-status/);
   assert.doesNotMatch(content, /San Jose Public Market/);
+});
+
+test("resident location shows the place and coordinates after detection", () => {
+  const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
+
+  assert.match(page, /data-location-coordinates/);
+  assert.match(page, /Location detected on the map/);
+  assert.match(page, /Latitude/);
+  assert.match(page, /Longitude/);
+  assert.doesNotMatch(page, /Accurate within about/);
 });

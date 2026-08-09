@@ -88,6 +88,7 @@ export default function ResidentReportFirePage() {
     const address = root.querySelector<HTMLElement>('[data-location-address]');
     const barangay = root.querySelector<HTMLElement>('[data-location-barangay]');
     const municipality = root.querySelector<HTMLElement>('[data-location-municipality]');
+    const coordinates = root.querySelector<HTMLElement>('[data-location-coordinates]');
     const mapElement = root.querySelector<HTMLElement>('[data-location-map]');
     const mapOverlay = root.querySelector<HTMLElement>('[data-location-map-overlay]');
     const mapOverlayLabel = root.querySelector<HTMLElement>('[data-location-map-label]');
@@ -193,6 +194,9 @@ export default function ResidentReportFirePage() {
       if (text) {
         text.textContent = `Coordinates: ${reading.latitude.toFixed(5)}, ${reading.longitude.toFixed(5)}`;
       }
+      if (coordinates) {
+        coordinates.textContent = `Latitude ${reading.latitude.toFixed(5)} · Longitude ${reading.longitude.toFixed(5)}`;
+      }
       if (accuracy) {
         const rounded = Math.max(1, Math.round(reading.accuracy));
         accuracy.textContent = rounded >= 1000
@@ -291,6 +295,9 @@ export default function ResidentReportFirePage() {
         locationCard.dataset.locationProvince = resolved.isAntique ? 'Antique' : '';
         if (barangay) barangay.textContent = barangayLabel(resolved.barangay);
         if (municipality) municipality.textContent = municipalityLabel(resolved.municipality);
+        if (coordinates) {
+          coordinates.textContent = `Latitude ${reading.latitude.toFixed(5)} · Longitude ${reading.longitude.toFixed(5)}`;
+        }
         if (address) address.hidden = false;
 
         if (!resolved.isAntique) {
@@ -298,6 +305,7 @@ export default function ResidentReportFirePage() {
           setState('outside');
           setLandmark('unavailable', 'No Antique landmark selected', 'Location is outside Antique');
           if (title) title.textContent = 'Location is outside Antique';
+          if (text) text.textContent = `${barangayLabel(resolved.barangay)}, ${resolved.municipality || 'Municipality unavailable'}`;
           showError(
             resolved.municipality
               ? `Detected near ${resolved.municipality}, outside Antique. Keep GPS on and try again, or adjust the pin in Antique.`
@@ -311,11 +319,12 @@ export default function ResidentReportFirePage() {
             mappedLandmark || 'No named landmark is mapped nearby',
             mappedLandmark ? 'Nearest mapped place' : 'You can adjust the fire pin',
           );
-          if (title) title.textContent = source === 'manual' ? 'Pin adjusted in Antique' : 'Location confirmed in Antique';
+          if (title) title.textContent = source === 'manual' ? 'Pin adjusted in Antique' : 'Location detected in Antique';
+          if (text) text.textContent = `${barangayLabel(resolved.barangay)}, ${resolved.municipality || 'Municipality unavailable'}`;
           if (accuracy) {
             accuracy.textContent = source === 'manual'
               ? 'Pin selected manually'
-              : `Accurate within about ${Math.max(1, Math.round(reading.accuracy))} meters`;
+              : 'Location detected on the map';
           }
           showError('');
         }
@@ -435,6 +444,7 @@ export default function ResidentReportFirePage() {
       locationCard.dataset.locationMunicipality = '';
       locationCard.dataset.locationProvince = '';
       if (address) address.hidden = true;
+      if (coordinates) coordinates.textContent = 'Latitude -- · Longitude --';
       setLandmark('waiting', 'Finding a nearby mapped place...', 'Waiting for location');
       showError('');
 

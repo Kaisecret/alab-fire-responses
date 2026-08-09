@@ -865,6 +865,7 @@ export const reportFireMarkup = `
                                 <div class="location-address" data-location-address hidden>
                                     <div class="location-address-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><strong data-location-barangay>Barangay --</strong></div>
                                     <div class="location-address-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V5l7-3 7 3v16"/><path d="M9 21v-5h6v5"/></svg><strong data-location-municipality>Municipality --</strong></div>
+                                    <div class="location-address-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="9"/></svg><strong data-location-coordinates>Latitude -- · Longitude --</strong></div>
                                 </div>
                                 <div class="accuracy" data-location-accuracy>Waiting for permission...</div>
                                 <div class="location-error" data-location-error hidden></div>
