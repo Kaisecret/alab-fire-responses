@@ -16,7 +16,7 @@ const ANTIQUE_BOUNDS: LngLatBoundsLike = [
 ];
 
 const ANTIQUE_CENTER: [number, number] = [122.04, 11.08];
-const OSM_STYLE_URL = process.env.NEXT_PUBLIC_OSM_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/liberty';
+const OSM_VECTOR_TILES_URL = process.env.NEXT_PUBLIC_OSM_VECTOR_TILES_URL ?? 'https://tiles.openfreemap.org/planet';
 
 const DEFAULT_OPERATIONAL_VISIBILITY: OperationalLayerVisibility = {
   incident: true,
@@ -26,6 +26,7 @@ const DEFAULT_OPERATIONAL_VISIBILITY: OperationalLayerVisibility = {
 
 const interactiveMapLayerIds = [
   'alab-building-footprints',
+  'alab-road-network',
   'alab-public-place-points',
   'road_motorway',
   'road_trunk_primary',
@@ -423,44 +424,12 @@ function refreshBoundaryData(map: Map) {
 }
 
 function tintBaseMap(map: Map) {
-  const style = map.getStyle();
+  if (map.getLayer('alab-background')) {
+    map.setPaintProperty('alab-background', 'background-color', alabPalette.land);
+  }
 
-  for (const layer of style.layers ?? []) {
-    if (layer.type === 'background') {
-      map.setPaintProperty(layer.id, 'background-color', alabPalette.land);
-    }
-
-    if (layer.type === 'raster') {
-      map.setPaintProperty(layer.id, 'raster-opacity', 0.3);
-    }
-
-    if (layer.type === 'fill' && /water/i.test(layer.id)) {
-      map.setPaintProperty(layer.id, 'fill-color', alabPalette.waterBase);
-    }
-
-    if (layer.type === 'fill' && /land|park|wood|grass|earth|residential/i.test(layer.id)) {
-      map.setPaintProperty(layer.id, 'fill-color', alabPalette.land);
-    }
-
-    if (layer.id === 'building' && layer.type === 'fill') {
-      map.setPaintProperty(layer.id, 'fill-color', '#ffffff');
-      map.setPaintProperty(layer.id, 'fill-outline-color', '#b9c9c1');
-      map.setLayerZoomRange(layer.id, 13, 20);
-    }
-
-    if (layer.id === 'building-3d') {
-      map.setLayoutProperty(layer.id, 'visibility', 'none');
-    }
-
-    if (layer.type === 'line' && /road|street|path|track|bridge|tunnel/i.test(layer.id)) {
-      map.setPaintProperty(layer.id, 'line-color', layer.id.includes('casing') ? '#b8c8c0' : '#ffffff');
-    }
-
-    if (layer.type === 'symbol' && /label|place|name|poi|highway/i.test(layer.id)) {
-      map.setPaintProperty(layer.id, 'text-color', alabPalette.text);
-      map.setPaintProperty(layer.id, 'text-halo-color', '#ffffff');
-      map.setPaintProperty(layer.id, 'text-halo-width', 1.2);
-    }
+  if (map.getLayer('osm-raster-fallback')) {
+    map.setPaintProperty('osm-raster-fallback', 'raster-opacity', 0.92);
   }
 }
 
@@ -505,7 +474,44 @@ export function AntiqueGisMap({ visibleLayers = DEFAULT_OPERATIONAL_VISIBILITY }
 
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: OSM_STYLE_URL,
+        style: {
+          version: 8,
+          glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+          sources: {
+            osm: {
+              type: 'raster',
+              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+              tileSize: 256,
+              attribution: '&copy; OpenStreetMap contributors',
+            },
+            openmaptiles: {
+              type: 'vector',
+              url: OSM_VECTOR_TILES_URL,
+              attribution: '&copy; OpenFreeMap &middot; &copy; OpenStreetMap contributors',
+            },
+          },
+          layers: [
+            {
+              id: 'alab-background',
+              type: 'background',
+              paint: {
+                'background-color': alabPalette.land,
+              },
+            },
+            {
+              id: 'osm-raster-fallback',
+              type: 'raster',
+              source: 'osm',
+              paint: {
+                'raster-opacity': 0.92,
+                'raster-saturation': -0.32,
+                'raster-contrast': -0.08,
+                'raster-brightness-min': 0.08,
+                'raster-brightness-max': 0.96,
+              },
+            },
+          ],
+        },
         center: ANTIQUE_CENTER,
         zoom: 8.4,
         minZoom: 8,

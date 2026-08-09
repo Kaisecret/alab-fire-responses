@@ -44,11 +44,16 @@ test("municipal GIS map uses OSM vector detail layers for Antique", () => {
   const mapPath = join(root, "app", "_components", "antique-gis-map.tsx");
   const map = readFileSync(mapPath, "utf8");
 
-  assert.match(map, /https:\/\/tiles\.openfreemap\.org\/styles\/liberty/);
+  assert.match(map, /https:\/\/tiles\.openfreemap\.org\/planet/);
+  assert.match(map, /osm-raster-fallback/);
+  assert.match(map, /type:\s*'raster'/);
+  assert.match(map, /type:\s*'vector'/);
+  assert.match(map, /NEXT_PUBLIC_OSM_VECTOR_TILES_URL/);
   assert.match(map, /maxZoom:\s*19/);
   assert.match(map, /['"]source-layer['"]:\s*'building'/);
   assert.match(map, /['"]source-layer['"]:\s*'transportation'/);
   assert.match(map, /['"]source-layer['"]:\s*'poi'/);
+  assert.match(map, /alab-road-network/);
   assert.match(map, /queryRenderedFeatures/);
   assert.match(map, /Mapped buildings/);
   assert.match(map, /Public places/);
