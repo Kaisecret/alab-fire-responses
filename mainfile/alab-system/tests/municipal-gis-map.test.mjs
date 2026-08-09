@@ -150,6 +150,9 @@ test("municipal GIS map keeps reset and legend controls usable on mobile", () =>
   const page = readFileSync(pagePath, "utf8");
 
   assert.match(page, /leaflet-control-antique-reset/);
+  assert.match(page, /\.mbfp-antique-map-title\s*\{[^}]*z-index:\s*1000/);
+  assert.match(page, /\.mbfp-gis-legend\s*\{[^}]*z-index:\s*1000/);
+  assert.match(page, /@media \(max-width: 768px\)[\s\S]*\.mbfp-layout-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
   assert.match(page, /@media \(max-width: 768px\)[\s\S]*mbfp-gis-legend/);
   assert.match(page, /@media \(max-width: 768px\)[\s\S]*leaflet-control-antique-reset/);
 });

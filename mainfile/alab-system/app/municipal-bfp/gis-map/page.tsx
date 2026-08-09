@@ -19,7 +19,7 @@ const styles = `
   .mbfp-gis-ctrl i { font-size: 0.85rem; }
   .mbfp-antique-map-shell { width: 100%; height: calc(100vh - 200px); min-height: 500px; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; position: relative; overflow: hidden; background: #eef8f1; }
   .mbfp-antique-map { position: absolute; inset: 0; }
-  .mbfp-antique-map-title { position: absolute; top: 14px; left: 14px; z-index: 3; display: flex; flex-direction: column; gap: 0.1rem; background: rgba(255,255,255,0.92); border: 1px solid rgba(229,231,235,0.9); border-radius: 0.55rem; padding: 0.55rem 0.75rem; box-shadow: 0 8px 20px rgba(31,41,55,0.1); }
+  .mbfp-antique-map-title { position: absolute; top: 14px; left: 14px; z-index: 1000; display: flex; flex-direction: column; gap: 0.1rem; background: rgba(255,255,255,0.92); border: 1px solid rgba(229,231,235,0.9); border-radius: 0.55rem; padding: 0.55rem 0.75rem; box-shadow: 0 8px 20px rgba(31,41,55,0.1); }
   .mbfp-antique-map-title span { font-size: 0.82rem; font-weight: 800; color: #1f2937; }
   .mbfp-antique-map-title small { font-size: 0.62rem; font-weight: 600; color: #6b7280; }
   .mbfp-antique-marker { border: none; background: transparent; color: var(--marker-color); display: flex; flex-direction: column; align-items: center; gap: 0.1rem; transform: translateY(0); cursor: pointer; filter: drop-shadow(0 3px 5px rgba(15,23,42,0.28)); }
@@ -39,7 +39,7 @@ const styles = `
   .leaflet-tooltip.leaflet-operational-label { border: none; border-radius: 0.25rem; padding: 0.14rem 0.32rem; color: #1f2937; background: rgba(255,255,255,0.94); box-shadow: 0 2px 6px rgba(31,41,55,0.14); font-size: 0.62rem; font-weight: 800; }
   .leaflet-popup-content { margin: 0.75rem 0.85rem; }
   .leaflet-popup-content-wrapper { border-radius: 0.55rem; box-shadow: 0 8px 24px rgba(31,41,55,0.18); }
-  .mbfp-gis-legend { position: absolute; bottom: 12px; left: 12px; background: rgba(255,255,255,0.95); border-radius: 0.5rem; padding: 0.6rem 0.8rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 10; display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.68rem; font-weight: 600; color: #4b5563; }
+  .mbfp-gis-legend { position: absolute; bottom: 12px; left: 12px; background: rgba(255,255,255,0.95); border-radius: 0.5rem; padding: 0.6rem 0.8rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.68rem; font-weight: 600; color: #4b5563; }
   .mbfp-gis-legend-item { display: flex; align-items: center; gap: 0.4rem; }
   .mbfp-gis-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
   .mbfp-gis-route-line { border-top: 2px dashed #4b5563; width: 16px; display: inline-block; }
@@ -303,7 +303,8 @@ const styles = `
     .mbfp-page { padding: 0.8rem; }
     .mbfp-page-header { align-items: flex-start; flex-direction: column; gap: 0.75rem; }
     .mbfp-gis-controls { flex-wrap: wrap; }
-    .mbfp-antique-map-shell { height: 560px; min-height: 560px; }
+    .mbfp-layout-grid { grid-template-columns: minmax(0, 1fr); }
+    .mbfp-antique-map-shell { height: 560px; min-height: 560px; min-width: 0; max-width: 100%; }
     .mbfp-antique-map-title { top: 10px; left: 10px; max-width: calc(100% - 7.5rem); }
     .mbfp-gis-legend { max-width: calc(100% - 5.5rem); padding: 0.45rem 0.55rem; gap: 0.2rem; font-size: 0.58rem; }
     .leaflet-control-antique-reset button { width: 2.25rem; height: 2.25rem; }
