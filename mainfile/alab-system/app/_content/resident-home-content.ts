@@ -708,6 +708,10 @@ export const homeStyles = `
         .dashboard-page-root {
             background-color: var(--card-bg);
             padding-bottom: 5rem; /* space for bottom nav */
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: clip;
+            overscroll-behavior-x: none;
         }
 
         .header-nav {
@@ -722,25 +726,40 @@ export const homeStyles = `
         .mobile-top-header {
             display: flex !important;
             align-items: center;
-            justify-content: center;
-            padding: 1rem;
+            justify-content: flex-end;
+            min-height: 3.5rem;
+            padding: 0.45rem 1rem;
             background: white;
+            border-bottom: 1px solid var(--border-color);
             position: sticky;
             top: 0;
             z-index: 100;
         }
         .mobile-page-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin: 0;
+            display: none;
         }
         .mobile-notif-btn {
-            position: absolute;
-            right: 1rem;
-            padding: 0.5rem;
-            background: none;
-            border: none;
+            position: static;
+            width: 2.6rem;
+            height: 2.6rem;
+            padding: 0.55rem;
+            display: grid;
+            place-items: center;
+            color: var(--primary-red);
+            background: #fff5f4;
+            border: 1px solid #fecaca;
+            border-radius: 0.8rem;
+            box-shadow: 0 2px 7px rgba(217, 27, 16, 0.12);
+        }
+        .mobile-notif-btn svg {
+            width: 1.3rem;
+            height: 1.3rem;
+            display: block;
+        }
+        .mobile-notif-btn .notification-badge {
+            top: -0.3rem !important;
+            right: -0.3rem !important;
+            border-color: white !important;
         }
 
         .brand-logo {
@@ -750,9 +769,11 @@ export const homeStyles = `
         .dashboard-container {
             display: flex;
             flex-direction: column;
-            padding: 0 1rem;
-            margin: 0.5rem auto;
-            gap: 1rem;
+            width: 100%;
+            max-width: 100%;
+            padding: 0 0.85rem;
+            margin: 0.4rem auto;
+            gap: 0.85rem;
         }
 
         .card {
@@ -795,8 +816,10 @@ export const homeStyles = `
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin: 1.5rem 0;
+            min-height: 16rem;
+            margin: 1rem 0 1.25rem;
             position: relative;
+            overflow: clip;
         }
 
         .radar-animation {
@@ -878,6 +901,7 @@ export const homeStyles = `
             justify-content: center;
             padding-bottom: 0.8rem;
             color: white;
+            text-decoration: none;
             z-index: 1;
             cursor: pointer;
             transition: transform 0.1s;
@@ -1213,11 +1237,11 @@ export const homeMarkup = `
                     <div class="radar-ring ring-2"></div>
                     <div class="radar-ring ring-3"></div>
                 </div>
-                <div class="mobile-emergency-btn">
+                <a href="/resident/report-fire" class="mobile-emergency-btn" aria-label="Report a fire">
                     <img src="/images/fire logo.webp" alt="Fire Logo" />
                     <h2>REPORT FIRE</h2>
                     <div class="tap-text">TAP TO REPORT FIRE</div>
-                </div>
+                </a>
                 <div class="safety-first-hint">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
                     Move to safety first.
