@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 import "./globals.css";
 
@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   icons: {
     icon: "/images/FAVICON.webp",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#D4140B",
 };
 
 export default function RootLayout({
