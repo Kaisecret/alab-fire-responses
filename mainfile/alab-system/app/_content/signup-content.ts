@@ -935,47 +935,162 @@ export const signupStyles = `
         }
 
         .selfie-camera-panel {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
             display: none;
-            margin-top: 0.8rem;
-            gap: 0.7rem;
+            place-items: center;
+            padding: 1.25rem;
+            background: rgba(8, 12, 20, 0.84);
+            backdrop-filter: blur(0.7rem);
         }
 
         .selfie-camera-panel.active {
             display: grid;
         }
 
-        .selfie-camera-panel video {
-            width: 100%;
-            max-height: 17rem;
-            object-fit: cover;
-            border-radius: 10px;
-            background: #111827;
+        .selfie-camera-card {
+            position: relative;
+            width: min(100%, 34rem);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 1.5rem;
+            background: #0b111c;
+            color: #ffffff;
+            box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.42);
         }
 
-        .selfie-camera-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.6rem;
+        .selfie-camera-heading {
+            position: absolute;
+            z-index: 2;
+            top: 1.1rem;
+            right: 4.1rem;
+            left: 4.1rem;
+            text-align: center;
+            font-size: 0.86rem;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            text-shadow: 0 0.1rem 0.8rem rgba(0, 0, 0, 0.8);
         }
 
-        .selfie-camera-actions button {
-            border: 0;
-            border-radius: 8px;
-            padding: 0.65rem 0.9rem;
+        .selfie-camera-close {
+            position: absolute;
+            z-index: 3;
+            top: 0.85rem;
+            right: 0.85rem;
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 50%;
+            background: rgba(8, 12, 20, 0.54);
+            color: #ffffff;
             font: inherit;
-            font-size: 0.78rem;
-            font-weight: 700;
+            font-size: 1.8rem;
+            font-weight: 400;
+            line-height: 1;
             cursor: pointer;
         }
 
+        .selfie-camera-stage {
+            position: relative;
+            min-height: min(75svh, 38rem);
+            background: #111827;
+        }
+
+        .selfie-camera-stage video,
+        .selfie-camera-stage img {
+            width: 100%;
+            height: min(75svh, 38rem);
+            object-fit: cover;
+            object-position: center;
+            background: #111827;
+        }
+
+        .selfie-face-guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: min(58vw, 13.5rem);
+            height: min(76vw, 18rem);
+            transform: translate(-50%, -50%);
+            border: 2px solid rgba(255, 255, 255, 0.82);
+            border-radius: 50%;
+            box-shadow: 0 0 0 100vmax rgba(8, 12, 20, 0.2);
+            pointer-events: none;
+        }
+
+        .selfie-camera-footer {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            display: grid;
+            justify-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem 1.35rem;
+            background: linear-gradient(transparent, rgba(8, 12, 20, 0.92) 42%);
+        }
+
+        .selfie-camera-guidance {
+            max-width: 19rem;
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 0.78rem;
+            font-weight: 600;
+            line-height: 1.4;
+            text-align: center;
+        }
+
         .capture-selfie-btn {
+            width: 4.5rem;
+            height: 4.5rem;
+            border: 0.34rem solid #ffffff;
+            border-radius: 50%;
+            background: transparent;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+            cursor: pointer;
+        }
+
+        .capture-selfie-btn::after {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
             background: var(--primary-red);
+            content: "";
+            transform: scale(0.79);
+            transition: transform 0.18s ease, background 0.18s ease;
+        }
+
+        .capture-selfie-btn:hover::after {
+            background: #ef3b2f;
+            transform: scale(0.86);
+        }
+
+        .selfie-review-actions {
+            display: flex;
+            width: min(100%, 24rem);
+            gap: 0.65rem;
+        }
+
+        .selfie-review-actions button {
+            flex: 1;
+            border: 0;
+            border-radius: 0.85rem;
+            padding: 0.85rem 0.75rem;
+            font: inherit;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .retake-selfie-btn {
+            background: rgba(255, 255, 255, 0.16);
             color: #ffffff;
         }
 
-        .cancel-selfie-btn {
-            background: #e2e8f0;
-            color: #334155;
+        .use-selfie-btn {
+            background: var(--primary-red);
+            color: #ffffff;
         }
 
         /* Responsive */
@@ -1003,6 +1118,25 @@ export const signupStyles = `
                 height: auto;
                 overflow-y: visible;
                 justify-content: center;
+            }
+
+            .selfie-camera-panel {
+                inset: 0;
+                padding: 0;
+            }
+
+            .selfie-camera-card {
+                width: 100%;
+                height: 100%;
+                border: 0;
+                border-radius: 0;
+            }
+
+            .selfie-camera-stage,
+            .selfie-camera-stage video,
+            .selfie-camera-stage img {
+                height: 100svh;
+                max-height: none;
             }
         }
 
@@ -1287,11 +1421,23 @@ export const signupMarkup = `<main class="signup-container">
                                 <span class="selfie-hint">Ensure your face is clearly visible</span>
                             </div>
                         </button>
-                        <div class="selfie-camera-panel" id="selfieCameraPanel">
-                            <video id="selfieVideo" autoplay playsinline muted></video>
-                            <div class="selfie-camera-actions">
-                                <button type="button" class="cancel-selfie-btn" id="cancelSelfie">Cancel</button>
-                                <button type="button" class="capture-selfie-btn" id="captureSelfie">Capture Selfie</button>
+                        <div class="selfie-camera-panel" id="selfieCameraPanel" role="dialog" aria-modal="true" aria-label="Take a verification selfie" aria-hidden="true">
+                            <div class="selfie-camera-card">
+                                <button type="button" class="selfie-camera-close" id="cancelSelfie" aria-label="Close camera">&times;</button>
+                                <p class="selfie-camera-heading">Center your face in the guide</p>
+                                <div class="selfie-camera-stage">
+                                    <video id="selfieVideo" autoplay playsinline muted></video>
+                                    <img id="selfiePreview" hidden alt="Your captured verification selfie">
+                                    <div class="selfie-face-guide" aria-hidden="true"></div>
+                                    <div class="selfie-camera-footer">
+                                        <p class="selfie-camera-guidance" id="selfieCameraGuidance">Use good lighting and make sure your face is clearly visible.</p>
+                                        <button type="button" class="capture-selfie-btn" id="captureSelfie" aria-label="Capture selfie"></button>
+                                        <div class="selfie-review-actions" id="selfieReviewActions" hidden>
+                                            <button type="button" class="retake-selfie-btn" id="retakeSelfie">Retake</button>
+                                            <button type="button" class="use-selfie-btn" id="useSelfie">Use this selfie</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

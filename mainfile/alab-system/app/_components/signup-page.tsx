@@ -96,8 +96,14 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const selfieSection = root.querySelector<HTMLElement>("#selfieSection");
     const selfieCameraPanel = root.querySelector<HTMLElement>("#selfieCameraPanel");
     const selfieVideo = root.querySelector<HTMLVideoElement>("#selfieVideo");
+    const selfiePreview = root.querySelector<HTMLImageElement>("#selfiePreview");
+    const selfieFaceGuide = root.querySelector<HTMLElement>(".selfie-face-guide");
+    const selfieGuidance = root.querySelector<HTMLElement>("#selfieCameraGuidance");
     const captureSelfieBtn = root.querySelector<HTMLButtonElement>("#captureSelfie");
     const cancelSelfieBtn = root.querySelector<HTMLButtonElement>("#cancelSelfie");
+    const retakeSelfieBtn = root.querySelector<HTMLButtonElement>("#retakeSelfie");
+    const useSelfieBtn = root.querySelector<HTMLButtonElement>("#useSelfie");
+    const selfieReviewActions = root.querySelector<HTMLElement>("#selfieReviewActions");
     let selfieStream: MediaStream | null = null;
 
     // Success overlay
@@ -365,12 +371,43 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       }
     }
 
+    const resetSelfieCameraUi = () => {
+      if (selfieVideo) selfieVideo.hidden = false;
+      if (selfiePreview) {
+        selfiePreview.hidden = true;
+        selfiePreview.removeAttribute("src");
+      }
+      selfieFaceGuide?.removeAttribute("hidden");
+      if (selfieGuidance) selfieGuidance.textContent = "Use good lighting and make sure your face is clearly visible.";
+      if (captureSelfieBtn) captureSelfieBtn.hidden = false;
+      if (selfieReviewActions) selfieReviewActions.hidden = true;
+    };
+
     const stopSelfieCamera = () => {
       selfieStream?.getTracks().forEach((track) => track.stop());
       selfieStream = null;
       if (selfieVideo) selfieVideo.srcObject = null;
       selfieCameraPanel?.classList.remove("active");
+      selfieCameraPanel?.setAttribute("aria-hidden", "true");
       selfieCapture?.setAttribute("aria-expanded", "false");
+      resetSelfieCameraUi();
+    };
+
+    const showSelfieReview = (dataUrl: string) => {
+      selfieStream?.getTracks().forEach((track) => track.stop());
+      selfieStream = null;
+      if (selfieVideo) {
+        selfieVideo.srcObject = null;
+        selfieVideo.hidden = true;
+      }
+      if (selfiePreview) {
+        selfiePreview.src = dataUrl;
+        selfiePreview.hidden = false;
+      }
+      selfieFaceGuide?.setAttribute("hidden", "true");
+      if (selfieGuidance) selfieGuidance.textContent = "Does this photo clearly show your face?";
+      if (captureSelfieBtn) captureSelfieBtn.hidden = true;
+      if (selfieReviewActions) selfieReviewActions.hidden = false;
     };
 
     const startSelfieCamera = async () => {
@@ -380,14 +417,17 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       }
 
       try {
+        resetSelfieCameraUi();
+        selfieCameraPanel?.classList.add("active");
+        selfieCameraPanel?.setAttribute("aria-hidden", "false");
+        selfieCapture?.setAttribute("aria-expanded", "true");
         selfieStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "user" } },
           audio: false,
         });
         selfieVideo.srcObject = selfieStream;
-        selfieCameraPanel?.classList.add("active");
-        selfieCapture?.setAttribute("aria-expanded", "true");
       } catch {
+        stopSelfieCamera();
         window.alert("Unable to open the camera. Please allow camera access and try again.");
       }
     };
@@ -406,13 +446,23 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       frame.width = selfieVideo.videoWidth;
       frame.height = selfieVideo.videoHeight;
       frame.getContext("2d")?.drawImage(selfieVideo, 0, 0, frame.width, frame.height);
+      showSelfieReview(frame.toDataURL("image/jpeg", 0.92));
+    };
+
+    const handleUseSelfie = () => {
       stopSelfieCamera();
       showSelfieCaptured();
+    };
+
+    const handleRetakeSelfie = async () => {
+      await startSelfieCamera();
     };
 
     selfieCapture?.addEventListener("click", handleSelfieClick);
     captureSelfieBtn?.addEventListener("click", handleCaptureSelfie);
     cancelSelfieBtn?.addEventListener("click", stopSelfieCamera);
+    retakeSelfieBtn?.addEventListener("click", handleRetakeSelfie);
+    useSelfieBtn?.addEventListener("click", handleUseSelfie);
 
     // Password toggle handler factory
     function makeToggle(field: HTMLInputElement | null, btn: HTMLButtonElement | null) {
@@ -457,15 +507,44 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       if (passwordField) checkStrength(passwordField.value);
     };
 
+    const getInvalidField = (panel: HTMLElement | null) => {
+      if (!panel) return null;
+      return Array.from(panel.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input, select, textarea"))
+        .find((field) => !field.disabled && !field.checkValidity()) ?? null;
+    };
+
+    const fieldLabel = (field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) => {
+      const labels: Record<string, string> = {
+        firstName: "first name",
+        lastName: "last name",
+        email: "email address",
+        phone: "11-digit phone number",
+        municipality: "municipality",
+        barangay: "barangay",
+        address: "complete address",
+        username: "username",
+        signupPassword: "password",
+        confirmPassword: "password confirmation",
+        termsCheck: "Terms of Service and Privacy Policy agreement",
+      };
+      return labels[field.id] ?? "required field";
+    };
+
+    const showInvalidField = (step: number, field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) => {
+      goToStep(step);
+      formStatus.textContent = `Please complete your ${fieldLabel(field)} to continue.`;
+      window.requestAnimationFrame(() => {
+        field.focus();
+        field.reportValidity();
+      });
+    };
+
     const validateStep = (panel: HTMLElement | null) => {
-      if (!panel) return false;
-      for (const field of panel.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input, select, textarea")) {
-        if (!field.disabled && !field.checkValidity()) {
-          field.reportValidity();
-          return false;
-        }
-      }
-      return true;
+      const invalidField = getInvalidField(panel);
+      if (!invalidField) return true;
+      invalidField.focus();
+      invalidField.reportValidity();
+      return false;
     };
 
     const handleToStep2 = () => {
@@ -495,17 +574,50 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const handleBackToStep3 = () => goToStep(3);
     const handleBackToStep4 = () => goToStep(4);
 
-    const handleSubmit = async (e: SubmitEvent) => {
-      e.preventDefault();
+    const validateRegistration = () => {
+      for (const [index, panel] of panels.entries()) {
+        const invalidField = getInvalidField(panel);
+        if (invalidField) {
+          showInvalidField(index + 1, invalidField);
+          return false;
+        }
+      }
+
+      if (!frontFile) {
+        goToStep(3);
+        formStatus.textContent = "Upload the front of your valid ID to continue.";
+        return false;
+      }
+
+      if (!selfieTaken) {
+        goToStep(3);
+        formStatus.textContent = "Take and confirm your selfie to continue.";
+        return false;
+      }
+
+      if (!passwordField || passwordField.value !== confirmField?.value) {
+        goToStep(4);
+        formStatus.textContent = "Passwords do not match.";
+        confirmField?.focus();
+        return false;
+      }
+
       const termsCheck = root.querySelector<HTMLInputElement>("#termsCheck");
       if (!termsCheck?.checked) {
+        goToStep(5);
         formStatus.textContent = "Please agree to the Terms of Service and Privacy Policy.";
-        return;
+        termsCheck?.focus();
+        return false;
       }
-      if (!frontFile || !selfieTaken || !passwordField) {
-        formStatus.textContent = "Complete the valid ID, selfie, and password fields before registering.";
-        return;
-      }
+
+      return true;
+    };
+
+    const handleSubmit = async (e: SubmitEvent) => {
+      e.preventDefault();
+      formStatus.textContent = "";
+      if (!validateRegistration()) return;
+      if (!passwordField || !frontFile) return;
 
       const value = (id: string) => root.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`#${id}`)?.value ?? "";
       formStatus.textContent = "Creating your resident account…";
@@ -582,6 +694,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       selfieCapture?.removeEventListener("click", handleSelfieClick);
       captureSelfieBtn?.removeEventListener("click", handleCaptureSelfie);
       cancelSelfieBtn?.removeEventListener("click", stopSelfieCamera);
+      retakeSelfieBtn?.removeEventListener("click", handleRetakeSelfie);
+      useSelfieBtn?.removeEventListener("click", handleUseSelfie);
       stopSelfieCamera();
       cleanupDragFront?.();
       cleanupDragBack?.();
