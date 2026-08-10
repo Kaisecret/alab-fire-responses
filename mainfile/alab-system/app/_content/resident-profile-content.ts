@@ -935,7 +935,7 @@ export const profileMarkup = `
                 </div>
                 <div class="profile-header-info">
                     <div class="profile-name-row">
-                        <h2>Juan Dela Cruz</h2>
+                        <h2 data-profile-field="name">Loading profile…</h2>
                         <svg class="verified-icon-blue" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.1 14.2l-3.6-3.6 1.4-1.4 2.2 2.2 5.8-5.8 1.4 1.4-7.2 7.2z"/></svg>
                     </div>
                     <div class="profile-verified-status">
@@ -945,22 +945,22 @@ export const profileMarkup = `
                     <div class="profile-location-row desktop-only">
                         <div class="profile-location-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                            <span>Municipality of San Jose de Buenavista</span>
+                            <span>Municipality of <span data-profile-field="municipality">Loading…</span></span>
                         </div>
                         <div class="profile-location-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                            <span>Barangay Poblacion</span>
+                            <span>Barangay <span data-profile-field="barangay">Loading…</span></span>
                         </div>
                     </div>
                     <div class="profile-location-row desktop-only">
                         <div class="profile-location-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                            <span>+63 912 345 6789</span>
+                            <span data-profile-field="phone">Loading…</span>
                         </div>
                     </div>
                     <div class="profile-location-text mobile-only">
-                        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> San Jose de Buenavista</span>
-                        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Poblacion</span>
+                        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <span data-profile-field="municipality">Loading…</span></span>
+                        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> <span data-profile-field="barangay">Loading…</span></span>
                     </div>
                     <p class="profile-subtitle desktop-only">Manage your personal information and account settings.</p>
                 </div>
@@ -993,32 +993,32 @@ export const profileMarkup = `
                         <div class="profile-info-list">
                             <div class="info-list-item">
                                 <div class="info-list-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Full Name</div>
-                                <div class="info-list-value">Juan Dela Cruz</div>
+                                <div class="info-list-value" data-profile-field="name">Loading…</div>
                                 <svg class="chevron-right mobile-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                             </div>
                             <div class="info-list-item">
                                 <div class="info-list-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Mobile Number</div>
-                                <div class="info-list-value">+63 912 345 6789</div>
+                                <div class="info-list-value" data-profile-field="phone">Loading…</div>
                                 <svg class="chevron-right mobile-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                             </div>
                             <div class="info-list-item">
                                 <div class="info-list-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Municipality</div>
-                                <div class="info-list-value">San Jose de Buenavista</div>
+                                <div class="info-list-value" data-profile-field="municipality">Loading…</div>
                                 <svg class="chevron-right mobile-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                             </div>
                             <div class="info-list-item">
                                 <div class="info-list-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Barangay</div>
-                                <div class="info-list-value">Poblacion</div>
+                                <div class="info-list-value" data-profile-field="barangay">Loading…</div>
                                 <svg class="chevron-right mobile-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                             </div>
                             <div class="info-list-item">
                                 <div class="info-list-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email Address</div>
-                                <div class="info-list-value">juan.delacruz@email.com</div>
+                                <div class="info-list-value" data-profile-field="email">Loading…</div>
                                 <svg class="chevron-right mobile-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                             </div>
                             <div class="info-list-item desktop-only">
                                 <div class="info-list-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Address</div>
-                                <div class="info-list-value" style="font-size: 0.8rem; line-height: 1.4;">Poblacion, San Jose de Buenavista,<br>Antique, Philippines</div>
+                                <div class="info-list-value" data-profile-field="address" style="font-size: 0.8rem; line-height: 1.4;">Loading…</div>
                             </div>
                             <div class="info-list-item desktop-only">
                                 <div class="info-list-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Account Status</div>
