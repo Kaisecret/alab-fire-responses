@@ -52,6 +52,10 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const stepTitle = root.querySelector<HTMLElement>("#stepTitle");
     const stepSubtitle = root.querySelector<HTMLElement>("#stepSubtitle");
     const reviewContent = root.querySelector<HTMLElement>("#reviewContent");
+    const formStatus = root.ownerDocument.createElement("p");
+    formStatus.setAttribute("role", "alert");
+    formStatus.style.cssText = "min-height: 1.25rem; margin-top: 0.75rem; color: #b91c1c; font-size: 0.8rem; font-weight: 700; text-align: center;";
+    form?.appendChild(formStatus);
 
     const panels = [
       root.querySelector<HTMLElement>("#step1"),
@@ -90,6 +94,11 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const uploadBackSection = root.querySelector<HTMLElement>("#uploadBackSection");
     const selfieCapture = root.querySelector<HTMLElement>("#selfieCapture");
     const selfieSection = root.querySelector<HTMLElement>("#selfieSection");
+    const selfieCameraPanel = root.querySelector<HTMLElement>("#selfieCameraPanel");
+    const selfieVideo = root.querySelector<HTMLVideoElement>("#selfieVideo");
+    const captureSelfieBtn = root.querySelector<HTMLButtonElement>("#captureSelfie");
+    const cancelSelfieBtn = root.querySelector<HTMLButtonElement>("#cancelSelfie");
+    let selfieStream: MediaStream | null = null;
 
     // Success overlay
     const successOverlay = root.ownerDocument.querySelector<HTMLElement>("#successOverlay") ??
@@ -335,26 +344,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     dropzoneFront?.addEventListener("click", handleDropzoneClick);
     dropzoneBack?.addEventListener("click", handleDropzoneClick);
 
-    // Selfie capture handler
-    const handleSelfieClick = () => {
-      if (selfieTaken) {
-        // Reset selfie
-        selfieTaken = false;
-        selfieSection?.classList.remove("has-capture");
-        selfieCapture?.classList.remove("has-capture");
-        if (selfieCapture) {
-          const textArea = selfieCapture.querySelector(".selfie-text");
-          if (textArea) {
-            textArea.innerHTML = `
-              <span class="selfie-main">Click to open camera and take a selfie</span>
-              <span class="selfie-hint">Ensure your face is clearly visible</span>
-            `;
-          }
-        }
-        return;
-      }
-
-      // Simulate selfie capture (in real app, this would open camera)
+    function showSelfieCaptured() {
       selfieTaken = true;
       selfieSection?.classList.add("has-capture");
       selfieCapture?.classList.add("has-capture");
@@ -373,9 +363,56 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
           `;
         }
       }
+    }
+
+    const stopSelfieCamera = () => {
+      selfieStream?.getTracks().forEach((track) => track.stop());
+      selfieStream = null;
+      if (selfieVideo) selfieVideo.srcObject = null;
+      selfieCameraPanel?.classList.remove("active");
+      selfieCapture?.setAttribute("aria-expanded", "false");
+    };
+
+    const startSelfieCamera = async () => {
+      if (!navigator.mediaDevices?.getUserMedia || !selfieVideo) {
+        window.alert("Camera access is not supported by this browser.");
+        return;
+      }
+
+      try {
+        selfieStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "user" } },
+          audio: false,
+        });
+        selfieVideo.srcObject = selfieStream;
+        selfieCameraPanel?.classList.add("active");
+        selfieCapture?.setAttribute("aria-expanded", "true");
+      } catch {
+        window.alert("Unable to open the camera. Please allow camera access and try again.");
+      }
+    };
+
+    const handleSelfieClick = async () => {
+      await startSelfieCamera();
+    };
+
+    const handleCaptureSelfie = () => {
+      if (!selfieStream || !selfieVideo || selfieVideo.videoWidth === 0) {
+        window.alert("Please wait for the camera preview before taking the selfie.");
+        return;
+      }
+
+      const frame = root.ownerDocument.createElement("canvas");
+      frame.width = selfieVideo.videoWidth;
+      frame.height = selfieVideo.videoHeight;
+      frame.getContext("2d")?.drawImage(selfieVideo, 0, 0, frame.width, frame.height);
+      stopSelfieCamera();
+      showSelfieCaptured();
     };
 
     selfieCapture?.addEventListener("click", handleSelfieClick);
+    captureSelfieBtn?.addEventListener("click", handleCaptureSelfie);
+    cancelSelfieBtn?.addEventListener("click", stopSelfieCamera);
 
     // Password toggle handler factory
     function makeToggle(field: HTMLInputElement | null, btn: HTMLButtonElement | null) {
@@ -420,24 +457,87 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       if (passwordField) checkStrength(passwordField.value);
     };
 
-    const handleToStep2 = () => goToStep(2);
-    const handleToStep3 = () => goToStep(3);
-    const handleToStep4 = () => goToStep(4);
-    const handleToStep5 = () => goToStep(5);
+    const validateStep = (panel: HTMLElement | null) => {
+      if (!panel) return false;
+      for (const field of panel.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input, select, textarea")) {
+        if (!field.disabled && !field.checkValidity()) {
+          field.reportValidity();
+          return false;
+        }
+      }
+      return true;
+    };
+
+    const handleToStep2 = () => {
+      formStatus.textContent = "";
+      if (validateStep(panels[0])) goToStep(2);
+    };
+    const handleToStep3 = () => {
+      formStatus.textContent = "";
+      if (validateStep(panels[1])) goToStep(3);
+    };
+    const handleToStep4 = () => {
+      formStatus.textContent = "";
+      if (!validateStep(panels[2])) return;
+      if (!frontFile || !selfieTaken) {
+        formStatus.textContent = "Upload the front of your valid ID and capture a selfie before continuing.";
+        return;
+      }
+      goToStep(4);
+    };
+    const handleToStep5 = () => {
+      formStatus.textContent = "";
+      if (validateStep(panels[3]) && passwordField?.value === confirmField?.value) goToStep(5);
+      else if (passwordField?.value !== confirmField?.value) formStatus.textContent = "Passwords do not match.";
+    };
     const handleBackToStep1 = () => goToStep(1);
     const handleBackToStep2 = () => goToStep(2);
     const handleBackToStep3 = () => goToStep(3);
     const handleBackToStep4 = () => goToStep(4);
 
-    const handleSubmit = (e: SubmitEvent) => {
+    const handleSubmit = async (e: SubmitEvent) => {
       e.preventDefault();
       const termsCheck = root.querySelector<HTMLInputElement>("#termsCheck");
       if (!termsCheck?.checked) {
-        window.alert("Please agree to the Terms of Service and Privacy Policy.");
+        formStatus.textContent = "Please agree to the Terms of Service and Privacy Policy.";
         return;
       }
-      if (successOverlay) {
-        successOverlay.classList.add("active");
+      if (!frontFile || !selfieTaken || !passwordField) {
+        formStatus.textContent = "Complete the valid ID, selfie, and password fields before registering.";
+        return;
+      }
+
+      const value = (id: string) => root.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`#${id}`)?.value ?? "";
+      formStatus.textContent = "Creating your resident account…";
+      try {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstName: value("firstName"),
+            lastName: value("lastName"),
+            email: value("email"),
+            phone: value("phone"),
+            municipality: value("municipality"),
+            barangay: value("barangay"),
+            address: value("address"),
+            username: value("username"),
+            password: passwordField.value,
+            frontDocumentName: frontFile.name,
+            backDocumentName: backFile?.name,
+            selfieCaptured: selfieTaken,
+            termsAccepted: true,
+          }),
+        });
+        const result = await response.json() as { error?: string };
+        if (!response.ok) {
+          formStatus.textContent = result.error ?? "Unable to create the resident account.";
+          return;
+        }
+        if (successOverlay) successOverlay.classList.add("active");
+        window.setTimeout(() => window.location.assign("/resident"), 700);
+      } catch {
+        formStatus.textContent = "Unable to reach the registration service. Please try again.";
       }
     };
 
@@ -474,11 +574,15 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       passwordField?.removeEventListener("input", handlePasswordInput);
       form?.removeEventListener("submit", handleSubmit);
       googleBtn?.removeEventListener("click", handleGoogleSignup);
+      formStatus.remove();
       fileFrontInput?.removeEventListener("change", handleFrontFileChange);
       fileBackInput?.removeEventListener("change", handleBackFileChange);
       dropzoneFront?.removeEventListener("click", handleDropzoneClick);
       dropzoneBack?.removeEventListener("click", handleDropzoneClick);
       selfieCapture?.removeEventListener("click", handleSelfieClick);
+      captureSelfieBtn?.removeEventListener("click", handleCaptureSelfie);
+      cancelSelfieBtn?.removeEventListener("click", stopSelfieCamera);
+      stopSelfieCamera();
       cleanupDragFront?.();
       cleanupDragBack?.();
     };

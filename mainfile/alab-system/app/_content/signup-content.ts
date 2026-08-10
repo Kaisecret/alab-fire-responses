@@ -870,6 +870,9 @@ export const signupStyles = `
             transition: all 0.2s ease;
             background: #fafbfc;
             min-height: 4rem;
+            width: 100%;
+            font: inherit;
+            text-align: left;
         }
 
         .selfie-capture-area:hover {
@@ -929,6 +932,50 @@ export const signupStyles = `
             display: flex;
             align-items: center;
             gap: 0.3rem;
+        }
+
+        .selfie-camera-panel {
+            display: none;
+            margin-top: 0.8rem;
+            gap: 0.7rem;
+        }
+
+        .selfie-camera-panel.active {
+            display: grid;
+        }
+
+        .selfie-camera-panel video {
+            width: 100%;
+            max-height: 17rem;
+            object-fit: cover;
+            border-radius: 10px;
+            background: #111827;
+        }
+
+        .selfie-camera-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.6rem;
+        }
+
+        .selfie-camera-actions button {
+            border: 0;
+            border-radius: 8px;
+            padding: 0.65rem 0.9rem;
+            font: inherit;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .capture-selfie-btn {
+            background: var(--primary-red);
+            color: #ffffff;
+        }
+
+        .cancel-selfie-btn {
+            background: #e2e8f0;
+            color: #334155;
         }
 
         /* Responsive */
@@ -1228,7 +1275,7 @@ export const signupMarkup = `<main class="signup-container">
                             </div>
                             <span class="upload-title">Take Selfie</span>
                         </div>
-                        <div class="selfie-capture-area" id="selfieCapture">
+                        <button type="button" class="selfie-capture-area" id="selfieCapture">
                             <div class="camera-icon-circle">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
@@ -1238,6 +1285,13 @@ export const signupMarkup = `<main class="signup-container">
                             <div class="selfie-text">
                                 <span class="selfie-main">Click to open camera and take a selfie</span>
                                 <span class="selfie-hint">Ensure your face is clearly visible</span>
+                            </div>
+                        </button>
+                        <div class="selfie-camera-panel" id="selfieCameraPanel">
+                            <video id="selfieVideo" autoplay playsinline muted></video>
+                            <div class="selfie-camera-actions">
+                                <button type="button" class="cancel-selfie-btn" id="cancelSelfie">Cancel</button>
+                                <button type="button" class="capture-selfie-btn" id="captureSelfie">Capture Selfie</button>
                             </div>
                         </div>
                     </div>
