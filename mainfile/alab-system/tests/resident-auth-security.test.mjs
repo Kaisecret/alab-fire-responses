@@ -41,9 +41,9 @@ test("resident login shows a clear popup for incorrect credentials", () => {
   assert.match(loginPage, /width:min\(94vw,34rem\)/);
 });
 
-test("middleware redirects unauthenticated visitors away from protected resident routes", () => {
-  assert.equal(existsSync(join(appRoot, "middleware.ts")), true);
-  const middleware = source("middleware.ts");
+test("proxy redirects unauthenticated visitors away from protected resident routes", () => {
+  assert.equal(existsSync(join(appRoot, "proxy.ts")), true);
+  const middleware = source("proxy.ts");
 
   assert.match(middleware, /\/resident\/:path\*/);
   assert.match(middleware, /\/resident\/login/);

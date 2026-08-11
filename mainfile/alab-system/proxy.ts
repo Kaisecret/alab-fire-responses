@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { updateSupabaseSession } from "./utils/supabase/middleware";
+
 const SESSION_COOKIE = "alab_resident_session";
 
 function base64UrlToBytes(value: string) {
@@ -32,15 +34,18 @@ async function verifyResidentSession(token: string | undefined) {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  const supabaseResponse = await updateSupabaseSession(request);
   const path = request.nextUrl.pathname;
-  if (path === "/resident/login" || path === "/resident/signup") return NextResponse.next();
-  if (await verifyResidentSession(request.cookies.get(SESSION_COOKIE)?.value)) return NextResponse.next();
+  if (path === "/resident/login" || path === "/resident/signup") return supabaseResponse;
+  if (await verifyResidentSession(request.cookies.get(SESSION_COOKIE)?.value)) return supabaseResponse;
 
   const loginUrl = request.nextUrl.clone();
   loginUrl.pathname = "/resident/login";
   loginUrl.searchParams.set("next", path);
-  return NextResponse.redirect(loginUrl);
+  const redirectResponse = NextResponse.redirect(loginUrl);
+  supabaseResponse.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+  return redirectResponse;
 }
 
 export const config = { matcher: ["/resident/:path*"] };
