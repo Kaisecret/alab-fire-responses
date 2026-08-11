@@ -31,6 +31,21 @@ test("resident login has a five-attempt limit and writes a secure session cookie
   assert.match(session, /sameSite:\s*"lax"/);
 });
 
+test("resident logout clears the secure session cookie and redirects to login", () => {
+  const logoutPath = join(appRoot, "app", "api", "auth", "logout", "route.ts");
+  assert.equal(existsSync(logoutPath), true, "logout route is missing");
+  const logout = readFileSync(logoutPath, "utf8");
+  const residentLayout = source("app/resident/layout.tsx");
+  const profile = source("app/_content/resident-profile-content.ts");
+
+  assert.match(logout, /export async function POST/);
+  assert.match(logout, /NextResponse\.redirect/);
+  assert.match(logout, /RESIDENT_SESSION_COOKIE/);
+  assert.match(logout, /maxAge:\s*0/);
+  assert.match(residentLayout, /action="\/api\/auth\/logout"/);
+  assert.match(profile, /action="\/api\/auth\/logout"/);
+});
+
 test("resident login shows a clear popup for incorrect credentials", () => {
   const loginPage = source("app/_components/login-page.tsx");
 

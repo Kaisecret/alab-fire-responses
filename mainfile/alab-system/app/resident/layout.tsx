@@ -174,6 +174,11 @@ const layoutStyles = `
   .rl-dropdown-divider { height: 1px; background-color: #e2e8f0; margin: 0.5rem 0; }
   .rl-dropdown-item.rl-logout { color: #d91b10; }
   .rl-dropdown-item.rl-logout .rl-dropdown-icon { color: #d91b10; }
+  .rl-logout-form { margin: 0; }
+  .rl-logout-button {
+    width: 100%; border: 0; background: transparent; cursor: pointer;
+    font-family: inherit; text-align: left;
+  }
 
   /* ==================== MOBILE HEADER ==================== */
   .rl-mobile-header {
@@ -511,10 +516,12 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
                   Help Center
                 </a>
                 <div className="rl-dropdown-divider" />
-                <a href="/" className="rl-dropdown-item rl-logout">
+                <form action="/api/auth/logout" method="post" className="rl-logout-form">
+                  <button type="submit" className="rl-dropdown-item rl-logout rl-logout-button">
                   <svg className="rl-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
                   Logout
-                </a>
+                  </button>
+                </form>
               </div>
             </div>
           </div>

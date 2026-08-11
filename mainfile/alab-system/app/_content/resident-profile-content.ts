@@ -187,6 +187,11 @@ export const profileStyles = `
     }
     .logout-text { color: var(--primary-red); }
     .logout-text svg { color: var(--primary-red); }
+    .settings-logout-form { margin: 0; }
+    .settings-logout-button {
+        width: 100%; border: 0; background: transparent; cursor: pointer;
+        font-family: inherit; text-align: left;
+    }
 
     /* ==================== MAIN CONTENT GRID ==================== */
     .profile-content-grid {
@@ -826,9 +831,11 @@ export const profileMarkup = `
                                     <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Privacy Settings</div>
                                     <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                                 </a>
-                                <a href="#" class="settings-item logout-text">
+                                <form action="/api/auth/logout" method="post" class="settings-logout-form">
+                                  <button type="submit" class="settings-item logout-text settings-logout-button">
                                     <div class="settings-item-left" style="color:var(--primary-red)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary-red)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Logout</div>
-                                </a>
+                                  </button>
+                                </form>
                             </div>
                         </div>
 
