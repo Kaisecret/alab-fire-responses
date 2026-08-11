@@ -46,11 +46,15 @@ test("resident logout clears the secure session cookie and redirects to login", 
   assert.match(profile, /action="\/api\/auth\/logout"/);
 });
 
-test("resident logout asks for confirmation before ending the session", () => {
+test("resident logout uses an accessible branded confirmation dialog before ending the session", () => {
   const residentLayout = source("app/resident/layout.tsx");
 
-  assert.match(residentLayout, /window\.confirm\("Are you sure you want to log out\?"\)/);
-  assert.match(residentLayout, /onSubmitCapture=\{confirmResidentLogout\}/);
+  assert.match(residentLayout, /useState/);
+  assert.match(residentLayout, /role="alertdialog"/);
+  assert.match(residentLayout, /aria-modal="true"/);
+  assert.match(residentLayout, /id="residentLogoutDialog"/);
+  assert.match(residentLayout, /onSubmitCapture=\{requestLogoutConfirmation\}/);
+  assert.match(residentLayout, /current\?\.submit\(\)/);
   assert.match(residentLayout, /event\.preventDefault\(\)/);
 });
 

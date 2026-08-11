@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import type { FormEvent, ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 /* ─────────────────────────────────────────────
    Shared Resident Layout
@@ -178,6 +178,40 @@ const layoutStyles = `
   .rl-logout-button {
     width: 100%; border: 0; background: transparent; cursor: pointer;
     font-family: inherit; text-align: left;
+  }
+
+  .resident-logout-backdrop {
+    position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center;
+    padding: 1.25rem; background: rgba(15, 23, 42, 0.62); backdrop-filter: blur(6px);
+    animation: resident-logout-fade-in 0.18s ease-out;
+  }
+  .resident-logout-dialog {
+    width: min(100%, 26rem); padding: 2rem; border-radius: 1.35rem;
+    background: #ffffff; box-shadow: 0 1.5rem 4.5rem rgba(15, 23, 42, 0.32);
+    text-align: center; animation: resident-logout-dialog-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .resident-logout-icon {
+    width: 3.65rem; height: 3.65rem; margin: 0 auto 1.1rem; border-radius: 50%;
+    display: grid; place-items: center; background: #fff1f2; color: #d91b10;
+  }
+  .resident-logout-icon svg { width: 1.85rem; height: 1.85rem; }
+  .resident-logout-title { margin: 0; color: #1e293b; font-size: 1.38rem; font-weight: 800; letter-spacing: -0.02em; }
+  .resident-logout-copy { margin: 0.6rem auto 1.5rem; max-width: 20rem; color: #64748b; font-size: 0.94rem; line-height: 1.55; }
+  .resident-logout-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+  .resident-logout-action {
+    min-height: 2.75rem; border-radius: 0.75rem; padding: 0.65rem 0.8rem; cursor: pointer;
+    font: inherit; font-size: 0.9rem; font-weight: 750; transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+  }
+  .resident-logout-action:hover { transform: translateY(-1px); }
+  .resident-logout-cancel { border: 1px solid #cbd5e1; background: #ffffff; color: #334155; }
+  .resident-logout-cancel:hover { background: #f8fafc; }
+  .resident-logout-confirm { border: 1px solid #c81e12; background: #d91b10; color: #ffffff; box-shadow: 0 0.5rem 1rem rgba(217, 27, 16, 0.2); }
+  .resident-logout-confirm:hover { background: #b91c1c; box-shadow: 0 0.7rem 1.35rem rgba(217, 27, 16, 0.3); }
+  @keyframes resident-logout-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes resident-logout-dialog-in { from { opacity: 0; transform: translateY(0.6rem) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @media (prefers-reduced-motion: reduce) {
+    .resident-logout-backdrop, .resident-logout-dialog { animation: none; }
+    .resident-logout-action { transition: none; }
   }
 
   /* ==================== MOBILE HEADER ==================== */
@@ -435,12 +469,29 @@ function isActive(pathname: string, href: string): boolean {
 
 export default function ResidentLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const logoutFormRef = useRef<HTMLFormElement | null>(null);
+  const cancelLogoutButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const confirmResidentLogout = (event: FormEvent<HTMLDivElement>) => {
+  useEffect(() => {
+    if (!isLogoutDialogOpen) return;
+    cancelLogoutButtonRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsLogoutDialogOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isLogoutDialogOpen]);
+
+  const requestLogoutConfirmation = (event: FormEvent<HTMLDivElement>) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement) || form.getAttribute("action") !== "/api/auth/logout") return;
-    if (!window.confirm("Are you sure you want to log out?")) event.preventDefault();
+    event.preventDefault();
+    logoutFormRef.current = form;
+    setIsLogoutDialogOpen(true);
   };
+
+  const confirmLogout = () => logoutFormRef.current?.submit();
 
   /* Don't show shared nav on login/signup */
   const isAuth = pathname.startsWith("/resident/login") || pathname.startsWith("/resident/signup");
@@ -452,7 +503,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <style>{layoutStyles}</style>
-      <div className="resident-shell" onSubmitCapture={confirmResidentLogout}>
+      <div className="resident-shell" onSubmitCapture={requestLogoutConfirmation}>
         {/* ===== MOBILE HEADER ===== */}
         <header className="rl-mobile-header">
           <div className="rl-m-left">
@@ -562,6 +613,29 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
           </a>
         </nav>
       </div>
+      {isLogoutDialogOpen && (
+        <div className="resident-logout-backdrop" role="presentation" onMouseDown={() => setIsLogoutDialogOpen(false)}>
+          <section
+            id="residentLogoutDialog"
+            className="resident-logout-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="residentLogoutTitle"
+            aria-describedby="residentLogoutDescription"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="resident-logout-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 17l5-5-5-5" /><path d="M15 12H3" /><path d="M21 19V5a2 2 0 0 0-2-2h-6" /></svg>
+            </div>
+            <h2 id="residentLogoutTitle" className="resident-logout-title">Log out?</h2>
+            <p id="residentLogoutDescription" className="resident-logout-copy">You will need to sign in again to access your resident account.</p>
+            <div className="resident-logout-actions">
+              <button ref={cancelLogoutButtonRef} type="button" className="resident-logout-action resident-logout-cancel" onClick={() => setIsLogoutDialogOpen(false)}>Cancel</button>
+              <button type="button" className="resident-logout-action resident-logout-confirm" onClick={confirmLogout}>Yes, log out</button>
+            </div>
+          </section>
+        </div>
+      )}
     </>
   );
 }
