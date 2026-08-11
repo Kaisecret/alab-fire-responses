@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 
 /* ─────────────────────────────────────────────
    Shared Resident Layout
@@ -436,6 +436,12 @@ function isActive(pathname: string, href: string): boolean {
 export default function ResidentLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
+  const confirmResidentLogout = (event: FormEvent<HTMLDivElement>) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || form.getAttribute("action") !== "/api/auth/logout") return;
+    if (!window.confirm("Are you sure you want to log out?")) event.preventDefault();
+  };
+
   /* Don't show shared nav on login/signup */
   const isAuth = pathname.startsWith("/resident/login") || pathname.startsWith("/resident/signup");
   if (isAuth) return <>{children}</>;
@@ -446,7 +452,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <style>{layoutStyles}</style>
-      <div className="resident-shell">
+      <div className="resident-shell" onSubmitCapture={confirmResidentLogout}>
         {/* ===== MOBILE HEADER ===== */}
         <header className="rl-mobile-header">
           <div className="rl-m-left">

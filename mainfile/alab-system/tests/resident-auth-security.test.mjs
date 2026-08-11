@@ -46,6 +46,14 @@ test("resident logout clears the secure session cookie and redirects to login", 
   assert.match(profile, /action="\/api\/auth\/logout"/);
 });
 
+test("resident logout asks for confirmation before ending the session", () => {
+  const residentLayout = source("app/resident/layout.tsx");
+
+  assert.match(residentLayout, /window\.confirm\("Are you sure you want to log out\?"\)/);
+  assert.match(residentLayout, /onSubmitCapture=\{confirmResidentLogout\}/);
+  assert.match(residentLayout, /event\.preventDefault\(\)/);
+});
+
 test("resident login shows a clear popup for incorrect credentials", () => {
   const loginPage = source("app/_components/login-page.tsx");
 
