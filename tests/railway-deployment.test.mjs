@@ -24,7 +24,7 @@ test("the repository root exposes Railway build and start commands", async () =>
   assert.equal(packageJson.workspaces, undefined);
   assert.equal(
     packageJson.scripts.postinstall,
-    "npm ci --prefix mainfile/alab-system",
+    "npm install --prefix mainfile/alab-system",
   );
   assert.equal(packageJson.scripts.dev, "npm run dev --prefix mainfile/alab-system");
   assert.equal(packageJson.scripts.build, "npm run build --prefix mainfile/alab-system");
@@ -62,6 +62,16 @@ test("the standalone app lockfile installs Next beside the app", async () => {
   );
 });
 
+test("Railway postinstall avoids strict nested ci for platform optional packages", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8"));
+
+  assert.equal(packageJson.scripts.postinstall.includes("npm ci"), false);
+  assert.equal(
+    packageJson.scripts.postinstall,
+    `npm install --prefix ${APP_DIRECTORY}`,
+  );
+});
+
 test("the production launcher forwards Railway's host and port", async () => {
   const launcher = await readFile("scripts/start.mjs", "utf8");
 
@@ -79,5 +89,8 @@ test("Railway configuration uses the root commands and health check", async () =
   assert.equal(railway.build.builder, "RAILPACK");
   assert.equal(railway.build.buildCommand, "npm run build");
   assert.equal(railway.deploy.startCommand, "npm start");
-  assert.equal(railway.deploy.healthcheckPath, "/");
+  assert.equal(
+    railway.deploy.healthcheckPath,
+    "/api/health/database",
+  );
 });
