@@ -14,14 +14,14 @@ This is preferred over creating the account first because unverified accounts an
 
 1. The resident completes the existing profile, locality, credential, document-name, selfie, and terms fields.
 2. `POST /api/auth/register/start` validates the submitted data and rejects an existing email, username, or phone before an SMS is sent.
-3. The server creates a random six-digit OTP, stores only an HMAC hash with the pending registration payload in `registration_otps`, and sends the OTP with PhilSMS.
+3. The server creates a random six-digit OTP, hashes the password before persisting the pending registration payload, stores only an HMAC hash of the OTP in `registration_otps`, and sends the OTP with PhilSMS.
 4. The UI switches to a branded OTP screen with six accessible digit inputs, a five-minute countdown, a 60-second resend cooldown, and an edit-number/back action.
 5. `POST /api/auth/register/verify` validates the OTP. A valid, unused, unexpired OTP creates all existing resident records in one transaction, consumes the OTP, issues the existing protected session cookie, and returns success.
 6. Invalid verification attempts are counted. The code becomes unusable after five failed attempts. An expired/consumed code cannot create an account.
 
 ## Data model
 
-Add `registration_otps` with a UUID primary key, normalized phone/email/username, a JSONB pending-registration payload, OTP hash, expiry timestamp, attempt count, consumed timestamp, send timestamp, and timestamps. A unique phone constraint is not used because retry histories must be retained briefly; an index supports active lookup by normalized phone and expiry.
+Add `registration_otps` with a UUID primary key, normalized phone/email/username, a JSONB pending-registration payload containing a password hash but never a plaintext password, OTP hash, expiry timestamp, attempt count, consumed timestamp, send timestamp, and timestamps. A unique phone constraint is not used because retry histories must be retained briefly; an index supports active lookup by normalized phone and expiry.
 
 The existing account tables remain unchanged. Pending data has a five-minute lifetime and is deleted by the server when it is expired or superseded.
 

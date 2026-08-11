@@ -9,6 +9,7 @@ import { createResidentSession, residentSessionCookie, RESIDENT_SESSION_COOKIE }
 export const runtime = "nodejs";
 
 type RegistrationPayload = {
+  verificationId?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -18,6 +19,7 @@ type RegistrationPayload = {
   address?: string;
   username?: string;
   password?: string;
+  passwordHash?: string;
   frontDocumentName?: string;
   backDocumentName?: string;
   selfieCaptured?: boolean;
@@ -34,6 +36,20 @@ export async function POST(request: Request) {
     input = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid registration data." }, { status: 400 });
+  }
+
+  const verificationId = clean(input.verificationId, 36);
+  if (!verificationId) return NextResponse.json({ error: "Verify your phone number before creating an account." }, { status: 400 });
+  let pendingPasswordHash = "";
+  try {
+    const pending = await withTransaction(async (client) => client.query<{ payload: RegistrationPayload & { passwordHash?: string } }>(
+      "select payload from registration_otps where id = $1 and consumed_at is not null and expires_at > now()", [verificationId],
+    ));
+    if (!pending.rowCount) return NextResponse.json({ error: "Your verification has expired. Please request a new code." }, { status: 400 });
+    input = pending.rows[0].payload;
+    pendingPasswordHash = input.passwordHash ?? "";
+  } catch {
+    return NextResponse.json({ error: "Unable to confirm phone verification." }, { status: 500 });
   }
 
   const firstName = clean(input.firstName, 50);
@@ -54,7 +70,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const passwordHash = await hashPassword(password);
+    const passwordHash = pendingPasswordHash || await hashPassword(password);
     const user = await withTransaction(async (client) => {
       const locality = await client.query<{ municipality_id: string; barangay_id: string }>(
         `SELECT m.id AS municipality_id, b.id AS barangay_id

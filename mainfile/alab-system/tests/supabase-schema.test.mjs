@@ -56,3 +56,14 @@ test("Supabase phone validation accepts Philippine numbers with or without a lea
   assert.match(repair, /drop constraint if exists users_phone_check/i);
   assert.ok(repair.includes("phone ~ '^\\+?[0-9]{10,15}$'"));
 });
+
+test("Supabase schema stores pending registration OTPs securely", () => {
+  const migrationPath = join(migrationsDirectory, "20260812090000_add_registration_otps.sql");
+  assert.equal(existsSync(migrationPath), true, "registration OTP migration is missing");
+  const migration = readFileSync(migrationPath, "utf8");
+
+  assert.match(migration, /create table public\.registration_otps/i);
+  assert.match(migration, /code_hash text not null/i);
+  assert.match(migration, /attempt_count integer not null default 0/i);
+  assert.match(migration, /enable row level security/i);
+});

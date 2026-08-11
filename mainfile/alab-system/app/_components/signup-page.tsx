@@ -613,6 +613,35 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       return true;
     };
 
+    const showOtpPanel = (verificationId: string, phone: string) => {
+      const panel = root.ownerDocument.createElement("div");
+      panel.id = "otpVerificationPanel";
+      panel.innerHTML = `<div class="otp-card"><div class="otp-icon">✦</div><h2>Verify your phone</h2><p>We sent a 6-digit code to <strong>${phone.replace(/.(?=.{4})/g, "•")}</strong></p><div class="otp-digits">${Array.from({ length: 6 }, (_, i) => `<input aria-label="Verification code digit ${i + 1}" inputmode="numeric" maxlength="1">`).join("")}</div><p class="otp-status" role="alert"></p><button type="button" class="otp-verify">Verify & Create Account</button><button type="button" class="otp-back">Back and edit details</button></div>`;
+      panel.style.cssText = "position:fixed;inset:0;z-index:3000;display:grid;place-items:center;padding:1rem;background:rgba(15,23,42,.66);backdrop-filter:blur(7px)";
+      const card = panel.querySelector<HTMLElement>(".otp-card")!;
+      card.style.cssText = "width:min(94vw,28rem);padding:2rem;border-radius:1.5rem;background:#fff;text-align:center;box-shadow:0 2rem 5rem rgba(0,0,0,.3);font-family:inherit";
+      const inputs = Array.from(panel.querySelectorAll<HTMLInputElement>("input"));
+      inputs.forEach((input) => input.style.cssText = "width:2.5rem;height:3.2rem;margin:.18rem;border:2px solid #fecaca;border-radius:.75rem;text-align:center;font-size:1.3rem;font-weight:800;outline-color:#dc2626");
+      panel.querySelector<HTMLButtonElement>(".otp-verify")!.style.cssText = "width:100%;border:0;border-radius:.8rem;padding:1rem;background:linear-gradient(135deg,#ef2d1d,#b91c1c);color:#fff;font-weight:800;cursor:pointer";
+      panel.querySelector<HTMLButtonElement>(".otp-back")!.style.cssText = "margin-top:.8rem;border:0;background:none;color:#b91c1c;font-weight:700;cursor:pointer";
+      inputs.forEach((input, index) => input.addEventListener("input", () => { input.value = input.value.replace(/\D/g, "").slice(0, 1); if (input.value) inputs[index + 1]?.focus(); }));
+      const status = panel.querySelector<HTMLElement>(".otp-status")!;
+      panel.querySelector<HTMLButtonElement>(".otp-back")!.onclick = () => panel.remove();
+      panel.querySelector<HTMLButtonElement>(".otp-verify")!.onclick = async () => {
+        const code = inputs.map((input) => input.value).join("");
+        if (code.length !== 6) { status.textContent = "Enter all six digits."; return; }
+        status.textContent = "Verifying…";
+        const verify = await fetch("/api/auth/register/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verificationId, code }) });
+        const result = await verify.json() as { error?: string };
+        if (!verify.ok) { status.textContent = result.error ?? "Unable to verify the code."; return; }
+        const register = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verificationId }) });
+        if (!register.ok) { const failed = await register.json() as { error?: string }; status.textContent = failed.error ?? "Unable to create your account."; return; }
+        window.location.assign("/resident");
+      };
+      root.ownerDocument.body.appendChild(panel);
+      inputs[0]?.focus();
+    };
+
     const handleSubmit = async (e: SubmitEvent) => {
       e.preventDefault();
       formStatus.textContent = "";
@@ -620,9 +649,9 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       if (!passwordField || !frontFile) return;
 
       const value = (id: string) => root.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`#${id}`)?.value ?? "";
-      formStatus.textContent = "Creating your resident account…";
+      formStatus.textContent = "Sending your verification code…";
       try {
-        const response = await fetch("/api/auth/register", {
+        const response = await fetch("/api/auth/register/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -641,13 +670,14 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
             termsAccepted: true,
           }),
         });
-        const result = await response.json() as { error?: string };
+        const result = await response.json() as { error?: string; verificationId?: string };
         if (!response.ok) {
           formStatus.textContent = result.error ?? "Unable to create the resident account.";
           return;
         }
-        if (successOverlay) successOverlay.classList.add("active");
-        window.setTimeout(() => window.location.assign("/resident"), 700);
+        if (!result.verificationId) { formStatus.textContent = "Unable to start phone verification."; return; }
+        formStatus.textContent = "";
+        showOtpPanel(result.verificationId, value("phone"));
       } catch {
         formStatus.textContent = "Unable to reach the registration service. Please try again.";
       }
