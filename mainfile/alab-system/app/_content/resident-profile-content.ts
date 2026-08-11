@@ -28,111 +28,6 @@ export const profileStyles = `
         padding-bottom: 2rem;
     }
 
-    /* ==================== GLOBAL HEADER (Desktop) ==================== */
-    .top-header {
-        background: var(--card-bg);
-        border-bottom: 1px solid var(--border-color);
-        padding: 0.4rem 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        position: sticky;
-        top: 0;
-        z-index: 50;
-    }
-    .header-left { display: flex; align-items: center; gap: 1rem; }
-    .brand-logo { height: 6rem; width: auto; }
-    .header-nav { display: flex; align-items: center; gap: 2.5rem; }
-    .nav-item {
-        display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
-        color: var(--text-muted); text-decoration: none; font-size: 0.8rem; font-weight: 600; transition: color 0.2s;
-    }
-    .nav-item:hover { color: var(--primary-red); }
-    .nav-item.active { color: var(--primary-red); }
-    .nav-item.active::after {
-        content: ''; display: block; width: 100%; height: 3px;
-        background: var(--primary-red); border-radius: 3px 3px 0 0;
-        position: absolute; bottom: 0;
-    }
-    .nav-item-wrapper {
-        position: relative; display: flex; flex-direction: column;
-        align-items: center; height: 100%; padding: 0.5rem 0;
-    }
-    .nav-icon { width: 1.5rem; height: 1.5rem; }
-    .nav-item.report-fire-nav { color: var(--primary-red); }
-    .nav-item.report-fire-nav .nav-icon {
-        background: var(--primary-red); color: white; border-radius: 50%;
-        padding: 0.35rem; width: 2.2rem; height: 2.2rem;
-    }
-    .fire-logo-tint { filter: brightness(0) invert(1); object-fit: contain; width: 100%; height: 100%; }
-    .header-right { display: flex; align-items: center; }
-    .notification-btn, .lang-btn {
-        background: none; border: none; position: relative; cursor: pointer;
-        color: var(--text-dark); padding: 0.5rem; display: flex; align-items: center;
-        gap: 0.3rem; font-weight: 600; font-size: 0.95rem;
-    }
-    .notification-btn:hover, .lang-btn:hover { color: var(--primary-red); }
-    .notification-badge {
-        position: absolute; top: 0; right: 0; background: var(--primary-red);
-        color: white; font-size: 0.65rem; font-weight: 700; width: 1.1rem; height: 1.1rem;
-        border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        border: 2px solid var(--card-bg);
-    }
-
-    /* ==================== HEADER PROFILE DROPDOWN ==================== */
-    .header-profile-menu {
-        position: relative;
-        margin-left: 0.5rem;
-    }
-    .header-profile-btn {
-        background: none; border: none; cursor: pointer;
-        padding: 0.2rem; display: flex; align-items: center; justify-content: center;
-        border-radius: 50%; border: 2px solid transparent; transition: all 0.2s;
-    }
-    .header-profile-btn img {
-        width: 2.2rem; height: 2.2rem; border-radius: 50%; object-fit: cover;
-    }
-    .header-profile-btn:hover, .header-profile-menu:focus-within .header-profile-btn {
-        border-color: var(--primary-red);
-    }
-    .profile-dropdown {
-        position: absolute; top: calc(100% + 0.5rem); right: 0;
-        background: var(--card-bg); border: 1px solid var(--border-color);
-        border-radius: 0.8rem; box-shadow: var(--shadow-md); width: 230px;
-        opacity: 0; visibility: hidden; transform: translateY(-10px);
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        z-index: 100;
-        padding: 0.5rem 0;
-    }
-    .header-profile-menu:focus-within .profile-dropdown,
-    .header-profile-menu:hover .profile-dropdown {
-        opacity: 1; visibility: visible; transform: translateY(0);
-    }
-    .profile-dropdown-item {
-        display: flex; align-items: center; gap: 0.8rem;
-        padding: 0.7rem 1.2rem; text-decoration: none;
-        color: var(--text-dark); font-size: 0.95rem; font-weight: 500;
-        transition: background-color 0.2s, color 0.2s;
-    }
-    .profile-dropdown-item:hover {
-        background-color: #f1f5f9;
-    }
-    .profile-dropdown-icon {
-        width: 1.2rem; height: 1.2rem; color: var(--text-muted);
-    }
-    .profile-dropdown-divider {
-        height: 1px; background-color: var(--border-color);
-        margin: 0.5rem 0;
-    }
-    .profile-dropdown-item.logout-item {
-        color: var(--primary-red);
-    }
-    .profile-dropdown-item.logout-item .profile-dropdown-icon {
-        color: var(--primary-red);
-    }
-    .profile-dropdown-item.logout-item:hover {
-        background-color: var(--primary-red-light);
-    }
 
     /* ==================== UTILITIES ==================== */
     .desktop-only { display: block; }
@@ -597,38 +492,11 @@ export const profileStyles = `
 
     /* ==================== MOBILE RESPONSIVE ==================== */
     /* Mobile nav */
-    .mobile-bottom-nav { display: none; }
 
     @media (max-width: 950px) {
         /* Hide desktop components */
         .desktop-only { display: none !important; }
-        .mobile-only { display: flex !important; } /* Use flex generally for mobile-only items if needed */
-        div.mobile-only { display: block !important; }
-        
-        .top-header { display: none; }
-        
-        /* Mobile Top Header */
-        .mobile-top-header {
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            background: white;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .mobile-page-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin: 0;
-        }
-        .mobile-notif-btn {
-            position: absolute;
-            right: 1rem;
-            padding: 0.5rem;
-        }
+        .mobile-only { display: block !important; }
         
         /* Layout Adjustments */
         .profile-main-layout {
@@ -644,8 +512,9 @@ export const profileStyles = `
         .profile-header-card {
             flex-direction: row;
             text-align: left;
-            padding: 0.8rem;
-            gap: 0.6rem;
+            padding: 0.9rem 1rem;
+            gap: 0.8rem;
+            align-items: center;
         }
         .profile-header-card::before {
             width: 130px;
@@ -654,8 +523,8 @@ export const profileStyles = `
             opacity: 0.04;
         }
         .profile-avatar {
-            width: 4rem !important;
-            height: 4rem !important;
+            width: 3.8rem !important;
+            height: 3.8rem !important;
         }
         .profile-header-info {
             display: flex;
@@ -664,27 +533,34 @@ export const profileStyles = `
             min-width: 0; /* allows text truncation if needed */
         }
         .profile-name-row h2 {
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            margin: 0;
         }
         .profile-verified-status {
             font-size: 0.75rem;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.25rem;
+            margin-top: 0.1rem;
         }
         .profile-location-text {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.3rem;
-            font-size: 0.75rem;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 0.6rem !important;
+            font-size: 0.78rem;
             color: var(--text-muted);
             line-height: 1.2;
             white-space: nowrap;
         }
+        .profile-location-text span {
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
         .profile-location-text svg {
-            width: 0.9rem; height: 0.9rem; color: var(--primary-red); margin-right: 0.2rem;
+            width: 0.9rem; height: 0.9rem; color: var(--primary-red); margin-right: 0.1rem;
             vertical-align: middle;
         }
         
@@ -702,27 +578,35 @@ export const profileStyles = `
         .mobile-dashboard-row {
             display: flex !important;
             flex-direction: column;
-            gap: 0.8rem;
+            gap: 1rem;
             margin-top: 0.5rem;
         }
         
-        .settings-menu-card { padding: 0.5rem 0.8rem !important; margin: 0; display: flex; flex-direction: column; justify-content: center; }
-        .settings-item { padding: 0.5rem 0 !important; }
-        .settings-item-left { font-size: 0.75rem !important; gap: 0.3rem !important; }
-        .settings-item-left svg { width: 0.9rem !important; height: 0.9rem !important; }
-        .settings-item .chevron-right { width: 0.9rem !important; height: 0.9rem !important; }
-        .settings-menu-card .profile-card-title { font-size: 0.85rem !important; margin-bottom: 0.5rem; justify-content: flex-start; }
-
-        /* Mobile Account Status */
-        .mobile-account-status {
-            text-align: center;
-            padding: 0.8rem !important;
+        .settings-menu-card {
+            padding: 1.25rem 1.25rem !important;
             margin: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            border-radius: 1.2rem !important;
         }
-        .mobile-account-status .profile-card-title { justify-content: center; margin-bottom: 0.8rem; font-size: 0.85rem !important; }
+        .settings-item { padding: 0.85rem 0 !important; }
+        .settings-item-left { font-size: 0.95rem !important; font-weight: 600 !important; gap: 0.75rem !important; }
+        .settings-item-left svg { width: 1.25rem !important; height: 1.25rem !important; }
+        .settings-item .chevron-right { width: 1.15rem !important; height: 1.15rem !important; }
+        .settings-menu-card .profile-card-title { font-size: 1.15rem !important; font-weight: 800 !important; margin-bottom: 0.8rem !important; justify-content: flex-start; }
+
+        /* Mobile Account Status */
+        .mobile-account-status {
+            text-align: center;
+            padding: 1.25rem !important;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-radius: 1.2rem !important;
+        }
+        .mobile-account-status .profile-card-title { justify-content: center; margin-bottom: 0.8rem; font-size: 1.05rem !important; font-weight: 800 !important; }
         .status-center {
             display: flex;
             flex-direction: column;
@@ -800,135 +684,17 @@ export const profileStyles = `
         .mobile-fixed-bottom button {
             pointer-events: auto;
         }
-        
-        .mobile-bottom-nav {
-            display: flex;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: white;
-            border-top: 1px solid var(--border-color);
-            padding: 0.8rem 1rem 1.4rem;
-            justify-content: space-between;
-            align-items: flex-end;
-            z-index: 100;
-        }
-        .mobile-nav-item {
-            display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
-            color: var(--text-muted); font-size: 0.8rem; font-weight: 600;
-            text-decoration: none; width: 20%;
-        }
-        .mobile-nav-item.active { color: var(--primary-red); }
-        .mobile-nav-item svg { width: 1.8rem; height: 1.8rem; }
-        .mobile-nav-fab-wrapper {
-            position: relative; width: 20%; display: flex; justify-content: center;
-        }
-        .mobile-nav-fab {
-            position: absolute; bottom: 1rem; background: var(--primary-red);
-            width: 4.8rem; height: 4.8rem; border-radius: 50%; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; padding-bottom: 0.6rem; color: white;
-            box-shadow: 0 4px 10px rgba(212, 20, 11, 0.3); border: 4px solid white; text-decoration: none;
-        }
-        .mobile-nav-fab img { width: 3.2rem; height: 3.2rem; margin-top: 0.3rem; object-fit: contain; filter: brightness(0) invert(1); }
-        .mobile-nav-fab span { font-size: 0.55rem; font-weight: 700; margin-top: -0.8rem; }
     }
 `;
 
 export const profileMarkup = `
     <div class="profile-page-root">
-        <!-- MOBILE TOP HEADER -->
-        <header class="mobile-top-header mobile-only">
-            <h1 class="mobile-page-title">Profile</h1>
-            <button class="notification-btn mobile-notif-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                <span class="notification-badge">1</span>
-            </button>
-        </header>
-
-        <!-- GLOBAL HEADER (Desktop) -->
-        <header class="top-header">
-            <div class="header-left">
-                <img src="/images/Logo.webp" alt="ALAB Logo" class="brand-logo">
-            </div>
-            
-            <div class="header-nav">
-                <div class="nav-item-wrapper">
-                    <a href="/resident" class="nav-item">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-                        Home
-                    </a>
-                </div>
-                <div class="nav-item-wrapper">
-                    <a href="/resident/reports" class="nav-item">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-                        </svg>
-                        Reports
-                    </a>
-                </div>
-                <div class="nav-item-wrapper">
-                    <a href="/resident/report-fire" class="nav-item report-fire-nav">
-                        <div class="nav-icon"><img src="/images/fire logo.webp" alt="Report Fire Logo" class="fire-logo-tint" /></div>
-                        Report Fire
-                    </a>
-                </div>
-                <div class="nav-item-wrapper">
-                    <a href="/resident/guide" class="nav-item">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                        </svg>
-                        Guide
-                    </a>
-                </div>
-            </div>
-
-            <div class="header-right">
-                <button class="notification-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem; height:1.2rem;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                    <span class="notification-badge">3</span>
-                </button>
-                <button class="lang-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem; height:1.2rem; margin-right:0.3rem;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                    EN
-                </button>
-                
-                <div class="header-profile-menu desktop-only">
-                    <button class="header-profile-btn" aria-haspopup="true">
-                        <img src="/images/user_avatar_placeholder.png" alt="Profile" onerror="this.src='https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=1e293b&color=fff&size=150'">
-                    </button>
-                    <div class="profile-dropdown">
-                        <a href="/resident/profile" class="profile-dropdown-item">
-                            <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                            Profile Settings
-                        </a>
-                        <a href="/resident/profile?tab=notifications" class="profile-dropdown-item">
-                            <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                            Notification Settings
-                        </a>
-                        <a href="/resident/profile?tab=emergency" class="profile-dropdown-item">
-                            <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                            Emergency Contacts
-                        </a>
-                        <a href="/resident/guide" class="profile-dropdown-item">
-                            <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                            Help Center
-                        </a>
-                        <div class="profile-dropdown-divider"></div>
-                        <a href="/" class="profile-dropdown-item logout-item">
-                            <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                            Logout
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </header>
 
         <main class="profile-main-layout">
             <!-- HEADER SECTION -->
             <div class="profile-header-card">
                 <div class="profile-avatar-container">
-                    <img src="/images/user_avatar_placeholder.png" alt="Juan Dela Cruz" class="profile-avatar" onerror="this.src='https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=1e293b&color=fff&size=200'">
+                    <img src="https://ui-avatars.com/api/?name=Resident&background=1e293b&color=fff&size=200" alt="Resident Profile" class="profile-avatar">
                     <button class="profile-camera-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     </button>
@@ -1204,29 +970,5 @@ export const profileMarkup = `
         </main>
 
         <!-- Mobile Bottom Nav -->
-        <nav class="mobile-bottom-nav">
-            <a href="/resident" class="mobile-nav-item">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-                Home
-            </a>
-            <a href="/resident/reports" class="mobile-nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                Reports
-            </a>
-            <div class="mobile-nav-fab-wrapper">
-                <a href="/resident/report-fire" class="mobile-nav-fab">
-                    <img src="/images/fire logo.webp" alt="Fire Logo" />
-                    <span>Report Fire</span>
-                </a>
-            </div>
-            <a href="/resident/guide" class="mobile-nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                Guide
-            </a>
-            <a href="/resident/profile" class="mobile-nav-item active">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Profile
-            </a>
-        </nav>
     </div>
 `;

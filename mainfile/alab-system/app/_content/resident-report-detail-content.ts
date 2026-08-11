@@ -18,7 +18,7 @@ export const reportDetailStyles = `
         color: var(--text-dark);
         -webkit-font-smoothing: antialiased;
         min-height: 100vh;
-        padding-bottom: 5rem;
+        padding-bottom: calc(6rem + env(safe-area-inset-bottom));
     }
 
     /* MOBILE HEADER */
@@ -358,38 +358,6 @@ export const reportDetailStyles = `
         font-weight: 500;
     }
 
-    /* BOTTOM NAV */
-    .detail-bottom-nav {
-        display: flex;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background: white;
-        border-top: 1px solid var(--border-color);
-        padding: 0.8rem 1rem 1.4rem;
-        justify-content: space-between;
-        align-items: flex-end;
-        z-index: 100;
-    }
-    .detail-nav-item {
-        display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
-        color: var(--text-muted); font-size: 0.8rem; font-weight: 600;
-        text-decoration: none; width: 20%;
-    }
-    .detail-nav-item.active { color: var(--primary-red); }
-    .detail-nav-item svg { width: 1.8rem; height: 1.8rem; }
-    .detail-nav-fab-wrapper {
-        position: relative; width: 20%; display: flex; justify-content: center;
-    }
-    .detail-nav-fab {
-        position: absolute; bottom: 1rem; background: var(--primary-red);
-        width: 4.8rem; height: 4.8rem; border-radius: 50%; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; padding-bottom: 0.6rem; color: white;
-        box-shadow: 0 4px 10px rgba(212, 20, 11, 0.3); border: 4px solid white; text-decoration: none;
-    }
-    .detail-nav-fab img { width: 3.2rem; height: 3.2rem; margin-top: 0.3rem; object-fit: contain; filter: brightness(0) invert(1); }
-    .detail-nav-fab span { font-size: 0.55rem; font-weight: 700; margin-top: -0.8rem; }
 `;
 
 export const reportDetailMarkup = `
@@ -548,33 +516,5 @@ export const reportDetailMarkup = `
                 </div>
             </div>
         </div>
-
-        <!-- Bottom Navigation -->
-        <nav class="detail-bottom-nav">
-            <a href="/resident" class="detail-nav-item">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-                Home
-            </a>
-            <a href="/resident/reports" class="detail-nav-item active">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-                </svg>
-                Reports
-            </a>
-            <div class="detail-nav-fab-wrapper">
-                <a href="/resident/report-fire" class="detail-nav-fab">
-                    <img src="/images/fire logo.webp" alt="Fire Logo" />
-                    <span>Report Fire</span>
-                </a>
-            </div>
-            <a href="/resident/guide" class="detail-nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                Guide
-            </a>
-            <a href="/resident/profile" class="detail-nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Profile
-            </a>
-        </nav>
     </div>
 `;

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 const root = process.cwd();
+const residentLayout = readFileSync(join(root, "app", "resident", "layout.tsx"), "utf8");
 
 test("resident fire report requests browser location and updates the scoped location card", () => {
   const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
@@ -166,6 +167,23 @@ test("resident location card cannot collapse on mobile", () => {
   assert.match(content, /@media \(max-width: 950px\)[\s\S]*\.location-box\[data-location-card\][\s\S]*min-height:\s*26rem/);
   assert.match(content, /@media \(max-width: 950px\)[\s\S]*\.location-box\[data-location-card\]\s+\.location-details[\s\S]*display:\s*flex/);
   assert.match(content, /@media \(max-width: 950px\)[\s\S]*\.map-preview\[data-location-map-surface\][\s\S]*display:\s*block/);
+});
+
+test("resident mobile nav stays above the map and reserves its bottom space", () => {
+  const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
+
+  assert.match(
+    content,
+    /@media \(max-width: 950px\)[\s\S]*\.report-page-root \{[\s\S]*padding-bottom:\s*calc\(6rem \+ env\(safe-area-inset-bottom\)\)/,
+  );
+  assert.match(
+    content,
+    /\.map-preview\[data-location-map-surface\]\s*\{[\s\S]*?z-index:\s*0;/,
+  );
+  assert.match(
+    residentLayout,
+    /@media \(max-width: 950px\)[\s\S]*\.rl-mobile-nav\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?bottom:\s*0;[\s\S]*?z-index:\s*100;/,
+  );
 });
 
 test("resident report refresh keeps styles and map overlay outside Leaflet-owned DOM", () => {

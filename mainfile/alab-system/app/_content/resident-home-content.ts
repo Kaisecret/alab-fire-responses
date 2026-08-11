@@ -26,209 +26,6 @@ export const homeStyles = `
         min-height: 100vh;
     }
 
-    /* HEADER */
-    .top-header {
-        background: var(--card-bg);
-        border-bottom: 1px solid var(--border-color);
-        padding: 0.4rem 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        position: sticky;
-        top: 0;
-        z-index: 50;
-    }
-
-    .header-left {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .brand-logo {
-        height: 6rem;
-        width: auto;
-    }
-
-    .brand-title {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: var(--text-dark);
-        line-height: 1.2;
-    }
-
-    .brand-subtitle {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        font-weight: 500;
-    }
-
-    .header-nav {
-        display: flex;
-        align-items: center;
-        gap: 2.5rem;
-    }
-
-    .nav-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.3rem;
-        color: var(--text-muted);
-        text-decoration: none;
-        font-size: 0.8rem;
-        font-weight: 600;
-        transition: color 0.2s;
-    }
-
-    .nav-item:hover {
-        color: var(--primary-red);
-    }
-
-    .nav-item.active {
-        color: var(--primary-red);
-    }
-
-    .nav-item.active::after {
-        content: '';
-        display: block;
-        width: 100%;
-        height: 3px;
-        background: var(--primary-red);
-        border-radius: 3px 3px 0 0;
-        position: absolute;
-        bottom: 0;
-    }
-    
-    .nav-item-wrapper {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        height: 100%;
-        padding: 0.5rem 0;
-    }
-
-    .nav-icon {
-        width: 1.5rem;
-        height: 1.5rem;
-    }
-
-    .nav-item.report-fire-nav {
-        color: var(--primary-red);
-    }
-
-    .nav-item.report-fire-nav .nav-icon {
-        background: var(--primary-red);
-        color: white;
-        border-radius: 50%;
-        padding: 0.35rem;
-        width: 2.2rem;
-        height: 2.2rem;
-    }
-
-    .fire-logo-tint {
-        filter: brightness(0) invert(1);
-        object-fit: contain;
-        width: 100%;
-        height: 100%;
-    }
-
-    .header-right {
-        display: flex;
-        align-items: center;
-    }
-
-    .notification-btn, .lang-btn {
-        background: none;
-        border: none;
-        position: relative;
-        cursor: pointer;
-        color: var(--text-dark);
-        padding: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-
-    .notification-btn:hover, .lang-btn:hover {
-        color: var(--primary-red);
-    }
-
-    .notification-badge {
-        position: absolute;
-        top: 0;
-        right: 0;
-        background: var(--primary-red);
-        color: white;
-        font-size: 0.65rem;
-        font-weight: 700;
-        width: 1.1rem;
-        height: 1.1rem;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid var(--card-bg);
-    }
-
-    /* ==================== HEADER PROFILE DROPDOWN ==================== */
-    .header-profile-menu {
-        position: relative;
-        margin-left: 0.5rem;
-    }
-    .header-profile-btn {
-        background: none; border: none; cursor: pointer;
-        padding: 0.2rem; display: flex; align-items: center; justify-content: center;
-        border-radius: 50%; border: 2px solid transparent; transition: all 0.2s;
-    }
-    .header-profile-btn img {
-        width: 2.2rem; height: 2.2rem; border-radius: 50%; object-fit: cover;
-    }
-    .header-profile-btn:hover, .header-profile-menu:focus-within .header-profile-btn {
-        border-color: var(--primary-red);
-    }
-    .profile-dropdown {
-        position: absolute; top: calc(100% + 0.5rem); right: 0;
-        background: var(--card-bg); border: 1px solid var(--border-color);
-        border-radius: 0.8rem; box-shadow: var(--shadow-md); width: 230px;
-        opacity: 0; visibility: hidden; transform: translateY(-10px);
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        z-index: 100;
-        padding: 0.5rem 0;
-    }
-    .header-profile-menu:focus-within .profile-dropdown,
-    .header-profile-menu:hover .profile-dropdown {
-        opacity: 1; visibility: visible; transform: translateY(0);
-    }
-    .profile-dropdown-item {
-        display: flex; align-items: center; gap: 0.8rem;
-        padding: 0.7rem 1.2rem; text-decoration: none;
-        color: var(--text-dark); font-size: 0.95rem; font-weight: 500;
-        transition: background-color 0.2s, color 0.2s;
-    }
-    .profile-dropdown-item:hover {
-        background-color: #f1f5f9;
-    }
-    .profile-dropdown-icon {
-        width: 1.2rem; height: 1.2rem; color: var(--text-muted);
-    }
-    .profile-dropdown-divider {
-        height: 1px; background-color: var(--border-color);
-        margin: 0.5rem 0;
-    }
-    .profile-dropdown-item.logout-item {
-        color: var(--primary-red);
-    }
-    .profile-dropdown-item.logout-item .profile-dropdown-icon {
-        color: var(--primary-red);
-    }
-    .profile-dropdown-item.logout-item:hover {
-        background-color: var(--primary-red-light);
-    }
-
     /* MAIN CONTAINER */
     .dashboard-container {
         max-width: 1400px;
@@ -642,7 +439,10 @@ export const homeStyles = `
         font-weight: 600;
     }
     .report-badge.verifying { background: #ffedd5; color: #ea580c; }
+    .report-badge.submitted { background: #e0f2fe; color: #0369a1; }
+    .report-badge.confirmed { background: #dcfce7; color: #15803d; }
     .report-badge.closed { background: #f1f5f9; color: #475569; }
+    .report-empty { padding: 0.35rem 0; color: var(--text-muted); font-size: 0.85rem; }
 
     .btn-view {
         padding: 0.3rem 0.8rem;
@@ -698,95 +498,44 @@ export const homeStyles = `
         line-height: 0.8;
     }
 
-    /* MOBILE BOTTOM NAV */
-    .mobile-bottom-nav {
-        display: none;
-    }
-
     /* RESPONSIVE DESIGN (MOBILE FOCUS) */
     @media (max-width: 950px) {
         .dashboard-page-root {
-            background-color: var(--card-bg);
-            padding-bottom: 5rem; /* space for bottom nav */
+            background-color: #f5f3f0;
+            padding-bottom: 6rem;
             width: 100%;
             max-width: 100vw;
             overflow-x: clip;
             overscroll-behavior-x: none;
         }
-
-        .header-nav {
-            display: none; /* Hide desktop nav */
-        }
         
-        .top-header {
-            display: none !important;
-        }
-        
-        /* Mobile Top Header */
-        .mobile-top-header {
-            display: flex !important;
-            align-items: center;
-            justify-content: flex-end;
-            min-height: 3.5rem;
-            padding: 0.45rem 1rem;
-            background: white;
-            border-bottom: 1px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .mobile-page-title {
-            display: none;
-        }
-        .mobile-notif-btn {
-            position: static;
-            width: 2.6rem;
-            height: 2.6rem;
-            padding: 0.55rem;
-            display: grid;
-            place-items: center;
-            color: var(--primary-red);
-            background: #fff5f4;
-            border: 1px solid #fecaca;
-            border-radius: 0.8rem;
-            box-shadow: 0 2px 7px rgba(217, 27, 16, 0.12);
-        }
-        .mobile-notif-btn svg {
-            width: 1.3rem;
-            height: 1.3rem;
-            display: block;
-        }
-        .mobile-notif-btn .notification-badge {
-            top: -0.3rem !important;
-            right: -0.3rem !important;
-            border-color: white !important;
-        }
-
-        .brand-logo {
-            height: 3rem;
-        }
-
         .dashboard-container {
             display: flex;
             flex-direction: column;
             width: 100%;
             max-width: 100%;
-            padding: 0 0.85rem;
-            margin: 0.4rem auto;
-            gap: 0.85rem;
+            padding: 0 0.9rem;
+            margin: 0;
+            gap: 0.9rem;
         }
 
         .card {
-            border: 1px solid var(--border-color);
-            box-shadow: none;
-            border-radius: 0.8rem;
+            border: none;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            border-radius: 1rem;
         }
 
-        /* Mobile specific welcome card */
+        /* ===== REDESIGNED WELCOME CARD ===== */
         .welcome-card {
-            border: 1px solid var(--border-color);
+            border: none;
             min-height: auto;
-            padding: 0.8rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            margin-top: 0.9rem;
+            position: relative;
+            z-index: 0;
         }
 
         .welcome-center-graphic {
@@ -794,16 +543,27 @@ export const homeStyles = `
         }
 
         .welcome-card .welcome-header {
-            margin-bottom: 0.8rem;
+            margin-bottom: 0;
         }
 
         .welcome-card .user-avatar {
             width: 2.8rem;
             height: 2.8rem;
+            background: linear-gradient(135deg, #fecaca, #fee2e2);
         }
 
         .welcome-card .user-details h2 {
-            font-size: 1rem;
+            font-size: 1.05rem;
+            color: var(--text-dark);
+        }
+
+        .welcome-card .location-info {
+            font-size: 0.85rem;
+        }
+
+        .welcome-footer {
+            padding-top: 0.7rem;
+            margin-top: 0.7rem;
         }
 
         /* Hide desktop emergency card, nearby incident */
@@ -811,15 +571,16 @@ export const homeStyles = `
             display: none;
         }
 
-        /* MASSIVE MOBILE EMERGENCY BUTTON */
+        /* ===== MASSIVE MOBILE EMERGENCY BUTTON ===== */
         .mobile-emergency-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 16rem;
-            margin: 1rem 0 1.25rem;
+            min-height: 15rem;
+            margin: 1.5rem 0 0.75rem;
             position: relative;
-            overflow: clip;
+            overflow: visible;
+            z-index: 1;
         }
 
         .radar-animation {
@@ -831,7 +592,7 @@ export const homeStyles = `
             height: 12.5rem;
             pointer-events: none;
             z-index: 0;
-            margin-top: -1.2rem; /* offset for safety text below */
+            margin-top: -1.2rem;
         }
 
         .radar-ring {
@@ -880,7 +641,7 @@ export const homeStyles = `
                 box-shadow: 0 0 0 4px var(--primary-red), 0 10px 25px rgba(217, 27, 16, 0.3);
             }
             50% {
-                box-shadow: 0 0 0 4px var(--primary-red), 0 0 45px rgba(217, 27, 16, 0.6);
+                box-shadow: 0 0 0 6px var(--primary-red), 0 0 50px rgba(217, 27, 16, 0.5);
             }
             100% {
                 box-shadow: 0 0 0 4px var(--primary-red), 0 10px 25px rgba(217, 27, 16, 0.3);
@@ -891,7 +652,7 @@ export const homeStyles = `
             width: 12.5rem;
             height: 12.5rem;
             border-radius: 50%;
-            background: var(--primary-red);
+            background: linear-gradient(145deg, #ef4444 0%, #dc2626 40%, #b91c1c 100%);
             border: 6px solid white;
             box-shadow: 0 0 0 4px var(--primary-red), 0 10px 25px rgba(217, 27, 16, 0.3);
             animation: buttonGlow 3s ease-in-out infinite;
@@ -905,10 +666,11 @@ export const homeStyles = `
             z-index: 1;
             cursor: pointer;
             transition: transform 0.1s;
+            position: relative;
         }
 
         .mobile-emergency-btn:active {
-            transform: scale(0.96);
+            transform: scale(0.94);
         }
 
         .mobile-emergency-btn img {
@@ -927,7 +689,7 @@ export const homeStyles = `
         }
 
         .mobile-emergency-btn .tap-text {
-            background: white;
+            background: rgba(255, 255, 255, 0.95);
             color: var(--primary-red);
             padding: 0.3rem 0.9rem;
             border-radius: 2rem;
@@ -952,90 +714,40 @@ export const homeStyles = `
             height: 1.2rem;
         }
 
-        /* Mobile specific report status */
+        /* ===== REDESIGNED REPORT STATUS CARD ===== */
+        .status-card {
+            background: white;
+            border: none;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        }
+        .status-card .card-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
         .status-grid {
-            padding: 0;
+            padding: 0.3rem 0;
         }
         .status-count {
-            font-size: 1.2rem;
+            font-size: 1.35rem;
+            font-weight: 800;
         }
         .status-icon {
             width: 1.8rem;
             height: 1.8rem;
         }
 
-        .mobile-bottom-nav {
-            display: flex;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
+        /* ===== REDESIGNED RECENT REPORTS CARD ===== */
+        .recent-card {
             background: white;
-            border-top: 1px solid var(--border-color);
-            padding: 0.8rem 1rem 1.4rem;
-            justify-content: space-between;
-            align-items: flex-end;
-            z-index: 100;
+            border: none;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
         }
 
-        .mobile-nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.3rem;
-            color: var(--text-muted);
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-decoration: none;
-            width: 20%;
-        }
-
-        .mobile-nav-item.active {
-            color: var(--primary-red);
-        }
-
-        .mobile-nav-item svg {
-            width: 1.8rem;
-            height: 1.8rem;
-        }
-
-        .mobile-nav-fab-wrapper {
-            position: relative;
-            width: 20%;
-            display: flex;
-            justify-content: center;
-        }
-
-        .mobile-nav-fab {
-            position: absolute;
-            bottom: 1rem;
-            background: var(--primary-red);
-            width: 4.8rem;
-            height: 4.8rem;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding-bottom: 0.6rem;
-            color: white;
-            box-shadow: 0 4px 10px rgba(217, 27, 16, 0.3);
-            border: 4px solid white;
-            text-decoration: none;
-        }
-
-        .mobile-nav-fab img {
-            width: 3.2rem;
-            height: 3.2rem;
-            margin-top: 0.3rem;
-            object-fit: contain;
-            filter: brightness(0) invert(1);
-        }
-
-        .mobile-nav-fab span {
-            font-size: 0.55rem;
-            font-weight: 700;
-            margin-top: -0.8rem;
+        /* ===== REDESIGNED SAFETY CARD ===== */
+        .safety-card {
+            background: white;
+            border: none;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
         }
     }
     
@@ -1048,101 +760,6 @@ export const homeStyles = `
 
 export const homeMarkup = `
     <div class="dashboard-page-root">
-        <!-- MOBILE TOP HEADER -->
-        <header class="mobile-top-header" style="display: none;">
-            <h1 class="mobile-page-title">Home</h1>
-            <button class="notification-btn mobile-notif-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                <span class="notification-badge" style="position: absolute; top: 0; right: 0; background: var(--primary-red); color: white; font-size: 0.65rem; font-weight: 700; width: 1.1rem; height: 1.1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white;">1</span>
-            </button>
-        </header>
-
-        <header class="top-header">
-            <div class="header-left">
-                <img src="/images/Logo.webp" alt="ALAB Logo" class="brand-logo">
-            </div>
-            
-            <div class="header-nav">
-                <div class="nav-item-wrapper">
-                    <a href="/resident" class="nav-item active">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                        </svg>
-                        Home
-                    </a>
-                </div>
-                <div class="nav-item-wrapper">
-                    <a href="/resident/reports" class="nav-item">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10 9 9 9 8 9"/>
-                        </svg>
-                        Reports
-                    </a>
-                </div>
-                <div class="nav-item-wrapper">
-                    <a href="/resident/report-fire" class="nav-item report-fire-nav">
-                        <div class="nav-icon">
-                            <img src="/images/fire logo.webp" alt="Report Fire Logo" class="fire-logo-tint" />
-                        </div>
-                        Report Fire
-                    </a>
-                </div>
-                <div class="nav-item-wrapper">
-                    <a href="/resident/guide" class="nav-item">
-                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                        </svg>
-                        Guide
-                    </a>
-                </div>
-            </div>
-
-            <div class="header-right">
-                <button class="notification-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem; height:1.2rem;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                    <span class="notification-badge">3</span>
-                </button>
-                <button class="lang-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem; height:1.2rem; margin-right:0.3rem;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                    EN
-                </button>
-                
-                <div class="header-profile-menu desktop-only">
-                    <button class="header-profile-btn" aria-haspopup="true">
-                        <img src="/images/user_avatar_placeholder.png" alt="Profile" onerror="this.src='https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=1e293b&color=fff&size=150'">
-                    </button>
-                    <div class="profile-dropdown">
-                        <a href="/resident/profile" class="profile-dropdown-item">
-                            <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                            Profile Settings
-                        </a>
-                        <a href="/resident/profile?tab=notifications" class="profile-dropdown-item">
-                            <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                            Notification Settings
-                        </a>
-                        <a href="/resident/profile?tab=emergency" class="profile-dropdown-item">
-                            <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                            Emergency Contacts
-                        </a>
-                        <a href="/resident/guide" class="profile-dropdown-item">
-                            <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                            Help Center
-                        </a>
-                        <div class="profile-dropdown-divider"></div>
-                        <a href="/" class="profile-dropdown-item logout-item">
-                            <svg class="profile-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                            Logout
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </header>
-
         <main class="dashboard-container">
             
             <!-- Welcome Card -->
@@ -1155,15 +772,15 @@ export const homeMarkup = `
                             </svg>
                         </div>
                         <div class="user-details">
-                            <h2>Welcome, Resident Name</h2>
+                            <h2 data-dashboard-name>Welcome, Resident Name</h2>
                             <div class="location-info">
                                 <div class="location-row">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                    San Jose
+                                    <span data-dashboard-municipality>San Jose</span>
                                 </div>
                                 <div class="location-row">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>
-                                    Barangay 8
+                                    <span data-dashboard-barangay>Barangay 8</span>
                                 </div>
                             </div>
                         </div>
@@ -1256,7 +873,7 @@ export const homeMarkup = `
                         <div class="status-icon blue">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                         </div>
-                        <div class="status-count">1</div>
+                        <div class="status-count" data-dashboard-count="submitted">0</div>
                         <div class="status-label">Submitted</div>
                     </div>
                     <div class="status-divider"></div>
@@ -1264,7 +881,7 @@ export const homeMarkup = `
                         <div class="status-icon orange">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         </div>
-                        <div class="status-count">1</div>
+                        <div class="status-count" data-dashboard-count="verifying">0</div>
                         <div class="status-label">Verifying</div>
                     </div>
                     <div class="status-divider"></div>
@@ -1272,7 +889,7 @@ export const homeMarkup = `
                         <div class="status-icon green">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                         </div>
-                        <div class="status-count">0</div>
+                        <div class="status-count" data-dashboard-count="confirmed">0</div>
                         <div class="status-label">Confirmed</div>
                     </div>
                     <div class="status-divider"></div>
@@ -1280,7 +897,7 @@ export const homeMarkup = `
                         <div class="status-icon gray">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="14" rx="2"/><path d="M12 5H7a2 2 0 0 0-2 2v1"/><path d="M12 5h5a2 2 0 0 1 2 2v1"/></svg>
                         </div>
-                        <div class="status-count">3</div>
+                        <div class="status-count" data-dashboard-count="closed">0</div>
                         <div class="status-label">Closed</div>
                     </div>
                 </div>
@@ -1290,19 +907,10 @@ export const homeMarkup = `
             <div class="card recent-card">
                 <div class="card-header">
                     <h3 class="card-title" style="margin: 0;">Recent Reports</h3>
-                    <a href="#" class="view-all">View All</a>
+                    <a href="/resident/reports" class="view-all">View All</a>
                 </div>
-                <div class="report-list">
-                    <div class="report-item">
-                        <span class="report-id">FR-2025-001</span>
-                        <span class="report-badge verifying">Verifying</span>
-                        <button class="btn-view">View</button>
-                    </div>
-                    <div class="report-item">
-                        <span class="report-id">FR-2025-002</span>
-                        <span class="report-badge closed">Closed</span>
-                        <button class="btn-view">View</button>
-                    </div>
+                <div class="report-list" data-dashboard-recent>
+                    <div class="report-empty">No reports yet.</div>
                 </div>
             </div>
 
@@ -1322,47 +930,5 @@ export const homeMarkup = `
             </div>
 
         </main>
-
-        <!-- Mobile Bottom Navigation -->
-        <nav class="mobile-bottom-nav">
-            <a href="/resident" class="mobile-nav-item active">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                </svg>
-                Home
-            </a>
-            <a href="/resident/reports" class="mobile-nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <polyline points="10 9 9 9 8 9"/>
-                </svg>
-                Reports
-            </a>
-            
-            <div class="mobile-nav-fab-wrapper">
-                <a href="/resident/report-fire" class="mobile-nav-fab">
-                    <img src="/images/fire logo.webp" alt="Fire Logo" />
-                    <span>Report Fire</span>
-                </a>
-            </div>
-
-            <a href="/resident/guide" class="mobile-nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                </svg>
-                Guide
-            </a>
-            <a href="/resident/profile" class="mobile-nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                </svg>
-                Profile
-            </a>
-        </nav>
     </div>
 `;
