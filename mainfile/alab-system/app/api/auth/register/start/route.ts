@@ -31,6 +31,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Error && error.message === "DUPLICATE") return NextResponse.json({ error: "That email, username, or phone is already registered." }, { status: 409 });
     if (error instanceof Error && error.message === "PHILSMS_NOT_CONFIGURED") return NextResponse.json({ error: "SMS verification is not configured yet." }, { status: 503 });
+    if (error instanceof Error && error.message.startsWith("PHILSMS_DELIVERY_FAILED")) return NextResponse.json({ error: "PhilSMS could not accept this OTP. Check the Vercel runtime log for the provider reason." }, { status: 502 });
     console.error("OTP start failed", error);
     return NextResponse.json({ error: "Unable to send the verification code." }, { status: 500 });
   }

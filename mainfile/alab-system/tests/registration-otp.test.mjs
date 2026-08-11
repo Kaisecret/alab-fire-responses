@@ -18,4 +18,5 @@ test("PhilSMS delivery rejects API error payloads even when HTTP succeeds", () =
   assert.match(source, /https:\/\/dashboard\.philsms\.com\/api\/v3\/sms\/send/);
   assert.match(source, /await response\.json\(\)/);
   assert.match(source, /result\?\.status !== "success"/);
+  assert.match(source, /result\?\.message/);
 });

@@ -10,6 +10,9 @@ export async function sendPhilSmsOtp({ phone, code }: PhilSmsOtp) {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "Content-Type": "application/json" },
     body: JSON.stringify({ recipient: phone, sender_id: senderId, type: "plain", message: `Your ALAB verification code is ${code}. It expires in 5 minutes.` }),
   });
-  const result = await response.json().catch(() => null) as { status?: string } | null;
-  if (!response.ok || result?.status !== "success") throw new Error("PHILSMS_DELIVERY_FAILED");
+  const result = await response.json().catch(() => null) as { status?: string; message?: string } | null;
+  if (!response.ok || result?.status !== "success") {
+    const detail = typeof result?.message === "string" ? result.message.slice(0, 300) : "unknown provider error";
+    throw new Error(`PHILSMS_DELIVERY_FAILED: ${detail}`);
+  }
 }
