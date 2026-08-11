@@ -22,7 +22,7 @@ create table public.users (
   email text not null unique check (email = lower(email) and char_length(email) <= 100),
   username text not null unique check (username ~ '^[A-Za-z0-9_.-]{3,30}$'),
   password_hash text not null,
-  phone text not null unique check (phone ~ '^\\+?[0-9]{10,15}$'),
+  phone text not null unique check (phone ~ '^\+?[0-9]{10,15}$'),
   role text not null default 'RESIDENT' check (role in ('RESIDENT')),
   account_status text not null default 'ACTIVE' check (account_status in ('ACTIVE', 'SUSPENDED')),
   terms_accepted_at timestamptz not null,

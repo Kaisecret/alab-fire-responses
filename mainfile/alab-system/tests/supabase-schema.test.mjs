@@ -42,3 +42,17 @@ test("Supabase seed imports Antique municipalities and barangays idempotently", 
   assert.match(seed, /on conflict/i);
   assert.match(seed, /Antique/);
 });
+
+test("Supabase phone validation accepts Philippine numbers with or without a leading plus", () => {
+  const schemaMigration = readFileSync(
+    join(migrationsDirectory, "20260811125353_create_alab_resident_schema.sql"),
+    "utf8",
+  );
+  const repairMigration = join(migrationsDirectory, "20260811150000_fix_users_phone_check.sql");
+
+  assert.ok(schemaMigration.includes("phone ~ '^\\+?[0-9]{10,15}$'"));
+  assert.equal(existsSync(repairMigration), true, "phone-check repair migration is missing");
+  const repair = readFileSync(repairMigration, "utf8");
+  assert.match(repair, /drop constraint if exists users_phone_check/i);
+  assert.ok(repair.includes("phone ~ '^\\+?[0-9]{10,15}$'"));
+});
