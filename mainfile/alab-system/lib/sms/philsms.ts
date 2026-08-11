@@ -10,5 +10,6 @@ export async function sendPhilSmsOtp({ phone, code }: PhilSmsOtp) {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "Content-Type": "application/json" },
     body: JSON.stringify({ recipient: phone, sender_id: senderId, type: "plain", message: `Your ALAB verification code is ${code}. It expires in 5 minutes.` }),
   });
-  if (!response.ok) throw new Error("PHILSMS_DELIVERY_FAILED");
+  const result = await response.json().catch(() => null) as { status?: string } | null;
+  if (!response.ok || result?.status !== "success") throw new Error("PHILSMS_DELIVERY_FAILED");
 }
