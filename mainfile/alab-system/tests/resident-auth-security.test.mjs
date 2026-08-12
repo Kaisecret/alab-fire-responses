@@ -78,3 +78,11 @@ test("proxy redirects unauthenticated visitors away from protected resident rout
   assert.match(middleware, /NextResponse\.redirect/);
   assert.match(middleware, /verifyResidentSession/);
 });
+
+test("resident OTP sending enforces a server-side one-minute resend cooldown", () => {
+  const start = source("app/api/auth/register/start/route.ts");
+
+  assert.match(start, /interval '60 seconds'/);
+  assert.match(start, /OTP_RESEND_COOLDOWN/);
+  assert.match(start, /status: 429/);
+});

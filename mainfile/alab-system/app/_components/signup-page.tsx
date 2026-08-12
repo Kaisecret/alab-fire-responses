@@ -18,6 +18,7 @@ const hiddenEye = `
 `;
 
 const TOTAL_STEPS = 5;
+const RESEND_COOLDOWN_SECONDS = 60;
 
 type SignupPageProps = {
   fontVariableClassName: string;
@@ -28,7 +29,7 @@ const STEP_CONFIG = [
   { title: "Address Information", subtitle: "Tell us where you are located in Antique." },
   { title: "Identity Verification", subtitle: "Upload your identification details for account verification." },
   { title: "Account Security", subtitle: "Set up your login credentials." },
-  { title: "Review & Confirm", subtitle: "Double-check your details before submitting." },
+  { title: "Verify your phone", subtitle: "Confirm the one-time code to protect your resident account." },
 ];
 
 export function SignupPage({ fontVariableClassName }: SignupPageProps) {
@@ -564,10 +565,29 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       }
       goToStep(4);
     };
-    const handleToStep5 = () => {
+    const handleToStep5 = async () => {
       formStatus.textContent = "";
-      if (validateStep(panels[3]) && passwordField?.value === confirmField?.value) goToStep(5);
-      else if (passwordField?.value !== confirmField?.value) formStatus.textContent = "Passwords do not match.";
+      if (!validateStep(panels[3])) return;
+      if (passwordField?.value !== confirmField?.value) {
+        formStatus.textContent = "Passwords do not match.";
+        return;
+      }
+      if (!frontFile || !passwordField) return;
+      const value = (id: string) => root.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`#${id}`)?.value ?? "";
+      formStatus.textContent = "Sending your verification code…";
+      try {
+        const response = await fetch("/api/auth/register/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ firstName: value("firstName"), lastName: value("lastName"), email: value("email"), phone: value("phone"), municipality: value("municipality"), barangay: value("barangay"), address: value("address"), username: value("username"), password: passwordField.value, frontDocumentName: frontFile.name, backDocumentName: backFile?.name, selfieCaptured: selfieTaken, termsAccepted: true }),
+        });
+        const result = await response.json() as { error?: string; verificationId?: string };
+        if (!response.ok || !result.verificationId) { formStatus.textContent = result.error ?? "Unable to send the verification code."; return; }
+        formStatus.textContent = "";
+        showOtpPanel(result.verificationId, value("phone"));
+      } catch {
+        formStatus.textContent = "Unable to reach the verification service. Please try again.";
+      }
     };
     const handleBackToStep1 = () => goToStep(1);
     const handleBackToStep2 = () => goToStep(2);
@@ -614,31 +634,49 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     };
 
     const showOtpPanel = (verificationId: string, phone: string) => {
-      const panel = root.ownerDocument.createElement("div");
-      panel.id = "otpVerificationPanel";
-      panel.innerHTML = `<div class="otp-card"><div class="otp-icon">✦</div><h2>Verify your phone</h2><p>We sent a 6-digit code to <strong>${phone.replace(/.(?=.{4})/g, "•")}</strong></p><div class="otp-digits">${Array.from({ length: 6 }, (_, i) => `<input aria-label="Verification code digit ${i + 1}" inputmode="numeric" maxlength="1">`).join("")}</div><p class="otp-status" role="alert"></p><button type="button" class="otp-verify">Verify & Create Account</button><button type="button" class="otp-back">Back and edit details</button></div>`;
-      panel.style.cssText = "position:fixed;inset:0;z-index:3000;display:grid;place-items:center;padding:1rem;background:rgba(15,23,42,.66);backdrop-filter:blur(7px)";
-      const card = panel.querySelector<HTMLElement>(".otp-card")!;
-      card.style.cssText = "width:min(94vw,28rem);padding:2rem;border-radius:1.5rem;background:#fff;text-align:center;box-shadow:0 2rem 5rem rgba(0,0,0,.3);font-family:inherit";
-      const inputs = Array.from(panel.querySelectorAll<HTMLInputElement>("input"));
-      inputs.forEach((input) => input.style.cssText = "width:2.5rem;height:3.2rem;margin:.18rem;border:2px solid #fecaca;border-radius:.75rem;text-align:center;font-size:1.3rem;font-weight:800;outline-color:#dc2626");
-      panel.querySelector<HTMLButtonElement>(".otp-verify")!.style.cssText = "width:100%;border:0;border-radius:.8rem;padding:1rem;background:linear-gradient(135deg,#ef2d1d,#b91c1c);color:#fff;font-weight:800;cursor:pointer";
-      panel.querySelector<HTMLButtonElement>(".otp-back")!.style.cssText = "margin-top:.8rem;border:0;background:none;color:#b91c1c;font-weight:700;cursor:pointer";
+      const panel = panels[4];
+      if (!panel) return;
+      currentStep = 5;
+      goToStep(5);
+      panel.innerHTML = `<section style="display:grid;gap:1.15rem;padding:clamp(.25rem,1vw,.75rem) 0;text-align:center"><div style="margin:auto;display:grid;place-items:center;width:4.2rem;height:4.2rem;border-radius:1.35rem;background:linear-gradient(135deg,#ef2d1d,#b91c1c);box-shadow:0 .9rem 1.8rem rgba(220,38,38,.25);color:#fff;font-size:1.65rem">✦</div><div><h3 style="margin:0;color:#7f1d1d;font-size:1.35rem">Enter your verification code</h3><p style="margin:.5rem auto 0;max-width:25rem;color:#475569;line-height:1.55">We sent a six-digit code to <strong>${phone.replace(/.(?=.{4})/g, "•")}</strong>. It expires in 5 minutes.</p></div><div id="otpDigits" style="display:flex;justify-content:center;gap:clamp(.28rem,1vw,.55rem);margin:.35rem 0">${Array.from({ length: 6 }, (_, i) => `<input aria-label="Verification code digit ${i + 1}" inputmode="numeric" autocomplete="one-time-code" maxlength="1" style="width:clamp(2.4rem,10vw,3rem);height:3.35rem;border:2px solid #fecaca;border-radius:.85rem;text-align:center;font-size:1.4rem;font-weight:800;outline-color:#dc2626">`).join("")}</div><p id="otpStatus" role="alert" style="min-height:1.3rem;margin:0;color:#b91c1c;font-size:.86rem;font-weight:700"></p><button id="verifyOtpButton" type="button" style="width:100%;border:0;border-radius:.85rem;padding:1rem;background:linear-gradient(135deg,#ef2d1d,#b91c1c);box-shadow:0 .7rem 1.4rem rgba(220,38,38,.22);color:#fff;font-weight:800;cursor:pointer">Verify & Continue</button><button id="resendOtpButton" type="button" disabled style="border:0;background:none;color:#94a3b8;font-weight:750;cursor:not-allowed">Resend code in 01:00</button><button id="editSignupDetails" type="button" style="border:0;background:none;color:#b91c1c;font-weight:700;cursor:pointer">Back and edit details</button></section>`;
+      const inputs = Array.from(panel.querySelectorAll<HTMLInputElement>("#otpDigits input"));
+      const status = panel.querySelector<HTMLElement>("#otpStatus")!;
+      const verifyButton = panel.querySelector<HTMLButtonElement>("#verifyOtpButton")!;
+      const resendButton = panel.querySelector<HTMLButtonElement>("#resendOtpButton")!;
+      let activeVerificationId = verificationId;
+      let secondsRemaining = RESEND_COOLDOWN_SECONDS;
+      const updateResendButton = () => {
+        const minutes = Math.floor(secondsRemaining / 60).toString().padStart(2, "0");
+        const seconds = (secondsRemaining % 60).toString().padStart(2, "0");
+        resendButton.disabled = secondsRemaining > 0;
+        resendButton.textContent = secondsRemaining > 0 ? `Resend code in ${minutes}:${seconds}` : "Resend code";
+        resendButton.style.color = secondsRemaining > 0 ? "#94a3b8" : "#b91c1c";
+        resendButton.style.cursor = secondsRemaining > 0 ? "not-allowed" : "pointer";
+      };
+      const resendTimer = window.setInterval(() => { secondsRemaining = Math.max(0, secondsRemaining - 1); updateResendButton(); if (secondsRemaining === 0) window.clearInterval(resendTimer); }, 1000);
+      updateResendButton();
       inputs.forEach((input, index) => input.addEventListener("input", () => { input.value = input.value.replace(/\D/g, "").slice(0, 1); if (input.value) inputs[index + 1]?.focus(); }));
-      const status = panel.querySelector<HTMLElement>(".otp-status")!;
-      panel.querySelector<HTMLButtonElement>(".otp-back")!.onclick = () => panel.remove();
-      panel.querySelector<HTMLButtonElement>(".otp-verify")!.onclick = async () => {
+      panel.querySelector<HTMLButtonElement>("#editSignupDetails")!.onclick = () => { window.clearInterval(resendTimer); goToStep(4); };
+      const requestOtp = async () => {
+        const value = (id: string) => root.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`#${id}`)?.value ?? "";
+        const response = await fetch("/api/auth/register/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ firstName: value("firstName"), lastName: value("lastName"), email: value("email"), phone: value("phone"), municipality: value("municipality"), barangay: value("barangay"), address: value("address"), username: value("username"), password: passwordField?.value, frontDocumentName: frontFile?.name, backDocumentName: backFile?.name, selfieCaptured: selfieTaken, termsAccepted: true }) });
+        const result = await response.json() as { verificationId?: string; error?: string };
+        if (!response.ok || !result.verificationId) throw new Error(result.error ?? "Unable to send the verification code.");
+        return result.verificationId;
+      };
+      resendButton.onclick = async () => { status.textContent = "Sending a new code…"; try { activeVerificationId = await requestOtp(); inputs.forEach((input) => { input.value = ""; }); inputs[0]?.focus(); secondsRemaining = RESEND_COOLDOWN_SECONDS; updateResendButton(); status.textContent = "A new code was sent."; } catch (error) { status.textContent = error instanceof Error ? error.message : "Unable to resend the code."; } };
+      verifyButton.onclick = async () => {
         const code = inputs.map((input) => input.value).join("");
         if (code.length !== 6) { status.textContent = "Enter all six digits."; return; }
-        status.textContent = "Verifying…";
-        const verify = await fetch("/api/auth/register/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verificationId, code }) });
+        verifyButton.disabled = true; verifyButton.textContent = "Verifying…"; status.textContent = "";
+        const verify = await fetch("/api/auth/register/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verificationId: activeVerificationId, code }) });
         const result = await verify.json() as { error?: string };
-        if (!verify.ok) { status.textContent = result.error ?? "Unable to verify the code."; return; }
-        const register = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verificationId }) });
-        if (!register.ok) { const failed = await register.json() as { error?: string }; status.textContent = failed.error ?? "Unable to create your account."; return; }
+        if (!verify.ok) { verifyButton.disabled = false; verifyButton.textContent = "Verify & Continue"; status.textContent = result.error ?? "Unable to verify the code."; return; }
+        const register = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verificationId: activeVerificationId }) });
+        if (!register.ok) { const failed = await register.json() as { error?: string }; verifyButton.disabled = false; verifyButton.textContent = "Verify & Continue"; status.textContent = failed.error ?? "Unable to create your account."; return; }
+        window.clearInterval(resendTimer);
         window.location.assign("/resident");
       };
-      root.ownerDocument.body.appendChild(panel);
       inputs[0]?.focus();
     };
 

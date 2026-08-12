@@ -16,3 +16,15 @@ test("resident signup uses step-aware validation before account creation", () =>
   assert.match(component, /Take and confirm your selfie to continue\./);
   assert.match(component, /if \(!validateRegistration\(\)\) return;/);
 });
+
+test("resident signup uses step five for polished OTP verification and a one-minute resend countdown", () => {
+  const component = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");
+
+  assert.match(component, /Verify your phone/);
+  assert.match(component, /Sending your verification code/);
+  assert.match(component, /const RESEND_COOLDOWN_SECONDS = 60/);
+  assert.match(component, /Resend code in/);
+  assert.match(component, /Resend code/);
+  assert.match(component, /currentStep = 5/);
+  assert.match(component, /window\.location\.assign\("\/resident"\)/);
+});
