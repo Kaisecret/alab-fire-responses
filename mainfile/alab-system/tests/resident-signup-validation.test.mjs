@@ -28,3 +28,14 @@ test("resident signup uses step five for polished OTP verification and a one-min
   assert.match(component, /currentStep = 5/);
   assert.match(component, /window\.location\.assign\("\/resident"\)/);
 });
+
+test("Google login starts OAuth and pre-fills a new resident signup without skipping verification", () => {
+  const login = readFileSync(join(appRoot, "app", "_components", "login-page.tsx"), "utf8");
+  const signup = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");
+
+  assert.match(login, /\/api\/auth\/google\/start/);
+  assert.match(signup, /\/api\/auth\/google\/prefill/);
+  assert.match(signup, /Google verified your name and email/);
+  assert.match(signup, /frontFile/);
+  assert.match(signup, /selfieTaken/);
+});

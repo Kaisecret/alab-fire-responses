@@ -140,6 +140,40 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     municipalitySelect?.addEventListener("change", handleMunicipalityChange);
     handleMunicipalityChange();
 
+    const loadGooglePrefill = async () => {
+      try {
+        const response = await fetch("/api/auth/google/prefill/", { cache: "no-store" });
+        if (!response.ok) return;
+        const result = await response.json() as {
+          prefill?: { firstName: string; lastName: string; email: string } | null;
+        };
+        if (!result.prefill) return;
+
+        const firstName = root.querySelector<HTMLInputElement>("#firstName");
+        const lastName = root.querySelector<HTMLInputElement>("#lastName");
+        const email = root.querySelector<HTMLInputElement>("#email");
+        if (firstName && !firstName.value) firstName.value = result.prefill.firstName;
+        if (lastName && !lastName.value) lastName.value = result.prefill.lastName;
+        if (email) {
+          email.value = result.prefill.email;
+          email.readOnly = true;
+          email.setAttribute("aria-describedby", "googlePrefillNotice");
+        }
+
+        if (!root.querySelector("#googlePrefillNotice")) {
+          const notice = root.ownerDocument.createElement("p");
+          notice.id = "googlePrefillNotice";
+          notice.setAttribute("role", "status");
+          notice.textContent = "Google verified your name and email. Complete all steps, including ID upload and phone verification.";
+          notice.style.cssText = "margin:0 0 1rem;padding:.75rem .9rem;border:1px solid #bbf7d0;border-radius:.8rem;background:#f0fdf4;color:#166534;font-size:.84rem;font-weight:650;line-height:1.45;";
+          panels[0]?.prepend(notice);
+        }
+      } catch {
+        // The standard signup form remains available if the prefill cannot be read.
+      }
+    };
+    void loadGooglePrefill();
+
     function goToStep(step: number) {
       currentStep = step;
       panels.forEach((p, i) => {
@@ -722,7 +756,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     };
 
     const handleGoogleSignup = () => {
-      window.alert("Google sign-up coming soon!");
+      window.location.assign("/api/auth/google/start");
     };
 
     // Attach listeners

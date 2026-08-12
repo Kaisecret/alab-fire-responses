@@ -67,3 +67,12 @@ test("Supabase schema stores pending registration OTPs securely", () => {
   assert.match(migration, /attempt_count integer not null default 0/i);
   assert.match(migration, /enable row level security/i);
 });
+
+test("Supabase schema links a resident to a unique Google provider identity", () => {
+  const migrationPath = join(migrationsDirectory, "20260813090000_add_google_resident_identity.sql");
+  assert.equal(existsSync(migrationPath), true, "Google identity migration is missing");
+  const migration = readFileSync(migrationPath, "utf8");
+
+  assert.match(migration, /add column if not exists google_subject text/i);
+  assert.match(migration, /create unique index .*google_subject/i);
+});

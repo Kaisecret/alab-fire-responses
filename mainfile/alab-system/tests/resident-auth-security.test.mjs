@@ -86,3 +86,24 @@ test("resident OTP sending enforces a server-side one-minute resend cooldown", (
   assert.match(start, /OTP_RESEND_COOLDOWN/);
   assert.match(start, /status: 429/);
 });
+
+test("Google OAuth links verified existing residents or creates a safe signup prefill", () => {
+  const googleStart = join(appRoot, "app", "api", "auth", "google", "start", "route.ts");
+  const googleCallback = join(appRoot, "app", "auth", "callback", "route.ts");
+  const googlePrefill = join(appRoot, "app", "api", "auth", "google", "prefill", "route.ts");
+
+  assert.equal(existsSync(googleStart), true, "Google OAuth start route is missing");
+  assert.equal(existsSync(googleCallback), true, "Google OAuth callback route is missing");
+  assert.equal(existsSync(googlePrefill), true, "Google signup prefill route is missing");
+  const start = readFileSync(googleStart, "utf8");
+  const callback = readFileSync(googleCallback, "utf8");
+  const register = source("app/api/auth/register/route.ts");
+
+  assert.match(start, /signInWithOAuth/);
+  assert.match(callback, /exchangeCodeForSession/);
+  assert.match(callback, /email_confirmed_at/);
+  assert.match(callback, /google_subject/);
+  assert.match(callback, /createResidentSession/);
+  assert.match(callback, /createGoogleSignupPrefill/);
+  assert.match(register, /getGoogleSignupPrefill/);
+});

@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { withTransaction } from "../../../../lib/db";
 import { hashPassword } from "../../../../lib/auth/password";
 import { createResidentSession, residentSessionCookie, RESIDENT_SESSION_COOKIE } from "../../../../lib/auth/session";
+import { getGoogleSignupPrefill, GOOGLE_SIGNUP_PREFILL_COOKIE } from "../../../../lib/auth/google-signup-prefill";
 
 export const runtime = "nodejs";
 
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
   const verificationId = clean(input.verificationId, 36);
   if (!verificationId) return NextResponse.json({ error: "Verify your phone number before creating an account." }, { status: 400 });
   let pendingPasswordHash = "";
+  const googlePrefill = await getGoogleSignupPrefill();
   try {
     const pending = await withTransaction(async (client) => client.query<{ payload: RegistrationPayload & { passwordHash?: string } }>(
       "select payload from registration_otps where id = $1 and consumed_at is not null and expires_at > now()", [verificationId],
@@ -54,7 +56,7 @@ export async function POST(request: Request) {
 
   const firstName = clean(input.firstName, 50);
   const lastName = clean(input.lastName, 50);
-  const email = clean(input.email, 100).toLowerCase();
+  const email = googlePrefill?.email ?? clean(input.email, 100).toLowerCase();
   const phone = clean(input.phone, 15);
   const municipality = clean(input.municipality, 100);
   const barangay = clean(input.barangay, 100);
@@ -90,9 +92,9 @@ export async function POST(request: Request) {
       const safeBackName = clean(input.backDocumentName, 255).replace(/[^A-Za-z0-9._-]/g, "_");
 
       await client.query(
-        `INSERT INTO users (id, email, username, password_hash, phone, role, account_status, terms_accepted_at, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, 'RESIDENT', 'ACTIVE', $6, $6, $6)`,
-        [userId, email, username, passwordHash, phone, now],
+        `INSERT INTO users (id, email, username, password_hash, phone, google_subject, role, account_status, terms_accepted_at, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, 'RESIDENT', 'ACTIVE', $7, $7, $7)`,
+        [userId, email, username, passwordHash, phone, googlePrefill?.subject ?? null, now],
       );
       await client.query(
         `INSERT INTO resident_profiles (id, user_id, first_name, last_name, created_at, updated_at)
@@ -119,6 +121,7 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({ user: { id: user.id, username: user.username } }, { status: 201 });
     response.cookies.set(RESIDENT_SESSION_COOKIE, createResidentSession(user.id, user.username), residentSessionCookie);
+    response.cookies.set(GOOGLE_SIGNUP_PREFILL_COOKIE, "", { ...residentSessionCookie, maxAge: 0, expires: new Date(0) });
     return response;
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_LOCALITY") {

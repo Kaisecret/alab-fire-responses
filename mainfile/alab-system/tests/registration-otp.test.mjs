@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 
+process.env.OTP_SECRET = "test-only-otp-secret";
 const otp = await import("../lib/auth/registration-otp.ts");
 
 test("registration OTP normalizes Philippine phone numbers and verifies a hash", () => {

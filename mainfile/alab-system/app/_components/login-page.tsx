@@ -125,7 +125,13 @@ export function LoginPage({
     form.addEventListener("submit", handleSubmit);
     forgot?.addEventListener("click", handleForgot);
     register?.addEventListener("click", handleRegister);
-    const handleGoogle = () => window.alert("Google login is not available yet. Please use your resident account.");
+    const handleGoogle = () => {
+      if (google) {
+        google.disabled = true;
+        google.textContent = "Opening Google…";
+      }
+      window.location.assign("/api/auth/google/start");
+    };
     google?.addEventListener("click", handleGoogle);
     popupClose.addEventListener("click", hideLoginPopup);
     popup.addEventListener("click", (event) => {

@@ -4,6 +4,7 @@ import { hashPassword } from "../../../../../lib/auth/password";
 import { createOtpCode, hashOtp, normalizePhilippinePhone } from "../../../../../lib/auth/registration-otp";
 import { withTransaction } from "../../../../../lib/db";
 import { sendPhilSmsOtp } from "../../../../../lib/sms/philsms";
+import { getGoogleSignupPrefill } from "../../../../../lib/auth/google-signup-prefill";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,9 @@ export async function POST(request: Request) {
   const phoneInput = typeof input?.phone === "string" ? input.phone : "";
   const password = typeof input?.password === "string" ? input.password : "";
   if (!input || password.length < 8) return NextResponse.json({ error: "Please complete your registration details." }, { status: 400 });
+  const googlePrefill = await getGoogleSignupPrefill();
+  const suppliedEmail = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
+  if (googlePrefill && suppliedEmail !== googlePrefill.email) return NextResponse.json({ error: "Use the verified email address from your Google account." }, { status: 400 });
   let phone: string;
   try { phone = normalizePhilippinePhone(phoneInput); } catch { return NextResponse.json({ error: "Enter a valid Philippine mobile number." }, { status: 400 }); }
   const code = createOtpCode();
