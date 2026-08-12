@@ -49,4 +49,4 @@
 
 - [x] Run `node --test tests/supabase-schema.test.mjs tests/resident-auth-security.test.mjs tests/resident-signup-validation.test.mjs`.
 - [x] Run `npm run build`.
-- [ ] Commit and push the verified result to GitHub `main` for Vercel.
+- [x] Commit and push the verified result to GitHub `main` for Vercel.
