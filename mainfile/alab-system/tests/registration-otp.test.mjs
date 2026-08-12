@@ -15,7 +15,7 @@ test("registration OTP normalizes Philippine phone numbers and verifies a hash",
 
 test("PhilSMS delivery rejects API error payloads even when HTTP succeeds", () => {
   const source = readFileSync(new URL("../lib/sms/philsms.ts", import.meta.url), "utf8");
-  assert.match(source, /https:\/\/dashboard\.philsms\.com\/api\/v3\/sms\/send/);
+  assert.match(source, /https:\/\/app\.philsms\.com\/api\/v3\/sms\/send/);
   assert.match(source, /await response\.json\(\)/);
   assert.match(source, /result\?\.status !== "success"/);
   assert.match(source, /result\?\.message/);
