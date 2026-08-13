@@ -40,6 +40,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     if (!root) return;
 
     let currentStep = 1;
+    let isStartingVerification = false;
 
     // Track uploaded files for verification step
     let frontFile: File | null = null;
@@ -729,12 +730,20 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
 
     const handleSubmit = async (e: SubmitEvent) => {
       e.preventDefault();
+      if (isStartingVerification) return;
       formStatus.textContent = "";
       if (!validateRegistration()) return;
       if (!passwordField || !frontFile) return;
 
       const value = (id: string) => root.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`#${id}`)?.value ?? "";
       formStatus.textContent = "Sending your verification code…";
+      const submitButton = root.querySelector<HTMLButtonElement>("#submitBtn");
+      const submitButtonMarkup = submitButton?.innerHTML;
+      isStartingVerification = true;
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = "Sending verification code…";
+      }
       try {
         const response = await fetch("/api/auth/register/start", {
           method: "POST",
@@ -765,6 +774,12 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         showOtpPanel(result.verificationId, value("phone"));
       } catch {
         formStatus.textContent = "Unable to reach the registration service. Please try again.";
+      } finally {
+        isStartingVerification = false;
+        if (submitButton?.isConnected && submitButtonMarkup) {
+          submitButton.disabled = false;
+          submitButton.innerHTML = submitButtonMarkup;
+        }
       }
     };
 

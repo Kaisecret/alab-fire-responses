@@ -38,6 +38,15 @@ test("resident signup restarts the full resend countdown after every successful 
   assert.match(component, /startResendCountdown\(\);\s*status\.textContent = "A new code was sent/);
 });
 
+test("resident signup prevents duplicate first-code requests while the request is in progress", () => {
+  const component = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");
+
+  assert.match(component, /let isStartingVerification = false/);
+  assert.match(component, /if \(isStartingVerification\) return;/);
+  assert.match(component, /isStartingVerification = true/);
+  assert.match(component, /isStartingVerification = false/);
+});
+
 test("Google login starts OAuth and pre-fills a new resident signup without skipping verification", () => {
   const login = readFileSync(join(appRoot, "app", "_components", "login-page.tsx"), "utf8");
   const signup = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");
