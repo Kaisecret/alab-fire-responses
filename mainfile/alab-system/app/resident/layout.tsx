@@ -350,6 +350,47 @@ const layoutStyles = `
       height: 1.55rem;
     }
 
+    .rl-mn-fab-wrap {
+      position: relative;
+      width: 20%;
+      display: flex;
+      justify-content: center;
+    }
+    .rl-mn-fab {
+      position: absolute;
+      bottom: 0.48rem;
+      display: flex;
+      width: 3.85rem;
+      height: 3.85rem;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-bottom: 0.28rem;
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      color: #ffffff;
+      background: linear-gradient(145deg, #ef4444, #b91c1c);
+      box-shadow: 0 .45rem 1.25rem rgba(217, 27, 16, .34);
+      text-decoration: none;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .rl-mn-fab:active { transform: scale(.94); }
+    .rl-mn-fab:hover { box-shadow: 0 .6rem 1.5rem rgba(217, 27, 16, .4); }
+    .rl-mn-fab img {
+      width: 2.05rem;
+      height: 2.05rem;
+      margin-top: .12rem;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+    .rl-mn-fab span {
+      margin-top: -.3rem;
+      font-size: .46rem;
+      font-weight: 800;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+
   }
 `;
 
@@ -390,15 +431,6 @@ function IconProfile({ filled }: { filled?: boolean }) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={filled ? "2.3" : "2"} strokeLinecap="round" strokeLinejoin="round" className="rl-nav-icon">
       <circle cx="12" cy="8" r="5" />
       <path d="M20 21a8 8 0 0 0-16 0" />
-    </svg>
-  );
-}
-
-function IconFire({ filled }: { filled?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={filled ? "2.3" : "2"} strokeLinecap="round" strokeLinejoin="round" className="rl-nav-icon">
-      <path d="M12 22c4.1 0 7-2.7 7-6.5 0-2.8-1.8-5.4-4.5-8 .2 2.6-1.2 4.5-2.5 5.3.2-3.1-1.2-5.5-3.5-7.8C7.2 7.5 5 10.2 5 14.2 5 18.5 8 22 12 22Z" />
-      <path d="M12 22c1.6 0 2.7-1.1 2.7-2.6 0-1.2-.8-2.3-2.4-3.8.1 1.2-.6 2.1-1.3 2.7-.1-1.3-.5-2.4-1.4-3.4-.6.8-1 1.8-1 3.1C8.6 20.4 10 22 12 22Z" />
     </svg>
   );
 }
@@ -565,10 +597,12 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
             <IconReports filled={activeKey === "reports"} />
             Reports
           </a>
-          <a href="/resident/report-fire" className={`rl-mn-item${activeKey === "report-fire" ? " rl-mn-active" : ""}`}>
-            <IconFire filled={activeKey === "report-fire"} />
-            Report Fire
-          </a>
+          <div className="rl-mn-fab-wrap">
+            <a href="/resident/report-fire" className="rl-mn-fab">
+              <img src="/images/fire logo.webp" alt="Fire Logo" />
+              <span>Report Fire</span>
+            </a>
+          </div>
           <a href="/resident/guide" className={`rl-mn-item${activeKey === "guide" ? " rl-mn-active" : ""}`}>
             <IconGuide filled={activeKey === "guide"} />
             Guide
