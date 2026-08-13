@@ -87,6 +87,14 @@ test("resident OTP sending enforces a server-side one-minute resend cooldown", (
   assert.match(start, /status: 429/);
 });
 
+test("a failed SMS delivery removes its unusable OTP record before returning an error", () => {
+  const start = source("app/api/auth/register/start/route.ts");
+
+  assert.match(start, /let otpStored = false/);
+  assert.match(start, /otpStored = true/);
+  assert.match(start, /delete from registration_otps where id = \$1/);
+});
+
 test("verified OTP registration accepts the securely stored password hash", () => {
   const register = source("app/api/auth/register/route.ts");
 

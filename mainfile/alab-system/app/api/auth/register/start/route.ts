@@ -21,6 +21,7 @@ export async function POST(request: Request) {
   const code = createOtpCode();
   const id = randomUUID();
   const expiresAt = new Date(Date.now() + 5 * 60_000);
+  let otpStored = false;
   try {
     const passwordHash = await hashPassword(password);
     await withTransaction(async (client) => {
@@ -32,9 +33,15 @@ export async function POST(request: Request) {
       const payload = { ...input, phone: phoneInput, password: undefined, passwordHash };
       await client.query("insert into registration_otps (id, phone, payload, code_hash, expires_at, last_sent_at) values ($1,$2,$3,$4,$5,now())", [id, phone, payload, hashOtp(phone, code), expiresAt]);
     });
+    otpStored = true;
     await sendPhilSmsOtp({ phone, code });
     return NextResponse.json({ verificationId: id, expiresAt: expiresAt.toISOString() });
   } catch (error) {
+    if (otpStored) {
+      await withTransaction(async (client) => {
+        await client.query("delete from registration_otps where id = $1 and consumed_at is null", [id]);
+      }).catch(() => undefined);
+    }
     if (error instanceof Error && error.message === "DUPLICATE") return NextResponse.json({ error: "That email, username, or phone is already registered." }, { status: 409 });
     if (error instanceof Error && error.message === "OTP_RESEND_COOLDOWN") return NextResponse.json({ error: "Please wait one minute before requesting another code." }, { status: 429 });
     if (error instanceof Error && error.message === "PHILSMS_NOT_CONFIGURED") return NextResponse.json({ error: "SMS verification is not configured yet." }, { status: 503 });
