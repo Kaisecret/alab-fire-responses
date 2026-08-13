@@ -68,7 +68,13 @@ export default function ResidentReportFirePage() {
     const root = rootRef.current;
     if (!root) return undefined;
 
-    return initializeLocationLogic(root);
+    const disposeLocation = initializeLocationLogic(root);
+    const disposePhotoCapture = initializePhotoCapture(root);
+
+    return () => {
+      disposePhotoCapture();
+      disposeLocation();
+    };
   }, []);
 
   return (
@@ -77,6 +83,82 @@ export default function ResidentReportFirePage() {
       <div ref={rootRef} dangerouslySetInnerHTML={{ __html: reportFireMarkup }} />
     </>
   );
+}
+
+function initializePhotoCapture(root: HTMLElement): () => void {
+  const openButton = root.querySelector<HTMLButtonElement>('[data-photo-open]');
+  const dialog = root.querySelector<HTMLElement>('[data-photo-dialog]');
+  const photoInput = root.querySelector<HTMLInputElement>('[data-photo-input]');
+  const takeButton = root.querySelector<HTMLButtonElement>('[data-photo-take]');
+  const retakeButton = root.querySelector<HTMLButtonElement>('[data-photo-retake]');
+  const useButton = root.querySelector<HTMLButtonElement>('[data-photo-use]');
+  const closeButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-photo-close]'));
+  const preview = root.querySelector<HTMLImageElement>('[data-photo-preview]');
+  const summaryPreview = root.querySelector<HTMLImageElement>('[data-photo-summary-preview]');
+  const placeholder = root.querySelector<HTMLElement>('[data-photo-placeholder]');
+
+  if (!openButton || !dialog || !photoInput || !takeButton || !retakeButton || !useButton || !preview || !summaryPreview || !placeholder) {
+    return () => {};
+  }
+
+  let previewUrl = '';
+
+  const closeDialog = () => {
+    dialog.hidden = true;
+  };
+
+  const openDialog = () => {
+    dialog.hidden = false;
+    if (dialog.dataset.photoReady !== 'true') takeButton.focus();
+    else useButton.focus();
+  };
+
+  const openCamera = () => {
+    photoInput.click();
+  };
+
+  const handlePhotoChange = () => {
+    const [photo] = Array.from(photoInput.files ?? []);
+    if (!photo) return;
+
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(photo);
+    preview.src = previewUrl;
+    summaryPreview.src = previewUrl;
+    preview.hidden = false;
+    placeholder.hidden = true;
+    dialog.dataset.photoReady = 'true';
+    openDialog();
+  };
+
+  const usePhoto = () => {
+    openButton.dataset.photoState = 'selected';
+    closeDialog();
+    openButton.focus();
+  };
+
+  const handleKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && !dialog.hidden) closeDialog();
+  };
+
+  openButton.addEventListener('click', openDialog);
+  takeButton.addEventListener('click', openCamera);
+  retakeButton.addEventListener('click', openCamera);
+  useButton.addEventListener('click', usePhoto);
+  closeButtons.forEach((button) => button.addEventListener('click', closeDialog));
+  photoInput.addEventListener('change', handlePhotoChange);
+  window.addEventListener('keydown', handleKeydown);
+
+  return () => {
+    openButton.removeEventListener('click', openDialog);
+    takeButton.removeEventListener('click', openCamera);
+    retakeButton.removeEventListener('click', openCamera);
+    useButton.removeEventListener('click', usePhoto);
+    closeButtons.forEach((button) => button.removeEventListener('click', closeDialog));
+    photoInput.removeEventListener('change', handlePhotoChange);
+    window.removeEventListener('keydown', handleKeydown);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  };
 }
 
 /* ─────────────────────────────────────────────────────────────

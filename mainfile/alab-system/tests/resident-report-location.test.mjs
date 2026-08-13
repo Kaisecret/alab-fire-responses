@@ -215,6 +215,20 @@ test("resident fire report keeps only essential emergency details", () => {
   assert.doesNotMatch(content, /class="right-col"/);
 });
 
+test("resident fire report opens a camera-first photo dialog", () => {
+  const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
+  const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
+
+  assert.match(content, /data-photo-open/);
+  assert.match(content, /data-photo-dialog/);
+  assert.match(content, /data-photo-take/);
+  assert.match(content, /data-photo-use/);
+  assert.match(content, /capture="environment"/);
+  assert.match(page, /initializePhotoCapture/);
+  assert.match(page, /\[data-photo-open\]/);
+  assert.match(page, /photoInput\.click\(\)/);
+});
+
 test("resident pages use one fixed safe-area mobile navigation component", () => {
   const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
   const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
