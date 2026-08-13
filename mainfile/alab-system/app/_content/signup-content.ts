@@ -1460,7 +1460,7 @@ export const signupMarkup = `<main class="signup-container">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                 <circle cx="12" cy="7" r="4"/>
                             </svg>
-                            <input type="text" class="form-input" placeholder="Choose a Username" required id="username" maxlength="30">
+                            <input type="text" class="form-input" placeholder="Choose a Username (3–30 characters)" required id="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9_.-]{3,30}" title="Use 3 to 30 letters, numbers, dots, underscores, or hyphens.">
                         </div>
                     </div>
 

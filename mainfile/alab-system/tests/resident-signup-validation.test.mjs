@@ -17,6 +17,18 @@ test("resident signup uses step-aware validation before account creation", () =>
   assert.match(component, /if \(!validateRegistration\(\)\) return;/);
 });
 
+test("resident signup blocks an invalid username on the account-security step", () => {
+  const markup = readFileSync(join(appRoot, "app", "_content", "signup-content.ts"), "utf8");
+  const component = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");
+  const register = readFileSync(join(appRoot, "app", "api", "auth", "register", "route.ts"), "utf8");
+
+  const usernameInput = markup.match(/<input[^>]*id="username"[^>]*>/)?.[0] ?? "";
+  assert.match(usernameInput, /minlength="3"/);
+  assert.match(usernameInput, /pattern="\[A-Za-z0-9_.-\]\{3,30\}"/);
+  assert.match(component, /formStatus\.textContent = `Please complete your \$\{fieldLabel\(invalidField\)\} to continue\.`/);
+  assert.match(register, /Username must contain 3 to 30 letters, numbers, dots, underscores, or hyphens\./);
+});
+
 test("resident signup uses step five for polished OTP verification and a one-minute resend countdown", () => {
   const component = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");
 

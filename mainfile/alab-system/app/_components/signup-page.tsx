@@ -578,6 +578,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const validateStep = (panel: HTMLElement | null) => {
       const invalidField = getInvalidField(panel);
       if (!invalidField) return true;
+      formStatus.textContent = `Please complete your ${fieldLabel(invalidField)} to continue.`;
       invalidField.focus();
       invalidField.reportValidity();
       return false;
