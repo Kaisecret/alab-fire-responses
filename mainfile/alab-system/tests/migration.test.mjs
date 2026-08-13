@@ -161,7 +161,8 @@ test("login content preserves the source form, imagery, and home route", () => {
 
   const route = readFileSync(routePath, "utf8");
   assert.match(route, /Resident Login - ALAB/);
-  assert.match(route, /next\/font\/google/);
+  assert.doesNotMatch(route, /next\/font\/google/);
+  assert.match(route, /fontVariableClassName=""/);
   assert.doesNotMatch(route, /fonts\.googleapis\.com/);
 
   const oldRoute = readFileSync(oldRoutePath, "utf8");
