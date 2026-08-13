@@ -228,6 +228,7 @@ test("resident pages use one fixed safe-area mobile navigation component", () =>
   assert.match(residentMobileNavigation, /\.rl-mn-item svg\s*\{[\s\S]*?width:\s*1\.7rem/);
   assert.match(residentMobileNavigation, /\.rl-mn-fab\s*\{[\s\S]*?width:\s*4\.2rem/);
   assert.match(residentMobileNavigation, /\.rl-mn-fab\s*\{[\s\S]*?bottom:\s*1\.05rem/);
+  assert.match(residentMobileNavigation, /\.rl-mobile-nav \.rl-mn-fab\s*\{[\s\S]*?width:\s*67\.2px !important;[\s\S]*?height:\s*67\.2px !important;[\s\S]*?bottom:\s*16\.8px !important;/);
   assert.match(residentMobileNavigation, /background:\s*linear-gradient\(145deg, #ef4444, #b91c1c\)/);
   assert.doesNotMatch(content, /data-location-adjust/);
   assert.match(content, /data-landmark-input/);

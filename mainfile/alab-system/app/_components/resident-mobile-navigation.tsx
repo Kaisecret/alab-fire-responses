@@ -95,6 +95,13 @@ export const residentMobileNavigationStyles = `
       line-height: 1;
       white-space: nowrap;
     }
+
+    /* Keep the emergency action pixel-identical even when a page loads other CSS. */
+    .rl-mobile-nav .rl-mn-fab {
+      width: 67.2px !important;
+      height: 67.2px !important;
+      bottom: 16.8px !important;
+    }
   }
 `;
 
