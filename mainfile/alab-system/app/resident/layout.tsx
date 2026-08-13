@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { ResidentMobileNavigation, residentMobileNavigationStyles } from "@/app/_components/resident-mobile-navigation";
 
 /* ─────────────────────────────────────────────
    Shared Resident Layout
@@ -219,11 +220,6 @@ const layoutStyles = `
     display: none;
   }
 
-  /* ==================== MOBILE BOTTOM NAV ==================== */
-  .rl-mobile-nav {
-    display: none;
-  }
-
   /* ==================== RESPONSIVE ==================== */
   @media (max-width: 950px) {
     .rl-desktop-header {
@@ -314,130 +310,21 @@ const layoutStyles = `
       z-index: 5;
     }
 
-    /* ===== MOBILE BOTTOM NAV ===== */
-    .rl-mobile-nav {
-      display: flex;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: white;
-      border-top: 1px solid #e2e8f0;
-      min-height: 5.3rem;
-      box-sizing: border-box;
-      padding: 0.7rem 0.7rem calc(0.8rem + env(safe-area-inset-bottom));
-      justify-content: space-between;
-      align-items: flex-end;
-      isolation: isolate;
-      z-index: 100;
-      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
-    }
-
-    .rl-mn-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.2rem;
-      color: #94a3b8;
-      font-size: 0.74rem;
-      font-weight: 600;
-      text-decoration: none;
-      width: 20%;
-      transition: color 0.2s;
-    }
-    .rl-mn-item.rl-mn-active {
-      color: #d91b10;
-    }
-    .rl-mn-item svg {
-      width: 1.7rem;
-      height: 1.7rem;
-    }
-
-    .rl-mn-fab-wrap {
-      position: relative;
-      width: 20%;
-      height: 3.8rem;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-    }
-    .rl-mn-fab {
-      position: absolute;
-      bottom: 1.05rem;
-      display: flex;
-      width: 4.2rem;
-      height: 4.2rem;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding-bottom: 0.28rem;
-      border: 3px solid #ffffff;
-      border-radius: 50%;
-      color: #ffffff;
-      background: linear-gradient(145deg, #ef4444, #b91c1c);
-      box-shadow: 0 .55rem 1.35rem rgba(217, 27, 16, .36);
-      text-decoration: none;
-      transition: transform .15s ease, box-shadow .15s ease;
-    }
-    .rl-mn-fab:active { transform: scale(.94); }
-    .rl-mn-fab:hover { box-shadow: 0 .6rem 1.5rem rgba(217, 27, 16, .4); }
-    .rl-mn-fab img {
-      width: 2.2rem;
-      height: 2.2rem;
-      margin-top: .12rem;
-      object-fit: contain;
-      filter: brightness(0) invert(1);
-    }
-    .rl-mn-fab span {
-      margin-top: -.3rem;
-      font-size: .49rem;
-      font-weight: 800;
-      letter-spacing: .02em;
-      white-space: nowrap;
-    }
-
   }
 `;
 
 /* ─── SVG Icon components (modern uniform Lucide-style) ─── */
 
 function IconHome({ filled }: { filled?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={filled ? "2.3" : "2"} strokeLinecap="round" strokeLinejoin="round" className="rl-nav-icon">
-      <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
-      <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={filled ? "2.3" : "2"} strokeLinecap="round" strokeLinejoin="round" className="rl-nav-icon"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>;
 }
 
 function IconReports({ filled }: { filled?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={filled ? "2.3" : "2"} strokeLinecap="round" strokeLinejoin="round" className="rl-nav-icon">
-      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-      <path d="M10 13H8" />
-      <path d="M16 17H8" />
-      <path d="M16 13h-2" />
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={filled ? "2.3" : "2"} strokeLinecap="round" strokeLinejoin="round" className="rl-nav-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 13H8" /><path d="M16 17H8" /><path d="M16 13h-2" /></svg>;
 }
 
 function IconGuide({ filled }: { filled?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={filled ? "2.3" : "2"} strokeLinecap="round" strokeLinejoin="round" className="rl-nav-icon">
-      <path d="M12 7v14" />
-      <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
-    </svg>
-  );
-}
-
-function IconProfile({ filled }: { filled?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={filled ? "2.3" : "2"} strokeLinecap="round" strokeLinejoin="round" className="rl-nav-icon">
-      <circle cx="12" cy="8" r="5" />
-      <path d="M20 21a8 8 0 0 0-16 0" />
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={filled ? "2.3" : "2"} strokeLinecap="round" strokeLinejoin="round" className="rl-nav-icon"><path d="M12 7v14" /><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" /></svg>;
 }
 
 function IconBell() {
@@ -508,6 +395,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <style>{layoutStyles}</style>
+      <style>{residentMobileNavigationStyles}</style>
       <div className="resident-shell" onSubmitCapture={requestLogoutConfirmation}>
         {/* ===== MOBILE HEADER ===== */}
         <header className="rl-mobile-header">
@@ -592,31 +480,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
         {/* ===== PAGE CONTENT ===== */}
         {children}
 
-        {/* ===== MOBILE BOTTOM NAV ===== */}
-        <nav className="rl-mobile-nav">
-          <a href="/resident" className={`rl-mn-item${activeKey === "home" ? " rl-mn-active" : ""}`}>
-            <IconHome filled={activeKey === "home"} />
-            Home
-          </a>
-          <a href="/resident/reports" className={`rl-mn-item${activeKey === "reports" ? " rl-mn-active" : ""}`}>
-            <IconReports filled={activeKey === "reports"} />
-            Reports
-          </a>
-          <div className="rl-mn-fab-wrap">
-            <a href="/resident/report-fire" className="rl-mn-fab">
-              <img src="/images/fire logo.webp" alt="Fire Logo" />
-              <span>Report Fire</span>
-            </a>
-          </div>
-          <a href="/resident/guide" className={`rl-mn-item${activeKey === "guide" ? " rl-mn-active" : ""}`}>
-            <IconGuide filled={activeKey === "guide"} />
-            Guide
-          </a>
-          <a href="/resident/profile" className={`rl-mn-item${isProfileActive ? " rl-mn-active" : ""}`}>
-            <IconProfile filled={isProfileActive} />
-            Profile
-          </a>
-        </nav>
+        <ResidentMobileNavigation activeKey={activeKey} isProfileActive={isProfileActive} />
       </div>
       {isLogoutDialogOpen && (
         <div className="resident-logout-backdrop" role="presentation" onMouseDown={() => setIsLogoutDialogOpen(false)}>

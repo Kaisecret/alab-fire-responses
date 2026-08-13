@@ -10,6 +10,10 @@ const layoutSource = await readFile(
   new URL("../app/resident/layout.tsx", import.meta.url),
   "utf8",
 );
+const mobileNavigationSource = await readFile(
+  new URL("../app/_components/resident-mobile-navigation.tsx", import.meta.url),
+  "utf8",
+);
 const homePageSource = await readFile(
   new URL("../app/_components/resident-home-page.tsx", import.meta.url),
   "utf8",
@@ -40,10 +44,10 @@ test("resident mobile emergency button goes directly to the fire report form", (
 });
 
 test("mobile profile navigation keeps the same outlined icon when active", () => {
-  assert.doesNotMatch(layoutSource, /function IconProfile[\s\S]*?if \(filled\)/);
+  assert.doesNotMatch(mobileNavigationSource, /function ProfileIcon[\s\S]*?if \(active\)/);
   assert.match(
-    layoutSource,
-    /function IconProfile[\s\S]*?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth=\{filled \? "2\.3" : "2"\}/,
+    mobileNavigationSource,
+    /function ProfileIcon[\s\S]*?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth=\{active \? "2\.3" : "2"\}/,
   );
 });
 

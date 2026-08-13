@@ -5,6 +5,7 @@ import test from "node:test";
 
 const root = process.cwd();
 const residentLayout = readFileSync(join(root, "app", "resident", "layout.tsx"), "utf8");
+const residentMobileNavigation = readFileSync(join(root, "app", "_components", "resident-mobile-navigation.tsx"), "utf8");
 
 test("resident fire report requests browser location and updates the scoped location card", () => {
   const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
@@ -181,7 +182,7 @@ test("resident mobile nav stays above the map and reserves its bottom space", ()
     /\.map-preview\[data-location-map-surface\]\s*\{[\s\S]*?z-index:\s*0;/,
   );
   assert.match(
-    residentLayout,
+    residentMobileNavigation,
     /@media \(max-width: 950px\)[\s\S]*\.rl-mobile-nav\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?bottom:\s*0;[\s\S]*?z-index:\s*100;/,
   );
 });
@@ -214,18 +215,20 @@ test("resident fire report keeps only essential emergency details", () => {
   assert.doesNotMatch(content, /class="right-col"/);
 });
 
-test("resident pages share a larger uniform branded mobile fire action", () => {
+test("resident pages use one fixed safe-area mobile navigation component", () => {
   const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
   const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
 
-  assert.match(residentLayout, /className="rl-mn-fab"/);
-  assert.match(residentLayout, /\.rl-mobile-nav\s*\{[\s\S]*?min-height:\s*5\.3rem/);
-  assert.match(residentLayout, /\.rl-mn-item\s*\{[\s\S]*?font-size:\s*0\.74rem/);
-  assert.match(residentLayout, /\.rl-mn-item svg\s*\{[\s\S]*?width:\s*1\.7rem/);
-  assert.match(residentLayout, /\.rl-mn-fab\s*\{[\s\S]*?width:\s*4\.2rem/);
-  assert.match(residentLayout, /\.rl-mn-fab-wrap\s*\{[\s\S]*?height:\s*3\.8rem/);
-  assert.match(residentLayout, /\.rl-mn-fab\s*\{[\s\S]*?bottom:\s*1\.05rem/);
-  assert.match(residentLayout, /background:\s*linear-gradient\(145deg, #ef4444, #b91c1c\)/);
+  assert.match(residentLayout, /import \{ ResidentMobileNavigation, residentMobileNavigationStyles \} from "@\/app\/_components\/resident-mobile-navigation"/);
+  assert.match(residentLayout, /<ResidentMobileNavigation activeKey=\{activeKey\} isProfileActive=\{isProfileActive\} \/>/);
+  assert.doesNotMatch(residentLayout, /className="rl-mobile-nav"/);
+  assert.match(residentMobileNavigation, /className="rl-mobile-nav"/);
+  assert.match(residentMobileNavigation, /position:\s*fixed;[\s\S]*?bottom:\s*0;/);
+  assert.match(residentMobileNavigation, /padding:\s*0\.7rem 0\.7rem calc\(0\.8rem \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(residentMobileNavigation, /\.rl-mn-item svg\s*\{[\s\S]*?width:\s*1\.7rem/);
+  assert.match(residentMobileNavigation, /\.rl-mn-fab\s*\{[\s\S]*?width:\s*4\.2rem/);
+  assert.match(residentMobileNavigation, /\.rl-mn-fab\s*\{[\s\S]*?bottom:\s*1\.05rem/);
+  assert.match(residentMobileNavigation, /background:\s*linear-gradient\(145deg, #ef4444, #b91c1c\)/);
   assert.doesNotMatch(content, /data-location-adjust/);
   assert.match(content, /data-landmark-input/);
   assert.match(page, /\[data-landmark-input\]/);
