@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
+import { residentAuthFontStyles } from "../_content/resident-auth-font";
 import { loginMarkup, loginStyles } from "../_content/login-content";
 
 const visibleEye = `
@@ -152,6 +153,7 @@ export function LoginPage({
 
   return (
     <>
+      <style>{residentAuthFontStyles}</style>
       <style>{loginStyles}</style>
       <div
         ref={rootRef}

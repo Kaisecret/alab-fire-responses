@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { signupMarkup, signupStyles } from "../_content/signup-content";
+import { residentAuthFontStyles } from "../_content/resident-auth-font";
 import { antiqueBarangays } from "../_content/antique-barangays";
 
 const visibleEye = `
@@ -846,6 +847,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
 
   return (
     <>
+      <style>{residentAuthFontStyles}</style>
       <style>{signupStyles}</style>
       <div
         ref={rootRef}
