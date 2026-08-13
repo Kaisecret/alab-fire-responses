@@ -328,6 +328,7 @@ const layoutStyles = `
       padding: 0.7rem 0.7rem calc(0.8rem + env(safe-area-inset-bottom));
       justify-content: space-between;
       align-items: flex-end;
+      isolation: isolate;
       z-index: 100;
       box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
     }
@@ -355,12 +356,14 @@ const layoutStyles = `
     .rl-mn-fab-wrap {
       position: relative;
       width: 20%;
+      height: 3.8rem;
       display: flex;
+      align-items: flex-end;
       justify-content: center;
     }
     .rl-mn-fab {
       position: absolute;
-      bottom: 0.44rem;
+      bottom: 1.05rem;
       display: flex;
       width: 4.2rem;
       height: 4.2rem;

@@ -201,15 +201,14 @@ test("resident report refresh keeps styles and map overlay outside Leaflet-owned
   assert.ok(overlayStart > mapClose, "location overlay must be a sibling outside the Leaflet map target");
 });
 
-test("resident fire report renders a focused responsive emergency form", () => {
+test("resident fire report keeps only essential emergency details", () => {
   const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
 
   assert.match(content, /report-form-shell/);
-  assert.match(content, /data-report-reason/);
-  assert.match(content, /Electrical malfunction/);
-  assert.match(content, /Cooking accident/);
-  assert.match(content, /Open flame or cigarette/);
-  assert.match(content, /Unknown \/ Other/);
+  assert.doesNotMatch(content, /data-report-reason/);
+  assert.doesNotMatch(content, /REASON <span/);
+  assert.doesNotMatch(content, /SHORT DESCRIPTION/);
+  assert.match(content, /<span class="step-number">4<\/span>ADD FIRE PHOTO/);
   assert.match(content, /@media \(max-width: 950px\)[\s\S]*\.report-form-shell/);
   assert.doesNotMatch(content, /class="left-col"/);
   assert.doesNotMatch(content, /class="right-col"/);
@@ -224,6 +223,8 @@ test("resident pages share a larger uniform branded mobile fire action", () => {
   assert.match(residentLayout, /\.rl-mn-item\s*\{[\s\S]*?font-size:\s*0\.74rem/);
   assert.match(residentLayout, /\.rl-mn-item svg\s*\{[\s\S]*?width:\s*1\.7rem/);
   assert.match(residentLayout, /\.rl-mn-fab\s*\{[\s\S]*?width:\s*4\.2rem/);
+  assert.match(residentLayout, /\.rl-mn-fab-wrap\s*\{[\s\S]*?height:\s*3\.8rem/);
+  assert.match(residentLayout, /\.rl-mn-fab\s*\{[\s\S]*?bottom:\s*1\.05rem/);
   assert.match(residentLayout, /background:\s*linear-gradient\(145deg, #ef4444, #b91c1c\)/);
   assert.doesNotMatch(content, /data-location-adjust/);
   assert.match(content, /data-landmark-input/);

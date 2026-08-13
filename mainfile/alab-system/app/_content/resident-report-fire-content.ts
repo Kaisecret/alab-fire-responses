@@ -81,7 +81,7 @@ export const reportFireStyles = `
   .action-btn-row-single { grid-template-columns: minmax(0, 1fr); }
   .btn-small-outline, .btn-outline-red, .btn-solid-red, .btn-cancel { display: inline-flex; min-height: 2.65rem; align-items: center; justify-content: center; gap: .45rem; border: 1px solid #DCE2EA; border-radius: .72rem; background: #fff; color: var(--report-ink); font-size: .76rem; font-weight: 800; cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease; }
   .btn-small-outline:hover:not(:disabled), .btn-cancel:hover { transform: translateY(-1px); border-color: var(--report-red); color: var(--report-red); box-shadow: 0 .45rem 1rem rgba(219, 27, 13, .09); }
-  .btn-small-outline:focus-visible, .btn-cancel:focus-visible, .btn-primary:focus-visible, .type-btn:focus-visible, .reason-select:focus-visible { outline: 3px solid rgba(219, 27, 13, .22); outline-offset: 2px; }
+  .btn-small-outline:focus-visible, .btn-cancel:focus-visible, .btn-primary:focus-visible, .type-btn:focus-visible { outline: 3px solid rgba(219, 27, 13, .22); outline-offset: 2px; }
   .btn-small-outline:disabled { cursor: not-allowed; color: #B7C0CC; background: #FBFCFD; border-color: #EDF0F4; box-shadow: none; }
 
   .map-preview[data-location-map-surface] { position: relative; z-index: 0; display: block; height: 11rem; overflow: hidden; border-top: 1px solid var(--report-line); background: #D9EEF1; }
@@ -112,15 +112,11 @@ export const reportFireStyles = `
   .type-btn:hover { transform: translateY(-2px); border-color: #F0AAA3; color: var(--report-red); box-shadow: 0 .75rem 1.5rem rgba(16, 34, 49, .07); }
   .type-btn.selected { border-color: var(--report-red); color: var(--report-red); background: linear-gradient(145deg, #FFF7F6, #FFFDFC); box-shadow: inset 0 0 0 1px rgba(219, 27, 13, .08), 0 .75rem 1.5rem rgba(219, 27, 13, .08); }
 
-  .report-detail-grid { display: grid; grid-template-columns: .88fr 1.15fr .95fr; gap: clamp(.9rem, 2vw, 1.25rem); align-items: stretch; }
-  .reason-field, .description-field, .photo-field { display: flex; min-width: 0; flex-direction: column; }
+  .report-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(.9rem, 2vw, 1.25rem); align-items: stretch; }
+  .photo-field { display: flex; min-width: 0; flex-direction: column; }
   .field-label { display: flex; align-items: center; gap: .5rem; margin-bottom: .65rem; color: var(--report-ink); font-size: .79rem; font-weight: 850; }
   .field-label .step-number { width: 1.42rem; height: 1.42rem; flex-basis: 1.42rem; font-size: .68rem; }
   .field-helper { min-height: 2.25rem; margin: 0 0 .65rem; color: var(--report-muted); font-size: .73rem; line-height: 1.48; }
-  .reason-select, .desc-input { width: 100%; border: 1px solid #DDE3EA; border-radius: .75rem; color: var(--report-ink); background: #fff; font-size: .82rem; transition: border-color .18s ease, box-shadow .18s ease; }
-  .reason-select { min-height: 2.85rem; padding: 0 .8rem; appearance: auto; }
-  .desc-input { min-height: 8.2rem; padding: .8rem; resize: vertical; line-height: 1.5; }
-  .reason-select:focus, .desc-input:focus { border-color: var(--report-red); outline: none; box-shadow: 0 0 0 .22rem rgba(219, 27, 13, .10); }
   .photo-upload { display: flex; min-height: 8.2rem; align-items: center; justify-content: center; padding: .9rem; border: 1.5px dashed #F0B8B1; border-radius: .85rem; background: #FFFDFD; text-align: center; }
   .photo-upload svg { width: 1.55rem; height: 1.55rem; margin-bottom: .35rem; color: var(--report-red); }
   .photo-upload strong, .photo-upload span { display: block; }
@@ -138,7 +134,7 @@ export const reportFireStyles = `
   @media (max-width: 950px) {
     .report-page-root { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
     .report-form-shell { padding: 1rem; border-radius: 1.25rem; }
-    .two-col-grid, .report-detail-grid { grid-template-columns: 1fr; }
+    .two-col-grid { grid-template-columns: 1fr; }
     .location-box[data-location-card] { min-height: 26rem; }
     .location-box[data-location-card] .location-details { display: flex; }
     .map-preview[data-location-map-surface] { display: block; height: 12.25rem; }
@@ -147,7 +143,7 @@ export const reportFireStyles = `
     .type-btn { min-height: 5.8rem; font-size: .7rem; }
     .type-btn svg { width: 1.42rem; height: 1.42rem; }
     .field-helper { min-height: auto; }
-    .desc-input, .photo-upload { min-height: 7rem; }
+    .photo-upload { min-height: 7rem; }
   }
   @media (max-width: 540px) {
     .report-page-root { padding: .85rem .75rem calc(6rem + env(safe-area-inset-bottom)); }
@@ -229,9 +225,7 @@ export const reportFireMarkup = `
       </section>
 
       <section class="report-detail-grid">
-        <label class="reason-field"><span class="field-label"><span class="step-number">4</span>REASON <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">What may have started the fire?</span><select class="reason-select" data-report-reason aria-label="Reason for fire"><option value="">Select reason</option><option>Electrical malfunction</option><option>Cooking accident</option><option>Open flame or cigarette</option><option>Unknown / Other</option></select></label>
-        <label class="description-field"><span class="field-label"><span class="step-number">5</span>SHORT DESCRIPTION <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">Add details that can help responders identify the incident.</span><textarea class="desc-input" placeholder="Example: Fire is spreading to another house."></textarea></label>
-        <div class="photo-field"><span class="field-label"><span class="step-number">6</span>ADD FIRE PHOTO <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">Upload a photo only when it is safe to do so.</span><label class="photo-upload" for="fire-photo"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Choose a photo</strong><span>JPG or PNG, up to 10MB</span></span></label><input class="photo-input" id="fire-photo" type="file" accept="image/jpeg,image/png" /></div>
+        <div class="photo-field"><span class="field-label"><span class="step-number">4</span>ADD FIRE PHOTO <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">Upload a photo only when it is safe to do so.</span><label class="photo-upload" for="fire-photo"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Choose a photo</strong><span>JPG or PNG, up to 10MB</span></span></label><input class="photo-input" id="fire-photo" type="file" accept="image/jpeg,image/png" /></div>
       </section>
 
       <footer class="form-footer"><button type="button" class="btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>SEND FIRE ALERT</button><button type="button" class="btn-cancel">Cancel</button></footer>
