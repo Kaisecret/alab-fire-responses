@@ -29,6 +29,15 @@ test("resident signup uses step five for polished OTP verification and a one-min
   assert.match(component, /window\.location\.assign\("\/resident"\)/);
 });
 
+test("resident signup restarts the full resend countdown after every successful OTP resend", () => {
+  const component = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");
+
+  assert.match(component, /const startResendCountdown = \(\) =>/);
+  assert.match(component, /window\.clearInterval\(resendTimer\)/);
+  assert.match(component, /secondsRemaining = RESEND_COOLDOWN_SECONDS/);
+  assert.match(component, /startResendCountdown\(\);\s*status\.textContent = "A new code was sent/);
+});
+
 test("Google login starts OAuth and pre-fills a new resident signup without skipping verification", () => {
   const login = readFileSync(join(appRoot, "app", "_components", "login-page.tsx"), "utf8");
   const signup = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");

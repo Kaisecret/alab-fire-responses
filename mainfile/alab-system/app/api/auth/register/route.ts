@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 
   if (!firstName || !lastName || !/^\S+@\S+\.\S+$/.test(email) || !/^\+?[0-9]{10,15}$/.test(phone) ||
     !municipality || !barangay || !address || !/^[A-Za-z0-9_.-]{3,30}$/.test(username) ||
-    password.length < 8 || !frontDocumentName || !input.selfieCaptured || !input.termsAccepted) {
+    (!pendingPasswordHash && password.length < 8) || !frontDocumentName || !input.selfieCaptured || !input.termsAccepted) {
     return NextResponse.json({ error: "Please complete all required registration fields." }, { status: 400 });
   }
 

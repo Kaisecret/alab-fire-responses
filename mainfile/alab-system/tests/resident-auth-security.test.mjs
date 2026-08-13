@@ -87,6 +87,13 @@ test("resident OTP sending enforces a server-side one-minute resend cooldown", (
   assert.match(start, /status: 429/);
 });
 
+test("verified OTP registration accepts the securely stored password hash", () => {
+  const register = source("app/api/auth/register/route.ts");
+
+  assert.match(register, /pendingPasswordHash/);
+  assert.match(register, /!pendingPasswordHash && password\.length < 8/);
+});
+
 test("Google OAuth links verified existing residents or creates a safe signup prefill", () => {
   const googleStart = join(appRoot, "app", "api", "auth", "google", "start", "route.ts");
   const googleCallback = join(appRoot, "app", "auth", "callback", "route.ts");

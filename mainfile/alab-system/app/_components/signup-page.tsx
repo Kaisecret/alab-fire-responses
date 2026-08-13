@@ -687,8 +687,21 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         resendButton.style.color = secondsRemaining > 0 ? "#94a3b8" : "#b91c1c";
         resendButton.style.cursor = secondsRemaining > 0 ? "not-allowed" : "pointer";
       };
-      const resendTimer = window.setInterval(() => { secondsRemaining = Math.max(0, secondsRemaining - 1); updateResendButton(); if (secondsRemaining === 0) window.clearInterval(resendTimer); }, 1000);
-      updateResendButton();
+      let resendTimer: number | undefined;
+      const startResendCountdown = () => {
+        window.clearInterval(resendTimer);
+        secondsRemaining = RESEND_COOLDOWN_SECONDS;
+        updateResendButton();
+        resendTimer = window.setInterval(() => {
+          secondsRemaining = Math.max(0, secondsRemaining - 1);
+          updateResendButton();
+          if (secondsRemaining === 0) {
+            window.clearInterval(resendTimer);
+            resendTimer = undefined;
+          }
+        }, 1000);
+      };
+      startResendCountdown();
       inputs.forEach((input, index) => input.addEventListener("input", () => { input.value = input.value.replace(/\D/g, "").slice(0, 1); if (input.value) inputs[index + 1]?.focus(); }));
       panel.querySelector<HTMLButtonElement>("#editSignupDetails")!.onclick = () => { window.clearInterval(resendTimer); goToStep(4); };
       const requestOtp = async () => {
@@ -698,7 +711,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         if (!response.ok || !result.verificationId) throw new Error(result.error ?? "Unable to send the verification code.");
         return result.verificationId;
       };
-      resendButton.onclick = async () => { status.textContent = "Sending a new code…"; try { activeVerificationId = await requestOtp(); inputs.forEach((input) => { input.value = ""; }); inputs[0]?.focus(); secondsRemaining = RESEND_COOLDOWN_SECONDS; updateResendButton(); status.textContent = "A new code was sent."; } catch (error) { status.textContent = error instanceof Error ? error.message : "Unable to resend the code."; } };
+      resendButton.onclick = async () => { status.textContent = "Sending a new code…"; try { activeVerificationId = await requestOtp(); inputs.forEach((input) => { input.value = ""; }); inputs[0]?.focus(); startResendCountdown(); status.textContent = "A new code was sent. You can request another code in 01:00."; } catch (error) { status.textContent = error instanceof Error ? error.message : "Unable to resend the code."; } };
       verifyButton.onclick = async () => {
         const code = inputs.map((input) => input.value).join("");
         if (code.length !== 6) { status.textContent = "Enter all six digits."; return; }
