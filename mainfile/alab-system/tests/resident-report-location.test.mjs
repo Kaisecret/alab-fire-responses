@@ -214,3 +214,16 @@ test("resident fire report renders a focused responsive emergency form", () => {
   assert.doesNotMatch(content, /class="left-col"/);
   assert.doesNotMatch(content, /class="right-col"/);
 });
+
+test("resident report keeps a normal mobile fire nav item and editable auto-filled landmark", () => {
+  const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
+  const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
+
+  assert.match(residentLayout, /href="\/resident\/report-fire" className=\{`rl-mn-item/);
+  assert.doesNotMatch(residentLayout, /className="rl-mn-fab"/);
+  assert.doesNotMatch(content, /data-location-adjust/);
+  assert.match(content, /data-landmark-input/);
+  assert.match(page, /\[data-landmark-input\]/);
+  assert.match(page, /landmarkInput\.value = nameValue/);
+  assert.match(page, /landmarkInput\?\.addEventListener\('input'/);
+});

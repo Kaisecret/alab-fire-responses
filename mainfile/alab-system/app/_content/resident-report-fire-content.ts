@@ -78,6 +78,7 @@ export const reportFireStyles = `
   .accuracy { margin: 0 0 .8rem; color: #087E3E; font-size: .75rem; font-weight: 750; }
 
   .action-btn-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-top: auto; }
+  .action-btn-row-single { grid-template-columns: minmax(0, 1fr); }
   .btn-small-outline, .btn-outline-red, .btn-solid-red, .btn-cancel { display: inline-flex; min-height: 2.65rem; align-items: center; justify-content: center; gap: .45rem; border: 1px solid #DCE2EA; border-radius: .72rem; background: #fff; color: var(--report-ink); font-size: .76rem; font-weight: 800; cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease; }
   .btn-small-outline:hover:not(:disabled), .btn-cancel:hover { transform: translateY(-1px); border-color: var(--report-red); color: var(--report-red); box-shadow: 0 .45rem 1rem rgba(219, 27, 13, .09); }
   .btn-small-outline:focus-visible, .btn-cancel:focus-visible, .btn-primary:focus-visible, .type-btn:focus-visible, .reason-select:focus-visible { outline: 3px solid rgba(219, 27, 13, .22); outline-offset: 2px; }
@@ -99,9 +100,9 @@ export const reportFireStyles = `
   .landmark-status { display: block; margin-bottom: .22rem; color: var(--report-muted); font-size: .64rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
   .landmark-name { margin: 0; color: var(--report-ink); font-size: .95rem; line-height: 1.35; overflow-wrap: anywhere; }
   .landmark-helper { margin: .95rem 0 1rem; color: var(--report-muted); font-size: .78rem; line-height: 1.55; }
-  .landmark-select-display { display: flex; min-height: 3rem; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .9rem; padding: .7rem .8rem; border: 1px solid #E0E6ED; border-radius: .75rem; color: var(--report-muted); background: #FCFDFE; font-size: .76rem; }
-  .landmark-select-display svg { width: 1rem; height: 1rem; flex: 0 0 1rem; color: var(--report-red); }
-  .landmark-box .action-btn-row { margin-top: auto; }
+  .landmark-input { width: 100%; min-height: 3rem; margin-top: .9rem; padding: .7rem .8rem; border: 1px solid #E0E6ED; border-radius: .75rem; color: var(--report-ink); background: #FCFDFE; font-size: .78rem; outline: none; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+  .landmark-input::placeholder { color: #8794A5; }
+  .landmark-input:focus { border-color: var(--report-red); background: #fff; box-shadow: 0 0 0 .22rem rgba(219, 27, 13, .10); }
   .landmark-box[data-landmark-state="confirmed"] .landmark-icon { background: #0C8B48; box-shadow: 0 .55rem 1.2rem rgba(12, 139, 72, .18); }
   .landmark-box[data-landmark-state="unavailable"] .landmark-icon { background: #7A8797; box-shadow: none; }
 
@@ -192,8 +193,7 @@ export const reportFireMarkup = `
               <p data-location-text hidden>Barangay checking, Municipality checking</p>
               <div class="accuracy" data-location-accuracy hidden></div>
               <div class="location-error" data-location-error hidden></div>
-              <div class="action-btn-row">
-                <button type="button" class="btn-small-outline" data-location-adjust><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Adjust Pin</button>
+              <div class="action-btn-row action-btn-row-single">
                 <button type="button" class="btn-small-outline" data-location-refresh><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Detect my location</button>
               </div>
             </div>
@@ -211,12 +211,8 @@ export const reportFireMarkup = `
               <span class="landmark-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg></span>
               <div><span class="landmark-status" data-landmark-status>Waiting for location</span><h3 class="landmark-name" data-landmark-name>Finding a nearby mapped place...</h3></div>
             </div>
-            <div class="landmark-select-display" aria-label="Nearest landmark selection"><span>Closest named place or road</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
-            <p class="landmark-helper">Confirm the suggested landmark, or adjust the pin to choose a more accurate place.</p>
-            <div class="action-btn-row">
-              <button type="button" class="btn-small-outline" data-landmark-confirm disabled><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Use Suggestion</button>
-              <button type="button" class="btn-small-outline" data-landmark-change disabled><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Adjust Location</button>
-            </div>
+            <input class="landmark-input" data-landmark-input type="text" maxlength="120" placeholder="Type a landmark if needed" aria-label="Nearest landmark" />
+            <p class="landmark-helper">A nearby place is filled automatically. You can type a different landmark if it is more accurate.</p>
           </div>
         </section>
       </div>

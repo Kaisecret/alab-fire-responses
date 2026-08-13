@@ -86,7 +86,6 @@ export default function ResidentReportFirePage() {
 function initializeLocationLogic(root: HTMLElement): () => void {
     const card = root.querySelector<HTMLElement>('[data-location-card]');
     const refresh = root.querySelector<HTMLButtonElement>('[data-location-refresh]');
-    const adjust = root.querySelector<HTMLButtonElement>('[data-location-adjust]');
     if (!card || !refresh) return () => {};
     const locationCard: HTMLElement = card;
     const refreshButton: HTMLButtonElement = refresh;
@@ -106,6 +105,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
     const landmarkCard = root.querySelector<HTMLElement>('[data-nearest-landmark]');
     const landmarkName = root.querySelector<HTMLElement>('[data-landmark-name]');
     const landmarkStatus = root.querySelector<HTMLElement>('[data-landmark-status]');
+    const landmarkInput = root.querySelector<HTMLInputElement>('[data-landmark-input]');
     const landmarkConfirm = root.querySelector<HTMLButtonElement>('[data-landmark-confirm]');
     const landmarkChange = root.querySelector<HTMLButtonElement>('[data-landmark-change]');
 
@@ -140,6 +140,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
     let bestReading: LocationReading | null = null;
     let isFinalizing = false;
     let isAdjusting = false;
+    let hasManualLandmark = false;
     let leaflet: typeof import('leaflet') | null = null;
     let map: LeafletMap | null = null;
     let marker: Marker | null = null;
@@ -206,6 +207,9 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       }
       if (landmarkName) landmarkName.textContent = nameValue;
       if (landmarkStatus) landmarkStatus.textContent = statusValue;
+      if (landmarkInput && !hasManualLandmark && (kind === 'suggested' || kind === 'confirmed')) {
+        landmarkInput.value = nameValue;
+      }
       if (landmarkConfirm) landmarkConfirm.disabled = kind !== 'suggested';
       if (landmarkChange) landmarkChange.disabled = map === null;
     }
@@ -394,6 +398,8 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       stopDetection();
       reverseController?.abort();
       isAdjusting = false;
+      hasManualLandmark = false;
+      if (landmarkInput) landmarkInput.value = '';
       isFinalizing = true;
       marker?.dragging?.disable();
       const reading: LocationReading = {
@@ -573,7 +579,17 @@ function initializeLocationLogic(root: HTMLElement): () => void {
 
     void initializeMap();
     refreshButton.addEventListener('click', detectLocation);
-    adjust?.addEventListener('click', beginManualAdjustment);
+    landmarkInput?.addEventListener('input', () => {
+      const manualLandmark = landmarkInput.value.trim();
+      hasManualLandmark = Boolean(manualLandmark);
+      if (!manualLandmark) return;
+      if (landmarkCard) {
+        landmarkCard.dataset.landmarkState = 'confirmed';
+        landmarkCard.dataset.landmarkName = manualLandmark;
+      }
+      if (landmarkName) landmarkName.textContent = manualLandmark;
+      if (landmarkStatus) landmarkStatus.textContent = 'Entered by resident';
+    });
     landmarkConfirm?.addEventListener('click', confirmLandmarkSelection);
     landmarkChange?.addEventListener('click', changeLandmarkSelection);
     detectLocation();
@@ -585,7 +601,6 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       reverseController?.abort();
       resizeObserver?.disconnect();
       refreshButton.removeEventListener('click', detectLocation);
-      adjust?.removeEventListener('click', beginManualAdjustment);
       landmarkConfirm?.removeEventListener('click', confirmLandmarkSelection);
       landmarkChange?.removeEventListener('click', changeLandmarkSelection);
       map?.remove();
