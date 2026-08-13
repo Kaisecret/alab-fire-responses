@@ -1,891 +1,244 @@
 export const reportFireStyles = `
-    /* BASE STYLES */
-    :root {
-        --primary-red: #d31212;
-        --text-dark: #1e293b;
-        --text-muted: #64748b;
-        --border-color: #e2e8f0;
-        --card-bg: #f8fafc;
-        --bg-white: #ffffff;
-        --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.05);
-    }
+  .report-page-root {
+    --report-red: #DB1B0D;
+    --report-red-deep: #B8150C;
+    --report-ink: #102231;
+    --report-muted: #5C6B7A;
+    --report-line: #E7E9EE;
+    --report-pink: #FFF2F0;
+    --report-warm: #FFF9F6;
+    min-height: 100vh;
+    padding: clamp(1rem, 3vw, 3.25rem) clamp(1rem, 4vw, 2.75rem) calc(6.8rem + env(safe-area-inset-bottom));
+    background: radial-gradient(circle at 100% 0%, rgba(255, 219, 213, .72), transparent 30rem), #FFF9F6;
+    color: var(--report-ink);
+    font-family: var(--font-plus-jakarta, Inter, ui-sans-serif, system-ui, sans-serif);
+  }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-    
-    .report-page-root {
-        background-color: var(--card-bg);
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
+  .report-page-root *, .report-page-root *::before, .report-page-root *::after { box-sizing: border-box; }
+  .report-page-root button, .report-page-root input, .report-page-root select, .report-page-root textarea { font: inherit; }
 
-    /* HEADER */
-    .top-header {
-        background: var(--card-bg);
-        border-bottom: 1px solid var(--border-color);
-        padding: 0.4rem 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        position: sticky;
-        top: 0;
-        z-index: 50;
-    }
+  .report-form-shell {
+    width: min(100%, 1180px);
+    margin: 0 auto;
+    padding: clamp(1.15rem, 3vw, 2.65rem);
+    overflow: hidden;
+    border: 1px solid rgba(219, 27, 13, .10);
+    border-radius: clamp(1.35rem, 3vw, 2rem);
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 1.25rem 4rem rgba(49, 31, 23, .10);
+    animation: report-rise .5s cubic-bezier(.16, 1, .3, 1) both;
+  }
 
-    .header-left {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
+  .report-form-heading { max-width: 44rem; margin-bottom: clamp(1.35rem, 3vw, 2rem); }
+  .report-eyebrow { display: inline-flex; align-items: center; gap: .45rem; color: var(--report-red); font-size: .72rem; font-weight: 850; letter-spacing: .13em; }
+  .report-eyebrow::before { content: ''; width: 1.8rem; height: 2px; border-radius: 4px; background: currentColor; }
+  .report-form-heading h1 { margin: .65rem 0 .45rem; color: var(--report-ink); font-size: clamp(1.7rem, 3vw, 2.55rem); line-height: 1.08; letter-spacing: -.045em; }
+  .report-form-heading p { max-width: 34rem; margin: 0; color: var(--report-muted); font-size: .94rem; line-height: 1.55; }
 
-    .brand-logo {
-        height: 6rem;
-        width: auto;
-    }
+  .warning-banner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+    padding: 1rem 1.1rem;
+    border: 1px solid #FFD4CF;
+    border-radius: 1rem;
+    background: linear-gradient(105deg, #FFF2F0, #FFF9F8);
+  }
+  .warning-banner-icon { display: grid; width: 2.8rem; height: 2.8rem; flex: 0 0 2.8rem; place-items: center; border-radius: .9rem; color: #fff; background: var(--report-red); box-shadow: 0 .6rem 1.4rem rgba(219, 27, 13, .20); }
+  .warning-banner-icon svg { width: 1.4rem; height: 1.4rem; }
+  .warning-banner-icon img { width: 2rem; height: 2rem; object-fit: contain; filter: brightness(0) invert(1); }
+  .warning-banner h2 { margin: 0 0 .15rem; color: var(--report-red-deep); font-size: 1rem; line-height: 1.2; }
+  .warning-banner p { margin: 0; color: #4B3B3A; font-size: .85rem; line-height: 1.45; }
 
-    .brand-title {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: var(--text-dark);
-        line-height: 1.2;
-    }
+  .two-col-grid { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(18rem, .82fr); gap: clamp(1rem, 2vw, 1.5rem); }
+  .step-section { min-width: 0; margin: 0 0 clamp(1.55rem, 3vw, 2.15rem); }
+  .step-title { display: flex; align-items: center; gap: .55rem; margin-bottom: .75rem; color: var(--report-ink); font-size: .82rem; font-weight: 850; letter-spacing: .055em; }
+  .step-number { display: grid; width: 1.55rem; height: 1.55rem; flex: 0 0 1.55rem; place-items: center; border-radius: 50%; background: var(--report-red); color: #fff; font-size: .72rem; box-shadow: 0 .28rem .75rem rgba(219, 27, 13, .22); }
+  .step-title-spread { justify-content: space-between; }
+  .step-title-leading { display: inline-flex; align-items: center; gap: .55rem; }
+  .optional-label { color: var(--report-muted); font-size: .72rem; font-weight: 650; letter-spacing: 0; }
 
-    .brand-subtitle {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        font-weight: 500;
-    }
+  .location-status { padding: .34rem .55rem; border: 1px solid #FFD2CD; border-radius: 99px; color: var(--report-red-deep); background: var(--report-pink); font-size: .62rem; font-weight: 850; letter-spacing: .04em; }
+  .location-status.is-confirmed, .location-status.is-adjusted { border-color: #BCE8CB; color: #087E3E; background: #ECFBF1; }
+  .location-status.is-improving, .location-status.is-locating { animation: report-pulse 1.4s ease-in-out infinite; }
+  .location-status.is-approximate, .location-status.is-low-accuracy { border-color: #FFD2CD; color: var(--report-red-deep); background: #FFF5F3; }
+  .location-status.is-outside, .location-status.is-error { background: #FFF0F0; }
 
-    .header-nav {
-        display: flex;
-        align-items: center;
-        gap: 2.5rem;
-    }
+  .location-box { overflow: hidden; border: 1px solid var(--report-line); border-radius: 1rem; background: #fff; box-shadow: 0 .45rem 1.25rem rgba(17, 34, 49, .045); }
+  .location-box[data-location-card] { display: flex; min-height: 22.75rem; flex-direction: column; }
+  .location-box[data-location-card] .location-details { display: flex; flex: 1 1 auto; flex-direction: column; padding: 1.05rem; }
+  .location-details h4 { display: flex; align-items: center; gap: .45rem; margin: 0 0 .8rem; color: var(--report-ink); font-size: .98rem; }
+  .location-heading-icon { width: 1.2rem; height: 1.2rem; color: var(--report-red); }
+  .location-address { display: grid; gap: .42rem; margin-bottom: .72rem; padding: .7rem; border: 1px solid #FFD9D5; border-radius: .75rem; background: #FFF9F8; }
+  .location-address-row { display: flex; align-items: flex-start; gap: .42rem; color: #4B5563; font-size: .76rem; line-height: 1.35; }
+  .location-address-row svg { width: .92rem; height: .92rem; flex: 0 0 .92rem; color: var(--report-red); }
+  .location-address-row strong { color: #334155; font-weight: 750; }
+  .location-error { margin: 0 0 .8rem; padding-left: .7rem; border-left: 2px solid var(--report-red); color: var(--report-red-deep); font-size: .76rem; line-height: 1.45; }
+  .accuracy { margin: 0 0 .8rem; color: #087E3E; font-size: .75rem; font-weight: 750; }
 
-    .nav-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.3rem;
-        color: var(--text-muted);
-        text-decoration: none;
-        font-size: 0.8rem;
-        font-weight: 600;
-        transition: color 0.2s;
-    }
+  .action-btn-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-top: auto; }
+  .btn-small-outline, .btn-outline-red, .btn-solid-red, .btn-cancel { display: inline-flex; min-height: 2.65rem; align-items: center; justify-content: center; gap: .45rem; border: 1px solid #DCE2EA; border-radius: .72rem; background: #fff; color: var(--report-ink); font-size: .76rem; font-weight: 800; cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease; }
+  .btn-small-outline:hover:not(:disabled), .btn-cancel:hover { transform: translateY(-1px); border-color: var(--report-red); color: var(--report-red); box-shadow: 0 .45rem 1rem rgba(219, 27, 13, .09); }
+  .btn-small-outline:focus-visible, .btn-cancel:focus-visible, .btn-primary:focus-visible, .type-btn:focus-visible, .reason-select:focus-visible { outline: 3px solid rgba(219, 27, 13, .22); outline-offset: 2px; }
+  .btn-small-outline:disabled { cursor: not-allowed; color: #B7C0CC; background: #FBFCFD; border-color: #EDF0F4; box-shadow: none; }
 
-    .nav-item:hover {
-        color: var(--primary-red);
-    }
+  .map-preview[data-location-map-surface] { position: relative; z-index: 0; display: block; height: 11rem; overflow: hidden; border-top: 1px solid var(--report-line); background: #D9EEF1; }
+  .location-map { width: 100%; height: 100%; }
+  .location-map-overlay { position: absolute; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; gap: .55rem; color: var(--report-ink); background: rgba(255, 255, 255, .78); font-size: .75rem; font-weight: 800; backdrop-filter: blur(2px); pointer-events: none; }
+  .location-map-overlay.is-hidden { display: none; }
+  .location-map-pulse { width: .75rem; height: .75rem; border-radius: 50%; background: var(--report-red); box-shadow: 0 0 0 .35rem rgba(219, 27, 13, .13); animation: report-pulse 1.2s ease-in-out infinite; }
+  .location-map-marker-wrapper { background: transparent; border: 0; }
+  .location-map-marker { display: grid; width: 2.4rem; height: 2.4rem; place-items: center; border: 2px solid #fff; border-radius: 50% 50% 50% 0; background: var(--report-red); box-shadow: 0 .5rem 1.1rem rgba(219, 27, 13, .35); transform: rotate(-45deg); }
+  .location-map-marker img { width: 1.55rem; height: 1.55rem; object-fit: contain; transform: rotate(45deg); filter: brightness(0) invert(1); }
 
-    .nav-item.active {
-        color: var(--primary-red);
-    }
+  .landmark-box { display: flex; min-height: 22.75rem; flex-direction: column; padding: 1.05rem; }
+  .landmark-heading { display: flex; align-items: flex-start; gap: .75rem; }
+  .landmark-icon { display: grid; width: 2.5rem; height: 2.5rem; flex: 0 0 2.5rem; place-items: center; border-radius: .82rem; color: #fff; background: var(--report-red); box-shadow: 0 .55rem 1.2rem rgba(219, 27, 13, .18); }
+  .landmark-icon svg { width: 1.22rem; height: 1.22rem; }
+  .landmark-status { display: block; margin-bottom: .22rem; color: var(--report-muted); font-size: .64rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+  .landmark-name { margin: 0; color: var(--report-ink); font-size: .95rem; line-height: 1.35; overflow-wrap: anywhere; }
+  .landmark-helper { margin: .95rem 0 1rem; color: var(--report-muted); font-size: .78rem; line-height: 1.55; }
+  .landmark-select-display { display: flex; min-height: 3rem; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .9rem; padding: .7rem .8rem; border: 1px solid #E0E6ED; border-radius: .75rem; color: var(--report-muted); background: #FCFDFE; font-size: .76rem; }
+  .landmark-select-display svg { width: 1rem; height: 1rem; flex: 0 0 1rem; color: var(--report-red); }
+  .landmark-box .action-btn-row { margin-top: auto; }
+  .landmark-box[data-landmark-state="confirmed"] .landmark-icon { background: #0C8B48; box-shadow: 0 .55rem 1.2rem rgba(12, 139, 72, .18); }
+  .landmark-box[data-landmark-state="unavailable"] .landmark-icon { background: #7A8797; box-shadow: none; }
 
-    .nav-item.active::after {
-        content: '';
-        display: block;
-        width: 100%;
-        height: 3px;
-        background: var(--primary-red);
-        border-radius: 3px 3px 0 0;
-        position: absolute;
-        bottom: 0;
-    }
-    
-    .nav-item-wrapper {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        height: 100%;
-        padding: 0.5rem 0;
-    }
+  .type-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .7rem; }
+  .type-btn { display: flex; min-height: 7.3rem; flex-direction: column; align-items: center; justify-content: center; gap: .65rem; padding: .75rem .45rem; border: 1px solid #E1E6ED; border-radius: 1rem; background: #fff; color: #607084; font-size: .78rem; font-weight: 800; line-height: 1.25; text-align: center; cursor: pointer; transition: transform .18s ease, border-color .18s ease, color .18s ease, background .18s ease, box-shadow .18s ease; }
+  .type-btn svg { width: 1.7rem; height: 1.7rem; }
+  .type-btn:hover { transform: translateY(-2px); border-color: #F0AAA3; color: var(--report-red); box-shadow: 0 .75rem 1.5rem rgba(16, 34, 49, .07); }
+  .type-btn.selected { border-color: var(--report-red); color: var(--report-red); background: linear-gradient(145deg, #FFF7F6, #FFFDFC); box-shadow: inset 0 0 0 1px rgba(219, 27, 13, .08), 0 .75rem 1.5rem rgba(219, 27, 13, .08); }
 
-    .nav-icon {
-        width: 1.5rem;
-        height: 1.5rem;
-    }
+  .report-detail-grid { display: grid; grid-template-columns: .88fr 1.15fr .95fr; gap: clamp(.9rem, 2vw, 1.25rem); align-items: stretch; }
+  .reason-field, .description-field, .photo-field { display: flex; min-width: 0; flex-direction: column; }
+  .field-label { display: flex; align-items: center; gap: .5rem; margin-bottom: .65rem; color: var(--report-ink); font-size: .79rem; font-weight: 850; }
+  .field-label .step-number { width: 1.42rem; height: 1.42rem; flex-basis: 1.42rem; font-size: .68rem; }
+  .field-helper { min-height: 2.25rem; margin: 0 0 .65rem; color: var(--report-muted); font-size: .73rem; line-height: 1.48; }
+  .reason-select, .desc-input { width: 100%; border: 1px solid #DDE3EA; border-radius: .75rem; color: var(--report-ink); background: #fff; font-size: .82rem; transition: border-color .18s ease, box-shadow .18s ease; }
+  .reason-select { min-height: 2.85rem; padding: 0 .8rem; appearance: auto; }
+  .desc-input { min-height: 8.2rem; padding: .8rem; resize: vertical; line-height: 1.5; }
+  .reason-select:focus, .desc-input:focus { border-color: var(--report-red); outline: none; box-shadow: 0 0 0 .22rem rgba(219, 27, 13, .10); }
+  .photo-upload { display: flex; min-height: 8.2rem; align-items: center; justify-content: center; padding: .9rem; border: 1.5px dashed #F0B8B1; border-radius: .85rem; background: #FFFDFD; text-align: center; }
+  .photo-upload svg { width: 1.55rem; height: 1.55rem; margin-bottom: .35rem; color: var(--report-red); }
+  .photo-upload strong, .photo-upload span { display: block; }
+  .photo-upload strong { color: var(--report-ink); font-size: .78rem; }
+  .photo-upload span { margin-top: .18rem; color: var(--report-muted); font-size: .66rem; line-height: 1.45; }
+  .photo-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; clip-path: inset(50%); }
 
-    .nav-item.report-fire-nav {
-        color: var(--primary-red);
-    }
+  .form-footer { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(10rem, .65fr); gap: 1rem; margin-top: clamp(.3rem, 2vw, .75rem); padding-top: 1.2rem; border-top: 1px solid var(--report-line); }
+  .btn-primary { display: inline-flex; min-height: 3.4rem; align-items: center; justify-content: center; gap: .65rem; border: 0; border-radius: .85rem; color: #fff; background: linear-gradient(135deg, #EF2A1E, var(--report-red-deep)); box-shadow: 0 .8rem 1.6rem rgba(219, 27, 13, .25); font-size: .9rem; font-weight: 900; letter-spacing: .01em; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+  .btn-primary svg { width: 1.25rem; height: 1.25rem; }
+  .btn-primary:hover { filter: saturate(1.1); transform: translateY(-2px); box-shadow: 0 1rem 2rem rgba(219, 27, 13, .30); }
 
-    .nav-item.report-fire-nav .nav-icon {
-        background: var(--primary-red);
-        color: white;
-        border-radius: 50%;
-        padding: 0.35rem;
-        width: 2.2rem;
-        height: 2.2rem;
-    }
-
-    .fire-logo-tint {
-        filter: brightness(0) invert(1);
-        object-fit: contain;
-        width: 100%;
-        height: 100%;
-    }
-
-    .header-right {
-        display: flex;
-        align-items: center;
-    }
-
-    .notification-btn, .lang-btn {
-        background: none;
-        border: none;
-        position: relative;
-        cursor: pointer;
-        color: var(--text-dark);
-        padding: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-
-    .notification-btn:hover, .lang-btn:hover {
-        color: var(--primary-red);
-    }
-
-    .notification-badge {
-        position: absolute;
-        top: 0.2rem;
-        right: 0.2rem;
-        background: var(--primary-red);
-        color: white;
-        font-size: 0.65rem;
-        font-weight: 800;
-        width: 1.1rem;
-        height: 1.1rem;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* ==================== HEADER PROFILE DROPDOWN ==================== */
-    .header-profile-menu {
-        position: relative;
-        margin-left: 0.5rem;
-    }
-    .header-profile-btn {
-        background: none; border: none; cursor: pointer;
-        padding: 0.2rem; display: flex; align-items: center; justify-content: center;
-        border-radius: 50%; border: 2px solid transparent; transition: all 0.2s;
-    }
-    .header-profile-btn img {
-        width: 2.2rem; height: 2.2rem; border-radius: 50%; object-fit: cover;
-    }
-    .header-profile-btn:hover, .header-profile-menu:focus-within .header-profile-btn {
-        border-color: var(--primary-red);
-    }
-    .profile-dropdown {
-        position: absolute; top: calc(100% + 0.5rem); right: 0;
-        background: var(--card-bg); border: 1px solid var(--border-color);
-        border-radius: 0.8rem; box-shadow: var(--shadow-md); width: 230px;
-        opacity: 0; visibility: hidden; transform: translateY(-10px);
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        z-index: 100;
-        padding: 0.5rem 0;
-    }
-    .header-profile-menu:focus-within .profile-dropdown,
-    .header-profile-menu:hover .profile-dropdown {
-        opacity: 1; visibility: visible; transform: translateY(0);
-    }
-    .profile-dropdown-item {
-        display: flex; align-items: center; gap: 0.8rem;
-        padding: 0.7rem 1.2rem; text-decoration: none;
-        color: var(--text-dark); font-size: 0.95rem; font-weight: 500;
-        transition: background-color 0.2s, color 0.2s;
-    }
-    .profile-dropdown-item:hover {
-        background-color: #f1f5f9;
-    }
-    .profile-dropdown-icon {
-        width: 1.2rem; height: 1.2rem; color: var(--text-muted);
-    }
-    .profile-dropdown-divider {
-        height: 1px; background-color: var(--border-color);
-        margin: 0.5rem 0;
-    }
-    .profile-dropdown-item.logout-item {
-        color: var(--primary-red);
-    }
-    .profile-dropdown-item.logout-item .profile-dropdown-icon {
-        color: var(--primary-red);
-    }
-    .profile-dropdown-item.logout-item:hover {
-        background-color: var(--primary-red-light);
-    }
-
-    /* DESKTOP LAYOUT (3 COLUMNS) */
-    .report-container {
-        flex: 1;
-        max-width: 1400px;
-        margin: 2rem auto;
-        padding: 0 2rem;
-        display: grid;
-        grid-template-columns: 280px 1fr 280px;
-        gap: 1.5rem;
-        align-items: start;
-    }
-
-    /* CARD STYLES */
-    .card {
-        background: var(--bg-white);
-        border-radius: 1rem;
-        padding: 1.5rem;
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .card-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: var(--text-dark);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-top: 0;
-    }
-
-    .card-title svg { width: 1.25rem; height: 1.25rem; color: var(--primary-red); }
-
-    /* LEFT COLUMN */
-    .account-info {
-        background: #fff5f5;
-        border-radius: 0.5rem;
-        padding: 1rem;
-        font-size: 0.85rem;
-        color: var(--text-dark);
-        line-height: 1.4;
-    }
-    .account-info strong { display: block; margin-bottom: 0.5rem; }
-    
-    .btn-outline-red {
-        background: transparent;
-        border: 1px solid var(--primary-red);
-        color: var(--primary-red);
-        padding: 0.8rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        cursor: pointer;
-        text-align: center;
-        width: 100%;
-    }
-
-    /* CENTER COLUMN (MAIN FORM) */
-    .main-form-card { padding: 1.5rem; }
-    .form-header-title { font-size: 1.5rem; font-weight: 800; color: var(--text-dark); margin-bottom: 1.5rem; margin-top: 0; }
-    
-    .warning-banner {
-        background: #fff5f5;
-        border: 1px solid #ffcaca;
-        border-radius: 0.5rem;
-        padding: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-    .warning-banner svg { width: 2.5rem; height: 2.5rem; color: var(--primary-red); }
-    .warning-banner-text h3 { color: var(--primary-red); font-size: 1.2rem; margin-bottom: 0.2rem; }
-    .warning-banner-text p { color: var(--text-dark); font-size: 0.95rem; font-weight: 500; }
-
-    .step-section { margin-bottom: 2rem; }
-    .step-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 700;
-        font-size: 0.95rem;
-        color: var(--text-dark);
-        margin-bottom: 1rem;
-    }
-    .step-number {
-        background: var(--primary-red);
-        color: white;
-        width: 1.5rem;
-        height: 1.5rem;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.8rem;
-    }
-
-    /* STEP 1 & 2 GRIDS */
-    .two-col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    
-    .location-box {
-        border: 1px solid var(--border-color);
-        border-radius: 0.5rem;
-        padding: 1rem;
-        display: flex;
-        justify-content: space-between;
-    }
-    .location-details h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.2rem; }
-    .location-details p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.2rem; }
-    .location-details .accuracy { font-size: 0.8rem; font-weight: 600; color: #16a34a; margin-bottom: 1rem; }
-    
-    .map-preview { width: 100px; height: 80px; background: #e2e8f0; border-radius: 0.5rem; overflow: hidden; position: relative; }
-    .map-preview::after {
-        content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        width: 1rem; height: 1.5rem; background: var(--primary-red);
-        clip-path: polygon(50% 100%, 0 40%, 0 0, 100% 0, 100% 40%);
-    }
-
-    .location-box[data-location-card] {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        padding: 0;
-        gap: 0;
-        overflow: hidden;
-        background: #ffffff;
-        border-color: #d9e2ec;
-        align-items: stretch;
-        justify-content: flex-start;
-    }
-    .location-box[data-location-card] .location-details {
-        min-width: 0;
-        padding: 1rem;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .location-box[data-location-card] .location-details h4 {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-        margin-bottom: 0.32rem;
-        color: #172033;
-    }
-    .location-box[data-location-card] .location-details p {
-        margin-bottom: 0.28rem;
-        line-height: 1.35;
-        overflow-wrap: anywhere;
-    }
-    .location-heading-icon { width: 1.1rem; height: 1.1rem; color: var(--primary-red); flex-shrink: 0; }
-    .location-status {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        max-width: 9rem;
-        min-height: 1.65rem;
-        padding: 0.25rem 0.5rem;
-        border: 1px solid #fed7aa;
-        border-radius: 1rem;
-        background: #fff7ed;
-        color: #9a3412;
-        font-size: 0.66rem;
-        font-weight: 800;
-        line-height: 1.1;
-        text-align: center;
-        white-space: normal;
-        transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
-    }
-    .location-status.is-locating,
-    .location-status.is-improving { color: #9a3412; background: #fff7ed; border-color: #fed7aa; }
-    .location-status.is-confirmed,
-    .location-status.is-adjusted { color: #166534; background: #dcfce7; border-color: #bbf7d0; }
-    .location-status.is-approximate,
-    .location-status.is-adjusting { color: #854d0e; background: #fef9c3; border-color: #fde68a; }
-    .location-status.is-low-accuracy,
-    .location-status.is-outside,
-    .location-status.is-error { color: #b91c1c; background: #fee2e2; border-color: #fecaca; }
-    .location-error {
-        width: 100%;
-        margin: 0 0 0.7rem;
-        padding-left: 0.55rem;
-        border-left: 2px solid #dc2626;
-        color: #b91c1c;
-        font-size: 0.72rem;
-        line-height: 1.35;
-    }
-    .location-box[data-location-card] .accuracy {
-        display: inline-flex;
-        align-items: center;
-        min-height: 1.5rem;
-        margin: 0.25rem 0 0.72rem;
-        padding: 0.22rem 0.45rem;
-        border-radius: 0.3rem;
-        background: #f1f5f9;
-        color: #475569;
-        font-size: 0.7rem;
-        font-weight: 700;
-        line-height: 1.2;
-    }
-    .location-box[data-location-state="confirmed"] .accuracy,
-    .location-box[data-location-state="adjusted"] .accuracy { color: #166534; background: #ecfdf5; }
-    .location-box[data-location-state="approximate"] .accuracy { color: #854d0e; background: #fefce8; }
-    .map-preview[data-location-map-surface] {
-        width: 100%;
-        height: 11rem;
-        min-height: 11rem;
-        flex: 0 0 11rem;
-        border: 0;
-        border-top: 1px solid #d9e2ec;
-        border-radius: 0;
-        background: #dbeafe;
-        overflow: hidden;
-        position: relative;
-        z-index: 0;
-        isolation: isolate;
-    }
-    .location-map,
-    .location-map.leaflet-container { width: 100%; height: 100%; min-height: inherit; font-family: 'Inter', sans-serif; background: #dbeafe; }
-    .location-map .leaflet-control-zoom { border: 0; border-radius: 0.4rem; overflow: hidden; box-shadow: 0 4px 12px rgba(15,23,42,0.18); }
-    .location-map .leaflet-control-zoom a { width: 1.9rem; height: 1.9rem; line-height: 1.9rem; border: 0; color: #172033; background: rgba(255,255,255,0.96); }
-    .location-map .leaflet-control-zoom a:hover { color: var(--primary-red); background: #ffffff; }
-    .location-map .leaflet-control-attribution { max-width: 100%; padding: 0 0.15rem; font-size: 0.38rem; line-height: 1.1; }
-    .location-map-overlay {
-        position: absolute;
-        right: 0.55rem;
-        bottom: 0.55rem;
-        left: 0.55rem;
-        z-index: 700;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        min-height: 2.35rem;
-        padding: 0.4rem 0.65rem;
-        border: 1px solid rgba(255,255,255,0.82);
-        border-radius: 0.4rem;
-        color: var(--primary-red);
-        background: rgba(255,255,255,0.94);
-        box-shadow: 0 4px 12px rgba(15,23,42,0.16);
-        font-size: 0.65rem;
-        font-weight: 800;
-        text-align: center;
-        transition: opacity 0.22s ease, visibility 0.22s ease;
-        pointer-events: none;
-    }
-    .location-map-overlay.is-hidden { opacity: 0; visibility: hidden; }
-    .location-map-pulse { width: 0.82rem; height: 0.82rem; border: 2px solid var(--primary-red); border-radius: 50%; box-shadow: 0 0 0 0 rgba(211,18,18,0.38); animation: location-pulse 1.35s ease-out infinite; flex-shrink: 0; }
-    .location-map-marker-wrapper { background: transparent; border: 0; }
-    .location-map-marker { display: grid; place-items: center; width: 2.38rem; height: 2.38rem; border: 2px solid #ffffff; border-radius: 50%; background: var(--primary-red); box-shadow: 0 4px 10px rgba(15,23,42,0.34); overflow: hidden; }
-    .location-map-marker img { width: 1.72rem; height: 1.72rem; object-fit: contain; filter: brightness(0) invert(1); }
-    @keyframes location-pulse { 0% { box-shadow: 0 0 0 0 rgba(211,18,18,0.42); transform: scale(0.86); } 70% { box-shadow: 0 0 0 0.9rem rgba(211,18,18,0); transform: scale(1); } 100% { box-shadow: 0 0 0 0 rgba(211,18,18,0); transform: scale(0.86); } }
-    .location-address { display: flex; flex-direction: column; gap: 0.32rem; width: 100%; margin: 0.2rem 0 0.35rem; }
-    .location-address-row { display: flex; align-items: flex-start; gap: 0.38rem; color: var(--text-dark); font-size: 0.74rem; line-height: 1.25; }
-    .location-address-row svg { width: 0.86rem; height: 0.86rem; margin-top: 0.05rem; color: var(--primary-red); flex-shrink: 0; }
-    .location-address-row strong { min-width: 0; font-weight: 750; overflow-wrap: anywhere; }
-    .location-result:not([hidden]) { display: flex; margin: 0.45rem 0 0.65rem; padding: 0.7rem 0.75rem; border: 1px solid #fecaca; border-radius: 0.45rem; background: #fff7f7; gap: 0.5rem; }
-    .location-result .location-address-row { gap: 0.45rem; }
-    .location-result-place strong { color: #172033; font-size: 0.8rem; }
-    .location-place-separator { color: #64748b; font-weight: 700; }
-    .location-result-coordinates strong { color: #475569; font-size: 0.72rem; font-weight: 700; }
-    .map-preview[data-location-preview]::after { display: none; }
-    .location-box[data-location-card] .action-btn-row { width: 100%; margin-top: auto; flex-wrap: wrap; }
-    .location-box[data-location-card] .btn-small-outline { flex: 1 1 6.5rem; justify-content: center; min-height: 2.25rem; padding: 0.4rem 0.5rem; font-size: 0.72rem; }
-    .landmark-box { min-height: 12.5rem; padding: 1rem; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0.8rem; }
-    .landmark-heading { display: flex; align-items: flex-start; gap: 0.75rem; }
-    .landmark-icon { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; flex: 0 0 2.4rem; border-radius: 0.45rem; color: #ffffff; background: var(--primary-red); box-shadow: 0 5px 12px rgba(211,18,18,0.2); }
-    .landmark-icon svg { width: 1.25rem; height: 1.25rem; }
-    .landmark-copy { min-width: 0; }
-    .landmark-status { display: block; margin-bottom: 0.24rem; color: #64748b; font-size: 0.68rem; font-weight: 750; text-transform: uppercase; }
-    .landmark-name { margin: 0; color: #172033; font-size: 0.92rem; font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
-    .landmark-helper { margin: 0; color: var(--text-muted); font-size: 0.75rem; line-height: 1.4; }
-    .landmark-box .action-btn-row { width: 100%; margin-top: auto; flex-wrap: wrap; }
-    .landmark-box .btn-small-outline { flex: 1 1 7rem; justify-content: center; min-height: 2.35rem; }
-    .landmark-box[data-landmark-state="confirmed"] .landmark-icon { background: #15803d; }
-    .landmark-box[data-landmark-state="unavailable"] .landmark-icon { background: #64748b; box-shadow: none; }
-    .btn-small-outline:disabled { opacity: 0.55; cursor: wait; }
-
-    @media (prefers-reduced-motion: reduce) {
-        .location-map-pulse { animation: none; }
-        .location-map-overlay, .location-status { transition: none; }
-    }
-
-    .action-btn-row { display: flex; gap: 0.5rem; }
-    .btn-small-outline {
-        padding: 0.4rem 0.8rem; border: 1px solid var(--border-color); background: var(--bg-white);
-        border-radius: 0.3rem; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 0.3rem; cursor: pointer;
-    }
-
-    /* STEP 3 GRID */
-    .type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
-    .type-btn {
-        border: 1px solid var(--border-color);
-        border-radius: 0.5rem;
-        padding: 1rem 0.5rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-        background: var(--bg-white);
-        cursor: pointer;
-        color: var(--text-dark);
-        font-weight: 600;
-        font-size: 0.85rem;
-    }
-    .type-btn svg { width: 2rem; height: 2rem; color: var(--text-muted); }
-    .type-btn.selected { border-color: var(--primary-red); color: var(--primary-red); }
-    .type-btn.selected svg { color: var(--primary-red); }
-
-    /* STEP 4 TEXTAREA */
-    .desc-input {
-        width: 100%; border: 1px solid var(--border-color); border-radius: 0.5rem;
-        padding: 0.8rem; font-size: 0.9rem; resize: vertical; min-height: 80px;
-    }
-    
-    /* STEP 5 PHOTOS */
-    .photo-actions { display: flex; gap: 1rem; }
-    .photo-actions button { flex: 1; }
-
-    /* FORM FOOTER */
-    .form-footer { display: flex; gap: 1rem; margin-top: 1rem; }
-    .btn-primary {
-        background: var(--primary-red); color: white; border: none; flex: 3;
-        padding: 1.2rem; border-radius: 0.5rem; font-size: 1.1rem; font-weight: 700;
-        display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer;
-    }
-    .btn-cancel {
-        background: var(--bg-white); color: var(--primary-red); border: 1px solid var(--primary-red); flex: 1;
-        padding: 1.2rem; border-radius: 0.5rem; font-size: 1.1rem; font-weight: 700; cursor: pointer;
-    }
-
-    /* RIGHT COLUMN */
-    .safety-list { list-style: none; display: flex; flex-direction: column; gap: 0.8rem; }
-    .safety-list li { font-size: 0.9rem; font-weight: 500; display: flex; align-items: flex-start; gap: 0.5rem; }
-    .safety-list li::before { content: '•'; color: var(--primary-red); font-weight: bold; font-size: 1.2rem; line-height: 0.8; }
-    
-    .btn-solid-red {
-        background: var(--primary-red); color: white; border: none;
-        padding: 0.8rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; text-align: center; width: 100%;
-    }
-    .text-sm-muted { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; text-align: center; }
-    
-    /* MOBILE HEADER */
-    .mobile-header { display: none; }
-    .mobile-warning { display: none; }
-    /* RESPONSIVE DESIGN (MOBILE) */
-    @media (max-width: 950px) {
-        .report-page-root {
-            background: var(--bg-white);
-            padding-bottom: calc(6rem + env(safe-area-inset-bottom));
-        }
-        .top-header, .account-card, .assistance-card, .safety-card, .incident-card, .form-header-title { display: none; }
-        
-        .brand-logo {
-            height: 3rem;
-        }
-        
-        .report-container { display: flex; flex-direction: column; padding: 0; margin: 0; }
-        .main-form-card { padding: 0; border: none; box-shadow: none; border-radius: 0; }
-        
-        .mobile-header { display: none !important; }
-        
-        .mobile-warning {
-            background: #fffdeb; color: #b45309; padding: 0.8rem 1rem; font-size: 0.8rem; font-weight: 700;
-            display: flex; align-items: center; gap: 0.6rem; 
-            border: 1px solid #fde047; border-radius: 0.5rem; margin: 1rem 1rem 0.5rem 1rem;
-            line-height: 1.4;
-        }
-        .mobile-warning svg { width: 1.4rem; height: 1.4rem; flex-shrink: 0; }
-
-        /* Form adjustments */
-        .warning-banner { margin: 0.5rem 1rem 1.5rem 1rem; padding: 1rem; border-radius: 0.5rem; }
-        .step-section { margin: 0 1rem 1.5rem 1rem; }
-        
-        .two-col-grid { grid-template-columns: 1fr; gap: 1.5rem; }
-        .type-grid { grid-template-columns: repeat(3, 1fr); }
-        
-        .location-box { flex-direction: column; gap: 1rem; }
-        .location-box[data-location-card] {
-            display: flex !important;
-            flex-direction: column;
-            min-height: 26rem;
-            gap: 0;
-            overflow: hidden;
-            border: 1px solid #d9e2ec;
-            background: #ffffff;
-        }
-        .location-box[data-location-card] .location-details {
-            display: flex !important;
-            width: 100%;
-            min-height: 13rem;
-            padding: 1rem;
-        }
-        .location-box[data-location-card] .location-result:not([hidden]) {
-            display: flex !important;
-        }
-        .location-box[data-location-card] .action-btn-row {
-            margin-top: 0.85rem;
-        }
-        .map-preview[data-location-map-surface] {
-            display: block !important;
-            width: 100%;
-            height: 13rem;
-            min-height: 13rem;
-            flex: 0 0 13rem;
-            background: #dbeafe;
-        }
-        .location-map,
-        .location-map.leaflet-container {
-            display: block !important;
-            width: 100%;
-            height: 100%;
-            min-height: 13rem;
-        }
-        .action-btn-row { flex-wrap: wrap; }
-
-        .form-footer { margin: 1rem; flex-direction: column; gap: 0.8rem; }
-        .btn-cancel { border: none; font-size: 1rem; padding: 0.8rem; }
-    }
-
-    /* TABLET ADJUSTMENTS */
-    @media (min-width: 768px) and (max-width: 950px) {
-        .report-page-root {
-            background-color: var(--card-bg);
-            padding-bottom: calc(6rem + env(safe-area-inset-bottom));
-        }
-        .report-container {
-            margin: 2rem auto;
-            max-width: 750px;
-            width: 92%;
-            padding: 0;
-        }
-        .main-form-card {
-            background: var(--bg-white);
-            border: 1px solid var(--border-color);
-            border-radius: 1rem;
-            padding: 2.5rem;
-            box-shadow: var(--shadow-sm);
-        }
-        .mobile-warning {
-            max-width: 750px;
-            width: 92%;
-            margin: 1.5rem auto 2rem auto;
-            box-sizing: border-box;
-        }
-        .warning-banner {
-            margin: 0 0 2rem 0;
-            padding: 1.5rem;
-        }
-        .step-section {
-            margin: 0 0 2rem 0;
-        }
-        .two-col-grid {
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-        }
-        .location-box {
-            flex-direction: row;
-            justify-content: space-between;
-            gap: 0.5rem;
-        }
-        .map-preview[data-location-map-surface] { height: 11rem; min-height: 11rem; flex-basis: 11rem; }
-        .type-grid {
-            grid-template-columns: repeat(5, 1fr);
-        }
-        .mobile-bottom-nav {
-            justify-content: center;
-            gap: 2rem;
-        }
-        .mobile-nav-item, .mobile-nav-fab-wrapper {
-            width: auto;
-            min-width: 4.5rem;
-        }
-    }
+  @keyframes report-rise { from { opacity: 0; transform: translateY(.85rem); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes report-pulse { 50% { transform: scale(1.05); box-shadow: 0 0 0 .35rem rgba(219, 27, 13, .08); } }
+  @media (max-width: 950px) {
+    .report-page-root { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
+    .report-form-shell { padding: 1rem; border-radius: 1.25rem; }
+    .two-col-grid, .report-detail-grid { grid-template-columns: 1fr; }
+    .location-box[data-location-card] { min-height: 26rem; }
+    .location-box[data-location-card] .location-details { display: flex; }
+    .map-preview[data-location-map-surface] { display: block; height: 12.25rem; }
+    .landmark-box { min-height: 16rem; }
+    .type-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .type-btn { min-height: 5.8rem; font-size: .7rem; }
+    .type-btn svg { width: 1.42rem; height: 1.42rem; }
+    .field-helper { min-height: auto; }
+    .desc-input, .photo-upload { min-height: 7rem; }
+  }
+  @media (max-width: 540px) {
+    .report-page-root { padding: .85rem .75rem calc(6rem + env(safe-area-inset-bottom)); }
+    .report-form-heading h1 { font-size: 1.7rem; }
+    .warning-banner { align-items: flex-start; padding: .85rem; }
+    .warning-banner-icon { width: 2.45rem; height: 2.45rem; flex-basis: 2.45rem; }
+    .action-btn-row { grid-template-columns: 1fr; }
+    .type-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .type-btn:last-child { grid-column: span 2; min-height: 4.65rem; flex-direction: row; }
+    .form-footer { grid-template-columns: 1fr; gap: .65rem; }
+    .btn-primary, .btn-cancel { min-height: 3.25rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { .report-form-shell, .location-status.is-improving, .location-status.is-locating, .location-map-pulse { animation: none; } }
 `;
 
 export const reportFireMarkup = `
-    <div class="report-page-root">
-        <div class="mobile-warning">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            WARNING: Send alerts only for real fire emergencies. False reports are illegal.
+  <div class="report-page-root">
+    <main class="report-form-shell" aria-labelledby="report-fire-title">
+      <header class="report-form-heading">
+        <span class="report-eyebrow">ALAB EMERGENCY RESPONSE</span>
+        <h1 id="report-fire-title">Report a Fire Incident</h1>
+        <p>Share the clearest details you can so responders can act faster.</p>
+      </header>
+
+      <section class="warning-banner" aria-label="Fire emergency safety reminder">
+        <span class="warning-banner-icon" aria-hidden="true"><img src="/images/fire logo.webp" alt="" /></span>
+        <div><h2>Fire Emergency</h2><p>Move to a safe location before sending the report.</p></div>
+      </section>
+
+      <div class="two-col-grid">
+        <section class="step-section">
+          <div class="step-title step-title-spread">
+            <span class="step-title-leading"><span class="step-number">1</span> LOCATION</span>
+            <span class="location-status" data-location-status>LOCATING</span>
+          </div>
+          <div class="location-box" data-location-card data-location-latitude="" data-location-longitude="" data-location-accuracy="" data-location-barangay="" data-location-municipality="" data-location-province="" data-location-valid="false" data-location-state="locating">
+            <div class="location-details">
+              <h4><svg class="location-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><span data-location-title>Detecting location</span></h4>
+              <div class="location-address location-result" data-location-address data-location-result>
+                <div class="location-address-row location-result-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><strong data-location-place><span data-location-barangay>Barangay checking</span><span>, </span><span data-location-municipality>Municipality checking</span></strong></div>
+                <div class="location-address-row location-result-coordinates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="9"/></svg><strong data-location-coordinates>Latitude -- | Longitude --</strong></div>
+              </div>
+              <p data-location-text hidden>Barangay checking, Municipality checking</p>
+              <div class="accuracy" data-location-accuracy hidden></div>
+              <div class="location-error" data-location-error hidden></div>
+              <div class="action-btn-row">
+                <button type="button" class="btn-small-outline" data-location-adjust><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Adjust Pin</button>
+                <button type="button" class="btn-small-outline" data-location-refresh><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Detect my location</button>
+              </div>
+            </div>
+            <div class="map-preview" data-location-preview data-location-map-panel data-location-map-surface>
+              <div class="location-map" data-location-map aria-label="OpenStreetMap street map with detected fire location"></div>
+              <div class="location-map-overlay" data-location-map-overlay aria-live="polite"><span class="location-map-pulse" aria-hidden="true"></span><span data-location-map-label>Locating you...</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="step-section">
+          <div class="step-title"><span class="step-number">2</span> NEAREST LANDMARK</div>
+          <div class="location-box landmark-box" data-nearest-landmark data-landmark-state="waiting">
+            <div class="landmark-heading">
+              <span class="landmark-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg></span>
+              <div><span class="landmark-status" data-landmark-status>Waiting for location</span><h3 class="landmark-name" data-landmark-name>Finding a nearby mapped place...</h3></div>
+            </div>
+            <div class="landmark-select-display" aria-label="Nearest landmark selection"><span>Closest named place or road</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+            <p class="landmark-helper">Confirm the suggested landmark, or adjust the pin to choose a more accurate place.</p>
+            <div class="action-btn-row">
+              <button type="button" class="btn-small-outline" data-landmark-confirm disabled><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Use Suggestion</button>
+              <button type="button" class="btn-small-outline" data-landmark-change disabled><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Adjust Location</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="step-section">
+        <div class="step-title"><span class="step-number">3</span> WHAT IS BURNING?</div>
+        <div class="type-grid" role="list" aria-label="Fire type">
+          <button type="button" class="type-btn selected" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>House/Building</button>
+          <button type="button" class="type-btn" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8M8 20v-5M16 20v-6M4 20v-3M20 20v-4"/></svg>Grass Fire</button>
+          <button type="button" class="type-btn" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 14 15 14 18 22 6 22 9 14 5 14 12 2"/></svg>Forest Fire</button>
+          <button type="button" class="type-btn" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H9.3a2 2 0 0 0-1.6.8L5 11l-5.16.86a1 1 0 0 0-.84.99V16h3m10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0m-10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0"/></svg>Vehicle Fire</button>
+          <button type="button" class="type-btn" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>Other</button>
         </div>
+      </section>
 
-        <main class="report-container">
-            
-            <!-- LEFT COLUMN -->
-            <div class="left-col" style="display:flex; flex-direction:column; gap:1rem;">
-                <div class="card account-card">
-                    <div class="card-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        Your Account
-                    </div>
-                    <div class="account-info">
-                        <strong>Account details are automatically filled.</strong>
-                        Location and profile information are securely attached to this report.
-                    </div>
-                </div>
+      <section class="report-detail-grid">
+        <label class="reason-field"><span class="field-label"><span class="step-number">4</span>REASON <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">What may have started the fire?</span><select class="reason-select" data-report-reason aria-label="Reason for fire"><option value="">Select reason</option><option>Electrical malfunction</option><option>Cooking accident</option><option>Open flame or cigarette</option><option>Unknown / Other</option></select></label>
+        <label class="description-field"><span class="field-label"><span class="step-number">5</span>SHORT DESCRIPTION <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">Add details that can help responders identify the incident.</span><textarea class="desc-input" placeholder="Example: Fire is spreading to another house."></textarea></label>
+        <div class="photo-field"><span class="field-label"><span class="step-number">6</span>ADD FIRE PHOTO <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">Upload a photo only when it is safe to do so.</span><label class="photo-upload" for="fire-photo"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Choose a photo</strong><span>JPG or PNG, up to 10MB</span></span></label><input class="photo-input" id="fire-photo" type="file" accept="image/jpeg,image/png" /></div>
+      </section>
 
-                <div class="card assistance-card">
-                    <div class="card-title">
-                        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                        Need Assistance?
-                    </div>
-                    <p class="text-sm-muted" style="margin-bottom:0.5rem;">For immediate assistance, contact your local BFP office or dial 911.</p>
-                    <button class="btn-outline-red">View Emergency Contacts</button>
-                </div>
-            </div>
-
-            <!-- CENTER COLUMN -->
-            <div class="card main-form-card">
-                <h2 class="form-header-title">Report a Fire Incident</h2>
-                
-                <div class="warning-banner">
-                    <img src="/images/fire logo.webp" alt="Fire Emergency Logo" style="width: 2.8rem; height: 2.8rem; object-fit: contain; flex-shrink: 0;" />
-                    <div class="warning-banner-text">
-                        <h3>Fire Emergency</h3>
-                        <p>Move to a safe location before sending the report.</p>
-                    </div>
-                </div>
-
-                <div class="two-col-grid">
-                    <div class="step-section">
-                        <div class="step-title" style="justify-content:space-between;">
-                            <div style="display:flex; align-items:center; gap:0.5rem;">
-                                <div class="step-number">1</div> LOCATION
-                            </div>
-                            <span class="location-status" data-location-status>LOCATING...</span>
-                        </div>
-                        <div class="location-box" data-location-card data-location-latitude="" data-location-longitude="" data-location-accuracy="" data-location-barangay="" data-location-municipality="" data-location-province="" data-location-valid="false" data-location-state="locating">
-                            <div class="location-details">
-                                <h4>
-                                    <svg class="location-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
-                                    <span data-location-title>Detecting location</span>
-                                </h4>
-                                <div class="location-address location-result" data-location-address data-location-result>
-                                    <div class="location-address-row location-result-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><strong data-location-place><span data-location-barangay>Barangay checking</span><span class="location-place-separator">, </span><span data-location-municipality>Municipality checking</span></strong></div>
-                                    <div class="location-address-row location-result-coordinates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="9"/></svg><strong data-location-coordinates>Latitude -- | Longitude --</strong></div>
-                                </div>
-                                <p data-location-text hidden>Barangay checking, Municipality checking</p>
-                                <div class="accuracy" data-location-accuracy hidden></div>
-                                <div class="location-error" data-location-error hidden></div>
-                                <div class="action-btn-row">
-                                    <button type="button" class="btn-small-outline" data-location-adjust><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Adjust Pin</button>
-                                    <button type="button" class="btn-small-outline" data-location-refresh><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Detect my location</button>
-                                </div>
-                            </div>
-                            <div class="map-preview" data-location-preview data-location-map-panel data-location-map-surface>
-                                <div class="location-map" data-location-map aria-label="OpenStreetMap street map with detected fire location"></div>
-                                <div class="location-map-overlay" data-location-map-overlay aria-live="polite">
-                                    <span class="location-map-pulse" aria-hidden="true"></span>
-                                    <span data-location-map-label>Locating you...</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="step-section">
-                        <div class="step-title">
-                            <div class="step-number">2</div> NEAREST LANDMARK
-                        </div>
-                        <div class="location-box landmark-box" data-nearest-landmark data-landmark-state="waiting">
-                            <div class="landmark-heading">
-                                <span class="landmark-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg></span>
-                                <div class="landmark-copy">
-                                    <span class="landmark-status" data-landmark-status>Waiting for location</span>
-                                    <h4 class="landmark-name" data-landmark-name>Finding a nearby mapped place...</h4>
-                                </div>
-                            </div>
-                            <p class="landmark-helper">Suggested from the closest named place or road in OpenStreetMap.</p>
-                            <div class="action-btn-row">
-                                <button type="button" class="btn-small-outline" data-landmark-confirm disabled><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Correct</button>
-                                <button type="button" class="btn-small-outline" data-landmark-change disabled><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Change</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="step-section">
-                    <div class="step-title">
-                        <div class="step-number">3</div> WHAT IS BURNING?
-                    </div>
-                    <div class="type-grid">
-                        <div class="type-btn selected">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                            House/Building
-                        </div>
-                        <div class="type-btn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8M8 20v-5M16 20v-6M4 20v-3M20 20v-4"/></svg>
-                            Grass Fire
-                        </div>
-                        <div class="type-btn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 14 15 14 18 22 6 22 9 14 5 14 12 2"/></svg>
-                            Forest Fire
-                        </div>
-                        <div class="type-btn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 00-.84-.99L16 11l-2.7-3.6a2 2 0 00-1.6-.8H9.3a2 2 0 00-1.6.8L5 11l-5.16.86a1 1 0 00-.84.99V16h3m10 0a2 2 0 11-4 0m4 0a2 2 0 10-4 0m-10 0a2 2 0 11-4 0m4 0a2 2 0 10-4 0"/></svg>
-                            Vehicle Fire
-                        </div>
-                        <div class="type-btn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
-                            Other
-                        </div>
-                    </div>
-                </div>
-
-                <div class="two-col-grid">
-                    <div class="step-section" style="margin-bottom:0;">
-                        <div class="step-title">
-                            <div class="step-number">4</div> SHORT DESCRIPTION <span style="color:var(--text-muted); font-weight:500; font-size:0.8rem;">(OPTIONAL)</span>
-                        </div>
-                        <textarea class="desc-input" placeholder="Example: Fire is spreading to another house."></textarea>
-                    </div>
-
-                    <div class="step-section" style="margin-bottom:0;">
-                        <div class="step-title">
-                            <div class="step-number">5</div> ADD FIRE PHOTO <span style="color:var(--text-muted); font-weight:500; font-size:0.8rem;">(OPTIONAL)</span>
-                        </div>
-                        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;">Optional. Upload only when safe.</p>
-                        <div class="photo-actions">
-                            <button class="btn-small-outline" style="justify-content:center; padding:0.8rem;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Take Photo</button>
-                            <button class="btn-small-outline" style="justify-content:center; padding:0.8rem;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Choose Photo</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-footer">
-                    <button class="btn-primary">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
-                        SEND FIRE ALERT
-                    </button>
-                    <button class="btn-cancel">Cancel</button>
-                </div>
-            </div>
-
-            <!-- RIGHT COLUMN -->
-            <div class="right-col" style="display:flex; flex-direction:column; gap:1rem;">
-                <div class="card safety-card">
-                    <div class="card-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-                        Safety Reminder
-                    </div>
-                    <ul class="safety-list">
-                        <li>Stay calm.</li>
-                        <li>Move away from the fire.</li>
-                        <li>Do not return for belongings.</li>
-                        <li>Follow responder instructions.</li>
-                    </ul>
-                </div>
-
-                <div class="card incident-card">
-                    <div class="card-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        Nearby Active Incident
-                    </div>
-                    <p style="font-size:0.9rem; font-weight:500; margin-bottom:1rem; color:var(--text-dark); line-height:1.4;">A fire incident has already been reported near your location.</p>
-                    <button class="btn-outline-red" style="margin-bottom:0.8rem;">View Existing Incident</button>
-                    <button class="btn-solid-red" style="margin-bottom:1rem;">Report a Different Fire</button>
-                    <p class="text-sm-muted">Avoid duplicate reports to help responders act faster.</p>
-                </div>
-            </div>
-
-        </main>
-
-        <!-- Mobile Bottom Navigation -->
-    </div>
+      <footer class="form-footer"><button type="button" class="btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>SEND FIRE ALERT</button><button type="button" class="btn-cancel">Cancel</button></footer>
+    </main>
+  </div>
 `;

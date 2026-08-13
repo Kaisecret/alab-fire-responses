@@ -200,3 +200,17 @@ test("resident report refresh keeps styles and map overlay outside Leaflet-owned
   assert.ok(mapStart > mapSurfaceStart, "Leaflet map target is inside the map surface");
   assert.ok(overlayStart > mapClose, "location overlay must be a sibling outside the Leaflet map target");
 });
+
+test("resident fire report renders a focused responsive emergency form", () => {
+  const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
+
+  assert.match(content, /report-form-shell/);
+  assert.match(content, /data-report-reason/);
+  assert.match(content, /Electrical malfunction/);
+  assert.match(content, /Cooking accident/);
+  assert.match(content, /Open flame or cigarette/);
+  assert.match(content, /Unknown \/ Other/);
+  assert.match(content, /@media \(max-width: 950px\)[\s\S]*\.report-form-shell/);
+  assert.doesNotMatch(content, /class="left-col"/);
+  assert.doesNotMatch(content, /class="right-col"/);
+});
