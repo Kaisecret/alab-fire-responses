@@ -47,6 +47,29 @@ test("resident signup prevents duplicate first-code requests while the request i
   assert.match(component, /isStartingVerification = false/);
 });
 
+test("resident signup sends one OTP only after account details are confirmed", () => {
+  const component = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");
+  const stepFourContinue = component.slice(
+    component.indexOf("const handleToStep5"),
+    component.indexOf("const handleBackToStep1"),
+  );
+
+  assert.match(stepFourContinue, /goToStep\(5\)/);
+  assert.doesNotMatch(stepFourContinue, /\/api\/auth\/register\/start/);
+  assert.match(component, /const showAccountConfirmation = \(verificationId: string\) =>/);
+  const verificationHandler = component.slice(
+    component.indexOf("verifyButton.onclick"),
+    component.indexOf("const handleSubmit"),
+  );
+  const confirmation = component.slice(
+    component.indexOf("const showAccountConfirmation"),
+    component.indexOf("const showOtpPanel"),
+  );
+  assert.match(verificationHandler, /showAccountConfirmation\(activeVerificationId\)/);
+  assert.doesNotMatch(verificationHandler, /fetch\("\/api\/auth\/register"/);
+  assert.match(confirmation, /fetch\("\/api\/auth\/register"/);
+});
+
 test("Google login starts OAuth and pre-fills a new resident signup without skipping verification", () => {
   const login = readFileSync(join(appRoot, "app", "_components", "login-page.tsx"), "utf8");
   const signup = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");

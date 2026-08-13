@@ -600,29 +600,14 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       }
       goToStep(4);
     };
-    const handleToStep5 = async () => {
+    const handleToStep5 = () => {
       formStatus.textContent = "";
       if (!validateStep(panels[3])) return;
       if (passwordField?.value !== confirmField?.value) {
         formStatus.textContent = "Passwords do not match.";
         return;
       }
-      if (!frontFile || !passwordField) return;
-      const value = (id: string) => root.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`#${id}`)?.value ?? "";
-      formStatus.textContent = "Sending your verification code…";
-      try {
-        const response = await fetch("/api/auth/register/start", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ firstName: value("firstName"), lastName: value("lastName"), email: value("email"), phone: value("phone"), municipality: value("municipality"), barangay: value("barangay"), address: value("address"), username: value("username"), password: passwordField.value, frontDocumentName: frontFile.name, backDocumentName: backFile?.name, selfieCaptured: selfieTaken, termsAccepted: true }),
-        });
-        const result = await response.json() as { error?: string; verificationId?: string };
-        if (!response.ok || !result.verificationId) { formStatus.textContent = result.error ?? "Unable to send the verification code."; return; }
-        formStatus.textContent = "";
-        showOtpPanel(result.verificationId, value("phone"));
-      } catch {
-        formStatus.textContent = "Unable to reach the verification service. Please try again.";
-      }
+      goToStep(5);
     };
     const handleBackToStep1 = () => goToStep(1);
     const handleBackToStep2 = () => goToStep(2);
@@ -666,6 +651,34 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       }
 
       return true;
+    };
+
+    const showAccountConfirmation = (verificationId: string) => {
+      const panel = panels[4];
+      if (!panel) return;
+      panel.innerHTML = `<section style="display:grid;gap:1.15rem;padding:clamp(.25rem,1vw,.75rem) 0;text-align:center"><div style="margin:auto;display:grid;place-items:center;width:4.2rem;height:4.2rem;border-radius:1.35rem;background:linear-gradient(135deg,#16a34a,#15803d);box-shadow:0 .9rem 1.8rem rgba(22,163,74,.22);color:#fff;font-size:1.65rem">✓</div><div><h3 style="margin:0;color:#166534;font-size:1.45rem">Phone verified</h3><p style="margin:.5rem auto 0;max-width:27rem;color:#475569;line-height:1.55">Your phone is confirmed. Review your details, then create your resident account.</p></div><div style="display:grid;gap:.55rem;padding:1rem;border:1px solid #dcfce7;border-radius:1rem;background:#f0fdf4;text-align:left;color:#334155;font-size:.9rem"><span><strong>Name:</strong> ${root.querySelector<HTMLInputElement>("#firstName")?.value ?? ""} ${root.querySelector<HTMLInputElement>("#lastName")?.value ?? ""}</span><span><strong>Username:</strong> ${root.querySelector<HTMLInputElement>("#username")?.value ?? ""}</span><span><strong>Phone:</strong> ${root.querySelector<HTMLInputElement>("#phone")?.value ?? ""}</span></div><p id="accountConfirmationStatus" role="alert" style="min-height:1.3rem;margin:0;color:#b91c1c;font-size:.86rem;font-weight:700"></p><button id="completeAccountButton" type="button" style="width:100%;border:0;border-radius:.85rem;padding:1rem;background:linear-gradient(135deg,#ef2d1d,#b91c1c);box-shadow:0 .7rem 1.4rem rgba(220,38,38,.22);color:#fff;font-weight:800;cursor:pointer">Create my account</button></section>`;
+      const completeButton = panel.querySelector<HTMLButtonElement>("#completeAccountButton")!;
+      const status = panel.querySelector<HTMLElement>("#accountConfirmationStatus")!;
+      completeButton.onclick = async () => {
+        completeButton.disabled = true;
+        completeButton.textContent = "Creating your account…";
+        status.textContent = "";
+        try {
+          const register = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verificationId }) });
+          if (!register.ok) {
+            const failed = await register.json() as { error?: string };
+            completeButton.disabled = false;
+            completeButton.textContent = "Create my account";
+            status.textContent = failed.error ?? "Unable to create your account.";
+            return;
+          }
+          window.location.assign("/resident");
+        } catch {
+          completeButton.disabled = false;
+          completeButton.textContent = "Create my account";
+          status.textContent = "Unable to reach the account service. Please try again.";
+        }
+      };
     };
 
     const showOtpPanel = (verificationId: string, phone: string) => {
@@ -720,10 +733,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         const verify = await fetch("/api/auth/register/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verificationId: activeVerificationId, code }) });
         const result = await verify.json() as { error?: string };
         if (!verify.ok) { verifyButton.disabled = false; verifyButton.textContent = "Verify & Continue"; status.textContent = result.error ?? "Unable to verify the code."; return; }
-        const register = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verificationId: activeVerificationId }) });
-        if (!register.ok) { const failed = await register.json() as { error?: string }; verifyButton.disabled = false; verifyButton.textContent = "Verify & Continue"; status.textContent = failed.error ?? "Unable to create your account."; return; }
         window.clearInterval(resendTimer);
-        window.location.assign("/resident");
+        showAccountConfirmation(activeVerificationId);
       };
       inputs[0]?.focus();
     };
