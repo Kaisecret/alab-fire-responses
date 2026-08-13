@@ -215,12 +215,15 @@ test("resident fire report renders a focused responsive emergency form", () => {
   assert.doesNotMatch(content, /class="right-col"/);
 });
 
-test("resident report keeps a compact branded mobile fire action and editable auto-filled landmark", () => {
+test("resident pages share a larger uniform branded mobile fire action", () => {
   const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
   const content = readFileSync(join(root, "app", "_content", "resident-report-fire-content.ts"), "utf8");
 
   assert.match(residentLayout, /className="rl-mn-fab"/);
-  assert.match(residentLayout, /\.rl-mn-fab\s*\{[\s\S]*?width:\s*3\.85rem/);
+  assert.match(residentLayout, /\.rl-mobile-nav\s*\{[\s\S]*?min-height:\s*5\.3rem/);
+  assert.match(residentLayout, /\.rl-mn-item\s*\{[\s\S]*?font-size:\s*0\.74rem/);
+  assert.match(residentLayout, /\.rl-mn-item svg\s*\{[\s\S]*?width:\s*1\.7rem/);
+  assert.match(residentLayout, /\.rl-mn-fab\s*\{[\s\S]*?width:\s*4\.2rem/);
   assert.match(residentLayout, /background:\s*linear-gradient\(145deg, #ef4444, #b91c1c\)/);
   assert.doesNotMatch(content, /data-location-adjust/);
   assert.match(content, /data-landmark-input/);

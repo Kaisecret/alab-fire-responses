@@ -323,7 +323,9 @@ const layoutStyles = `
       width: 100%;
       background: white;
       border-top: 1px solid #e2e8f0;
-      padding: 0.55rem 0.8rem 1.1rem;
+      min-height: 5.3rem;
+      box-sizing: border-box;
+      padding: 0.7rem 0.7rem calc(0.8rem + env(safe-area-inset-bottom));
       justify-content: space-between;
       align-items: flex-end;
       z-index: 100;
@@ -336,7 +338,7 @@ const layoutStyles = `
       align-items: center;
       gap: 0.2rem;
       color: #94a3b8;
-      font-size: 0.7rem;
+      font-size: 0.74rem;
       font-weight: 600;
       text-decoration: none;
       width: 20%;
@@ -346,8 +348,8 @@ const layoutStyles = `
       color: #d91b10;
     }
     .rl-mn-item svg {
-      width: 1.55rem;
-      height: 1.55rem;
+      width: 1.7rem;
+      height: 1.7rem;
     }
 
     .rl-mn-fab-wrap {
@@ -358,10 +360,10 @@ const layoutStyles = `
     }
     .rl-mn-fab {
       position: absolute;
-      bottom: 0.48rem;
+      bottom: 0.44rem;
       display: flex;
-      width: 3.85rem;
-      height: 3.85rem;
+      width: 4.2rem;
+      height: 4.2rem;
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -370,22 +372,22 @@ const layoutStyles = `
       border-radius: 50%;
       color: #ffffff;
       background: linear-gradient(145deg, #ef4444, #b91c1c);
-      box-shadow: 0 .45rem 1.25rem rgba(217, 27, 16, .34);
+      box-shadow: 0 .55rem 1.35rem rgba(217, 27, 16, .36);
       text-decoration: none;
       transition: transform .15s ease, box-shadow .15s ease;
     }
     .rl-mn-fab:active { transform: scale(.94); }
     .rl-mn-fab:hover { box-shadow: 0 .6rem 1.5rem rgba(217, 27, 16, .4); }
     .rl-mn-fab img {
-      width: 2.05rem;
-      height: 2.05rem;
+      width: 2.2rem;
+      height: 2.2rem;
       margin-top: .12rem;
       object-fit: contain;
       filter: brightness(0) invert(1);
     }
     .rl-mn-fab span {
       margin-top: -.3rem;
-      font-size: .46rem;
+      font-size: .49rem;
       font-weight: 800;
       letter-spacing: .02em;
       white-space: nowrap;
