@@ -665,7 +665,7 @@ export const guideMarkup = `
                 <div class="guide-main-col">
                     <!-- HERO -->
                     <div class="guide-hero-section">
-                        <img src="/images/burning-house.png" alt="Burning House" class="guide-hero-img" />
+                        <img src="/images/burning-house.webp" alt="Burning House" class="guide-hero-img" />
                         <div class="guide-hero-content">
                             <h2 class="desktop-only">What to Do During a Fire Emergency</h2>
                             <h2 class="mobile-only">Fire Emergency Steps</h2>
@@ -676,7 +676,7 @@ export const guideMarkup = `
                                 <div class="guide-step">
                                     <div class="guide-step-icon-wrapper">
                                         <div class="guide-step-number">1</div>
-                                        <img src="/images/step1_calm.png" alt="Stay Calm" style="mix-blend-mode: multiply;" />
+                                        <img src="/images/step1_calm.webp" alt="Stay Calm" style="mix-blend-mode: multiply;" />
                                     </div>
                                     <h3>Stay Calm</h3>
                                     <p>Keep yourself calm and think clearly.</p>
@@ -684,7 +684,7 @@ export const guideMarkup = `
                                 <div class="guide-step">
                                     <div class="guide-step-icon-wrapper">
                                         <div class="guide-step-number">2</div>
-                                        <img src="/images/step2_exit.png" alt="Move to Safety" style="mix-blend-mode: multiply;" />
+                                        <img src="/images/step2_exit.webp" alt="Move to Safety" style="mix-blend-mode: multiply;" />
                                     </div>
                                     <h3>Move to Safety</h3>
                                     <p>Exit the building using safe routes.</p>
@@ -692,7 +692,7 @@ export const guideMarkup = `
                                 <div class="guide-step">
                                     <div class="guide-step-icon-wrapper">
                                         <div class="guide-step-number">3</div>
-                                        <img src="/images/step3_phone.png" alt="Send Fire Alert" style="mix-blend-mode: multiply;" />
+                                        <img src="/images/step3_phone.webp" alt="Send Fire Alert" style="mix-blend-mode: multiply;" />
                                     </div>
                                     <h3>Send Fire Alert</h3>
                                     <p>Report the fire immediately.</p>
@@ -700,7 +700,7 @@ export const guideMarkup = `
                                 <div class="guide-step">
                                     <div class="guide-step-icon-wrapper">
                                         <div class="guide-step-number">4</div>
-                                        <img src="/images/step4_firefighter.png" alt="Wait for Responders" style="mix-blend-mode: multiply;" />
+                                        <img src="/images/step4_firefighter.webp" alt="Wait for Responders" style="mix-blend-mode: multiply;" />
                                     </div>
                                     <h3>Wait for Responders</h3>
                                     <p>Stay in a safe area and follow instructions.</p>
