@@ -64,3 +64,8 @@ test("resident dashboard uses the saved first name without the surname", () => {
 test("mobile header gives the fire logo a clear, balanced size", () => {
   assert.match(layoutSource, /\.rl-m-left img\s*\{[\s\S]*?height:\s*3\.6rem;/);
 });
+
+test("resident home uses the approved ALAB hover-red accent", () => {
+  assert.match(source, /--primary-red-hover:\s*#DB1B0D;/i);
+  assert.doesNotMatch(source, /#b8150c/i);
+});

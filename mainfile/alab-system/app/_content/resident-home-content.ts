@@ -1,7 +1,7 @@
 export const homeStyles = `
     :root {
         --primary-red: #d91b10;
-        --primary-red-hover: #b8150c;
+        --primary-red-hover: #DB1B0D;
         --bg-color: #fafaf9;
         --card-bg: #ffffff;
         --text-dark: #1e293b;
