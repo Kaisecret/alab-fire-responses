@@ -1,5 +1,20 @@
 import { randomBytes, randomUUID, scrypt } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { Pool } from "pg";
+
+function loadLocalEnvironment() {
+  const envPath = resolve(process.cwd(), ".env.local");
+  if (!existsSync(envPath)) return;
+  for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
+    if (!match || process.env[match[1]] !== undefined) continue;
+    const value = match[2].trim();
+    process.env[match[1]] = value.startsWith('"') && value.endsWith('"') ? value.slice(1, -1) : value;
+  }
+}
+
+loadLocalEnvironment();
 
 const required = ["DATABASE_URL", "PROVINCIAL_BFP_EMAIL", "PROVINCIAL_BFP_NAME", "PROVINCIAL_BFP_TEMP_PASSWORD"];
 for (const key of required) {

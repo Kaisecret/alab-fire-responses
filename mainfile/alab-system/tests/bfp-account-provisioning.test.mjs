@@ -61,6 +61,13 @@ test("BFP APIs provision individual staff, require a password change, and never 
   assert.doesNotMatch(me, /password_hash/);
 });
 
+test("Provincial bootstrap reads the local database URL without requiring it in the terminal", () => {
+  const bootstrap = source("scripts/bootstrap-provincial-bfp.mjs");
+  assert.match(bootstrap, /\.env\.local/);
+  assert.match(bootstrap, /readFileSync/);
+  assert.match(bootstrap, /process\.env\[match\[1\]\] !== undefined/);
+});
+
 test("Provincial BFP can provision municipal accounts and Municipal BFP pages use signed-in identity", () => {
   for (const path of [
     "app/provincial-bfp/municipal-accounts/page.tsx",
