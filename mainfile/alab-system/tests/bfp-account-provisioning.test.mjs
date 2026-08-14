@@ -58,6 +58,25 @@ test("Provincial and Municipal BFP sessions use independent cookies", () => {
   assert.match(proxy, /bfpSessionCookieName\(requiredRole\)/);
 });
 
+test("local UI preview is explicitly development-only and serves every portal", () => {
+  const previewPath = join(root, "lib", "auth", "local-ui-preview.ts");
+  assert.equal(existsSync(previewPath), true, "local UI preview guard is missing");
+
+  const preview = source("lib/auth/local-ui-preview.ts");
+  const proxy = source("proxy.ts");
+  const residentDashboard = source("app/api/resident/dashboard/route.ts");
+  const residentProfile = source("app/api/resident/profile/route.ts");
+  const municipalMe = source("app/api/municipal-bfp/me/route.ts");
+  const provincialMe = source("app/api/provincial-bfp/me/route.ts");
+
+  assert.match(preview, /NODE_ENV\s*===\s*["']development["']/);
+  assert.match(preview, /LOCAL_UI_BYPASS\s*===\s*["']true["']/);
+  assert.match(proxy, /isLocalUiPreviewEnabled/);
+  for (const route of [residentDashboard, residentProfile, municipalMe, provincialMe]) {
+    assert.match(route, /isLocalUiPreviewEnabled/);
+  }
+});
+
 test("BFP APIs provision individual staff, require a password change, and never expose hashes", () => {
   for (const path of [
     "app/api/auth/bfp/login/route.ts",

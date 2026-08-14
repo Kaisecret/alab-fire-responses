@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { RESIDENT_SESSION_COOKIE, verifyResidentSession } from "../../../../lib/auth/session";
+import { isLocalUiPreviewEnabled } from "../../../../lib/auth/local-ui-preview";
 import { getDatabase } from "../../../../lib/db";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
+    if (isLocalUiPreviewEnabled()) {
+      return NextResponse.json({
+        profile: {
+          name: "Resident Preview", username: "resident.preview", email: "resident.preview@local.test", phone: "0917 000 0000",
+          municipality: "San Jose de Buenavista", barangay: "Funda-Dalipe", address: "Preview address only",
+          verificationStatus: "VERIFIED",
+          notifications: { push: true, incidents: true, emergency: true, guide: true },
+        },
+      });
+    }
     const session = verifyResidentSession(request.cookies.get(RESIDENT_SESSION_COOKIE)?.value);
     if (!session) return NextResponse.json({ error: "Sign in to view your profile." }, { status: 401 });
 

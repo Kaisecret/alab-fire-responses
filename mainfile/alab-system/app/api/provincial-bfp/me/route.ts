@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getBfpIdentity } from "../../../../lib/auth/bfp-accounts";
+import { isLocalUiPreviewEnabled } from "../../../../lib/auth/local-ui-preview";
 import { bfpSessionCookieName, verifyBfpSession } from "../../../../lib/auth/session";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
+  if (isLocalUiPreviewEnabled()) {
+    return NextResponse.json({
+      user: {
+        userId: "local-preview-provincial",
+        displayName: "Provincial BFP Preview",
+        rankOrPosition: "Provincial Fire Marshal",
+        role: "PROVINCIAL_BFP",
+        email: "provincial.preview@local.test",
+        province: "Antique",
+        mustChangePassword: false,
+      },
+    });
+  }
   const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("PROVINCIAL_BFP"))?.value);
   if (!session || session.role !== "PROVINCIAL_BFP") {
     return NextResponse.json({ error: "Provincial BFP sign-in is required." }, { status: 401 });

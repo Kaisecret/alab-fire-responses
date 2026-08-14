@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getBfpIdentity } from "../../../../lib/auth/bfp-accounts";
+import { isLocalUiPreviewEnabled } from "../../../../lib/auth/local-ui-preview";
 import { bfpSessionCookieName, verifyBfpSession } from "../../../../lib/auth/session";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
+  if (isLocalUiPreviewEnabled()) {
+    return NextResponse.json({
+      user: {
+        displayName: "Municipal BFP Preview",
+        rankOrPosition: "Municipal Fire Marshal",
+        municipalityId: "local-preview-municipality",
+        municipalityName: "San Jose de Buenavista",
+        assignmentRole: "MUNICIPAL_ADMIN",
+        mustChangePassword: false,
+      },
+    });
+  }
   const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
   if (!session || session.role !== "MUNICIPAL_BFP") return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
   try {

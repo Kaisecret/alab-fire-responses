@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { RESIDENT_SESSION_COOKIE, verifyResidentSession } from "../../../../lib/auth/session";
+import { isLocalUiPreviewEnabled } from "../../../../lib/auth/local-ui-preview";
 import { getDatabase } from "../../../../lib/db";
 
 export const runtime = "nodejs";
@@ -20,6 +21,13 @@ type ReportStatus = keyof typeof reportStatus;
 
 export async function GET(request: NextRequest) {
   try {
+    if (isLocalUiPreviewEnabled()) {
+      return NextResponse.json({
+        resident: { name: "Resident Preview", municipality: "San Jose de Buenavista", barangay: "Funda-Dalipe" },
+        counts: { submitted: 0, verifying: 0, confirmed: 0, closed: 0 },
+        reports: [],
+      });
+    }
     const session = verifyResidentSession(request.cookies.get(RESIDENT_SESSION_COOKIE)?.value);
     if (!session) return NextResponse.json({ error: "Sign in to view your dashboard." }, { status: 401 });
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { updateSupabaseSession } from "./utils/supabase/middleware";
+import { isLocalUiPreviewEnabled } from "./lib/auth/local-ui-preview";
 
 const SESSION_COOKIE = "alab_resident_session";
 const PROVINCIAL_BFP_SESSION_COOKIE = "alab_provincial_bfp_session";
@@ -69,6 +70,7 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   if (path.startsWith("/resident/")) {
     if (path === "/resident/login" || path === "/resident/signup") return supabaseResponse;
+    if (isLocalUiPreviewEnabled()) return supabaseResponse;
     if (await verifyResidentSession(request.cookies.get(SESSION_COOKIE)?.value)) return supabaseResponse;
 
     const loginUrl = request.nextUrl.clone();
@@ -82,6 +84,7 @@ export async function proxy(request: NextRequest) {
   const isMunicipal = path.startsWith("/municipal-bfp/") || path === "/municipal-bfp";
   const publicBfpPage = path.endsWith("/login") || path.endsWith("/change-password");
   if (publicBfpPage) return supabaseResponse;
+  if (isLocalUiPreviewEnabled()) return supabaseResponse;
   const requiredRole = isMunicipal ? "MUNICIPAL_BFP" : "PROVINCIAL_BFP";
   const bfpAccess = await verifyBfpSession(request.cookies.get(bfpSessionCookieName(requiredRole))?.value, requiredRole);
   if (bfpAccess === "AUTHORIZED") return supabaseResponse;
