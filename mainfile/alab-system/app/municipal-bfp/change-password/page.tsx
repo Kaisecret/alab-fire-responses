@@ -1,5 +1,5 @@
 import { BfpChangePassword } from "../../_components/bfp-change-password";
 
 export default function MunicipalBfpChangePasswordPage() {
-  return <BfpChangePassword />;
+  return <BfpChangePassword portal="MUNICIPAL" />;
 }

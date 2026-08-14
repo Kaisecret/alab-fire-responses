@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getDatabase } from "../../../../lib/db";
 import { getBfpIdentity, provisionMunicipalBfpAccount } from "../../../../lib/auth/bfp-accounts";
-import { BFP_SESSION_COOKIE, verifyBfpSession } from "../../../../lib/auth/session";
+import { bfpSessionCookieName, verifyBfpSession } from "../../../../lib/auth/session";
 
 export const runtime = "nodejs";
 
 async function provincialActor(request: NextRequest) {
-  const session = verifyBfpSession(request.cookies.get(BFP_SESSION_COOKIE)?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("PROVINCIAL_BFP"))?.value);
   if (!session || session.role !== "PROVINCIAL_BFP") return null;
   const identity = await getBfpIdentity(session.userId);
   return identity?.role === "PROVINCIAL_BFP" ? identity : null;

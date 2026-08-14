@@ -1126,7 +1126,11 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/bfp/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ portal: 'PROVINCIAL' }),
+      });
     } catch {
       // ignore
     }

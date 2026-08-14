@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 
-export function BfpChangePassword() {
+export function BfpChangePassword({ portal }: { portal: "MUNICIPAL" | "PROVINCIAL" }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [nextPassword, setNextPassword] = useState("");
   const [error, setError] = useState("");
@@ -10,7 +10,7 @@ export function BfpChangePassword() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setLoading(true);
     try {
-      const response = await fetch("/api/auth/bfp/change-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword, nextPassword }) });
+      const response = await fetch("/api/auth/bfp/change-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword, nextPassword, portal }) });
       const result = await response.json() as { error?: string; redirectTo?: string };
       if (!response.ok || !result.redirectTo) throw new Error(result.error || "Unable to update your password.");
       window.location.assign(result.redirectTo);

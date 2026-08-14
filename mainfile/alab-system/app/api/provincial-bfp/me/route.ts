@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getBfpIdentity } from "../../../../lib/auth/bfp-accounts";
-import { BFP_SESSION_COOKIE, verifyBfpSession } from "../../../../lib/auth/session";
+import { bfpSessionCookieName, verifyBfpSession } from "../../../../lib/auth/session";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const session = verifyBfpSession(request.cookies.get(BFP_SESSION_COOKIE)?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("PROVINCIAL_BFP"))?.value);
   if (!session || session.role !== "PROVINCIAL_BFP") {
     return NextResponse.json({ error: "Provincial BFP sign-in is required." }, { status: 401 });
   }

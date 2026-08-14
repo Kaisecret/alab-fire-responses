@@ -1,7 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const RESIDENT_SESSION_COOKIE = "alab_resident_session";
-export const BFP_SESSION_COOKIE = "alab_bfp_session";
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 8;
 
 export type ResidentSession = {
@@ -12,6 +11,15 @@ export type ResidentSession = {
 };
 
 export type BfpRole = "PROVINCIAL_BFP" | "MUNICIPAL_BFP";
+
+export const PROVINCIAL_BFP_SESSION_COOKIE = "alab_provincial_bfp_session";
+export const MUNICIPAL_BFP_SESSION_COOKIE = "alab_municipal_bfp_session";
+
+export function bfpSessionCookieName(role: BfpRole) {
+  return role === "PROVINCIAL_BFP"
+    ? PROVINCIAL_BFP_SESSION_COOKIE
+    : MUNICIPAL_BFP_SESSION_COOKIE;
+}
 
 export type BfpSession = {
   userId: string;

@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { changeBfpPassword, getBfpIdentity } from "../../../../../lib/auth/bfp-accounts";
-import { BFP_SESSION_COOKIE, bfpSessionCookie, createBfpSession, verifyBfpSession } from "../../../../../lib/auth/session";
+import { bfpSessionCookieName, bfpSessionCookie, createBfpSession, type BfpRole, verifyBfpSession } from "../../../../../lib/auth/session";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  const session = verifyBfpSession(request.cookies.get(BFP_SESSION_COOKIE)?.value);
-  if (!session) return NextResponse.json({ error: "Sign in again to change your password." }, { status: 401 });
-  let body: { currentPassword?: string; nextPassword?: string };
+  let body: { currentPassword?: string; nextPassword?: string; portal?: "MUNICIPAL" | "PROVINCIAL" };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid password data." }, { status: 400 });
   }
+  const expectedRole: BfpRole = body.portal === "PROVINCIAL" ? "PROVINCIAL_BFP" : "MUNICIPAL_BFP";
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName(expectedRole))?.value);
+  if (!session || session.role !== expectedRole) return NextResponse.json({ error: "Sign in again to change your password." }, { status: 401 });
   const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
   const nextPassword = typeof body.nextPassword === "string" ? body.nextPassword : "";
 
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
     const identity = await getBfpIdentity(session.userId);
     if (!identity) return NextResponse.json({ error: "Your account is no longer active." }, { status: 403 });
     const response = NextResponse.json({ redirectTo: identity.role === "PROVINCIAL_BFP" ? "/provincial-bfp" : "/municipal-bfp" });
-    response.cookies.set(BFP_SESSION_COOKIE, createBfpSession({
+    response.cookies.set(bfpSessionCookieName(session.role), createBfpSession({
       userId: identity.userId,
       displayName: identity.displayName,
       role: identity.role,

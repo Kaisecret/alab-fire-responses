@@ -817,6 +817,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                         <i className="fa-regular fa-circle-question" /> Help Center
                       </button>
                       <form action="/api/auth/bfp/logout" method="post">
+                        <input type="hidden" name="portal" value="MUNICIPAL" />
                         <button type="submit" className="mbfp-dropdown-item logout" onClick={() => setIsProfileOpen(false)}>
                           <i className="fa-solid fa-arrow-right-from-bracket" /> Logout
                         </button>

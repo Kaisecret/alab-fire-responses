@@ -3,7 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { updateSupabaseSession } from "./utils/supabase/middleware";
 
 const SESSION_COOKIE = "alab_resident_session";
-const BFP_SESSION_COOKIE = "alab_bfp_session";
+const PROVINCIAL_BFP_SESSION_COOKIE = "alab_provincial_bfp_session";
+const MUNICIPAL_BFP_SESSION_COOKIE = "alab_municipal_bfp_session";
+
+function bfpSessionCookieName(role: "MUNICIPAL_BFP" | "PROVINCIAL_BFP") {
+  return role === "PROVINCIAL_BFP"
+    ? PROVINCIAL_BFP_SESSION_COOKIE
+    : MUNICIPAL_BFP_SESSION_COOKIE;
+}
 
 function base64UrlToBytes(value: string) {
   const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
@@ -76,7 +83,7 @@ export async function proxy(request: NextRequest) {
   const publicBfpPage = path.endsWith("/login") || path.endsWith("/change-password");
   if (publicBfpPage) return supabaseResponse;
   const requiredRole = isMunicipal ? "MUNICIPAL_BFP" : "PROVINCIAL_BFP";
-  const bfpAccess = await verifyBfpSession(request.cookies.get(BFP_SESSION_COOKIE)?.value, requiredRole);
+  const bfpAccess = await verifyBfpSession(request.cookies.get(bfpSessionCookieName(requiredRole))?.value, requiredRole);
   if (bfpAccess === "AUTHORIZED") return supabaseResponse;
   if (bfpAccess === "PASSWORD_CHANGE_REQUIRED") {
     const changePasswordUrl = request.nextUrl.clone();

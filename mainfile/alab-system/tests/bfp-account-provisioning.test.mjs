@@ -30,11 +30,32 @@ test("BFP authentication uses a separate signed cookie and protects both BFP are
   const session = source("lib/auth/session.ts");
   const proxy = source("proxy.ts");
 
-  assert.match(session, /BFP_SESSION_COOKIE/);
+  assert.match(session, /bfpSessionCookieName/);
   assert.match(session, /createBfpSession/);
   assert.match(session, /verifyBfpSession/);
   assert.match(proxy, /\/municipal-bfp\/:path\*/);
   assert.match(proxy, /\/provincial-bfp\/:path\*/);
+});
+
+test("Provincial and Municipal BFP sessions use independent cookies", () => {
+  const session = source("lib/auth/session.ts");
+  const login = source("app/api/auth/bfp/login/route.ts");
+  const changePassword = source("app/api/auth/bfp/change-password/route.ts");
+  const logout = source("app/api/auth/bfp/logout/route.ts");
+  const municipalMe = source("app/api/municipal-bfp/me/route.ts");
+  const provincialMe = source("app/api/provincial-bfp/me/route.ts");
+  const proxy = source("proxy.ts");
+
+  assert.match(session, /PROVINCIAL_BFP_SESSION_COOKIE\s*=\s*"alab_provincial_bfp_session"/);
+  assert.match(session, /MUNICIPAL_BFP_SESSION_COOKIE\s*=\s*"alab_municipal_bfp_session"/);
+  assert.match(session, /bfpSessionCookieName/);
+  assert.match(login, /bfpSessionCookieName\(identity\.role\)/);
+  assert.match(changePassword, /portal/);
+  assert.match(changePassword, /bfpSessionCookieName\(session\.role\)/);
+  assert.match(logout, /bfpSessionCookieName/);
+  assert.match(municipalMe, /bfpSessionCookieName\("MUNICIPAL_BFP"\)/);
+  assert.match(provincialMe, /bfpSessionCookieName\("PROVINCIAL_BFP"\)/);
+  assert.match(proxy, /bfpSessionCookieName\(requiredRole\)/);
 });
 
 test("BFP APIs provision individual staff, require a password change, and never expose hashes", () => {
