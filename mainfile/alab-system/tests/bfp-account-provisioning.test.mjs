@@ -78,7 +78,7 @@ test("Provincial BFP can provision municipal accounts and Municipal BFP pages us
 
   const provincial = source("app/_components/provincial-municipal-accounts.tsx");
   const layout = source("app/_components/municipal-bfp-layout.tsx");
-  assert.match(provincial, /Municipal Accounts/);
+  assert.match(provincial, /Municipal BFP Accounts/);
   assert.match(provincial, /api\/provincial-bfp\/municipal-accounts/);
   assert.match(layout, /api\/municipal-bfp\/me/);
   assert.match(layout, /mustChangePassword/);

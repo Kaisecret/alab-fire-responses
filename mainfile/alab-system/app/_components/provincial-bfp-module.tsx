@@ -1,11 +1,5 @@
-import { userModules } from "../_content/user-modules";
-import { ModuleShell } from "./module-shell";
+import { ProvincialBfpDashboard } from "./provincial-bfp-dashboard";
 
 export function ProvincialBfpModule() {
-  return (
-    <ModuleShell
-      accent="provincial"
-      moduleData={userModules["provincial-bfp"]}
-    />
-  );
+  return <ProvincialBfpDashboard />;
 }

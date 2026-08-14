@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 type ResidentMobileNavigationProps = {
@@ -129,7 +130,7 @@ export function ResidentMobileNavigation({ activeKey, isProfileActive }: Residen
   return (
     <nav className="rl-mobile-nav" aria-label="Resident navigation">
       <a href="/resident" className={`rl-mn-item${activeKey === "home" ? " rl-mn-active" : ""}`}><HomeIcon active={activeKey === "home"} /><span>Home</span></a>
-      <a href="/resident/reports" className={`rl-mn-item${activeKey === "reports" ? " rl-mn-active" : ""}`}><ReportsIcon active={activeKey === "reports"} /><span>Reports</span></a>
+      <Link href="/resident/reports" className={`rl-mn-item${activeKey === "reports" ? " rl-mn-active" : ""}`}><ReportsIcon active={activeKey === "reports"} /><span>Reports</span></Link>
       <div className="rl-mn-fab-wrap"><a href="/resident/report-fire" className="rl-mn-fab" aria-label="Report Fire"><img src="/images/fire logo.webp" alt="" /><span>Report Fire</span></a></div>
       <a href="/resident/guide" className={`rl-mn-item${activeKey === "guide" ? " rl-mn-active" : ""}`}><GuideIcon active={activeKey === "guide"} /><span>Guide</span></a>
       <a href="/resident/profile" className={`rl-mn-item${isProfileActive ? " rl-mn-active" : ""}`}><ProfileIcon active={isProfileActive} /><span>Profile</span></a>

@@ -14,3 +14,10 @@ test("report details relies on the shared resident navigation instead of renderi
   assert.match(layout, /<ResidentMobileNavigation activeKey=\{activeKey\} isProfileActive=\{isProfileActive\} \/>/);
   assert.match(mobileNavigation, /<nav className="rl-mobile-nav"/);
 });
+
+test("resident mobile navigation uses a client-side link for the reports route", () => {
+  const mobileNavigation = readFileSync(join(root, "app", "_components", "resident-mobile-navigation.tsx"), "utf8");
+
+  assert.match(mobileNavigation, /import Link from "next\/link"/);
+  assert.match(mobileNavigation, /<Link href="\/resident\/reports" className=\{`rl-mn-item/);
+});

@@ -20,18 +20,13 @@ test("shared module shell renders role content collections", () => {
   assert.doesNotMatch(shell, /firefighter/i);
 });
 
-test("role components bind the correct web role definitions", () => {
+test("resident and municipal components bind shared role definitions", () => {
   const cases = [
     ["resident-module.tsx", /userModules\.resident/, /ResidentModule/],
     [
       "municipal-bfp-module.tsx",
       /userModules\["municipal-bfp"\]/,
       /MunicipalBfpModule/,
-    ],
-    [
-      "provincial-bfp-module.tsx",
-      /userModules\["provincial-bfp"\]/,
-      /ProvincialBfpModule/,
     ],
   ];
 
@@ -47,4 +42,17 @@ test("role components bind the correct web role definitions", () => {
     assert.match(component, /ModuleShell/);
     assert.doesNotMatch(component, /firefighter/i);
   }
+});
+
+test("Provincial BFP module uses the dedicated provincial dashboard", () => {
+  const componentPath = join(root, "app", "_components", "provincial-bfp-module.tsx");
+
+  assert.equal(existsSync(componentPath), true, "provincial-bfp-module.tsx is missing");
+
+  const component = readFileSync(componentPath, "utf8");
+
+  assert.match(component, /ProvincialBfpModule/);
+  assert.match(component, /ProvincialBfpDashboard/);
+  assert.doesNotMatch(component, /ModuleShell/);
+  assert.doesNotMatch(component, /firefighter/i);
 });
