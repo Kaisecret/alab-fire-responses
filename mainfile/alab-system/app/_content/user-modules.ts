@@ -159,6 +159,11 @@ export const userModules = {
       "Provincial BFP personnel oversee province-wide incidents, municipal status, resource availability, assistance coordination, analytics, reports, and authorized system activity.",
     primaryActions: [
       {
+        label: "Municipal accounts",
+        href: "/provincial-bfp/municipal-accounts",
+        description: "Issue and manage individual Municipal BFP staff accounts.",
+      },
+      {
         label: "View province incidents",
         href: "/provincial-bfp/incidents",
         description:

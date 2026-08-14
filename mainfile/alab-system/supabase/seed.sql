@@ -1,25 +1,28 @@
 -- Generated from app/_content/antique-barangays.ts. Do not edit by hand.
 
-insert into public.municipalities (name, province)
+insert into public.municipalities (name, province, psgc_code)
 values
-  ('Anini-y', 'Antique'),
-  ('Barbaza', 'Antique'),
-  ('Belison', 'Antique'),
-  ('Bugasong', 'Antique'),
-  ('Caluya', 'Antique'),
-  ('Culasi', 'Antique'),
-  ('Tobias Fornier', 'Antique'),
-  ('Hamtic', 'Antique'),
-  ('Laua-an', 'Antique'),
-  ('Libertad', 'Antique'),
-  ('Pandan', 'Antique'),
-  ('Patnongon', 'Antique'),
-  ('San Jose de Buenavista', 'Antique'),
-  ('San Remigio', 'Antique'),
-  ('Sebaste', 'Antique'),
-  ('Sibalom', 'Antique'),
-  ('Tibiao', 'Antique')
-on conflict (name) do update set province = excluded.province;
+  ('Anini-y', 'Antique', '0600601000'),
+  ('Barbaza', 'Antique', '0600602000'),
+  ('Belison', 'Antique', '0600603000'),
+  ('Bugasong', 'Antique', '0600604000'),
+  ('Caluya', 'Antique', '0600605000'),
+  ('Culasi', 'Antique', '0600606000'),
+  ('Tobias Fornier', 'Antique', '0600607000'),
+  ('Hamtic', 'Antique', '0600608000'),
+  ('Laua-an', 'Antique', '0600609000'),
+  ('Libertad', 'Antique', '0600610000'),
+  ('Pandan', 'Antique', '0600611000'),
+  ('Patnongon', 'Antique', '0600612000'),
+  ('San Jose de Buenavista', 'Antique', '0600613000'),
+  ('San Remigio', 'Antique', '0600614000'),
+  ('Sebaste', 'Antique', '0600615000'),
+  ('Sibalom', 'Antique', '0600616000'),
+  ('Tibiao', 'Antique', '0600617000'),
+  ('Valderrama', 'Antique', '0600618000')
+on conflict (name) do update set
+  province = excluded.province,
+  psgc_code = excluded.psgc_code;
 
 insert into public.barangays (municipality_id, name)
 select municipalities.id, values_to_insert.name

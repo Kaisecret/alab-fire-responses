@@ -616,6 +616,36 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [identity, setIdentity] = useState<{
+    displayName: string;
+    rankOrPosition: string | null;
+    municipalityName: string | null;
+    assignmentRole: string | null;
+    mustChangePassword: boolean;
+  } | null>(null);
+
+  const isAuthenticationPage = pathname === '/municipal-bfp/login' || pathname === '/municipal-bfp/change-password';
+
+  useEffect(() => {
+    if (isAuthenticationPage) return;
+    let active = true;
+    fetch('/api/municipal-bfp/me')
+      .then(async (response) => ({ response, body: await response.json() as { user?: typeof identity; error?: string } }))
+      .then(({ response, body }) => {
+        if (!active) return;
+        if (!response.ok || !body.user) {
+          window.location.assign('/municipal-bfp/login');
+          return;
+        }
+        if (body.user.mustChangePassword) {
+          window.location.assign('/municipal-bfp/change-password');
+          return;
+        }
+        setIdentity(body.user);
+      })
+      .catch(() => { if (active) window.location.assign('/municipal-bfp/login'); });
+    return () => { active = false; };
+  }, [isAuthenticationPage]);
 
   useEffect(() => {
     if (!isMobileNavOpen) {
@@ -640,6 +670,8 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
     }
     return pathname.startsWith(item.href);
   };
+
+  if (isAuthenticationPage) return <>{children}</>;
 
   return (
     <>
@@ -745,7 +777,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
               <div className="mbfp-header-right">
                 <div className="mbfp-header-location">
                   <i className="fa-solid fa-location-dot" />
-                  <span>San Jose de Buenavista</span>
+                  <span>{identity?.municipalityName ?? 'Loading municipality…'}</span>
                   <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.6rem', marginLeft: '0.2rem' }} />
                 </div>
 
@@ -764,8 +796,8 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                       <i className="fa-solid fa-user-shield" />
                     </div>
                     <div className="mbfp-header-user-info">
-                      <span className="mbfp-header-user-role">Municipal BFP</span>
-                      <span className="mbfp-header-user-rank">Station Commander</span>
+                      <span className="mbfp-header-user-role">{identity?.assignmentRole === 'MUNICIPAL_ADMIN' ? 'Municipal BFP Administrator' : 'Municipal BFP Personnel'}</span>
+                      <span className="mbfp-header-user-rank">{identity?.rankOrPosition || identity?.displayName || 'Loading profile…'}</span>
                     </div>
                     <i className={`fa-solid fa-chevron-${isProfileOpen ? 'up' : 'down'} mbfp-header-user-chevron`} />
                   </div>
@@ -784,9 +816,11 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                       <button className="mbfp-dropdown-item">
                         <i className="fa-regular fa-circle-question" /> Help Center
                       </button>
-                      <Link href="/login" className="mbfp-dropdown-item logout" onClick={() => setIsProfileOpen(false)}>
-                        <i className="fa-solid fa-arrow-right-from-bracket" /> Logout
-                      </Link>
+                      <form action="/api/auth/bfp/logout" method="post">
+                        <button type="submit" className="mbfp-dropdown-item logout" onClick={() => setIsProfileOpen(false)}>
+                          <i className="fa-solid fa-arrow-right-from-bracket" /> Logout
+                        </button>
+                      </form>
                     </div>
                   )}
                 </div>

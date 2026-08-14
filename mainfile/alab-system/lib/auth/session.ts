@@ -1,12 +1,24 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const RESIDENT_SESSION_COOKIE = "alab_resident_session";
+export const BFP_SESSION_COOKIE = "alab_bfp_session";
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 8;
 
 export type ResidentSession = {
   userId: string;
   username: string;
   role: "RESIDENT";
+  expiresAt: number;
+};
+
+export type BfpRole = "PROVINCIAL_BFP" | "MUNICIPAL_BFP";
+
+export type BfpSession = {
+  userId: string;
+  displayName: string;
+  role: BfpRole;
+  municipalityId: string | null;
+  mustChangePassword: boolean;
   expiresAt: number;
 };
 
@@ -51,10 +63,42 @@ export function verifyResidentSession(token: string | undefined): ResidentSessio
   }
 }
 
+export function createBfpSession(input: Omit<BfpSession, "expiresAt">) {
+  const session: BfpSession = { ...input, expiresAt: Date.now() + SESSION_DURATION_MS };
+  const payload = Buffer.from(JSON.stringify(session)).toString("base64url");
+  return `${payload}.${signature(payload)}`;
+}
+
+export function verifyBfpSession(token: string | undefined): BfpSession | null {
+  if (!token) return null;
+  const [payload, receivedSignature] = token.split(".");
+  if (!payload || !receivedSignature) return null;
+
+  const expectedSignature = signature(payload);
+  const received = Buffer.from(receivedSignature);
+  const expected = Buffer.from(expectedSignature);
+  if (received.length !== expected.length || !timingSafeEqual(received, expected)) return null;
+
+  try {
+    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as BfpSession;
+    const isRoleValid = session.role === "PROVINCIAL_BFP" || session.role === "MUNICIPAL_BFP";
+    return isRoleValid && typeof session.userId === "string" && typeof session.displayName === "string" &&
+      typeof session.mustChangePassword === "boolean" && typeof session.expiresAt === "number" && session.expiresAt > Date.now()
+      ? session
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export const residentSessionCookie = {
   httpOnly: true,
   sameSite: "lax" as const,
   secure: process.env.NODE_ENV === "production",
   path: "/",
   maxAge: SESSION_DURATION_MS / 1000,
+};
+
+export const bfpSessionCookie = {
+  ...residentSessionCookie,
 };
