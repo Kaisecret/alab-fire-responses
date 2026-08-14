@@ -4,18 +4,51 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-type NavItem = { label: string; href: string; icon: string; exact?: boolean; badge?: number };
-const sidebarNav: NavItem[] = [
-  { label: 'Dashboard', href: '/municipal-bfp', icon: 'fa-solid fa-table-cells-large', exact: true },
-  { label: 'Active Incidents', href: '/municipal-bfp/active-incidents', icon: 'fa-solid fa-fire' },
-  { label: 'Verification Queue', href: '/municipal-bfp/verification-queue', icon: 'fa-solid fa-clipboard-check' },
-  { label: 'Dispatch & Routing', href: '/municipal-bfp/dispatch-routing', icon: 'fa-solid fa-route' },
-  { label: 'GIS Map', href: '/municipal-bfp/gis-map', icon: 'fa-solid fa-map-location-dot' },
-  { label: 'Firetrucks', href: '/municipal-bfp/firetrucks', icon: 'fa-solid fa-truck-moving' },
-  { label: 'Water Sources', href: '/municipal-bfp/water-sources', icon: 'fa-solid fa-droplet' },
-  { label: 'Responders', href: '/municipal-bfp/responders', icon: 'fa-solid fa-users' },
-  { label: 'Incident Reports', href: '/municipal-bfp/incident-reports', icon: 'fa-solid fa-file-lines' },
-  { label: 'Knowledge Base', href: '/municipal-bfp/knowledge-base', icon: 'fa-solid fa-book' },
+type NavItem = {
+  label: string;
+  href: string;
+  icon: string;
+  exact?: boolean;
+  badge?: number;
+  badgeType?: 'red' | 'amber' | 'blue';
+};
+
+type NavGroup = {
+  groupTitle: string;
+  items: NavItem[];
+};
+
+const navigationGroups: NavGroup[] = [
+  {
+    groupTitle: 'MAIN COMMAND',
+    items: [
+      { label: 'Dashboard', href: '/municipal-bfp', icon: 'custom-dashboard-grid', exact: true },
+      { label: 'Active Incidents', href: '/municipal-bfp/active-incidents', icon: 'fa-solid fa-fire', badge: 3, badgeType: 'red' },
+      { label: 'Verification Queue', href: '/municipal-bfp/verification-queue', icon: 'fa-solid fa-clipboard-check', badge: 2, badgeType: 'amber' },
+    ],
+  },
+  {
+    groupTitle: 'DISPATCH & TACTICAL',
+    items: [
+      { label: 'Dispatch & Routing', href: '/municipal-bfp/dispatch-routing', icon: 'fa-solid fa-route' },
+      { label: 'GIS Map', href: '/municipal-bfp/gis-map', icon: 'fa-solid fa-map-location-dot' },
+    ],
+  },
+  {
+    groupTitle: 'STATION RESOURCES',
+    items: [
+      { label: 'Firetrucks', href: '/municipal-bfp/firetrucks', icon: 'fa-solid fa-truck-moving' },
+      { label: 'Water Sources', href: '/municipal-bfp/water-sources', icon: 'fa-solid fa-droplet' },
+      { label: 'Responders', href: '/municipal-bfp/responders', icon: 'fa-solid fa-users' },
+    ],
+  },
+  {
+    groupTitle: 'RECORDS & ARCHIVES',
+    items: [
+      { label: 'Incident Reports', href: '/municipal-bfp/incident-reports', icon: 'fa-solid fa-file-lines' },
+      { label: 'Knowledge Base', href: '/municipal-bfp/knowledge-base', icon: 'fa-solid fa-book' },
+    ],
+  },
 ];
 
 const layoutStyles = `
@@ -32,17 +65,18 @@ const layoutStyles = `
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     display: flex;
     min-height: 100vh;
-    background: #f0f2f5;
+    background: #EEF5FD;
+    color: #1E293B;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* ========== SIDEBAR ========== */
+  /* ========== IMPECCABLE REDESIGNED SIDEBAR ========== */
   .mbfp-sidebar {
-    width: 240px;
-    min-width: 240px;
-    background: #ffffff;
-    border-right: 1px solid #e5e7eb;
+    width: 260px;
+    min-width: 260px;
+    background: #FFFFFF;
+    border-right: 1px solid #E2E8F0;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -50,172 +84,545 @@ const layoutStyles = `
     left: 0;
     bottom: 0;
     z-index: 100;
-    overflow-y: auto;
-    overflow-x: hidden;
-    border-left: 4px solid #D00F09;
+    transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 2px 0 16px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
   }
 
-  .mbfp-sidebar::-webkit-scrollbar {
-    width: 4px;
-  }
-  .mbfp-sidebar::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 4px;
+  .mbfp-sidebar.collapsed {
+    width: 78px;
+    min-width: 78px;
   }
 
-  /* Sidebar Logo */
-  .mbfp-sidebar-logo {
+  /* Top accent indicator */
+  .mbfp-sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3.5px;
+    background: linear-gradient(90deg, #E23632 0%, #FF6B6B 100%);
+    z-index: 10;
+  }
+
+  /* Sidebar Header Brand */
+  .mbfp-sidebar-header {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #F1F5F9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    min-height: 72px;
+    box-sizing: border-box;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-sidebar-header {
+    padding: 0.85rem 0.5rem;
+    justify-content: center;
+  }
+
+  .mbfp-brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.65rem;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-brand-row {
+    justify-content: center;
+  }
+
+  .mbfp-brand-link {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    text-decoration: none;
+    touch-action: manipulation;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-brand-link {
+    display: none;
+  }
+
+  .mbfp-brand-logo-img {
+    height: 52px;
+    width: auto;
+    max-width: 175px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 2px 8px rgba(226, 54, 50, 0.14));
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), filter 0.25s ease;
+  }
+
+  .mbfp-brand-link:hover .mbfp-brand-logo-img {
+    transform: scale(1.04);
+    filter: drop-shadow(0 4px 14px rgba(226, 54, 50, 0.25));
+  }
+
+  .mbfp-collapse-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    color: #64748B;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.2rem 0;
-    border-bottom: 1px solid #f3f4f6;
-  }
-
-  .mbfp-sidebar-logo-img {
-    width: 180px;
-    height: 70px;
-    object-fit: contain;
-  }
-
-
-  /* Sidebar Navigation */
-  .mbfp-sidebar-nav {
-    flex: 1;
-    padding: 0.5rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .mbfp-sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.65rem 1.2rem;
-    text-decoration: none;
-    color: #4b5563;
-    font-size: 0.88rem;
-    font-weight: 500;
-    border-left: 4px solid transparent;
-    transition: all 0.18s ease;
-    position: relative;
-    margin-left: -4px;
-  }
-
-  .mbfp-sidebar-link:hover {
-    background: #fef2f2;
-    color: #b91c1c;
-  }
-
-  .mbfp-sidebar-link.active {
-    background: linear-gradient(90deg, #fef2f2 0%, #fff5f5 100%);
-    color: #D00F09;
-    font-weight: 700;
-    border-left-color: #D00F09;
-  }
-
-  .mbfp-sidebar-link.active .mbfp-sidebar-icon {
-    color: #D00F09;
-  }
-
-  .mbfp-sidebar-icon {
-    width: 1.15rem;
-    text-align: center;
-    font-size: 0.95rem;
-    color: #9ca3af;
-    transition: color 0.18s;
+    cursor: pointer;
+    touch-action: manipulation;
+    font-size: 0.78rem;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     flex-shrink: 0;
   }
 
-  .mbfp-sidebar-link:hover .mbfp-sidebar-icon {
-    color: #b91c1c;
+  .mbfp-collapse-btn:hover {
+    background: #FFF1F2;
+    color: #E23632;
+    border-color: #FECDD3;
+    transform: scale(1.06);
   }
 
-  .mbfp-sidebar-badge {
-    margin-left: auto;
-    background: #D00F09;
-    color: white;
-    font-size: 0.68rem;
+  .mbfp-sidebar.collapsed .mbfp-collapse-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 0.85rem;
+    border-radius: 10px;
+    background: #FFF1F2;
+    border-color: #FFE4E6;
+    color: #E23632;
+  }
+
+  .mbfp-sidebar-close {
+    display: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    color: #64748B;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .mbfp-sidebar-close:hover {
+    background: #FFF1F2;
+    color: #E23632;
+    border-color: #FECDD3;
+  }
+
+  /* Live Station Status Pill */
+
+
+  /* Navigation Body */
+  .mbfp-sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.85rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+
+  .mbfp-sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+  }
+  .mbfp-sidebar-nav::-webkit-scrollbar-thumb {
+    background: #E2E8F0;
+    border-radius: 4px;
+  }
+
+  .mbfp-nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .mbfp-nav-group-title {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 1.25rem 0.35rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-nav-group-title {
+    display: none;
+  }
+
+  /* Floating Modern Nav Link */
+  .mbfp-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: 42px;
+    margin: 0.1rem 0.75rem;
+    padding: 0 0.85rem;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #475569;
+    font-size: 0.85rem;
+    font-weight: 600;
+    position: relative;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-nav-link {
+    margin: 0.15rem 0.55rem;
+    padding: 0;
+    justify-content: center;
+    height: 44px;
+  }
+
+  .mbfp-nav-link:hover {
+    background: #F8FAFC;
+    color: #0F172A;
+    transform: translateX(2px);
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-nav-link:hover {
+    transform: none;
+  }
+
+  .mbfp-nav-link:hover .mbfp-nav-icon,
+  .mbfp-nav-link:hover .mbfp-custom-dash-icon {
+    color: #0F172A;
+  }
+
+  /* Active Pill State */
+  .mbfp-nav-link.active {
+    background: #FFF1F2;
+    color: #E23632;
     font-weight: 700;
-    min-width: 1.3rem;
-    height: 1.3rem;
-    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(226, 54, 50, 0.08);
+  }
+
+  .mbfp-nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 3.5px;
+    border-radius: 0 4px 4px 0;
+    background: #E23632;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-nav-link.active::before {
+    left: 2px;
+  }
+
+  .mbfp-nav-icon {
+    width: 1.25rem;
+    text-align: center;
+    font-size: 0.95rem;
+    color: #64748B;
+    transition: color 0.15s, transform 0.15s;
+    flex-shrink: 0;
+  }
+
+  .mbfp-custom-dash-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    color: #64748B;
+    transition: color 0.15s, transform 0.15s;
+    flex-shrink: 0;
+  }
+
+  .mbfp-nav-link.active .mbfp-nav-icon,
+  .mbfp-nav-link.active .mbfp-custom-dash-icon {
+    color: #E23632;
+    transform: scale(1.08);
+  }
+
+  .mbfp-nav-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    line-height: 1;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-nav-label {
+    display: none;
+  }
+
+  .mbfp-nav-badge {
+    color: #FFFFFF;
+    font-size: 0.65rem;
+    font-weight: 800;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
+    margin-left: auto;
   }
 
-  /* Sidebar Municipality Info (bottom) */
-  .mbfp-sidebar-municipality {
-    padding: 1rem;
-    border-top: 1px solid #f3f4f6;
+  .mbfp-nav-badge.red {
+    background: #E23632;
+    box-shadow: 0 2px 6px rgba(226, 54, 50, 0.35);
+  }
+
+  .mbfp-nav-badge.amber {
+    background: #D97706;
+    box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-nav-badge {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    min-width: 0.85rem;
+    height: 0.85rem;
+    font-size: 0.55rem;
+    padding: 0;
+  }
+
+  /* Tooltip for Collapsed Sidebar */
+  .mbfp-tooltip {
+    position: absolute;
+    left: calc(100% + 12px);
+    background: #0F172A;
+    color: #FFFFFF;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-6px);
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 1000;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-nav-link:hover .mbfp-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  /* Sidebar Bottom Officer Profile */
+  .mbfp-sidebar-footer {
+    padding: 0.85rem 0.75rem;
+    border-top: 1px solid #F1F5F9;
+    background: #FFFFFF;
+    position: relative;
+  }
+
+  .mbfp-profile-card {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 10px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: all 0.18s ease;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-profile-card {
+    justify-content: center;
+    padding: 0.45rem;
+  }
+
+  .mbfp-profile-card:hover {
+    background: #FFF1F2;
+    border-color: #FECDD3;
+  }
+
+  .mbfp-profile-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+    border: 1.5px solid #E23632;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(226, 54, 50, 0.2);
+  }
+
+  .mbfp-profile-info {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    text-align: center;
+    min-width: 0;
+    flex: 1;
   }
 
-  .mbfp-sidebar-muni-label {
+  .mbfp-sidebar.collapsed .mbfp-profile-info {
+    display: none;
+  }
+
+  .mbfp-profile-name {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #0F172A;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25;
+  }
+
+  .mbfp-profile-role {
     font-size: 0.68rem;
+    color: #64748B;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #9ca3af;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
   }
 
-  .mbfp-sidebar-muni-name {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #1f2937;
-    line-height: 1.3;
+  .mbfp-profile-chevron {
+    color: #94A3B8;
+    font-size: 0.72rem;
+    transition: transform 0.2s;
   }
 
-  .mbfp-sidebar-muni-province {
-    font-size: 0.75rem;
-    color: #6b7280;
-    font-style: italic;
+  .mbfp-sidebar.collapsed .mbfp-profile-chevron {
+    display: none;
   }
 
-  .mbfp-sidebar-muni-seal {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #fef2f2;
-    margin-top: 0.25rem;
-    box-shadow: 0 2px 8px rgba(211,47,47,0.12);
+  /* Profile Dropdown Menu */
+  .mbfp-profile-popover {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 10px;
+    right: 10px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+    padding: 0.45rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 200;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-profile-popover {
+    left: calc(100% + 10px);
+    right: auto;
+    bottom: 10px;
+    width: 200px;
+  }
+
+  .mbfp-popover-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+    color: #334155;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+
+  .mbfp-popover-item:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+  }
+
+  .mbfp-popover-item i {
+    width: 1.1rem;
+    text-align: center;
+    color: #64748B;
+  }
+
+  .mbfp-popover-divider {
+    height: 1px;
+    background: #F1F5F9;
+    margin: 0.3rem 0;
+  }
+
+  .mbfp-popover-logout {
+    color: #E23632;
+  }
+
+  .mbfp-popover-logout i {
+    color: #E23632;
+  }
+
+  .mbfp-popover-logout:hover {
+    background: #FFF1F2;
+    color: #E23632;
   }
 
   /* ========== MAIN AREA ========== */
   .mbfp-main-area {
     flex: 1;
-    margin-left: 240px;
-    width: calc(100% - 240px);
+    margin-left: 260px;
+    width: calc(100% - 260px);
     min-width: 0;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    background: #EEF5FD;
+    transition: margin-left 0.24s cubic-bezier(0.4, 0, 0.2, 1), width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mbfp-main-area.collapsed {
+    margin-left: 78px;
+    width: calc(100% - 78px);
   }
 
   /* ========== TOP HEADER ========== */
   .mbfp-header {
-    background: #ffffff;
-    border-bottom: 1px solid #e5e7eb;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E2E8F0;
     position: sticky;
     top: 0;
     z-index: 90;
-    border-top: 3px solid #D00F09;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
   }
 
   .mbfp-header-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.5rem 1.5rem;
+    padding: 0.65rem 1.75rem;
     gap: 1rem;
   }
 
@@ -223,12 +630,21 @@ const layoutStyles = `
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    min-width: 0;
   }
 
-  .mbfp-header-logo {
-    width: 42px;
-    height: 42px;
-    object-fit: contain;
+  .mbfp-mobile-menu-toggle {
+    display: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    color: #334155;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.95rem;
   }
 
   .mbfp-header-titles {
@@ -237,53 +653,43 @@ const layoutStyles = `
   }
 
   .mbfp-header-title {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 800;
-    color: #1f2937;
-    line-height: 1.3;
+    color: #0F172A;
+    line-height: 1.25;
   }
 
   .mbfp-header-subtitle {
     font-size: 0.72rem;
-    font-weight: 600;
-    color: #D00F09;
+    font-weight: 700;
+    color: #E23632;
+    line-height: 1.2;
+    margin-top: 2px;
   }
 
   .mbfp-header-right {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.65rem;
   }
 
   .mbfp-header-location {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
+    background: #FFF1F2;
+    border: 1px solid #FFE4E6;
     border-radius: 2rem;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #b91c1c;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .mbfp-header-location:hover {
-    background: #fee2e2;
-    border-color: #fca5a5;
-  }
-
-  .mbfp-header-location i {
-    font-size: 0.85rem;
-    color: #D00F09;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #E23632;
   }
 
   .mbfp-header-icon-btn {
     position: relative;
-    background: none;
-    border: 1px solid #e5e7eb;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
     border-radius: 50%;
     width: 2.2rem;
     height: 2.2rem;
@@ -291,28 +697,28 @@ const layoutStyles = `
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #4b5563;
-    font-size: 0.95rem;
-    transition: all 0.2s;
+    color: #475569;
+    font-size: 0.9rem;
+    transition: all 0.18s;
   }
 
   .mbfp-header-icon-btn:hover {
-    background: #f3f4f6;
-    color: #1f2937;
-    border-color: #d1d5db;
+    background: #F8FAFC;
+    color: #0F172A;
+    border-color: #CBD5E1;
   }
 
   .mbfp-header-notif-badge {
     position: absolute;
     top: -2px;
     right: -2px;
-    background: #D00F09;
+    background: #E23632;
     color: white;
     font-size: 0.6rem;
-    font-weight: 700;
+    font-weight: 800;
     min-width: 1rem;
     height: 1rem;
-    border-radius: 50%;
+    border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -320,300 +726,100 @@ const layoutStyles = `
     line-height: 1;
   }
 
-  .mbfp-header-user {
+  /* Content */
+  .mbfp-content {
+    flex: 1;
+  }
+
+  /* Footer */
+  .mbfp-footer {
+    background: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    padding: 0.85rem 1.75rem;
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    margin-left: 0.5rem;
-    padding: 0.3rem 0.5rem;
-    border-radius: 2rem;
-    cursor: pointer;
-    transition: background 0.2s;
+    justify-content: space-between;
+    font-size: 0.74rem;
+    color: #64748B;
   }
 
-  .mbfp-header-user:hover {
-    background: #f3f4f6;
-  }
-
-  .mbfp-header-avatar {
-    width: 2.2rem;
-    height: 2.2rem;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #D00F09, #EF5350);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 0.9rem;
+  .mbfp-footer-version {
     font-weight: 700;
-    border: 2px solid #fecaca;
+    color: #94A3B8;
   }
 
-  .mbfp-header-user-info {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .mbfp-header-user-role {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #1f2937;
-    line-height: 1.2;
-  }
-
-  .mbfp-header-user-rank {
-    font-size: 0.68rem;
-    color: #6b7280;
-    font-weight: 500;
-  }
-
-  .mbfp-header-user-chevron {
-    font-size: 0.65rem;
-    color: #9ca3af;
-  }
-
-  .mbfp-mobile-menu-toggle,
-  .mbfp-sidebar-close,
+  /* Backdrop for Mobile Drawer */
   .mbfp-sidebar-backdrop {
     display: none;
   }
 
-  /* ========== PROFILE DROPDOWN ========== */
-  .mbfp-profile-wrapper {
-    position: relative;
-  }
-  .mbfp-profile-dropdown {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    right: 0;
-    width: 240px;
-    background: white;
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    border: 1px solid #e5e7eb;
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    z-index: 200;
-  }
-  .mbfp-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.6rem 0.8rem;
-    text-decoration: none;
-    color: #4b5563;
-    font-size: 0.85rem;
-    font-weight: 500;
-    border-radius: 0.5rem;
-    transition: all 0.2s;
-    background: none;
-    border: none;
-    width: 100%;
-    text-align: left;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .mbfp-dropdown-item:hover {
-    background: #f9fafb;
-    color: #1f2937;
-  }
-  .mbfp-dropdown-item i {
-    font-size: 1rem;
-    width: 1.2rem;
-    text-align: center;
-    color: #6b7280;
-  }
-  .mbfp-dropdown-item.logout {
-    color: #D00F09;
-    margin-top: 0.5rem;
-    border-top: 1px solid #f3f4f6;
-    border-radius: 0 0 0.5rem 0.5rem;
-    padding-top: 0.8rem;
-  }
-  .mbfp-dropdown-item.logout i {
-    color: #D00F09;
-  }
-  .mbfp-dropdown-item.logout:hover {
-    background: #fef2f2;
-    color: #b91c1c;
-  }
-
-  /* ========== CONTENT ========== */
-  .mbfp-content {
-    flex: 1;
-    padding: 0;
-  }
-
-  /* ========== FOOTER ========== */
-  .mbfp-footer {
-    background: #ffffff;
-    border-top: 1px solid #e5e7eb;
-    padding: 0.8rem 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.72rem;
-    color: #9ca3af;
-  }
-
-  .mbfp-footer-version {
-    font-weight: 600;
-    color: #6b7280;
-  }
-
-  /* ========== RESPONSIVE ========== */
-  @media (max-width: 1024px) {
-    .mbfp-sidebar {
-      width: 200px;
-      min-width: 200px;
-    }
-    .mbfp-main-area {
-      margin-left: 200px;
-      width: calc(100% - 200px);
-    }
-  }
-
   @media (max-width: 768px) {
     .mbfp-sidebar {
-      width: min(84vw, 300px);
-      min-width: min(84vw, 300px);
+      width: min(84vw, 280px);
+      min-width: min(84vw, 280px);
       transform: translateX(-100%);
-      transition: transform 0.25s ease;
-      box-shadow: 12px 0 28px rgba(15, 23, 42, 0.18);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 16px 0 32px rgba(15, 23, 42, 0.2);
     }
+
     .mbfp-sidebar.mobile-open {
       transform: translateX(0);
     }
-    .mbfp-sidebar-logo {
-      justify-content: space-between;
-      padding: 0.55rem 0.75rem;
-    }
-    .mbfp-sidebar-logo-img {
-      width: 150px;
-      height: 60px;
-    }
-    .mbfp-sidebar-close {
-      width: 44px;
-      height: 44px;
+
+    .mbfp-sidebar.collapsed .mbfp-brand-link {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.6rem;
-      background: #ffffff;
-      color: #4b5563;
-      cursor: pointer;
-      font-size: 1rem;
     }
-    .mbfp-sidebar-nav {
-      padding: 0.75rem 0;
+
+    .mbfp-sidebar.collapsed .mbfp-nav-label,
+    .mbfp-sidebar.collapsed .mbfp-nav-group-title,
+    .mbfp-sidebar.collapsed .mbfp-profile-info {
+      display: flex;
     }
-    .mbfp-sidebar-link {
+
+    .mbfp-sidebar.collapsed .mbfp-nav-link {
       justify-content: flex-start;
-      padding: 0.85rem 1rem;
-      margin-left: -4px;
-      font-size: 0.84rem;
+      padding: 0 0.85rem;
     }
-    .mbfp-sidebar-icon {
-      font-size: 0.95rem;
-    }
-    .mbfp-sidebar-municipality {
-      display: flex;
-      padding: 1rem 0.75rem;
-    }
+
     .mbfp-main-area {
       margin-left: 0;
       width: 100%;
     }
-    .mbfp-header-inner {
-      padding: 0.5rem 0.75rem;
-      gap: 0.5rem;
-    }
-    .mbfp-header-left {
-      min-width: 0;
-      gap: 0.5rem;
-    }
-    .mbfp-mobile-menu-toggle {
-      width: 44px;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.6rem;
-      background: #ffffff;
-      color: #4b5563;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-    .mbfp-header-logo {
-      width: 36px;
-      height: 36px;
-      flex-shrink: 0;
-    }
-    .mbfp-header-titles {
-      min-width: 0;
-    }
-    .mbfp-header-title {
-      display: none;
-    }
-    .mbfp-header-subtitle {
-      white-space: nowrap;
-      font-size: 0.68rem;
-    }
-    .mbfp-header-user-info {
-      display: none;
-    }
-    .mbfp-header-user-chevron {
-      display: none;
-    }
-    .mbfp-header-location,
-    .mbfp-search-btn {
-      display: none;
-    }
-    .mbfp-header-right {
-      gap: 0.35rem;
-    }
-    .mbfp-header-user {
+
+    .mbfp-main-area.collapsed {
       margin-left: 0;
-      padding: 0.1rem;
+      width: 100%;
     }
-    .mbfp-profile-dropdown {
-      width: min(240px, calc(100vw - 1.5rem));
+
+    .mbfp-mobile-menu-toggle {
+      display: flex;
     }
+
     .mbfp-sidebar-backdrop {
+      display: block;
       position: fixed;
       inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(3px);
       z-index: 95;
-      border: 0;
-      background: rgba(15, 23, 42, 0.42);
-      cursor: pointer;
-      display: block;
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
-      transition: opacity 0.25s ease, visibility 0.25s ease;
+      transition: opacity 0.25s, visibility 0.25s;
     }
+
     .mbfp-sidebar-backdrop.visible {
       display: block;
       opacity: 1;
       visibility: visible;
       pointer-events: auto;
     }
-    .mbfp-footer {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.35rem;
-      padding: 0.75rem;
-      font-size: 0.65rem;
-    }
   }
 `;
 
 export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [identity, setIdentity] = useState<{
@@ -621,7 +827,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
     rankOrPosition: string | null;
     municipalityName: string | null;
     assignmentRole: string | null;
-    mustChangePassword: boolean;
+    mustChangePassword?: boolean;
   } | null>(null);
 
   const isAuthenticationPage = pathname === '/municipal-bfp/login' || pathname === '/municipal-bfp/change-password';
@@ -648,27 +854,37 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
   }, [isAuthenticationPage]);
 
   useEffect(() => {
-    if (!isMobileNavOpen) {
-      return;
-    }
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsMobileNavOpen(false);
+        setIsProfileOpen(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMobileNavOpen]);
+  }, []);
 
   const closeMobileNav = () => setIsMobileNavOpen(false);
 
-  const isActive = (item: typeof sidebarNav[0]) => {
+  const isActive = (item: NavItem) => {
     if (item.exact) {
       return pathname === item.href;
     }
     return pathname.startsWith(item.href);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/bfp/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'portal=MUNICIPAL',
+      });
+    } catch {
+      // ignore
+    }
+    window.location.assign('/municipal-bfp/login');
   };
 
   if (isAuthenticationPage) return <>{children}</>;
@@ -676,73 +892,160 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
   return (
     <>
       <style>{layoutStyles}</style>
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-      />
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-        integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
-        crossOrigin="anonymous"
-        referrerPolicy="no-referrer"
-      />
 
       <div className="mbfp-layout">
-        {/* ===== SIDEBAR ===== */}
-        <aside id="mbfp-sidebar" className={`mbfp-sidebar ${isMobileNavOpen ? 'mobile-open' : ''}`}>
-          {/* Logo */}
-          <div className="mbfp-sidebar-logo">
-            <img
-              src="/images/Logo.webp"
-              alt="ALAB Logo"
-              className="mbfp-sidebar-logo-img"
-            />
-            <button
-              type="button"
-              className="mbfp-sidebar-close"
-              aria-label="Close navigation menu"
-              onClick={closeMobileNav}
-            >
-              <i className="fa-solid fa-xmark" />
-            </button>
+        {/* ===== IMPECCABLE REDESIGNED SIDEBAR ===== */}
+        <aside
+          id="mbfp-sidebar"
+          className={`mbfp-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileNavOpen ? 'mobile-open' : ''}`}
+          aria-label="Municipal BFP navigation"
+        >
+          {/* Header Brand */}
+          <div className="mbfp-sidebar-header">
+            <div className="mbfp-brand-row">
+              <Link href="/municipal-bfp" prefetch={true} className="mbfp-brand-link" onClick={closeMobileNav}>
+                <img
+                  src="/images/Logo.webp"
+                  alt="ALAB Logo"
+                  className="mbfp-brand-logo-img"
+                />
+              </Link>
+
+              <button
+                type="button"
+                className="mbfp-sidebar-close"
+                aria-label="Close navigation menu"
+                onClick={() => setIsMobileNavOpen(false)}
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+
+              <button
+                type="button"
+                className="mbfp-collapse-btn"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                <i className={`fa-solid ${isCollapsed ? 'fa-angles-right' : 'fa-angles-left'}`} />
+              </button>
+            </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="mbfp-sidebar-nav" aria-label="Municipal BFP navigation">
-            {sidebarNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`mbfp-sidebar-link ${isActive(item) ? 'active' : ''}`}
-                onClick={closeMobileNav}
-              >
-                <i className={`${item.icon} mbfp-sidebar-icon`} />
-                <span>{item.label}</span>
-                {item.badge && (
-                  <span className="mbfp-sidebar-badge">{item.badge}</span>
-                )}
-            </Link>
-          ))}
-        </nav>
+          {/* Categorized Navigation Groups */}
+          <nav className="mbfp-sidebar-nav" aria-label="Municipal BFP Modules">
+            {navigationGroups.map((group) => (
+              <div key={group.groupTitle} className="mbfp-nav-group">
+                <div className="mbfp-nav-group-title">{group.groupTitle}</div>
+                {group.items.map((item) => {
+                  const active = isActive(item);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      prefetch={true}
+                      className={`mbfp-nav-link ${active ? 'active' : ''}`}
+                      onClick={closeMobileNav}
+                    >
+                      {item.icon === 'custom-dashboard-grid' ? (
+                        <svg
+                          className="mbfp-custom-dash-icon"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          aria-hidden="true"
+                        >
+                          <rect x="2.5" y="2.5" width="8.2" height="12" rx="2.5" />
+                          <rect x="2.5" y="16.5" width="8.2" height="5" rx="2" />
+                          <rect x="13.3" y="2.5" width="8.2" height="5" rx="2" />
+                          <rect x="13.3" y="9.5" width="8.2" height="12" rx="2.5" />
+                        </svg>
+                      ) : (
+                        <i className={`${item.icon} mbfp-nav-icon`} />
+                      )}
+                      <span className="mbfp-nav-label">{item.label}</span>
+                      {item.badge !== undefined && (
+                        <span className={`mbfp-nav-badge ${item.badgeType || 'red'}`}>{item.badge}</span>
+                      )}
+                      {/* Tooltip in collapsed mode */}
+                      {isCollapsed && <span className="mbfp-tooltip">{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </nav>
+
+          {/* Profile Area at Bottom */}
+          <div className="mbfp-sidebar-footer">
+            <div
+              className="mbfp-profile-card"
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              title="Station Officer Profile"
+            >
+              <div className="mbfp-profile-avatar">
+                <i className="fa-solid fa-user-shield" />
+              </div>
+              <div className="mbfp-profile-info">
+                <div className="mbfp-profile-name">
+                  {identity?.displayName || 'Officer on Duty'}
+                </div>
+                <div className="mbfp-profile-role">
+                  <span>{identity?.rankOrPosition || 'Municipal Commander'}</span>
+                </div>
+              </div>
+              <i
+                className={`fa-solid fa-chevron-up mbfp-profile-chevron ${isProfileOpen ? 'rotate-180' : ''}`}
+              />
+            </div>
+
+            {/* Profile Popover Menu */}
+            {isProfileOpen && (
+              <div className="mbfp-profile-popover" role="menu">
+                <Link
+                  href="/municipal-bfp/profile"
+                  className="mbfp-popover-item"
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    closeMobileNav();
+                  }}
+                >
+                  <i className="fa-solid fa-gear" />
+                  <span>Profile Settings</span>
+                </Link>
+                <Link
+                  href="/municipal-bfp/notifications"
+                  className="mbfp-popover-item"
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    closeMobileNav();
+                  }}
+                >
+                  <i className="fa-regular fa-bell" />
+                  <span>Notifications</span>
+                </Link>
+                <div className="mbfp-popover-divider" />
+                <button
+                  type="button"
+                  className="mbfp-popover-item mbfp-popover-logout"
+                  onClick={handleLogout}
+                >
+                  <i className="fa-solid fa-arrow-right-from-bracket" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
+          </div>
         </aside>
 
-        <button
-          type="button"
+        {/* Mobile Backdrop */}
+        <div
           className={`mbfp-sidebar-backdrop ${isMobileNavOpen ? 'visible' : ''}`}
-          aria-label="Close navigation menu"
-          aria-hidden={!isMobileNavOpen}
-          tabIndex={isMobileNavOpen ? 0 : -1}
           onClick={closeMobileNav}
+          aria-hidden={!isMobileNavOpen}
         />
 
         {/* ===== MAIN AREA ===== */}
-        <div className="mbfp-main-area">
+        <div className={`mbfp-main-area ${isCollapsed ? 'collapsed' : ''}`}>
           {/* Top Header */}
           <header className="mbfp-header">
             <div className="mbfp-header-inner">
@@ -758,86 +1061,43 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                 >
                   <i className="fa-solid fa-bars" />
                 </button>
-                <img
-                  src="/images/FAVICON.webp"
-                  alt="ALAB"
-                  className="mbfp-header-logo"
-                />
                 <div className="mbfp-header-titles">
                   <span className="mbfp-header-title">
-                    GIS-Based Provincial Fire Response and Decision Support System
+                    Bureau of Fire Protection • Municipal Operations
                   </span>
                   <span className="mbfp-header-subtitle">
-                    Municipal BFP Dashboard
+                    {identity?.municipalityName ? `${identity.municipalityName} Fire Station Command` : 'Municipal BFP Station'}
                   </span>
                 </div>
               </div>
 
-              {/* Right: Location, notifications, user */}
+              {/* Right: Location & notifications */}
               <div className="mbfp-header-right">
                 <div className="mbfp-header-location">
                   <i className="fa-solid fa-location-dot" />
-                  <span>{identity?.municipalityName ?? 'Loading municipality…'}</span>
-                  <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.6rem', marginLeft: '0.2rem' }} />
+                  <span>{identity?.municipalityName ?? 'Antique BFP'}</span>
                 </div>
 
-                <button className="mbfp-header-icon-btn" title="Notifications">
+                <Link
+                  href="/municipal-bfp/notifications"
+                  prefetch={true}
+                  className="mbfp-header-icon-btn"
+                  title="Notifications"
+                >
                   <i className="fa-solid fa-bell" />
                   <span className="mbfp-header-notif-badge">2</span>
-                </button>
-
-                <button className="mbfp-header-icon-btn mbfp-search-btn" title="Search">
-                  <i className="fa-solid fa-magnifying-glass" />
-                </button>
-
-                <div className="mbfp-profile-wrapper">
-                  <div className="mbfp-header-user" onClick={() => setIsProfileOpen(!isProfileOpen)}>
-                    <div className="mbfp-header-avatar">
-                      <i className="fa-solid fa-user-shield" />
-                    </div>
-                    <div className="mbfp-header-user-info">
-                      <span className="mbfp-header-user-role">{identity?.assignmentRole === 'MUNICIPAL_ADMIN' ? 'Municipal BFP Administrator' : 'Municipal BFP Personnel'}</span>
-                      <span className="mbfp-header-user-rank">{identity?.rankOrPosition || identity?.displayName || 'Loading profile…'}</span>
-                    </div>
-                    <i className={`fa-solid fa-chevron-${isProfileOpen ? 'up' : 'down'} mbfp-header-user-chevron`} />
-                  </div>
-
-                  {isProfileOpen && (
-                    <div className="mbfp-profile-dropdown">
-                      <Link href="/municipal-bfp/profile" className="mbfp-dropdown-item" onClick={() => setIsProfileOpen(false)}>
-                        <i className="fa-solid fa-gear" /> Profile Settings
-                      </Link>
-                      <Link href="/municipal-bfp/notifications" className="mbfp-dropdown-item" onClick={() => setIsProfileOpen(false)}>
-                        <i className="fa-regular fa-bell" /> Notification Settings
-                      </Link>
-                      <button className="mbfp-dropdown-item">
-                        <i className="fa-solid fa-phone" /> Emergency Contacts
-                      </button>
-                      <button className="mbfp-dropdown-item">
-                        <i className="fa-regular fa-circle-question" /> Help Center
-                      </button>
-                      <form action="/api/auth/bfp/logout" method="post">
-                        <input type="hidden" name="portal" value="MUNICIPAL" />
-                        <button type="submit" className="mbfp-dropdown-item logout" onClick={() => setIsProfileOpen(false)}>
-                          <i className="fa-solid fa-arrow-right-from-bracket" /> Logout
-                        </button>
-                      </form>
-                    </div>
-                  )}
-                </div>
+                </Link>
               </div>
             </div>
           </header>
 
           {/* Content */}
-          <main className="mbfp-content">
-            {children}
-          </main>
+          <main className="mbfp-content">{children}</main>
 
           {/* Footer */}
           <footer className="mbfp-footer">
-            <span>© 2025 ALAB Fire Response System. All rights reserved.</span>
-            <span className="mbfp-footer-version">v1.2.0</span>
+            <span>© 2025 ALAB Fire Response System • Municipal Command Center</span>
+            <span className="mbfp-footer-version">v2.0</span>
           </footer>
         </div>
       </div>

@@ -13,7 +13,7 @@ const styles = `
   .mbfp-add-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(208, 15, 9, 0.3); }
   
   .mbfp-ft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
-  .mbfp-ft-card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
+  .mbfp-ft-card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; animation: fadeIn 0.4s ease both; }
   .mbfp-ft-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
   .mbfp-ft-card-top { background: linear-gradient(135deg, #D00F09 0%, #EF5350 100%); padding: 1rem; display: flex; align-items: center; gap: 0.8rem; color: white; }
   .mbfp-ft-card-icon { width: 3rem; height: 3rem; background: rgba(255,255,255,0.2); border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
@@ -60,25 +60,173 @@ const styles = `
   .mbfp-file-upload span { font-size: 0.7rem; color: #9ca3af; }
   .mbfp-file-input-hidden { display: none; }
 
+  /* =====================================================================
+     ULTRA-PREMIUM ROTATING NEON FIRE LOADER (NO BG / EXACT AS REQUESTED)
+     ===================================================================== */
+  .mbfp-fire-loader-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .mbfp-fire-loader-stage {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: mbfpFloatLevitate 2.5s ease-in-out infinite alternate;
+  }
+
+  /* Outer Rotating Neon Flame Ring (Thicker Ring Stroke Width) */
+  .mbfp-fire-outer-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    padding: 6.5px;
+    background: conic-gradient(from 0deg, #E23632 0%, #FF6B35 30%, #FFAA00 65%, transparent 80%, #E23632 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: mbfpRingSpin 1.6s linear infinite;
+    filter: drop-shadow(0 0 16px rgba(226, 54, 50, 0.95)) drop-shadow(0 0 30px rgba(255, 107, 53, 0.7));
+  }
+
+  /* Secondary Counter-Rotating Accent Orbit */
+  .mbfp-fire-outer-ring-orbit {
+    position: absolute;
+    inset: -7px;
+    border-radius: 50%;
+    padding: 2px;
+    background: conic-gradient(from 180deg, rgba(255, 170, 0, 0.85) 0%, transparent 40%, rgba(226, 54, 50, 0.7) 80%, transparent 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: mbfpRingSpinReverse 2.4s linear infinite;
+    filter: drop-shadow(0 0 10px rgba(255, 120, 40, 0.6));
+  }
+
+  /* Ambient Fiery Glow Backlight */
+  .mbfp-fire-pulse-glow {
+    position: absolute;
+    width: 105px;
+    height: 105px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(226, 54, 50, 0.35) 0%, rgba(255, 107, 53, 0.12) 65%, transparent 80%);
+    animation: mbfpFlameBreathe 1.5s ease-in-out infinite alternate;
+  }
+
+  /* Center Fire Logo Image */
+  .mbfp-fire-logo-img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    display: block;
+    position: relative;
+    z-index: 2;
+    filter: drop-shadow(0 4px 16px rgba(226, 54, 50, 0.55));
+    animation: mbfpFlameBreathe 1.5s ease-in-out infinite alternate;
+  }
+
+  /* Floating Floating Ember Sparks */
+  .mbfp-ember {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #FFAE00;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #FF5100, 0 0 16px #FF1A00;
+    opacity: 0;
+  }
+
+  .mbfp-ember:nth-child(1) { left: 15%; bottom: 20%; animation: mbfpEmberDrift 1.6s ease-out infinite 0.1s; }
+  .mbfp-ember:nth-child(2) { right: 18%; bottom: 25%; animation: mbfpEmberDrift 1.9s ease-out infinite 0.3s; }
+  .mbfp-ember:nth-child(3) { left: 45%; bottom: 10%; animation: mbfpEmberDrift 1.4s ease-out infinite 0.6s; }
+  .mbfp-ember:nth-child(4) { right: 30%; bottom: 15%; animation: mbfpEmberDrift 1.8s ease-out infinite 0.9s; }
+
+  /* Keyframe Animations */
+  @keyframes mbfpFloatLevitate {
+    0% { transform: translateY(0px) scale(1); }
+    100% { transform: translateY(-6px) scale(1.02); }
+  }
+
+  @keyframes mbfpRingSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes mbfpRingSpinReverse {
+    0% { transform: rotate(360deg); }
+    100% { transform: rotate(0deg); }
+  }
+
+  @keyframes mbfpFlameBreathe {
+    0% { transform: scale(0.96); opacity: 0.85; }
+    100% { transform: scale(1.05); opacity: 1; }
+  }
+
+  @keyframes mbfpEmberDrift {
+    0% { opacity: 0; transform: translateY(0) scale(0.4); }
+    40% { opacity: 1; transform: translateY(-20px) translateX(6px) scale(1); }
+    100% { opacity: 0; transform: translateY(-50px) translateX(-8px) scale(0.2); }
+  }
+
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 `;
 
 export default function FiretrucksPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const trucks = [
+  const [trucks, setTrucks] = useState([
     { name: 'Engine 1', plate: 'BFP-SJ-001', type: 'Pumper', capacity: '3,000 L', crew: '4 Personnel', station: 'Poblacion', status: 'available', statusLabel: 'Available', lastService: 'Jul 28, 2025' },
     { name: 'Engine 2', plate: 'BFP-SJ-002', type: 'Pumper', capacity: '3,000 L', crew: '4 Personnel', station: 'Poblacion', status: 'dispatched', statusLabel: 'Dispatched', lastService: 'Jul 15, 2025' },
     { name: 'Rescue 1', plate: 'BFP-SJ-R01', type: 'Rescue Vehicle', capacity: '1,000 L', crew: '3 Personnel', station: 'Poblacion', status: 'dispatched', statusLabel: 'On Route', lastService: 'Aug 1, 2025' },
     { name: 'Tanker 1', plate: 'BFP-SJ-T01', type: 'Water Tanker', capacity: '10,000 L', crew: '2 Personnel', station: 'Poblacion', status: 'maintenance', statusLabel: 'Maintenance', lastService: 'Jul 5, 2025' },
     { name: 'Engine 3', plate: 'BFP-SJ-003', type: 'Aerial Ladder', capacity: '2,500 L', crew: '5 Personnel', station: 'San Roque', status: 'available', statusLabel: 'Available', lastService: 'Jul 20, 2025' },
-  ];
+  ]);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    plate: '',
+    type: 'Pumper',
+    capacity: '',
+    crew: '',
+    station: '',
+  });
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsModalOpen(false);
-    // In a real app, this would append to the trucks list
+    setIsLoading(true);
+
+    // 3-second loader sequence
+    setTimeout(() => {
+      // Add the new truck to state after exactly 3 seconds
+      const newTruck = {
+        name: formData.name || 'Engine 4',
+        plate: formData.plate || 'BFP-SJ-004',
+        type: formData.type || 'Pumper',
+        capacity: formData.capacity || '4,000 L',
+        crew: formData.crew || '4 Personnel',
+        station: formData.station || 'Poblacion',
+        status: 'available',
+        statusLabel: 'Available',
+        lastService: 'Just Added',
+      };
+      setTrucks((prev) => [newTruck, ...prev]);
+      setIsLoading(false);
+      setFormData({ name: '', plate: '', type: 'Pumper', capacity: '', crew: '', station: '' });
+    }, 3000);
   };
 
   return (
@@ -118,6 +266,7 @@ export default function FiretrucksPage() {
         </div>
       </div>
 
+      {/* Add Modal */}
       {isModalOpen && (
         <div className="mbfp-modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="mbfp-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -139,19 +288,37 @@ export default function FiretrucksPage() {
                 <div className="mbfp-form-row">
                   <div className="mbfp-form-group">
                     <label>Truck Name</label>
-                    <input type="text" className="mbfp-form-input" placeholder="e.g. Engine 4" required />
+                    <input
+                      type="text"
+                      className="mbfp-form-input"
+                      placeholder="e.g. Engine 4"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                    />
                   </div>
                   <div className="mbfp-form-group">
                     <label>License Plate</label>
-                    <input type="text" className="mbfp-form-input" placeholder="e.g. BFP-SJ-004" required />
+                    <input
+                      type="text"
+                      className="mbfp-form-input"
+                      placeholder="e.g. BFP-SJ-004"
+                      value={formData.plate}
+                      onChange={(e) => setFormData({ ...formData, plate: e.target.value })}
+                      required
+                    />
                   </div>
                 </div>
                 
                 <div className="mbfp-form-row">
                   <div className="mbfp-form-group">
                     <label>Vehicle Type</label>
-                    <select className="mbfp-form-input" required>
-                      <option value="">Select Type</option>
+                    <select
+                      className="mbfp-form-input"
+                      value={formData.type}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                      required
+                    >
                       <option value="Pumper">Pumper</option>
                       <option value="Rescue Vehicle">Rescue Vehicle</option>
                       <option value="Water Tanker">Water Tanker</option>
@@ -160,18 +327,39 @@ export default function FiretrucksPage() {
                   </div>
                   <div className="mbfp-form-group">
                     <label>Water Capacity</label>
-                    <input type="text" className="mbfp-form-input" placeholder="e.g. 4,000 L" required />
+                    <input
+                      type="text"
+                      className="mbfp-form-input"
+                      placeholder="e.g. 4,000 L"
+                      value={formData.capacity}
+                      onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                      required
+                    />
                   </div>
                 </div>
 
                 <div className="mbfp-form-row">
                   <div className="mbfp-form-group">
                     <label>Crew Size</label>
-                    <input type="text" className="mbfp-form-input" placeholder="e.g. 4 Personnel" required />
+                    <input
+                      type="text"
+                      className="mbfp-form-input"
+                      placeholder="e.g. 4 Personnel"
+                      value={formData.crew}
+                      onChange={(e) => setFormData({ ...formData, crew: e.target.value })}
+                      required
+                    />
                   </div>
                   <div className="mbfp-form-group">
                     <label>Assigned Station</label>
-                    <input type="text" className="mbfp-form-input" placeholder="e.g. Poblacion" required />
+                    <input
+                      type="text"
+                      className="mbfp-form-input"
+                      placeholder="e.g. Poblacion"
+                      value={formData.station}
+                      onChange={(e) => setFormData({ ...formData, station: e.target.value })}
+                      required
+                    />
                   </div>
                 </div>
               </div>
@@ -180,6 +368,35 @@ export default function FiretrucksPage() {
                 <button type="submit" className="mbfp-submit-btn">Add Firetruck</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ULTRA-PREMIUM ROTATING NEON FIRE LOADER (NO BG / 3 SECONDS) */}
+      {isLoading && (
+        <div className="mbfp-fire-loader-overlay">
+          <div className="mbfp-fire-loader-stage">
+            {/* Outer Spinning Neon Ring */}
+            <div className="mbfp-fire-outer-ring" />
+
+            {/* Secondary Counter-Rotating Accent Orbit */}
+            <div className="mbfp-fire-outer-ring-orbit" />
+
+            {/* Ambient Fiery Glow Backlight */}
+            <div className="mbfp-fire-pulse-glow" />
+
+            {/* Floating Ember Sparks */}
+            <div className="mbfp-ember" />
+            <div className="mbfp-ember" />
+            <div className="mbfp-ember" />
+            <div className="mbfp-ember" />
+
+            {/* Center Fire Logo Image */}
+            <img
+              src="/images/fire%20logo.webp"
+              alt="Fire Loader"
+              className="mbfp-fire-logo-img"
+            />
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 type MunicipalStationStatus = {
   name: string;
@@ -10,770 +10,882 @@ type MunicipalStationStatus = {
   availableTrucks: number;
   totalTrucks: number;
   dutyResponders: number;
-  lastCheckIn: string;
 };
 
 const municipalReadinessData: MunicipalStationStatus[] = [
-  { name: 'San Jose de Buenavista', status: 'RESPONDING', activeIncidents: 1, availableTrucks: 4, totalTrucks: 5, dutyResponders: 16, lastCheckIn: 'Just now' },
-  { name: 'Sibalom', status: 'RESPONDING', activeIncidents: 1, availableTrucks: 2, totalTrucks: 3, dutyResponders: 12, lastCheckIn: '2m ago' },
-  { name: 'Tibiao', status: 'RESPONDING', activeIncidents: 1, availableTrucks: 1, totalTrucks: 2, dutyResponders: 9, lastCheckIn: '5m ago' },
-  { name: 'Hamtic', status: 'MUTUAL_AID', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 10, lastCheckIn: '3m ago' },
-  { name: 'Bugasong', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 8, lastCheckIn: '6m ago' },
-  { name: 'Pandan', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 10, lastCheckIn: '8m ago' },
-  { name: 'Culasi', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 11, lastCheckIn: '1m ago' },
-  { name: 'Barbaza', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 2, dutyResponders: 8, lastCheckIn: '12m ago' },
-  { name: 'Tobias Fornier', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 9, lastCheckIn: '4m ago' },
-  { name: 'Patnongon', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 8, lastCheckIn: '7m ago' },
-  { name: 'Anini-y', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7, lastCheckIn: '15m ago' },
-  { name: 'Belison', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 6, lastCheckIn: '10m ago' },
-  { name: 'Caluya', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 8, lastCheckIn: '18m ago' },
-  { name: 'Laua-an', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7, lastCheckIn: '9m ago' },
-  { name: 'Libertad', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7, lastCheckIn: '14m ago' },
-  { name: 'San Remigio', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 8, lastCheckIn: '11m ago' },
-  { name: 'Sebaste', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 6, lastCheckIn: '16m ago' },
-  { name: 'Valderrama', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7, lastCheckIn: '13m ago' },
+  { name: 'San Jose de Buenavista', status: 'RESPONDING', activeIncidents: 1, availableTrucks: 4, totalTrucks: 5, dutyResponders: 16 },
+  { name: 'Sibalom', status: 'RESPONDING', activeIncidents: 1, availableTrucks: 2, totalTrucks: 3, dutyResponders: 12 },
+  { name: 'Tibiao', status: 'RESPONDING', activeIncidents: 1, availableTrucks: 1, totalTrucks: 2, dutyResponders: 9 },
+  { name: 'Hamtic', status: 'MUTUAL_AID', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 10 },
+  { name: 'Bugasong', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 8 },
+  { name: 'Pandan', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 10 },
+  { name: 'Culasi', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 11 },
+  { name: 'Barbaza', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 2, dutyResponders: 8 },
+  { name: 'Tobias Fornier', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 9 },
+  { name: 'Patnongon', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 8 },
+  { name: 'Anini-y', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7 },
+  { name: 'Belison', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 6 },
+  { name: 'Caluya', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 8 },
+  { name: 'Laua-an', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7 },
+  { name: 'Libertad', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7 },
+  { name: 'San Remigio', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 8 },
+  { name: 'Sebaste', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 6 },
+  { name: 'Valderrama', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7 },
 ];
 
 const dashboardStyles = `
-  .pbfp-dash {
-    padding: 1.5rem 1.75rem 3rem;
+  .pbfp-dash-clean {
+    padding: 10px 1.5rem 2.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 10px;
+    background: #EEF5FD;
+    min-height: 100%;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
-  /* ========== WELCOME BANNER ========== */
-  .pbfp-hero {
-    background: linear-gradient(135deg, #161C2B 0%, #1E273D 100%);
-    border-radius: 14px;
-    padding: 1.5rem 1.75rem;
-    color: #FFFFFF;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1.5rem;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .pbfp-hero::after {
-    content: '';
-    position: absolute;
-    right: -40px;
-    top: -40px;
-    width: 220px;
-    height: 220px;
-    background: radial-gradient(circle, rgba(219, 27, 13, 0.2) 0%, transparent 70%);
-    pointer-events: none;
-  }
-
-  .pbfp-hero-content {
-    max-width: 680px;
-    position: relative;
-    z-index: 1;
-  }
-
-  .pbfp-hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    background: rgba(219, 27, 13, 0.2);
-    border: 1px solid rgba(219, 27, 13, 0.5);
-    color: #FFA59E;
-    padding: 0.25rem 0.65rem;
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 0.6rem;
-  }
-
-  .pbfp-hero-title {
-    font-size: 1.45rem;
-    font-weight: 800;
-    color: #FFFFFF;
-    line-height: 1.25;
-    margin-bottom: 0.4rem;
-  }
-
-  .pbfp-hero-desc {
-    color: #94A3B8;
-    font-size: 0.88rem;
-    line-height: 1.5;
-  }
-
-  .pbfp-hero-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-  }
-
-  .pbfp-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.65rem 1.15rem;
-    border-radius: 8px;
-    font-size: 0.84rem;
-    font-weight: 700;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.18s;
-    border: none;
-    font-family: inherit;
-  }
-
-  .pbfp-btn-primary {
-    background: #DB1B0D;
-    color: #FFFFFF;
-    box-shadow: 0 4px 14px rgba(219, 27, 13, 0.35);
-  }
-
-  .pbfp-btn-primary:hover {
-    background: #c2160a;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(219, 27, 13, 0.45);
-  }
-
-  .pbfp-btn-secondary {
-    background: rgba(255, 255, 255, 0.08);
-    color: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-  }
-
-  .pbfp-btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-
-  /* ========== METRICS KPI GRID ========== */
-  .pbfp-kpi-grid {
+  /* ========== 4 COMPACT KPI METRIC CARDS ROW ========== */
+  .pbfp-kpi-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
   }
 
-  .pbfp-kpi-card {
+  .pbfp-kpi-box {
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 1.15rem 1.25rem;
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  .pbfp-kpi-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-  }
-
-  .pbfp-kpi-header {
-    display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+    transition: transform 0.18s, box-shadow 0.18s;
+    animation: pbfpCardReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  .pbfp-kpi-title {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+  .pbfp-kpi-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   }
 
-  .pbfp-kpi-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+  .pbfp-kpi-badge-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
+    font-size: 1.15rem;
+    flex-shrink: 0;
   }
 
-  .pbfp-kpi-icon.red { background: #FEF2F2; color: #DB1B0D; }
-  .pbfp-kpi-icon.blue { background: #EFF6FF; color: #2563EB; }
-  .pbfp-kpi-icon.emerald { background: #ECFDF5; color: #059669; }
-  .pbfp-kpi-icon.amber { background: #FFFBEB; color: #D97706; }
-
-  .pbfp-kpi-body {
-    display: flex;
-    align-items: baseline;
-    gap: 0.6rem;
+  .pbfp-kpi-badge-icon.red {
+    background: #FFF1F2;
+    border: 1px solid #FFE4E6;
   }
 
-  .pbfp-kpi-value {
-    font-size: 1.85rem;
-    font-weight: 800;
-    color: #0F172A;
-    line-height: 1;
+  .pbfp-kpi-badge-icon.blue {
+    background: #EFF6FF;
+    border: 1px solid #DBEAFE;
+    color: #2563EB;
   }
 
-  .pbfp-kpi-subtitle {
-    font-size: 0.76rem;
-    color: #64748B;
+  .pbfp-kpi-badge-icon.green {
+    background: #ECFDF5;
+    border: 1px solid #D1FAE5;
+    color: #059669;
   }
 
-  .pbfp-kpi-footer {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.72rem;
-    color: #64748B;
-    border-top: 1px solid #F1F5F9;
-    padding-top: 0.55rem;
+  .pbfp-kpi-badge-icon.orange {
+    background: #FFFBEB;
+    border: 1px solid #FEF3C7;
+    color: #D97706;
   }
 
-  .pbfp-kpi-footer strong {
-    color: #0F172A;
+  .pbfp-kpi-badge-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
   }
 
-  /* ========== TWO-COLUMN OPERATIONAL SECTIONS ========== */
-  .pbfp-grid-2col {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    gap: 1.25rem;
-  }
-
-  .pbfp-panel {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  .pbfp-kpi-info {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    min-width: 0;
+    flex: 1;
   }
 
-  .pbfp-panel-header {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid #E2E8F0;
+  .pbfp-kpi-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pbfp-kpi-number {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #0F172A;
+    line-height: 1.1;
+  }
+
+  .pbfp-kpi-subtext {
+    font-size: 0.76rem;
+    color: #64748B;
+    font-weight: 600;
+    margin-top: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ========== TWO COLUMN SECTION ========== */
+  .pbfp-main-grid {
+    display: grid;
+    grid-template-columns: 1.55fr 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  /* LEFT CARD: MUNICIPAL READINESS TABLE */
+  .pbfp-table-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    animation: pbfpCardReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .pbfp-card-header {
+    padding: 1.1rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    background: #FAFAFA;
-  }
-
-  .pbfp-panel-title {
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: #0F172A;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .pbfp-panel-title i {
-    color: #DB1B0D;
-  }
-
-  .pbfp-panel-search {
-    padding: 0.35rem 0.65rem;
-    border: 1px solid #CBD5E1;
-    border-radius: 6px;
-    font-size: 0.78rem;
-    width: 170px;
-    outline: none;
-    font-family: inherit;
-  }
-
-  .pbfp-panel-search:focus {
-    border-color: #DB1B0D;
-  }
-
-  /* Municipal Readiness Table */
-  .pbfp-table-wrap {
-    overflow-x: auto;
-    max-height: 480px;
-  }
-
-  .pbfp-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.82rem;
-  }
-
-  .pbfp-table th {
-    background: #F8FAFC;
-    color: #475569;
-    font-weight: 700;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 0.75rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid #E2E8F0;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
-
-  .pbfp-table td {
-    padding: 0.75rem 1rem;
     border-bottom: 1px solid #F1F5F9;
-    color: #334155;
-    vertical-align: middle;
   }
 
-  .pbfp-table tr:hover td {
-    background: #F8FAFC;
-  }
-
-  .pbfp-muni-name {
-    font-weight: 700;
-    color: #0F172A;
-  }
-
-  .pbfp-muni-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 999px;
-    font-size: 0.68rem;
-    font-weight: 700;
-  }
-
-  .pbfp-muni-badge.ready {
-    background: #ECFDF5;
-    color: #059669;
-  }
-
-  .pbfp-muni-badge.responding {
-    background: #FEF2F2;
-    color: #DB1B0D;
-  }
-
-  .pbfp-muni-badge.mutual_aid {
-    background: #FFFBEB;
-    color: #D97706;
-  }
-
-  /* Right Side Incident Cards & Alerts */
-  .pbfp-incidents-list {
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-  }
-
-  .pbfp-incident-item {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-left: 4px solid #DB1B0D;
-    border-radius: 8px;
-    padding: 0.85rem 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
-    transition: transform 0.15s;
-  }
-
-  .pbfp-incident-item:hover {
-    transform: translateX(2px);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-  }
-
-  .pbfp-incident-item.alarm-2 {
-    border-left-color: #B91C1C;
-    background: #FFFAF9;
-  }
-
-  .pbfp-incident-top {
+  .pbfp-card-header-left {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-
-  .pbfp-incident-loc {
-    font-size: 0.86rem;
-    font-weight: 800;
-    color: #0F172A;
-  }
-
-  .pbfp-alarm-tag {
-    background: #DB1B0D;
-    color: #FFFFFF;
-    font-size: 0.65rem;
-    font-weight: 800;
-    padding: 0.15rem 0.45rem;
-    border-radius: 4px;
-    letter-spacing: 0.03em;
-  }
-
-  .pbfp-incident-details {
-    font-size: 0.76rem;
-    color: #64748B;
-    line-height: 1.4;
-  }
-
-  .pbfp-incident-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.7rem;
-    color: #475569;
-    padding-top: 0.35rem;
-    border-top: 1px dashed #E2E8F0;
-  }
-
-  /* Activity Feed List */
-  .pbfp-feed-list {
-    padding: 0.85rem 1rem;
-    display: flex;
-    flex-direction: column;
     gap: 0.75rem;
   }
 
-  .pbfp-feed-item {
+  .pbfp-card-header-icon-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #FFF1F2;
+    border: 1px solid #FFE4E6;
     display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    font-size: 0.78rem;
-  }
-
-  .pbfp-feed-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #94A3B8;
-    margin-top: 5px;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
   }
 
-  .pbfp-feed-dot.red { background: #DB1B0D; }
-  .pbfp-feed-dot.green { background: #10B981; }
-  .pbfp-feed-dot.blue { background: #2563EB; }
-
-  .pbfp-feed-text {
-    flex: 1;
-    color: #334155;
-    line-height: 1.4;
+  .pbfp-card-header-icon-img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
   }
 
-  .pbfp-feed-time {
-    font-size: 0.68rem;
+  .pbfp-card-title-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pbfp-card-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .pbfp-card-subtitle {
+    font-size: 0.76rem;
+    color: #64748B;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  .pbfp-search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 999px;
+    padding: 0.42rem 0.95rem;
+    width: 200px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .pbfp-search-box:focus-within {
+    border-color: #E23632;
+    background: #FFFFFF;
+  }
+
+  .pbfp-search-box i {
     color: #94A3B8;
+    font-size: 0.8rem;
+  }
+
+  .pbfp-search-input {
+    border: none;
+    outline: none;
+    font-size: 0.8rem;
+    width: 100%;
+    background: transparent;
+    color: #0F172A;
+    font-weight: 600;
+    font-family: inherit;
+  }
+
+  .pbfp-search-input::placeholder {
+    color: #94A3B8;
+    font-weight: 500;
+  }
+
+  /* NO-SCROLL Table styling with auto-fitting columns */
+  .pbfp-table-container {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .pbfp-clean-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    table-layout: auto;
+  }
+
+  .pbfp-clean-table th {
+    background: #FFFFFF;
+    color: #64748B;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.8rem 0.9rem;
+    text-align: left;
+    border-bottom: 1px solid #F1F5F9;
     white-space: nowrap;
   }
 
-  @media (max-width: 1024px) {
-    .pbfp-grid-2col {
+  .pbfp-clean-table td {
+    padding: 0.8rem 0.9rem;
+    border-bottom: 1px solid #F8FAFC;
+    color: #0F172A;
+    font-weight: 500;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .pbfp-clean-table tr:hover td {
+    background: #FAFAFA;
+  }
+
+  .pbfp-muni-bold {
+    font-weight: 700;
+    color: #0F172A;
+    font-size: 0.84rem;
+  }
+
+  /* Status Badges */
+  .pbfp-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .pbfp-status-pill.responding {
+    background: #FFF1F2;
+    color: #E23632;
+    border: 1px solid #FFE4E6;
+  }
+
+  .pbfp-status-pill.mutual-aid {
+    background: #FFFBEB;
+    color: #D97706;
+    border: 1px solid #FEF3C7;
+  }
+
+  .pbfp-status-pill.ready {
+    background: #ECFDF5;
+    color: #059669;
+    border: 1px solid #D1FAE5;
+  }
+
+  .pbfp-incidents-count {
+    font-weight: 800;
+    color: #E23632;
+  }
+
+  .pbfp-incidents-zero {
+    color: #94A3B8;
+    font-weight: 500;
+  }
+
+  /* Table Pagination Footer */
+  .pbfp-table-footer {
+    padding: 0.8rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #F1F5F9;
+    font-size: 0.78rem;
+    color: #475569;
+    font-weight: 600;
+    background: #FFFFFF;
+  }
+
+  .pbfp-pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .pbfp-page-btn {
+    min-width: 28px;
+    height: 28px;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    background: #FFFFFF;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s;
+  }
+
+  .pbfp-page-btn:hover:not(:disabled) {
+    background: #F8FAFC;
+    color: #0F172A;
+    border-color: #CBD5E1;
+  }
+
+  .pbfp-page-btn.active {
+    border-color: #E23632;
+    background: #FFF1F2;
+    color: #E23632;
+    font-weight: 800;
+  }
+
+  .pbfp-page-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  /* RIGHT CARD: ACTIVE INCIDENTS */
+  .pbfp-incidents-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+    padding: 1.15rem 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    height: 100%;
+    animation: pbfpCardReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .pbfp-incidents-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.2rem;
+  }
+
+  .pbfp-incidents-title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0F172A;
+  }
+
+  .pbfp-incidents-title i {
+    color: #E23632;
+    font-size: 1rem;
+  }
+
+  .pbfp-view-all-link {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #E23632;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: opacity 0.15s;
+  }
+
+  .pbfp-view-all-link:hover {
+    opacity: 0.8;
+  }
+
+  .pbfp-incidents-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    justify-content: space-between;
+  }
+
+  .pbfp-incident-box {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 1.05rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.45rem;
+    flex: 1;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s;
+  }
+
+  .pbfp-incident-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 26px rgba(15, 23, 42, 0.1), 0 2px 6px rgba(15, 23, 42, 0.06);
+    border-color: #CBD5E1;
+  }
+
+  .pbfp-incident-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .pbfp-incident-name {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #0F172A;
+  }
+
+  .pbfp-alarm-pill {
+    color: #FFFFFF;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+
+  .pbfp-alarm-pill.red {
+    background: #E23632;
+  }
+
+  .pbfp-alarm-pill.orange {
+    background: #D97706;
+  }
+
+  .pbfp-incident-desc {
+    font-size: 0.78rem;
+    color: #475569;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  .pbfp-incident-bottom-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.73rem;
+    color: #64748B;
+    padding-top: 0.45rem;
+    border-top: 1px solid #F8FAFC;
+  }
+
+  .pbfp-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .pbfp-meta-item i {
+    color: #94A3B8;
+    font-size: 0.75rem;
+  }
+
+  .pbfp-meta-item i.fa-location-dot {
+    color: #E23632;
+  }
+
+  @media (max-width: 1200px) {
+    .pbfp-kpi-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .pbfp-main-grid {
       grid-template-columns: 1fr;
     }
   }
 
-  @media (max-width: 768px) {
-    .pbfp-dash {
-      padding: 1rem;
-      gap: 1rem;
+  @media (max-width: 640px) {
+    .pbfp-dash-clean {
+      padding: 0.9rem;
+      gap: 0.9rem;
     }
-
-    .pbfp-hero {
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 1.25rem;
+    .pbfp-kpi-row {
+      grid-template-columns: 1fr;
     }
+  }
 
-    .pbfp-hero-actions {
-      width: 100%;
-      flex-direction: column;
+  @keyframes pbfpCardReveal {
+    0% {
+      opacity: 0;
+      transform: translateY(16px) scale(0.97);
     }
-
-    .pbfp-hero-actions .pbfp-btn {
-      width: 100%;
-      justify-content: center;
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
   }
 `;
 
+function FastNumber({ value, duration = 650 }: { value: string | number; duration?: number }) {
+  const [display, setDisplay] = useState<string>(() => {
+    if (typeof value === 'number') return '0';
+    return String(value).replace(/\d+/g, '0');
+  });
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    const strVal = String(value);
+    const matches = strVal.match(/\d+/g);
+    if (!matches) {
+      return;
+    }
+
+    const targets = matches.map(Number);
+    let frameId: number;
+
+    const step = (now: number) => {
+      if (!startTimestamp) startTimestamp = now;
+      const progress = Math.min((now - startTimestamp) / duration, 1);
+      const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+
+      let matchIndex = 0;
+      const currentText = strVal.replace(/\d+/g, () => {
+        const target = targets[matchIndex];
+        const current = Math.round(target * ease);
+        matchIndex++;
+        return String(current);
+      });
+
+      setDisplay(currentText);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(step);
+      } else {
+        setDisplay(strVal);
+      }
+    };
+
+    frameId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frameId);
+  }, [value, duration]);
+
+  return <span>{String(value).match(/\d+/g) ? display : String(value)}</span>;
+}
+
 export function ProvincialBfpDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
 
   const filteredStations = municipalReadinessData.filter((s) =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const totalPages = Math.ceil(filteredStations.length / pageSize) || 1;
+  const paginatedStations = filteredStations.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <>
       <style>{dashboardStyles}</style>
-      <div className="pbfp-dash">
-        {/* ===== HERO OVERVIEW ===== */}
-        <section className="pbfp-hero">
-          <div className="pbfp-hero-content">
-            <div className="pbfp-hero-badge">
-              <i className="fa-solid fa-satellite-dish" /> Operational Command Status • Antique
-            </div>
-            <h2 className="pbfp-hero-title">Provincial Fire Command & Coordination Center</h2>
-            <p className="pbfp-hero-desc">
-              Centralized oversight of all 18 municipalities, real-time fire incident response,
-              firetruck resources, mutual aid coordination, and municipal staff provisioning for Antique.
-            </p>
-          </div>
-          <div className="pbfp-hero-actions">
-            <Link href="/provincial-bfp/municipal-accounts" className="pbfp-btn pbfp-btn-primary">
-              <i className="fa-solid fa-id-card-clip" /> Manage Accounts
-            </Link>
-            <Link href="/provincial-bfp/gis-map" className="pbfp-btn pbfp-btn-secondary">
-              <i className="fa-solid fa-map-location-dot" /> Province GIS Map
-            </Link>
-          </div>
-        </section>
-
-        {/* ===== KPI METRICS ===== */}
-        <section className="pbfp-kpi-grid" aria-label="Provincial Key Performance Indicators">
-          {/* Active Incidents */}
-          <div className="pbfp-kpi-card">
-            <div className="pbfp-kpi-header">
-              <span className="pbfp-kpi-title">Active Province Incidents</span>
-              <div className="pbfp-kpi-icon red">
-                <i className="fa-solid fa-fire" />
-              </div>
-            </div>
-            <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-value">3</span>
-              <span className="pbfp-kpi-subtitle">in progress</span>
-            </div>
-            <div className="pbfp-kpi-footer">
-              <span>San Jose (1) • Sibalom (1) • Tibiao (1)</span>
-            </div>
-          </div>
-
-          {/* Municipal Stations */}
-          <div className="pbfp-kpi-card">
-            <div className="pbfp-kpi-header">
-              <span className="pbfp-kpi-title">Municipal Stations Online</span>
-              <div className="pbfp-kpi-icon blue">
-                <i className="fa-solid fa-building-shield" />
-              </div>
-            </div>
-            <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-value">18 / 18</span>
-              <span className="pbfp-kpi-subtitle">connected</span>
-            </div>
-            <div className="pbfp-kpi-footer">
-              <span><strong>100%</strong> coverage across Antique</span>
-            </div>
-          </div>
-
-          {/* Firetruck Readiness */}
-          <div className="pbfp-kpi-card">
-            <div className="pbfp-kpi-header">
-              <span className="pbfp-kpi-title">Total Fire Trucks</span>
-              <div className="pbfp-kpi-icon emerald">
-                <i className="fa-solid fa-truck-moving" />
-              </div>
-            </div>
-            <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-value">42</span>
-              <span className="pbfp-kpi-subtitle">fleet total</span>
-            </div>
-            <div className="pbfp-kpi-footer">
-              <span>36 Ready • 4 Responding • 2 Maint.</span>
-            </div>
-          </div>
-
-          {/* Mutual Aid Assistance */}
-          <div className="pbfp-kpi-card">
-            <div className="pbfp-kpi-header">
-              <span className="pbfp-kpi-title">Assistance Requests</span>
-              <div className="pbfp-kpi-icon amber">
-                <i className="fa-solid fa-handshake-angle" />
-              </div>
-            </div>
-            <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-value">1</span>
-              <span className="pbfp-kpi-subtitle">active coordination</span>
-            </div>
-            <div className="pbfp-kpi-footer">
-              <span>Sibalom ➔ San Jose Tanker Support</span>
-            </div>
-          </div>
-        </section>
-
-        {/* ===== TWO COLUMN OPERATIONAL PANELS ===== */}
-        <section className="pbfp-grid-2col">
-          {/* Left Panel: Municipal Readiness Roster */}
-          <div className="pbfp-panel">
-            <div className="pbfp-panel-header">
-              <div className="pbfp-panel-title">
-                <i className="fa-solid fa-building-circle-check" />
-                <span>Municipal Readiness & Station Status (18 Municipalities)</span>
-              </div>
-              <input
-                type="text"
-                className="pbfp-panel-search"
-                placeholder="Search municipality…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                aria-label="Filter municipalities"
+      <div className="pbfp-dash-clean">
+        {/* ===== 4 COMPACT KPI METRIC CARDS ROW ===== */}
+        <section className="pbfp-kpi-row" aria-label="Provincial KPI Metrics">
+          {/* Card 1: Active Incidents */}
+          <div className="pbfp-kpi-box">
+            <div className="pbfp-kpi-badge-icon red">
+              <img
+                src="/images/fire logo.webp"
+                alt="Fire Icon"
+                className="pbfp-kpi-badge-img"
               />
             </div>
-            <div className="pbfp-table-wrap">
-              <table className="pbfp-table">
+            <div className="pbfp-kpi-info">
+              <span className="pbfp-kpi-label">Active Province Incidents</span>
+              <span className="pbfp-kpi-number"><FastNumber value={3} /></span>
+              <span className="pbfp-kpi-subtext">in progress</span>
+            </div>
+          </div>
+
+          {/* Card 2: Municipal Stations Online */}
+          <div className="pbfp-kpi-box">
+            <div className="pbfp-kpi-badge-icon blue">
+              <i className="fa-solid fa-building" />
+            </div>
+            <div className="pbfp-kpi-info">
+              <span className="pbfp-kpi-label">Municipal Stations Online</span>
+              <span className="pbfp-kpi-number"><FastNumber value="18 / 18" /></span>
+              <span className="pbfp-kpi-subtext">connected</span>
+            </div>
+          </div>
+
+          {/* Card 3: Total Fire Trucks */}
+          <div className="pbfp-kpi-box">
+            <div className="pbfp-kpi-badge-icon green">
+              <i className="fa-solid fa-truck" />
+            </div>
+            <div className="pbfp-kpi-info">
+              <span className="pbfp-kpi-label">Total Fire Trucks</span>
+              <span className="pbfp-kpi-number"><FastNumber value={42} /></span>
+              <span className="pbfp-kpi-subtext">fleet total</span>
+            </div>
+          </div>
+
+          {/* Card 4: Assistance Requests */}
+          <div className="pbfp-kpi-box">
+            <div className="pbfp-kpi-badge-icon orange">
+              <i className="fa-solid fa-handshake" />
+            </div>
+            <div className="pbfp-kpi-info">
+              <span className="pbfp-kpi-label">Assistance Requests</span>
+              <span className="pbfp-kpi-number"><FastNumber value={1} /></span>
+              <span className="pbfp-kpi-subtext">active coordination</span>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== TWO-COLUMN MAIN SECTION ===== */}
+        <div className="pbfp-main-grid">
+          {/* LEFT: Municipal Readiness Table (No Side Scroll + Page Size 8) */}
+          <section className="pbfp-table-card">
+            <div className="pbfp-card-header">
+              <div className="pbfp-card-header-left">
+                <div className="pbfp-card-header-icon-badge">
+                  <img
+                    src="/images/fire logo.webp"
+                    alt="Fire Logo"
+                    className="pbfp-card-header-icon-img"
+                  />
+                </div>
+                <div className="pbfp-card-title-group">
+                  <h2 className="pbfp-card-title">Municipal Readiness</h2>
+                  <span className="pbfp-card-subtitle">
+                    Station Status ({filteredStations.length} Municipalities)
+                  </span>
+                </div>
+              </div>
+              <div className="pbfp-search-box">
+                <i className="fa-solid fa-magnifying-glass" />
+                <input
+                  type="text"
+                  placeholder="Search municipality…"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="pbfp-search-input"
+                  aria-label="Search municipality"
+                />
+              </div>
+            </div>
+
+            <div className="pbfp-table-container">
+              <table className="pbfp-clean-table">
                 <thead>
                   <tr>
-                    <th>Municipality</th>
-                    <th>Status</th>
-                    <th>Incidents</th>
-                    <th>Trucks Ready</th>
-                    <th>Duty Responders</th>
-                    <th>Last Check-In</th>
+                    <th>MUNICIPALITY</th>
+                    <th>STATUS</th>
+                    <th>INCIDENTS</th>
+                    <th>TRUCKS READY</th>
+                    <th>DUTY RESPONDERS</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStations.map((station) => (
+                  {paginatedStations.map((station) => (
                     <tr key={station.name}>
-                      <td className="pbfp-muni-name">{station.name}</td>
+                      <td className="pbfp-muni-bold">{station.name}</td>
                       <td>
-                        <span
-                          className={`pbfp-muni-badge ${
-                            station.status === 'RESPONDING'
-                              ? 'responding'
-                              : station.status === 'MUTUAL_AID'
-                              ? 'mutual_aid'
-                              : 'ready'
-                          }`}
-                        >
-                          {station.status === 'RESPONDING' && <i className="fa-solid fa-fire" />}
-                          {station.status === 'MUTUAL_AID' && (
-                            <i className="fa-solid fa-handshake-angle" />
-                          )}
-                          {station.status === 'READY' && <i className="fa-solid fa-check" />}
-                          {station.status.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td>
-                        {station.activeIncidents > 0 ? (
-                          <strong style={{ color: '#DB1B0D' }}>{station.activeIncidents} Active</strong>
-                        ) : (
-                          <span style={{ color: '#94A3B8' }}>0</span>
+                        {station.status === 'RESPONDING' && (
+                          <span className="pbfp-status-pill responding">
+                            <i className="fa-solid fa-fire" /> RESPONDING
+                          </span>
+                        )}
+                        {station.status === 'MUTUAL_AID' && (
+                          <span className="pbfp-status-pill mutual-aid">
+                            <i className="fa-solid fa-handshake" /> MUTUAL AID
+                          </span>
+                        )}
+                        {station.status === 'READY' && (
+                          <span className="pbfp-status-pill ready">
+                            <i className="fa-solid fa-check" /> READY
+                          </span>
                         )}
                       </td>
                       <td>
-                        <strong>{station.availableTrucks}</strong> / {station.totalTrucks}
+                        {station.activeIncidents > 0 ? (
+                          <span className="pbfp-incidents-count">{station.activeIncidents} Active</span>
+                        ) : (
+                          <span className="pbfp-incidents-zero">0</span>
+                        )}
                       </td>
-                      <td>{station.dutyResponders} crew</td>
-                      <td style={{ color: '#64748B' }}>{station.lastCheckIn}</td>
+                      <td>
+                        <strong style={{ color: '#0F172A' }}>{station.availableTrucks}</strong>
+                        <span style={{ color: '#94A3B8' }}> / {station.totalTrucks}</span>
+                      </td>
+                      <td>
+                        <span style={{ color: '#0F172A', fontWeight: 600 }}>{station.dutyResponders} crew</span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
 
-          {/* Right Column: Active Incidents & System Activity */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Active Incidents */}
-            <div className="pbfp-panel">
-              <div className="pbfp-panel-header">
-                <div className="pbfp-panel-title">
-                  <i className="fa-solid fa-triangle-exclamation" />
-                  <span>Active Incidents (Province-Wide)</span>
-                </div>
-                <Link
-                  href="/provincial-bfp/incidents"
-                  style={{ fontSize: '0.75rem', color: '#DB1B0D', fontWeight: 700, textDecoration: 'none' }}
+            {/* Clean Pagination Footer */}
+            <div className="pbfp-table-footer">
+              <span>
+                Showing <strong>{paginatedStations.length}</strong> of <strong>{filteredStations.length}</strong> municipalities
+              </span>
+              <div className="pbfp-pagination">
+                <button
+                  type="button"
+                  className="pbfp-page-btn"
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  aria-label="Previous page"
                 >
-                  View All &rarr;
-                </Link>
+                  <i className="fa-solid fa-chevron-left" />
+                </button>
+                {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    className={`pbfp-page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                    onClick={() => setCurrentPage(pageNum)}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="pbfp-page-btn"
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  aria-label="Next page"
+                >
+                  <i className="fa-solid fa-chevron-right" />
+                </button>
               </div>
-              <div className="pbfp-incidents-list">
-                {/* Incident 1 */}
-                <div className="pbfp-incident-item alarm-2">
-                  <div className="pbfp-incident-top">
-                    <span className="pbfp-incident-loc">Brgy. Funda-Dalipe, San Jose</span>
-                    <span className="pbfp-alarm-tag">2nd Alarm</span>
-                  </div>
-                  <p className="pbfp-incident-details">
-                    Commercial structure fire near trade center. 3 engines deployed, mutual aid requested.
-                  </p>
-                  <div className="pbfp-incident-meta">
-                    <span>Assigned: San Jose BFP Station</span>
-                    <span>Reported 24m ago</span>
-                  </div>
-                </div>
+            </div>
+          </section>
 
-                {/* Incident 2 */}
-                <div className="pbfp-incident-item">
-                  <div className="pbfp-incident-top">
-                    <span className="pbfp-incident-loc">Brgy. Bari, Sibalom</span>
-                    <span className="pbfp-alarm-tag">1st Alarm</span>
-                  </div>
-                  <p className="pbfp-incident-details">
-                    Residential fire response underway. Tanker reinforcement en route.
-                  </p>
-                  <div className="pbfp-incident-meta">
-                    <span>Assigned: Sibalom BFP Station</span>
-                    <span>Reported 48m ago</span>
-                  </div>
-                </div>
+          {/* RIGHT: Active Incidents Card */}
+          <section className="pbfp-incidents-card">
+            <div className="pbfp-incidents-header">
+              <div className="pbfp-incidents-title">
+                <i className="fa-solid fa-triangle-exclamation" />
+                <span>Active Incidents</span>
+              </div>
+              <Link href="/provincial-bfp/incidents" prefetch={true} className="pbfp-view-all-link">
+                View All &rarr;
+              </Link>
+            </div>
 
-                {/* Incident 3 */}
-                <div className="pbfp-incident-item">
-                  <div className="pbfp-incident-top">
-                    <span className="pbfp-incident-loc">Brgy. Alegre, Tibiao</span>
-                    <span className="pbfp-alarm-tag">Under Control</span>
-                  </div>
-                  <p className="pbfp-incident-details">
-                    Grass fire near highway. Overhauling operations in progress.
-                  </p>
-                  <div className="pbfp-incident-meta">
-                    <span>Assigned: Tibiao BFP Station</span>
-                    <span>Reported 1h 15m ago</span>
-                  </div>
+            <div className="pbfp-incidents-list">
+              {/* Incident 1: San Jose */}
+              <div className="pbfp-incident-box">
+                <div className="pbfp-incident-header">
+                  <span className="pbfp-incident-name">Brgy. Funda-Dalipe, San Jose</span>
+                  <span className="pbfp-alarm-pill red">2nd Alarm</span>
+                </div>
+                <p className="pbfp-incident-desc">
+                  Commercial structure fire near trade center. 3 engines deployed, mutual aid requested.
+                </p>
+                <div className="pbfp-incident-bottom-meta">
+                  <span className="pbfp-meta-item">
+                    <i className="fa-solid fa-location-dot" /> Assigned: San Jose BFP Station
+                  </span>
+                  <span className="pbfp-meta-item">
+                    <i className="fa-regular fa-clock" /> Reported: 24m ago
+                  </span>
+                </div>
+              </div>
+
+              {/* Incident 2: Sibalom */}
+              <div className="pbfp-incident-box">
+                <div className="pbfp-incident-header">
+                  <span className="pbfp-incident-name">Brgy. Bari, Sibalom</span>
+                  <span className="pbfp-alarm-pill red">1st Alarm</span>
+                </div>
+                <p className="pbfp-incident-desc">
+                  Residential fire response underway. Tanker reinforcement en route.
+                </p>
+                <div className="pbfp-incident-bottom-meta">
+                  <span className="pbfp-meta-item">
+                    <i className="fa-solid fa-location-dot" /> Assigned: Sibalom BFP Station
+                  </span>
+                  <span className="pbfp-meta-item">
+                    <i className="fa-regular fa-clock" /> Reported: 48m ago
+                  </span>
+                </div>
+              </div>
+
+              {/* Incident 3: Tibiao */}
+              <div className="pbfp-incident-box">
+                <div className="pbfp-incident-header">
+                  <span className="pbfp-incident-name">Brgy. Alegre, Tibiao</span>
+                  <span className="pbfp-alarm-pill orange">Under Control</span>
+                </div>
+                <p className="pbfp-incident-desc">
+                  Grass fire near highway. Overhauling operations in progress.
+                </p>
+                <div className="pbfp-incident-bottom-meta">
+                  <span className="pbfp-meta-item">
+                    <i className="fa-solid fa-location-dot" /> Assigned: Tibiao BFP Station
+                  </span>
+                  <span className="pbfp-meta-item">
+                    <i className="fa-regular fa-clock" /> Reported: 1h 15m ago
+                  </span>
                 </div>
               </div>
             </div>
-
-            {/* Live Command Logs */}
-            <div className="pbfp-panel">
-              <div className="pbfp-panel-header">
-                <div className="pbfp-panel-title">
-                  <i className="fa-solid fa-clock-rotate-left" />
-                  <span>Recent Provincial Coordination Activity</span>
-                </div>
-              </div>
-              <div className="pbfp-feed-list">
-                <div className="pbfp-feed-item">
-                  <div className="pbfp-feed-dot red" />
-                  <div className="pbfp-feed-text">
-                    <strong>Mutual aid dispatched:</strong> Hamtic Engine 1 rerouted to San Jose Funda-Dalipe.
-                  </div>
-                  <span className="pbfp-feed-time">12m ago</span>
-                </div>
-                <div className="pbfp-feed-item">
-                  <div className="pbfp-feed-dot green" />
-                  <div className="pbfp-feed-text">
-                    <strong>Account issued:</strong> Municipal Admin account provisioned for <em>Culasi BFP Office</em>.
-                  </div>
-                  <span className="pbfp-feed-time">35m ago</span>
-                </div>
-                <div className="pbfp-feed-item">
-                  <div className="pbfp-feed-dot blue" />
-                  <div className="pbfp-feed-text">
-                    <strong>Resource update:</strong> Sibalom Water Tanker 1 reported full and operational.
-                  </div>
-                  <span className="pbfp-feed-time">1h ago</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </>
   );

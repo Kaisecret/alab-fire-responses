@@ -123,3 +123,20 @@ test("Provincial BFP can provision municipal accounts and Municipal BFP pages us
   assert.match(layout, /api\/municipal-bfp\/me/);
   assert.match(layout, /mustChangePassword/);
 });
+
+test("Provincial BFP sign-out clears its own BFP session", () => {
+  const layout = source("app/_components/provincial-bfp-layout.tsx");
+
+  assert.match(layout, /fetch\('\/api\/auth\/bfp\/logout'/);
+  assert.match(layout, /portal:\s*'PROVINCIAL'/);
+});
+
+test("latest provincial UI defines its identity model and avoids synchronous timer updates", () => {
+  const layout = source("app/_components/provincial-bfp-layout.tsx");
+  const dashboard = source("app/_components/provincial-bfp-dashboard.tsx");
+  const incidents = source("app/provincial-bfp/incidents/page.tsx");
+
+  assert.match(layout, /type ProvincialIdentity\s*=/);
+  assert.doesNotMatch(dashboard, /if \(!matches\)\s*\{\s*setDisplay\(/);
+  assert.doesNotMatch(incidents, /if \(!matches\)\s*\{\s*setDisplay\(/);
+});

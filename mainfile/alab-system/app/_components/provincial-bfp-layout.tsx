@@ -17,6 +17,15 @@ type NavGroup = {
   items: NavItem[];
 };
 
+type ProvincialIdentity = {
+  displayName: string;
+  rankOrPosition: string | null;
+  email?: string;
+  role?: string;
+  province?: string;
+  mustChangePassword?: boolean;
+};
+
 const navigationGroups: NavGroup[] = [
   {
     groupTitle: 'OVERVIEW',
@@ -24,7 +33,7 @@ const navigationGroups: NavGroup[] = [
       {
         label: 'Provincial Dashboard',
         href: '/provincial-bfp',
-        icon: 'fa-solid fa-table-cells-large',
+        icon: 'custom-dashboard-grid',
         exact: true,
       },
     ],
@@ -124,17 +133,17 @@ const provincialLayoutStyles = `
   }
 
   .pbfp-shell {
-    --pbfp-red: #DB1B0D;
-    --pbfp-red-hover: #b81409;
-    --pbfp-red-soft: rgba(219, 27, 13, 0.16);
-    --pbfp-red-glow: rgba(219, 27, 13, 0.35);
+    --pbfp-red: #E23632;
+    --pbfp-red-hover: #c42724;
+    --pbfp-red-soft: rgba(226, 54, 50, 0.16);
+    --pbfp-red-glow: rgba(226, 54, 50, 0.35);
     --pbfp-navy-bg: #161C2B;
     --pbfp-navy-surface: #1B2336;
     --pbfp-navy-hover: #222C44;
     --pbfp-navy-border: rgba(255, 255, 255, 0.08);
     --pbfp-text-muted: #8E9DAE;
     --pbfp-text-bright: #F1F5F9;
-    --pbfp-content-bg: #F4F6F9;
+    --pbfp-content-bg: #EEF5FD;
     --pbfp-sidebar-width: 270px;
     --pbfp-sidebar-collapsed: 78px;
 
@@ -203,14 +212,16 @@ const provincialLayoutStyles = `
   .pbfp-brand-link {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.65rem;
     text-decoration: none;
     min-width: 0;
+    flex: 1;
+    overflow: hidden;
   }
 
   .pbfp-brand-logo-wrap {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     flex-shrink: 0;
     border-radius: 10px;
     background: #0f1420;
@@ -223,47 +234,46 @@ const provincialLayoutStyles = `
   }
 
   .pbfp-brand-logo-img {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     object-fit: contain;
   }
 
-  .pbfp-brand-text {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    white-space: nowrap;
+  .pbfp-brand-tint-img {
+    height: 44px;
+    max-width: 160px;
+    width: auto;
+    object-fit: contain;
+    margin: 0 auto;
+    display: block;
     transition: opacity 0.2s, transform 0.2s;
   }
 
-  .pbfp-sidebar.collapsed .pbfp-brand-text {
-    opacity: 0;
-    pointer-events: none;
-    position: absolute;
-    transform: translateX(-10px);
+  .pbfp-sidebar.collapsed .pbfp-brand-row {
+    justify-content: center;
+    width: 100%;
   }
 
-  .pbfp-brand-title {
-    font-size: 0.95rem;
-    font-weight: 800;
+  .pbfp-sidebar.collapsed .pbfp-brand-link {
+    display: none;
+  }
+
+  .pbfp-sidebar.collapsed .pbfp-collapse-btn {
+    width: 38px;
+    height: 38px;
+    margin: 0 auto;
+    font-size: 0.88rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #CBD5E1;
+  }
+
+  .pbfp-sidebar.collapsed .pbfp-collapse-btn:hover {
+    background: var(--pbfp-navy-hover);
     color: #FFFFFF;
-    letter-spacing: -0.01em;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    line-height: 1.2;
-  }
-
-  .pbfp-brand-title span {
-    color: var(--pbfp-red);
-  }
-
-  .pbfp-brand-subtitle {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #94A3B8;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    border-color: rgba(219, 27, 13, 0.4);
+    box-shadow: 0 0 10px rgba(219, 27, 13, 0.2);
   }
 
   .pbfp-collapse-btn {
@@ -404,8 +414,12 @@ const provincialLayoutStyles = `
     font-size: 0.86rem;
     font-weight: 500;
     position: relative;
-    transition: all 0.18s ease;
+    transition: all 0.15s ease;
     border-left: 3px solid transparent;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
   }
 
   .pbfp-sidebar.collapsed .pbfp-nav-link {
@@ -419,7 +433,8 @@ const provincialLayoutStyles = `
     color: var(--pbfp-text-bright);
   }
 
-  .pbfp-nav-link:hover .pbfp-nav-icon {
+  .pbfp-nav-link:hover .pbfp-nav-icon,
+  .pbfp-nav-link:hover .pbfp-custom-dash-icon {
     color: #CBD5E1;
   }
 
@@ -444,7 +459,19 @@ const provincialLayoutStyles = `
     flex-shrink: 0;
   }
 
-  .pbfp-nav-link.active .pbfp-nav-icon {
+  /* Custom 4-Box Dashboard Icon matching user shape */
+  .pbfp-custom-dash-icon {
+    width: 1.18rem;
+    height: 1.18rem;
+    color: #64748B;
+    transition: color 0.18s, transform 0.18s;
+    flex-shrink: 0;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .pbfp-nav-link.active .pbfp-nav-icon,
+  .pbfp-nav-link.active .pbfp-custom-dash-icon {
     color: var(--pbfp-red);
     transform: scale(1.08);
   }
@@ -750,29 +777,20 @@ const provincialLayoutStyles = `
 
   .pbfp-topbar-title-group {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     min-width: 0;
   }
 
   .pbfp-topbar-kicker {
-    font-size: 0.68rem;
+    font-size: 0.84rem;
     font-weight: 800;
     color: var(--pbfp-red);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-  }
-
-  .pbfp-topbar-title {
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: #0F172A;
-    line-height: 1.2;
+    gap: 0.45rem;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .pbfp-topbar-right {
@@ -950,12 +968,25 @@ const provincialLayoutStyles = `
       transform: translateX(0);
     }
 
-    .pbfp-sidebar.collapsed {
-      width: min(84vw, 290px);
-      min-width: min(84vw, 290px);
+    .pbfp-sidebar.collapsed .pbfp-brand-link {
+      display: flex;
     }
 
-    .pbfp-sidebar.collapsed .pbfp-brand-text,
+    .pbfp-sidebar.collapsed .pbfp-brand-tint-img {
+      display: block;
+    }
+
+    .pbfp-sidebar.collapsed .pbfp-brand-row {
+      justify-content: space-between;
+    }
+
+    .pbfp-sidebar.collapsed .pbfp-collapse-btn {
+      width: 28px;
+      height: 28px;
+      margin: 0;
+      font-size: 0.75rem;
+    }
+
     .pbfp-sidebar.collapsed .pbfp-status-label,
     .pbfp-sidebar.collapsed .pbfp-nav-label,
     .pbfp-sidebar.collapsed .pbfp-profile-info {
@@ -1021,48 +1052,43 @@ const provincialLayoutStyles = `
   }
 `;
 
-export function ProvincialBfpLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [timeString, setTimeString] = useState<string>('');
-  const [identity, setIdentity] = useState<{
-    displayName: string;
-    rankOrPosition: string | null;
-    email?: string;
-    role?: string;
-    province?: string;
-    mustChangePassword?: boolean;
-  } | null>(null);
+function LiveClock() {
+  const [timeString, setTimeString] = useState('');
 
-  const isAuthenticationPage =
-    pathname === '/provincial-bfp/login' || pathname === '/provincial-bfp/change-password';
-
-  // Live operational clock
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
       setTimeString(
-        now.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        }) +
-          ', ' +
-          now.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true,
-          }) +
-          ' PHT'
+        now.toLocaleTimeString('en-US', {
+          timeZone: 'Asia/Manila',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        }) + ' PHT'
       );
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  return <span>{timeString || 'Loading clock…'}</span>;
+}
+
+export function ProvincialBfpLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() || '/provincial-bfp';
+  const isAuthenticationPage = pathname === '/provincial-bfp/login';
+
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [identity, setIdentity] = useState<ProvincialIdentity>({
+    displayName: 'CINSP Juan Dela Cruz',
+    rankOrPosition: 'Provincial Fire Marshal',
+    role: 'PROVINCIAL_BFP',
+    province: 'Antique',
+  });
 
   // Fetch Provincial Identity
   useEffect(() => {
@@ -1071,7 +1097,6 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
     fetch('/api/provincial-bfp/me')
       .then(async (response) => {
         if (!response.ok) {
-          // If unauthenticated, fallback to representative profile for command center preview
           return {
             user: {
               displayName: 'CINSP Juan Dela Cruz',
@@ -1144,38 +1169,19 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
   return (
     <>
       <style>{provincialLayoutStyles}</style>
-      {/* Google Fonts - Plus Jakarta Sans */}
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-      />
-      {/* FontAwesome 6 Icons */}
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-        integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
-        crossOrigin="anonymous"
-        referrerPolicy="no-referrer"
-      />
 
       <div className="pbfp-shell">
         {/* ===== PROVINCIAL COMMAND SIDEBAR ===== */}
         <aside
           id="pbfp-sidebar"
-          className={`pbfp-sidebar ${isCollapsed ? 'collapsed' : ''} ${
-            isMobileOpen ? 'mobile-open' : ''
-          }`}
+          className={`pbfp-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''
+            }`}
           aria-label="Provincial BFP Navigation"
         >
           {/* Header Brand */}
           <div className="pbfp-sidebar-header">
             <div className="pbfp-brand-row">
-              <Link href="/provincial-bfp" className="pbfp-brand-link" onClick={closeMobileDrawer}>
+              <Link href="/provincial-bfp" prefetch={true} className="pbfp-brand-link" onClick={closeMobileDrawer}>
                 <div className="pbfp-brand-logo-wrap">
                   <img
                     src="/images/FAVICON.webp"
@@ -1183,12 +1189,11 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                     className="pbfp-brand-logo-img"
                   />
                 </div>
-                <div className="pbfp-brand-text">
-                  <div className="pbfp-brand-title">
-                    ALAB <span>BFP</span>
-                  </div>
-                  <div className="pbfp-brand-subtitle">Provincial BFP Command Center</div>
-                </div>
+                <img
+                  src="/images/logo white tint.webp"
+                  alt="ALAB BFP Command Center"
+                  className="pbfp-brand-tint-img"
+                />
               </Link>
 
               <button
@@ -1220,10 +1225,29 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                     <Link
                       key={item.href}
                       href={item.href}
+                      prefetch={true}
                       className={`pbfp-nav-link ${active ? 'active' : ''}`}
                       onClick={closeMobileDrawer}
                     >
-                      <i className={`${item.icon} pbfp-nav-icon`} />
+                      {item.icon === 'custom-dashboard-grid' ? (
+                        <svg
+                          className="pbfp-custom-dash-icon"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          aria-hidden="true"
+                        >
+                          {/* Top-left: Tall rounded rectangle */}
+                          <rect x="2.5" y="2.5" width="8.2" height="12" rx="2.5" />
+                          {/* Bottom-left: Short rounded rectangle */}
+                          <rect x="2.5" y="16.5" width="8.2" height="5" rx="2" />
+                          {/* Top-right: Short rounded rectangle */}
+                          <rect x="13.3" y="2.5" width="8.2" height="5" rx="2" />
+                          {/* Bottom-right: Tall rounded rectangle */}
+                          <rect x="13.3" y="9.5" width="8.2" height="12" rx="2.5" />
+                        </svg>
+                      ) : (
+                        <i className={`${item.icon} pbfp-nav-icon`} />
+                      )}
                       <span className="pbfp-nav-label">{item.label}</span>
                       {item.badge !== undefined && (
                         <span className="pbfp-nav-badge">{item.badge}</span>
@@ -1257,9 +1281,8 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                 </div>
               </div>
               <i
-                className={`fa-solid fa-chevron-up pbfp-profile-chevron ${
-                  isProfileOpen ? 'rotate-180' : ''
-                }`}
+                className={`fa-solid fa-chevron-up pbfp-profile-chevron ${isProfileOpen ? 'rotate-180' : ''
+                  }`}
               />
             </div>
 
@@ -1328,9 +1351,6 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                   <span className="pbfp-topbar-kicker">
                     <i className="fa-solid fa-shield-heart" /> Bureau of Fire Protection • Region VI
                   </span>
-                  <h1 className="pbfp-topbar-title">
-                    Provincial BFP Command & Coordination Center — Antique
-                  </h1>
                 </div>
               </div>
 
@@ -1339,7 +1359,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                 <div className="pbfp-topbar-meta">
                   <div className="pbfp-clock-chip" title="Philippine Standard Time">
                     <i className="fa-regular fa-clock" />
-                    <span>{timeString || 'Loading clock…'}</span>
+                    <LiveClock />
                   </div>
 
                   <div
@@ -1353,6 +1373,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
 
                 <Link
                   href="/provincial-bfp/incidents"
+                  prefetch={true}
                   className="pbfp-topbar-icon-btn"
                   title="3 Active Province Incidents"
                 >

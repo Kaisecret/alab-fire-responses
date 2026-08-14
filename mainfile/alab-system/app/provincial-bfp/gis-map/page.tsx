@@ -6,7 +6,14 @@ import type { OperationalLayerVisibility } from '../../_components/antique-gis-m
 
 const AntiqueGisMap = dynamic(
   () => import('../../_components/antique-gis-map').then((mod) => mod.AntiqueGisMap),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '480px', color: '#64748B', fontSize: '0.85rem' }}>
+        <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '0.5rem', color: '#DB1B0D' }} /> Loading Provincial GIS Map…
+      </div>
+    ),
+  }
 );
 
 const styles = `
