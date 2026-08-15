@@ -312,6 +312,16 @@ export function MunicipalBfpLogin() {
           font-weight: 500;
         }
 
+        .muni-input:-webkit-autofill,
+        .muni-input:-webkit-autofill:hover,
+        .muni-input:-webkit-autofill:focus,
+        .muni-input:-webkit-autofill:active {
+          -webkit-text-fill-color: #0F172A;
+          -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset;
+          box-shadow: 0 0 0 1000px #FFFFFF inset;
+          caret-color: #0F172A;
+        }
+
         .muni-password-toggle {
           background: transparent;
           border: none;

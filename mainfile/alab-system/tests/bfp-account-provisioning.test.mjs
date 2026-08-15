@@ -175,3 +175,13 @@ test("BFP login artwork uses the converted WebP assets", () => {
   assert.match(provincial, /\/images\/WHITE%20LOGO\.webp/);
   assert.doesNotMatch(`${municipal}\n${provincial}`, /\/images\/[^"']+\.png/);
 });
+
+test("BFP login fields keep browser autofill from applying a blue background", () => {
+  const municipal = source("app/_components/municipal-bfp-login.tsx");
+  const provincial = source("app/_components/provincial-bfp-login.tsx");
+
+  assert.match(municipal, /\.muni-input:-webkit-autofill/);
+  assert.match(provincial, /\.prov-input:-webkit-autofill/);
+  assert.match(municipal, /-webkit-box-shadow:\s*0 0 0 1000px #FFFFFF inset/);
+  assert.match(provincial, /-webkit-box-shadow:\s*0 0 0 1000px #FFFFFF inset/);
+});

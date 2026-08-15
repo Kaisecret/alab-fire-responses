@@ -315,6 +315,16 @@ export function ProvincialBfpLogin() {
           font-weight: 500;
         }
 
+        .prov-input:-webkit-autofill,
+        .prov-input:-webkit-autofill:hover,
+        .prov-input:-webkit-autofill:focus,
+        .prov-input:-webkit-autofill:active {
+          -webkit-text-fill-color: #0F172A;
+          -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset;
+          box-shadow: 0 0 0 1000px #FFFFFF inset;
+          caret-color: #0F172A;
+        }
+
         .prov-password-toggle {
           background: transparent;
           border: none;
