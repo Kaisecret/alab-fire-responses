@@ -79,6 +79,12 @@ test("proxy redirects unauthenticated visitors away from protected resident rout
   assert.match(middleware, /verifyResidentSession/);
 });
 
+test("the resident home route uses resident protection instead of the Provincial BFP fallback", () => {
+  const middleware = source("proxy.ts");
+
+  assert.match(middleware, /path === "\/resident" \|\| path\.startsWith\("\/resident\/"\)/);
+});
+
 test("resident OTP sending enforces a server-side one-minute resend cooldown", () => {
   const start = source("app/api/auth/register/start/route.ts");
 

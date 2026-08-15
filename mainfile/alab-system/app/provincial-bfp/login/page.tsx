@@ -1,5 +1,5 @@
-import { BfpLogin } from "../../_components/bfp-login";
+import { ProvincialBfpLogin } from "../../_components/provincial-bfp-login";
 
 export default function ProvincialBfpLoginPage() {
-  return <BfpLogin portal="PROVINCIAL" />;
+  return <ProvincialBfpLogin />;
 }

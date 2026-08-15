@@ -68,7 +68,7 @@ async function verifyBfpSession(token: string | undefined, requiredRole: "MUNICI
 export async function proxy(request: NextRequest) {
   const supabaseResponse = await updateSupabaseSession(request);
   const path = request.nextUrl.pathname;
-  if (path.startsWith("/resident/")) {
+  if (path === "/resident" || path.startsWith("/resident/")) {
     if (path === "/resident/login" || path === "/resident/signup") return supabaseResponse;
     if (isLocalUiPreviewEnabled()) return supabaseResponse;
     if (await verifyResidentSession(request.cookies.get(SESSION_COOKIE)?.value)) return supabaseResponse;

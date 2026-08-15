@@ -157,6 +157,17 @@ const provincialLayoutStyles = `
   }
 
   /* ========== SIDEBAR CONTAINER ========== */
+  @keyframes pbfpSidebarSlideIn {
+    0% {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
   .pbfp-sidebar {
     width: var(--pbfp-sidebar-width);
     min-width: var(--pbfp-sidebar-width);
@@ -169,9 +180,10 @@ const provincialLayoutStyles = `
     left: 0;
     bottom: 0;
     z-index: 100;
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 4px 0 24px rgba(10, 14, 23, 0.4);
     overflow: hidden;
+    animation: pbfpSidebarSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .pbfp-sidebar.collapsed {
@@ -192,20 +204,40 @@ const provincialLayoutStyles = `
   }
 
   /* ========== SIDEBAR HEADER / BRAND ========== */
+  @keyframes pbfpSidebarHeaderIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .pbfp-sidebar-header {
-    padding: 1.1rem 1rem 1rem;
+    padding: 1.15rem 1rem 1.05rem;
     border-bottom: 1px solid var(--pbfp-navy-border);
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
     position: relative;
+    min-height: 70px;
+    box-sizing: border-box;
     background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+    animation: pbfpSidebarHeaderIn 0.45s 0.08s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .pbfp-sidebar.collapsed .pbfp-sidebar-header {
+    padding: 0.95rem 0.5rem;
+    justify-content: center;
   }
 
   .pbfp-brand-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
     gap: 0.6rem;
   }
 
@@ -231,12 +263,14 @@ const provincialLayoutStyles = `
     justify-content: center;
     box-shadow: 0 0 12px rgba(219, 27, 13, 0.25);
     overflow: hidden;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
   }
 
   .pbfp-brand-logo-img {
     width: 32px;
     height: 32px;
     object-fit: contain;
+    display: block;
   }
 
   .pbfp-brand-tint-img {
@@ -246,7 +280,17 @@ const provincialLayoutStyles = `
     object-fit: contain;
     margin: 0 auto;
     display: block;
-    transition: opacity 0.2s, transform 0.2s;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), filter 0.22s ease;
+  }
+
+  .pbfp-brand-link:hover .pbfp-brand-logo-wrap {
+    transform: scale(1.05);
+    box-shadow: 0 0 16px rgba(219, 27, 13, 0.45);
+  }
+
+  .pbfp-brand-link:hover .pbfp-brand-tint-img {
+    transform: scale(1.03);
+    filter: drop-shadow(0 2px 8px rgba(219, 27, 13, 0.3));
   }
 
   .pbfp-sidebar.collapsed .pbfp-brand-row {
@@ -274,6 +318,7 @@ const provincialLayoutStyles = `
     color: #FFFFFF;
     border-color: rgba(219, 27, 13, 0.4);
     box-shadow: 0 0 10px rgba(219, 27, 13, 0.2);
+    transform: scale(1.06);
   }
 
   .pbfp-collapse-btn {
@@ -288,7 +333,7 @@ const provincialLayoutStyles = `
     justify-content: center;
     cursor: pointer;
     font-size: 0.75rem;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     flex-shrink: 0;
   }
 
@@ -296,63 +341,30 @@ const provincialLayoutStyles = `
     background: var(--pbfp-navy-hover);
     color: #FFFFFF;
     border-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.06);
   }
 
-  /* Province Status Pill */
-  .pbfp-status-indicator {
-    display: flex;
+  .pbfp-sidebar-close {
+    display: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--pbfp-navy-border);
+    color: #CBD5E1;
     align-items: center;
-    gap: 0.55rem;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    padding: 0.4rem 0.65rem;
-    border-radius: 6px;
-    transition: opacity 0.2s;
-  }
-
-  .pbfp-sidebar.collapsed .pbfp-status-indicator {
     justify-content: center;
-    padding: 0.4rem 0;
-  }
-
-  .pbfp-status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #10B981;
-    box-shadow: 0 0 8px #10B981;
-    position: relative;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     flex-shrink: 0;
   }
 
-  .pbfp-status-dot::after {
-    content: '';
-    position: absolute;
-    inset: -3px;
-    border-radius: 50%;
-    border: 1px solid #10B981;
-    animation: pbfpPulse 2s infinite;
-    opacity: 0.7;
-  }
-
-  @keyframes pbfpPulse {
-    0% { transform: scale(0.9); opacity: 0.8; }
-    70% { transform: scale(2.2); opacity: 0; }
-    100% { transform: scale(2.2); opacity: 0; }
-  }
-
-  .pbfp-status-label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: #CBD5E1;
-    letter-spacing: 0.01em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .pbfp-sidebar.collapsed .pbfp-status-label {
-    display: none;
+  .pbfp-sidebar-close:hover {
+    background: var(--pbfp-navy-hover);
+    color: #FFFFFF;
+    border-color: rgba(219, 27, 13, 0.4);
+    transform: scale(1.06);
   }
 
   /* ========== NAVIGATION SCROLL AREA ========== */
@@ -380,6 +392,23 @@ const provincialLayoutStyles = `
     flex-direction: column;
     gap: 2px;
   }
+
+  @keyframes pbfpNavItemEntrance {
+    0% {
+      opacity: 0;
+      transform: translateX(-18px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .pbfp-nav-group:nth-child(1) { animation: pbfpNavItemEntrance 0.42s 0.10s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .pbfp-nav-group:nth-child(2) { animation: pbfpNavItemEntrance 0.42s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .pbfp-nav-group:nth-child(3) { animation: pbfpNavItemEntrance 0.42s 0.20s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .pbfp-nav-group:nth-child(4) { animation: pbfpNavItemEntrance 0.42s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .pbfp-nav-group:nth-child(5) { animation: pbfpNavItemEntrance 0.42s 0.30s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
   .pbfp-nav-group-title {
     font-size: 0.65rem;
@@ -414,7 +443,7 @@ const provincialLayoutStyles = `
     font-size: 0.86rem;
     font-weight: 500;
     position: relative;
-    transition: all 0.15s ease;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     border-left: 3px solid transparent;
     cursor: pointer;
     touch-action: manipulation;
@@ -431,6 +460,11 @@ const provincialLayoutStyles = `
   .pbfp-nav-link:hover {
     background: var(--pbfp-navy-hover);
     color: var(--pbfp-text-bright);
+    transform: translateX(3px);
+  }
+
+  .pbfp-sidebar.collapsed .pbfp-nav-link:hover {
+    transform: none;
   }
 
   .pbfp-nav-link:hover .pbfp-nav-icon,
@@ -473,7 +507,7 @@ const provincialLayoutStyles = `
   .pbfp-nav-link.active .pbfp-nav-icon,
   .pbfp-nav-link.active .pbfp-custom-dash-icon {
     color: var(--pbfp-red);
-    transform: scale(1.08);
+    transform: scale(1.1);
   }
 
   .pbfp-nav-label {
@@ -531,8 +565,8 @@ const provincialLayoutStyles = `
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: translateX(-6px);
-    transition: opacity 0.18s, transform 0.18s;
+    transform: translateX(-8px);
+    transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 1000;
   }
 
@@ -543,11 +577,23 @@ const provincialLayoutStyles = `
   }
 
   /* ========== SIDEBAR BOTTOM PROFILE AREA ========== */
+  @keyframes pbfpFooterEntrance {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .pbfp-sidebar-footer {
     padding: 0.85rem 0.75rem;
     border-top: 1px solid var(--pbfp-navy-border);
     background: var(--pbfp-navy-surface);
     position: relative;
+    animation: pbfpFooterEntrance 0.45s 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .pbfp-profile-card {
@@ -559,7 +605,7 @@ const provincialLayoutStyles = `
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .pbfp-sidebar.collapsed .pbfp-profile-card {
@@ -570,6 +616,7 @@ const provincialLayoutStyles = `
   .pbfp-profile-card:hover {
     background: var(--pbfp-navy-hover);
     border-color: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
   }
 
   .pbfp-profile-avatar {
@@ -632,7 +679,11 @@ const provincialLayoutStyles = `
   .pbfp-profile-chevron {
     color: #64748B;
     font-size: 0.7rem;
-    transition: transform 0.2s;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pbfp-profile-chevron.rotate-180 {
+    transform: rotate(180deg);
   }
 
   .pbfp-sidebar.collapsed .pbfp-profile-chevron {
@@ -665,8 +716,8 @@ const provincialLayoutStyles = `
   }
 
   @keyframes pbfpPopIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
   .pbfp-popover-item {
@@ -728,7 +779,7 @@ const provincialLayoutStyles = `
     flex-direction: column;
     min-height: 100vh;
     background: var(--pbfp-content-bg);
-    transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: margin-left 0.24s cubic-bezier(0.4, 0, 0.2, 1), width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .pbfp-main-area.collapsed {
@@ -737,6 +788,17 @@ const provincialLayoutStyles = `
   }
 
   /* ========== TOP COMMAND CENTER HEADER ========== */
+  @keyframes pbfpTopbarEntrance {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .pbfp-topbar {
     background: #FFFFFF;
     border-bottom: 1px solid #E2E8F0;
@@ -744,6 +806,7 @@ const provincialLayoutStyles = `
     top: 0;
     z-index: 90;
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+    animation: pbfpTopbarEntrance 0.45s 0.06s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .pbfp-topbar-inner {
@@ -773,6 +836,13 @@ const provincialLayoutStyles = `
     justify-content: center;
     cursor: pointer;
     font-size: 1rem;
+    transition: all 0.18s ease;
+  }
+
+  .pbfp-mobile-menu-btn:hover {
+    background: #F8FAFC;
+    color: var(--pbfp-red);
+    border-color: #CBD5E1;
   }
 
   .pbfp-topbar-title-group {
@@ -856,13 +926,14 @@ const provincialLayoutStyles = `
     cursor: pointer;
     color: #475569;
     font-size: 0.9rem;
-    transition: all 0.18s;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .pbfp-topbar-icon-btn:hover {
     background: #F8FAFC;
     color: #0F172A;
     border-color: #CBD5E1;
+    transform: translateY(-1px);
   }
 
   .pbfp-topbar-badge {
@@ -892,12 +963,13 @@ const provincialLayoutStyles = `
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
     cursor: pointer;
-    transition: all 0.18s;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .pbfp-topbar-admin-btn:hover {
     background: #F1F5F9;
     border-color: #CBD5E1;
+    transform: translateY(-1px);
   }
 
   .pbfp-topbar-admin-avatar {
@@ -920,10 +992,23 @@ const provincialLayoutStyles = `
     color: #1E293B;
   }
 
-  /* ========== CONTENT CONTAINER ========== */
+  /* ========== CONTENT CONTAINER ANIMATIONS ========== */
+  @keyframes pbfpContentEntrance {
+    0% {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .pbfp-content {
     flex: 1;
     padding: 0;
+    animation: pbfpContentEntrance 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
   }
 
   /* ========== FOOTER ========== */
@@ -960,12 +1045,41 @@ const provincialLayoutStyles = `
       width: min(84vw, 290px);
       min-width: min(84vw, 290px);
       transform: translateX(-100%);
-      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 16px 0 32px rgba(10, 14, 23, 0.45);
+      animation: none;
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 16px 0 40px rgba(10, 14, 23, 0.55);
     }
 
     .pbfp-sidebar.mobile-open {
       transform: translateX(0);
+    }
+
+    .pbfp-sidebar.mobile-open .pbfp-nav-group {
+      animation: pbfpDrawerItemFade 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .pbfp-sidebar.mobile-open .pbfp-nav-group:nth-child(1) { animation-delay: 0.04s; }
+    .pbfp-sidebar.mobile-open .pbfp-nav-group:nth-child(2) { animation-delay: 0.08s; }
+    .pbfp-sidebar.mobile-open .pbfp-nav-group:nth-child(3) { animation-delay: 0.12s; }
+    .pbfp-sidebar.mobile-open .pbfp-nav-group:nth-child(4) { animation-delay: 0.16s; }
+    .pbfp-sidebar.mobile-open .pbfp-nav-group:nth-child(5) { animation-delay: 0.20s; }
+
+    @keyframes pbfpDrawerItemFade {
+      0% {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .pbfp-sidebar-close {
+      display: flex;
+    }
+
+    .pbfp-collapse-btn {
+      display: none;
     }
 
     .pbfp-sidebar.collapsed .pbfp-brand-link {
@@ -978,13 +1092,6 @@ const provincialLayoutStyles = `
 
     .pbfp-sidebar.collapsed .pbfp-brand-row {
       justify-content: space-between;
-    }
-
-    .pbfp-sidebar.collapsed .pbfp-collapse-btn {
-      width: 28px;
-      height: 28px;
-      margin: 0;
-      font-size: 0.75rem;
     }
 
     .pbfp-sidebar.collapsed .pbfp-status-label,
@@ -1048,6 +1155,23 @@ const provincialLayoutStyles = `
       align-items: flex-start;
       gap: 0.4rem;
       padding: 0.85rem 1rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pbfp-sidebar,
+    .pbfp-sidebar-header,
+    .pbfp-nav-group,
+    .pbfp-sidebar-footer,
+    .pbfp-topbar,
+    .pbfp-main-area,
+    .pbfp-content,
+    .pbfp-backdrop,
+    .pbfp-profile-popover,
+    .pbfp-tooltip,
+    .pbfp-sidebar.mobile-open .pbfp-nav-group {
+      transition: none !important;
+      animation: none !important;
     }
   }
 `;
@@ -1198,6 +1322,15 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
 
               <button
                 type="button"
+                className="pbfp-sidebar-close"
+                aria-label="Close navigation menu"
+                onClick={closeMobileDrawer}
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+
+              <button
+                type="button"
                 className="pbfp-collapse-btn"
                 onClick={() => setIsCollapsed(!isCollapsed)}
                 title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -1205,12 +1338,6 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
               >
                 <i className={`fa-solid ${isCollapsed ? 'fa-angles-right' : 'fa-angles-left'}`} />
               </button>
-            </div>
-
-            {/* Status indicator */}
-            <div className="pbfp-status-indicator" title="Province-wide monitoring active: Antique">
-              <div className="pbfp-status-dot" />
-              <span className="pbfp-status-label">Province-wide monitoring active</span>
             </div>
           </div>
 
@@ -1397,8 +1524,8 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
             </div>
           </header>
 
-          {/* Dynamic Page Content */}
-          <main className="pbfp-content">{children}</main>
+          {/* Dynamic Page Content with entrance animation */}
+          <main key={pathname} className="pbfp-content">{children}</main>
 
           {/* Footer */}
           <footer className="pbfp-footer">

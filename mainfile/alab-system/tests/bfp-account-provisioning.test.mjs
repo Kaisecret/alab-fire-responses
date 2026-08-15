@@ -140,3 +140,38 @@ test("latest provincial UI defines its identity model and avoids synchronous tim
   assert.doesNotMatch(dashboard, /if \(!matches\)\s*\{\s*setDisplay\(/);
   assert.doesNotMatch(incidents, /if \(!matches\)\s*\{\s*setDisplay\(/);
 });
+
+test("Provincial BFP login keeps the artwork edge free of animated glow lines", () => {
+  const login = source("app/_components/provincial-bfp-login.tsx");
+
+  assert.doesNotMatch(login, /prov-emergency-glow-svg/);
+  assert.doesNotMatch(login, /prov-travelling-beam/);
+  assert.doesNotMatch(login, /prov-travelling-hotspot/);
+});
+
+test("BFP login pages use the resident-style full-screen loader instead of button spinners", () => {
+  const municipal = source("app/_components/municipal-bfp-login.tsx");
+  const provincial = source("app/_components/provincial-bfp-login.tsx");
+  const loader = source("app/_components/bfp-login-loader.tsx");
+
+  assert.match(municipal, /BfpLoginLoader theme="municipal"/);
+  assert.match(provincial, /BfpLoginLoader theme="provincial"/);
+  assert.doesNotMatch(municipal, /muni-spinner/);
+  assert.doesNotMatch(provincial, /prov-spinner/);
+  assert.match(loader, /#0B132B/);
+  assert.match(loader, /bfp-fire-loader-flame/);
+  assert.match(loader, /mask: url\("\/images\/fire%20logo\.webp"\)/);
+  assert.doesNotMatch(loader, /fa-fire-flame-simple/);
+  assert.doesNotMatch(loader, /--bfp-loader-backdrop:\s*rgba\(11,\s*19,\s*43/);
+});
+
+test("BFP login artwork uses the converted WebP assets", () => {
+  const municipal = source("app/_components/municipal-bfp-login.tsx");
+  const provincial = source("app/_components/provincial-bfp-login.tsx");
+
+  assert.match(municipal, /\/images\/formunicipallogin\.webp/);
+  assert.match(municipal, /\/images\/WHITE%20LOGO\.webp/);
+  assert.match(provincial, /\/images\/FOR%20PROVOCIAL%20SIDE\.webp/);
+  assert.match(provincial, /\/images\/WHITE%20LOGO\.webp/);
+  assert.doesNotMatch(`${municipal}\n${provincial}`, /\/images\/[^"']+\.png/);
+});

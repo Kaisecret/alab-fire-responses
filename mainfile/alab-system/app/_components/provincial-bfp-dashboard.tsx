@@ -44,105 +44,186 @@ const dashboardStyles = `
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
-  /* ========== 4 COMPACT KPI METRIC CARDS ROW ========== */
+  /* ========== 4 PASTEL KPI METRIC CARDS ROW ========== */
   .pbfp-kpi-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    gap: 0.85rem;
+    margin-bottom: 0.5rem;
   }
 
   .pbfp-kpi-box {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    position: relative;
     border-radius: 14px;
-    padding: 1.15rem 1.25rem;
+    padding: 0.85rem 0.95rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    overflow: hidden;
+    text-decoration: none;
+    animation: pbfpCardReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .pbfp-kpi-box:nth-child(1) { animation-delay: 0.05s; }
+  .pbfp-kpi-box:nth-child(2) { animation-delay: 0.1s; }
+  .pbfp-kpi-box:nth-child(3) { animation-delay: 0.15s; }
+  .pbfp-kpi-box:nth-child(4) { animation-delay: 0.2s; }
+
+  /* Distinct Pastel Gradient Themes */
+  .pbfp-kpi-box.red {
+    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
+    border: 1.5px solid #FFBEBE;
+    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
+  }
+  .pbfp-kpi-box.amber {
+    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
+    border: 1.5px solid #FFDC99;
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+  }
+  .pbfp-kpi-box.blue {
+    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
+    border: 1.5px solid #B8D3FD;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  }
+  .pbfp-kpi-box.purple {
+    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
+    border: 1.5px solid #D0BCFD;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
+  }
+
+  /* Hover Lift & Refined Shadow */
+  .pbfp-kpi-box:hover {
+    transform: translateY(-3px);
+  }
+  .pbfp-kpi-box.red:hover {
+    border-color: #FFA3A3;
+    box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2);
+  }
+  .pbfp-kpi-box.amber:hover {
+    border-color: #FFCF70;
+    box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2);
+  }
+  .pbfp-kpi-box.blue:hover {
+    border-color: #91B8FA;
+    box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2);
+  }
+  .pbfp-kpi-box.purple:hover {
+    border-color: #B79BFB;
+    box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2);
+  }
+
+  .pbfp-kpi-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
-    transition: transform 0.18s, box-shadow 0.18s;
-    animation: pbfpCardReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    justify-content: space-between;
+    gap: 0.4rem;
+    margin-bottom: 0.45rem;
   }
 
-  .pbfp-kpi-box:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-  }
-
+  /* Pure White Squircle Icon Wrapper */
   .pbfp-kpi-badge-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 10px;
+    background: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.95);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
   }
 
-  .pbfp-kpi-badge-icon.red {
-    background: #FFF1F2;
-    border: 1px solid #FFE4E6;
+  .pbfp-kpi-box:hover .pbfp-kpi-badge-icon {
+    transform: scale(1.08);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
   }
 
-  .pbfp-kpi-badge-icon.blue {
-    background: #EFF6FF;
-    border: 1px solid #DBEAFE;
-    color: #2563EB;
-  }
-
-  .pbfp-kpi-badge-icon.green {
-    background: #ECFDF5;
-    border: 1px solid #D1FAE5;
-    color: #059669;
-  }
-
-  .pbfp-kpi-badge-icon.orange {
-    background: #FFFBEB;
-    border: 1px solid #FEF3C7;
-    color: #D97706;
-  }
+  .pbfp-kpi-badge-icon.red { color: #E23632; }
+  .pbfp-kpi-badge-icon.amber { color: #D97706; }
+  .pbfp-kpi-badge-icon.blue { color: #2563EB; }
+  .pbfp-kpi-badge-icon.purple { color: #7C3AED; }
 
   .pbfp-kpi-badge-img {
-    width: 28px;
-    height: 28px;
+    width: 20px;
+    height: 20px;
     object-fit: contain;
   }
 
-  .pbfp-kpi-info {
+  /* Pure White Trend/Status Pill Badge */
+  .pbfp-kpi-trend-tag {
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 0.18rem 0.55rem;
+    border-radius: 999px;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+
+  .pbfp-kpi-trend-tag.red { color: #E23632; border: 1px solid #FFCDCD; }
+  .pbfp-kpi-trend-tag.amber { color: #D97706; border: 1px solid #FFE0A3; }
+  .pbfp-kpi-trend-tag.blue { color: #2563EB; border: 1px solid #BFD7FE; }
+  .pbfp-kpi-trend-tag.purple { color: #7C3AED; border: 1px solid #D5C4FE; }
+
+  .pbfp-kpi-body {
     display: flex;
     flex-direction: column;
-    min-width: 0;
-    flex: 1;
+    gap: 0.08rem;
   }
 
   .pbfp-kpi-label {
-    font-size: 0.72rem;
-    font-weight: 800;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 0.15rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #1E293B;
+    letter-spacing: -0.01em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .pbfp-kpi-number {
-    font-size: 1.65rem;
+    font-size: 1.6rem;
     font-weight: 800;
     color: #0F172A;
-    line-height: 1.1;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
   }
 
-  .pbfp-kpi-subtext {
-    font-size: 0.76rem;
-    color: #64748B;
+  .pbfp-kpi-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.55rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.7rem;
     font-weight: 600;
-    margin-top: 0.15rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  }
+
+  .pbfp-kpi-box.red .pbfp-kpi-footer { color: #DC2626; border-top-color: #FED7D7; }
+  .pbfp-kpi-box.amber .pbfp-kpi-footer { color: #D97706; border-top-color: #FEEBC8; }
+  .pbfp-kpi-box.blue .pbfp-kpi-footer { color: #2563EB; border-top-color: #DCE7FC; }
+  .pbfp-kpi-box.purple .pbfp-kpi-footer { color: #7C3AED; border-top-color: #E9D8FD; }
+
+  .pbfp-kpi-footer-subtext {
+    font-weight: 600;
+    opacity: 0.9;
+  }
+
+  .pbfp-kpi-footer i {
+    font-size: 0.72rem;
+    transition: transform 0.2s ease;
+  }
+
+  .pbfp-kpi-box:hover .pbfp-kpi-footer i {
+    transform: translateX(3px);
   }
 
   /* ========== TWO COLUMN SECTION ========== */
@@ -633,59 +714,91 @@ export function ProvincialBfpDashboard() {
     <>
       <style>{dashboardStyles}</style>
       <div className="pbfp-dash-clean">
-        {/* ===== 4 COMPACT KPI METRIC CARDS ROW ===== */}
+        {/* ===== 4 PASTEL STAT CARDS ROW ===== */}
         <section className="pbfp-kpi-row" aria-label="Provincial KPI Metrics">
           {/* Card 1: Active Incidents */}
-          <div className="pbfp-kpi-box">
-            <div className="pbfp-kpi-badge-icon red">
-              <img
-                src="/images/fire logo.webp"
-                alt="Fire Icon"
-                className="pbfp-kpi-badge-img"
-              />
+          <Link href="/provincial-bfp/incidents" className="pbfp-kpi-box red">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon red">
+                <img
+                  src="/images/fire logo.webp"
+                  alt="Fire Icon"
+                  className="pbfp-kpi-badge-img"
+                />
+              </div>
+              <span className="pbfp-kpi-trend-tag red">
+                <i className="fa-solid fa-triangle-exclamation" /> Priority
+              </span>
             </div>
-            <div className="pbfp-kpi-info">
+            <div className="pbfp-kpi-body">
               <span className="pbfp-kpi-label">Active Province Incidents</span>
               <span className="pbfp-kpi-number"><FastNumber value={3} /></span>
-              <span className="pbfp-kpi-subtext">in progress</span>
             </div>
-          </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Live Operations</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </Link>
 
           {/* Card 2: Municipal Stations Online */}
-          <div className="pbfp-kpi-box">
-            <div className="pbfp-kpi-badge-icon blue">
-              <i className="fa-solid fa-building" />
+          <Link href="/provincial-bfp/municipal-status" className="pbfp-kpi-box amber">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon amber">
+                <i className="fa-solid fa-building" />
+              </div>
+              <span className="pbfp-kpi-trend-tag amber">
+                <i className="fa-solid fa-circle-check" /> 100% Online
+              </span>
             </div>
-            <div className="pbfp-kpi-info">
+            <div className="pbfp-kpi-body">
               <span className="pbfp-kpi-label">Municipal Stations Online</span>
               <span className="pbfp-kpi-number"><FastNumber value="18 / 18" /></span>
-              <span className="pbfp-kpi-subtext">connected</span>
             </div>
-          </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">All Stations Connected</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </Link>
 
           {/* Card 3: Total Fire Trucks */}
-          <div className="pbfp-kpi-box">
-            <div className="pbfp-kpi-badge-icon green">
-              <i className="fa-solid fa-truck" />
+          <Link href="/provincial-bfp/firetrucks-stations" className="pbfp-kpi-box blue">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon blue">
+                <i className="fa-solid fa-truck" />
+              </div>
+              <span className="pbfp-kpi-trend-tag blue">
+                <i className="fa-solid fa-shield-halved" /> Fleet Ready
+              </span>
             </div>
-            <div className="pbfp-kpi-info">
+            <div className="pbfp-kpi-body">
               <span className="pbfp-kpi-label">Total Fire Trucks</span>
               <span className="pbfp-kpi-number"><FastNumber value={42} /></span>
-              <span className="pbfp-kpi-subtext">fleet total</span>
             </div>
-          </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Fleet Assets Total</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </Link>
 
           {/* Card 4: Assistance Requests */}
-          <div className="pbfp-kpi-box">
-            <div className="pbfp-kpi-badge-icon orange">
-              <i className="fa-solid fa-handshake" />
+          <Link href="/provincial-bfp/assistance-requests" className="pbfp-kpi-box purple">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon purple">
+                <i className="fa-solid fa-handshake" />
+              </div>
+              <span className="pbfp-kpi-trend-tag purple">
+                <i className="fa-solid fa-tower-broadcast" /> Mutual Aid
+              </span>
             </div>
-            <div className="pbfp-kpi-info">
+            <div className="pbfp-kpi-body">
               <span className="pbfp-kpi-label">Assistance Requests</span>
               <span className="pbfp-kpi-number"><FastNumber value={1} /></span>
-              <span className="pbfp-kpi-subtext">active coordination</span>
             </div>
-          </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Inter-Station Link</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </Link>
         </section>
 
         {/* ===== TWO-COLUMN MAIN SECTION ===== */}

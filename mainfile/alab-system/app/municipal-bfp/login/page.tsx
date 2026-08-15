@@ -1,5 +1,5 @@
-import { BfpLogin } from "../../_components/bfp-login";
+import { MunicipalBfpLogin } from "../../_components/municipal-bfp-login";
 
 export default function MunicipalBfpLoginPage() {
-  return <BfpLogin portal="MUNICIPAL" />;
+  return <MunicipalBfpLogin />;
 }

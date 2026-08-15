@@ -76,11 +76,8 @@ const dashboardStyles = `
 
   .mbfp-stat-card {
     position: relative;
-    background: #FFFFFF;
     border-radius: 14px;
-    padding: 1.15rem 1rem 1rem;
-    border: 1px solid #E2E8F0;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.02);
+    padding: 0.85rem 0.95rem 0.75rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -97,89 +94,123 @@ const dashboardStyles = `
   .mbfp-stat-card:nth-child(4) { animation-delay: 0.2s; }
   .mbfp-stat-card:nth-child(5) { animation-delay: 0.25s; }
 
-  .mbfp-stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    opacity: 0.9;
+  /* Distinct Pastel Gradient Themes from Reference */
+  .mbfp-stat-card.red {
+    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
+    border: 1.5px solid #FFBEBE;
+    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
+  }
+  .mbfp-stat-card.amber {
+    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
+    border: 1.5px solid #FFDC99;
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+  }
+  .mbfp-stat-card.blue {
+    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
+    border: 1.5px solid #B8D3FD;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  }
+  .mbfp-stat-card.emerald {
+    background: linear-gradient(145deg, #E3F8ED 0%, #CEF2DE 100%);
+    border: 1.5px solid #B0E9C6;
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.06);
+  }
+  .mbfp-stat-card.purple {
+    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
+    border: 1.5px solid #D0BCFD;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
   }
 
-  .mbfp-stat-card.red::before { background: linear-gradient(90deg, #E23632, #FF6B6B); }
-  .mbfp-stat-card.amber::before { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
-  .mbfp-stat-card.blue::before { background: linear-gradient(90deg, #2563EB, #60A5FA); }
-  .mbfp-stat-card.emerald::before { background: linear-gradient(90deg, #10B981, #34D399); }
-  .mbfp-stat-card.purple::before { background: linear-gradient(90deg, #8B5CF6, #A78BFA); }
-
+  /* Hover Lift & Refined Shadow */
   .mbfp-stat-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.04);
   }
 
-  .mbfp-stat-card.red:hover { border-color: #FECDD3; box-shadow: 0 12px 28px -6px rgba(226, 54, 50, 0.16); }
-  .mbfp-stat-card.amber:hover { border-color: #FDE68A; box-shadow: 0 12px 28px -6px rgba(245, 158, 11, 0.16); }
-  .mbfp-stat-card.blue:hover { border-color: #BFDBFE; box-shadow: 0 12px 28px -6px rgba(37, 99, 235, 0.16); }
-  .mbfp-stat-card.emerald:hover { border-color: #A7F3D0; box-shadow: 0 12px 28px -6px rgba(16, 185, 129, 0.16); }
-  .mbfp-stat-card.purple:hover { border-color: #DDD6FE; box-shadow: 0 12px 28px -6px rgba(139, 92, 246, 0.16); }
+  .mbfp-stat-card.red:hover {
+    border-color: #FFA3A3;
+    box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2);
+  }
+  .mbfp-stat-card.amber:hover {
+    border-color: #FFCF70;
+    box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2);
+  }
+  .mbfp-stat-card.blue:hover {
+    border-color: #91B8FA;
+    box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2);
+  }
+  .mbfp-stat-card.emerald:hover {
+    border-color: #83DF9F;
+    box-shadow: 0 10px 22px -4px rgba(5, 150, 105, 0.2);
+  }
+  .mbfp-stat-card.purple:hover {
+    border-color: #B79BFB;
+    box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2);
+  }
 
   .mbfp-stat-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    gap: 0.4rem;
+    margin-bottom: 0.45rem;
   }
 
+  /* Pure White Squircle Icon Wrapper */
   .mbfp-stat-icon {
-    width: 2.85rem;
-    height: 2.85rem;
-    border-radius: 12px;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 10px;
+    background: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.95);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     flex-shrink: 0;
-    transition: transform 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
   }
 
   .mbfp-stat-card:hover .mbfp-stat-icon {
-    transform: scale(1.08) rotate(-3deg);
+    transform: scale(1.08);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
   }
 
-  .mbfp-stat-icon.red { background: linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%); color: #E23632; border: 1px solid #FECDD3; }
-  .mbfp-stat-icon.amber { background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); color: #D97706; box-shadow: none; border: 1px solid #FDE68A; }
-  .mbfp-stat-icon.blue { background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); color: #2563EB; border: 1px solid #BFDBFE; }
-  .mbfp-stat-icon.emerald { background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); color: #059669; border: 1px solid #A7F3D0; }
-  .mbfp-stat-icon.purple { background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); color: #7C3AED; border: 1px solid #DDD6FE; }
+  .mbfp-stat-icon.red { color: #E23632; }
+  .mbfp-stat-icon.amber { color: #D97706; }
+  .mbfp-stat-icon.blue { color: #2563EB; }
+  .mbfp-stat-icon.emerald { color: #059669; }
+  .mbfp-stat-icon.purple { color: #7C3AED; }
 
+  /* Pure White Trend/Status Pill Badge */
   .mbfp-stat-trend-tag {
-    font-size: 0.64rem;
+    font-size: 0.62rem;
     font-weight: 700;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
+    padding: 0.18rem 0.55rem;
+    border-radius: 999px;
+    background: #FFFFFF;
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.3rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   }
 
-  .mbfp-stat-trend-tag.red { background: #FFF1F2; color: #E23632; }
-  .mbfp-stat-trend-tag.amber { background: #FFFBEB; color: #D97706; }
-  .mbfp-stat-trend-tag.blue { background: #EFF6FF; color: #2563EB; }
-  .mbfp-stat-trend-tag.emerald { background: #ECFDF5; color: #059669; }
-  .mbfp-stat-trend-tag.purple { background: #F5F3FF; color: #7C3AED; }
+  .mbfp-stat-trend-tag.red { color: #E23632; border: 1px solid #FFCDCD; }
+  .mbfp-stat-trend-tag.amber { color: #D97706; border: 1px solid #FFE0A3; }
+  .mbfp-stat-trend-tag.blue { color: #2563EB; border: 1px solid #BFD7FE; }
+  .mbfp-stat-trend-tag.emerald { color: #059669; border: 1px solid #B4E8C5; }
+  .mbfp-stat-trend-tag.purple { color: #7C3AED; border: 1px solid #D5C4FE; }
 
   .mbfp-stat-body {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.08rem;
   }
 
   .mbfp-stat-label {
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     font-weight: 700;
-    color: #64748B;
+    color: #1E293B;
     letter-spacing: -0.01em;
     white-space: nowrap;
     overflow: hidden;
@@ -187,35 +218,41 @@ const dashboardStyles = `
   }
 
   .mbfp-stat-value {
-    font-size: 1.85rem;
-    font-weight: 880;
+    font-size: 1.6rem;
+    font-weight: 850;
     color: #0F172A;
-    line-height: 1.15;
+    line-height: 1.05;
     letter-spacing: -0.03em;
     font-feature-settings: 'tnum';
+    margin-top: 0.05rem;
   }
 
   .mbfp-stat-foot {
-    margin-top: 0.6rem;
-    padding-top: 0.55rem;
-    border-top: 1px solid #F1F5F9;
+    margin-top: 0.55rem;
+    padding-top: 0.45rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     font-weight: 600;
-    color: #94A3B8;
+    color: #334155;
   }
 
+  .mbfp-stat-card.red .mbfp-stat-foot { border-top: 1px solid rgba(226, 54, 50, 0.18); }
+  .mbfp-stat-card.amber .mbfp-stat-foot { border-top: 1px solid rgba(217, 119, 6, 0.18); }
+  .mbfp-stat-card.blue .mbfp-stat-foot { border-top: 1px solid rgba(37, 99, 235, 0.18); }
+  .mbfp-stat-card.emerald .mbfp-stat-foot { border-top: 1px solid rgba(5, 150, 105, 0.18); }
+  .mbfp-stat-card.purple .mbfp-stat-foot { border-top: 1px solid rgba(124, 58, 237, 0.18); }
+
   .mbfp-stat-link-arrow {
-    font-size: 0.72rem;
-    color: #64748B;
+    font-size: 0.76rem;
+    color: #334155;
     transition: transform 0.2s ease, color 0.2s ease;
   }
 
   .mbfp-stat-card:hover .mbfp-stat-link-arrow {
-    transform: translateX(3px);
-    color: #E23632;
+    transform: translateX(4px);
+    color: #0F172A;
   }
 
   /* ========== TWO COLUMN GRID ========== */

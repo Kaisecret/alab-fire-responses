@@ -71,12 +71,23 @@ const layoutStyles = `
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* ========== IMPECCABLE REDESIGNED SIDEBAR ========== */
+  /* ========== DEEP DARK CRIMSON COMMAND SIDEBAR ========== */
+  @keyframes mbfpSidebarSlideIn {
+    0% {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
   .mbfp-sidebar {
     width: 260px;
     min-width: 260px;
-    background: #FFFFFF;
-    border-right: 1px solid #E2E8F0;
+    background: #940D07;
+    border-right: 1px solid rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -85,8 +96,9 @@ const layoutStyles = `
     bottom: 0;
     z-index: 100;
     transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 2px 0 16px rgba(15, 23, 42, 0.04);
+    box-shadow: 4px 0 28px rgba(0, 0, 0, 0.45);
     overflow: hidden;
+    animation: mbfpSidebarSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .mbfp-sidebar.collapsed {
@@ -94,32 +106,32 @@ const layoutStyles = `
     min-width: 78px;
   }
 
-  /* Top accent indicator */
-  .mbfp-sidebar::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3.5px;
-    background: linear-gradient(90deg, #E23632 0%, #FF6B6B 100%);
-    z-index: 10;
+  /* Sidebar Header Brand */
+  @keyframes mbfpSidebarHeaderIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
-  /* Sidebar Header Brand */
   .mbfp-sidebar-header {
-    padding: 0.85rem 1rem;
-    border-bottom: 1px solid #F1F5F9;
+    padding: 1.15rem 1rem 1.05rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
     justify-content: space-between;
     position: relative;
-    min-height: 72px;
+    min-height: 70px;
     box-sizing: border-box;
+    animation: mbfpSidebarHeaderIn 0.45s 0.08s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .mbfp-sidebar.collapsed .mbfp-sidebar-header {
-    padding: 0.85rem 0.5rem;
+    padding: 0.95rem 0.5rem;
     justify-content: center;
   }
 
@@ -128,50 +140,80 @@ const layoutStyles = `
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    gap: 0.65rem;
+    gap: 0.6rem;
   }
 
   .mbfp-sidebar.collapsed .mbfp-brand-row {
     justify-content: center;
+    width: 100%;
   }
 
   .mbfp-brand-link {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    gap: 0.65rem;
     text-decoration: none;
     touch-action: manipulation;
     cursor: pointer;
     flex: 1;
     min-width: 0;
+    overflow: hidden;
   }
 
   .mbfp-sidebar.collapsed .mbfp-brand-link {
     display: none;
   }
 
-  .mbfp-brand-logo-img {
-    height: 52px;
-    width: auto;
-    max-width: 175px;
-    object-fit: contain;
-    display: block;
-    filter: drop-shadow(0 2px 8px rgba(226, 54, 50, 0.14));
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), filter 0.25s ease;
+  .mbfp-brand-logo-wrap {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #0f1420;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
   }
 
-  .mbfp-brand-link:hover .mbfp-brand-logo-img {
-    transform: scale(1.04);
-    filter: drop-shadow(0 4px 14px rgba(226, 54, 50, 0.25));
+  .mbfp-brand-logo-img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    display: block;
+  }
+
+  .mbfp-brand-tint-img {
+    height: 44px;
+    max-width: 160px;
+    width: auto;
+    object-fit: contain;
+    margin: 0 auto;
+    display: block;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), filter 0.22s ease;
+  }
+
+  .mbfp-brand-link:hover .mbfp-brand-logo-wrap {
+    transform: scale(1.05);
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.5);
+  }
+
+  .mbfp-brand-link:hover .mbfp-brand-tint-img {
+    transform: scale(1.03);
+    filter: drop-shadow(0 4px 12px rgba(255, 255, 255, 0.3));
   }
 
   .mbfp-collapse-btn {
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    color: #64748B;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -183,9 +225,9 @@ const layoutStyles = `
   }
 
   .mbfp-collapse-btn:hover {
-    background: #FFF1F2;
-    color: #E23632;
-    border-color: #FECDD3;
+    background: rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #FFFFFF;
     transform: scale(1.06);
   }
 
@@ -194,9 +236,9 @@ const layoutStyles = `
     height: 38px;
     font-size: 0.85rem;
     border-radius: 10px;
-    background: #FFF1F2;
-    border-color: #FFE4E6;
-    color: #E23632;
+    background: rgba(0, 0, 0, 0.25);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #FFFFFF;
   }
 
   .mbfp-sidebar-close {
@@ -204,9 +246,9 @@ const layoutStyles = `
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    color: #64748B;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
     align-items: center;
     justify-content: center;
     cursor: pointer;
@@ -216,13 +258,10 @@ const layoutStyles = `
   }
 
   .mbfp-sidebar-close:hover {
-    background: #FFF1F2;
-    color: #E23632;
-    border-color: #FECDD3;
+    background: rgba(0, 0, 0, 0.35);
+    color: #FFFFFF;
+    border-color: rgba(255, 255, 255, 0.4);
   }
-
-  /* Live Station Status Pill */
-
 
   /* Navigation Body */
   .mbfp-sidebar-nav {
@@ -239,20 +278,36 @@ const layoutStyles = `
     width: 4px;
   }
   .mbfp-sidebar-nav::-webkit-scrollbar-thumb {
-    background: #E2E8F0;
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 4px;
   }
 
   .mbfp-nav-group {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.25rem;
   }
+
+  @keyframes mbfpNavItemEntrance {
+    0% {
+      opacity: 0;
+      transform: translateX(-18px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .mbfp-nav-group:nth-child(1) { animation: mbfpNavItemEntrance 0.42s 0.10s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .mbfp-nav-group:nth-child(2) { animation: mbfpNavItemEntrance 0.42s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .mbfp-nav-group:nth-child(3) { animation: mbfpNavItemEntrance 0.42s 0.20s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .mbfp-nav-group:nth-child(4) { animation: mbfpNavItemEntrance 0.42s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
   .mbfp-nav-group-title {
     font-size: 0.65rem;
     font-weight: 800;
-    color: #94A3B8;
+    color: rgba(255, 255, 255, 0.7);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     padding: 0 1.25rem 0.35rem;
@@ -270,16 +325,16 @@ const layoutStyles = `
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    height: 42px;
+    height: 44px;
     margin: 0.1rem 0.75rem;
     padding: 0 0.85rem;
-    border-radius: 10px;
+    border-radius: 12px;
     text-decoration: none;
-    color: #475569;
+    color: #FFFFFF;
     font-size: 0.85rem;
     font-weight: 600;
     position: relative;
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -294,9 +349,9 @@ const layoutStyles = `
   }
 
   .mbfp-nav-link:hover {
-    background: #F8FAFC;
-    color: #0F172A;
-    transform: translateX(2px);
+    background: rgba(0, 0, 0, 0.18);
+    color: #FFFFFF;
+    transform: translateX(3px);
   }
 
   .mbfp-sidebar.collapsed .mbfp-nav-link:hover {
@@ -305,52 +360,41 @@ const layoutStyles = `
 
   .mbfp-nav-link:hover .mbfp-nav-icon,
   .mbfp-nav-link:hover .mbfp-custom-dash-icon {
-    color: #0F172A;
+    color: #FFFFFF;
+    opacity: 1;
   }
 
   /* Active Pill State */
   .mbfp-nav-link.active {
-    background: #FFF1F2;
-    color: #E23632;
+    background: rgba(0, 0, 0, 0.22);
+    color: #FFFFFF;
     font-weight: 700;
-    box-shadow: 0 2px 8px rgba(226, 54, 50, 0.08);
-  }
-
-  .mbfp-nav-link.active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 6px;
-    bottom: 6px;
-    width: 3.5px;
-    border-radius: 0 4px 4px 0;
-    background: #E23632;
-  }
-
-  .mbfp-sidebar.collapsed .mbfp-nav-link.active::before {
-    left: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
   }
 
   .mbfp-nav-icon {
     width: 1.25rem;
     text-align: center;
     font-size: 0.95rem;
-    color: #64748B;
-    transition: color 0.15s, transform 0.15s;
+    color: #FFFFFF;
+    opacity: 0.92;
+    transition: color 0.15s, transform 0.15s, opacity 0.15s;
     flex-shrink: 0;
   }
 
   .mbfp-custom-dash-icon {
     width: 1.15rem;
     height: 1.15rem;
-    color: #64748B;
-    transition: color 0.15s, transform 0.15s;
+    color: #FFFFFF;
+    opacity: 0.92;
+    transition: color 0.15s, transform 0.15s, opacity 0.15s;
     flex-shrink: 0;
   }
 
   .mbfp-nav-link.active .mbfp-nav-icon,
   .mbfp-nav-link.active .mbfp-custom-dash-icon {
-    color: #E23632;
+    color: #FFFFFF;
+    opacity: 1;
     transform: scale(1.08);
   }
 
@@ -370,8 +414,8 @@ const layoutStyles = `
     color: #FFFFFF;
     font-size: 0.65rem;
     font-weight: 800;
-    min-width: 1.2rem;
-    height: 1.2rem;
+    min-width: 1.25rem;
+    height: 1.25rem;
     padding: 0 0.35rem;
     border-radius: 999px;
     display: flex;
@@ -379,16 +423,17 @@ const layoutStyles = `
     justify-content: center;
     line-height: 1;
     margin-left: auto;
+    border: 1px solid rgba(255, 255, 255, 0.35);
   }
 
   .mbfp-nav-badge.red {
-    background: #E23632;
-    box-shadow: 0 2px 6px rgba(226, 54, 50, 0.35);
+    background: #E52E2A;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   }
 
   .mbfp-nav-badge.amber {
     background: #D97706;
-    box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   }
 
   .mbfp-sidebar.collapsed .mbfp-nav-badge {
@@ -405,19 +450,20 @@ const layoutStyles = `
   .mbfp-tooltip {
     position: absolute;
     left: calc(100% + 12px);
-    background: #0F172A;
+    background: #140201;
+    border: 1px solid rgba(255, 255, 255, 0.15);
     color: #FFFFFF;
     padding: 0.45rem 0.75rem;
     border-radius: 8px;
     font-size: 0.78rem;
     font-weight: 700;
     white-space: nowrap;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: translateX(-6px);
-    transition: opacity 0.15s, transform 0.15s;
+    transform: translateX(-8px);
+    transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 1000;
   }
 
@@ -428,11 +474,23 @@ const layoutStyles = `
   }
 
   /* Sidebar Bottom Officer Profile */
+  @keyframes mbfpFooterEntrance {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .mbfp-sidebar-footer {
     padding: 0.85rem 0.75rem;
-    border-top: 1px solid #F1F5F9;
-    background: #FFFFFF;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
     position: relative;
+    animation: mbfpFooterEntrance 0.45s 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .mbfp-profile-card {
@@ -440,12 +498,12 @@ const layoutStyles = `
     align-items: center;
     gap: 0.65rem;
     padding: 0.55rem 0.65rem;
-    border-radius: 10px;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     cursor: pointer;
     touch-action: manipulation;
-    transition: all 0.18s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .mbfp-sidebar.collapsed .mbfp-profile-card {
@@ -454,23 +512,24 @@ const layoutStyles = `
   }
 
   .mbfp-profile-card:hover {
-    background: #FFF1F2;
-    border-color: #FECDD3;
+    background: rgba(0, 0, 0, 0.38);
+    border-color: rgba(255, 255, 255, 0.32);
+    transform: translateY(-1px);
   }
 
   .mbfp-profile-avatar {
     width: 36px;
     height: 36px;
-    border-radius: 9px;
-    background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-    border: 1.5px solid #E23632;
+    border-radius: 10px;
+    background: #B91C1C;
+    border: 1.5px solid rgba(255, 255, 255, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #FFFFFF;
     font-size: 0.95rem;
     flex-shrink: 0;
-    box-shadow: 0 2px 6px rgba(226, 54, 50, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   .mbfp-profile-info {
@@ -487,7 +546,7 @@ const layoutStyles = `
   .mbfp-profile-name {
     font-size: 0.82rem;
     font-weight: 800;
-    color: #0F172A;
+    color: #FFFFFF;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -496,7 +555,7 @@ const layoutStyles = `
 
   .mbfp-profile-role {
     font-size: 0.68rem;
-    color: #64748B;
+    color: rgba(255, 255, 255, 0.78);
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
@@ -507,9 +566,13 @@ const layoutStyles = `
   }
 
   .mbfp-profile-chevron {
-    color: #94A3B8;
+    color: #FFFFFF;
     font-size: 0.72rem;
-    transition: transform 0.2s;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mbfp-profile-chevron.rotate-180 {
+    transform: rotate(180deg);
   }
 
   .mbfp-sidebar.collapsed .mbfp-profile-chevron {
@@ -517,20 +580,26 @@ const layoutStyles = `
   }
 
   /* Profile Dropdown Menu */
+  @keyframes mbfpPopIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
   .mbfp-profile-popover {
     position: absolute;
     bottom: calc(100% + 8px);
     left: 10px;
     right: 10px;
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: #1F0705;
+    border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 12px;
-    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
     padding: 0.45rem;
     display: flex;
     flex-direction: column;
     gap: 2px;
     z-index: 200;
+    animation: mbfpPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .mbfp-sidebar.collapsed .mbfp-profile-popover {
@@ -546,7 +615,7 @@ const layoutStyles = `
     gap: 0.65rem;
     padding: 0.55rem 0.75rem;
     border-radius: 8px;
-    color: #334155;
+    color: #F1F5F9;
     font-size: 0.8rem;
     font-weight: 600;
     text-decoration: none;
@@ -560,33 +629,33 @@ const layoutStyles = `
   }
 
   .mbfp-popover-item:hover {
-    background: #F1F5F9;
-    color: #0F172A;
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
   }
 
   .mbfp-popover-item i {
     width: 1.1rem;
     text-align: center;
-    color: #64748B;
+    color: rgba(255, 255, 255, 0.8);
   }
 
   .mbfp-popover-divider {
     height: 1px;
-    background: #F1F5F9;
+    background: rgba(255, 255, 255, 0.12);
     margin: 0.3rem 0;
   }
 
   .mbfp-popover-logout {
-    color: #E23632;
+    color: #FFA39E;
   }
 
   .mbfp-popover-logout i {
-    color: #E23632;
+    color: #FFA39E;
   }
 
   .mbfp-popover-logout:hover {
-    background: #FFF1F2;
-    color: #E23632;
+    background: rgba(226, 54, 50, 0.28);
+    color: #FFFFFF;
   }
 
   /* ========== MAIN AREA ========== */
@@ -609,6 +678,17 @@ const layoutStyles = `
   }
 
   /* ========== TOP HEADER ========== */
+  @keyframes mbfpTopbarEntrance {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .mbfp-header {
     background: #FFFFFF;
     border-bottom: 1px solid #E2E8F0;
@@ -616,6 +696,7 @@ const layoutStyles = `
     top: 0;
     z-index: 90;
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+    animation: mbfpTopbarEntrance 0.45s 0.06s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .mbfp-header-inner {
@@ -645,6 +726,13 @@ const layoutStyles = `
     justify-content: center;
     cursor: pointer;
     font-size: 0.95rem;
+    transition: all 0.18s ease;
+  }
+
+  .mbfp-mobile-menu-toggle:hover {
+    background: #F8FAFC;
+    color: #E23632;
+    border-color: #CBD5E1;
   }
 
   .mbfp-header-titles {
@@ -699,13 +787,14 @@ const layoutStyles = `
     cursor: pointer;
     color: #475569;
     font-size: 0.9rem;
-    transition: all 0.18s;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .mbfp-header-icon-btn:hover {
     background: #F8FAFC;
     color: #0F172A;
     border-color: #CBD5E1;
+    transform: translateY(-1px);
   }
 
   .mbfp-header-notif-badge {
@@ -726,9 +815,22 @@ const layoutStyles = `
     line-height: 1;
   }
 
-  /* Content */
+  /* Content Entrance Animations */
+  @keyframes mbfpContentEntrance {
+    0% {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .mbfp-content {
     flex: 1;
+    animation: mbfpContentEntrance 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
   }
 
   /* Footer */
@@ -758,12 +860,40 @@ const layoutStyles = `
       width: min(84vw, 280px);
       min-width: min(84vw, 280px);
       transform: translateX(-100%);
-      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 16px 0 32px rgba(15, 23, 42, 0.2);
+      animation: none;
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 16px 0 40px rgba(10, 14, 23, 0.55);
     }
 
     .mbfp-sidebar.mobile-open {
       transform: translateX(0);
+    }
+
+    .mbfp-sidebar.mobile-open .mbfp-nav-group {
+      animation: mbfpDrawerItemFade 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .mbfp-sidebar.mobile-open .mbfp-nav-group:nth-child(1) { animation-delay: 0.04s; }
+    .mbfp-sidebar.mobile-open .mbfp-nav-group:nth-child(2) { animation-delay: 0.08s; }
+    .mbfp-sidebar.mobile-open .mbfp-nav-group:nth-child(3) { animation-delay: 0.12s; }
+    .mbfp-sidebar.mobile-open .mbfp-nav-group:nth-child(4) { animation-delay: 0.16s; }
+
+    @keyframes mbfpDrawerItemFade {
+      0% {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .mbfp-sidebar-close {
+      display: flex;
+    }
+
+    .mbfp-collapse-btn {
+      display: none;
     }
 
     .mbfp-sidebar.collapsed .mbfp-brand-link {
@@ -799,8 +929,8 @@ const layoutStyles = `
       display: block;
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.5);
-      backdrop-filter: blur(3px);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
       z-index: 95;
       opacity: 0;
       visibility: hidden;
@@ -813,6 +943,23 @@ const layoutStyles = `
       opacity: 1;
       visibility: visible;
       pointer-events: auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mbfp-sidebar,
+    .mbfp-sidebar-header,
+    .mbfp-nav-group,
+    .mbfp-sidebar-footer,
+    .mbfp-header,
+    .mbfp-main-area,
+    .mbfp-content,
+    .mbfp-sidebar-backdrop,
+    .mbfp-profile-popover,
+    .mbfp-tooltip,
+    .mbfp-sidebar.mobile-open .mbfp-nav-group {
+      transition: none !important;
+      animation: none !important;
     }
   }
 `;
@@ -894,7 +1041,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
       <style>{layoutStyles}</style>
 
       <div className="mbfp-layout">
-        {/* ===== IMPECCABLE REDESIGNED SIDEBAR ===== */}
+        {/* ===== RED VIBRANT COMMAND SIDEBAR ===== */}
         <aside
           id="mbfp-sidebar"
           className={`mbfp-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileNavOpen ? 'mobile-open' : ''}`}
@@ -904,10 +1051,17 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
           <div className="mbfp-sidebar-header">
             <div className="mbfp-brand-row">
               <Link href="/municipal-bfp" prefetch={true} className="mbfp-brand-link" onClick={closeMobileNav}>
+                <div className="mbfp-brand-logo-wrap">
+                  <img
+                    src="/images/FAVICON.webp"
+                    alt="ALAB Logo"
+                    className="mbfp-brand-logo-img"
+                  />
+                </div>
                 <img
-                  src="/images/Logo.webp"
-                  alt="ALAB Logo"
-                  className="mbfp-brand-logo-img"
+                  src="/images/logo white tint.webp"
+                  alt="ALAB BFP Command Center"
+                  className="mbfp-brand-tint-img"
                 />
               </Link>
 
@@ -1091,8 +1245,8 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
             </div>
           </header>
 
-          {/* Content */}
-          <main className="mbfp-content">{children}</main>
+          {/* Content with route entrance animation */}
+          <main key={pathname} className="mbfp-content">{children}</main>
 
           {/* Footer */}
           <footer className="mbfp-footer">
