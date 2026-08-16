@@ -160,6 +160,8 @@ export const reportFireStyles = `
   .btn-primary { display: inline-flex; min-height: 3.4rem; align-items: center; justify-content: center; gap: .65rem; border: 0; border-radius: .85rem; color: #fff; background: linear-gradient(135deg, #EF2A1E, var(--report-red-deep)); box-shadow: 0 .8rem 1.6rem rgba(219, 27, 13, .25); font-size: .9rem; font-weight: 900; letter-spacing: .01em; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
   .btn-primary svg { width: 1.25rem; height: 1.25rem; }
   .btn-primary:hover { filter: saturate(1.1); transform: translateY(-2px); box-shadow: 0 1rem 2rem rgba(219, 27, 13, .30); }
+  .btn-primary:disabled { cursor: wait; opacity: .7; transform: none; box-shadow: none; }
+  .report-submit-error { margin: .85rem 0 0; padding: .8rem .9rem; border: 1px solid #FFD2CD; border-radius: .8rem; color: var(--report-red-deep); background: #FFF6F5; font-size: .8rem; font-weight: 750; line-height: 1.45; }
 
   @keyframes report-rise { from { opacity: 0; transform: translateY(.85rem); } to { opacity: 1; transform: translateY(0); } }
   @keyframes photo-dialog-in { from { opacity: 0; transform: translateY(1rem) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
@@ -249,11 +251,11 @@ export const reportFireMarkup = `
       <section class="step-section">
         <div class="step-title"><span class="step-number">3</span> WHAT IS BURNING?</div>
         <div class="type-grid" role="list" aria-label="Fire type">
-          <button type="button" class="type-btn selected" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>House/Building</button>
-          <button type="button" class="type-btn" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8M8 20v-5M16 20v-6M4 20v-3M20 20v-4"/></svg>Grass Fire</button>
-          <button type="button" class="type-btn" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 14 15 14 18 22 6 22 9 14 5 14 12 2"/></svg>Forest Fire</button>
-          <button type="button" class="type-btn" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H9.3a2 2 0 0 0-1.6.8L5 11l-5.16.86a1 1 0 0 0-.84.99V16h3m10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0m-10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0"/></svg>Vehicle Fire</button>
-          <button type="button" class="type-btn" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>Other</button>
+          <button type="button" class="type-btn selected" data-fire-type="HOUSE_BUILDING" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>House/Building</button>
+          <button type="button" class="type-btn" data-fire-type="GRASS" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8M8 20v-5M16 20v-6M4 20v-3M20 20v-4"/></svg>Grass Fire</button>
+          <button type="button" class="type-btn" data-fire-type="FOREST" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 14 15 14 18 22 6 22 9 14 5 14 12 2"/></svg>Forest Fire</button>
+          <button type="button" class="type-btn" data-fire-type="VEHICLE" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H9.3a2 2 0 0 0-1.6.8L5 11l-5.16.86a1 1 0 0 0-.84.99V16h3m10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0m-10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0"/></svg>Vehicle Fire</button>
+          <button type="button" class="type-btn" data-fire-type="OTHER" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>Other</button>
         </div>
       </section>
 
@@ -261,7 +263,8 @@ export const reportFireMarkup = `
         <div class="photo-field"><span class="field-label"><span class="step-number">4</span>ADD FIRE PHOTO <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">Take a photo only when it is safe to do so.</span><button type="button" class="photo-upload" data-photo-open data-photo-state="empty"><span class="photo-upload-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Take a photo</strong><span>Your camera opens in a secure popup</span></span><span class="photo-upload-summary"><img data-photo-summary-preview alt="Selected fire photo" /><span><strong>Photo ready</strong><span>Tap to retake it</span></span></span></button><input class="photo-input" id="fire-photo" data-photo-input type="file" accept="image/jpeg,image/png" capture="environment" /></div>
       </section>
 
-      <footer class="form-footer"><button type="button" class="btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>SEND FIRE ALERT</button><button type="button" class="btn-cancel">Cancel</button></footer>
+      <p class="report-submit-error" data-report-submit-error role="alert" hidden></p>
+      <footer class="form-footer"><button type="button" class="btn-primary" data-report-submit><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>SEND FIRE ALERT</button><button type="button" class="btn-cancel" data-report-cancel>Cancel</button></footer>
     </main>
     <div class="photo-dialog" data-photo-dialog data-photo-ready="false" role="dialog" aria-modal="true" aria-labelledby="photo-dialog-title" hidden>
       <button type="button" class="photo-dialog-backdrop" data-photo-close aria-label="Close camera dialog"></button>

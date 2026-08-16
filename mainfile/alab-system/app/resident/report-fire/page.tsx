@@ -1,7 +1,5 @@
 'use client';
 
-import { ResidentFireReportForm } from "../../_components/resident-fire-report-form";
-
 import { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 import type { Circle, Map as LeafletMap, Marker } from 'leaflet';
@@ -64,7 +62,7 @@ function barangayLabel(value: string) {
 }
 
 export default function ResidentReportFirePage() {
-  return <ResidentFireReportForm />;
+  return <LegacyResidentReportFirePage />;
 }
 
 function LegacyResidentReportFirePage() {
@@ -76,8 +74,10 @@ function LegacyResidentReportFirePage() {
 
     const disposeLocation = initializeLocationLogic(root);
     const disposePhotoCapture = initializePhotoCapture(root);
+    const disposeSubmission = initializeReportSubmission(root);
 
     return () => {
+      disposeSubmission();
       disposePhotoCapture();
       disposeLocation();
     };
@@ -89,6 +89,82 @@ function LegacyResidentReportFirePage() {
       <div ref={rootRef} dangerouslySetInnerHTML={{ __html: reportFireMarkup }} />
     </>
   );
+}
+
+function initializeReportSubmission(root: HTMLElement): () => void {
+  const submitButton = root.querySelector<HTMLButtonElement>('[data-report-submit]');
+  const cancelButton = root.querySelector<HTMLButtonElement>('[data-report-cancel]');
+  const errorMessage = root.querySelector<HTMLElement>('[data-report-submit-error]');
+  const locationCard = root.querySelector<HTMLElement>('[data-location-card]');
+  const landmarkInput = root.querySelector<HTMLInputElement>('[data-landmark-input]');
+  const photoInput = root.querySelector<HTMLInputElement>('[data-photo-input]');
+  const typeButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-fire-type]'));
+  if (!submitButton || !locationCard || !landmarkInput || !photoInput || typeButtons.length === 0) return () => {};
+
+  let fireType = typeButtons.find((button) => button.classList.contains('selected'))?.dataset.fireType ?? 'HOUSE_BUILDING';
+  let submitting = false;
+  const showError = (message: string) => {
+    if (!errorMessage) return;
+    errorMessage.hidden = !message;
+    errorMessage.textContent = message;
+  };
+  const typeHandlers = new Map<HTMLButtonElement, () => void>();
+
+  typeButtons.forEach((button) => {
+    const handler = () => {
+      fireType = button.dataset.fireType ?? 'HOUSE_BUILDING';
+      typeButtons.forEach((item) => item.classList.toggle('selected', item === button));
+    };
+    typeHandlers.set(button, handler);
+    button.addEventListener('click', handler);
+  });
+
+  const submit = async () => {
+    if (submitting) return;
+    showError('');
+    if (locationCard.dataset.locationValid !== 'true') {
+      showError('Detect a verified Antique location before sending the alert.');
+      return;
+    }
+    const { locationLatitude, locationLongitude, locationAccuracy, locationMunicipality, locationBarangay } = locationCard.dataset;
+    if (!locationLatitude || !locationLongitude || !locationMunicipality || !locationBarangay) {
+      showError('Current GPS location, municipality, and barangay are required.');
+      return;
+    }
+    submitting = true;
+    submitButton.disabled = true;
+    submitButton.textContent = 'SENDING FIRE ALERT…';
+    const form = new FormData();
+    form.set('fireType', fireType);
+    form.set("latitude", locationLatitude);
+    form.set('longitude', locationLongitude);
+    form.set('locationAccuracy', locationAccuracy ?? '');
+    form.set('municipality', locationMunicipality);
+    form.set('barangay', locationBarangay);
+    form.set('landmark', landmarkInput.value.trim());
+    form.set('description', '');
+    if (photoInput.files?.[0]) form.set("photo", photoInput.files[0]);
+    try {
+      const response = await fetch("/api/resident/fire-reports", { method: "POST", body: form });
+      const data = await response.json() as { error?: string; report?: { id: string } };
+      if (!response.ok || !data.report?.id) throw new Error(data.error || 'Unable to submit the fire report.');
+      window.location.assign(`/resident/reports/${data.report.id}`);
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Unable to submit the fire report.');
+      submitting = false;
+      submitButton.disabled = false;
+      submitButton.textContent = 'SEND FIRE ALERT';
+    }
+  };
+  const cancel = () => window.location.assign('/resident');
+  submitButton.addEventListener('click', submit);
+  cancelButton?.addEventListener('click', cancel);
+
+  return () => {
+    typeHandlers.forEach((handler, button) => button.removeEventListener('click', handler));
+    submitButton.removeEventListener('click', submit);
+    cancelButton?.removeEventListener('click', cancel);
+  };
 }
 
 function initializePhotoCapture(root: HTMLElement): () => void {
