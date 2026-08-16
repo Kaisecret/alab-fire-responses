@@ -1,68 +1,63 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { reportFireStyles } from "../_content/resident-report-fire-content";
+import { useEffect, useMemo, useState } from "react";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 
-type Report = {
-  reference_number: string; status: FireReportStatus; description: string; nearest_landmark: string | null;
-  municipality: string; barangay: string; submitted_at: string;
-  history: Array<{ next_status: FireReportStatus; resident_message: string | null; created_at: string }>;
-  photos: Array<{ url: string | null }>;
-};
+type Report = { reference_number: string; status: FireReportStatus; fire_type: string; description: string; nearest_landmark: string | null; municipality: string; barangay: string; submitted_at: string; history: Array<{ next_status: FireReportStatus; resident_message: string | null; created_at: string }>; photos: Array<{ url: string | null }>; };
 
-const statusStyles = `${reportFireStyles}
-  .report-status-page .report-form-shell { max-width: 52rem; }
-  .report-status-page .status-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; margin: 1rem 0; }
-  .report-status-page .status-meta > div, .report-status-page .status-history { padding: .9rem; border: 1px solid var(--report-line); border-radius: .9rem; background: #fff; }
-  .report-status-page .status-meta strong { display: block; margin-bottom: .2rem; color: var(--report-muted); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; }
-  .resident-photo-button { width: 100%; margin: 1rem 0; border: 1px solid #E83B32; border-radius: .8rem; background: #FFF8F7; color: #B91E16; padding: .8rem 1rem; font: inherit; font-weight: 800; cursor: pointer; }
-  .resident-photo-button:hover { background: #FFF0EE; }
-  .resident-photo-backdrop { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 1rem; background: rgba(21,20,23,.72); }
-  .resident-photo-dialog { position: relative; width: min(100%, 48rem); max-height: min(90dvh, 52rem); padding: .75rem; border: 1px solid rgba(255,255,255,.5); border-radius: 1.1rem; background: #fff; box-shadow: 0 24px 72px rgba(0,0,0,.4); }
-  .resident-photo-dialog-image { display: block; width: 100%; max-height: calc(min(90dvh, 52rem) - 4rem); border-radius: .75rem; object-fit: contain; background: #171717; }
-  .resident-photo-close { position: absolute; right: 1.15rem; top: 1.15rem; width: 2.4rem; height: 2.4rem; border: 0; border-radius: 50%; background: rgba(0,0,0,.68); color: #fff; font-size: 1.35rem; line-height: 1; cursor: pointer; }
-  .report-status-page .status-history h2 { margin: 0 0 .7rem; font-size: 1rem; }
-  .report-status-page .status-history ol { display: grid; gap: .65rem; margin: 0; padding-left: 1.25rem; }
-  .report-status-page .status-history li { color: var(--report-muted); font-size: .84rem; line-height: 1.45; }
-  .report-status-page .status-history b { color: var(--report-ink); }
-  @media (max-width: 540px) { .report-status-page .status-meta { grid-template-columns: 1fr; } }
+const detailStyles = `
+  .resident-report-detail { min-height: 100vh; padding: 1.4rem 1rem 8rem; background: #fbfaf9; color: #1e293b; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .resident-report-detail-inner { width: min(100%, 51rem); margin: 0 auto; }
+  .resident-detail-heading { display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; }
+  .resident-detail-back { width:2.25rem; height:2.25rem; display:grid; place-items:center; border:0; border-radius:.65rem; color:#334155; background:#fff; font-size:1.5rem; text-decoration:none; box-shadow:0 1px 3px rgba(15,23,42,.1); }
+  .resident-detail-heading h1 { margin:0; font-size:1.32rem; font-weight:800; }
+  .resident-detail-hero { display:flex; justify-content:space-between; align-items:center; gap:.8rem; padding:1rem; margin-bottom:1rem; border:1px solid #ffcaca; border-radius:1rem; background:#fff7f6; }
+  .resident-detail-reference { display:flex; align-items:center; gap:.7rem; font-size:1.08rem; font-weight:800; }
+  .resident-detail-reference-icon { color:#e32118; font-size:1.5rem; }
+  .resident-status-pill { display:inline-flex; align-items:center; gap:.35rem; border-radius:99px; padding:.4rem .7rem; background:#e32118; color:#fff; font-size:.75rem; font-weight:800; white-space:nowrap; }
+  .resident-status-pill::before { content:''; width:.4rem; height:.4rem; border-radius:50%; background:currentColor; }
+  .resident-detail-card { padding:1rem; margin-bottom:.9rem; border:1px solid #e6ebf1; border-radius:1rem; background:#fff; box-shadow:0 2px 8px rgba(15,23,42,.035); }
+  .resident-detail-card h2 { display:flex; align-items:center; gap:.5rem; margin:0 0 .85rem; padding-bottom:.75rem; border-bottom:1px solid #edf0f3; font-size:1rem; }
+  .resident-detail-card h2 span { color:#e32118; }
+  .resident-detail-info { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem .9rem; }
+  .resident-detail-info-item { display:grid; grid-template-columns:1.15rem 1fr; gap:.45rem; align-items:start; }
+  .resident-detail-info-item svg { width:1.1rem; height:1.1rem; color:#e32118; margin-top:.08rem; }
+  .resident-detail-info-item small { display:block; color:#7c8ba1; font-size:.72rem; font-weight:700; }
+  .resident-detail-info-item strong { display:block; margin-top:.08rem; color:#334155; font-size:.84rem; line-height:1.3; }
+  .resident-detail-info-item strong.status { color:#e32118; }
+  .resident-timeline { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); margin-top:.2rem; }
+  .resident-timeline-step { position:relative; text-align:center; padding-top:1.8rem; color:#94a3b8; font-size:.64rem; font-weight:700; line-height:1.2; }
+  .resident-timeline-step::before { content:''; position:absolute; top:.58rem; left:0; width:100%; height:2px; background:#d9e1ea; }
+  .resident-timeline-step:first-child::before { left:50%; width:50%; }.resident-timeline-step:last-child::before { width:50%; }
+  .resident-timeline-dot { position:absolute; top:0; left:50%; width:1.2rem; height:1.2rem; transform:translateX(-50%); display:grid; place-items:center; border:2px solid #d9e1ea; border-radius:50%; background:#eff3f7; color:#fff; font-size:.67rem; z-index:1; }
+  .resident-timeline-step.complete, .resident-timeline-step.current { color:#e32118; }.resident-timeline-step.complete::before, .resident-timeline-step.current::before { background:#e32118; }.resident-timeline-step.complete .resident-timeline-dot, .resident-timeline-step.current .resident-timeline-dot { border-color:#e32118; background:#e32118; }.resident-timeline-step.current .resident-timeline-dot { box-shadow:0 0 0 5px rgba(227,33,24,.13); }
+  .resident-timeline-date { display:block; margin-top:.18rem; color:#8da0b5; font-size:.58rem; font-weight:600; }
+  .resident-bfp-update { margin:0; border-radius:.7rem; padding:.8rem; background:#fff3f2; color:#4a5568; font-size:.84rem; line-height:1.45; }
+  .resident-update-time { margin:.65rem 0 0; color:#718096; font-size:.72rem; font-weight:700; }
+  .resident-photo-button { width:100%; border:1px solid #e32118; border-radius:.75rem; padding:.75rem 1rem; color:#c91f17; background:#fffafa; font:inherit; font-weight:800; cursor:pointer; }
+  .resident-photo-backdrop { position:fixed; inset:0; z-index:300; display:grid; place-items:center; padding:1rem; background:rgba(13,18,30,.76); }.resident-photo-dialog { position:relative; width:min(100%,48rem); padding:.75rem; border-radius:1rem; background:#fff; }.resident-photo-dialog-image { display:block; width:100%; max-height:78dvh; object-fit:contain; border-radius:.7rem; background:#101827; }.resident-photo-close { position:absolute; top:1.2rem; right:1.2rem; width:2.35rem; height:2.35rem; border:0; border-radius:50%; background:rgba(0,0,0,.68); color:#fff; font-size:1.3rem; cursor:pointer; }
+  .resident-safety-card { display:flex; gap:.8rem; padding:1rem; border:1px solid #ffd1cf; border-radius:1rem; background:#fff7f6; color:#44546a; }.resident-safety-icon { display:grid; place-items:center; width:2.2rem; height:2.2rem; flex:none; border-radius:.7rem; background:#ffe0de; color:#e32118; font-size:1.2rem; }.resident-safety-card h2 { margin:0 0 .25rem; color:#e32118; font-size:.9rem; }.resident-safety-card p { margin:0; font-size:.78rem; line-height:1.45; }
+  .resident-report-detail-loading { padding:3rem 1rem; text-align:center; color:#64748b; font-weight:700; }
+  @media (min-width:760px) { .resident-report-detail { padding-top:2rem; }.resident-detail-card { padding:1.25rem; } }
+  @media (max-width:420px) { .resident-report-detail { padding-inline:.75rem; }.resident-detail-info { gap:.8rem .6rem; }.resident-detail-info-item strong { font-size:.78rem; }.resident-detail-reference { font-size:.95rem; }.resident-status-pill { font-size:.67rem; padding:.35rem .55rem; } }
 `;
 
+const timeline = [
+  { status: "PENDING_VERIFICATION", label: "Submitted" }, { status: "VERIFIED", label: "Verified" }, { status: "RESPONDING", label: "Responding" }, { status: "FIRETRUCK_DISPATCHED", label: "Dispatched" }, { status: "RESOLVED", label: "Resolved" },
+] as const;
+
 export function ResidentReportStatus({ reportId }: { reportId: string }) {
-  const [report, setReport] = useState<Report | null>(null);
-  const [error, setError] = useState("");
-  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const response = await fetch(`/api/resident/fire-reports/${reportId}`, { cache: "no-store" });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
-        if (active) setReport(data.report);
-      } catch (cause) { if (active) setError(cause instanceof Error ? cause.message : "Unable to load report."); }
-    };
-    void load();
-    const timer = window.setInterval(load, 10_000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, [reportId]);
-
-  if (error) return <StatusShell><p className="report-submit-error" role="alert">{error}</p></StatusShell>;
-  if (!report) return <StatusShell><header className="report-form-heading"><span className="report-eyebrow">ALAB EMERGENCY RESPONSE</span><h1>Loading your fire report…</h1></header></StatusShell>;
-
-  const label = fireReportStatusLabels[report.status];
-  const photoUrl = report.photos[0]?.url;
-  return <StatusShell>
-    <header className="report-form-heading"><span className="report-eyebrow">ALAB EMERGENCY RESPONSE</span><h1>{label}</h1><p>Keep this page open. Your incident status refreshes automatically.</p></header>
-    <div className="emergency-banner"><span className="warning-banner-icon" aria-hidden>🚒</span><div><h2>{report.status === "RESPONDING" ? "BFP is responding to your fire report." : label}</h2><p>Your report updates automatically while it is active.</p></div></div>
-    <div className="status-meta"><div><strong>Reference</strong>{report.reference_number}</div><div><strong>Location</strong>{report.barangay}, {report.municipality}</div><div><strong>Landmark</strong>{report.nearest_landmark || "Not provided"}</div><div><strong>Reported</strong>{new Date(report.submitted_at).toLocaleString()}</div></div>
-    {report.description && <div className="status-meta"><div><strong>Description</strong>{report.description}</div></div>}
-    {photoUrl && <button type="button" className="resident-photo-button" onClick={() => setIsPhotoDialogOpen(true)} aria-haspopup="dialog">View incident photo</button>}
-    {isPhotoDialogOpen && photoUrl && <div className="resident-photo-backdrop" role="presentation" onMouseDown={() => setIsPhotoDialogOpen(false)}><div className="resident-photo-dialog" role="dialog" aria-modal="true" aria-label="Submitted incident photo" onMouseDown={(event) => event.stopPropagation()}><button type="button" className="resident-photo-close" onClick={() => setIsPhotoDialogOpen(false)} aria-label="Close photo">×</button><img className="resident-photo-dialog-image" src={photoUrl} alt="Submitted fire incident" /></div></div>}
-    <section className="status-history"><h2>Report updates</h2><ol>{report.history.map((item, index) => <li key={`${item.created_at}-${index}`}><b>{fireReportStatusLabels[item.next_status]}</b> — {item.resident_message || "Status updated"}</li>)}</ol></section>
-  </StatusShell>;
+  const [report, setReport] = useState<Report | null>(null); const [error, setError] = useState(""); const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
+  useEffect(() => { let active = true; const load = async () => { try { const response = await fetch(`/api/resident/fire-reports/${reportId}`, { cache: "no-store" }); const data = await response.json(); if (!response.ok) throw new Error(data.error); if (active) setReport(data.report); } catch (cause) { if (active) setError(cause instanceof Error ? cause.message : "Unable to load report."); } }; void load(); const timer = window.setInterval(load, 10_000); return () => { active = false; window.clearInterval(timer); }; }, [reportId]);
+  const activeTimelineIndex = useMemo(() => report ? timelineIndex(report.status) : 0, [report]);
+  if (!report) return <Shell><p className="resident-report-detail-loading" role={error ? "alert" : undefined}>{error || "Loading your fire report…"}</p></Shell>;
+  const latest = report.history.at(-1); const photoUrl = report.photos[0]?.url;
+  return <Shell><div className="resident-detail-heading"><a className="resident-detail-back" href="/resident/reports" aria-label="Back to reports">‹</a><h1>Report Details</h1></div><section className="resident-detail-hero"><div className="resident-detail-reference"><span className="resident-detail-reference-icon">♨</span>{report.reference_number}</div><span className="resident-status-pill">{fireReportStatusLabels[report.status]}</span></section><section className="resident-detail-card"><h2><span>⌖</span> Incident Information</h2><div className="resident-detail-info"><Info label="Location" value={`${report.barangay}, ${report.municipality}`} icon="pin" /><Info label="Nearest Landmark" value={report.nearest_landmark || "Not provided"} icon="home" /><Info label="Date Reported" value={formatDate(report.submitted_at)} icon="calendar" /><Info label="Fire Type" value={formatFireType(report.fire_type)} icon="fire" /></div></section><section className="resident-detail-card"><h2><span>▧</span> Report Information</h2><div className="resident-detail-info"><Info label="Current Status" value={fireReportStatusLabels[report.status]} icon="fire" status /><Info label="Reference Number" value={report.reference_number} icon="file" /><Info label="Reported By" value="You" icon="person" /><Info label="Municipal BFP" value={`${report.municipality} Fire Station`} icon="phone" /></div></section><section className="resident-detail-card"><h2><span>◷</span> Status Timeline</h2><div className="resident-timeline">{timeline.map((step, index) => <div key={step.status} className={`resident-timeline-step${index < activeTimelineIndex ? " complete" : ""}${index === activeTimelineIndex ? " current" : ""}`}><span className="resident-timeline-dot">{index <= activeTimelineIndex ? "✓" : ""}</span>{step.label}{index === activeTimelineIndex && <span className="resident-timeline-date">Current</span>}</div>)}</div></section><section className="resident-detail-card"><h2><span>▣</span> Latest Update from Municipal BFP</h2><p className="resident-bfp-update">{report.status === "RESPONDING" ? "BFP is responding to your fire report. Please stay in a safe location and follow responder instructions." : latest?.resident_message || "Your report has been received and is being processed."}</p><p className="resident-update-time">{latest ? formatDate(latest.created_at) : formatDate(report.submitted_at)}</p></section>{photoUrl && <section className="resident-detail-card"><button type="button" className="resident-photo-button" onClick={() => setIsPhotoDialogOpen(true)} aria-haspopup="dialog">View incident photo</button></section>}{isPhotoDialogOpen && photoUrl && <div className="resident-photo-backdrop" role="presentation" onMouseDown={() => setIsPhotoDialogOpen(false)}><div className="resident-photo-dialog" role="dialog" aria-modal="true" aria-label="Submitted incident photo" onMouseDown={(event) => event.stopPropagation()}><button type="button" className="resident-photo-close" onClick={() => setIsPhotoDialogOpen(false)} aria-label="Close photo">×</button><img className="resident-photo-dialog-image" src={photoUrl} alt="Submitted fire incident" /></div></div>}<section className="resident-safety-card"><span className="resident-safety-icon">♨</span><div><h2>Fire Safety Reminder</h2><p>Stay calm, move away from the fire, and follow the instructions of responders.</p></div></section></Shell>;
 }
 
-function StatusShell({ children }: { children: React.ReactNode }) { return <><style>{statusStyles}</style><main className="report-page-root report-status-page"><section className="report-form-shell">{children}</section></main></>; }
+function Shell({ children }: { children: React.ReactNode }) { return <><style>{detailStyles}</style><main className="resident-report-detail"><div className="resident-report-detail-inner">{children}</div></main></>; }
+function Info({ label, value, icon, status = false }: { label: string; value: string; icon: "pin" | "home" | "calendar" | "fire" | "file" | "person" | "phone"; status?: boolean }) { return <div className="resident-detail-info-item"><InfoIcon icon={icon} /><span><small>{label}</small><strong className={status ? "status" : undefined}>{value}</strong></span></div>; }
+function InfoIcon({ icon }: { icon: string }) { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{icon === "pin" && <><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></>}{icon === "home" && <><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10" /></>}{icon === "calendar" && <><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>}{icon === "fire" && <path d="M12 22c4 0 7-2.8 7-6.6 0-3.1-1.9-5.1-4.1-7.8-.4 2.3-1.4 3.7-2.9 4.6.1-3-1.1-5.3-3.2-7.3.2 3-1.6 5-2.8 6.8C4.7 13.7 5 22 12 22Z" />}{icon === "file" && <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></>}{icon === "person" && <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>}{icon === "phone" && <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7A2 2 0 0 1 22 16.9Z" />}</svg>; }
+function timelineIndex(status: FireReportStatus) { if (["RESOLVED", "CLOSED"].includes(status)) return 4; if (status === "FIRETRUCK_DISPATCHED" || status === "RESPONDER_ARRIVED" || status === "UNDER_CONTROL") return 3; if (status === "RESPONDING") return 2; if (["VERIFIED", "CONFIRMED"].includes(status)) return 1; return 0; }
+function formatDate(value: string) { return new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value)); }
+function formatFireType(value: string) { return ({ HOUSE_BUILDING: "House/Building Fire", GRASS: "Grass Fire", FOREST: "Forest Fire", VEHICLE: "Vehicle Fire", OTHER: "Other" } as Record<string, string>)[value] || "Fire incident"; }

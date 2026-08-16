@@ -16,12 +16,12 @@ test("the established resident report layout submits the selected photo and veri
   assert.match(page, /form\.set\("photo", photoInput\.files\[0\]\)/);
 });
 
-test("resident report status uses the shared report surface for live status data", () => {
+test("resident report status uses the established report detail screen for live status data", () => {
   const status = readFileSync(join(root, "app", "_components", "resident-report-status.tsx"), "utf8");
 
-  assert.match(status, /reportFireStyles/);
-  assert.match(status, /className="report-page-root report-status-page"/);
-  assert.match(status, /className="report-page-root report-status-page"/);
+  assert.match(status, /resident-report-detail/);
+  assert.match(status, /Status Timeline/);
+  assert.match(status, /Latest Update from Municipal BFP/);
 });
 
 test("resident reports keep the established report cards while loading live API data", () => {

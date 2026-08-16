@@ -23,8 +23,7 @@ const liveReportsStyles = `
   @media (max-width: 950px) {
     .reports-page-root { min-height: calc(100vh - 4.75rem); padding-bottom: 7.5rem; }
     .reports-live-heading { padding: 1.15rem 1rem .25rem; }
-    .reports-live-heading .reports-page-title { display: block; font-size: 1.5rem; }
-    .reports-live-heading .reports-page-subtitle { display: block; font-size: .78rem; margin-bottom: 0; }
+    .reports-live-heading { display: none; }
     .reports-count-note { display: none; }
     .reports-empty-state { margin: .5rem 1rem 0; padding: 2rem 1rem; }
     .mobile-report-card { min-height: 5.7rem; }
@@ -59,7 +58,8 @@ export default function ReportsPage() {
     return true;
   }), [filter, query, reports]);
 
-  const activeCount = reports.filter((report) => !isClosed(report.status)).length;
+  const submittedCount = reports.filter((report) => ["SUBMITTED", "PENDING_VERIFICATION"].includes(report.status)).length;
+  const verifyingCount = reports.filter((report) => ["UNDER_VERIFICATION", "NEEDS_MORE_INFO", "VERIFIED", "CONFIRMED"].includes(report.status)).length;
   const respondingCount = reports.filter((report) => report.status === "RESPONDING").length;
   const closedCount = reports.filter((report) => isClosed(report.status)).length;
 
@@ -74,10 +74,10 @@ export default function ReportsPage() {
           </div>
           {error && <p className="reports-load-error" role="alert">{error}</p>}
           <div className="status-summary-row" aria-label="Report status summary">
-            <SummaryCard label="All reports" count={reports.length} tone="submitted" onClick={() => setFilter("ALL")} active={filter === "ALL"} />
-            <SummaryCard label="Active" count={activeCount} tone="verifying" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
+            <SummaryCard label="Submitted" count={submittedCount} tone="submitted" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
+            <SummaryCard label="Verifying" count={verifyingCount} tone="verifying" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
             <SummaryCard label="Responding" count={respondingCount} tone="responding" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
-            <SummaryCard label="Resolved" count={closedCount} tone="closed" onClick={() => setFilter("CLOSED")} active={filter === "CLOSED"} />
+            <SummaryCard label="Closed" count={closedCount} tone="closed" onClick={() => setFilter("CLOSED")} active={filter === "CLOSED"} />
           </div>
           <div className="reports-controls">
             <div className="reports-search-wrapper"><SearchIcon /><input className="reports-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by reference or location" aria-label="Search fire reports" /></div>
