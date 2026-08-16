@@ -22,6 +22,7 @@ test("resident report status uses the established report detail screen for live 
   assert.match(status, /resident-report-detail/);
   assert.match(status, /Status Timeline/);
   assert.match(status, /Latest Update from Municipal BFP/);
+  assert.match(status, /\/images\/fire logo\.webp/);
 });
 
 test("resident reports keep the established report cards while loading live API data", () => {
