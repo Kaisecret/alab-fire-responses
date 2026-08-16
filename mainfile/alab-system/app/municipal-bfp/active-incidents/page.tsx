@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useState } from "react";
+import { MunicipalIncidentDetail } from "../../_components/municipal-incident-detail";
+
 const styles = `
   .mbfp-page { padding: 1.2rem 1.5rem 2rem; font-family: 'Plus Jakarta Sans', sans-serif; }
   .mbfp-page-header { margin-bottom: 1.5rem; }
@@ -26,56 +29,6 @@ const styles = `
 `;
 
 export default function ActiveIncidentsPage() {
-  const incidents = [
-    { id: 'INC-2025-0421', location: 'Poblacion, San Jose de Buenavista', type: 'Structure Fire', severity: 'critical', severityLabel: 'Critical', reported: '10:24 AM', status: 'dispatched', statusLabel: 'Dispatched', units: 2 },
-    { id: 'INC-2025-0420', location: 'Sampaguita, San Jose de Buenavista', type: 'Grass Fire', severity: 'medium', severityLabel: 'Medium', reported: '09:58 AM', status: 'active', statusLabel: 'Confirmed', units: 1 },
-    { id: 'INC-2025-0419', location: 'San Roque, San Jose de Buenavista', type: 'Structure Fire', severity: 'high', severityLabel: 'High', reported: '09:15 AM', status: 'dispatched', statusLabel: 'Dispatched', units: 3 },
-    { id: 'INC-2025-0418', location: 'Libertad, San Jose de Buenavista', type: 'Brush Fire', severity: 'medium', severityLabel: 'Medium', reported: '08:42 AM', status: 'responding', statusLabel: 'Responding', units: 1 },
-  ];
-
-  return (
-    <>
-      <style>{styles}</style>
-      <div className="mbfp-page">
-        <div className="mbfp-page-header">
-          <h1><i className="fa-solid fa-fire" /> Active Incidents</h1>
-          <p>Monitor and manage all currently active fire incidents in your municipality.</p>
-        </div>
-        <div className="mbfp-page-actions">
-          <button className="mbfp-filter-btn active">All Active (4)</button>
-          <button className="mbfp-filter-btn">Critical (1)</button>
-          <button className="mbfp-filter-btn">High (1)</button>
-          <button className="mbfp-filter-btn">Medium (2)</button>
-        </div>
-        <table className="mbfp-data-table">
-          <thead>
-            <tr>
-              <th>Incident ID</th>
-              <th>Location</th>
-              <th>Fire Type</th>
-              <th>Severity</th>
-              <th>Time Reported</th>
-              <th>Status</th>
-              <th>Units Assigned</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {incidents.map((inc) => (
-              <tr key={inc.id}>
-                <td style={{ fontWeight: 700 }}>{inc.id}</td>
-                <td>{inc.location}</td>
-                <td>{inc.type}</td>
-                <td><span className={`mbfp-status ${inc.severity}`}><span className="mbfp-status-dot" />{inc.severityLabel}</span></td>
-                <td>{inc.reported}</td>
-                <td><span className={`mbfp-status ${inc.status}`}><span className="mbfp-status-dot" />{inc.statusLabel}</span></td>
-                <td style={{ textAlign: 'center' }}>{inc.units}</td>
-                <td><a href="#" className="mbfp-action-link">View <i className="fa-solid fa-arrow-right" /></a></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
-  );
+  const [incidents,setIncidents]=useState<Array<{id:string;referenceNumber:string;residentName:string;fireType:string;status:string;barangay:string;landmark:string|null;submittedAt:string}>>([]); const [selected,setSelected]=useState<string|null>(null); const [error,setError]=useState(""); const load=()=>fetch("/api/municipal-bfp/incidents",{cache:"no-store"}).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.error);setIncidents(d.incidents)}).catch(e=>setError(e.message)); useEffect(()=>{load()},[]); if(selected)return <MunicipalIncidentDetail incidentId={selected} onResponded={load}/>;
+  return <><style>{styles}</style><div className="mbfp-page"><div className="mbfp-page-header"><h1><i className="fa-solid fa-fire"/> Active Incidents</h1><p>Live emergency reports in your assigned municipality.</p></div>{error&&<p role="alert">{error}</p>}<table className="mbfp-data-table"><thead><tr><th>Report</th><th>Resident</th><th>Location</th><th>Fire type</th><th>Status</th><th>Action</th></tr></thead><tbody>{incidents.length===0?<tr><td colSpan={6}>No active incidents in your municipality.</td></tr>:incidents.map(inc=><tr key={inc.id}><td>{inc.referenceNumber}</td><td>{inc.residentName}</td><td>{inc.barangay}<br/>{inc.landmark||"No landmark"}</td><td>{inc.fireType.replaceAll("_"," ")}</td><td>{inc.status.replaceAll("_"," ")}</td><td><button className="mbfp-action-link" onClick={()=>setSelected(inc.id)}>Open</button></td></tr>)}</tbody></table></div></>;
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { ResidentFireReportForm } from "../../_components/resident-fire-report-form";
+
 import { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 import type { Circle, Map as LeafletMap, Marker } from 'leaflet';
@@ -62,6 +64,10 @@ function barangayLabel(value: string) {
 }
 
 export default function ResidentReportFirePage() {
+  return <ResidentFireReportForm />;
+}
+
+function LegacyResidentReportFirePage() {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {

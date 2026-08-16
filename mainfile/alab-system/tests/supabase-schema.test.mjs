@@ -76,3 +76,15 @@ test("Supabase schema links a resident to a unique Google provider identity", ()
   assert.match(migration, /add column if not exists google_subject text/i);
   assert.match(migration, /create unique index .*google_subject/i);
 });
+
+test("emergency workflow schema stores operational response history securely", () => {
+  const migrationPath = join(migrationsDirectory, "20260816090000_add_resident_bfp_response_workflow.sql");
+  assert.equal(existsSync(migrationPath), true, "emergency workflow migration is missing");
+  const migration = readFileSync(migrationPath, "utf8");
+
+  assert.match(migration, /create table (if not exists )?public\.fire_report_status_history/i);
+  assert.match(migration, /responding_bfp_user_id uuid references public\.users/i);
+  assert.match(migration, /create table (if not exists )?public\.municipal_bfp_stations/i);
+  assert.match(migration, /fire_reports_municipality_status_submitted_idx/i);
+  assert.match(migration, /enable row level security/i);
+});
