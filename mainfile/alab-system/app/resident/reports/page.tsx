@@ -20,6 +20,8 @@ const liveReportsStyles = `
   .reports-live-table-link { color: inherit; text-decoration: none; }
   .reports-live-table-link:hover .ref-number { color: var(--primary-red); }
   .reports-count-note { font-size: .78rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+  .resident-fire-logo { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .status-summary-icon .resident-fire-logo { width: 1.18rem; height: 1.18rem; }
   @media (max-width: 950px) {
     .reports-page-root { min-height: calc(100vh - 4.75rem); padding-bottom: 7.5rem; }
     .reports-live-heading { padding: 1.15rem 1rem .25rem; }
@@ -85,7 +87,7 @@ export default function ReportsPage() {
           </div>
           {loading ? <p className="reports-loading">Loading your fire reports…</p> : filteredReports.length === 0 ? <EmptyState /> : <>
             <div className="reports-table-card"><table className="reports-table"><thead><tr><th>Reference no.</th><th>Location</th><th>Date reported</th><th>Status</th><th>Action</th></tr></thead><tbody>{filteredReports.map((report) => <tr key={report.id}><td><Link className="reports-live-table-link" href={`/resident/reports/${report.id}`}><span className="ref-number">{report.reference_number}</span></Link></td><td><LocationCell report={report} /></td><td className="date-cell">{formatDate(report.submitted_at)}</td><td><StatusBadge status={report.status} /></td><td><Link className="view-details-btn" href={`/resident/reports/${report.id}`}>View details</Link></td></tr>)}</tbody></table><div className="table-footer"><span>Showing {filteredReports.length} of {reports.length} report{reports.length === 1 ? "" : "s"}</span></div></div>
-            <div className="mobile-reports-list">{filteredReports.map((report) => <Link key={report.id} href={`/resident/reports/${report.id}`} className={`mobile-report-card${report.status === "RESPONDING" ? " selected" : ""}`}><span className="mobile-report-fire-icon" aria-hidden><FireIcon /></span><span className="mobile-report-info"><span className="mobile-report-ref">{report.reference_number}</span><span className="mobile-report-location"><PinIcon />{formatLocation(report)}</span><span className="mobile-report-date">{formatDate(report.submitted_at)}</span></span><span className="mobile-report-right"><StatusBadge status={report.status} /><span className="mobile-report-chevron">›</span></span></Link>)}</div>
+            <div className="mobile-reports-list">{filteredReports.map((report) => <Link key={report.id} href={`/resident/reports/${report.id}`} className={`mobile-report-card${report.status === "RESPONDING" ? " selected" : ""}`}><span className="mobile-report-fire-icon" aria-hidden><FireLogo /></span><span className="mobile-report-info"><span className="mobile-report-ref">{report.reference_number}</span><span className="mobile-report-location"><PinIcon />{formatLocation(report)}</span><span className="mobile-report-date">{formatDate(report.submitted_at)}</span></span><span className="mobile-report-right"><StatusBadge status={report.status} /><span className="mobile-report-chevron">›</span></span></Link>)}</div>
           </>}
         </section>
       </div>
@@ -93,7 +95,7 @@ export default function ReportsPage() {
   </>;
 }
 
-function SummaryCard({ label, count, tone, onClick, active }: { label: string; count: number; tone: string; onClick: () => void; active: boolean }) { return <button type="button" className="status-summary-card" onClick={onClick} aria-pressed={active}><span className={`status-summary-icon ${tone}`}><FireIcon /></span><span className="status-summary-text"><span className="status-summary-label">{label}</span><span className="status-summary-count">{count}</span></span></button>; }
+function SummaryCard({ label, count, tone, onClick, active }: { label: string; count: number; tone: string; onClick: () => void; active: boolean }) { return <button type="button" className="status-summary-card" onClick={onClick} aria-pressed={active}><span className={`status-summary-icon ${tone}`}><FireLogo /></span><span className="status-summary-text"><span className="status-summary-label">{label}</span><span className="status-summary-count">{count}</span></span></button>; }
 function StatusBadge({ status }: { status: FireReportStatus }) { return <span className={`status-badge ${statusClass(status)}`}>{fireReportStatusLabels[status]}</span>; }
 function LocationCell({ report }: { report: Report }) { return <span className="location-cell"><PinIcon /><span className="location-text">{report.barangay || "Barangay not available"}<br />{report.municipality || "Municipality not available"}</span></span>; }
 function EmptyState() { return <div className="reports-empty-state"><h2>No fire reports found</h2><p>When you submit an emergency report, its live BFP status will appear here.</p><Link href="/resident/report-fire">Report a fire</Link></div>; }
@@ -101,6 +103,6 @@ function isClosed(status: FireReportStatus) { return ["RESOLVED", "CLOSED", "REJ
 function statusClass(status: FireReportStatus) { if (["RESPONDING", "FIRETRUCK_DISPATCHED", "RESPONDER_ARRIVED"].includes(status)) return "responding"; if (isClosed(status)) return "closed"; if (["VERIFIED", "CONFIRMED", "UNDER_CONTROL"].includes(status)) return "confirmed"; if (["PENDING_VERIFICATION", "UNDER_VERIFICATION", "NEEDS_MORE_INFO"].includes(status)) return "verifying"; return "submitted"; }
 function formatLocation(report: Report) { return [report.barangay, report.municipality].filter(Boolean).join(", ") || "Location not available"; }
 function formatDate(value: string) { return new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value)); }
-function FireIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22c4 0 7-2.7 7-6.5 0-3.2-1.9-5.1-4.1-7.8-.4 2.3-1.5 3.7-2.9 4.6.1-3-1.1-5.3-3.2-7.3.2 3-1.6 5-2.8 6.8C4.7 13.7 5 22 12 22Z" /><path d="M12 22c1.6 0 2.8-1.1 2.8-2.8 0-1.2-.7-2.1-1.5-3.1-.2 1-.7 1.7-1.4 2.1.1-1.4-.5-2.5-1.4-3.4.1 1.4-.7 2.4-1.2 3.2C8.9 19.8 10.1 22 12 22Z" /></svg>; }
+function FireLogo() { return <img className="resident-fire-logo" src="/images/fire logo.webp" alt="" aria-hidden />; }
 function PinIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg>; }
 function SearchIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="11" cy="11" r="8" /><path d="m21 21-4.4-4.4" /></svg>; }

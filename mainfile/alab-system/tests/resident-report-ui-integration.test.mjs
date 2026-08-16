@@ -32,6 +32,8 @@ test("resident reports keep the established report cards while loading live API 
   assert.match(reportsPage, /className="mobile-reports-list"/);
   assert.match(reportsPage, /mobile-report-card/);
   assert.match(reportsPage, /className="reports-table-card"/);
+  assert.match(reportsPage, /\/images\/fire logo\.webp/);
+  assert.match(reportsPage, /resident-fire-logo/);
   assert.doesNotMatch(reportsPage, /style=\{\{display:"block",padding:"1rem"/);
 });
 
