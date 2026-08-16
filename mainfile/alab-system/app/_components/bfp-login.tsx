@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState, useEffect } from "react";
+import { FormEvent, useState } from "react";
 
 interface BfpLoginProps {
   portal: "MUNICIPAL" | "PROVINCIAL";
@@ -16,10 +16,6 @@ export function BfpLogin({ portal: initialPortal }: BfpLoginProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setActivePortal(initialPortal);
-  }, [initialPortal]);
 
   const isProvincial = activePortal === "PROVINCIAL";
   const portalTitle = isProvincial ? "Provincial Command Center" : "Municipal Fire Station";

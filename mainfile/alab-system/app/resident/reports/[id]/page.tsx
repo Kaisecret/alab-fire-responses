@@ -1,12 +1,9 @@
 "use client";
 
-import { reportDetailStyles, reportDetailMarkup } from "../../../_content/resident-report-detail-content";
+import { useParams } from "next/navigation";
+import { ResidentReportStatus } from "../../../_components/resident-report-status";
 
 export default function ReportDetailPage() {
-  return (
-    <>
-      <style>{reportDetailStyles}</style>
-      <div dangerouslySetInnerHTML={{ __html: reportDetailMarkup }} />
-    </>
-  );
+  const params = useParams<{ id: string }>();
+  return <ResidentReportStatus reportId={params.id} />;
 }

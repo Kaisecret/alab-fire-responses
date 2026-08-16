@@ -13,7 +13,7 @@ const guideContent = readFileSync(
 
 test("resident content pages keep styles in React-owned nodes", () => {
   const styleImports = {
-    reports: "reportsStyles",
+    reports: null,
     guide: "guideStyles",
     profile: "profileStyles",
   };
@@ -24,8 +24,8 @@ test("resident content pages keep styles in React-owned nodes", () => {
       "utf8",
     );
     const styleName = styleImports[page];
-
-    assert.match(source, new RegExp(`<style>\\{${styleName}\\}</style>`));
+    if (styleName) assert.match(source, new RegExp(`<style>\\{${styleName}\\}</style>`));
+    if (page === "reports") assert.match(source, /\/api\/resident\/fire-reports/);
     assert.doesNotMatch(source, /["']<style>["']\s*\+/);
   }
 });

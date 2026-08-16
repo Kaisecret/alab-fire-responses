@@ -1,0 +1,28 @@
+import { NextRequest, NextResponse } from "next/server";
+
+import { getBfpIdentity } from "../../../../lib/auth/bfp-accounts";
+import { bfpSessionCookieName, verifyBfpSession } from "../../../../lib/auth/session";
+import { getDatabase } from "../../../../lib/db";
+
+export const runtime = "nodejs";
+
+export async function GET(request: NextRequest) {
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
+  if (!session || session.role !== "MUNICIPAL_BFP") return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
+  try {
+    const identity = await getBfpIdentity(session.userId);
+    if (!identity?.municipalityId) return NextResponse.json({ error: "Your Municipal BFP assignment is not active." }, { status: 403 });
+    const result = await getDatabase().query(
+      `select fr.id, fr.reference_number as "referenceNumber", fr.fire_type as "fireType", fr.status, fr.submitted_at as "submittedAt",
+              fr.latitude::float as latitude, fr.longitude::float as longitude, b.name as barangay, fr.nearest_landmark as landmark,
+              fr.reporter_name_snapshot as "residentName"
+         from fire_reports fr left join barangays b on b.id = fr.barangay_id
+        where fr.municipality_id = $1 and fr.status not in ('RESOLVED','REJECTED','FALSE_REPORT','DUPLICATE','CLOSED')
+        order by fr.submitted_at desc`, [identity.municipalityId],
+    );
+    return NextResponse.json({ municipality: identity.municipalityName, incidents: result.rows });
+  } catch (error) {
+    console.error("Municipal incident queue failed", error);
+    return NextResponse.json({ error: "Unable to load municipal incidents." }, { status: 500 });
+  }
+}
