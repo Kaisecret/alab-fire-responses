@@ -2,10 +2,18 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 
 import { getDatabase, withTransaction } from "../db";
-import type { FireReportInput } from "./validation";
+import {
+  normalizeDetectedBarangay,
+  normalizeDetectedMunicipality,
+  type FireReportInput,
+} from "./validation";
 import type { FireReportStatus } from "./types";
 
 export type PhotoMetadata = { storageKey: string; originalFileName: string; mimeType: string; fileSizeBytes: number };
+
+function localityKey(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]/g, "");
+}
 
 function referenceNumber() {
   return `ALAB-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 6).toUpperCase()}`;
@@ -23,12 +31,15 @@ export async function createResidentFireReport(userId: string, input: FireReport
   return withTransaction(async (client) => {
     const resident = await residentProfile(client, userId);
     if (!resident) throw new Error("RESIDENT_PROFILE_NOT_FOUND");
-    const locality = await client.query<{ municipality_id: string; barangay_id: string }>(
-      `select m.id as municipality_id, b.id as barangay_id
+    const detectedMunicipality = normalizeDetectedMunicipality(input.municipality);
+    const detectedBarangay = normalizeDetectedBarangay(input.barangay);
+    const localities = await client.query<{ municipality_id: string; barangay_id: string; barangay_name: string }>(
+      `select m.id as municipality_id, b.id as barangay_id, b.name as barangay_name
        from municipalities m join barangays b on b.municipality_id = m.id
-       where lower(m.name) = lower($1) and lower(b.name) = lower($2) limit 1`, [input.municipality, input.barangay],
+       where lower(m.name) = lower($1)`, [detectedMunicipality],
     );
-    if (!locality.rowCount) throw new Error("DETECTED_LOCALITY_NOT_FOUND");
+    const locality = localities.rows.find((candidate) => localityKey(candidate.barangay_name) === localityKey(detectedBarangay));
+    if (!locality) throw new Error("DETECTED_LOCALITY_NOT_FOUND");
     const reportId = randomUUID();
     const reference = referenceNumber();
     const now = new Date();
@@ -39,7 +50,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
         municipality_id, barangay_id, address_label, nearest_landmark, submitted_at, updated_at
       ) values ($1,$2,$3,$4,$5,$6,$7,'PENDING_VERIFICATION',$8,$9,$10,'GPS','DETECTED',true,$11,$12,$13,$14,$15,$15)`,
       [reportId, reference, resident.id, resident.name, resident.phone, input.fireType, input.description || "No description provided.", input.latitude, input.longitude, input.locationAccuracy,
-        locality.rows[0].municipality_id, locality.rows[0].barangay_id, `${input.barangay}, ${input.municipality}, Antique`, input.landmark || null, now],
+        locality.municipality_id, locality.barangay_id, `${locality.barangay_name}, ${detectedMunicipality}, Antique`, input.landmark || null, now],
     );
     if (photo) await client.query(
       `insert into fire_report_photos (fire_report_id, storage_key, original_file_name, mime_type, file_size_bytes, uploaded_at)

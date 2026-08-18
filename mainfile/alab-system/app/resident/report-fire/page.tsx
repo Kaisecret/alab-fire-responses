@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import type { Circle, Map as LeafletMap, Marker } from 'leaflet';
+import { ResidentFireLoader } from '../../_components/resident-fire-loader';
 import { reportFireMarkup, reportFireStyles } from '../../_content/resident-report-fire-content';
 import {
   REFINEMENT_WINDOW_MS,
@@ -67,10 +68,16 @@ export default function ResidentReportFirePage() {
 
 function LegacyResidentReportFirePage() {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return undefined;
+
+    const handleSubmissionState = (event: Event) => {
+      setIsSubmitting(Boolean((event as CustomEvent<{ loading?: boolean }>).detail?.loading));
+    };
+    root.addEventListener('resident-report:submission-state', handleSubmissionState);
 
     const disposeLocation = initializeLocationLogic(root);
     const disposePhotoCapture = initializePhotoCapture(root);
@@ -80,6 +87,7 @@ function LegacyResidentReportFirePage() {
       disposeSubmission();
       disposePhotoCapture();
       disposeLocation();
+      root.removeEventListener('resident-report:submission-state', handleSubmissionState);
     };
   }, []);
 
@@ -87,6 +95,7 @@ function LegacyResidentReportFirePage() {
     <>
       <style>{reportFireStyles}</style>
       <div ref={rootRef} dangerouslySetInnerHTML={{ __html: reportFireMarkup }} />
+      {isSubmitting && <ResidentFireLoader label="Sending your fire alert…" />}
     </>
   );
 }
@@ -110,6 +119,21 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   };
   const typeHandlers = new Map<HTMLButtonElement, () => void>();
 
+  const setSubmissionLoading = (loading: boolean) => {
+    root.dispatchEvent(new CustomEvent('resident-report:submission-state', { detail: { loading } }));
+  };
+
+  const resetSubmission = () => {
+    submitting = false;
+    submitButton.disabled = false;
+    submitButton.textContent = 'SEND FIRE ALERT';
+    setSubmissionLoading(false);
+  };
+
+  const detectLocationForSubmission = () => new Promise<boolean>((resolve) => {
+    root.dispatchEvent(new CustomEvent('resident-report:request-location', { detail: { resolve } }));
+  });
+
   typeButtons.forEach((button) => {
     const handler = () => {
       fireType = button.dataset.fireType ?? 'HOUSE_BUILDING';
@@ -123,17 +147,26 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     if (submitting) return;
     showError('');
     if (locationCard.dataset.locationValid !== 'true') {
-      showError('Detect a verified Antique location before sending the alert.');
-      return;
+      submitting = true;
+      submitButton.disabled = true;
+      submitButton.textContent = 'DETECTING LOCATION…';
+      setSubmissionLoading(true);
+      const locationDetected = await detectLocationForSubmission();
+      if (!locationDetected) {
+        resetSubmission();
+        return;
+      }
     }
     const { locationLatitude, locationLongitude, locationAccuracy, locationMunicipality, locationBarangay } = locationCard.dataset;
     if (!locationLatitude || !locationLongitude || !locationMunicipality || !locationBarangay) {
       showError('Current GPS location, municipality, and barangay are required.');
+      resetSubmission();
       return;
     }
     submitting = true;
     submitButton.disabled = true;
     submitButton.textContent = 'SENDING FIRE ALERT…';
+    setSubmissionLoading(true);
     const form = new FormData();
     form.set('fireType', fireType);
     form.set("latitude", locationLatitude);
@@ -151,9 +184,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       window.location.assign(`/resident/reports/${data.report.id}`);
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Unable to submit the fire report.');
-      submitting = false;
-      submitButton.disabled = false;
-      submitButton.textContent = 'SEND FIRE ALERT';
+      resetSubmission();
     }
   };
   const cancel = () => window.location.assign('/resident');
@@ -310,6 +341,12 @@ function initializeLocationLogic(root: HTMLElement): () => void {
     let marker: Marker | null = null;
     let accuracyCircle: Circle | null = null;
     let resizeObserver: ResizeObserver | null = null;
+    const locationRequestResolvers = new Set<(valid: boolean) => void>();
+
+    function settleLocationRequests(valid: boolean) {
+      locationRequestResolvers.forEach((resolve) => resolve(valid));
+      locationRequestResolvers.clear();
+    }
 
     function setState(kind: LocationUiState) {
       status?.classList.remove(...stateClasses);
@@ -454,7 +491,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       reading: LocationReading,
       source: 'automatic' | 'manual',
       quality: LocationQuality,
-    ) {
+    ): Promise<boolean> {
       const requestRun = detectionRun;
       reverseController?.abort();
       const controller = new AbortController();
@@ -477,7 +514,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
         if (!response.ok) throw new Error(`Reverse geocode HTTP ${response.status}`);
 
         const payload = await response.json() as ReverseGeocodePayload;
-        if (disposed || requestRun !== detectionRun) return;
+        if (disposed || requestRun !== detectionRun) return false;
 
         const resolved = resolvePhilippineAddress(payload.address ?? {});
         const mappedLandmark = resolveNearestLandmark(payload);
@@ -504,6 +541,8 @@ function initializeLocationLogic(root: HTMLElement): () => void {
               ? `Detected near ${resolved.municipality}, outside Antique. Keep GPS on and try again, or adjust the pin in Antique.`
               : 'This position could not be verified inside Antique. Try again or adjust the pin.',
           );
+          setMapOverlay(false, 'Location is outside Antique');
+          return false;
         } else {
           setLocationValidity(true);
           setState(source === 'manual' ? 'adjusted' : quality === 'precise' ? 'confirmed' : 'approximate');
@@ -515,15 +554,16 @@ function initializeLocationLogic(root: HTMLElement): () => void {
           if (title) title.textContent = source === 'manual' ? 'Fire report pin' : 'Fire report location';
           if (text) text.textContent = placeSummary;
           showError('');
+          setMapOverlay(false, 'Location verified');
+          window.requestAnimationFrame(() => map?.invalidateSize({ pan: false }));
+          return true;
         }
-        setMapOverlay(false, 'Location verified');
-        window.requestAnimationFrame(() => map?.invalidateSize({ pan: false }));
       } catch (reverseError: unknown) {
         if (
           disposed
           || requestRun !== detectionRun
           || (reverseError instanceof DOMException && reverseError.name === 'AbortError')
-        ) return;
+        ) return false;
 
         setLocationValidity(false);
         setState('error');
@@ -532,6 +572,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
         showLocationSummary(reading, 'Barangay unavailable', 'Municipality unavailable');
         showError('Your coordinates were detected, but the Antique address could not be verified. Try again or adjust the pin.');
         setMapOverlay(false, 'Address unavailable');
+        return false;
       } finally {
         if (requestRun === detectionRun) isFinalizing = false;
       }
@@ -551,10 +592,11 @@ function initializeLocationLogic(root: HTMLElement): () => void {
         if (title) title.textContent = 'Location is still too approximate';
         showError('The current reading is too broad for a fire report. Keep GPS on, move near a window, then try again or adjust the pin.');
         setMapOverlay(false, 'Low accuracy');
+        settleLocationRequests(false);
         return;
       }
 
-      await resolveReading(reading, 'automatic', quality);
+      settleLocationRequests(await resolveReading(reading, 'automatic', quality));
     }
 
     async function finalizeManualLocation(latitudeValue: number, longitudeValue: number) {
@@ -574,7 +616,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       };
       bestReading = reading;
       updateReading(reading);
-      await resolveReading(reading, 'manual', 'precise');
+      settleLocationRequests(await resolveReading(reading, 'manual', 'precise'));
     }
 
     function handlePosition(position: GeolocationPosition, run: number) {
@@ -619,6 +661,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       if (text) text.hidden = false;
       showError(locationErrorCopy(error));
       setMapOverlay(false, 'Location unavailable');
+      settleLocationRequests(false);
     }
 
     function detectLocation() {
@@ -646,6 +689,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
         if (accuracy) accuracy.hidden = false;
         setLandmark('unavailable', 'Location is not available', 'Landmark not selected');
         setMapOverlay(false, 'Location unavailable');
+        settleLocationRequests(false);
         return;
       }
 
@@ -670,6 +714,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
         setLandmark('unavailable', 'No location was detected', 'Landmark not selected');
         showError('No GPS reading arrived. Turn on precise location, move near a window, and try again.');
         setMapOverlay(false, 'Location timed out');
+        settleLocationRequests(false);
       }, REFINEMENT_WINDOW_MS);
     }
 
@@ -741,8 +786,20 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       }
     }
 
+    const handleSubmissionLocationRequest = (event: Event) => {
+      const detail = (event as CustomEvent<{ resolve?: (valid: boolean) => void }>).detail;
+      if (!detail?.resolve) return;
+      if (locationCard.dataset.locationValid === 'true') {
+        detail.resolve(true);
+        return;
+      }
+      locationRequestResolvers.add(detail.resolve);
+      detectLocation();
+    };
+
     void initializeMap();
     refreshButton.addEventListener('click', detectLocation);
+    root.addEventListener('resident-report:request-location', handleSubmissionLocationRequest);
     landmarkInput?.addEventListener('input', () => {
       const manualLandmark = landmarkInput.value.trim();
       hasManualLandmark = Boolean(manualLandmark);
@@ -763,8 +820,10 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       detectionRun += 1;
       stopDetection();
       reverseController?.abort();
+      settleLocationRequests(false);
       resizeObserver?.disconnect();
       refreshButton.removeEventListener('click', detectLocation);
+      root.removeEventListener('resident-report:request-location', handleSubmissionLocationRequest);
       landmarkConfirm?.removeEventListener('click', confirmLandmarkSelection);
       landmarkChange?.removeEventListener('click', changeLandmarkSelection);
       map?.remove();

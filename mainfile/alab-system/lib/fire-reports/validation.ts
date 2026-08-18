@@ -19,12 +19,33 @@ function text(value: unknown, maximum: number) {
   return typeof value === "string" ? value.trim().slice(0, maximum) : "";
 }
 
+export function normalizeDetectedMunicipality(value: unknown) {
+  const municipality = text(value, 120);
+  const normalized = municipality.toLocaleLowerCase();
+
+  // Nominatim commonly returns the short local name, while the official PSGC
+  // municipality stored by ALAB uses the full name.
+  if (normalized === "san jose") return "San Jose de Buenavista";
+
+  return municipality;
+}
+
+export function normalizeDetectedBarangay(value: unknown) {
+  const barangay = text(value, 120);
+  const withoutPrefix = barangay.replace(/^(?:barangay|brgy\.?)\s+/i, '');
+
+  // Numeric barangays are officially named "Barangay 1", "Barangay 2", etc.
+  if (/^\d+[a-z]?$/i.test(withoutPrefix)) return `Barangay ${withoutPrefix}`;
+
+  return withoutPrefix;
+}
+
 export function validateFireReportInput(raw: Record<string, unknown>): FireReportInput {
   const fireType = text(raw.fireType, 40) as FireType;
   const latitude = Number(raw.latitude);
   const longitude = Number(raw.longitude);
   const locationAccuracy = raw.locationAccuracy === "" || raw.locationAccuracy == null ? null : Number(raw.locationAccuracy);
-  const municipality = text(raw.municipality, 120);
+  const municipality = normalizeDetectedMunicipality(raw.municipality);
   const barangay = text(raw.barangay, 120);
   const landmark = text(raw.landmark, 180);
   const description = text(raw.description, 1200);
