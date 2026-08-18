@@ -17,7 +17,7 @@ interface IncidentItem {
 const activeIncidentsStyles = `
   /* ========== ACTIVE INCIDENTS STYLES ========== */
   .mbfp-incidents-shell {
-    padding: 1.25rem 1.5rem 3rem;
+    padding: 1.15rem 1.5rem 2.5rem;
     max-width: 1600px;
     margin: 0 auto;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -28,29 +28,29 @@ const activeIncidentsStyles = `
   /* Header Section */
   .mbfp-incidents-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
     flex-wrap: wrap;
   }
 
   .mbfp-incidents-title-group {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.25rem;
   }
 
   .mbfp-ops-live-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.4rem;
     background: #FEF2F2;
     border: 1px solid #FECACA;
     color: #DC2626;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 800;
-    padding: 0.25rem 0.75rem;
+    padding: 0.2rem 0.65rem;
     border-radius: 999px;
     width: fit-content;
     letter-spacing: 0.04em;
@@ -58,8 +58,8 @@ const activeIncidentsStyles = `
   }
 
   .mbfp-live-pulse-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: #DC2626;
     box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6);
@@ -73,7 +73,7 @@ const activeIncidentsStyles = `
     }
     70% {
       transform: scale(1.1);
-      box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+      box-shadow: 0 0 0 5px rgba(220, 38, 38, 0);
     }
     100% {
       transform: scale(0.95);
@@ -82,44 +82,37 @@ const activeIncidentsStyles = `
   }
 
   .mbfp-incidents-h1 {
-    font-size: clamp(1.4rem, 2.2vw, 1.75rem);
+    font-size: clamp(1.3rem, 2vw, 1.6rem);
     font-weight: 850;
     color: #0F172A;
     margin: 0;
     letter-spacing: -0.03em;
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.55rem;
   }
 
   .mbfp-incidents-h1 i {
     color: #DC2626;
   }
 
-  .mbfp-incidents-desc {
-    font-size: 0.88rem;
-    color: #64748B;
-    margin: 0;
-    font-weight: 500;
-  }
-
   /* Header Action Controls */
   .mbfp-header-actions {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.5rem;
   }
 
   .mbfp-refresh-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.55rem 1.1rem;
+    gap: 0.45rem;
+    padding: 0.5rem 0.95rem;
     background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
+    border: 1px solid #E2E8F0;
     border-radius: 10px;
     color: #334155;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -131,6 +124,7 @@ const activeIncidentsStyles = `
     border-color: #CBD5E1;
     color: #0F172A;
     transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
   }
 
   .mbfp-refresh-btn i.spin {
@@ -141,80 +135,85 @@ const activeIncidentsStyles = `
     to { transform: rotate(360deg); }
   }
 
-  /* Quick Metric KPI Cards */
+  /* Quick Metric KPI Cards (Strictly 8px Spacing) */
   .mbfp-quick-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.85rem;
-    margin-bottom: 1.35rem;
+    gap: 8px;
+    margin-bottom: 8px;
   }
 
   .mbfp-qstat-card {
     background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 0.85rem 1.1rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 0.75rem 0.95rem;
     display: flex;
     align-items: center;
-    gap: 1rem;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-    transition: all 0.2s ease;
+    gap: 0.85rem;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .mbfp-qstat-card:hover {
     border-color: #CBD5E1;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
   }
 
   .mbfp-qstat-icon {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     flex-shrink: 0;
   }
 
   .mbfp-qstat-icon.red { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
-  .mbfp-qstat-icon.amber { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
-  .mbfp-qstat-icon.blue { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
   .mbfp-qstat-icon.emerald { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+  .mbfp-qstat-icon.blue { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+  .mbfp-qstat-icon.amber { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
 
   .mbfp-qstat-body {
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
 
   .mbfp-qstat-val {
     font-size: 1.35rem;
     font-weight: 850;
     color: #0F172A;
-    line-height: 1.15;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
   }
 
   .mbfp-qstat-lbl {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     color: #64748B;
     font-weight: 600;
     margin-top: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Filter & Search Bar */
   .mbfp-toolbar {
     background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 0.85rem 1rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 0.65rem 0.85rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1.25rem;
+    gap: 8px;
+    margin-bottom: 8px;
     flex-wrap: wrap;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
   }
 
   .mbfp-search-box {
@@ -222,25 +221,26 @@ const activeIncidentsStyles = `
     display: flex;
     align-items: center;
     flex: 1;
-    min-width: 260px;
+    min-width: 250px;
     max-width: 420px;
   }
 
   .mbfp-search-box i {
     position: absolute;
-    left: 0.95rem;
+    left: 0.85rem;
     color: #94A3B8;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    pointer-events: none;
   }
 
   .mbfp-search-input {
     width: 100%;
-    height: 40px;
-    padding: 0 0.85rem 0 2.4rem;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 10px;
+    height: 36px;
+    padding: 0 0.8rem 0 2.3rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 9px;
     font-family: inherit;
-    font-size: 0.84rem;
+    font-size: 0.82rem;
     color: #0F172A;
     background: #F8FAFC;
     transition: all 0.2s ease;
@@ -250,22 +250,22 @@ const activeIncidentsStyles = `
     outline: none;
     border-color: #DC2626;
     background: #FFFFFF;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
   }
 
   .mbfp-filter-pills {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 8px;
     flex-wrap: wrap;
   }
 
   .mbfp-tab-pill {
-    padding: 0.42rem 0.95rem;
+    padding: 0.4rem 0.85rem;
     border-radius: 999px;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 700;
-    border: 1.5px solid #E2E8F0;
+    border: 1px solid #E2E8F0;
     background: #FFFFFF;
     color: #64748B;
     cursor: pointer;
@@ -282,16 +282,16 @@ const activeIncidentsStyles = `
     background: #0F172A;
     color: #FFFFFF;
     border-color: #0F172A;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
   }
 
   /* Table Card Container */
   .mbfp-table-card {
     background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 18px;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
   }
 
   .mbfp-table-responsive {
@@ -307,12 +307,12 @@ const activeIncidentsStyles = `
 
   .mbfp-incidents-table thead {
     background: #F8FAFC;
-    border-bottom: 1.5px solid #E2E8F0;
+    border-bottom: 1px solid #E2E8F0;
   }
 
   .mbfp-incidents-table th {
-    padding: 0.85rem 1.15rem;
-    font-size: 0.72rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.7rem;
     font-weight: 800;
     color: #475569;
     text-transform: uppercase;
@@ -326,12 +326,16 @@ const activeIncidentsStyles = `
   }
 
   .mbfp-incidents-table tbody tr:hover {
-    background: #FFF8F8;
+    background: #FFF9F9;
+  }
+
+  .mbfp-incidents-table tbody tr:last-child {
+    border-bottom: none;
   }
 
   .mbfp-incidents-table td {
-    padding: 1rem 1.15rem;
-    font-size: 0.84rem;
+    padding: 0.85rem 1rem;
+    font-size: 0.82rem;
     color: #1E293B;
     vertical-align: middle;
   }
@@ -340,36 +344,36 @@ const activeIncidentsStyles = `
   .mbfp-ref-code {
     font-weight: 800;
     color: #0F172A;
-    font-size: 0.85rem;
+    font-size: 0.84rem;
     letter-spacing: -0.01em;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   .mbfp-ref-time {
     font-size: 0.72rem;
     color: #64748B;
     font-weight: 500;
-    margin-top: 0.2rem;
+    margin-top: 0.15rem;
   }
 
   .mbfp-caller-cell {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.6rem;
   }
 
   .mbfp-caller-avatar {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     background: #EEF2F6;
     color: #475569;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 800;
     flex-shrink: 0;
   }
@@ -382,7 +386,7 @@ const activeIncidentsStyles = `
   .mbfp-loc-cell {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.12rem;
   }
 
   .mbfp-loc-brgy {
@@ -394,7 +398,7 @@ const activeIncidentsStyles = `
   }
 
   .mbfp-loc-landmark {
-    font-size: 0.74rem;
+    font-size: 0.73rem;
     color: #64748B;
     font-weight: 500;
   }
@@ -404,9 +408,9 @@ const activeIncidentsStyles = `
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.3rem 0.7rem;
-    border-radius: 8px;
-    font-size: 0.74rem;
+    padding: 0.26rem 0.65rem;
+    border-radius: 7px;
+    font-size: 0.72rem;
     font-weight: 800;
     letter-spacing: 0.01em;
     background: #FFF1F2;
@@ -419,10 +423,10 @@ const activeIncidentsStyles = `
   .mbfp-status-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.32rem 0.75rem;
+    gap: 0.38rem;
+    padding: 0.28rem 0.7rem;
     border-radius: 999px;
-    font-size: 0.73rem;
+    font-size: 0.72rem;
     font-weight: 800;
     letter-spacing: 0.02em;
     white-space: nowrap;
@@ -474,27 +478,27 @@ const activeIncidentsStyles = `
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    padding: 0.48rem 1rem;
+    padding: 0.45rem 0.95rem;
     background: #DC2626;
     border: none;
-    border-radius: 10px;
+    border-radius: 9px;
     color: #FFFFFF;
-    font-size: 0.78rem;
+    font-size: 0.77rem;
     font-weight: 800;
     cursor: pointer;
     transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.22);
     white-space: nowrap;
   }
 
   .mbfp-open-btn:hover {
     background: #B91C1C;
-    transform: translateY(-1.5px);
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.32);
   }
 
   .mbfp-open-btn i {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     transition: transform 0.15s ease;
   }
 
@@ -504,7 +508,7 @@ const activeIncidentsStyles = `
 
   /* Empty State */
   .mbfp-empty-state {
-    padding: 4.5rem 1.5rem;
+    padding: 4rem 1.5rem;
     text-align: center;
     display: flex;
     flex-direction: column;
@@ -513,29 +517,29 @@ const activeIncidentsStyles = `
   }
 
   .mbfp-empty-icon-radar {
-    width: 72px;
-    height: 72px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     background: #ECFDF5;
-    border: 1.5px solid #A7F3D0;
+    border: 1px solid #A7F3D0;
     color: #059669;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
+    font-size: 1.8rem;
+    margin-bottom: 0.85rem;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
   }
 
   .mbfp-empty-title {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     font-weight: 800;
     color: #0F172A;
-    margin: 0 0 0.35rem;
+    margin: 0 0 0.3rem;
   }
 
   .mbfp-empty-desc {
-    font-size: 0.85rem;
+    font-size: 0.84rem;
     color: #64748B;
     margin: 0;
     max-width: 380px;
@@ -544,16 +548,16 @@ const activeIncidentsStyles = `
   /* Error Alert */
   .mbfp-error-banner {
     background: #FEF2F2;
-    border: 1.5px solid #FECACA;
-    border-radius: 12px;
-    padding: 0.85rem 1.1rem;
+    border: 1px solid #FECACA;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
     color: #991B1B;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.65rem;
-    margin-bottom: 1.25rem;
+    gap: 0.6rem;
+    margin-bottom: 8px;
   }
 
   /* Responsive Adjustments */
@@ -664,9 +668,6 @@ export default function ActiveIncidentsPage() {
               <i className="fa-solid fa-fire" />
               <span>Active Incidents</span>
             </h1>
-            <p className="mbfp-incidents-desc">
-              Live emergency reports requiring municipal verification, dispatch, and suppression response.
-            </p>
           </div>
 
           <div className="mbfp-header-actions">

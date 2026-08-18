@@ -6,7 +6,7 @@ const styles = `
   .mbfp-page-header h1 { font-size: 1.3rem; font-weight: 800; color: #1f2937; display: flex; align-items: center; gap: 0.5rem; }
   .mbfp-page-header h1 i { color: #D00F09; }
   .mbfp-page-header p { font-size: 0.85rem; color: #6b7280; margin-top: 0.3rem; }
-  .mbfp-vq-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .mbfp-vq-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
   .mbfp-vq-stat { background: white; border-radius: 0.75rem; padding: 1.2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; display: flex; align-items: center; gap: 0.8rem; }
   .mbfp-vq-stat-icon { width: 2.8rem; height: 2.8rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: white; }
   .mbfp-vq-stat-icon.pending { background: linear-gradient(135deg, #E65100, #FF8F00); }
@@ -14,7 +14,7 @@ const styles = `
   .mbfp-vq-stat-icon.avg { background: linear-gradient(135deg, #2E7D32, #66BB6A); }
   .mbfp-vq-stat-value { font-size: 1.5rem; font-weight: 800; color: #1f2937; }
   .mbfp-vq-stat-label { font-size: 0.72rem; color: #6b7280; font-weight: 600; }
-  .mbfp-vq-card { background: white; border-radius: 0.75rem; padding: 1.2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; margin-bottom: 1rem; transition: box-shadow 0.2s; }
+  .mbfp-vq-card { background: white; border-radius: 0.75rem; padding: 1.2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; margin-bottom: 8px; transition: box-shadow 0.2s; }
   .mbfp-vq-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
   .mbfp-vq-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
   .mbfp-vq-id { font-size: 0.9rem; font-weight: 800; color: #1f2937; }

@@ -12,7 +12,7 @@ const styles = `
   .mbfp-add-btn { background: linear-gradient(135deg, #D00F09 0%, #EF5350 100%); color: white; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; font-size: 0.85rem; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(208, 15, 9, 0.2); }
   .mbfp-add-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(208, 15, 9, 0.3); }
   
-  .mbfp-ft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+  .mbfp-ft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; }
   .mbfp-ft-card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; animation: fadeIn 0.4s ease both; }
   .mbfp-ft-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
   .mbfp-ft-card-top { background: linear-gradient(135deg, #D00F09 0%, #EF5350 100%); padding: 1rem; display: flex; align-items: center; gap: 0.8rem; color: white; }

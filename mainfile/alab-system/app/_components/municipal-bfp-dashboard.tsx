@@ -70,8 +70,8 @@ const dashboardStyles = `
   .mbfp-stats-row {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.85rem;
-    margin-bottom: 1.25rem;
+    gap: 8px;
+    margin-bottom: 8px;
   }
 
   .mbfp-stat-card {
@@ -259,8 +259,8 @@ const dashboardStyles = `
   .mbfp-grid {
     display: grid;
     grid-template-columns: 1.75fr 1fr;
-    gap: 1.25rem;
-    margin-bottom: 1.25rem;
+    gap: 8px;
+    margin-bottom: 8px;
   }
 
   /* Glassmorphic Card Container */
@@ -510,17 +510,17 @@ const dashboardStyles = `
 
   /* ========== QUICK ACTIONS (IMPECCABLE TACTICAL GRID) ========== */
   .mbfp-quick-actions-wrap {
-    padding: 1.15rem 1.25rem;
+    padding: 0.95rem 1.15rem;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 8px;
     height: 100%;
   }
 
   .mbfp-qa-grid-top {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.85rem;
+    gap: 8px;
   }
 
   .mbfp-qa-box {
@@ -741,7 +741,7 @@ const dashboardStyles = `
   .mbfp-col-right {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 8px;
   }
 
   .mbfp-resource-matrix {
