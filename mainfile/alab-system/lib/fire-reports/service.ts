@@ -8,6 +8,7 @@ import {
   normalizeDetectedMunicipality,
   type FireReportInput,
 } from "./validation";
+import type { FireReportSubmissionAudit } from "./submission-audit";
 import type { FireReportStatus } from "./types";
 
 export type PhotoMetadata = { storageKey: string; originalFileName: string; mimeType: string; fileSizeBytes: number };
@@ -24,7 +25,7 @@ async function residentProfile(client: PoolClient, userId: string) {
   return result.rows[0] ?? null;
 }
 
-export async function createResidentFireReport(userId: string, input: FireReportInput) {
+export async function createResidentFireReport(userId: string, input: FireReportInput, audit: FireReportSubmissionAudit) {
   return withTransaction(async (client) => {
     const resident = await residentProfile(client, userId);
     if (!resident) throw new Error("RESIDENT_PROFILE_NOT_FOUND");
@@ -50,11 +51,11 @@ export async function createResidentFireReport(userId: string, input: FireReport
       `insert into fire_reports (
         id, reference_number, resident_profile_id, reporter_name_snapshot, reporter_phone_snapshot, fire_type, description,
         status, latitude, longitude, location_accuracy_meters, location_method, location_quality, is_within_antique,
-        municipality_id, barangay_id, address_label, nearest_landmark, submitted_at, updated_at
-      ) values ($1,$2,$3,$4,$5,$6,$7,'PENDING_VERIFICATION',$8,$9,$10,'GPS',$11,true,$12,$13,$14,$15,$16,$16)`,
+        municipality_id, barangay_id, address_label, nearest_landmark, reporter_ip_address, reporter_device_summary, submitted_at, updated_at
+      ) values ($1,$2,$3,$4,$5,$6,$7,'PENDING_VERIFICATION',$8,$9,$10,'GPS',$11,true,$12,$13,$14,$15,$16,$17,$18,$18)`,
       [reportId, reference, resident.id, resident.name, resident.phone, input.fireType, input.description || "No description provided.", input.latitude, input.longitude, input.locationAccuracy,
         barangay.needsVerification ? "BARANGAY_NEEDS_VERIFICATION" : "DETECTED", municipalityId, barangay.barangayId,
-        `${barangay.barangayName}, ${detectedMunicipality}, Antique`, input.landmark || null, now],
+        `${barangay.barangayName}, ${detectedMunicipality}, Antique`, input.landmark || null, audit.ipAddress, audit.deviceSummary, now],
     );
     await client.query(
       `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)

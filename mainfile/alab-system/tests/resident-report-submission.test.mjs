@@ -19,7 +19,14 @@ test("resident report APIs own their reports and accept controlled FormData uplo
 test("a photo storage failure cannot prevent an emergency report from being saved", () => {
   const createRoute = readFileSync(join(root, "app", "api", "resident", "fire-reports", "route.ts"), "utf8");
 
-  assert.match(createRoute, /createResidentFireReport\(session\.userId, input\)/);
+  const submissionAudit = readFileSync(join(root, "lib", "fire-reports", "submission-audit.ts"), "utf8");
+
+  assert.match(createRoute, /submissionAuditFromHeaders\(request\.headers\)/);
+  assert.match(createRoute, /createResidentFireReport\(session\.userId, input, submissionAudit\)/);
   assert.match(createRoute, /attachFireReportPhoto\(report\.id, uploadedPhoto\)/);
   assert.match(createRoute, /photoWarning/);
+  assert.match(submissionAudit, /x-vercel-forwarded-for/);
+  assert.match(submissionAudit, /x-forwarded-for/);
+  assert.match(submissionAudit, /isIP/);
+  assert.match(submissionAudit, /return `\$\{browser\} on \$\{platform\}`\.slice\(0, 160\)/);
 });

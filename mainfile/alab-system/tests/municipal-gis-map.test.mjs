@@ -13,7 +13,12 @@ test("Municipal BFP incident map renders a protected road route and direct line"
   assert.match(map, /polyline/);
   assert.match(map, /Direct line/);
   assert.match(map, /Road route/);
+  assert.match(map, /\/images\/fire logo\.webp/);
+  assert.match(map, /L\.divIcon/);
   assert.match(detail, /\/api\/municipal-bfp\/incidents/);
   assert.match(detail, /RESPOND/);
   assert.match(detail, /Resident emergency profile/);
+  assert.match(detail, /Public IP address/);
+  assert.match(detail, /Device \/ browser/);
+  assert.match(detail, /GPS coordinates/);
 });

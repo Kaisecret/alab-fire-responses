@@ -12,6 +12,9 @@ test("Municipal incident APIs require the assigned BFP identity and record a res
   assert.match(queue, /session\.role !== "MUNICIPAL_BFP"/);
   assert.match(detail, /resident_profiles/);
   assert.match(detail, /resident_addresses/);
+  assert.match(detail, /reporter_ip_address::text as "reporterIpAddress"/);
+  assert.match(detail, /reporter_device_summary as "reporterDeviceSummary"/);
+  assert.match(detail, /where fr\.id = \$1 and fr\.municipality_id = \$2/);
   assert.match(respond, /withTransaction/);
   assert.match(respond, /response_started_at/);
   assert.match(respond, /fire_report_status_history/);

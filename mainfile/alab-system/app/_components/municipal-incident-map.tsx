@@ -25,6 +25,26 @@ const mapStyles = `
     z-index: 1;
   }
 
+  .mbfp-incident-fire-marker-wrapper {
+    background: transparent;
+    border: 0;
+  }
+
+  .mbfp-incident-fire-marker {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+  }
+
+  .mbfp-incident-fire-marker img {
+    display: block;
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 5px rgba(185, 28, 28, 0.42));
+  }
+
   .mbfp-route-panel {
     margin-top: 0.95rem;
     background: #F8FAFC;
@@ -86,13 +106,15 @@ export function MunicipalIncidentMap({ incident }: IncidentMapProps) {
         attribution: "© OpenStreetMap contributors",
       }).addTo(map);
 
-      // Custom pulsing emergency marker for incident location
-      const incidentMarker = L.circleMarker([incident.latitude, incident.longitude], {
-        radius: 11,
-        color: "#B91C1C",
-        fillColor: "#DC2626",
-        fillOpacity: 1,
-        weight: 3,
+      // Match the resident map marker so BFP personnel can identify the report point at a glance.
+      const incidentMarker = L.marker([incident.latitude, incident.longitude], {
+        icon: L.divIcon({
+          className: "mbfp-incident-fire-marker-wrapper",
+          html: '<span class="mbfp-incident-fire-marker"><img src="/images/fire logo.webp" alt="" /></span>',
+          iconSize: [38, 38],
+          iconAnchor: [19, 38],
+          popupAnchor: [0, -36],
+        }),
       })
         .addTo(map)
         .bindPopup(

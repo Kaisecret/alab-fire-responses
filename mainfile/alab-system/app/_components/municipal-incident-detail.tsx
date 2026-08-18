@@ -18,6 +18,8 @@ type Incident = {
   respondingStationName: string | null;
   residentName: string;
   phone: string;
+  reporterIpAddress: string | null;
+  reporterDeviceSummary: string | null;
   email: string;
   address: string | null;
   barangay: string;
@@ -904,6 +906,27 @@ export function MunicipalIncidentDetail({
                     <i className="fa-regular fa-clock" /> Verified Timestamp
                   </span>
                   <span className="mbfp-data-value">{new Date(incident.submittedAt).toLocaleString()}</span>
+                </div>
+
+                <div className="mbfp-data-cell">
+                  <span className="mbfp-data-label">
+                    <i className="fa-solid fa-crosshairs" /> GPS coordinates
+                  </span>
+                  <span className="mbfp-data-value">{incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}</span>
+                </div>
+
+                <div className="mbfp-data-cell">
+                  <span className="mbfp-data-label">
+                    <i className="fa-solid fa-network-wired" /> Public IP address
+                  </span>
+                  <span className="mbfp-data-value">{incident.reporterIpAddress || "Unavailable"}</span>
+                </div>
+
+                <div className="mbfp-data-cell">
+                  <span className="mbfp-data-label">
+                    <i className="fa-solid fa-mobile-screen-button" /> Device / browser
+                  </span>
+                  <span className="mbfp-data-value">{incident.reporterDeviceSummary || "Unavailable"}</span>
                 </div>
               </div>
             </section>

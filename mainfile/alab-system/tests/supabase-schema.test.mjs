@@ -88,3 +88,13 @@ test("emergency workflow schema stores operational response history securely", (
   assert.match(migration, /fire_reports_municipality_status_submitted_idx/i);
   assert.match(migration, /enable row level security/i);
 });
+
+test("fire reports retain protected server-side submission audit data", () => {
+  const migrationPath = join(migrationsDirectory, "20260818090000_add_fire_report_submission_audit.sql");
+  assert.equal(existsSync(migrationPath), true, "submission audit migration is missing");
+  const migration = readFileSync(migrationPath, "utf8");
+
+  assert.match(migration, /add column if not exists reporter_ip_address inet/i);
+  assert.match(migration, /add column if not exists reporter_device_summary text/i);
+  assert.match(migration, /char_length\(reporter_device_summary\) <= 160/i);
+});

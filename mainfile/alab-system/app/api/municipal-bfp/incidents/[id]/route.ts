@@ -20,6 +20,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       `select fr.id, fr.reference_number as "referenceNumber", fr.status, fr.fire_type as "fireType", fr.description, fr.nearest_landmark as landmark,
               fr.latitude::float as latitude, fr.longitude::float as longitude, fr.submitted_at as "submittedAt", fr.response_started_at as "responseStartedAt",
               fr.responding_station_name as "respondingStationName", fr.reporter_name_snapshot as "residentName", fr.reporter_phone_snapshot as "phone",
+              fr.reporter_ip_address::text as "reporterIpAddress", fr.reporter_device_summary as "reporterDeviceSummary",
               rp.id as "residentProfileId", rp.first_name as "firstName", rp.last_name as "lastName", u.email,
               ra.complete_address as address, b.name as barangay, m.name as municipality,
               s.station_name as "stationName", s.latitude::float as "stationLatitude", s.longitude::float as "stationLongitude"

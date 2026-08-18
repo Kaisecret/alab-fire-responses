@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { RESIDENT_SESSION_COOKIE, verifyResidentSession } from "../../../../lib/auth/session";
 import { attachFireReportPhoto, createResidentFireReport, listResidentReports } from "../../../../lib/fire-reports/service";
+import { submissionAuditFromHeaders } from "../../../../lib/fire-reports/submission-audit";
 import { validateFireReportInput, validateFireReportPhoto } from "../../../../lib/fire-reports/validation";
 import { deleteFireReportPhoto, uploadFireReportPhoto } from "../../../../lib/supabase/server-storage";
 
@@ -36,7 +37,8 @@ export async function POST(request: NextRequest) {
     });
     validateFireReportPhoto(photo);
     // Emergency routing is never dependent on optional photo storage.
-    const report = await createResidentFireReport(session.userId, input);
+    const submissionAudit = submissionAuditFromHeaders(request.headers);
+    const report = await createResidentFireReport(session.userId, input, submissionAudit);
     let photoWarning: string | undefined;
 
     if (photo) {
