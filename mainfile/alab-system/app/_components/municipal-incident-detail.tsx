@@ -35,12 +35,17 @@ type Incident = {
 const detailStyles = `
   /* ========== MUNICIPAL INCIDENT DETAIL STYLES ========== */
   .mbfp-detail-shell {
-    padding: 1.25rem 1.5rem 3.5rem;
-    max-width: 1600px;
+    padding: 10px 1.5rem 2.5rem;
+    max-width: 1640px;
     margin: 0 auto;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #0F172A;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #EEF5FD;
+    min-height: 100%;
   }
 
   /* Top Navigation & Breadcrumbs */
@@ -48,25 +53,25 @@ const detailStyles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1.25rem;
+    gap: 0.85rem;
+    margin-bottom: 0.25rem;
     flex-wrap: wrap;
   }
 
   .mbfp-back-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
-    padding: 0.55rem 1.15rem;
+    gap: 0.45rem;
+    padding: 0.5rem 1rem;
     background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 12px;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
     color: #334155;
-    font-size: 0.84rem;
+    font-size: 0.82rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   }
 
   .mbfp-back-btn:hover {
@@ -74,24 +79,25 @@ const detailStyles = `
     border-color: #CBD5E1;
     color: #0F172A;
     transform: translateX(-2px);
+    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
   }
 
   .mbfp-telemetry-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    font-size: 0.76rem;
+    gap: 0.4rem;
+    font-size: 0.74rem;
     font-weight: 700;
     color: #059669;
     background: #ECFDF5;
     border: 1px solid #A7F3D0;
-    padding: 0.3rem 0.8rem;
+    padding: 0.28rem 0.75rem;
     border-radius: 999px;
   }
 
   .mbfp-telemetry-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: #059669;
     animation: mbfpTelPulse 1.8s infinite;
@@ -105,38 +111,38 @@ const detailStyles = `
   /* Incident Hero Command Banner */
   .mbfp-incident-hero {
     background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 20px;
-    padding: 1.35rem 1.6rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 1.15rem 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1.5rem;
-    margin-bottom: 1.35rem;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+    gap: 1rem;
+    margin-bottom: 0.25rem;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
     flex-wrap: wrap;
   }
 
   .mbfp-hero-left {
     display: flex;
     flex-direction: column;
-    gap: 0.45rem;
+    gap: 0.35rem;
   }
 
   .mbfp-hero-meta-row {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
   }
 
   .mbfp-hero-ref-tag {
     font-family: 'JetBrains Mono', monospace, sans-serif;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 800;
     color: #475569;
     background: #F1F5F9;
-    padding: 0.25rem 0.65rem;
+    padding: 0.22rem 0.6rem;
     border-radius: 6px;
     border: 1px solid #E2E8F0;
   }
@@ -144,20 +150,20 @@ const detailStyles = `
   .mbfp-hero-firetype-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.35rem;
     background: #FFF1F2;
     border: 1px solid #FECDD3;
     color: #E11D48;
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     font-weight: 800;
-    padding: 0.25rem 0.75rem;
+    padding: 0.22rem 0.65rem;
     border-radius: 999px;
     text-transform: uppercase;
     letter-spacing: 0.02em;
   }
 
   .mbfp-hero-title {
-    font-size: clamp(1.5rem, 2.2vw, 1.95rem);
+    font-size: clamp(1.4rem, 2vw, 1.8rem);
     font-weight: 850;
     color: #0F172A;
     margin: 0;
@@ -165,45 +171,45 @@ const detailStyles = `
     line-height: 1.15;
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.55rem;
   }
 
   .mbfp-hero-time {
-    font-size: 0.84rem;
+    font-size: 0.8rem;
     color: #64748B;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   /* Response Trigger Button */
   .mbfp-respond-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.65rem;
-    padding: 0.85rem 1.65rem;
+    gap: 0.55rem;
+    padding: 0.75rem 1.45rem;
     border: none;
-    border-radius: 14px;
-    font-size: 0.96rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
     font-weight: 850;
     letter-spacing: 0.01em;
     cursor: pointer;
-    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.28);
     color: #FFFFFF;
     background: #DC2626;
   }
 
   .mbfp-respond-btn:hover:not(:disabled) {
     background: #B91C1C;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.45);
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
   }
 
   .mbfp-respond-btn.active-responding {
     background: #059669;
-    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.3);
+    box-shadow: 0 4px 14px rgba(5, 150, 105, 0.28);
     cursor: default;
   }
 
@@ -211,22 +217,22 @@ const detailStyles = `
     opacity: 0.85;
   }
 
-  /* 2-Column Tactical Layout Grid */
+  /* 2-Column Tactical Layout Grid (Exact Provincial Spacing) */
   .mbfp-tactical-grid {
     display: grid;
     grid-template-columns: 1.15fr 0.95fr;
-    gap: 1.35rem;
+    gap: 10px;
     align-items: start;
   }
 
   /* Card Containers */
   .mbfp-card {
     background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 18px;
-    padding: 1.35rem;
-    margin-bottom: 1.35rem;
-    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.03);
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 1.15rem 1.35rem;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
   }
 
   .mbfp-card:last-child {
@@ -237,7 +243,7 @@ const detailStyles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.15rem;
+    margin-bottom: 0.85rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid #F1F5F9;
   }
@@ -257,25 +263,25 @@ const detailStyles = `
     color: #DC2626;
   }
 
-  /* Resident Profile Data Grid */
+  /* Resident Profile Data Grid (Strictly 8px Spacing) */
   .mbfp-profile-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.85rem;
+    gap: 8px;
   }
 
   .mbfp-data-cell {
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 0.75rem 0.95rem;
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.2rem;
   }
 
   .mbfp-data-label {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 800;
     color: #64748B;
     text-transform: uppercase;
@@ -286,7 +292,7 @@ const detailStyles = `
   }
 
   .mbfp-data-value {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
     font-weight: 700;
     color: #0F172A;
     word-break: break-word;
@@ -310,11 +316,11 @@ const detailStyles = `
   /* Incident Details Description Block */
   .mbfp-desc-box {
     background: #F8FAFC;
-    border-left: 4px solid #DC2626;
+    border-left: 3.5px solid #DC2626;
     border-radius: 4px 10px 10px 4px;
-    padding: 0.95rem 1.15rem;
-    font-size: 0.92rem;
-    line-height: 1.6;
+    padding: 0.85rem 1.05rem;
+    font-size: 0.88rem;
+    line-height: 1.55;
     color: #334155;
     font-weight: 500;
     margin: 0;
@@ -323,10 +329,10 @@ const detailStyles = `
   /* Photo Evidence Card & Lightbox Trigger */
   .mbfp-photo-showcase {
     position: relative;
-    border-radius: 14px;
+    border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
-    border: 1.5px solid #E2E8F0;
+    border: 1px solid #E2E8F0;
     max-height: 320px;
     background: #0F172A;
   }
@@ -347,32 +353,32 @@ const detailStyles = `
 
   .mbfp-photo-overlay-badge {
     position: absolute;
-    bottom: 0.85rem;
-    right: 0.85rem;
+    bottom: 0.75rem;
+    right: 0.75rem;
     background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(8px);
     color: #FFFFFF;
-    padding: 0.45rem 0.95rem;
+    padding: 0.4rem 0.85rem;
     border-radius: 999px;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 800;
     display: flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.4rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .mbfp-photo-click-hint {
     position: absolute;
-    top: 0.85rem;
-    left: 0.85rem;
+    top: 0.75rem;
+    left: 0.75rem;
     background: rgba(220, 38, 38, 0.9);
     backdrop-filter: blur(8px);
     color: #FFFFFF;
-    padding: 0.35rem 0.75rem;
+    padding: 0.3rem 0.65rem;
     border-radius: 6px;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -400,7 +406,7 @@ const detailStyles = `
   .mbfp-timeline-item {
     position: relative;
     padding-left: 2rem;
-    margin-bottom: 1rem;
+    margin-bottom: 8px;
   }
 
   .mbfp-timeline-item:last-child {
@@ -422,17 +428,17 @@ const detailStyles = `
   .mbfp-timeline-content {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.12rem;
   }
 
   .mbfp-timeline-title {
-    font-size: 0.86rem;
+    font-size: 0.84rem;
     font-weight: 800;
     color: #0F172A;
   }
 
   .mbfp-timeline-meta {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     color: #64748B;
     font-weight: 600;
   }
@@ -440,38 +446,38 @@ const detailStyles = `
   /* Right Column: Route Map Card */
   .mbfp-map-card-wrapper {
     position: sticky;
-    top: 1.5rem;
+    top: 1rem;
   }
 
   .mbfp-route-stats-bar {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 8px;
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 0.85rem 1rem;
-    margin-top: 0.85rem;
+    border-radius: 10px;
+    padding: 0.75rem 0.95rem;
+    margin-top: 8px;
   }
 
   .mbfp-route-icon-box {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: 8px;
     background: #EFF6FF;
     color: #2563EB;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
+    font-size: 0.95rem;
     flex-shrink: 0;
   }
 
   .mbfp-route-text-val {
-    font-size: 0.84rem;
+    font-size: 0.82rem;
     font-weight: 700;
     color: #1E293B;
-    line-height: 1.45;
+    line-height: 1.4;
   }
 
   /* Mission Loading State Skeleton */

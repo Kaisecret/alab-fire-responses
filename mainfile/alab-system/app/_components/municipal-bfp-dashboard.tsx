@@ -59,19 +59,24 @@ const dashboardStyles = `
 
   /* ========== DASHBOARD BASE ========== */
   .mbfp-dash {
-    padding: 1.1rem 1.25rem 3rem;
+    padding: 10px 1.5rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #EEF5FD;
+    min-height: 100%;
     max-width: 1640px;
     margin: 0 auto;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #1E293B;
   }
 
-  /* ========== ULTRA-PREMIUM STAT CARDS ROW ========== */
+  /* ========== 5 PASTEL KPI METRIC CARDS ROW (Exact Provincial Spacing) ========== */
   .mbfp-stats-row {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 0.85rem;
+    margin-bottom: 0.5rem;
   }
 
   .mbfp-stat-card {
@@ -255,12 +260,12 @@ const dashboardStyles = `
     color: #0F172A;
   }
 
-  /* ========== TWO COLUMN GRID ========== */
+  /* ========== TWO COLUMN SECTION (Exact Provincial Spacing) ========== */
   .mbfp-grid {
     display: grid;
     grid-template-columns: 1.75fr 1fr;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 10px;
+    align-items: stretch;
   }
 
   /* Glassmorphic Card Container */
@@ -268,18 +273,18 @@ const dashboardStyles = `
     background: #FFFFFF;
     border-radius: 16px;
     border: 1px solid #E2E8F0;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.02);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    animation: mbfpEntryFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: mbfpEntryFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .mbfp-card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.95rem 1.25rem;
+    padding: 1.1rem 1.25rem;
     border-bottom: 1px solid #F1F5F9;
     background: linear-gradient(180deg, #FFFFFF 0%, #FAFCFF 100%);
   }
@@ -510,17 +515,18 @@ const dashboardStyles = `
 
   /* ========== QUICK ACTIONS (IMPECCABLE TACTICAL GRID) ========== */
   .mbfp-quick-actions-wrap {
-    padding: 0.95rem 1.15rem;
+    padding: 1.15rem 1.35rem;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     height: 100%;
+    box-sizing: border-box;
   }
 
   .mbfp-qa-grid-top {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 10px;
   }
 
   .mbfp-qa-box {
@@ -528,39 +534,39 @@ const dashboardStyles = `
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
     border-radius: 14px;
-    padding: 1.3rem 1rem;
+    padding: 1.05rem 0.95rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    gap: 0.55rem;
     text-decoration: none;
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
   }
 
   .mbfp-qa-box:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 24px -4px rgba(226, 54, 50, 0.15), 0 4px 8px rgba(226, 54, 50, 0.06);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -4px rgba(226, 54, 50, 0.15), 0 2px 6px rgba(226, 54, 50, 0.06);
     border-color: #FECDD3;
     background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
   }
 
   .mbfp-qa-icon-wrap {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .mbfp-qa-box:hover .mbfp-qa-icon-wrap {
-    transform: scale(1.12);
+    transform: scale(1.08);
   }
 
   .mbfp-qa-icon-wrap.red { background: #FFF1F2; color: #E23632; border: 1px solid #FECDD3; }
@@ -569,11 +575,11 @@ const dashboardStyles = `
   .mbfp-qa-icon-wrap.purple { background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; }
 
   .mbfp-qa-text {
-    font-size: 0.88rem;
+    font-size: 0.84rem;
     font-weight: 800;
     color: #0F172A;
     text-align: center;
-    line-height: 1.3;
+    line-height: 1.25;
     letter-spacing: -0.01em;
   }
 
@@ -582,10 +588,11 @@ const dashboardStyles = `
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 0.85rem;
-    padding: 0.95rem 1.35rem;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
     background: linear-gradient(135deg, #FFFFFF 0%, #FFF5F5 100%);
     border-color: #FECDD3;
+    box-sizing: border-box;
   }
 
   .mbfp-qa-box.full-width:hover {
@@ -601,8 +608,8 @@ const dashboardStyles = `
 
   .mbfp-verif-card {
     display: flex;
-    gap: 0.95rem;
-    padding: 1.05rem 1.25rem;
+    gap: 0.85rem;
+    padding: 0.95rem 1.25rem;
     border-bottom: 1px solid #F1F5F9;
     transition: all 0.2s ease;
     align-items: flex-start;
@@ -617,19 +624,19 @@ const dashboardStyles = `
   }
 
   .mbfp-verif-accent-box {
-    width: 58px;
-    height: 52px;
-    border-radius: 12px;
+    width: 52px;
+    height: 46px;
+    border-radius: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.2rem;
+    gap: 0.15rem;
     color: #FFFFFF;
     font-weight: 800;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     flex-shrink: 0;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   .mbfp-verif-accent-box.fire {
@@ -697,7 +704,7 @@ const dashboardStyles = `
 
   .mbfp-verif-btn-row {
     display: flex;
-    gap: 0.5rem;
+    gap: 8px;
   }
 
   .mbfp-btn-action {
@@ -752,8 +759,8 @@ const dashboardStyles = `
   .mbfp-resource-row {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
-    padding: 0.85rem 1.25rem;
+    gap: 8px;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid #F1F5F9;
     transition: background 0.15s ease;
   }
@@ -852,9 +859,9 @@ const dashboardStyles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.95rem 1.25rem;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid #F1F5F9;
-    gap: 0.85rem;
+    gap: 8px;
     transition: background 0.15s ease;
   }
 

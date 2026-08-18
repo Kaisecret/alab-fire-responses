@@ -17,12 +17,17 @@ interface IncidentItem {
 const activeIncidentsStyles = `
   /* ========== ACTIVE INCIDENTS STYLES ========== */
   .mbfp-incidents-shell {
-    padding: 1.15rem 1.5rem 2.5rem;
-    max-width: 1600px;
+    padding: 10px 1.5rem 2.5rem;
+    max-width: 1640px;
     margin: 0 auto;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #0F172A;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #EEF5FD;
+    min-height: 100%;
   }
 
   /* Header Section */
@@ -31,7 +36,7 @@ const activeIncidentsStyles = `
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.25rem;
     flex-wrap: wrap;
   }
 
@@ -135,30 +140,30 @@ const activeIncidentsStyles = `
     to { transform: rotate(360deg); }
   }
 
-  /* Quick Metric KPI Cards (Strictly 8px Spacing) */
+  /* Quick Metric KPI Cards (Exact Provincial Spacing) */
   .mbfp-quick-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 0.85rem;
+    margin-bottom: 0.5rem;
   }
 
   .mbfp-qstat-card {
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 0.75rem 0.95rem;
+    border-radius: 14px;
+    padding: 0.85rem 0.95rem 0.75rem;
     display: flex;
     align-items: center;
     gap: 0.85rem;
-    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .mbfp-qstat-card:hover {
     border-color: #CBD5E1;
     transform: translateY(-1.5px);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   }
 
   .mbfp-qstat-icon {
@@ -184,7 +189,7 @@ const activeIncidentsStyles = `
   }
 
   .mbfp-qstat-val {
-    font-size: 1.35rem;
+    font-size: 1.45rem;
     font-weight: 850;
     color: #0F172A;
     line-height: 1.1;
@@ -205,15 +210,15 @@ const activeIncidentsStyles = `
   .mbfp-toolbar {
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 0.65rem 0.85rem;
+    border-radius: 14px;
+    padding: 0.75rem 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 0.85rem;
+    margin-bottom: 0.5rem;
     flex-wrap: wrap;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
   }
 
   .mbfp-search-box {
@@ -235,7 +240,7 @@ const activeIncidentsStyles = `
 
   .mbfp-search-input {
     width: 100%;
-    height: 36px;
+    height: 38px;
     padding: 0 0.8rem 0 2.3rem;
     border: 1px solid #E2E8F0;
     border-radius: 9px;
@@ -256,7 +261,7 @@ const activeIncidentsStyles = `
   .mbfp-filter-pills {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
     flex-wrap: wrap;
   }
 

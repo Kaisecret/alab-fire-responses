@@ -6,7 +6,7 @@ const styles = `
   .mbfp-page-header h1 { font-size: 1.3rem; font-weight: 800; color: #1f2937; display: flex; align-items: center; gap: 0.5rem; }
   .mbfp-page-header h1 i { color: #D00F09; }
   .mbfp-page-header p { font-size: 0.85rem; color: #6b7280; margin-top: 0.3rem; }
-  .mbfp-dr-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.2rem; }
+  .mbfp-dr-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 8px; }
   .mbfp-dr-card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; overflow: hidden; }
   .mbfp-dr-card-header { padding: 0.8rem 1rem; border-bottom: 1px solid #f3f4f6; font-size: 0.88rem; font-weight: 700; color: #1f2937; display: flex; align-items: center; gap: 0.4rem; }
   .mbfp-dr-card-header i { color: #D00F09; }
