@@ -28,6 +28,20 @@ test("resident report submission waits for automatic location detection instead 
   assert.match(page, /detail\.resolve/);
 });
 
+test("a cancelled earlier GPS lookup cannot settle the newer report submission request", () => {
+  const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
+
+  assert.match(page, /Map<number, Set<\(valid: boolean\) => void>>/);
+  assert.match(page, /const run = detectLocation\(\);/);
+  assert.match(page, /settleLocationRequests\(run, await resolveReading/);
+});
+
+test("a failed automatic location verification gives the resident a visible submit error", () => {
+  const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
+
+  assert.match(page, /We could not verify your current location\. Turn on precise location, then try again\./);
+});
+
 test("resident report submission uses the full-screen fire loader while detecting and sending", () => {
   const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
 

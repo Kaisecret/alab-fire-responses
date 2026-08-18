@@ -153,6 +153,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       setSubmissionLoading(true);
       const locationDetected = await detectLocationForSubmission();
       if (!locationDetected) {
+        showError('We could not verify your current location. Turn on precise location, then try again.');
         resetSubmission();
         return;
       }
@@ -341,10 +342,17 @@ function initializeLocationLogic(root: HTMLElement): () => void {
     let marker: Marker | null = null;
     let accuracyCircle: Circle | null = null;
     let resizeObserver: ResizeObserver | null = null;
-    const locationRequestResolvers = new Set<(valid: boolean) => void>();
+    const locationRequestResolvers = new Map<number, Set<(valid: boolean) => void>>();
 
-    function settleLocationRequests(valid: boolean) {
-      locationRequestResolvers.forEach((resolve) => resolve(valid));
+    function settleLocationRequests(run: number, valid: boolean) {
+      const resolvers = locationRequestResolvers.get(run);
+      if (!resolvers) return;
+      resolvers.forEach((resolve) => resolve(valid));
+      locationRequestResolvers.delete(run);
+    }
+
+    function settleAllLocationRequests(valid: boolean) {
+      locationRequestResolvers.forEach((resolvers) => resolvers.forEach((resolve) => resolve(valid)));
       locationRequestResolvers.clear();
     }
 
@@ -578,8 +586,8 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       }
     }
 
-    async function finalizeAutomaticLocation(reading: LocationReading) {
-      if (disposed || isFinalizing) return;
+    async function finalizeAutomaticLocation(reading: LocationReading, run: number) {
+      if (disposed || run !== detectionRun || isFinalizing) return;
       isFinalizing = true;
       stopDetection();
       const quality = classifyAccuracy(reading.accuracy);
@@ -592,11 +600,11 @@ function initializeLocationLogic(root: HTMLElement): () => void {
         if (title) title.textContent = 'Location is still too approximate';
         showError('The current reading is too broad for a fire report. Keep GPS on, move near a window, then try again or adjust the pin.');
         setMapOverlay(false, 'Low accuracy');
-        settleLocationRequests(false);
+        settleLocationRequests(run, false);
         return;
       }
 
-      settleLocationRequests(await resolveReading(reading, 'automatic', quality));
+      settleLocationRequests(run, await resolveReading(reading, 'automatic', quality));
     }
 
     async function finalizeManualLocation(latitudeValue: number, longitudeValue: number) {
@@ -607,6 +615,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       hasManualLandmark = false;
       if (landmarkInput) landmarkInput.value = '';
       isFinalizing = true;
+      const run = detectionRun;
       marker?.dragging?.disable();
       const reading: LocationReading = {
         latitude: latitudeValue,
@@ -616,7 +625,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       };
       bestReading = reading;
       updateReading(reading);
-      settleLocationRequests(await resolveReading(reading, 'manual', 'precise'));
+      settleLocationRequests(run, await resolveReading(reading, 'manual', 'precise'));
     }
 
     function handlePosition(position: GeolocationPosition, run: number) {
@@ -638,7 +647,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       showError('');
 
       if (classifyAccuracy(selected.accuracy) === 'precise' && isWithinAntiqueBounds(selected)) {
-        void finalizeAutomaticLocation(selected);
+        void finalizeAutomaticLocation(selected, run);
         return;
       }
 
@@ -661,7 +670,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       if (text) text.hidden = false;
       showError(locationErrorCopy(error));
       setMapOverlay(false, 'Location unavailable');
-      settleLocationRequests(false);
+      settleLocationRequests(run, false);
     }
 
     function detectLocation() {
@@ -689,8 +698,8 @@ function initializeLocationLogic(root: HTMLElement): () => void {
         if (accuracy) accuracy.hidden = false;
         setLandmark('unavailable', 'Location is not available', 'Landmark not selected');
         setMapOverlay(false, 'Location unavailable');
-        settleLocationRequests(false);
-        return;
+        settleLocationRequests(run, false);
+        return run;
       }
 
       setState('locating');
@@ -705,7 +714,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       refinementTimer = window.setTimeout(() => {
         if (disposed || run !== detectionRun || isFinalizing) return;
         if (bestReading) {
-          void finalizeAutomaticLocation(bestReading);
+          void finalizeAutomaticLocation(bestReading, run);
           return;
         }
         stopDetection();
@@ -714,8 +723,9 @@ function initializeLocationLogic(root: HTMLElement): () => void {
         setLandmark('unavailable', 'No location was detected', 'Landmark not selected');
         showError('No GPS reading arrived. Turn on precise location, move near a window, and try again.');
         setMapOverlay(false, 'Location timed out');
-        settleLocationRequests(false);
+        settleLocationRequests(run, false);
       }, REFINEMENT_WINDOW_MS);
+      return run;
     }
 
     function beginManualAdjustment() {
@@ -793,8 +803,10 @@ function initializeLocationLogic(root: HTMLElement): () => void {
         detail.resolve(true);
         return;
       }
-      locationRequestResolvers.add(detail.resolve);
-      detectLocation();
+      const run = detectLocation();
+      const resolvers = locationRequestResolvers.get(run) ?? new Set<(valid: boolean) => void>();
+      resolvers.add(detail.resolve);
+      locationRequestResolvers.set(run, resolvers);
     };
 
     void initializeMap();
@@ -820,7 +832,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       detectionRun += 1;
       stopDetection();
       reverseController?.abort();
-      settleLocationRequests(false);
+      settleAllLocationRequests(false);
       resizeObserver?.disconnect();
       refreshButton.removeEventListener('click', detectLocation);
       root.removeEventListener('resident-report:request-location', handleSubmissionLocationRequest);
