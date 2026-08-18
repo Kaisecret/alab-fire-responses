@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { MunicipalIncidentDetail } from "../../_components/municipal-incident-detail";
+import { BfpDataLoader } from "../../_components/bfp-data-loader";
 
 interface IncidentItem {
   id: string;
@@ -798,11 +799,14 @@ export default function ActiveIncidentsPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: "center", padding: "3rem" }}>
-                      <i className="fa-solid fa-arrows-rotate spin" style={{ fontSize: "1.5rem", color: "#DC2626" }} />
-                      <p style={{ marginTop: "0.75rem", fontWeight: 600, color: "#64748B" }}>
-                        Connecting to live BFP incident telemetry…
-                      </p>
+                    <td colSpan={6} style={{ padding: "1.5rem 0.5rem" }}>
+                      <BfpDataLoader
+                        theme="municipal"
+                        size="sm"
+                        title="Connecting to Live Incident Telemetry…"
+                        subtitle="Synchronizing incoming emergency reports and suppression status."
+                        minHeight="220px"
+                      />
                     </td>
                   </tr>
                 ) : filteredIncidents.length === 0 ? (

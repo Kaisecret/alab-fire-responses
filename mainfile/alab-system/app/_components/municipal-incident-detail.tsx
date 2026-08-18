@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MunicipalIncidentMap } from "./municipal-incident-map";
+import { BfpDataLoader } from "./bfp-data-loader";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 
 type Incident = {
@@ -765,21 +766,22 @@ export function MunicipalIncidentDetail({
     );
   }
 
-  // Polished Mission Control Loading State
+  // Polished Mission Control Loading State (Attached In-Card BFP Fire Loader)
   if (!incident) {
     return (
       <>
         <style>{detailStyles}</style>
-        <div className="mbfp-loading-shell">
-          <div className="mbfp-radar-scanner">
-            <span className="mbfp-radar-beam" />
-            <i className="fa-solid fa-satellite-dish mbfp-radar-inner-icon" />
+        <main className="mbfp-detail-shell">
+          <div className="mbfp-card" style={{ padding: "3rem 1.5rem" }}>
+            <BfpDataLoader
+              theme="municipal"
+              size="lg"
+              title="Accessing Live Incident Telemetry…"
+              subtitle="Connecting to municipal station GPS, caller verification, and tactical road routing."
+              minHeight="340px"
+            />
           </div>
-          <h2 className="mbfp-loading-title">Accessing Live Incident Telemetry…</h2>
-          <p className="mbfp-loading-subtext">
-            Connecting to municipal station GPS, caller verification, and road routing.
-          </p>
-        </div>
+        </main>
       </>
     );
   }
