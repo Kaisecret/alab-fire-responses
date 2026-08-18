@@ -26,6 +26,22 @@ test("normalizes the San Jose GPS label Maybato North to the official barangay s
   assert.equal(validation.normalizeDetectedBarangay("Maybato North"), "Maybato Norte");
 });
 
+test("keeps a municipality report routable when the GPS barangay is not in the official list", async () => {
+  const validation = await import("../lib/fire-reports/validation.ts");
+
+  assert.deepEqual(
+    validation.resolveDetectedBarangay([
+      { id: "official-map", name: "Mapatag" },
+      { id: "official-maybato", name: "Maybato Norte" },
+    ], "Unmapped GPS Barangay"),
+    {
+      barangayId: null,
+      barangayName: "Unmapped GPS Barangay",
+      needsVerification: true,
+    },
+  );
+});
+
 test("resident report submission waits for automatic location detection instead of failing immediately", () => {
   const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
 

@@ -3,6 +3,7 @@ import type { PoolClient } from "pg";
 
 import { getDatabase, withTransaction } from "../db";
 import {
+  resolveDetectedBarangay,
   normalizeDetectedBarangay,
   normalizeDetectedMunicipality,
   type FireReportInput,
@@ -10,10 +11,6 @@ import {
 import type { FireReportStatus } from "./types";
 
 export type PhotoMetadata = { storageKey: string; originalFileName: string; mimeType: string; fileSizeBytes: number };
-
-function localityKey(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]/g, "");
-}
 
 function referenceNumber() {
   return `ALAB-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 6).toUpperCase()}`;
@@ -33,13 +30,19 @@ export async function createResidentFireReport(userId: string, input: FireReport
     if (!resident) throw new Error("RESIDENT_PROFILE_NOT_FOUND");
     const detectedMunicipality = normalizeDetectedMunicipality(input.municipality);
     const detectedBarangay = normalizeDetectedBarangay(input.barangay);
-    const localities = await client.query<{ municipality_id: string; barangay_id: string; barangay_name: string }>(
+    const localities = await client.query<{ municipality_id: string; barangay_id: string | null; barangay_name: string | null }>(
       `select m.id as municipality_id, b.id as barangay_id, b.name as barangay_name
-       from municipalities m join barangays b on b.municipality_id = m.id
+       from municipalities m left join barangays b on b.municipality_id = m.id
        where lower(m.name) = lower($1)`, [detectedMunicipality],
     );
-    const locality = localities.rows.find((candidate) => localityKey(candidate.barangay_name) === localityKey(detectedBarangay));
-    if (!locality) throw new Error("DETECTED_LOCALITY_NOT_FOUND");
+    const municipalityId = localities.rows[0]?.municipality_id;
+    if (!municipalityId) throw new Error("DETECTED_MUNICIPALITY_NOT_FOUND");
+    const barangay = resolveDetectedBarangay(
+      localities.rows.flatMap((locality) => locality.barangay_id && locality.barangay_name
+        ? [{ id: locality.barangay_id, name: locality.barangay_name }]
+        : []),
+      detectedBarangay,
+    );
     const reportId = randomUUID();
     const reference = referenceNumber();
     const now = new Date();
@@ -48,9 +51,10 @@ export async function createResidentFireReport(userId: string, input: FireReport
         id, reference_number, resident_profile_id, reporter_name_snapshot, reporter_phone_snapshot, fire_type, description,
         status, latitude, longitude, location_accuracy_meters, location_method, location_quality, is_within_antique,
         municipality_id, barangay_id, address_label, nearest_landmark, submitted_at, updated_at
-      ) values ($1,$2,$3,$4,$5,$6,$7,'PENDING_VERIFICATION',$8,$9,$10,'GPS','DETECTED',true,$11,$12,$13,$14,$15,$15)`,
+      ) values ($1,$2,$3,$4,$5,$6,$7,'PENDING_VERIFICATION',$8,$9,$10,'GPS',$11,true,$12,$13,$14,$15,$16,$16)`,
       [reportId, reference, resident.id, resident.name, resident.phone, input.fireType, input.description || "No description provided.", input.latitude, input.longitude, input.locationAccuracy,
-        locality.municipality_id, locality.barangay_id, `${locality.barangay_name}, ${detectedMunicipality}, Antique`, input.landmark || null, now],
+        barangay.needsVerification ? "BARANGAY_NEEDS_VERIFICATION" : "DETECTED", municipalityId, barangay.barangayId,
+        `${barangay.barangayName}, ${detectedMunicipality}, Antique`, input.landmark || null, now],
     );
     await client.query(
       `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)

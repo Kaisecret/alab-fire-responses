@@ -15,6 +15,8 @@ export type FireReportInput = {
   description: string;
 };
 
+export type OfficialBarangay = { id: string; name: string };
+
 function text(value: unknown, maximum: number) {
   return typeof value === "string" ? value.trim().slice(0, maximum) : "";
 }
@@ -41,6 +43,21 @@ export function normalizeDetectedBarangay(value: unknown) {
   if (/^\d+[a-z]?$/i.test(officialDirection)) return `Barangay ${officialDirection}`;
 
   return officialDirection;
+}
+
+function barangayKey(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+export function resolveDetectedBarangay(officialBarangays: OfficialBarangay[], detectedValue: unknown) {
+  const barangayName = normalizeDetectedBarangay(detectedValue);
+  const officialMatch = officialBarangays.find((barangay) => barangayKey(barangay.name) === barangayKey(barangayName));
+
+  return {
+    barangayId: officialMatch?.id ?? null,
+    barangayName: officialMatch?.name ?? barangayName,
+    needsVerification: !officialMatch,
+  };
 }
 
 export function validateFireReportInput(raw: Record<string, unknown>): FireReportInput {
