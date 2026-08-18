@@ -5,7 +5,7 @@ import test from "node:test";
 
 const root = process.cwd();
 
-test("Municipal BFP incident map renders a protected road route and direct line", () => {
+test("Municipal BFP incident map routes from the live municipal device when permission is available", () => {
   const map = readFileSync(join(root, "app", "_components", "municipal-incident-map.tsx"), "utf8");
   const detail = readFileSync(join(root, "app", "_components", "municipal-incident-detail.tsx"), "utf8");
   assert.match(map, /leaflet/);
@@ -19,6 +19,10 @@ test("Municipal BFP incident map renders a protected road route and direct line"
   assert.match(map, /fa-fire/);
   assert.match(map, /rgba\(220, 38, 38/);
   assert.match(map, /L\.divIcon/);
+  assert.match(map, /navigator\.geolocation\.getCurrentPosition/);
+  assert.match(map, /Municipal BFP device location/);
+  assert.match(map, /enableHighAccuracy: true/);
+  assert.match(map, /maximumAge: 0/);
   assert.match(detail, /\/api\/municipal-bfp\/incidents/);
   assert.match(detail, /RESPOND/);
   assert.match(detail, /Resident emergency profile/);

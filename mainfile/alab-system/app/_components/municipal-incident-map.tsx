@@ -14,6 +14,34 @@ type IncidentMapProps = {
   };
 };
 
+type RouteOrigin = {
+  latitude: number;
+  longitude: number;
+  label: string;
+  isLiveDevice: boolean;
+};
+
+function getCurrentMunicipalDeviceLocation(): Promise<RouteOrigin | null> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          label: "your current device location",
+          isLiveDevice: true,
+        }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 12_000, maximumAge: 0 }
+    );
+  });
+}
+
 const mapStyles = `
   .mbfp-map-container {
     height: 380px;
@@ -137,13 +165,28 @@ export function MunicipalIncidentMap({ incident }: IncidentMapProps) {
         );
       incidentMarker.openPopup();
 
-      if (incident.stationLatitude == null || incident.stationLongitude == null) {
-        setRouteText("Station coordinates not configured. Incident marker displayed on map.");
+      const stationOrigin =
+        incident.stationLatitude != null && incident.stationLongitude != null
+          ? {
+              latitude: incident.stationLatitude,
+              longitude: incident.stationLongitude,
+              label: incident.stationName || "Municipal BFP station",
+              isLiveDevice: false,
+            }
+          : null;
+
+      setRouteText("Locating the Municipal BFP device for road guidance…");
+      const liveDeviceOrigin = await getCurrentMunicipalDeviceLocation();
+      if (disposed || !map) return;
+
+      const origin = liveDeviceOrigin || stationOrigin;
+      if (!origin) {
+        setRouteText("Allow device location to create a road route. Station coordinates are not configured.");
         return;
       }
 
       // Station marker
-      L.circleMarker([incident.stationLatitude, incident.stationLongitude], {
+      const originMarker = L.circleMarker([origin.latitude, origin.longitude], {
         radius: 10,
         color: "#1E3A8A",
         fillColor: "#2563EB",
@@ -155,8 +198,14 @@ export function MunicipalIncidentMap({ incident }: IncidentMapProps) {
           `<div style="font-family: sans-serif; font-size: 12px;"><b style="color:#2563EB;">🚒 ${incident.stationName || "Municipal BFP Station"}</b><br/>Dispatch Origin Point</div>`
         );
 
+      if (origin.isLiveDevice) {
+        originMarker.setPopupContent(
+          '<div style="font-family: sans-serif; font-size: 12px;"><b style="color:#2563EB;">Municipal BFP device location</b><br/>Live dispatch origin</div>'
+        );
+      }
+
       const direct: [[number, number], [number, number]] = [
-        [incident.stationLatitude, incident.stationLongitude],
+        [origin.latitude, origin.longitude],
         [incident.latitude, incident.longitude],
       ];
       const showDirectFallback = (message: string) => {
@@ -167,8 +216,8 @@ export function MunicipalIncidentMap({ incident }: IncidentMapProps) {
 
       try {
         const q = new URLSearchParams({
-          fromLat: String(incident.stationLatitude),
-          fromLng: String(incident.stationLongitude),
+          fromLat: String(origin.latitude),
+          fromLng: String(origin.longitude),
           toLat: String(incident.latitude),
           toLng: String(incident.longitude),
         });
