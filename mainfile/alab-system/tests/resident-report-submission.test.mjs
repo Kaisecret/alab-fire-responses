@@ -15,3 +15,11 @@ test("resident report APIs own their reports and accept controlled FormData uplo
   assert.match(service, /rp\.user_id = \$2/);
   assert.match(detailRoute, /getFireReportPhotoUrl/);
 });
+
+test("a photo storage failure cannot prevent an emergency report from being saved", () => {
+  const createRoute = readFileSync(join(root, "app", "api", "resident", "fire-reports", "route.ts"), "utf8");
+
+  assert.match(createRoute, /createResidentFireReport\(session\.userId, input\)/);
+  assert.match(createRoute, /attachFireReportPhoto\(report\.id, uploadedPhoto\)/);
+  assert.match(createRoute, /photoWarning/);
+});

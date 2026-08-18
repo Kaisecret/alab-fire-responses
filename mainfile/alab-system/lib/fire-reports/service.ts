@@ -27,7 +27,7 @@ async function residentProfile(client: PoolClient, userId: string) {
   return result.rows[0] ?? null;
 }
 
-export async function createResidentFireReport(userId: string, input: FireReportInput, photo: PhotoMetadata | null) {
+export async function createResidentFireReport(userId: string, input: FireReportInput) {
   return withTransaction(async (client) => {
     const resident = await residentProfile(client, userId);
     if (!resident) throw new Error("RESIDENT_PROFILE_NOT_FOUND");
@@ -52,16 +52,20 @@ export async function createResidentFireReport(userId: string, input: FireReport
       [reportId, reference, resident.id, resident.name, resident.phone, input.fireType, input.description || "No description provided.", input.latitude, input.longitude, input.locationAccuracy,
         locality.municipality_id, locality.barangay_id, `${locality.barangay_name}, ${detectedMunicipality}, Antique`, input.landmark || null, now],
     );
-    if (photo) await client.query(
-      `insert into fire_report_photos (fire_report_id, storage_key, original_file_name, mime_type, file_size_bytes, uploaded_at)
-       values ($1,$2,$3,$4,$5,$6)`, [reportId, photo.storageKey, photo.originalFileName, photo.mimeType, photo.fileSizeBytes, now],
-    );
     await client.query(
       `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)
        values ($1, null, 'PENDING_VERIFICATION', $2, 'Your fire report was submitted and is pending verification.', $3)`, [reportId, userId, now],
     );
     return { id: reportId, referenceNumber: reference, status: "PENDING_VERIFICATION" as const };
   });
+}
+
+export async function attachFireReportPhoto(reportId: string, photo: PhotoMetadata) {
+  await getDatabase().query(
+    `insert into fire_report_photos (fire_report_id, storage_key, original_file_name, mime_type, file_size_bytes, uploaded_at)
+     values ($1,$2,$3,$4,$5,$6)`,
+    [reportId, photo.storageKey, photo.originalFileName, photo.mimeType, photo.fileSizeBytes, new Date()],
+  );
 }
 
 export async function findResidentReport(userId: string, reportId: string) {
