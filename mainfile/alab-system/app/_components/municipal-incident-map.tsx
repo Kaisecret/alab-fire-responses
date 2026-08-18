@@ -159,9 +159,11 @@ export function MunicipalIncidentMap({ incident }: IncidentMapProps) {
         [incident.stationLatitude, incident.stationLongitude],
         [incident.latitude, incident.longitude],
       ];
-
-      L.polyline(direct, { color: "#94A3B8", dashArray: "6 6", weight: 2.5 }).addTo(map);
-      map.fitBounds(L.latLngBounds(direct).pad(0.25));
+      const showDirectFallback = (message: string) => {
+        L.polyline(direct, { color: "#94A3B8", dashArray: "6 6", weight: 2.5 }).addTo(map!);
+        map!.fitBounds(L.latLngBounds(direct).pad(0.25));
+        setRouteText(message);
+      };
 
       try {
         const q = new URLSearchParams({
@@ -172,22 +174,27 @@ export function MunicipalIncidentMap({ incident }: IncidentMapProps) {
         });
 
         const response = await fetch(`/api/routes/road?${q}`);
+        if (!response.ok) {
+          showDirectFallback("Road guidance is temporarily unavailable. Direct emergency line displayed.");
+          return;
+        }
         const data = await response.json();
         const kilometers = Number(data.directKilometers).toFixed(1);
 
         if (data.mode === "road" && Array.isArray(data.coordinates)) {
           L.polyline(data.coordinates, { color: "#DC2626", weight: 5, opacity: 0.9 }).addTo(map);
+          map.fitBounds(L.latLngBounds(data.coordinates).pad(0.18));
           setRouteText(
-            `Road route: ${(data.distanceMeters / 1000).toFixed(1)} km · Est. Response Time: ~${Math.max(
+            `Road route active: ${(data.distanceMeters / 1000).toFixed(1)} km · Est. Response Time: ~${Math.max(
               1,
               Math.round(data.durationSeconds / 60)
             )} mins (Direct: ${kilometers} km)`
           );
         } else {
-          setRouteText(`Direct line: ${kilometers} km · Road routing telemetry offline.`);
+          showDirectFallback(`Road guidance is temporarily unavailable. Direct distance: ${kilometers} km.`);
         }
       } catch {
-        setRouteText("Direct emergency line displayed. Real-time road routing temporarily unavailable.");
+        showDirectFallback("Road guidance is temporarily unavailable. Direct emergency line displayed.");
       }
     })();
 
