@@ -33,11 +33,14 @@ export function normalizeDetectedMunicipality(value: unknown) {
 export function normalizeDetectedBarangay(value: unknown) {
   const barangay = text(value, 120);
   const withoutPrefix = barangay.replace(/^(?:barangay|brgy\.?)\s+/i, '');
+  const officialDirection = withoutPrefix
+    .replace(/\bNorth\b/gi, 'Norte')
+    .replace(/\bSouth\b/gi, 'Sur');
 
   // Numeric barangays are officially named "Barangay 1", "Barangay 2", etc.
-  if (/^\d+[a-z]?$/i.test(withoutPrefix)) return `Barangay ${withoutPrefix}`;
+  if (/^\d+[a-z]?$/i.test(officialDirection)) return `Barangay ${officialDirection}`;
 
-  return withoutPrefix;
+  return officialDirection;
 }
 
 export function validateFireReportInput(raw: Record<string, unknown>): FireReportInput {

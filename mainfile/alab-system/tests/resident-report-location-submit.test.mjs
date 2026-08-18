@@ -20,6 +20,12 @@ test("normalizes a reverse-geocoded barangay label to the official barangay name
   assert.equal(validation.normalizeDetectedBarangay("Brgy. Mapatag"), "Mapatag");
 });
 
+test("normalizes the San Jose GPS label Maybato North to the official barangay spelling", async () => {
+  const validation = await import("../lib/fire-reports/validation.ts");
+
+  assert.equal(validation.normalizeDetectedBarangay("Maybato North"), "Maybato Norte");
+});
+
 test("resident report submission waits for automatic location detection instead of failing immediately", () => {
   const page = readFileSync(join(root, "app", "resident", "report-fire", "page.tsx"), "utf8");
 
