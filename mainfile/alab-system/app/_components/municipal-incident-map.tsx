@@ -31,18 +31,33 @@ const mapStyles = `
   }
 
   .mbfp-incident-fire-marker {
-    width: 38px;
-    height: 38px;
+    width: 60px;
+    height: 60px;
     display: grid;
     place-items: center;
+    border: 1.5px solid rgba(220, 38, 38, 0.44);
+    border-radius: 999px;
+    background: rgba(254, 242, 242, 0.38);
+    box-shadow: 0 0 0 8px rgba(220, 38, 38, 0.08);
   }
 
-  .mbfp-incident-fire-marker img {
-    display: block;
-    width: 38px;
-    height: 38px;
-    object-fit: contain;
-    filter: drop-shadow(0 3px 5px rgba(185, 28, 28, 0.42));
+  .mbfp-incident-fire-pin {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 50% 50% 50% 0;
+    background: #DC2626;
+    border: 2px solid #FFFFFF;
+    box-shadow: 0 4px 9px rgba(185, 28, 28, 0.46);
+    transform: rotate(-45deg);
+  }
+
+  .mbfp-incident-fire-pin i {
+    color: #FFFFFF;
+    font-size: 0.8rem;
+    line-height: 1;
+    transform: rotate(45deg);
   }
 
   .mbfp-route-panel {
@@ -110,10 +125,10 @@ export function MunicipalIncidentMap({ incident }: IncidentMapProps) {
       const incidentMarker = L.marker([incident.latitude, incident.longitude], {
         icon: L.divIcon({
           className: "mbfp-incident-fire-marker-wrapper",
-          html: '<span class="mbfp-incident-fire-marker"><img src="/images/fire logo.webp" alt="" /></span>',
-          iconSize: [38, 38],
-          iconAnchor: [19, 38],
-          popupAnchor: [0, -36],
+          html: '<span class="mbfp-incident-fire-marker"><span class="mbfp-incident-fire-pin"><i class="fa-solid fa-fire" aria-hidden="true"></i></span></span>',
+          iconSize: [60, 60],
+          iconAnchor: [30, 46],
+          popupAnchor: [0, -46],
         }),
       })
         .addTo(map)

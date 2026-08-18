@@ -13,7 +13,9 @@ test("Municipal BFP incident map renders a protected road route and direct line"
   assert.match(map, /polyline/);
   assert.match(map, /Direct line/);
   assert.match(map, /Road route/);
-  assert.match(map, /\/images\/fire logo\.webp/);
+  assert.match(map, /mbfp-incident-fire-pin/);
+  assert.match(map, /fa-fire/);
+  assert.match(map, /rgba\(220, 38, 38/);
   assert.match(map, /L\.divIcon/);
   assert.match(detail, /\/api\/municipal-bfp\/incidents/);
   assert.match(detail, /RESPOND/);
