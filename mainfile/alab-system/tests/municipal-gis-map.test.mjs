@@ -30,3 +30,20 @@ test("Municipal BFP incident map routes from the live municipal device when perm
   assert.match(detail, /Device \/ browser/);
   assert.match(detail, /GPS coordinates/);
 });
+
+test("Municipal GIS tab is a municipality-scoped live operations map instead of an incident detail view", () => {
+  const page = readFileSync(join(root, "app", "municipal-bfp", "gis-map", "page.tsx"), "utf8");
+
+  assert.match(page, /MunicipalGisOperationsMap/);
+  assert.doesNotMatch(page, /MunicipalIncidentDetail/);
+});
+
+test("Municipal GIS operations map draws every incident from the live municipal feed", () => {
+  const operationsMap = readFileSync(join(root, "app", "_components", "municipal-gis-operations-map.tsx"), "utf8");
+
+  assert.match(operationsMap, /useMunicipalIncidentFeed/);
+  assert.match(operationsMap, /incidents\.forEach/);
+  assert.match(operationsMap, /fitBounds/);
+  assert.match(operationsMap, /Municipal incident map/);
+  assert.match(operationsMap, /No active incidents in your assigned municipality/);
+});
