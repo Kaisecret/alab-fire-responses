@@ -46,7 +46,10 @@ test("Municipal GIS operations map draws every incident from the live municipal 
   assert.match(operationsMap, /includeHistory:\s*true/);
   assert.match(operationsMap, /autoRefresh:\s*false/);
   assert.match(operationsMap, /onSelectIncident/);
-  assert.match(operationsMap, /Manual refresh only/);
+  assert.match(operationsMap, /Live refresh/);
+  assert.doesNotMatch(operationsMap, /Manual refresh only/);
+  assert.doesNotMatch(operationsMap, /Every report assigned to/);
+  assert.match(operationsMap, /width:min\(100%,720px\)/);
   assert.match(operationsMap, /fitBounds/);
   assert.match(operationsMap, /Municipal incident map/);
   assert.match(operationsMap, /No incidents have been reported in your assigned municipality/);
