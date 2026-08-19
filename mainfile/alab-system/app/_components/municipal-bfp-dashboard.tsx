@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useMunicipalIncidentFeed } from './use-municipal-incident-feed';
 
 /* =====================================================================
    Municipal BFP Dashboard — Mission Command Center
@@ -1003,14 +1004,6 @@ const dashboardStyles = `
   }
 `;
 
-const incidentData = [
-  { ref: 'INC-2025-0421', barangay: 'Poblacion', type: 'Structure Fire', time: '10:24 AM', status: 'pending', statusLabel: 'Pending Verification' },
-  { ref: 'INC-2025-0420', barangay: 'Sampaguita', type: 'Grass Fire', time: '09:58 AM', status: 'confirmed', statusLabel: 'Confirmed' },
-  { ref: 'INC-2025-0419', barangay: 'San Roque', type: 'Structure Fire', time: '09:15 AM', status: 'dispatched', statusLabel: 'Dispatched' },
-  { ref: 'INC-2025-0418', barangay: 'Libertad', type: 'Brush Fire', time: '08:42 AM', status: 'responding', statusLabel: 'Responding' },
-  { ref: 'INC-2025-0417', barangay: 'Poblacion', type: 'Electrical Fire', time: '07:30 AM', status: 'contained', statusLabel: 'Contained' },
-];
-
 const resourceData = [
   { name: 'Engine 1', station: 'Poblacion Fire Station', type: 'engine', status: 'available', statusLabel: 'Available' },
   { name: 'Engine 2', station: 'Poblacion Fire Station', type: 'engine', status: 'ready', statusLabel: 'Ready' },
@@ -1019,6 +1012,22 @@ const resourceData = [
 ];
 
 export function MunicipalBfpDashboard() {
+  const { incidents, loading, checking, lastCheckedAt } = useMunicipalIncidentFeed();
+  const pendingCount = incidents.filter((incident) => ["PENDING", "UNVERIFIED"].includes(incident.status)).length;
+  const liveStatus = checking
+    ? "Live · checking..."
+    : lastCheckedAt
+      ? "Live · checked just now"
+      : "Live · connecting...";
+
+  const getStatusClass = (status: string) => {
+    if (status === 'RESPONDING') return 'responding';
+    if (status === 'DISPATCHED' || status === 'ASSIGNED') return 'dispatched';
+    if (status === 'VERIFIED') return 'confirmed';
+    if (status === 'UNDER_CONTROL') return 'contained';
+    return 'pending';
+  };
+
   return (
     <>
       <style>{dashboardStyles}</style>
@@ -1036,7 +1045,7 @@ export function MunicipalBfpDashboard() {
             </div>
             <div className="mbfp-stat-body">
               <span className="mbfp-stat-label">Active Incidents</span>
-              <span className="mbfp-stat-value">4</span>
+              <span className="mbfp-stat-value">{incidents.length}</span>
             </div>
             <div className="mbfp-stat-foot">
               <span>Live Operations</span>
@@ -1055,7 +1064,7 @@ export function MunicipalBfpDashboard() {
             </div>
             <div className="mbfp-stat-body">
               <span className="mbfp-stat-label">Pending Verification</span>
-              <span className="mbfp-stat-value">2</span>
+              <span className="mbfp-stat-value">{pendingCount}</span>
             </div>
             <div className="mbfp-stat-foot">
               <span>Incoming Citizen Reports</span>
@@ -1132,7 +1141,7 @@ export function MunicipalBfpDashboard() {
                 </div>
                 <span className="mbfp-card-title">Recent / Active Incident Queue</span>
               </div>
-              <span className="mbfp-card-badge">Live Monitoring</span>
+              <span className="mbfp-card-badge" aria-live="polite">{liveStatus}</span>
             </div>
 
             <div className="mbfp-card-body" style={{ padding: 0 }}>
@@ -1148,27 +1157,35 @@ export function MunicipalBfpDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {incidentData.map((inc) => (
-                      <tr key={inc.ref} className="mbfp-incident-row">
+                    {loading ? (
+                      <tr className="mbfp-incident-row">
+                        <td colSpan={5}>Loading live incident queue...</td>
+                      </tr>
+                    ) : incidents.length === 0 ? (
+                      <tr className="mbfp-incident-row">
+                        <td colSpan={5}>No active incidents in your assigned municipality.</td>
+                      </tr>
+                    ) : incidents.slice(0, 5).map((inc) => (
+                      <tr key={inc.id} className="mbfp-incident-row">
                         <td>
-                          <span className="mbfp-ref-code">{inc.ref}</span>
+                          <span className="mbfp-ref-code">{inc.referenceNumber}</span>
                         </td>
                         <td>
-                          <strong style={{ color: '#0F172A' }}>{inc.barangay}</strong>
+                          <strong style={{ color: '#0F172A' }}>{inc.barangay || 'Barangay not identified'}</strong>
                         </td>
                         <td>
                           <span className="mbfp-fire-type-tag">
                             <i className="fa-solid fa-fire-flame-simple" />
-                            <span>{inc.type}</span>
+                            <span>{inc.fireType.replaceAll('_', ' ')}</span>
                           </span>
                         </td>
                         <td style={{ color: '#64748B', fontFeatureSettings: 'tnum' }}>
-                          {inc.time}
+                          {new Intl.DateTimeFormat('en-PH', { hour: 'numeric', minute: '2-digit' }).format(new Date(inc.submittedAt))}
                         </td>
                         <td>
-                          <span className={`mbfp-status-pill ${inc.status}`}>
+                          <span className={`mbfp-status-pill ${getStatusClass(inc.status)}`}>
                             <span className="mbfp-pill-dot" />
-                            <span>{inc.statusLabel}</span>
+                            <span>{inc.status.replaceAll('_', ' ')}</span>
                           </span>
                         </td>
                       </tr>

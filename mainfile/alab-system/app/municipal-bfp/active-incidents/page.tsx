@@ -1,19 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { MunicipalIncidentDetail } from "../../_components/municipal-incident-detail";
 import { BfpDataLoader } from "../../_components/bfp-data-loader";
-
-interface IncidentItem {
-  id: string;
-  referenceNumber: string;
-  residentName: string;
-  fireType: string;
-  status: string;
-  barangay: string;
-  landmark: string | null;
-  submittedAt: string;
-}
+import { useMunicipalIncidentFeed } from "../../_components/use-municipal-incident-feed";
 
 const activeIncidentsStyles = `
   /* ========== ACTIVE INCIDENTS STYLES ========== */
@@ -45,6 +35,12 @@ const activeIncidentsStyles = `
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+  }
+
+  .mbfp-live-check {
+    color: #64748B;
+    font-size: 0.72rem;
+    font-weight: 700;
   }
 
   .mbfp-ops-live-pill {
@@ -591,46 +587,23 @@ const activeIncidentsStyles = `
 `;
 
 export default function ActiveIncidentsPage() {
-  const [incidents, setIncidents] = useState<IncidentItem[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("ALL");
-
-  const loadIncidents = async (isManual = false) => {
-    if (isManual) setRefreshing(true);
-    setError("");
-    try {
-      const res = await fetch("/api/municipal-bfp/incidents", { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to fetch incidents");
-      setIncidents(data.incidents || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load active incidents.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    loadIncidents();
-    // Live polling interval every 12 seconds
-    const timer = setInterval(() => {
-      loadIncidents();
-    }, 12000);
-    return () => clearInterval(timer);
-  }, []);
+  const { incidents, loading, checking, refreshing, error, lastCheckedAt, refresh } = useMunicipalIncidentFeed();
+  const liveRefreshLabel = checking
+    ? "Live · checking..."
+    : lastCheckedAt
+      ? "Live · checked just now"
+      : "Live · waiting for telemetry";
 
   const filteredIncidents = useMemo(() => {
     return incidents.filter((item) => {
       const matchesSearch =
         searchQuery === "" ||
         item.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.residentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.barangay.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.residentName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.barangay || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (item.landmark && item.landmark.toLowerCase().includes(searchQuery.toLowerCase()));
 
       if (!matchesSearch) return false;
@@ -654,7 +627,7 @@ export default function ActiveIncidentsPage() {
       <MunicipalIncidentDetail
         incidentId={selected}
         onBack={() => setSelected(null)}
-        onResponded={() => loadIncidents()}
+        onResponded={() => refresh()}
       />
     );
   }
@@ -674,16 +647,17 @@ export default function ActiveIncidentsPage() {
               <i className="fa-solid fa-fire" />
               <span>Active Incidents</span>
             </h1>
+            <span className="mbfp-live-check" aria-live="polite">{liveRefreshLabel}</span>
           </div>
 
           <div className="mbfp-header-actions">
             <button
               className="mbfp-refresh-btn"
-              onClick={() => loadIncidents(true)}
+              onClick={() => refresh(true)}
               disabled={refreshing}
               aria-label="Refresh incident queue"
             >
-              <i className={`fa-solid fa-arrows-rotate ${refreshing ? "spin" : ""}`} />
+              <i className={`fa-solid fa-arrows-rotate ${checking ? "spin" : ""}`} />
               <span>{refreshing ? "Refreshing…" : "Live Refresh"}</span>
             </button>
           </div>
@@ -868,7 +842,7 @@ export default function ActiveIncidentsPage() {
                           <div className="mbfp-loc-cell">
                             <span className="mbfp-loc-brgy">
                               <i className="fa-solid fa-location-dot" style={{ color: "#DC2626", fontSize: "0.8rem" }} />
-                              {inc.barangay}
+                              {inc.barangay || "Barangay not identified"}
                             </span>
                             <span className="mbfp-loc-landmark">
                               {inc.landmark ? `Near: ${inc.landmark}` : "No landmark specified"}

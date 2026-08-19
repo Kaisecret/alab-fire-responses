@@ -37,3 +37,33 @@ test("municipal dashboard mobile rules prevent cramped cards and page overflow",
   assert.match(mobileRules, /\.mbfp-card-body[\s\S]*overflow-x:\s*auto/);
   assert.match(mobileRules, /\.mbfp-emergency-item[\s\S]*flex-direction:\s*column/);
 });
+
+test("municipal incident feed refreshes every five seconds only while the tab is visible", () => {
+  const feedPath = join(root, "app", "_components", "use-municipal-incident-feed.ts");
+  const feed = readFileSync(feedPath, "utf8");
+
+  assert.match(feed, /REFRESH_INTERVAL_MS\s*=\s*5_000/);
+  assert.match(feed, /document\.visibilityState\s*===\s*["']visible["']/);
+  assert.match(feed, /document\.addEventListener\(["']visibilitychange["']/);
+  assert.match(feed, /document\.removeEventListener\(["']visibilitychange["']/);
+  assert.match(feed, /fetch\(["']\/api\/municipal-bfp\/incidents["'],\s*\{\s*cache:\s*["']no-store["']\s*\}\s*\)/);
+});
+
+test("municipal active incidents uses the shared live feed instead of a local twelve-second interval", () => {
+  const pagePath = join(root, "app", "municipal-bfp", "active-incidents", "page.tsx");
+  const page = readFileSync(pagePath, "utf8");
+
+  assert.match(page, /useMunicipalIncidentFeed/);
+  assert.doesNotMatch(page, /12000/);
+  assert.match(page, /Live · checked/);
+});
+
+test("municipal dashboard renders its incident queue from the authenticated live feed", () => {
+  const dashboardPath = join(root, "app", "_components", "municipal-bfp-dashboard.tsx");
+  const dashboard = readFileSync(dashboardPath, "utf8");
+
+  assert.match(dashboard, /useMunicipalIncidentFeed/);
+  assert.doesNotMatch(dashboard, /const incidentData\s*=/);
+  assert.match(dashboard, /incidents\.slice\(0, 5\)/);
+  assert.match(dashboard, /Live · checked/);
+});
