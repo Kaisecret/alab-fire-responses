@@ -18,11 +18,13 @@ export interface MunicipalIncident {
 }
 
 interface MunicipalIncidentResponse {
+  municipality?: string;
   incidents?: MunicipalIncident[];
   error?: string;
 }
 
 export function useMunicipalIncidentFeed() {
+  const [municipality, setMunicipality] = useState("");
   const [incidents, setIncidents] = useState<MunicipalIncident[]>([]);
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
@@ -48,6 +50,7 @@ export function useMunicipalIncidentFeed() {
       }
 
       if (!mounted.current) return;
+      setMunicipality(payload.municipality || "");
       setIncidents(payload.incidents || []);
       setError("");
       setLastCheckedAt(new Date());
@@ -85,5 +88,5 @@ export function useMunicipalIncidentFeed() {
     };
   }, [refresh]);
 
-  return { incidents, loading, checking, refreshing, error, lastCheckedAt, refresh };
+  return { municipality, incidents, loading, checking, refreshing, error, lastCheckedAt, refresh };
 }
