@@ -23,7 +23,11 @@ interface MunicipalIncidentResponse {
   error?: string;
 }
 
-export function useMunicipalIncidentFeed() {
+interface MunicipalIncidentFeedOptions {
+  includeHistory?: boolean;
+}
+
+export function useMunicipalIncidentFeed({ includeHistory = false }: MunicipalIncidentFeedOptions = {}) {
   const [municipality, setMunicipality] = useState("");
   const [incidents, setIncidents] = useState<MunicipalIncident[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +46,9 @@ export function useMunicipalIncidentFeed() {
     if (manual) setRefreshing(true);
 
     try {
-      const response = await fetch("/api/municipal-bfp/incidents", { cache: "no-store" });
+      const response = includeHistory
+        ? await fetch("/api/municipal-bfp/incidents?scope=all", { cache: "no-store" })
+        : await fetch("/api/municipal-bfp/incidents", { cache: "no-store" });
       const payload = (await response.json()) as MunicipalIncidentResponse;
 
       if (!response.ok) {
@@ -66,7 +72,7 @@ export function useMunicipalIncidentFeed() {
       }
       inFlight.current = false;
     }
-  }, []);
+  }, [includeHistory]);
 
   useEffect(() => {
     mounted.current = true;
