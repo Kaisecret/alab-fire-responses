@@ -42,8 +42,33 @@ test("Municipal GIS operations map draws every incident from the live municipal 
   const operationsMap = readFileSync(join(root, "app", "_components", "municipal-gis-operations-map.tsx"), "utf8");
 
   assert.match(operationsMap, /useMunicipalIncidentFeed/);
-  assert.match(operationsMap, /incidents\.forEach/);
+  assert.match(operationsMap, /clusterIncidents/);
+  assert.match(operationsMap, /includeHistory:\s*true/);
+  assert.match(operationsMap, /onSelectIncident/);
   assert.match(operationsMap, /fitBounds/);
   assert.match(operationsMap, /Municipal incident map/);
-  assert.match(operationsMap, /No active incidents in your assigned municipality/);
+  assert.match(operationsMap, /No incidents have been reported in your assigned municipality/);
+  assert.match(operationsMap, /MunicipalGisIncidentModal/);
+});
+
+test("Municipal GIS history remains restricted to the signed-in municipality", () => {
+  const feed = readFileSync(join(root, "app", "_components", "use-municipal-incident-feed.ts"), "utf8");
+  const route = readFileSync(join(root, "app", "api", "municipal-bfp", "incidents", "route.ts"), "utf8");
+
+  assert.match(feed, /includeHistory/);
+  assert.match(feed, /scope=all/);
+  assert.match(route, /includeHistory/);
+  assert.match(route, /fr\.municipality_id = \$1/);
+  assert.match(route, /fr\.status not in/);
+});
+
+test("Municipal GIS marker details use the protected incident endpoint and present the response history", () => {
+  const modal = readFileSync(join(root, "app", "_components", "municipal-gis-incident-modal.tsx"), "utf8");
+
+  assert.match(modal, /\/api\/municipal-bfp\/incidents\//);
+  assert.match(modal, /Status timeline/);
+  assert.match(modal, /Reported cause \/ description/);
+  assert.match(modal, /Response started/);
+  assert.match(modal, /Completed \/ closed/);
+  assert.match(modal, /View incident photo/);
 });
