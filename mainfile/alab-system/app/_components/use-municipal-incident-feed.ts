@@ -25,9 +25,10 @@ interface MunicipalIncidentResponse {
 
 interface MunicipalIncidentFeedOptions {
   includeHistory?: boolean;
+  autoRefresh?: boolean;
 }
 
-export function useMunicipalIncidentFeed({ includeHistory = false }: MunicipalIncidentFeedOptions = {}) {
+export function useMunicipalIncidentFeed({ includeHistory = false, autoRefresh = true }: MunicipalIncidentFeedOptions = {}) {
   const [municipality, setMunicipality] = useState("");
   const [incidents, setIncidents] = useState<MunicipalIncident[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +85,11 @@ export function useMunicipalIncidentFeed({ includeHistory = false }: MunicipalIn
     };
 
     void refresh();
+    if (!autoRefresh) {
+      return () => {
+        mounted.current = false;
+      };
+    }
     const timer = window.setInterval(refreshWhenVisible, REFRESH_INTERVAL_MS);
     document.addEventListener("visibilitychange", refreshWhenVisible);
 
@@ -92,7 +98,7 @@ export function useMunicipalIncidentFeed({ includeHistory = false }: MunicipalIn
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
-  }, [refresh]);
+  }, [autoRefresh, refresh]);
 
   return { municipality, incidents, loading, checking, refreshing, error, lastCheckedAt, refresh };
 }

@@ -44,7 +44,9 @@ test("Municipal GIS operations map draws every incident from the live municipal 
   assert.match(operationsMap, /useMunicipalIncidentFeed/);
   assert.match(operationsMap, /clusterIncidents/);
   assert.match(operationsMap, /includeHistory:\s*true/);
+  assert.match(operationsMap, /autoRefresh:\s*false/);
   assert.match(operationsMap, /onSelectIncident/);
+  assert.match(operationsMap, /Manual refresh only/);
   assert.match(operationsMap, /fitBounds/);
   assert.match(operationsMap, /Municipal incident map/);
   assert.match(operationsMap, /No incidents have been reported in your assigned municipality/);
@@ -56,6 +58,7 @@ test("Municipal GIS history remains restricted to the signed-in municipality", (
   const route = readFileSync(join(root, "app", "api", "municipal-bfp", "incidents", "route.ts"), "utf8");
 
   assert.match(feed, /includeHistory/);
+  assert.match(feed, /autoRefresh/);
   assert.match(feed, /scope=all/);
   assert.match(route, /includeHistory/);
   assert.match(route, /fr\.municipality_id = \$1/);
