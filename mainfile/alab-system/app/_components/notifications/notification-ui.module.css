@@ -60,3 +60,248 @@
   .markAllButton i { font-size: 14px; }
   .filters { scrollbar-width: none; }
 }
+
+/* Shared notification command-center treatment. These rules intentionally
+   enhance the existing compact components without changing their data flow. */
+.bellButton:focus-visible,
+.markAllButton:focus-visible,
+.filters button:focus-visible,
+.viewAll:focus-visible,
+.card:focus-visible {
+  outline: 3px solid rgba(217, 27, 16, .2);
+  outline-offset: 2px;
+}
+
+.popover {
+  border-color: rgba(203, 213, 225, .82);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+  backdrop-filter: blur(18px);
+}
+
+.popoverHeader {
+  background: linear-gradient(180deg, #fff 0%, #fffafa 100%);
+}
+
+.popoverList {
+  background: #f8fafc;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.cardUnread::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: #df2118;
+  content: "";
+}
+
+.cardHeading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardHeading .cardTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.categoryTag {
+  flex: none;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .035em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.tagINCIDENT { color: #c81e16; background: #feeceb; }
+.tagRESPONSE { color: #047857; background: #dff8ec; }
+.tagAPPLICATION { color: #b45309; background: #fff1c2; }
+.tagACCOUNT { color: #1d4ed8; background: #e5edff; }
+.tagSYSTEM { color: #475569; background: #e9eef4; }
+
+.center {
+  max-width: 1240px;
+  min-height: calc(100vh - 72px);
+  padding: 28px;
+}
+
+.center::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background: #eef5fd;
+  content: "";
+}
+
+.centerHeader {
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.centerHeading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.centerHeaderIcon {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #ffc4c0;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  color: #d91b10;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(185, 28, 28, .08);
+}
+
+.centerHeaderIcon i { font-size: 18px; }
+
+.centerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.livePill {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #a7ebcf;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #047857;
+  background: #ecfdf5;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.livePill i {
+  color: #10b981;
+  font-size: 7px;
+  animation: notificationPulse 1.8s ease-in-out infinite;
+}
+
+.toolbar {
+  margin-bottom: 12px;
+  padding: 8px;
+  border: 1px solid #dce5f0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 6px 24px rgba(15, 23, 42, .05);
+}
+
+.toolbar .filters {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.centerSummary {
+  padding: 7px 6px 0;
+  color: #6b7890;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.centerList .card {
+  border-color: #dfe7f1;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 5px 20px rgba(15, 23, 42, .055);
+}
+
+.centerList .cardUnread {
+  border-color: #ffc3bf;
+  background: #fffafa;
+}
+
+@keyframes notificationPulse {
+  0%, 100% { opacity: .45; transform: scale(.8); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 760px) {
+  .center {
+    padding: 18px 12px 110px;
+  }
+
+  .centerHeader {
+    align-items: flex-start;
+  }
+
+  .centerHeading {
+    align-items: flex-start;
+  }
+
+  .centerHeaderIcon {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
+
+  .centerHeader h1 {
+    font-size: 28px;
+  }
+
+  .centerHeader p {
+    max-width: 225px;
+  }
+
+  .livePill {
+    display: none;
+  }
+
+  .toolbar {
+    padding: 6px;
+  }
+
+  .centerList .card {
+    min-height: 92px;
+    padding: 12px 10px;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+  }
+
+  .categoryTag {
+    display: none;
+  }
+
+  .popover {
+    animation: sheetIn 180ms ease-out;
+  }
+}
+
+@keyframes sheetIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .livePill i,
+  .popover {
+    animation: none;
+  }
+
+  .bellButton,
+  .card {
+    transition: none;
+  }
+}

@@ -27,8 +27,14 @@ test("shared notification cards use compact report-style UI", () => {
   assert.match(center, /Unread/);
   assert.match(center, /Incidents/);
   assert.match(center, /Applications/);
+  assert.match(center, /Live updates/);
+  assert.match(center, /centerHeaderIcon/);
+  assert.match(card, /categoryLabel/);
   assert.match(styles, /gap:\s*8px/);
   assert.match(styles, /min-height:\s*44px/);
+  assert.match(styles, /#eef5fd/i);
+  assert.match(styles, /backdrop-filter:\s*blur/i);
+  assert.doesNotMatch(center, /ALAB-20260820|Mapatag Elementary|Just now/);
 });
 
 test("all three portal layouts use real shared notification bells", () => {

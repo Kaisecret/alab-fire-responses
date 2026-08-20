@@ -13,6 +13,14 @@ const iconByCategory: Record<NotificationCategory, string> = {
   SYSTEM: "fa-solid fa-bell",
 };
 
+const categoryLabel: Record<NotificationCategory, string> = {
+  INCIDENT: "Incident",
+  RESPONSE: "Response",
+  APPLICATION: "Application",
+  ACCOUNT: "Account",
+  SYSTEM: "System",
+};
+
 function relativeTime(value: string) {
   const elapsed = Date.now() - new Date(value).getTime();
   const minutes = Math.max(0, Math.floor(elapsed / 60_000));
@@ -34,7 +42,10 @@ export function NotificationCard({ notification, onOpen }: {
         <i className={iconByCategory[notification.category]} />
       </span>
       <span className={styles.cardCopy}>
-        <span className={styles.cardTitle}>{notification.title}</span>
+        <span className={styles.cardHeading}>
+          <span className={styles.cardTitle}>{notification.title}</span>
+          <span className={`${styles.categoryTag} ${styles[`tag${notification.category}`]}`}>{categoryLabel[notification.category]}</span>
+        </span>
         <span className={styles.cardSummary}>{notification.summary}</span>
       </span>
       <span className={styles.cardMeta}>

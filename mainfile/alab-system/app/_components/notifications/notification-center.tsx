@@ -13,6 +13,8 @@ const filters: Array<{ value: Filter; label: string }> = [
   { value: "UNREAD", label: "Unread" },
   { value: "INCIDENT", label: "Incidents" },
   { value: "APPLICATION", label: "Applications" },
+  { value: "RESPONSE", label: "Responses" },
+  { value: "ACCOUNT", label: "Accounts" },
 ];
 
 export function NotificationCenter({ apiPath, eyebrow = "LIVE ACCOUNT UPDATES" }: { apiPath: string; eyebrow?: string }) {
@@ -27,28 +29,37 @@ export function NotificationCenter({ apiPath, eyebrow = "LIVE ACCOUNT UPDATES" }
   return (
     <section className={styles.center}>
       <header className={styles.centerHeader}>
-        <span>
-          <small className={styles.eyebrow}><i className="fa-solid fa-circle" /> {eyebrow}</small>
-          <h1>Notifications</h1>
-          <p>Incident, response, and account updates in one place.</p>
-        </span>
-        {unreadCount > 0 && <button className={styles.markAllButton} type="button" onClick={() => void markAllRead()}>
-          <i className="fa-solid fa-check-double" /> Mark all read
-        </button>}
+        <div className={styles.centerHeading}>
+          <span className={styles.centerHeaderIcon} aria-hidden="true"><i className="fa-solid fa-bell" /></span>
+          <span>
+            <small className={styles.eyebrow}>{eyebrow}</small>
+            <h1>Notifications</h1>
+            <p>Incident, response, and account updates in one place.</p>
+          </span>
+        </div>
+        <div className={styles.centerActions}>
+          <span className={styles.livePill}><i className="fa-solid fa-circle" /> Live updates</span>
+          {unreadCount > 0 && <button className={styles.markAllButton} type="button" onClick={() => void markAllRead()}>
+            <i className="fa-solid fa-check-double" /> Mark all read
+          </button>}
+        </div>
       </header>
-      <nav className={styles.filters} aria-label="Notification filters">
-        {filters.map((item) => (
-          <button
-            type="button"
-            key={item.value}
-            className={filter === item.value ? styles.filterActive : ""}
-            aria-pressed={filter === item.value}
-            onClick={() => setFilter(item.value)}
-          >
-            {item.label}{item.value === "UNREAD" && unreadCount > 0 ? ` (${unreadCount})` : ""}
-          </button>
-        ))}
-      </nav>
+      <div className={styles.toolbar}>
+        <nav className={styles.filters} aria-label="Notification filters">
+          {filters.map((item) => (
+            <button
+              type="button"
+              key={item.value}
+              className={filter === item.value ? styles.filterActive : ""}
+              aria-pressed={filter === item.value}
+              onClick={() => setFilter(item.value)}
+            >
+              {item.label}{item.value === "UNREAD" && unreadCount > 0 ? ` (${unreadCount})` : ""}
+            </button>
+          ))}
+        </nav>
+        <span className={styles.centerSummary}>{notifications.length} updates <b>{unreadCount} unread</b></span>
+      </div>
       <div className={styles.centerList}>
         {isLoading && <div className={styles.state}>Loading account updates…</div>}
         {!isLoading && error && <div className={styles.state}>{error}</div>}
