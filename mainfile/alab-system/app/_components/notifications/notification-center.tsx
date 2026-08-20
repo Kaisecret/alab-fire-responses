@@ -34,7 +34,6 @@ export function NotificationCenter({ apiPath, eyebrow = "LIVE ACCOUNT UPDATES" }
           <span>
             <small className={styles.eyebrow}>{eyebrow}</small>
             <h1>Notifications</h1>
-            <p>Incident, response, and account updates in one place.</p>
           </span>
         </div>
         <div className={styles.centerActions}>
@@ -58,7 +57,10 @@ export function NotificationCenter({ apiPath, eyebrow = "LIVE ACCOUNT UPDATES" }
             </button>
           ))}
         </nav>
-        <span className={styles.centerSummary}>{notifications.length} updates <b>{unreadCount} unread</b></span>
+        <span className={styles.centerSummary}>
+          <span>{notifications.length} updates</span>
+          <b>{unreadCount} unread</b>
+        </span>
       </div>
       <div className={styles.centerList}>
         {isLoading && <div className={styles.state}>Loading account updates…</div>}

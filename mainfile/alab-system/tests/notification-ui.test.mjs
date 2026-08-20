@@ -37,6 +37,19 @@ test("shared notification cards use compact report-style UI", () => {
   assert.doesNotMatch(center, /ALAB-20260820|Mapatag Elementary|Just now/);
 });
 
+test("notification center stays contained and the resident sheet fits mobile screens", () => {
+  const center = source("app/_components/notifications/notification-center.tsx");
+  const styles = source("app/_components/notifications/notification-ui.module.css");
+
+  assert.doesNotMatch(center, /Incident, response, and account updates in one place\./);
+  assert.match(styles, /\.center,\s*\.center \*\s*\{[^}]*box-sizing:\s*border-box/s);
+  assert.match(styles, /\.bellRoot,\s*\.bellRoot \*\s*\{[^}]*box-sizing:\s*border-box/s);
+  assert.match(styles, /\.toolbar\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto/s);
+  assert.match(styles, /\.centerHeader h1\s*\{[^}]*font-size:\s*clamp\(24px,\s*3vw,\s*32px\)/s);
+  assert.match(styles, /padding-bottom:\s*calc\(8px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(styles, /@media \(max-width:\s*640px\)[\s\S]*\.popoverHeader\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto/s);
+});
+
 test("all three portal layouts use real shared notification bells", () => {
   const layouts = [
     source("app/resident/layout.tsx"),
