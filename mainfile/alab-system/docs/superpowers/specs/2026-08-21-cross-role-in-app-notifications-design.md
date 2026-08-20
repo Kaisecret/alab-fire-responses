@@ -1,7 +1,7 @@
 # Cross-Role In-App Notifications Design
 
 **Date:** 2026-08-21  
-**Status:** Approved design, awaiting specification review  
+**Status:** Approved for implementation  
 **Scope:** Resident, Municipal BFP, and Provincial BFP portals
 
 ## Goal
