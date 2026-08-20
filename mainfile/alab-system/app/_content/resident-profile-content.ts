@@ -588,18 +588,23 @@ export const profileStyles = `
         }
         
         .settings-menu-card {
-            padding: 1.25rem 1.25rem !important;
+            padding: 1.5rem !important;
             margin: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
             border-radius: 1.2rem !important;
         }
-        .settings-item { padding: 0.85rem 0 !important; }
+        .settings-menu-card .profile-card-header {
+            margin-bottom: 1.2rem;
+            padding-bottom: 1rem !important;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .settings-item { padding: 1rem 0 !important; }
         .settings-item-left { font-size: 0.95rem !important; font-weight: 600 !important; gap: 0.75rem !important; }
         .settings-item-left svg { width: 1.25rem !important; height: 1.25rem !important; }
         .settings-item .chevron-right { width: 1.15rem !important; height: 1.15rem !important; }
-        .settings-menu-card .profile-card-title { font-size: 1.15rem !important; font-weight: 800 !important; margin-bottom: 0.8rem !important; justify-content: flex-start; }
+        .settings-menu-card .profile-card-title { font-size: 1.15rem !important; font-weight: 800 !important; justify-content: flex-start; }
 
         /* Mobile Account Status */
         .mobile-account-status {
@@ -807,8 +812,8 @@ export const profileMarkup = `
                     <div class="mobile-dashboard-row mobile-only">
                         <!-- Mobile Settings Menu -->
                         <div class="profile-card settings-menu-card">
-                            <div class="profile-card-header no-border" style="padding-bottom: 0;">
-                                <div class="profile-card-title" style="margin-bottom: 0;">Settings</div>
+                            <div class="profile-card-header no-border">
+                                <div class="profile-card-title">Settings</div>
                             </div>
                             <div class="settings-list">
                                 <a href="#" class="settings-item">

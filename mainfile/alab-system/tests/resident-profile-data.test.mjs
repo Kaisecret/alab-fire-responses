@@ -17,3 +17,11 @@ test("resident profile reads only the signed-in resident's database record", () 
   assert.match(page, /fetch\("\/api\/resident\/profile"\)/);
   assert.match(page, /data-profile-field/);
 });
+
+test("resident mobile settings use the same vertical rhythm as personal information", () => {
+  const content = readFileSync(join(appRoot, "app", "_content", "resident-profile-content.ts"), "utf8");
+
+  assert.match(content, /\.settings-menu-card\s*\{[\s\S]*?padding:\s*1\.5rem\s*!important/);
+  assert.match(content, /\.settings-item\s*\{\s*padding:\s*1rem 0\s*!important/);
+  assert.match(content, /\.settings-menu-card \.profile-card-header\s*\{[\s\S]*?margin-bottom:\s*1\.2rem/);
+});
