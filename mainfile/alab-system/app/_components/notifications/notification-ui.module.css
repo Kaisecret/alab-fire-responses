@@ -12,7 +12,10 @@
 .popoverHeader > span { display: grid; gap: 2px; }
 .popoverHeader strong { color: #111827; font-size: 16px; }
 .popoverHeader small { color: #64748b; font-size: 12px; }
-.popoverHeader button, .markAllButton { min-height: 44px; border: 0; border-radius: 12px; padding: 0 12px; background: #fff1f0; color: #cf1c14; font-weight: 800; cursor: pointer; }
+.popoverHeaderActions { display: inline-flex; align-items: center; gap: 8px; }
+.popoverMarkAll, .markAllButton { min-height: 44px; border: 0; border-radius: 12px; padding: 0 12px; background: #fff1f0; color: #cf1c14; font-weight: 800; cursor: pointer; }
+.popoverClose { width: 40px; height: 40px; padding: 0; border: 1px solid #dce4ef; border-radius: 12px; display: grid; place-items: center; flex: none; color: #52617a; background: #fff; cursor: pointer; transition: border-color 160ms ease, color 160ms ease, background 160ms ease; }
+.popoverClose:hover { border-color: #f4aaa5; color: #cf1c14; background: #fff7f6; }
 .popoverList { padding: 8px; overflow-y: auto; display: grid; gap: 8px; }
 .card { min-height: 72px; width: 100%; padding: 10px; border: 1px solid #e4eaf1; border-radius: 15px; color: inherit; background: #fff; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 8px; text-align: left; text-decoration: none; transition: border-color 160ms ease, background 160ms ease, transform 160ms ease; }
 .card:hover { border-color: #f2aca7; transform: translateY(-1px); }
@@ -58,7 +61,8 @@
   .mobileBackdrop { position: fixed; inset: 0; z-index: 1000; display: block; border: 0; background: rgba(15, 23, 42, .45); }
   .popover { position: fixed; z-index: 1001; inset: auto 8px calc(8px + env(safe-area-inset-bottom)); width: auto; max-height: min(70dvh, 520px); border-radius: 18px; }
   .popoverHeader { min-height: 58px; padding: 9px 10px; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-  .popoverHeader button { min-height: 40px; padding: 0 10px; font-size: 12px; }
+  .popoverMarkAll { min-height: 40px; padding: 0 10px; font-size: 12px; }
+  .popoverClose { width: 40px; height: 40px; }
   .popoverList { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
   .popoverList .card { grid-template-columns: 40px minmax(0, 1fr) auto; }
   .popoverList .categoryTag { display: none; }
@@ -322,7 +326,7 @@
     width: 100%;
     min-height: auto;
     margin: 0;
-    padding: 28px 32px 48px;
+    padding: 31px 35px 51px;
   }
 
   .municipalDesktop::before {
@@ -355,7 +359,7 @@
   }
 
   .municipalDesktop .toolbar {
-    margin-bottom: 16px;
+    margin-bottom: 19px;
     padding: 8px;
     border-radius: 16px;
     background: #fff;
@@ -381,6 +385,10 @@
     border-radius: 16px;
     background: #fff;
     box-shadow: 0 5px 18px rgba(15, 23, 42, .05);
+  }
+
+  .municipalDesktop .centerList {
+    gap: 12px;
   }
 
   .municipalDesktop .centerList .cardUnread {
@@ -416,29 +424,29 @@
    existing compact mobile sheet. */
 @media (min-width: 641px) {
   .popover {
-    width: min(460px, calc(100vw - 40px));
-    max-height: min(640px, calc(100dvh - 110px));
+    width: min(520px, calc(100vw - 48px));
+    max-height: min(680px, calc(100dvh - 110px));
   }
 
   .popoverHeader {
-    min-height: 72px;
-    padding: 14px 16px;
+    min-height: 76px;
+    padding: 16px 18px;
   }
 
-  .popoverHeader strong { font-size: 18px; }
+  .popoverHeader strong { font-size: 19px; }
   .popoverHeader small { font-size: 13px; }
-  .popoverList { padding: 10px; gap: 10px; }
+  .popoverList { padding: 12px; gap: 12px; }
 
   .popoverList .card {
-    min-height: 88px;
-    padding: 14px;
-    grid-template-columns: 48px minmax(0, 1fr) auto;
-    gap: 12px;
+    min-height: 96px;
+    padding: 16px;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    gap: 14px;
   }
 
   .popoverList .iconTile {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     border-radius: 14px;
     font-size: 17px;
   }
@@ -446,7 +454,7 @@
   .popoverList .cardTitle { font-size: 15px; }
   .popoverList .cardSummary { font-size: 13px; }
   .popoverList .cardMeta { font-size: 11px; }
-  .viewAll { min-height: 54px; font-size: 13px; }
+  .viewAll { min-height: 58px; font-size: 13px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

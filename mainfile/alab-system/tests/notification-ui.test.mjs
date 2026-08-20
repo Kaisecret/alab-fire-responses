@@ -58,20 +58,23 @@ test("municipal notification center has an isolated compact desktop treatment", 
   assert.match(page, /desktopVariant="municipal"/);
   assert.match(center, /desktopVariant\?:\s*"municipal"/);
   assert.match(center, /styles\.municipalDesktop/);
-  assert.match(styles, /@media \(min-width:\s*761px\)[\s\S]*\.municipalDesktop\s*\{[^}]*max-width:\s*none[^}]*width:\s*100%[^}]*padding:\s*28px 32px 48px/s);
+  assert.match(styles, /@media \(min-width:\s*761px\)[\s\S]*\.municipalDesktop\s*\{[^}]*max-width:\s*none[^}]*width:\s*100%[^}]*padding:\s*31px 35px 51px/s);
   assert.match(styles, /\.municipalDesktop::before\s*\{[^}]*display:\s*none/s);
   assert.match(styles, /\.municipalDesktop \.centerHeader\s*\{[^}]*padding:\s*18px 20px[^}]*background:\s*#fff/s);
   assert.match(styles, /\.municipalDesktop \.centerHeader h1\s*\{[^}]*font-size:\s*32px/s);
-  assert.match(styles, /\.municipalDesktop \.toolbar\s*\{[^}]*margin-bottom:\s*16px/s);
+  assert.match(styles, /\.municipalDesktop \.toolbar\s*\{[^}]*margin-bottom:\s*19px/s);
+  assert.match(styles, /\.municipalDesktop \.centerList\s*\{[^}]*gap:\s*12px/s);
   assert.match(styles, /\.municipalDesktop \.centerList \.card\s*\{[^}]*min-height:\s*84px[^}]*padding:\s*16px 18px/s);
 });
 
 test("desktop notification popovers are large enough to scan incident cards", () => {
   const styles = source("app/_components/notifications/notification-ui.module.css");
 
-  assert.match(styles, /@media \(min-width:\s*641px\)[\s\S]*\.popover\s*\{[^}]*width:\s*min\(460px,\s*calc\(100vw - 40px\)\)[^}]*max-height:\s*min\(640px/s);
-  assert.match(styles, /\.popoverList \.card\s*\{[^}]*min-height:\s*88px[^}]*padding:\s*14px/s);
-  assert.match(styles, /\.popoverList \.iconTile\s*\{[^}]*width:\s*48px[^}]*height:\s*48px/s);
+  assert.match(styles, /@media \(min-width:\s*641px\)[\s\S]*\.popover\s*\{[^}]*width:\s*min\(520px,\s*calc\(100vw - 48px\)\)[^}]*max-height:\s*min\(680px/s);
+  assert.match(styles, /\.popoverList \.card\s*\{[^}]*min-height:\s*96px[^}]*padding:\s*16px/s);
+  assert.match(styles, /\.popoverList \.iconTile\s*\{[^}]*width:\s*52px[^}]*height:\s*52px/s);
+  assert.match(styles, /\.popoverClose\s*\{[^}]*width:\s*40px[^}]*height:\s*40px/s);
+  assert.match(source("app/_components/notifications/notification-bell.tsx"), /aria-label="Close notifications"/);
 });
 
 test("all three portal layouts use real shared notification bells", () => {

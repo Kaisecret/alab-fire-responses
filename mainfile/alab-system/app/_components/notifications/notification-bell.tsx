@@ -53,7 +53,16 @@ export function NotificationBell({ apiPath, allHref, inverse = false }: {
                 <strong>Notifications</strong>
                 <small>{unreadCount ? `${unreadCount} unread` : "You’re all caught up"}</small>
               </span>
-              {unreadCount > 0 && <button type="button" onClick={() => void markAllRead()}>Mark all read</button>}
+              <div className={styles.popoverHeaderActions}>
+                {unreadCount > 0 && (
+                  <button className={styles.popoverMarkAll} type="button" onClick={() => void markAllRead()}>
+                    Mark all read
+                  </button>
+                )}
+                <button className={styles.popoverClose} type="button" aria-label="Close notifications" onClick={() => setIsOpen(false)}>
+                  <i className="fa-solid fa-xmark" aria-hidden="true" />
+                </button>
+              </div>
             </header>
             <div className={styles.popoverList}>
               {isLoading && <div className={styles.state}>Checking for updates…</div>}
