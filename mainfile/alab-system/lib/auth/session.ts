@@ -1,12 +1,21 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const RESIDENT_SESSION_COOKIE = "alab_resident_session";
+export const RESIDENT_APPLICANT_COOKIE = "alab_resident_application";
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 8;
+const APPLICANT_SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 7;
 
 export type ResidentSession = {
   userId: string;
   username: string;
   role: "RESIDENT";
+  expiresAt: number;
+};
+
+export type ResidentApplicantSession = {
+  userId: string;
+  username: string;
+  purpose: "RESIDENT_APPLICATION";
   expiresAt: number;
 };
 
@@ -71,6 +80,36 @@ export function verifyResidentSession(token: string | undefined): ResidentSessio
   }
 }
 
+export function createResidentApplicantSession(userId: string, username: string) {
+  const session: ResidentApplicantSession = {
+    userId,
+    username,
+    purpose: "RESIDENT_APPLICATION",
+    expiresAt: Date.now() + APPLICANT_SESSION_DURATION_MS,
+  };
+  const payload = Buffer.from(JSON.stringify(session)).toString("base64url");
+  return `${payload}.${signature(payload)}`;
+}
+
+export function verifyResidentApplicantSession(token: string | undefined): ResidentApplicantSession | null {
+  if (!token) return null;
+  const [payload, receivedSignature] = token.split(".");
+  if (!payload || !receivedSignature) return null;
+
+  const expectedSignature = signature(payload);
+  const received = Buffer.from(receivedSignature);
+  const expected = Buffer.from(expectedSignature);
+  if (received.length !== expected.length || !timingSafeEqual(received, expected)) return null;
+
+  try {
+    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as ResidentApplicantSession;
+    return session.purpose === "RESIDENT_APPLICATION" && typeof session.userId === "string" &&
+      typeof session.username === "string" && session.expiresAt > Date.now() ? session : null;
+  } catch {
+    return null;
+  }
+}
+
 export function createBfpSession(input: Omit<BfpSession, "expiresAt">) {
   const session: BfpSession = { ...input, expiresAt: Date.now() + SESSION_DURATION_MS };
   const payload = Buffer.from(JSON.stringify(session)).toString("base64url");
@@ -105,6 +144,11 @@ export const residentSessionCookie = {
   secure: process.env.NODE_ENV === "production",
   path: "/",
   maxAge: SESSION_DURATION_MS / 1000,
+};
+
+export const residentApplicantCookie = {
+  ...residentSessionCookie,
+  maxAge: APPLICANT_SESSION_DURATION_MS / 1000,
 };
 
 export const bfpSessionCookie = {

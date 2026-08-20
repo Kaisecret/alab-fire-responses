@@ -24,7 +24,7 @@ const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Dashboard', href: '/municipal-bfp', icon: 'custom-dashboard-grid', exact: true },
       { label: 'Active Incidents', href: '/municipal-bfp/active-incidents', icon: 'fa-solid fa-fire', badge: 3, badgeType: 'red' },
-      { label: 'Verification Queue', href: '/municipal-bfp/verification-queue', icon: 'fa-solid fa-clipboard-check', badge: 2, badgeType: 'amber' },
+      { label: 'Resident Applications', href: '/municipal-bfp/verification-queue', icon: 'fa-solid fa-id-card' },
     ],
   },
   {

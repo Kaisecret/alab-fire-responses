@@ -47,6 +47,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     let frontFile: File | null = null;
     let backFile: File | null = null;
     let selfieTaken = false;
+    let pendingSelfieBlob: Blob | null = null;
+    let selfieFile: File | null = null;
 
     // Elements
     const form = root.querySelector<HTMLFormElement>("#signupForm");
@@ -483,10 +485,22 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       frame.width = selfieVideo.videoWidth;
       frame.height = selfieVideo.videoHeight;
       frame.getContext("2d")?.drawImage(selfieVideo, 0, 0, frame.width, frame.height);
-      showSelfieReview(frame.toDataURL("image/jpeg", 0.92));
+      frame.toBlob((blob) => {
+        if (!blob) {
+          window.alert("Unable to capture the selfie. Please try again.");
+          return;
+        }
+        pendingSelfieBlob = blob;
+        showSelfieReview(URL.createObjectURL(blob));
+      }, "image/jpeg", 0.92);
     };
 
     const handleUseSelfie = () => {
+      if (!pendingSelfieBlob) {
+        window.alert("Take a clear selfie before continuing.");
+        return;
+      }
+      selfieFile = new File([pendingSelfieBlob], `resident-selfie-${Date.now()}.jpg`, { type: "image/jpeg" });
       stopSelfieCamera();
       showSelfieCaptured();
     };
@@ -666,7 +680,13 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         completeButton.textContent = "Creating your account…";
         status.textContent = "";
         try {
-          const register = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verificationId }) });
+          if (!frontFile || !selfieFile) throw new Error("MISSING_EVIDENCE");
+          const registration = new FormData();
+          registration.set("verificationId", verificationId);
+          registration.set("frontId", frontFile);
+          if (backFile) registration.set("backId", backFile);
+          registration.set("selfie", selfieFile);
+          const register = await fetch("/api/auth/register", { method: "POST", body: registration });
           if (!register.ok) {
             const failed = await register.json() as { error?: string };
             completeButton.disabled = false;
@@ -674,7 +694,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
             status.textContent = failed.error ?? "Unable to create your account.";
             return;
           }
-          window.location.assign("/resident");
+          window.location.assign("/resident/application");
         } catch {
           completeButton.disabled = false;
           completeButton.textContent = "Create my account";

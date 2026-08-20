@@ -224,8 +224,12 @@ export function LoginPage({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ identifier: identifier.value, password: password.value }),
         });
-        const result = await response.json() as { error?: string };
+        const result = await response.json() as { error?: string; code?: string; redirectTo?: string; message?: string };
         if (!response.ok) {
+          if ((result.code === "ACCOUNT_UNDER_REVIEW" || result.code === "APPLICATION_CHANGES_REQUESTED") && result.redirectTo) {
+            window.location.assign(result.redirectTo);
+            return;
+          }
           setIsLoading(false);
           if (response.status === 401) showLoginPopup("Incorrect username/email or password.");
           else if (response.status === 429) showLoginPopup(result.error ?? "Too many login attempts. Please wait before trying again.");

@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withTransaction } from "../../../lib/db";
 import { createGoogleSignupPrefill, googleSignupPrefillCookie, GOOGLE_SIGNUP_PREFILL_COOKIE } from "../../../lib/auth/google-signup-prefill";
-import { createResidentSession, residentSessionCookie, RESIDENT_SESSION_COOKIE } from "../../../lib/auth/session";
+import {
+  createResidentApplicantSession,
+  createResidentSession,
+  residentApplicantCookie,
+  residentSessionCookie,
+  RESIDENT_APPLICANT_COOKIE,
+  RESIDENT_SESSION_COOKIE,
+} from "../../../lib/auth/session";
 import { createClient } from "../../../utils/supabase/server";
 
 export const runtime = "nodejs";
@@ -27,8 +34,8 @@ export async function GET(request: NextRequest) {
     return loginError(request, "Google could not verify your email address.");
   }
   const existing = await withTransaction(async (client) => {
-    const found = await client.query<{ id: string; username: string; google_subject: string | null }>(
-      "select id, username, google_subject from users where google_subject = $1 or (email = $2 and google_subject is null) limit 1 for update",
+    const found = await client.query<{ id: string; username: string; google_subject: string | null; account_status: string }>(
+      "select id, username, google_subject, account_status from users where google_subject = $1 or (email = $2 and google_subject is null) limit 1 for update",
       [subject, email],
     );
     const resident = found.rows[0];
@@ -36,6 +43,12 @@ export async function GET(request: NextRequest) {
     return resident;
   });
   if (existing) {
+    if (existing.account_status === "SUSPENDED") return loginError(request, "This resident account is not available.");
+    if (existing.account_status !== "ACTIVE") {
+      const response = NextResponse.redirect(new URL("/resident/application", request.url));
+      response.cookies.set(RESIDENT_APPLICANT_COOKIE, createResidentApplicantSession(existing.id, existing.username), residentApplicantCookie);
+      return response;
+    }
     const response = NextResponse.redirect(new URL("/resident", request.url));
     response.cookies.set(RESIDENT_SESSION_COOKIE, createResidentSession(existing.id, existing.username), residentSessionCookie);
     return response;

@@ -38,7 +38,7 @@ test("resident signup uses step five for polished OTP verification and a one-min
   assert.match(component, /Resend code in/);
   assert.match(component, /Resend code/);
   assert.match(component, /currentStep = 5/);
-  assert.match(component, /window\.location\.assign\("\/resident"\)/);
+  assert.match(component, /window\.location\.assign\("\/resident\/application"\)/);
 });
 
 test("resident signup restarts the full resend countdown after every successful OTP resend", () => {

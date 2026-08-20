@@ -12,11 +12,13 @@ function source(path) {
 test("resident registration persists account, profile, address, and verification records", () => {
   const register = source("app/api/auth/register/route.ts");
 
-  assert.match(register, /INSERT INTO users/);
-  assert.match(register, /INSERT INTO resident_profiles/);
-  assert.match(register, /INSERT INTO resident_addresses/);
-  assert.match(register, /INSERT INTO resident_verifications/);
+  assert.match(register, /insert into users/i);
+  assert.match(register, /insert into resident_profiles/i);
+  assert.match(register, /insert into resident_addresses/i);
+  assert.match(register, /insert into resident_verifications/i);
   assert.match(register, /hashPassword/);
+  assert.match(register, /'PENDING_REVIEW'/);
+  assert.match(register, /RESIDENT_APPLICANT_COOKIE/);
 });
 
 test("resident login has a five-attempt limit and writes a secure session cookie", () => {
