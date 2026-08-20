@@ -84,10 +84,11 @@ export function useMunicipalIncidentFeed({ includeHistory = false, autoRefresh =
       }
     };
 
-    void refresh();
+    const initialRefresh = window.setTimeout(() => void refresh(), 0);
     if (!autoRefresh) {
       return () => {
         mounted.current = false;
+        window.clearTimeout(initialRefresh);
       };
     }
     const timer = window.setInterval(refreshWhenVisible, REFRESH_INTERVAL_MS);
@@ -95,6 +96,7 @@ export function useMunicipalIncidentFeed({ includeHistory = false, autoRefresh =
 
     return () => {
       mounted.current = false;
+      window.clearTimeout(initialRefresh);
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };

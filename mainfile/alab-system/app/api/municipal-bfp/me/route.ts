@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       user: {
         displayName: "Municipal BFP Preview",
+        email: "preview@municipal-bfp.local",
         rankOrPosition: "Municipal Fire Marshal",
         municipalityId: "local-preview-municipality",
         municipalityName: "San Jose de Buenavista",
@@ -27,6 +28,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       user: {
         displayName: identity.displayName,
+        email: identity.email,
         rankOrPosition: identity.rankOrPosition,
         municipalityId: identity.municipalityId,
         municipalityName: identity.municipalityName,

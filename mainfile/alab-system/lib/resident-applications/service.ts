@@ -6,6 +6,7 @@ import { getBfpIdentity } from "../auth/bfp-accounts";
 import { bfpSessionCookieName, verifyBfpSession } from "../auth/session";
 import { getDatabase, withTransaction } from "../db";
 import { createIdentityEvidenceSignedUrl } from "./evidence";
+import { createAccountNotifications } from "../notifications/service";
 
 export async function getMunicipalReviewer(request: NextRequest) {
   const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
@@ -105,6 +106,13 @@ export async function approveResidentApplication(municipalityId: string, applica
        values ($1,$2,$3,'APPROVED',$4::jsonb,$5)`,
       [applicationId, application.resident_profile_id, actorUserId, JSON.stringify({ municipalityId }), now],
     );
+    await createAccountNotifications(client, {
+      recipientUserIds: [application.user_id], actorUserId,
+      eventType: "RESIDENT_APPLICATION_APPROVED", category: "APPLICATION",
+      title: "Application approved", summary: "Your resident account is ready.",
+      actionHref: "/resident/login", entityType: "resident_verification", entityId: applicationId,
+      dedupeKey: `resident-application:${applicationId}:approved`, createdAt: now,
+    });
     return { status: "VERIFIED" };
   });
 }
@@ -133,6 +141,13 @@ export async function requestResidentApplicationCorrections(
        values ($1,$2,$3,'CHANGES_REQUESTED',$4,$5::jsonb,$6)`,
       [applicationId, application.resident_profile_id, actorUserId, notes, JSON.stringify({ municipalityId }), now],
     );
+    await createAccountNotifications(client, {
+      recipientUserIds: [application.user_id], actorUserId,
+      eventType: "RESIDENT_APPLICATION_CHANGES_REQUESTED", category: "APPLICATION",
+      title: "Changes requested", summary: "Update your resident application.",
+      actionHref: "/resident/application", entityType: "resident_verification", entityId: applicationId,
+      context: { reason: notes }, dedupeKey: `resident-application:${applicationId}:changes`, createdAt: now,
+    });
     return { status: "CHANGES_REQUESTED" };
   });
 }

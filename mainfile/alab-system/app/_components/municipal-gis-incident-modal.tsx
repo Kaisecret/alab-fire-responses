@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { MunicipalIncident } from "./use-municipal-incident-feed";
 
@@ -43,24 +43,21 @@ function formatDate(value: string | null | undefined) {
 }
 
 export function MunicipalGisIncidentModal({ incidents, onClose }: { incidents: MunicipalIncident[]; onClose: () => void }) {
-  const [selectedId, setSelectedId] = useState(incidents[0]?.id ?? "");
+  const [requestedId, setSelectedId] = useState(incidents[0]?.id ?? "");
   const [detail, setDetail] = useState<IncidentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const selectedSummary = useMemo(() => incidents.find((incident) => incident.id === selectedId) ?? incidents[0], [incidents, selectedId]);
-
-  useEffect(() => {
-    setSelectedId(incidents[0]?.id ?? "");
-  }, [incidents]);
-
+  const selectedId = incidents.some((incident) => incident.id === requestedId) ? requestedId : (incidents[0]?.id ?? "");
   useEffect(() => {
     if (!selectedId) return;
     const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    setDetail(null);
     void (async () => {
+      await Promise.resolve();
+      if (controller.signal.aborted) return;
+      setLoading(true);
+      setError("");
+      setDetail(null);
       try {
         const response = await fetch(`/api/municipal-bfp/incidents/${selectedId}`, { cache: "no-store", signal: controller.signal });
         const payload = (await response.json()) as { incident?: IncidentDetail; error?: string };
@@ -84,8 +81,6 @@ export function MunicipalGisIncidentModal({ incidents, onClose }: { incidents: M
   }, [onClose]);
 
   const completion = detail?.history.slice().reverse().find((event) => terminalStatuses.has(event.status));
-  const incident = detail ?? selectedSummary;
-
   return (
     <div className="mbfp-gis-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section className="mbfp-gis-modal" role="dialog" aria-modal="true" aria-labelledby="municipal-gis-incident-title">

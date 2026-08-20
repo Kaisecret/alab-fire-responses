@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-html-link-for-pages */
+
 import { useEffect, useMemo, useState } from "react";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 

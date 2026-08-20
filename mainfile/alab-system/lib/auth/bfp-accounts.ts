@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { withTransaction, getDatabase } from "../db";
 import { hashPassword, verifyPassword } from "./password";
 import type { BfpRole } from "./session";
+import { createAccountNotifications } from "../notifications/service";
 
 type ProvisionInput = {
   email: string;
@@ -116,6 +117,13 @@ export async function provisionMunicipalBfpAccount(actorUserId: string, rawInput
        values ($1, $2, 'ACCOUNT_ISSUED', $3::jsonb, $4)`,
       [userId, actorUserId, JSON.stringify({ municipalityId, assignmentRole }), now],
     );
+    await createAccountNotifications(client, {
+      recipientUserIds: [userId], actorUserId,
+      eventType: "MUNICIPAL_ACCOUNT_CREATED", category: "ACCOUNT",
+      title: "Municipal account ready", summary: `${municipality.rows[0].name} · Change your temporary password.`,
+      actionHref: "/municipal-bfp/change-password", entityType: "user", entityId: userId,
+      dedupeKey: `municipal-account:${userId}:created`, createdAt: now,
+    });
     return { userId, municipalityName: municipality.rows[0].name };
   });
 

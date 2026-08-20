@@ -1,117 +1,118 @@
-'use client';
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+type MunicipalIdentity = {
+  email: string;
+  displayName: string;
+  rankOrPosition: string | null;
+  municipalityName: string;
+  assignmentRole: string;
+  mustChangePassword: boolean;
+};
 
 const styles = `
-  .mbfp-page { padding: 1.2rem 1.5rem 2rem; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .mbfp-page-header { margin-bottom: 1.5rem; }
-  .mbfp-page-header h1 { font-size: 1.3rem; font-weight: 800; color: #1f2937; display: flex; align-items: center; gap: 0.5rem; }
-  .mbfp-page-header h1 i { color: #D00F09; }
-  .mbfp-page-header p { font-size: 0.85rem; color: #6b7280; margin-top: 0.3rem; }
-  .mbfp-profile-grid { display: grid; grid-template-columns: 300px 1fr; gap: 1.5rem; }
-  .mbfp-profile-sidebar { display: flex; flex-direction: column; gap: 1rem; }
-  .mbfp-profile-card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; overflow: hidden; }
-  .mbfp-profile-cover { height: 80px; background: linear-gradient(135deg, #D00F09 0%, #EF5350 50%, #FF8A65 100%); position: relative; }
-  .mbfp-profile-avatar-wrapper { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); }
-  .mbfp-profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #B71C1C, #D00F09); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-  .mbfp-profile-info { padding: 2.5rem 1rem 1.2rem; text-align: center; }
-  .mbfp-profile-name { font-size: 1.05rem; font-weight: 800; color: #1f2937; }
-  .mbfp-profile-role { font-size: 0.78rem; color: #D00F09; font-weight: 700; margin-top: 0.15rem; }
-  .mbfp-profile-station { font-size: 0.72rem; color: #6b7280; margin-top: 0.1rem; }
-  .mbfp-profile-detail-list { padding: 0.5rem 1rem 1rem; }
-  .mbfp-profile-detail { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0; border-bottom: 1px solid #f9fafb; font-size: 0.8rem; }
-  .mbfp-profile-detail:last-child { border-bottom: none; }
-  .mbfp-profile-detail i { width: 16px; text-align: center; color: #D00F09; font-size: 0.85rem; }
-  .mbfp-profile-detail-label { color: #6b7280; font-weight: 600; min-width: 60px; }
-  .mbfp-profile-detail-value { color: #1f2937; font-weight: 700; }
-  .mbfp-settings-main { display: flex; flex-direction: column; gap: 1rem; }
-  .mbfp-settings-section { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; }
-  .mbfp-settings-title { padding: 0.8rem 1.2rem; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem; font-weight: 700; color: #1f2937; display: flex; align-items: center; gap: 0.4rem; }
-  .mbfp-settings-title i { color: #D00F09; }
-  .mbfp-settings-body { padding: 1rem 1.2rem; }
-  .mbfp-setting-row { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #fafafa; }
-  .mbfp-setting-row:last-child { border-bottom: none; }
-  .mbfp-setting-label { font-size: 0.82rem; font-weight: 600; color: #374151; }
-  .mbfp-setting-desc { font-size: 0.7rem; color: #6b7280; margin-top: 0.1rem; }
-  .mbfp-toggle { width: 36px; height: 20px; background: #d1d5db; border-radius: 10px; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
-  .mbfp-toggle.on { background: #D00F09; }
-  .mbfp-toggle::after { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
-  .mbfp-toggle.on::after { transform: translateX(16px); }
-  @media (max-width: 768px) { .mbfp-profile-grid { grid-template-columns: 1fr; } }
+  .municipal-settings { max-width: 1120px; margin: 0 auto; padding: 24px; color: #172033; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .municipal-settings__head { margin-bottom: 16px; display: grid; gap: 6px; }
+  .municipal-settings__eyebrow { color: #d91b10; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+  .municipal-settings h1 { margin: 0; font-size: clamp(28px, 4vw, 42px); line-height: 1; letter-spacing: -.04em; }
+  .municipal-settings__head p { margin: 0; color: #64748b; font-size: 13px; }
+  .municipal-settings__grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(300px, .9fr); gap: 8px; }
+  .municipal-settings__card { min-width: 0; border: 1px solid #dfe6ef; border-radius: 20px; background: #fff; box-shadow: 0 8px 28px rgba(15,23,42,.05); overflow: hidden; }
+  .municipal-settings__profile { padding: 20px; display: grid; gap: 16px; }
+  .municipal-settings__identity { display: flex; align-items: center; gap: 12px; }
+  .municipal-settings__avatar { width: 58px; height: 58px; border-radius: 18px; display: grid; place-items: center; color: #fff; background: #d91b10; box-shadow: 0 10px 24px rgba(217,27,16,.22); font-size: 21px; }
+  .municipal-settings__identity strong { display: block; font-size: 18px; }
+  .municipal-settings__identity span { display: block; margin-top: 3px; color: #d91b10; font-size: 12px; font-weight: 800; }
+  .municipal-settings__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .municipal-settings__field { min-height: 82px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 15px; background: #f8fafc; display: grid; align-content: center; gap: 5px; }
+  .municipal-settings__field small { color: #718096; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+  .municipal-settings__field strong { overflow-wrap: anywhere; font-size: 13px; }
+  .municipal-settings__notifications { padding: 20px; display: grid; gap: 8px; }
+  .municipal-settings__section-title { margin: 0 0 4px; display: flex; align-items: center; gap: 8px; font-size: 16px; }
+  .municipal-settings__section-title i { color: #d91b10; }
+  .municipal-settings__status { min-height: 72px; padding: 14px; border: 1px solid #b7efd6; border-radius: 15px; background: #effcf6; display: flex; align-items: center; gap: 10px; }
+  .municipal-settings__status-icon { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; color: #047857; background: #d2f8e7; }
+  .municipal-settings__status strong, .municipal-settings__status small { display: block; }
+  .municipal-settings__status strong { color: #065f46; font-size: 13px; }
+  .municipal-settings__status small { margin-top: 3px; color: #43806c; font-size: 11px; }
+  .municipal-settings__coverage { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .municipal-settings__coverage span { min-height: 52px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 13px; display: flex; align-items: center; gap: 8px; color: #475569; font-size: 11px; font-weight: 700; }
+  .municipal-settings__coverage i { color: #d91b10; }
+  .municipal-settings__link { min-height: 46px; margin-top: 4px; border-radius: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #fff; background: #d91b10; font-size: 12px; font-weight: 800; text-decoration: none; box-shadow: 0 8px 20px rgba(217,27,16,.18); }
+  .municipal-settings__state { min-height: 320px; display: grid; place-items: center; color: #64748b; }
+  @media (max-width: 760px) {
+    .municipal-settings { padding: 18px 12px; }
+    .municipal-settings__grid { grid-template-columns: 1fr; }
+    .municipal-settings__fields { grid-template-columns: 1fr; }
+  }
 `;
 
 export default function ProfilePage() {
+  const [identity, setIdentity] = useState<MunicipalIdentity | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/municipal-bfp/me", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("PROFILE_FETCH_FAILED");
+        return response.json() as Promise<{ user: MunicipalIdentity }>;
+      })
+      .then((payload) => { if (active) setIdentity(payload.user); })
+      .catch(() => { if (active) setError(true); });
+    return () => { active = false; };
+  }, []);
+
   return (
     <>
       <style>{styles}</style>
-      <div className="mbfp-page">
-        <div className="mbfp-page-header">
-          <h1><i className="fa-solid fa-user-gear" /> Profile / Settings</h1>
-          <p>Manage your account information and system preferences.</p>
-        </div>
-        <div className="mbfp-profile-grid">
-          <div className="mbfp-profile-sidebar">
-            <div className="mbfp-profile-card">
-              <div className="mbfp-profile-cover">
-                <div className="mbfp-profile-avatar-wrapper">
-                  <div className="mbfp-profile-avatar"><i className="fa-solid fa-user-shield" /></div>
+      <section className="municipal-settings">
+        <header className="municipal-settings__head">
+          <small className="municipal-settings__eyebrow">MUNICIPAL ACCOUNT</small>
+          <h1>Profile &amp; settings</h1>
+          <p>Your authenticated station identity and active notification service.</p>
+        </header>
+        {!identity && !error && <div className="municipal-settings__card municipal-settings__state">Loading secure account details…</div>}
+        {error && <div className="municipal-settings__card municipal-settings__state">Account details are temporarily unavailable.</div>}
+        {identity && (
+          <div className="municipal-settings__grid">
+            <article className="municipal-settings__card municipal-settings__profile">
+              <div className="municipal-settings__identity">
+                <span className="municipal-settings__avatar"><i className="fa-solid fa-user-shield" /></span>
+                <div>
+                  <strong>{identity.displayName}</strong>
+                  <span>{identity.rankOrPosition ?? "Municipal BFP Personnel"}</span>
                 </div>
               </div>
-              <div className="mbfp-profile-info">
-                <div className="mbfp-profile-name">Station Commander</div>
-                <div className="mbfp-profile-role">Municipal BFP</div>
-                <div className="mbfp-profile-station">San Jose de Buenavista Fire Station</div>
+              <div className="municipal-settings__fields">
+                <div className="municipal-settings__field"><small>Email</small><strong>{identity.email}</strong></div>
+                <div className="municipal-settings__field"><small>Station</small><strong>{identity.municipalityName} Fire Station</strong></div>
+                <div className="municipal-settings__field"><small>Assignment</small><strong>{identity.assignmentRole.replaceAll("_", " ")}</strong></div>
+                <div className="municipal-settings__field"><small>Account security</small><strong>{identity.mustChangePassword ? "Password change required" : "Password active"}</strong></div>
               </div>
-              <div className="mbfp-profile-detail-list">
-                <div className="mbfp-profile-detail"><i className="fa-solid fa-id-card" /><span className="mbfp-profile-detail-label">ID</span><span className="mbfp-profile-detail-value">BFP-SJ-CMD-001</span></div>
-                <div className="mbfp-profile-detail"><i className="fa-solid fa-phone" /><span className="mbfp-profile-detail-label">Phone</span><span className="mbfp-profile-detail-value">(036) 540-1234</span></div>
-                <div className="mbfp-profile-detail"><i className="fa-solid fa-envelope" /><span className="mbfp-profile-detail-label">Email</span><span className="mbfp-profile-detail-value">cmd@sj-bfp.gov.ph</span></div>
-                <div className="mbfp-profile-detail"><i className="fa-solid fa-calendar" /><span className="mbfp-profile-detail-label">Since</span><span className="mbfp-profile-detail-value">Jan 2020</span></div>
-              </div>
-            </div>
-          </div>
+            </article>
 
-          <div className="mbfp-settings-main">
-            <div className="mbfp-settings-section">
-              <div className="mbfp-settings-title"><i className="fa-solid fa-bell" /> Notification Preferences</div>
-              <div className="mbfp-settings-body">
-                <div className="mbfp-setting-row">
-                  <div><div className="mbfp-setting-label">New Fire Reports</div><div className="mbfp-setting-desc">Get notified when new fire reports are submitted</div></div>
-                  <div className="mbfp-toggle on" />
-                </div>
-                <div className="mbfp-setting-row">
-                  <div><div className="mbfp-setting-label">Verification Reminders</div><div className="mbfp-setting-desc">Receive reminders for pending verifications</div></div>
-                  <div className="mbfp-toggle on" />
-                </div>
-                <div className="mbfp-setting-row">
-                  <div><div className="mbfp-setting-label">Dispatch Alerts</div><div className="mbfp-setting-desc">Alerts when units are dispatched or return</div></div>
-                  <div className="mbfp-toggle on" />
-                </div>
-                <div className="mbfp-setting-row">
-                  <div><div className="mbfp-setting-label">System Updates</div><div className="mbfp-setting-desc">Maintenance and system update notifications</div></div>
-                  <div className="mbfp-toggle" />
-                </div>
+            <article className="municipal-settings__card municipal-settings__notifications">
+              <h2 className="municipal-settings__section-title"><i className="fa-solid fa-bell" /> Notification service</h2>
+              <div className="municipal-settings__status">
+                <span className="municipal-settings__status-icon"><i className="fa-solid fa-circle-check" /></span>
+                <span><strong>In-app notifications active</strong><small>Updates every 5 seconds while this tab is open.</small></span>
               </div>
-            </div>
-
-            <div className="mbfp-settings-section">
-              <div className="mbfp-settings-title"><i className="fa-solid fa-display" /> Display Settings</div>
-              <div className="mbfp-settings-body">
-                <div className="mbfp-setting-row">
-                  <div><div className="mbfp-setting-label">Auto-refresh Dashboard</div><div className="mbfp-setting-desc">Automatically refresh dashboard data every 30 seconds</div></div>
-                  <div className="mbfp-toggle on" />
-                </div>
-                <div className="mbfp-setting-row">
-                  <div><div className="mbfp-setting-label">Sound Alerts</div><div className="mbfp-setting-desc">Play sound for critical incident notifications</div></div>
-                  <div className="mbfp-toggle on" />
-                </div>
-                <div className="mbfp-setting-row">
-                  <div><div className="mbfp-setting-label">Map Satellite View</div><div className="mbfp-setting-desc">Default to satellite view in GIS map</div></div>
-                  <div className="mbfp-toggle" />
-                </div>
+              <div className="municipal-settings__coverage">
+                <span><i className="fa-solid fa-fire" /> New incidents</span>
+                <span><i className="fa-solid fa-id-card" /> Resident applications</span>
+                <span><i className="fa-solid fa-truck-medical" /> Response updates</span>
+                <span><i className="fa-solid fa-user-shield" /> Account notices</span>
               </div>
-            </div>
+              <Link className="municipal-settings__link" href="/municipal-bfp/notifications">
+                Open notification center <i className="fa-solid fa-arrow-right" />
+              </Link>
+            </article>
           </div>
-        </div>
-      </div>
+        )}
+      </section>
     </>
   );
 }

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { NotificationBell } from './notifications/notification-bell';
 
 type NavItem = {
   label: string;
@@ -1498,15 +1499,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                   </div>
                 </div>
 
-                <Link
-                  href="/provincial-bfp/incidents"
-                  prefetch={true}
-                  className="pbfp-topbar-icon-btn"
-                  title="3 Active Province Incidents"
-                >
-                  <i className="fa-solid fa-bell" />
-                  <span className="pbfp-topbar-badge">3</span>
-                </Link>
+                <NotificationBell apiPath="/api/provincial-bfp/notifications" allHref="/provincial-bfp/notifications" />
 
                 <div
                   className="pbfp-topbar-admin-btn"

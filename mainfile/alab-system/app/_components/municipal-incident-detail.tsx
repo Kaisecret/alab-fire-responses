@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MunicipalIncidentMap } from "./municipal-incident-map";
 import { BfpDataLoader } from "./bfp-data-loader";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
@@ -702,7 +702,7 @@ export function MunicipalIncidentDetail({
   const [sending, setSending] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}`, { cache: "no-store" });
       const data = await res.json();
@@ -711,11 +711,12 @@ export function MunicipalIncidentDetail({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load incident.");
     }
-  };
+  }, [incidentId]);
 
   useEffect(() => {
-    load();
-  }, [incidentId]);
+    const initialLoad = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(initialLoad);
+  }, [load]);
 
   const respond = async () => {
     setSending(true);

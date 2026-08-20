@@ -10,6 +10,11 @@ import {
 } from "./validation";
 import type { FireReportSubmissionAudit } from "./submission-audit";
 import type { FireReportStatus } from "./types";
+import {
+  createAccountNotifications,
+  listMunicipalNotificationRecipients,
+  listProvincialNotificationRecipients,
+} from "../notifications/service";
 
 export type PhotoMetadata = { storageKey: string; originalFileName: string; mimeType: string; fileSizeBytes: number };
 
@@ -61,6 +66,39 @@ export async function createResidentFireReport(userId: string, input: FireReport
       `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)
        values ($1, null, 'PENDING_VERIFICATION', $2, 'Your fire report was submitted and is pending verification.', $3)`, [reportId, userId, now],
     );
+    const [municipalRecipients, provincialRecipients] = await Promise.all([
+      listMunicipalNotificationRecipients(client, municipalityId),
+      listProvincialNotificationRecipients(client),
+    ]);
+    const summary = `${reference} · ${barangay.barangayName}`;
+    await createAccountNotifications(client, {
+      recipientUserIds: municipalRecipients,
+      actorUserId: userId,
+      eventType: "FIRE_REPORT_CREATED",
+      category: "INCIDENT",
+      title: "New fire report",
+      summary,
+      actionHref: "/municipal-bfp/active-incidents",
+      entityType: "fire_report",
+      entityId: reportId,
+      context: { reference, municipality: detectedMunicipality, barangay: barangay.barangayName },
+      dedupeKey: `fire-report:${reportId}:created`,
+      createdAt: now,
+    });
+    await createAccountNotifications(client, {
+      recipientUserIds: provincialRecipients,
+      actorUserId: userId,
+      eventType: "FIRE_REPORT_CREATED",
+      category: "INCIDENT",
+      title: "New municipal incident",
+      summary: `${reference} · ${detectedMunicipality}`,
+      actionHref: "/provincial-bfp/incidents",
+      entityType: "fire_report",
+      entityId: reportId,
+      context: { reference, municipality: detectedMunicipality, barangay: barangay.barangayName },
+      dedupeKey: `fire-report:${reportId}:created`,
+      createdAt: now,
+    });
     return { id: reportId, referenceNumber: reference, status: "PENDING_VERIFICATION" as const };
   });
 }

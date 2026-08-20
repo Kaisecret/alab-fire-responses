@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { RESIDENT_APPLICANT_COOKIE, verifyResidentApplicantSession } from "../../../../../lib/auth/session";
 import { getDatabase, withTransaction } from "../../../../../lib/db";
 import { removeIdentityEvidence, uploadIdentityEvidence } from "../../../../../lib/resident-applications/evidence";
+import { createAccountNotifications, listMunicipalNotificationRecipients } from "../../../../../lib/notifications/service";
 
 export const runtime = "nodejs";
 
@@ -77,6 +78,14 @@ export async function POST(request: NextRequest) {
          values ($1,$2,'RESUBMITTED',$3::jsonb,$4)`,
         [applicationId, previous.profile_id, JSON.stringify({ previousVerificationId: previous.verification_id }), now],
       );
+      await createAccountNotifications(client, {
+        recipientUserIds: await listMunicipalNotificationRecipients(client, previous.municipality_id),
+        actorUserId: session.userId,
+        eventType: "RESIDENT_APPLICATION_RESUBMITTED", category: "APPLICATION",
+        title: "Application resubmitted", summary: `${reference} · Corrections ready`,
+        actionHref: "/municipal-bfp/verification-queue", entityType: "resident_verification", entityId: applicationId,
+        context: { reference }, dedupeKey: `resident-application:${applicationId}:resubmitted`, createdAt: now,
+      });
     });
     return NextResponse.json({ application: { reference, status: "PENDING" }, message: "Corrections resubmitted for Municipal BFP review." });
   } catch (error) {

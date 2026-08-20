@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { NotificationBell } from './notifications/notification-bell';
 
 type NavItem = {
   label: string;
@@ -1232,15 +1233,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                   <span>{identity?.municipalityName ?? 'Antique BFP'}</span>
                 </div>
 
-                <Link
-                  href="/municipal-bfp/notifications"
-                  prefetch={true}
-                  className="mbfp-header-icon-btn"
-                  title="Notifications"
-                >
-                  <i className="fa-solid fa-bell" />
-                  <span className="mbfp-header-notif-badge">2</span>
-                </Link>
+                <NotificationBell apiPath="/api/municipal-bfp/notifications" allHref="/municipal-bfp/notifications" />
               </div>
             </div>
           </header>

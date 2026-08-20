@@ -12,6 +12,7 @@ import {
 } from "../../../../lib/auth/session";
 import { getGoogleSignupPrefill, GOOGLE_SIGNUP_PREFILL_COOKIE } from "../../../../lib/auth/google-signup-prefill";
 import { removeIdentityEvidence, uploadIdentityEvidence } from "../../../../lib/resident-applications/evidence";
+import { createAccountNotifications, listMunicipalNotificationRecipients } from "../../../../lib/notifications/service";
 
 export const runtime = "nodejs";
 
@@ -128,6 +129,14 @@ export async function POST(request: Request) {
          values ($1,$2,'SUBMITTED',$3::jsonb,$4)`,
         [applicationId, profileId, JSON.stringify({ municipalityId: locality.rows[0].municipality_id }), now],
       );
+      await createAccountNotifications(client, {
+        recipientUserIds: await listMunicipalNotificationRecipients(client, locality.rows[0].municipality_id),
+        actorUserId: userId,
+        eventType: "RESIDENT_APPLICATION_SUBMITTED", category: "APPLICATION",
+        title: "New resident application", summary: `${applicationReference} · ${barangay}`,
+        actionHref: "/municipal-bfp/verification-queue", entityType: "resident_verification", entityId: applicationId,
+        context: { reference: applicationReference }, dedupeKey: `resident-application:${applicationId}:submitted`, createdAt: now,
+      });
       await client.query(`insert into notification_preferences (id, resident_profile_id, created_at, updated_at) values ($1,$2,$3,$3)`, [randomUUID(), profileId, now]);
     });
 

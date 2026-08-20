@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ResidentMobileNavigation, residentMobileNavigationStyles } from "@/app/_components/resident-mobile-navigation";
+import { NotificationBell } from "@/app/_components/notifications/notification-bell";
 
 /* ─────────────────────────────────────────────
    Shared Resident Layout
@@ -327,15 +328,6 @@ function IconGuide({ filled }: { filled?: boolean }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={filled ? "2.3" : "2"} strokeLinecap="round" strokeLinejoin="round" className="rl-nav-icon"><path d="M12 7v14" /><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" /></svg>;
 }
 
-function IconBell() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-    </svg>
-  );
-}
-
 function IconGlobe() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: "1.2rem", height: "1.2rem", marginRight: "0.3rem" }}>
@@ -406,10 +398,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
             <img src="/images/logo white tint.webp" alt="ALAB Logo" />
           </div>
           <div className="rl-m-actions">
-            <button className="rl-m-notif-btn" aria-label="Notifications">
-              <IconBell />
-              <span className="rl-m-notif-badge">1</span>
-            </button>
+            <NotificationBell apiPath="/api/resident/notifications" allHref="/resident/notifications" inverse />
           </div>
         </header>
 
@@ -441,10 +430,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="rl-header-right">
-            <button className="rl-notif-btn">
-              <IconBell />
-              <span className="rl-notif-badge">1</span>
-            </button>
+            <NotificationBell apiPath="/api/resident/notifications" allHref="/resident/notifications" />
             <button className="rl-lang-btn">
               <IconGlobe />
               EN

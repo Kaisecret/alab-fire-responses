@@ -60,10 +60,9 @@ export function MunicipalGisOperationsMap() {
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const clustersRef = useRef(clusters);
   const municipalityRef = useRef(municipality);
-  const onSelectRef = useRef<(clusterReports: MunicipalIncident[]) => void>(() => undefined);
   const [selectedIncidents, setSelectedIncidents] = useState<MunicipalIncident[] | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  onSelectRef.current = setSelectedIncidents;
+  const onSelectRef = useRef<(clusterReports: MunicipalIncident[]) => void>(setSelectedIncidents);
 
   useEffect(() => {
     clustersRef.current = clusters;
