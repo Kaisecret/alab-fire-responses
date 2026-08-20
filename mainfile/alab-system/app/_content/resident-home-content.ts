@@ -440,6 +440,7 @@ export const homeStyles = `
     }
     .report-badge.verifying { background: #ffedd5; color: #ea580c; }
     .report-badge.submitted { background: #e0f2fe; color: #0369a1; }
+    .report-badge.responding { background: #dcfce7; color: #047857; }
     .report-badge.confirmed { background: #dcfce7; color: #15803d; }
     .report-badge.closed { background: #f1f5f9; color: #475569; }
     .report-empty { padding: 0.35rem 0; color: var(--text-muted); font-size: 0.85rem; }
@@ -889,8 +890,8 @@ export const homeMarkup = `
                         <div class="status-icon green">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                         </div>
-                        <div class="status-count" data-dashboard-count="confirmed">0</div>
-                        <div class="status-label">Confirmed</div>
+                        <div class="status-count" data-dashboard-count="responding">0</div>
+                        <div class="status-label">Responding</div>
                     </div>
                     <div class="status-divider"></div>
                     <div class="status-item">

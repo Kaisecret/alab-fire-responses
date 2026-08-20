@@ -5,7 +5,7 @@ import { homeMarkup, homeStyles } from "../_content/resident-home-content";
 
 type Dashboard = {
   resident: { name: string; municipality: string; barangay: string };
-  counts: Record<"submitted" | "verifying" | "confirmed" | "closed", number>;
+  counts: Record<"submitted" | "verifying" | "responding" | "closed", number>;
   reports: Array<{ id: string; referenceNumber: string; label: string; tone: string }>;
 };
 
