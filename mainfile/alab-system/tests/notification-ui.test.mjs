@@ -61,6 +61,7 @@ test("municipal notification center has an isolated compact desktop treatment", 
   assert.match(styles, /@media \(min-width:\s*761px\)[\s\S]*\.municipalDesktop\s*\{[^}]*max-width:\s*1200px[^}]*min-height:\s*auto[^}]*padding:\s*24px 32px 48px/s);
   assert.match(styles, /\.municipalDesktop::before\s*\{[^}]*display:\s*none/s);
   assert.match(styles, /\.municipalDesktop \.centerHeader h1\s*\{[^}]*font-size:\s*32px/s);
+  assert.match(styles, /\.municipalDesktop \.centerHeader\s*\{[^}]*padding:\s*16px 18px[^}]*background:\s*#fff/s);
   assert.match(styles, /\.municipalDesktop \.toolbar\s*\{[^}]*margin-bottom:\s*16px/s);
   assert.match(styles, /\.municipalDesktop \.centerList \.card\s*\{[^}]*min-height:\s*84px[^}]*padding:\s*16px 18px/s);
 });
