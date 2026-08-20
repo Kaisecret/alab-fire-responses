@@ -318,9 +318,11 @@
    layouts intentionally keep their established presentation. */
 @media (min-width: 761px) {
   .municipalDesktop {
-    max-width: 1200px;
+    max-width: none;
+    width: 100%;
     min-height: auto;
-    padding: 24px 32px 48px;
+    margin: 0;
+    padding: 28px 32px 48px;
   }
 
   .municipalDesktop::before {
@@ -330,9 +332,9 @@
   .municipalDesktop .centerHeader {
     margin-bottom: 20px;
     align-items: center;
-    padding: 16px 18px;
+    padding: 18px 20px;
     border: 1px solid #dce5f0;
-    border-radius: 16px;
+    border-radius: 18px;
     background: #fff;
     box-shadow: 0 6px 24px rgba(15, 23, 42, .05);
   }
@@ -408,6 +410,43 @@
   .municipalDesktop .emptyStateLarge {
     min-height: 180px;
   }
+}
+
+/* Keep desktop bell notifications comfortably readable while retaining the
+   existing compact mobile sheet. */
+@media (min-width: 641px) {
+  .popover {
+    width: min(460px, calc(100vw - 40px));
+    max-height: min(640px, calc(100dvh - 110px));
+  }
+
+  .popoverHeader {
+    min-height: 72px;
+    padding: 14px 16px;
+  }
+
+  .popoverHeader strong { font-size: 18px; }
+  .popoverHeader small { font-size: 13px; }
+  .popoverList { padding: 10px; gap: 10px; }
+
+  .popoverList .card {
+    min-height: 88px;
+    padding: 14px;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .popoverList .iconTile {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    font-size: 17px;
+  }
+
+  .popoverList .cardTitle { font-size: 15px; }
+  .popoverList .cardSummary { font-size: 13px; }
+  .popoverList .cardMeta { font-size: 11px; }
+  .viewAll { min-height: 54px; font-size: 13px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
