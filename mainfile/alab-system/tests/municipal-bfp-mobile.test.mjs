@@ -58,6 +58,16 @@ test("municipal active incidents uses the shared live feed instead of a local tw
   assert.match(page, /Live · checked/);
 });
 
+test("municipal active incidents uses an uncluttered compact eight-pixel card rhythm", () => {
+  const pagePath = join(root, "app", "municipal-bfp", "active-incidents", "page.tsx");
+  const page = readFileSync(pagePath, "utf8");
+
+  assert.doesNotMatch(page, /Live Emergency Queue/);
+  assert.match(page, /\.mbfp-incidents-shell\s*\{[\s\S]*?gap:\s*8px/);
+  assert.match(page, /\.mbfp-quick-stats\s*\{[\s\S]*?gap:\s*8px[\s\S]*?margin-bottom:\s*0/);
+  assert.match(page, /\.mbfp-toolbar\s*\{[\s\S]*?margin-bottom:\s*0/);
+});
+
 test("municipal dashboard renders its incident queue from the authenticated live feed", () => {
   const dashboardPath = join(root, "app", "_components", "municipal-bfp-dashboard.tsx");
   const dashboard = readFileSync(dashboardPath, "utf8");

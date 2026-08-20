@@ -16,7 +16,7 @@ const activeIncidentsStyles = `
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     background: #EEF5FD;
     min-height: 100%;
   }
@@ -27,7 +27,7 @@ const activeIncidentsStyles = `
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0;
     flex-wrap: wrap;
   }
 
@@ -41,46 +41,6 @@ const activeIncidentsStyles = `
     color: #64748B;
     font-size: 0.72rem;
     font-weight: 700;
-  }
-
-  .mbfp-ops-live-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: #FEF2F2;
-    border: 1px solid #FECACA;
-    color: #DC2626;
-    font-size: 0.7rem;
-    font-weight: 800;
-    padding: 0.2rem 0.65rem;
-    border-radius: 999px;
-    width: fit-content;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .mbfp-live-pulse-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #DC2626;
-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6);
-    animation: mbfpLiveBeacon 1.8s infinite;
-  }
-
-  @keyframes mbfpLiveBeacon {
-    0% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
-    }
-    70% {
-      transform: scale(1.1);
-      box-shadow: 0 0 0 5px rgba(220, 38, 38, 0);
-    }
-    100% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
-    }
   }
 
   .mbfp-incidents-h1 {
@@ -141,8 +101,8 @@ const activeIncidentsStyles = `
   .mbfp-quick-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.85rem;
-    margin-bottom: 0.5rem;
+    gap: 8px;
+    margin-bottom: 0;
   }
 
   .mbfp-qstat-card {
@@ -213,7 +173,7 @@ const activeIncidentsStyles = `
     align-items: center;
     justify-content: space-between;
     gap: 0.85rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
     flex-wrap: wrap;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
   }
@@ -571,7 +531,7 @@ const activeIncidentsStyles = `
 
   @media (max-width: 768px) {
     .mbfp-incidents-shell {
-      padding: 1rem 0.85rem 2rem;
+      padding: 8px 0.85rem 2rem;
     }
     .mbfp-quick-stats {
       grid-template-columns: 1fr;
@@ -639,10 +599,6 @@ export default function ActiveIncidentsPage() {
         {/* Page Header */}
         <header className="mbfp-incidents-header">
           <div className="mbfp-incidents-title-group">
-            <div className="mbfp-ops-live-pill">
-              <span className="mbfp-live-pulse-dot" />
-              <span>Live Emergency Queue</span>
-            </div>
             <h1 className="mbfp-incidents-h1">
               <i className="fa-solid fa-fire" />
               <span>Active Incidents</span>
