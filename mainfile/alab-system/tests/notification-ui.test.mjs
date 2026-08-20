@@ -50,6 +50,21 @@ test("notification center stays contained and the resident sheet fits mobile scr
   assert.match(styles, /@media \(max-width:\s*640px\)[\s\S]*\.popoverHeader\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto/s);
 });
 
+test("municipal notification center has an isolated compact desktop treatment", () => {
+  const page = source("app/municipal-bfp/notifications/page.tsx");
+  const center = source("app/_components/notifications/notification-center.tsx");
+  const styles = source("app/_components/notifications/notification-ui.module.css");
+
+  assert.match(page, /desktopVariant="municipal"/);
+  assert.match(center, /desktopVariant\?:\s*"municipal"/);
+  assert.match(center, /styles\.municipalDesktop/);
+  assert.match(styles, /@media \(min-width:\s*761px\)[\s\S]*\.municipalDesktop\s*\{[^}]*max-width:\s*1200px[^}]*min-height:\s*auto[^}]*padding:\s*24px 32px 48px/s);
+  assert.match(styles, /\.municipalDesktop::before\s*\{[^}]*display:\s*none/s);
+  assert.match(styles, /\.municipalDesktop \.centerHeader h1\s*\{[^}]*font-size:\s*32px/s);
+  assert.match(styles, /\.municipalDesktop \.toolbar\s*\{[^}]*margin-bottom:\s*16px/s);
+  assert.match(styles, /\.municipalDesktop \.centerList \.card\s*\{[^}]*min-height:\s*84px[^}]*padding:\s*16px 18px/s);
+});
+
 test("all three portal layouts use real shared notification bells", () => {
   const layouts = [
     source("app/resident/layout.tsx"),

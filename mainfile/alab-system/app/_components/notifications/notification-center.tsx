@@ -17,7 +17,15 @@ const filters: Array<{ value: Filter; label: string }> = [
   { value: "ACCOUNT", label: "Accounts" },
 ];
 
-export function NotificationCenter({ apiPath, eyebrow = "LIVE ACCOUNT UPDATES" }: { apiPath: string; eyebrow?: string }) {
+export function NotificationCenter({
+  apiPath,
+  eyebrow = "LIVE ACCOUNT UPDATES",
+  desktopVariant,
+}: {
+  apiPath: string;
+  eyebrow?: string;
+  desktopVariant?: "municipal";
+}) {
   const [filter, setFilter] = useState<Filter>("ALL");
   const { notifications, unreadCount, isLoading, error, markRead, markAllRead } = useNotifications(apiPath, 50);
   const visible = useMemo(() => notifications.filter((notification) => {
@@ -27,7 +35,7 @@ export function NotificationCenter({ apiPath, eyebrow = "LIVE ACCOUNT UPDATES" }
   }), [filter, notifications]);
 
   return (
-    <section className={styles.center}>
+    <section className={`${styles.center} ${desktopVariant === "municipal" ? styles.municipalDesktop : ""}`}>
       <header className={styles.centerHeader}>
         <div className={styles.centerHeading}>
           <span className={styles.centerHeaderIcon} aria-hidden="true"><i className="fa-solid fa-bell" /></span>

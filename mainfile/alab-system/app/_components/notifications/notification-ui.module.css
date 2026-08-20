@@ -314,6 +314,97 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Municipal command-center desktop only. Resident and all mobile notification
+   layouts intentionally keep their established presentation. */
+@media (min-width: 761px) {
+  .municipalDesktop {
+    max-width: 1200px;
+    min-height: auto;
+    padding: 24px 32px 48px;
+  }
+
+  .municipalDesktop::before {
+    display: none;
+  }
+
+  .municipalDesktop .centerHeader {
+    margin-bottom: 20px;
+    align-items: center;
+  }
+
+  .municipalDesktop .centerHeading {
+    gap: 14px;
+  }
+
+  .municipalDesktop .centerHeaderIcon {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+  }
+
+  .municipalDesktop .centerHeader h1 {
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  .municipalDesktop .toolbar {
+    margin-bottom: 16px;
+    padding: 8px;
+    border-radius: 16px;
+    background: #fff;
+  }
+
+  .municipalDesktop .filters {
+    gap: 4px;
+  }
+
+  .municipalDesktop .filters button {
+    padding-inline: 15px;
+  }
+
+  .municipalDesktop .centerSummary {
+    padding-inline: 8px;
+  }
+
+  .municipalDesktop .centerList .card {
+    min-height: 84px;
+    padding: 16px 18px;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 16px;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, .05);
+  }
+
+  .municipalDesktop .centerList .cardUnread {
+    background: #fff9f8;
+  }
+
+  .municipalDesktop .centerList .iconTile {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    font-size: 17px;
+  }
+
+  .municipalDesktop .centerList .cardTitle {
+    font-size: 15px;
+  }
+
+  .municipalDesktop .centerList .cardSummary {
+    font-size: 13px;
+  }
+
+  .municipalDesktop .centerList .cardMeta {
+    align-self: center;
+    padding-top: 0;
+  }
+
+  .municipalDesktop .emptyStateLarge {
+    min-height: 180px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .livePill i,
   .popover {
