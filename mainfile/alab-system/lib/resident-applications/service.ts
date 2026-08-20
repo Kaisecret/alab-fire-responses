@@ -38,13 +38,13 @@ export async function getResidentApplication(municipalityId: string, application
     id: string; reference: string; status: string; submittedAt: Date; correctionReason: string | null;
     firstName: string; lastName: string; email: string; phone: string; username: string;
     municipality: string; barangay: string; address: string; frontReviewKey: string | null;
-    backReviewKey: string | null; selfieKey: string;
+    backReviewKey: string | null; selfieReviewKey: string | null;
   }>(
     `select rv.id, rv.application_reference as reference, rv.status, rv.submitted_at as "submittedAt",
             rv.rejection_reason as "correctionReason", rp.first_name as "firstName", rp.last_name as "lastName",
             u.email, u.phone, u.username, m.name as municipality, b.name as barangay, ra.complete_address as address,
             rv.front_review_document_key as "frontReviewKey", rv.back_review_document_key as "backReviewKey",
-            rv.selfie_key as "selfieKey"
+            rv.selfie_review_document_key as "selfieReviewKey"
        from resident_verifications rv
        join resident_profiles rp on rp.id = rv.resident_profile_id
        join users u on u.id = rp.user_id
@@ -68,9 +68,9 @@ export async function getResidentApplication(municipalityId: string, application
   const [frontUrl, backUrl, selfieUrl] = await Promise.all([
     createIdentityEvidenceSignedUrl(application.frontReviewKey),
     createIdentityEvidenceSignedUrl(application.backReviewKey),
-    createIdentityEvidenceSignedUrl(application.selfieKey),
+    createIdentityEvidenceSignedUrl(application.selfieReviewKey),
   ]);
-  const { frontReviewKey: _front, backReviewKey: _back, selfieKey: _selfie, ...safe } = application;
+  const { frontReviewKey: _front, backReviewKey: _back, selfieReviewKey: _selfie, ...safe } = application;
   void _front; void _back; void _selfie;
   return { ...safe, evidence: { frontUrl, backUrl, selfieUrl }, events: events.rows };
 }
@@ -136,4 +136,3 @@ export async function requestResidentApplicationCorrections(
     return { status: "CHANGES_REQUESTED" };
   });
 }
-

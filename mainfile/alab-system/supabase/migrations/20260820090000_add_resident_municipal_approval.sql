@@ -18,6 +18,7 @@ alter table public.resident_verifications
   add column if not exists submission_number integer not null default 1,
   add column if not exists front_review_document_key text,
   add column if not exists back_review_document_key text,
+  add column if not exists selfie_review_document_key text,
   add column if not exists front_document_sha256 text,
   add column if not exists back_document_sha256 text,
   add column if not exists selfie_sha256 text,

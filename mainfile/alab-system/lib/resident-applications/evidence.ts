@@ -86,18 +86,15 @@ async function processAsset(
   await uploadObject(originalKey, original, file.type);
   uploadedKeys.push(originalKey);
 
-  let reviewKey: string | null = null;
-  if (kind !== "selfie") {
-    const review = await sharp(original)
-      .rotate()
-      .resize({ width: 1800, height: 1800, fit: "inside", withoutEnlargement: true })
-      .composite([{ input: watermarkSvg(reference, submittedAt), tile: true, blend: "over" }])
-      .webp({ quality: 88 })
-      .toBuffer();
-    reviewKey = `${applicationId}/review/${kind}-review-${assetId}.webp`;
-    await uploadObject(reviewKey, review, "image/webp");
-    uploadedKeys.push(reviewKey);
-  }
+  const review = await sharp(original)
+    .rotate()
+    .resize({ width: 1800, height: 1800, fit: "inside", withoutEnlargement: true })
+    .composite([{ input: watermarkSvg(reference, submittedAt), tile: true, blend: "over" }])
+    .webp({ quality: 88 })
+    .toBuffer();
+  const reviewKey = `${applicationId}/review/${kind}-review-${assetId}.webp`;
+  await uploadObject(reviewKey, review, "image/webp");
+  uploadedKeys.push(reviewKey);
 
   return {
     originalKey,
@@ -140,4 +137,3 @@ export async function createIdentityEvidenceSignedUrl(key: string | null) {
   const { data, error } = await storageClient().storage.from(EVIDENCE_BUCKET).createSignedUrl(key, 60 * 10);
   return error ? null : data.signedUrl;
 }
-

@@ -59,17 +59,18 @@ export async function POST(request: NextRequest) {
       await client.query(
         `insert into resident_verifications
           (id, resident_profile_id, application_reference, submission_number, front_document_key, back_document_key,
-           selfie_key, front_review_document_key, back_review_document_key, front_document_sha256,
+           selfie_key, front_review_document_key, back_review_document_key, selfie_review_document_key,
+           front_document_sha256,
            back_document_sha256, selfie_sha256, front_document_mime_type, back_document_mime_type,
            selfie_mime_type, front_document_size_bytes, back_document_size_bytes, selfie_size_bytes,
            status, submitted_at, created_at, updated_at)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'PENDING',$19,$19,$19)`,
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'PENDING',$20,$20,$20)`,
         [applicationId, previous.profile_id, reference, previous.submission_number + 1, evidence.front.originalKey,
           evidence.back?.originalKey ?? null, evidence.selfie.originalKey, evidence.front.reviewKey,
-          evidence.back?.reviewKey ?? null, evidence.front.sha256, evidence.back?.sha256 ?? null,
-          evidence.selfie.sha256, evidence.front.mimeType, evidence.back?.mimeType ?? null,
-          evidence.selfie.mimeType, evidence.front.sizeBytes, evidence.back?.sizeBytes ?? null,
-          evidence.selfie.sizeBytes, now],
+          evidence.back?.reviewKey ?? null, evidence.selfie.reviewKey, evidence.front.sha256,
+          evidence.back?.sha256 ?? null, evidence.selfie.sha256, evidence.front.mimeType,
+          evidence.back?.mimeType ?? null, evidence.selfie.mimeType, evidence.front.sizeBytes,
+          evidence.back?.sizeBytes ?? null, evidence.selfie.sizeBytes, now],
       );
       await client.query(
         `insert into resident_verification_events (verification_id, resident_profile_id, event_type, metadata, created_at)

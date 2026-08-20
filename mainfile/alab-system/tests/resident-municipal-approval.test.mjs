@@ -36,6 +36,20 @@ test("identity evidence creates protected watermarked review derivatives", () =>
   assert.doesNotMatch(evidence, /getPublicUrl/);
 });
 
+test("selfies use a watermarked review derivative instead of exposing the private original", () => {
+  const evidence = source("lib/resident-applications/evidence.ts");
+  const service = source("lib/resident-applications/service.ts");
+  const migrations = readdirSync(join(root, "supabase", "migrations"))
+    .map((file) => source(join("supabase", "migrations", file)))
+    .join("\n");
+
+  assert.match(migrations, /selfie_review_document_key/i);
+  assert.doesNotMatch(evidence, /if \(kind !== "selfie"\)/);
+  assert.match(service, /selfie_review_document_key as "selfieReviewKey"/i);
+  assert.match(service, /createIdentityEvidenceSignedUrl\(application\.selfieReviewKey\)/);
+  assert.doesNotMatch(service, /createIdentityEvidenceSignedUrl\(application\.selfieKey\)/);
+});
+
 test("registration creates a pending applicant and never creates a resident session", () => {
   const registration = source("app/api/auth/register/route.ts");
   assert.match(registration, /request\.formData\(\)/);
