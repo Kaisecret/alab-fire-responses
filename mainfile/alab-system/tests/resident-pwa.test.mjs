@@ -16,6 +16,10 @@ test("resident login exposes an installable, icon-branded PWA only for the resid
   assert.match(manifestSource, /start_url:\s*"\/resident\/login"/);
   assert.match(manifestSource, /scope:\s*"\/resident\/"/);
   assert.match(manifestSource, /\/images\/FAVICON\.webp/);
+  assert.match(manifestSource, /\/images\/resident-pwa-192\.webp/);
+  assert.match(manifestSource, /\/images\/resident-pwa-512\.webp/);
+  assert.ok(existsSync(join(appRoot, "public", "images", "resident-pwa-192.webp")));
+  assert.ok(existsSync(join(appRoot, "public", "images", "resident-pwa-512.webp")));
   assert.match(manifestSource, /purpose:\s*"maskable"/);
   assert.doesNotMatch(manifestSource, /purpose:\s*"any maskable"/);
   assert.match(login, /manifest:\s*"\/resident\/manifest\.webmanifest"/);
@@ -30,6 +34,10 @@ test("resident PWA installs without alert permissions or browser notification po
   assert.ok(existsSync(worker));
   assert.match(pwa, /navigator\.serviceWorker\.register\("\/resident-sw\.js", \{ scope: "\/resident\/" \}\)/);
   assert.match(pwa, /beforeinstallprompt/);
+  assert.doesNotMatch(pwa, /if \(!installPrompt\) return null/);
+  assert.match(pwa, /setInstallHelpOpen\(true\)/);
+  assert.match(pwa, /Add to Home Screen/);
+  assert.match(pwa, /window\.setInterval\(\(\) => setInstallPromptVisible\(true\), 10_000\)/);
   assert.doesNotMatch(pwa, /Notification/);
   assert.doesNotMatch(pwa, /useNotifications/);
   assert.doesNotMatch(readFileSync(worker, "utf8"), /notificationclick/);

@@ -1093,50 +1093,76 @@ export const signupStyles = `
             color: #ffffff;
         }
 
-        /* Responsive */
+        /* Responsive - Native Fullscreen on Mobile */
         @media (max-width: 950px) {
+            .signup-page-root {
+                background-color: #ffffff !important;
+                background-image: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                min-height: 100vh !important;
+                min-height: 100dvh !important;
+                width: 100% !important;
+                display: block !important;
+            }
+
             .signup-container {
-                grid-template-columns: 1fr;
-                max-width: 32rem;
-                height: auto;
-                min-height: 100vh;
-                border-radius: 0;
-                padding: 1.5rem;
+                grid-template-columns: 1fr !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                min-height: 100vh !important;
+                min-height: 100dvh !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: #ffffff !important;
+                padding: 4.2rem 1.4rem 3rem !important;
+                display: flex !important;
+                flex-direction: column !important;
+                animation: none !important;
             }
 
             .nav-back-btn {
-                top: 1rem;
-                left: 1rem;
+                top: 1.25rem !important;
+                left: 1.25rem !important;
+                width: 2.6rem !important;
+                height: 2.6rem !important;
+                background: #f1f5f9 !important;
+                border: 1px solid #cbd5e1 !important;
             }
 
             .signup-banner {
-                display: none;
+                display: none !important;
             }
 
             .signup-form-wrapper {
-                padding: 0;
-                height: auto;
-                overflow-y: visible;
-                justify-content: center;
+                padding: 0 !important;
+                max-width: 32rem !important;
+                width: 100% !important;
+                margin: 0 auto !important;
+                height: auto !important;
+                overflow-y: visible !important;
+                justify-content: flex-start !important;
             }
 
             .selfie-camera-panel {
-                inset: 0;
-                padding: 0;
+                inset: 0 !important;
+                padding: 0 !important;
             }
 
             .selfie-camera-card {
-                width: 100%;
-                height: 100%;
-                border: 0;
-                border-radius: 0;
+                width: 100% !important;
+                height: 100% !important;
+                border: 0 !important;
+                border-radius: 0 !important;
             }
 
             .selfie-camera-stage,
             .selfie-camera-stage video,
             .selfie-camera-stage img {
-                height: 100svh;
-                max-height: none;
+                height: 100svh !important;
+                max-height: none !important;
             }
         }
 
