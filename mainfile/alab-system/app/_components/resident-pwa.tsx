@@ -26,11 +26,14 @@ async function registerResidentWorker() {
 
 export function ResidentInstallPrompt() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(display-mode: standalone)").matches
+      || ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+  });
 
   useEffect(() => {
     void registerResidentWorker();
-    setIsInstalled(window.matchMedia("(display-mode: standalone)").matches || ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone)));
     const captureInstallPrompt = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as InstallPromptEvent);
