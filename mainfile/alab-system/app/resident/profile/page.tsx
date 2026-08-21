@@ -15,6 +15,8 @@ export default function ProfilePage() {
     type Activity = { deviceLabel?: string; occurredAt?: string };
     let profile: Record<string, unknown> = {};
     let notifications: Notifications | null = null;
+    let notificationRequested: Notifications | null = null;
+    let notificationSaveInFlight = false;
     let security: Security | null = null;
     const setFields = (values: Record<string, unknown>) => Object.entries(values).forEach(([field, value]) => {
       if (typeof value !== "string") return;
@@ -25,8 +27,11 @@ export default function ProfilePage() {
       const feedback = container.querySelector<HTMLElement>("[data-profile-feedback]");
       if (feedback) feedback.textContent = message;
     };
+    const setNotificationFeedback = (message: string) => {
+      root.querySelectorAll<HTMLElement>("[data-notification-feedback]").forEach((feedback) => { feedback.textContent = message; });
+    };
     const syncNotifications = (values: Notifications) => {
-      notifications = values;
+      notifications = { ...values };
       (Object.keys(values) as Array<keyof Notifications>).forEach((preference) => {
         root.querySelectorAll<HTMLButtonElement>(`[data-notification-toggle="${preference}"]`).forEach((toggle) => {
           toggle.setAttribute("aria-pressed", String(values[preference]));
@@ -34,15 +39,55 @@ export default function ProfilePage() {
         });
       });
     };
+    const notificationsMatch = (left: Notifications, right: Notifications) =>
+      left.push === right.push && left.incidents === right.incidents && left.emergency === right.emergency;
+    const saveRequestedNotifications = async () => {
+      if (notificationSaveInFlight) return;
+      notificationSaveInFlight = true;
+      try {
+        while (notificationRequested) {
+          const requested = { ...notificationRequested };
+          try {
+            const response = await fetch("/api/resident/profile", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notifications: requested }) });
+            const result = await response.json() as { error?: string; notifications?: Notifications };
+            if (!response.ok || !result.notifications) throw new Error(result.error ?? "Unable to save notification preference.");
+            syncNotifications(result.notifications);
+            if (notificationRequested && notificationsMatch(notificationRequested, result.notifications)) notificationRequested = null;
+          } catch (error) {
+            notificationRequested = null;
+            if (notifications) syncNotifications(notifications);
+            setNotificationFeedback(error instanceof Error ? error.message : "Unable to save notification preference.");
+          }
+        }
+      } finally {
+        notificationSaveInFlight = false;
+      }
+    };
+    const setPrivacyLoading = (dialog: HTMLElement, loading: boolean) => {
+      const checkbox = dialog.querySelector<HTMLInputElement>('input[name="bfpContactAllowed"]');
+      const saveButton = dialog.querySelector<HTMLButtonElement>("[data-privacy-save]");
+      if (checkbox) checkbox.disabled = loading;
+      if (saveButton) saveButton.disabled = loading;
+    };
     const loadSecurity = async (dialog: HTMLElement) => {
       setFeedback(dialog, "");
+      const checkbox = dialog.querySelector<HTMLInputElement>('input[name="bfpContactAllowed"]');
+      const saveButton = dialog.querySelector<HTMLButtonElement>("[data-privacy-save]");
+      if (checkbox) {
+        security = null;
+        checkbox.disabled = true;
+        if (saveButton) saveButton.disabled = true;
+      }
       try {
         const response = await fetch("/api/resident/profile/security");
         const result = await response.json() as { error?: string; security?: Security };
         if (!response.ok || !result.security) throw new Error(result.error ?? "Unable to load security settings.");
         security = result.security;
-        const checkbox = dialog.querySelector<HTMLInputElement>('input[name="bfpContactAllowed"]');
-        if (checkbox) checkbox.checked = security.bfpContactAllowed;
+        if (checkbox) {
+          checkbox.checked = security.bfpContactAllowed;
+          checkbox.disabled = false;
+          if (saveButton) saveButton.disabled = false;
+        }
       } catch (error) {
         setFeedback(dialog, error instanceof Error ? error.message : "Unable to load security settings.");
       }
@@ -78,6 +123,7 @@ export default function ProfilePage() {
     const openDialog = (name: string) => {
       const dialog = root.querySelector<HTMLElement>(`[data-profile-dialog="${name}"]`);
       if (!dialog) return;
+      if (name === "privacy-settings") setPrivacyLoading(dialog, true);
       dialog.hidden = false;
       dialog.querySelector<HTMLElement>("[data-profile-initial-focus]")?.focus({ preventScroll: true });
       if (name === "edit-profile") {
@@ -94,30 +140,18 @@ export default function ProfilePage() {
         event.preventDefault();
         const preference = toggle.dataset.notificationToggle as keyof Notifications | undefined;
         if (!preference || !notifications) return;
-        const feedback = root.querySelector<HTMLElement>("[data-notification-feedback]");
-        if (feedback) feedback.textContent = "";
-        const nextNotifications = { ...notifications, [preference]: !notifications[preference] };
-        void fetch("/api/resident/profile", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notifications: nextNotifications }) })
-          .then(async (response) => ({ response, result: await response.json() as { error?: string; notifications?: Notifications } }))
-          .then(({ response, result }) => {
-            if (!response.ok || !result.notifications) {
-              if (feedback) feedback.textContent = result.error ?? "Unable to save notification preference.";
-              return;
-            }
-            syncNotifications(result.notifications);
-          })
-          .catch(() => { if (feedback) feedback.textContent = "Unable to save notification preference."; });
+        setNotificationFeedback("");
+        const base = notificationRequested ?? notifications;
+        notificationRequested = { ...base, [preference]: !base[preference] };
+        void saveRequestedNotifications();
         return;
       }
       const target = clicked.closest<HTMLElement>("[data-profile-action], [data-profile-close]");
       if (!target) return;
       event.preventDefault();
       if (target.hasAttribute("data-profile-close")) closeDialogs();
-      else if (target.dataset.profileAction === "notification-settings") {
-        const panel = root.querySelector<HTMLElement>("#profile-notifications");
-        panel?.scrollIntoView({ behavior: "smooth", block: "start" });
-        panel?.focus({ preventScroll: true });
-      } else openDialog(target.dataset.profileAction ?? "");
+      else if (target.dataset.profileAction === "notification-settings") openDialog("notification-settings");
+      else openDialog(target.dataset.profileAction ?? "");
     };
     const onSubmit = async (event: Event) => {
       const form = event.target as HTMLFormElement;
@@ -133,6 +167,11 @@ export default function ProfilePage() {
       }
       if (formKind === "privacy-settings") {
         const checkbox = form.elements.namedItem("bfpContactAllowed") as HTMLInputElement | null;
+        const saveButton = form.querySelector<HTMLButtonElement>("[data-privacy-save]");
+        if (!security || checkbox?.disabled || saveButton?.disabled) {
+          if (feedback) feedback.textContent = "Wait for privacy settings to finish loading.";
+          return;
+        }
         body.bfpContactAllowed = Boolean(checkbox?.checked);
       }
       try {

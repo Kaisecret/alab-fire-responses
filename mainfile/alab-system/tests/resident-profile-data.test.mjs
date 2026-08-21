@@ -179,3 +179,41 @@ test("resident security dialogs recover from save failures and remain non-modal"
   assert.match(content, /data-profile-initial-focus/);
   assert.doesNotMatch(content, /aria-modal="true"/);
 });
+
+test("resident mobile settings expose every security action and their own notification controls", () => {
+  const content = readFileSync(join(appRoot, "app", "_content", "resident-profile-content.ts"), "utf8");
+  const page = readFileSync(join(appRoot, "app", "resident", "profile", "page.tsx"), "utf8");
+  const mobileSettings = content.match(/<!-- Mobile Settings Menu -->([\s\S]*?)<!-- COLUMN 2 \(Desktop Only\) -->/)?.[1] ?? "";
+  const notificationDialog = content.match(/data-profile-dialog="notification-settings"([\s\S]*?)<\/section><\/div>/)?.[1] ?? "";
+
+  ["change-password", "pin-security", "login-activity", "privacy-settings", "notification-settings"].forEach((action) => {
+    assert.match(mobileSettings, new RegExp(`data-profile-action="${action}"`));
+  });
+  ["push", "incidents", "emergency"].forEach((preference) => {
+    assert.match(notificationDialog, new RegExp(`data-notification-toggle="${preference}"`));
+  });
+  assert.match(page, /openDialog\("notification-settings"\)/);
+  assert.doesNotMatch(page, /#profile-notifications[\s\S]{0,200}scrollIntoView/);
+});
+
+test("resident privacy controls stay disabled until saved security state loads", () => {
+  const content = readFileSync(join(appRoot, "app", "_content", "resident-profile-content.ts"), "utf8");
+  const page = readFileSync(join(appRoot, "app", "resident", "profile", "page.tsx"), "utf8");
+
+  assert.match(content, /name="bfpContactAllowed"[^>]*disabled/);
+  assert.match(content, /data-privacy-save[^>]*disabled/);
+  assert.match(page, /checkbox\.disabled = true/);
+  assert.match(page, /saveButton\.disabled = true/);
+  assert.match(page, /security = result\.security;[\s\S]{0,500}checkbox\.disabled = false;[\s\S]{0,200}saveButton\.disabled = false/);
+});
+
+test("resident notification saves serialize the latest requested full state", () => {
+  const page = readFileSync(join(appRoot, "app", "resident", "profile", "page.tsx"), "utf8");
+
+  assert.match(page, /let notificationRequested: Notifications \| null = null/);
+  assert.match(page, /let notificationSaveInFlight = false/);
+  assert.match(page, /const base = notificationRequested \?\? notifications/);
+  assert.match(page, /while \(notificationRequested\)/);
+  assert.match(page, /await fetch\("\/api\/resident\/profile", \{ method: "PUT"/);
+  assert.match(page, /notificationRequested = null;[\s\S]{0,300}syncNotifications\(notifications\)/);
+});
