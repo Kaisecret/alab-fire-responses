@@ -26,18 +26,31 @@ const images = [
   "step4_firefighter.webp",
 ];
 
-test("public images use WebP except Resident PWA install assets", () => {
+test("public images use approved WebP, Resident Guide, or PWA formats", () => {
   for (const image of images) {
     assert.equal(existsSync(join(root, "public", "images", image)), true, image);
   }
 
-  const residentPwaPngs = new Set([
+  const approvedNonWebpImages = new Set([
+    "evac-alert-others.jpg",
+    "evac-stay-calm.jpg",
+    "evac-stay-low-smoke.jpg",
+    "extinguisher-types-row.jpg",
+    "forest-move-away-smoke.jpg",
+    "forest-warn-others-nearby.jpg",
+    "forest-wildfire-trees.jpg",
+    "guide-firefighter-truck.jpg",
+    "guide-safety-exit.jpg",
     "iconfor pwa.png",
+    "kitchen-cover-pan-lid.jpg",
+    "kitchen-evacuate-spread.jpg",
+    "kitchen-no-water-oil.jpg",
+    "kitchen-turn-off-stove.jpg",
     "resident-pwa-192.png",
     "resident-pwa-512.png",
   ]);
   const nonWebpImages = readdirSync(join(root, "public", "images")).filter(
-    (image) => !image.toLowerCase().endsWith(".webp") && !residentPwaPngs.has(image),
+    (image) => !image.toLowerCase().endsWith(".webp") && !approvedNonWebpImages.has(image),
   );
   assert.deepEqual(nonWebpImages, []);
 });

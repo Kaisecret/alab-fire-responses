@@ -14,13 +14,16 @@ const guideContent = readFileSync(
 test("resident content pages keep styles in React-owned nodes", () => {
   const styleImports = {
     reports: null,
-    guide: "guideStyles",
+    guide: "residentGuideCSS",
     profile: "profileStyles",
   };
 
   for (const page of residentPages) {
+    const sourcePath = page === "guide"
+      ? join(root, "app", "_components", "resident-guide-page.tsx")
+      : join(root, "app", "resident", page, "page.tsx");
     const source = readFileSync(
-      join(root, "app", "resident", page, "page.tsx"),
+      sourcePath,
       "utf8",
     );
     const styleName = styleImports[page];
