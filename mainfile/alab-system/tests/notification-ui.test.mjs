@@ -79,6 +79,12 @@ test("desktop notification popovers retain comfortable side insets", () => {
   assert.match(source("app/_components/notifications/notification-bell.tsx"), /aria-label="Close notifications"/);
 });
 
+test("notification live status pill retains horizontal breathing room", () => {
+  const styles = source("app/_components/notifications/notification-ui.module.css");
+
+  assert.match(styles, /\.centerActions \.livePill\s*\{[^}]*padding:\s*0 12px/s);
+});
+
 test("all three portal layouts use real shared notification bells", () => {
   const layouts = [
     source("app/resident/layout.tsx"),
