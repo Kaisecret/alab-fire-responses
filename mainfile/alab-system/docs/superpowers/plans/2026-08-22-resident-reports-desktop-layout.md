@@ -87,4 +87,3 @@ Expected: PASS with no failed Node test files.
 Run: `npm run lint`
 
 Expected: exit code 0.
-
