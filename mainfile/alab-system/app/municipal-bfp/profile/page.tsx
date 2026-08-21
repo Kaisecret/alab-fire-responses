@@ -22,9 +22,10 @@ const styles = `
   .municipal-settings__card { min-width: 0; border: 1px solid #dfe6ef; border-radius: 20px; background: #fff; box-shadow: 0 8px 28px rgba(15,23,42,.05); overflow: hidden; }
   .municipal-settings__profile { padding: 20px; display: grid; gap: 16px; }
   .municipal-settings__identity { display: flex; align-items: center; gap: 12px; }
-  .municipal-settings__avatar { width: 58px; height: 58px; border-radius: 18px; display: grid; place-items: center; color: #fff; background: #d91b10; box-shadow: 0 10px 24px rgba(217,27,16,.22); font-size: 21px; }
+  .municipal-settings__avatar { width: 58px; height: 58px; border: 1px solid #d7e0ea; border-radius: 18px; display: grid; place-items: center; color: #334155; background: #f8fafc; box-shadow: 0 8px 20px rgba(15,23,42,.08); flex: 0 0 58px; }
+  .municipal-settings__avatar svg { width: 28px; height: 28px; display: block; }
   .municipal-settings__identity strong { display: block; font-size: 18px; }
-  .municipal-settings__identity span { display: block; margin-top: 3px; color: #d91b10; font-size: 12px; font-weight: 800; }
+  .municipal-settings__role { display: block; margin-top: 3px; color: #d91b10; font-size: 12px; font-weight: 800; }
   .municipal-settings__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .municipal-settings__field { min-height: 82px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 15px; background: #f8fafc; display: grid; align-content: center; gap: 5px; }
   .municipal-settings__field small { color: #718096; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
@@ -80,10 +81,15 @@ export default function ProfilePage() {
           <div className="municipal-settings__grid">
             <article className="municipal-settings__card municipal-settings__profile">
               <div className="municipal-settings__identity">
-                <span className="municipal-settings__avatar"><i className="fa-solid fa-user-shield" /></span>
+                <span className="municipal-settings__avatar" data-municipal-profile-avatar aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8" r="3.75" stroke="currentColor" strokeWidth="1.8" />
+                    <path d="M4.75 20c.7-4.1 3.12-6.15 7.25-6.15S18.55 15.9 19.25 20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                </span>
                 <div>
                   <strong>{identity.displayName}</strong>
-                  <span>{identity.rankOrPosition ?? "Municipal BFP Personnel"}</span>
+                  <span className="municipal-settings__role">{identity.rankOrPosition ?? "Municipal BFP Personnel"}</span>
                 </div>
               </div>
               <div className="municipal-settings__fields">
