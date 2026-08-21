@@ -7,9 +7,21 @@ type InstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-function registerResidentWorker() {
-  if (!("serviceWorker" in navigator)) return Promise.resolve(undefined);
-  return navigator.serviceWorker.register("/resident-sw.js", { scope: "/resident/" });
+async function registerResidentWorker() {
+  if (!("serviceWorker" in navigator)) return undefined;
+
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(
+    registrations
+      .filter((registration) => {
+        const registrationScope = new URL(registration.scope);
+        return registrationScope.origin === window.location.origin
+          && registrationScope.pathname === "/resident/";
+      })
+      .map((registration) => registration.unregister()),
+  );
+
+  return navigator.serviceWorker.register("/resident-sw.js", { scope: "/resident" });
 }
 
 export function ResidentInstallPrompt() {

@@ -4,7 +4,7 @@
   "short_name": "ALAB",
   "description": "Resident fire reporting and emergency updates for ALAB.",
   "start_url": "/resident/login",
-  "scope": "/resident/",
+  "scope": "/resident",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",

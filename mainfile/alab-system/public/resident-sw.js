@@ -1,4 +1,4 @@
-const RESIDENT_CACHE = "alab-resident-shell-v1";
+const RESIDENT_CACHE = "alab-resident-shell-v2";
 const RESIDENT_LOGIN = "/resident/login";
 
 self.addEventListener("install", (event) => {
@@ -20,7 +20,9 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET" || event.request.mode !== "navigate") return;
   const requestUrl = new URL(event.request.url);
-  if (requestUrl.origin !== self.location.origin || !requestUrl.pathname.startsWith("/resident/")) return;
+  const isResidentNavigation = requestUrl.pathname === "/resident"
+    || requestUrl.pathname.startsWith("/resident/");
+  if (requestUrl.origin !== self.location.origin || !isResidentNavigation) return;
 
   event.respondWith(
     fetch(event.request).catch(() => caches.match(RESIDENT_LOGIN)),
