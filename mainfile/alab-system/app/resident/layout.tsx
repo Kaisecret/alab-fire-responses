@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ResidentMobileNavigation, residentMobileNavigationStyles } from "@/app/_components/resident-mobile-navigation";
 import { NotificationBell } from "@/app/_components/notifications/notification-bell";
+import { ResidentBrowserNotifications } from "@/app/_components/resident-pwa";
 
 /* ─────────────────────────────────────────────
    Shared Resident Layout
@@ -389,6 +390,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
       <style>{layoutStyles}</style>
       <style>{residentMobileNavigationStyles}</style>
       <div className="resident-shell" onSubmitCapture={requestLogoutConfirmation}>
+        <ResidentBrowserNotifications />
         {/* ===== MOBILE HEADER ===== */}
         <header className="rl-mobile-header">
           <div className="rl-m-left">
