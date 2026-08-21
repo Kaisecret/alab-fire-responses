@@ -323,7 +323,7 @@
 @media (min-width: 761px) {
   .municipalDesktop {
     max-width: 1440px;
-    width: min(1440px, calc(100% - 48px));
+    width: calc(100% - 48px);
     min-height: auto;
     margin: 0 auto;
     padding: 31px 0 51px;
