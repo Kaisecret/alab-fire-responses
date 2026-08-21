@@ -64,3 +64,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unable to load your profile right now." }, { status: 500 });
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    if (isLocalUiPreviewEnabled()) {
+      const body = await request.json();
+      return NextResponse.json({ profile: { email: String(body.email ?? ""), phone: String(body.phone ?? "") } });
+    }
+    const session = verifyResidentSession(request.cookies.get(RESIDENT_SESSION_COOKIE)?.value);
+    if (!session) return NextResponse.json({ error: "Sign in to update your profile." }, { status: 401 });
+    const body = await request.json() as { email?: unknown; phone?: unknown };
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const phone = typeof body.phone === "string" ? body.phone.replace(/[\s-]/g, "") : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+    if (!/^\+?[0-9]{10,15}$/.test(phone)) return NextResponse.json({ error: "Enter a valid mobile number." }, { status: 400 });
+    try {
+      const updated = await getDatabase().query<{ email: string; phone: string }>(
+        "update users set email = $1, phone = $2, updated_at = now() where id = $3 and role = 'RESIDENT' returning email, phone",
+        [email, phone, session.userId],
+      );
+      if (!updated.rowCount) return NextResponse.json({ error: "Resident profile not found." }, { status: 404 });
+      return NextResponse.json({ profile: updated.rows[0] });
+    } catch (error) {
+      if ((error as { code?: string }).code === "23505") return NextResponse.json({ error: "That email or mobile number is already in use." }, { status: 409 });
+      throw error;
+    }
+  } catch (error) {
+    console.error("Resident profile update failed", error);
+    return NextResponse.json({ error: "Unable to update your profile right now." }, { status: 500 });
+  }
+}

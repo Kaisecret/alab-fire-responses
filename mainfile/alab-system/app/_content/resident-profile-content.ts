@@ -275,6 +275,15 @@ export const profileStyles = `
     .btn-primary:hover { background: #b91008; }
     .btn-primary svg { width: 1.1rem; height: 1.1rem; }
     .w-full { width: 100%; }
+    .profile-dialog-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgba(15,23,42,.55); }
+    .profile-dialog-backdrop[hidden] { display: none; }
+    .profile-dialog { width: min(100%, 28rem); padding: 1.4rem; border-radius: 1rem; background: #fff; box-shadow: var(--shadow-lg); }
+    .profile-dialog h2 { margin-bottom: .35rem; font-size: 1.15rem; }
+    .profile-dialog p { margin-bottom: 1rem; color: var(--text-muted); font-size: .82rem; line-height: 1.45; }
+    .profile-dialog label { display: grid; gap: .35rem; margin-top: .75rem; color: var(--text-dark); font-size: .8rem; font-weight: 700; }
+    .profile-dialog input { width: 100%; padding: .65rem .75rem; border: 1px solid var(--border-color); border-radius: .5rem; font: inherit; }
+    .profile-dialog input[readonly] { background: var(--bg-color); color: var(--text-muted); }
+    .profile-dialog button { margin-top: 1rem; margin-right: .5rem; padding: .65rem .9rem; border: 0; border-radius: .5rem; font: inherit; font-weight: 700; cursor: pointer; }
 
     /* PERSONAL INFO LIST */
     .profile-info-list {
@@ -760,7 +769,7 @@ export const profileMarkup = `
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> 
                                 Personal Information
                             </div>
-                            <button class="btn-outline desktop-only">
+                            <button type="button" class="btn-outline desktop-only" data-profile-action="edit-profile">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 Edit Profile
                             </button>
@@ -816,11 +825,11 @@ export const profileMarkup = `
                                 <div class="profile-card-title">Settings</div>
                             </div>
                             <div class="settings-list">
-                                <a href="#" class="settings-item">
+                                <a href="#" class="settings-item" data-profile-action="edit-profile">
                                     <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted)"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Profile</div>
                                     <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                                 </a>
-                                <a href="#" class="settings-item">
+                                <a href="#" class="settings-item" data-profile-action="change-password">
                                     <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Change Password</div>
                                     <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                                 </a>
@@ -854,7 +863,7 @@ export const profileMarkup = `
                             <div class="profile-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Security</div>
                         </div>
                         <div class="settings-list">
-                            <a href="#" class="settings-item">
+                            <a href="#" class="settings-item" data-profile-action="change-password">
                                 <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Change Password</div>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                             </a>
@@ -973,13 +982,15 @@ export const profileMarkup = `
             
             <!-- Mobile Update Button (Static) -->
             <div class="mobile-fixed-bottom mobile-only" style="margin-top: 0.5rem;">
-                <button class="btn-primary w-full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Update Profile</button>
+                <button type="button" class="btn-primary w-full" data-profile-action="edit-profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Update Profile</button>
             </div>
             
             <div style="text-align: center; margin-top: 2rem; color: var(--text-muted); font-size: 0.8rem;" class="desktop-only">
                 © 2024 ALAB - BFP Antique. All rights reserved. &nbsp;&nbsp;&nbsp; Privacy Policy &nbsp;·&nbsp; Terms of Service &nbsp;·&nbsp; Help Center
             </div>
         </main>
+        <div class="profile-dialog-backdrop" data-profile-dialog="edit-profile" hidden><form class="profile-dialog" data-profile-form="contact"><h2>Edit contact details</h2><p>Name and barangay are verified details and cannot be changed here.</p><label>Full name<input name="name" readonly></label><label>Barangay<input name="barangay" readonly></label><label>Mobile number<input name="phone" inputmode="tel" required></label><label>Email address<input name="email" type="email" required></label><p data-profile-feedback></p><button type="button" data-profile-close>Cancel</button><button class="btn-primary" type="submit">Save changes</button></form></div>
+        <div class="profile-dialog-backdrop" data-profile-dialog="change-password" hidden><form class="profile-dialog" data-profile-form="password"><h2>Change password</h2><label>Current password<input name="currentPassword" type="password" required></label><label>New password<input name="newPassword" type="password" minlength="8" required></label><label>Confirm new password<input name="confirmPassword" type="password" minlength="8" required></label><p data-profile-feedback></p><button type="button" data-profile-close>Cancel</button><button class="btn-primary" type="submit">Update password</button></form></div>
 
         <!-- Mobile Bottom Nav -->
     </div>
