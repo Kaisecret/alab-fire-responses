@@ -9,6 +9,7 @@ test("resident login exposes an installable, icon-branded PWA only for the resid
   const manifest = join(appRoot, "app", "resident", "manifest.ts");
   const login = readFileSync(join(appRoot, "app", "resident", "login", "page.tsx"), "utf8");
   const pwa = join(appRoot, "app", "_components", "resident-pwa.tsx");
+  const proxy = readFileSync(join(appRoot, "proxy.ts"), "utf8");
 
   assert.ok(existsSync(manifest));
   assert.ok(existsSync(pwa));
@@ -24,6 +25,7 @@ test("resident login exposes an installable, icon-branded PWA only for the resid
   assert.doesNotMatch(manifestSource, /purpose:\s*"any maskable"/);
   assert.match(login, /manifest:\s*"\/resident\/manifest\.webmanifest"/);
   assert.match(login, /ResidentInstallPrompt/);
+  assert.match(proxy, /path === "\/resident\/manifest\.webmanifest"/);
 });
 
 test("resident login uses the native browser PWA dialog without alert permissions", () => {
