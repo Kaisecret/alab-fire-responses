@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import sharp from "sharp";
 
 const appRoot = process.cwd();
 
-test("resident login exposes an installable, icon-branded PWA only for the resident portal", () => {
+test("resident login exposes an installable, icon-branded PWA only for the resident portal", async () => {
   const manifest = join(appRoot, "public", "resident-manifest.webmanifest");
   const login = readFileSync(join(appRoot, "app", "resident", "login", "page.tsx"), "utf8");
   const pwa = join(appRoot, "app", "_components", "resident-pwa.tsx");
@@ -17,15 +18,36 @@ test("resident login exposes an installable, icon-branded PWA only for the resid
   assert.equal(manifestJson.scope, "/resident");
   assert.equal(manifestJson.display, "standalone");
   assert.equal(manifestJson.background_color, "#ffffff");
-  assert.deepEqual(manifestJson.icons.map((icon) => icon.src), [
-    "/images/FAVICON.webp",
-    "/images/resident-pwa-192.webp",
-    "/images/resident-pwa-512.webp",
+  assert.deepEqual(manifestJson.icons, [
+    {
+      src: "/images/resident-pwa-192.png",
+      sizes: "192x192",
+      type: "image/png",
+      purpose: "any",
+    },
+    {
+      src: "/images/resident-pwa-512.png",
+      sizes: "512x512",
+      type: "image/png",
+      purpose: "any",
+    },
   ]);
-  assert.ok(existsSync(join(appRoot, "public", "images", "resident-pwa-192.webp")));
-  assert.ok(existsSync(join(appRoot, "public", "images", "resident-pwa-512.webp")));
+  const icon192 = join(appRoot, "public", "images", "resident-pwa-192.png");
+  const icon512 = join(appRoot, "public", "images", "resident-pwa-512.png");
+  assert.ok(existsSync(join(appRoot, "public", "images", "iconfor pwa.png")));
+  assert.ok(existsSync(icon192));
+  assert.ok(existsSync(icon512));
+  assert.deepEqual(
+    { width: (await sharp(icon192).metadata()).width, height: (await sharp(icon192).metadata()).height },
+    { width: 192, height: 192 },
+  );
+  assert.deepEqual(
+    { width: (await sharp(icon512).metadata()).width, height: (await sharp(icon512).metadata()).height },
+    { width: 512, height: 512 },
+  );
   assert.match(login, /manifest:\s*"\/resident-manifest\.webmanifest"/);
   assert.match(login, /ResidentInstallPrompt/);
+  assert.match(readFileSync(pwa, "utf8"), /src="\/images\/resident-pwa-192\.png"/);
 });
 
 test("resident login uses the native browser PWA dialog without alert permissions", () => {

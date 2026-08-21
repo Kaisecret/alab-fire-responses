@@ -60,7 +60,7 @@ export function ResidentInstallPrompt() {
         .resident-pwa-prompt button { border: 0; border-radius: .65rem; padding: .62rem .75rem; background: #b91c1c; color: #fff; font: inherit; font-size: .75rem; font-weight: 800; cursor: pointer; }
         @media (max-width: 600px) { .resident-pwa-prompt { top: .75rem; right: .75rem; left: .75rem; justify-content: center; } }
       `}</style>
-      <img src="/images/FAVICON.webp" alt="ALAB" />
+      <img src="/images/resident-pwa-192.png" alt="ALAB" />
       <button type="button" onClick={() => void install()}>Install</button>
     </aside>
   );

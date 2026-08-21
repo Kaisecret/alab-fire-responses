@@ -26,13 +26,18 @@ const images = [
   "step4_firefighter.webp",
 ];
 
-test("all public images are exposed as WebP", () => {
+test("public images use WebP except Resident PWA install assets", () => {
   for (const image of images) {
     assert.equal(existsSync(join(root, "public", "images", image)), true, image);
   }
 
+  const residentPwaPngs = new Set([
+    "iconfor pwa.png",
+    "resident-pwa-192.png",
+    "resident-pwa-512.png",
+  ]);
   const nonWebpImages = readdirSync(join(root, "public", "images")).filter(
-    (image) => !image.toLowerCase().endsWith(".webp"),
+    (image) => !image.toLowerCase().endsWith(".webp") && !residentPwaPngs.has(image),
   );
   assert.deepEqual(nonWebpImages, []);
 });
