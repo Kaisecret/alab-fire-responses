@@ -386,6 +386,7 @@ export const reportsStyles = `
         font-family: inherit;
         transition: all 0.2s;
         white-space: nowrap;
+        text-decoration: none;
     }
     .view-details-btn:hover {
         background: #b8120a;

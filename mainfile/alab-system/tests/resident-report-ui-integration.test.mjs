@@ -46,6 +46,12 @@ test("resident reports center the full workspace on desktop without changing mob
   assert.match(reportsPage, /@media \(max-width: 950px\)/);
 });
 
+test("resident report View details links do not inherit browser underlining", () => {
+  const reportStyles = read("app/_content/resident-reports-content.ts");
+
+  assert.match(reportStyles, /\.view-details-btn \{[^}]*text-decoration: none;/);
+});
+
 test("incident photos open in a controlled dialog instead of expanding in the report view", () => {
   const status = read("app/_components/resident-report-status.tsx");
 
