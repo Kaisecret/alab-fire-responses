@@ -22,7 +22,7 @@ test("resident login exposes an installable, icon-branded PWA only for the resid
   assert.match(login, /ResidentInstallPrompt/);
 });
 
-test("resident notifications register a scoped worker and request browser permission from a user action", () => {
+test("resident PWA installs without alert permissions or browser notification pop-ups", () => {
   const pwa = readFileSync(join(appRoot, "app", "_components", "resident-pwa.tsx"), "utf8");
   const layout = readFileSync(join(appRoot, "app", "resident", "layout.tsx"), "utf8");
   const worker = join(appRoot, "public", "resident-sw.js");
@@ -30,10 +30,8 @@ test("resident notifications register a scoped worker and request browser permis
   assert.ok(existsSync(worker));
   assert.match(pwa, /navigator\.serviceWorker\.register\("\/resident-sw\.js", \{ scope: "\/resident\/" \}\)/);
   assert.match(pwa, /beforeinstallprompt/);
-  assert.match(pwa, /Notification\.requestPermission\(\)/);
-  assert.match(pwa, /showNotification/);
-  assert.match(pwa, /actionHref\?\.startsWith\("\/resident\/"\)/);
-  assert.match(readFileSync(worker, "utf8"), /notificationclick/);
-  assert.match(readFileSync(worker, "utf8"), /requestedUrl\.startsWith\("\/resident\/"\)/);
-  assert.match(layout, /ResidentBrowserNotifications/);
+  assert.doesNotMatch(pwa, /Notification/);
+  assert.doesNotMatch(pwa, /useNotifications/);
+  assert.doesNotMatch(readFileSync(worker, "utf8"), /notificationclick/);
+  assert.doesNotMatch(layout, /ResidentBrowserNotifications/);
 });
