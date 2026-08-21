@@ -80,11 +80,14 @@ test("resident profile settings expose contact-only and password forms", () => {
   assert.match(page, /fetch\(endpoint, \{ method: "PUT"/);
 });
 
-test("resident settings dialogs leave the dimmed page scrollable", () => {
+test("resident settings dialogs lock the background while keeping the popup usable", () => {
   const content = readFileSync(join(appRoot, "app", "_content", "resident-profile-content.ts"), "utf8");
+  const page = readFileSync(join(appRoot, "app", "resident", "profile", "page.tsx"), "utf8");
 
-  assert.match(content, /\.profile-dialog-backdrop\s*\{[^}]*pointer-events:\s*none/);
+  assert.match(content, /\.profile-dialog-backdrop\s*\{[^}]*pointer-events:\s*auto/);
   assert.match(content, /\.profile-dialog\s*\{[^}]*pointer-events:\s*auto/);
+  assert.match(page, /document\.documentElement\.style\.overflow\s*=\s*"hidden"/);
+  assert.match(page, /document\.body\.style\.overflow\s*=\s*"hidden"/);
 });
 
 test("resident security settings stay owned by the signed-in resident and never expose PIN hashes", () => {

@@ -275,9 +275,9 @@ export const profileStyles = `
     .btn-primary:hover { background: #b91008; }
     .btn-primary svg { width: 1.1rem; height: 1.1rem; }
     .w-full { width: 100%; }
-    .profile-dialog-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgba(15,23,42,.55); pointer-events: none; }
+    .profile-dialog-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgba(15,23,42,.55); pointer-events: auto; }
     .profile-dialog-backdrop[hidden] { display: none; }
-    .profile-dialog { width: min(100%, 28rem); padding: 1.4rem; border-radius: 1rem; background: #fff; box-shadow: var(--shadow-lg); pointer-events: auto; }
+    .profile-dialog { width: min(100%, 28rem); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 1.4rem; border-radius: 1rem; background: #fff; box-shadow: var(--shadow-lg); pointer-events: auto; }
     .profile-dialog h2 { margin-bottom: .35rem; font-size: 1.15rem; }
     .profile-dialog p { margin-bottom: 1rem; color: var(--text-muted); font-size: .82rem; line-height: 1.45; }
     .profile-dialog label { display: grid; gap: .35rem; margin-top: .75rem; color: var(--text-dark); font-size: .8rem; font-weight: 700; }

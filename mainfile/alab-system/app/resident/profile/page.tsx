@@ -22,7 +22,16 @@ export default function ProfilePage() {
       if (typeof value !== "string") return;
       root.querySelectorAll<HTMLElement>(`[data-profile-field="${field}"]`).forEach((element) => { element.textContent = value; });
     });
-    const closeDialogs = () => root.querySelectorAll<HTMLElement>("[data-profile-dialog]").forEach((dialog) => { dialog.hidden = true; });
+    const previousDocumentOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    const unlockBackground = () => {
+      document.documentElement.style.overflow = previousDocumentOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+    };
+    const closeDialogs = () => {
+      root.querySelectorAll<HTMLElement>("[data-profile-dialog]").forEach((dialog) => { dialog.hidden = true; });
+      unlockBackground();
+    };
     const setFeedback = (container: ParentNode, message: string) => {
       const feedback = container.querySelector<HTMLElement>("[data-profile-feedback]");
       if (feedback) feedback.textContent = message;
@@ -125,6 +134,8 @@ export default function ProfilePage() {
       if (!dialog) return;
       if (name === "privacy-settings") setPrivacyLoading(dialog, true);
       dialog.hidden = false;
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
       dialog.querySelector<HTMLElement>("[data-profile-initial-focus]")?.focus({ preventScroll: true });
       if (name === "edit-profile") {
         const form = dialog.querySelector<HTMLFormElement>("form");
@@ -206,7 +217,7 @@ export default function ProfilePage() {
         }
       })
       .catch(() => undefined);
-    return () => { root.removeEventListener("click", onClick); root.removeEventListener("submit", onSubmit); };
+    return () => { closeDialogs(); root.removeEventListener("click", onClick); root.removeEventListener("submit", onSubmit); };
   }, []);
 
   return (
