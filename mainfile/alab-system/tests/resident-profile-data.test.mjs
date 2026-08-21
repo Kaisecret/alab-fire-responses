@@ -25,3 +25,31 @@ test("resident mobile settings use the same vertical rhythm as personal informat
   assert.match(content, /\.settings-item\s*\{\s*padding:\s*1rem 0\s*!important/);
   assert.match(content, /\.settings-menu-card \.profile-card-header\s*\{[\s\S]*?margin-bottom:\s*1\.2rem/);
 });
+
+test("resident settings update only contact details and require the current password", () => {
+  const profileRoute = readFileSync(join(appRoot, "app", "api", "resident", "profile", "route.ts"), "utf8");
+  const passwordRoute = join(appRoot, "app", "api", "resident", "profile", "password", "route.ts");
+
+  assert.match(profileRoute, /export async function PUT/);
+  assert.match(profileRoute, /verifyResidentSession/);
+  assert.match(profileRoute, /update users set email = \$1, phone = \$2/);
+  assert.doesNotMatch(profileRoute, /update resident_profiles set/);
+  assert.ok(existsSync(passwordRoute));
+  const password = readFileSync(passwordRoute, "utf8");
+  assert.match(password, /verifyPassword\(currentPassword, user\.password_hash\)/);
+  assert.match(password, /hashPassword\(newPassword\)/);
+  assert.match(password, /newPassword !== confirmPassword/);
+});
+
+test("resident profile settings expose contact-only and password forms", () => {
+  const content = readFileSync(join(appRoot, "app", "_content", "resident-profile-content.ts"), "utf8");
+  const page = readFileSync(join(appRoot, "app", "resident", "profile", "page.tsx"), "utf8");
+
+  assert.match(content, /data-profile-action="edit-profile"/);
+  assert.match(content, /data-profile-action="change-password"/);
+  assert.match(content, /name="name"[^>]*readonly/);
+  assert.match(content, /name="barangay"[^>]*readonly/);
+  assert.match(page, /"\/api\/resident\/profile\/password"/);
+  assert.match(page, /"\/api\/resident\/profile"/);
+  assert.match(page, /fetch\(endpoint, \{ method: "PUT"/);
+});
