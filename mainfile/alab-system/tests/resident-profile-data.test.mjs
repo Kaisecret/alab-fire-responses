@@ -53,3 +53,10 @@ test("resident profile settings expose contact-only and password forms", () => {
   assert.match(page, /"\/api\/resident\/profile"/);
   assert.match(page, /fetch\(endpoint, \{ method: "PUT"/);
 });
+
+test("resident settings dialogs leave the dimmed page scrollable", () => {
+  const content = readFileSync(join(appRoot, "app", "_content", "resident-profile-content.ts"), "utf8");
+
+  assert.match(content, /\.profile-dialog-backdrop\s*\{[^}]*pointer-events:\s*none/);
+  assert.match(content, /\.profile-dialog\s*\{[^}]*pointer-events:\s*auto/);
+});
