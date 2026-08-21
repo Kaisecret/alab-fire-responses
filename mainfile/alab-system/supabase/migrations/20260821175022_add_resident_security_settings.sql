@@ -1,6 +1,6 @@
 create table public.resident_security_settings (
   resident_profile_id uuid not null unique references public.resident_profiles(id) on delete cascade,
-  pin_hash text check (pin_hash is null or char_length(trim(pin_hash)) between 60 and 255),
+  pin_hash text not null check (char_length(trim(pin_hash)) between 60 and 255),
   bfp_contact_allowed boolean not null default false,
   updated_at timestamptz not null default now()
 );

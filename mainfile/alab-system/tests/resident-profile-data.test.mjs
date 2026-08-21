@@ -14,11 +14,21 @@ test("resident security migration stores hashed PIN preferences and indexed logi
   const migration = readFileSync(join(migrationsPath, migrationPath), "utf8");
 
   assert.match(migration, /create table public\.resident_security_settings/);
-  assert.match(migration, /pin_hash text check \(pin_hash is null or char_length\(trim\(pin_hash\)\) between 60 and 255\)/);
+  assert.match(migration, /pin_hash text not null check \(char_length\(trim\(pin_hash\)\) between 60 and 255\)/);
   assert.match(migration, /create table public\.resident_login_activity/);
   assert.match(migration, /alter table public\.resident_security_settings enable row level security/);
   assert.match(migration, /alter table public\.resident_login_activity enable row level security/);
   assert.match(migration, /create index resident_login_activity_profile_occurred_idx\s+on public\.resident_login_activity \(resident_profile_id, occurred_at desc\)/);
+
+  const forwardMigrationPath = readdirSync(migrationsPath).find((name) =>
+    name.endsWith("_allow_security_preferences_without_pin.sql"),
+  );
+  assert.ok(forwardMigrationPath, "a forward migration should allow privacy preferences without a PIN");
+  const forwardMigration = readFileSync(join(migrationsPath, forwardMigrationPath), "utf8");
+
+  assert.match(forwardMigration, /alter column pin_hash drop not null/i);
+  assert.match(forwardMigration, /drop constraint.*pin_hash.*check/i);
+  assert.match(forwardMigration, /check \(pin_hash is null or char_length\(trim\(pin_hash\)\) between 60 and 255\)/i);
 });
 
 test("resident profile reads only the signed-in resident's database record", () => {
@@ -93,6 +103,8 @@ test("resident security settings stay owned by the signed-in resident and never 
   assert.match(security, /hashPassword\(pin\)/);
   assert.match(security, /insert into resident_security_settings/i);
   assert.match(security, /on conflict \(resident_profile_id\) do update/i);
+  assert.match(security, /returning pin_hash, bfp_contact_allowed/i);
+  assert.match(security, /pinConfigured:\s*Boolean\(saved\.rows\[0\]\.pin_hash\)/);
   assert.doesNotMatch(security, /Set a PIN before changing this preference/);
 });
 

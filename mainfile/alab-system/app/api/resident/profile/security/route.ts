@@ -77,17 +77,17 @@ export async function PUT(request: NextRequest) {
       pinHash = await hashPassword(pin);
     }
     const bfpContactAllowed = changingBfpContact ? body.bfpContactAllowed as boolean : user.bfp_contact_allowed ?? false;
-    const saved = await getDatabase().query<{ bfp_contact_allowed: boolean }>(`
+    const saved = await getDatabase().query<{ pin_hash: string | null; bfp_contact_allowed: boolean }>(`
       INSERT INTO resident_security_settings (resident_profile_id, pin_hash, bfp_contact_allowed, updated_at)
       VALUES ($1, $2, $3, now())
       ON CONFLICT (resident_profile_id) DO UPDATE
       SET pin_hash = EXCLUDED.pin_hash,
           bfp_contact_allowed = EXCLUDED.bfp_contact_allowed,
           updated_at = now()
-      RETURNING bfp_contact_allowed`, [user.resident_profile_id, pinHash, bfpContactAllowed]);
+      RETURNING pin_hash, bfp_contact_allowed`, [user.resident_profile_id, pinHash, bfpContactAllowed]);
 
     return NextResponse.json({
-      security: { pinConfigured: true, bfpContactAllowed: saved.rows[0].bfp_contact_allowed },
+      security: { pinConfigured: Boolean(saved.rows[0].pin_hash), bfpContactAllowed: saved.rows[0].bfp_contact_allowed },
     });
   } catch (error) {
     console.error("Resident security settings update failed", error);
