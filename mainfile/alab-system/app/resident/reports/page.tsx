@@ -22,6 +22,9 @@ const liveReportsStyles = `
   .reports-count-note { font-size: .78rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
   .resident-fire-logo { display: block; width: 100%; height: 100%; object-fit: contain; }
   .status-summary-icon .resident-fire-logo { width: 1.18rem; height: 1.18rem; }
+  @media (min-width: 951px) {
+    .reports-main-layout { max-width: 1200px; margin: 0 auto; grid-template-columns: minmax(0, 1fr); }
+  }
   @media (max-width: 950px) {
     .reports-page-root { min-height: calc(100vh - 4.75rem); padding-bottom: 7.5rem; }
     .reports-live-heading { padding: 1.15rem 1rem .25rem; }

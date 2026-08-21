@@ -38,6 +38,14 @@ test("resident reports keep the established report cards while loading live API 
   assert.doesNotMatch(reportsPage, /style=\{\{display:"block",padding:"1rem"/);
 });
 
+test("resident reports center the full workspace on desktop without changing mobile rules", () => {
+  const reportsPage = read("app/resident/reports/page.tsx");
+
+  assert.match(reportsPage, /@media \(min-width: 951px\)/);
+  assert.match(reportsPage, /\.reports-main-layout \{ max-width: 1200px; margin: 0 auto; grid-template-columns: minmax\(0, 1fr\); \}/);
+  assert.match(reportsPage, /@media \(max-width: 950px\)/);
+});
+
 test("incident photos open in a controlled dialog instead of expanding in the report view", () => {
   const status = read("app/_components/resident-report-status.tsx");
 
