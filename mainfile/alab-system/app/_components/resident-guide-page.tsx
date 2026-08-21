@@ -834,7 +834,7 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
       <div className="rgd-footer-actions">
         <a href="/resident/report-fire" className="rgd-report-now-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 23c-4.97 0-9-4.03-9-9 0-3.32 1.83-6.22 4.54-7.75.43-.24.96.06.96.55 0 .28-.15.54-.39.68C6.18 8.6 5 10.66 5 13c0 3.87 3.13 7 7 7s7-3.13 7-7c0-2.34-1.18-4.4-3.11-5.52-.24-.14-.39-.4-.39-.68 0-.49.53-.79.96-.55C19.17 7.78 21 10.68 21 14c0 4.97-4.03 9-9 9z" />
+            <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
           Report a Fire Now
         </a>
@@ -1140,7 +1140,7 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
       <div className="rgd-footer-actions">
         <a href="/resident/report-fire" className="rgd-report-now-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 23c-4.97 0-9-4.03-9-9 0-3.32 1.83-6.22 4.54-7.75.43-.24.96.06.96.55 0 .28-.15.54-.39.68C6.18 8.6 5 10.66 5 13c0 3.87 3.13 7 7 7s7-3.13 7-7c0-2.34-1.18-4.4-3.11-5.52-.24-.14-.39-.4-.39-.68 0-.49.53-.79.96-.55C19.17 7.78 21 10.68 21 14c0 4.97-4.03 9-9 9z" />
+            <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
           Report a Fire Now
         </a>
@@ -1454,7 +1454,7 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
       <div className="rgd-footer-actions">
         <a href="/resident/report-fire" className="rgd-report-now-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 23c-4.97 0-9-4.03-9-9 0-3.32 1.83-6.22 4.54-7.75.43-.24.96.06.96.55 0 .28-.15.54-.39.68C6.18 8.6 5 10.66 5 13c0 3.87 3.13 7 7 7s7-3.13 7-7c0-2.34-1.18-4.4-3.11-5.52-.24-.14-.39-.4-.39-.68 0-.49.53-.79.96-.55C19.17 7.78 21 10.68 21 14c0 4.97-4.03 9-9 9z" />
+            <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
           Report a Fire Now
         </a>
@@ -1774,7 +1774,7 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
       <div className="rgd-footer-actions">
         <a href="/resident/report-fire" className="rgd-report-now-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 23c-4.97 0-9-4.03-9-9 0-3.32 1.83-6.22 4.54-7.75.43-.24.96.06.96.55 0 .28-.15.54-.39.68C6.18 8.6 5 10.66 5 13c0 3.87 3.13 7 7 7s7-3.13 7-7c0-2.34-1.18-4.4-3.11-5.52-.24-.14-.39-.4-.39-.68 0-.49.53-.79.96-.55C19.17 7.78 21 10.68 21 14c0 4.97-4.03 9-9 9z" />
+            <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
           Report a Fire Now
         </a>
@@ -2107,7 +2107,7 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
       <div className="rgd-footer-actions">
         <a href="/resident/report-fire" className="rgd-report-now-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 23c-4.97 0-9-4.03-9-9 0-3.32 1.83-6.22 4.54-7.75.43-.24.96.06.96.55 0 .28-.15.54-.39.68C6.18 8.6 5 10.66 5 13c0 3.87 3.13 7 7 7s7-3.13 7-7c0-2.34-1.18-4.4-3.11-5.52-.24-.14-.39-.4-.39-.68 0-.49.53-.79.96-.55C19.17 7.78 21 10.68 21 14c0 4.97-4.03 9-9 9z" />
+            <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
           Report a Fire Now
         </a>
@@ -2455,7 +2455,7 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
       <div className="rgd-footer-actions">
         <a href="/resident/report-fire" className="rgd-report-now-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 23c-4.97 0-9-4.03-9-9 0-3.32 1.83-6.22 4.54-7.75.43-.24.96.06.96.55 0 .28-.15.54-.39.68C6.18 8.6 5 10.66 5 13c0 3.87 3.13 7 7 7s7-3.13 7-7c0-2.34-1.18-4.4-3.11-5.52-.24-.14-.39-.4-.39-.68 0-.49.53-.79.96-.55C19.17 7.78 21 10.68 21 14c0 4.97-4.03 9-9 9z" />
+            <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
           Report a Fire Now
         </a>
@@ -2820,7 +2820,7 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
       <div className="rgd-footer-actions">
         <a href="/resident/report-fire" className="rgd-report-now-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 23c-4.97 0-9-4.03-9-9 0-3.32 1.83-6.22 4.54-7.75.43-.24.96.06.96.55 0 .28-.15.54-.39.68C6.18 8.6 5 10.66 5 13c0 3.87 3.13 7 7 7s7-3.13 7-7c0-2.34-1.18-4.4-3.11-5.52-.24-.14-.39-.4-.39-.68 0-.49.53-.79.96-.55C19.17 7.78 21 10.68 21 14c0 4.97-4.03 9-9 9z" />
+            <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
           Report a Fire Now
         </a>
@@ -3202,7 +3202,7 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
       <div className="rgd-footer-actions">
         <a href="/resident/report-fire" className="rgd-report-now-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 23c-4.97 0-9-4.03-9-9 0-3.32 1.83-6.22 4.54-7.75.43-.24.96.06.96.55 0 .28-.15.54-.39.68C6.18 8.6 5 10.66 5 13c0 3.87 3.13 7 7 7s7-3.13 7-7c0-2.34-1.18-4.4-3.11-5.52-.24-.14-.39-.4-.39-.68 0-.49.53-.79.96-.55C19.17 7.78 21 10.68 21 14c0 4.97-4.03 9-9 9z" />
+            <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
           Report a Fire Now
         </a>
