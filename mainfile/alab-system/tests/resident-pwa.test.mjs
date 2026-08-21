@@ -12,9 +12,12 @@ test("resident login exposes an installable, icon-branded PWA only for the resid
 
   assert.ok(existsSync(manifest));
   assert.ok(existsSync(pwa));
-  assert.match(readFileSync(manifest, "utf8"), /start_url:\s*"\/resident\/login"/);
-  assert.match(readFileSync(manifest, "utf8"), /scope:\s*"\/resident\/"/);
-  assert.match(readFileSync(manifest, "utf8"), /\/images\/FAVICON\.webp/);
+  const manifestSource = readFileSync(manifest, "utf8");
+  assert.match(manifestSource, /start_url:\s*"\/resident\/login"/);
+  assert.match(manifestSource, /scope:\s*"\/resident\/"/);
+  assert.match(manifestSource, /\/images\/FAVICON\.webp/);
+  assert.match(manifestSource, /purpose:\s*"maskable"/);
+  assert.doesNotMatch(manifestSource, /purpose:\s*"any maskable"/);
   assert.match(login, /manifest:\s*"\/resident\/manifest\.webmanifest"/);
   assert.match(login, /ResidentInstallPrompt/);
 });
