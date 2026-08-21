@@ -1,9 +1,25 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
 const appRoot = process.cwd();
+
+test("resident security migration stores hashed PIN preferences and indexed login activity", () => {
+  const migrationsPath = join(appRoot, "supabase", "migrations");
+  const migrationName = "add_resident_security_settings";
+  const migrationPath = readdirSync(migrationsPath).find((name) => name.endsWith(`_${migrationName}.sql`));
+
+  assert.ok(migrationPath, "resident security settings migration should exist");
+  const migration = readFileSync(join(migrationsPath, migrationPath), "utf8");
+
+  assert.match(migration, /create table public\.resident_security_settings/);
+  assert.match(migration, /pin_hash text not null/);
+  assert.match(migration, /create table public\.resident_login_activity/);
+  assert.match(migration, /alter table public\.resident_security_settings enable row level security/);
+  assert.match(migration, /alter table public\.resident_login_activity enable row level security/);
+  assert.match(migration, /create index resident_login_activity_profile_occurred_idx\s+on public\.resident_login_activity \(resident_profile_id, occurred_at desc\)/);
+});
 
 test("resident profile reads only the signed-in resident's database record", () => {
   const routePath = join(appRoot, "app", "api", "resident", "profile", "route.ts");
