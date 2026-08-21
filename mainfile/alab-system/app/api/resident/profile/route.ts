@@ -68,12 +68,57 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     if (isLocalUiPreviewEnabled()) {
-      const body = await request.json();
+      const body = await request.json() as { notifications?: { push?: unknown; incidents?: unknown; emergency?: unknown }; email?: unknown; phone?: unknown };
+      if (body.notifications) {
+        return NextResponse.json({ notifications: body.notifications });
+      }
       return NextResponse.json({ profile: { email: String(body.email ?? ""), phone: String(body.phone ?? "") } });
     }
     const session = verifyResidentSession(request.cookies.get(RESIDENT_SESSION_COOKIE)?.value);
     if (!session) return NextResponse.json({ error: "Sign in to update your profile." }, { status: 401 });
-    const body = await request.json() as { email?: unknown; phone?: unknown };
+    const body = await request.json() as {
+      email?: unknown;
+      phone?: unknown;
+      notifications?: { push?: unknown; incidents?: unknown; emergency?: unknown };
+    };
+    const notifications = body.notifications;
+    if (notifications !== undefined) {
+      if (!notifications || typeof notifications !== "object" || Array.isArray(notifications)
+        || typeof notifications.push !== "boolean"
+        || typeof notifications.incidents !== "boolean"
+        || typeof notifications.emergency !== "boolean") {
+        return NextResponse.json({ error: "Provide all notification preferences as true or false." }, { status: 400 });
+      }
+      const saved = await getDatabase().query<{
+        push_enabled: boolean;
+        incident_updates_enabled: boolean;
+        emergency_alerts_enabled: boolean;
+      }>(`
+        WITH resident_profile AS (
+          SELECT id FROM resident_profiles WHERE user_id = $1
+        )
+        INSERT INTO notification_preferences (
+          id, resident_profile_id, push_enabled, incident_updates_enabled, emergency_alerts_enabled, created_at, updated_at
+        )
+        SELECT gen_random_uuid(), id, $2, $3, $4, now(), now()
+        FROM resident_profile
+        ON CONFLICT (resident_profile_id) DO UPDATE
+        SET push_enabled = EXCLUDED.push_enabled,
+            incident_updates_enabled = EXCLUDED.incident_updates_enabled,
+            emergency_alerts_enabled = EXCLUDED.emergency_alerts_enabled,
+            updated_at = now()
+        RETURNING push_enabled, incident_updates_enabled, emergency_alerts_enabled`, [
+        session.userId, notifications.push, notifications.incidents, notifications.emergency,
+      ]);
+      const preferences = saved.rows[0];
+      if (!preferences) return NextResponse.json({ error: "Resident profile not found." }, { status: 404 });
+      const savedNotifications = {
+        push: preferences.push_enabled,
+        incidents: preferences.incident_updates_enabled,
+        emergency: preferences.emergency_alerts_enabled,
+      };
+      return NextResponse.json({ notifications: savedNotifications });
+    }
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const phone = typeof body.phone === "string" ? body.phone.replace(/[\s-]/g, "") : "";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });

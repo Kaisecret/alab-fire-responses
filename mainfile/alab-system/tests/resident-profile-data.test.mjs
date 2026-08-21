@@ -14,7 +14,7 @@ test("resident security migration stores hashed PIN preferences and indexed logi
   const migration = readFileSync(join(migrationsPath, migrationPath), "utf8");
 
   assert.match(migration, /create table public\.resident_security_settings/);
-  assert.match(migration, /pin_hash text not null/);
+  assert.match(migration, /pin_hash text check \(pin_hash is null or char_length\(trim\(pin_hash\)\) between 60 and 255\)/);
   assert.match(migration, /create table public\.resident_login_activity/);
   assert.match(migration, /alter table public\.resident_security_settings enable row level security/);
   assert.match(migration, /alter table public\.resident_login_activity enable row level security/);
@@ -75,4 +75,64 @@ test("resident settings dialogs leave the dimmed page scrollable", () => {
 
   assert.match(content, /\.profile-dialog-backdrop\s*\{[^}]*pointer-events:\s*none/);
   assert.match(content, /\.profile-dialog\s*\{[^}]*pointer-events:\s*auto/);
+});
+
+test("resident security settings stay owned by the signed-in resident and never expose PIN hashes", () => {
+  const securityPath = join(appRoot, "app", "api", "resident", "profile", "security", "route.ts");
+  assert.ok(existsSync(securityPath), "resident security settings route should exist");
+  const security = readFileSync(securityPath, "utf8");
+
+  assert.match(security, /export async function GET/);
+  assert.match(security, /export async function PUT/);
+  assert.match(security, /verifyResidentSession/);
+  assert.match(security, /WHERE rp\.user_id = \$1/);
+  assert.match(security, /security:\s*\{\s*pinConfigured/);
+  assert.match(security, /bfpContactAllowed/);
+  assert.match(security, /verifyPassword\(currentPassword, user\.password_hash\)/);
+  assert.match(security, /!\/\^\\d\{4\}\$\/\.test\(pin\)/);
+  assert.match(security, /hashPassword\(pin\)/);
+  assert.match(security, /insert into resident_security_settings/i);
+  assert.match(security, /on conflict \(resident_profile_id\) do update/i);
+  assert.doesNotMatch(security, /Set a PIN before changing this preference/);
+});
+
+test("resident activity returns only the current resident's ten newest safe records", () => {
+  const activityPath = join(appRoot, "app", "api", "resident", "profile", "activity", "route.ts");
+  assert.ok(existsSync(activityPath), "resident activity route should exist");
+  const activity = readFileSync(activityPath, "utf8");
+
+  assert.match(activity, /verifyResidentSession/);
+  assert.match(activity, /WHERE rp\.user_id = \$1/);
+  assert.match(activity, /ORDER BY rla\.occurred_at DESC/);
+  assert.match(activity, /LIMIT 10/);
+  assert.match(activity, /deviceLabel/);
+  assert.match(activity, /occurredAt/);
+  assert.doesNotMatch(activity, /residentProfileId/);
+  assert.doesNotMatch(activity, /ipAddress/);
+});
+
+test("resident profile notifications validate all toggles and persist through the session-owned profile", () => {
+  const profile = readFileSync(join(appRoot, "app", "api", "resident", "profile", "route.ts"), "utf8");
+
+  assert.match(profile, /notifications\?:\s*\{\s*push\?: unknown; incidents\?: unknown; emergency\?: unknown/);
+  assert.match(profile, /typeof notifications\.push !== "boolean"/);
+  assert.match(profile, /typeof notifications\.incidents !== "boolean"/);
+  assert.match(profile, /typeof notifications\.emergency !== "boolean"/);
+  assert.match(profile, /insert into notification_preferences/i);
+  assert.match(profile, /on conflict \(resident_profile_id\) do update/i);
+  assert.match(profile, /where user_id = \$1/i);
+  assert.match(profile, /notifications:\s*savedNotifications/);
+});
+
+test("only successful active resident logins record a bounded server-derived device label", () => {
+  const login = readFileSync(join(appRoot, "app", "api", "auth", "login", "route.ts"), "utf8");
+
+  assert.match(login, /function deviceLabel\(request: Request\)/);
+  assert.match(login, /user-agent/);
+  assert.match(login, /slice\(0, 200\)/);
+  assert.match(login, /insert into resident_login_activity/i);
+  assert.match(login, /select id from resident_profiles where user_id = \$1/);
+  assert.match(login, /Resident login activity recording failed/);
+  assert.match(login, /catch \(activityError\)/);
+  assert.doesNotMatch(login, /resident_login_activity[\s\S]{0,300}x-forwarded-for/i);
 });
