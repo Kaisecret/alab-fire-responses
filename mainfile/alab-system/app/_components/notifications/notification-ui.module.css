@@ -321,12 +321,15 @@
 /* Municipal command-center desktop only. Resident and all mobile notification
    layouts intentionally keep their established presentation. */
 @media (min-width: 761px) {
-  .municipalDesktop {
+  /* The municipal shell owns a descendant reset (`.mbfp-layout *`) with the
+     same specificity as a single CSS-module class.  Keep this compound
+     selector so production CSS ordering cannot erase the page gutters. */
+  .center.municipalDesktop {
     max-width: 1440px;
-    width: calc(100% - 48px);
+    width: calc(100% - 64px);
     min-height: auto;
     margin: 0 auto;
-    padding: 31px 0 51px;
+    padding: 24px 0 48px;
   }
 
   .municipalDesktop::before {
