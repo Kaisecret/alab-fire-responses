@@ -58,7 +58,7 @@ test("municipal notification center has an isolated compact desktop treatment", 
   assert.match(page, /desktopVariant="municipal"/);
   assert.match(center, /desktopVariant\?:\s*"municipal"/);
   assert.match(center, /styles\.municipalDesktop/);
-  assert.match(styles, /@media \(min-width:\s*761px\)[\s\S]*\.municipalDesktop\s*\{[^}]*max-width:\s*none[^}]*width:\s*100%[^}]*padding:\s*31px 35px 51px/s);
+  assert.match(styles, /@media \(min-width:\s*761px\)[\s\S]*\.municipalDesktop\s*\{[^}]*max-width:\s*1440px[^}]*width:\s*min\(1440px,\s*calc\(100% - 48px\)\)[^}]*margin:\s*0 auto[^}]*padding:\s*31px 0 51px/s);
   assert.match(styles, /\.municipalDesktop::before\s*\{[^}]*display:\s*none/s);
   assert.match(styles, /\.municipalDesktop \.centerHeader\s*\{[^}]*padding:\s*18px 20px[^}]*background:\s*#fff/s);
   assert.match(styles, /\.municipalDesktop \.centerHeader h1\s*\{[^}]*font-size:\s*32px/s);
@@ -67,12 +67,12 @@ test("municipal notification center has an isolated compact desktop treatment", 
   assert.match(styles, /\.municipalDesktop \.centerList \.card\s*\{[^}]*min-height:\s*84px[^}]*padding:\s*16px 18px/s);
 });
 
-test("desktop notification popovers are large enough to scan incident cards", () => {
+test("desktop notification popovers retain comfortable side insets", () => {
   const styles = source("app/_components/notifications/notification-ui.module.css");
 
-  assert.match(styles, /@media \(min-width:\s*641px\)[\s\S]*\.popover\s*\{[^}]*width:\s*min\(520px,\s*calc\(100vw - 48px\)\)[^}]*max-height:\s*min\(680px/s);
-  assert.match(styles, /\.popoverList \.card\s*\{[^}]*min-height:\s*96px[^}]*padding:\s*16px/s);
-  assert.match(styles, /\.popoverList \.iconTile\s*\{[^}]*width:\s*52px[^}]*height:\s*52px/s);
+  assert.match(styles, /@media \(min-width:\s*641px\)[\s\S]*\.popover\s*\{[^}]*top:\s*calc\(100% \+ 14px\)[^}]*right:\s*16px[^}]*width:\s*min\(420px,\s*calc\(100vw - 48px\)\)[^}]*max-height:\s*min\(600px/s);
+  assert.match(styles, /\.popoverList \.card\s*\{[^}]*min-height:\s*88px[^}]*padding:\s*14px/s);
+  assert.match(styles, /\.popoverList \.iconTile\s*\{[^}]*width:\s*48px[^}]*height:\s*48px/s);
   assert.match(styles, /\.popoverClose\s*\{[^}]*width:\s*40px[^}]*height:\s*40px/s);
   assert.match(source("app/_components/notifications/notification-bell.tsx"), /aria-label="Close notifications"/);
 });
