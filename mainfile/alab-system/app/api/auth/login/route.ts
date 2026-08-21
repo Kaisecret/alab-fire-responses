@@ -19,6 +19,31 @@ function clientKey(request: Request, identifier: string) {
   return `${forwardedFor}:${identifier.toLowerCase()}`;
 }
 
+function deviceLabel(request: Request) {
+  const userAgent = request.headers.get("user-agent") ?? "";
+  const platform = /iPhone|iPad|iPod/i.test(userAgent)
+    ? "iOS"
+    : /Android/i.test(userAgent)
+      ? "Android"
+      : /Windows/i.test(userAgent)
+        ? "Windows"
+        : /Macintosh|Mac OS/i.test(userAgent)
+          ? "macOS"
+          : /Linux/i.test(userAgent)
+            ? "Linux"
+            : "Unknown device";
+  const browser = /Edg\//i.test(userAgent)
+    ? "Edge"
+    : /Firefox\//i.test(userAgent)
+      ? "Firefox"
+      : /Chrome\//i.test(userAgent)
+        ? "Chrome"
+        : /Safari\//i.test(userAgent)
+          ? "Safari"
+          : "browser";
+  return `${platform} ${browser}`.slice(0, 200);
+}
+
 export async function POST(request: Request) {
   let body: { identifier?: string; password?: string };
   try {
@@ -75,6 +100,20 @@ export async function POST(request: Request) {
     }
 
     await database.query("UPDATE users SET last_login_at = $1, updated_at = $1 WHERE id = $2", [new Date(), user.id]);
+    try {
+      const profile = await database.query<{ id: string }>(
+        "select id from resident_profiles where user_id = $1 limit 1",
+        [user.id],
+      );
+      if (profile.rows[0]) {
+        await database.query(
+          "insert into resident_login_activity (resident_profile_id, device_label) values ($1, $2)",
+          [profile.rows[0].id, deviceLabel(request)],
+        );
+      }
+    } catch (activityError) {
+      console.error("Resident login activity recording failed", activityError);
+    }
     const response = NextResponse.json({ user: { id: user.id, username: user.username } });
     response.cookies.set(RESIDENT_SESSION_COOKIE, createResidentSession(user.id, user.username), residentSessionCookie);
     response.cookies.set(RESIDENT_APPLICANT_COOKIE, "", { ...residentApplicantCookie, maxAge: 0, expires: new Date(0) });
