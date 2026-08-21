@@ -284,6 +284,12 @@ export const profileStyles = `
     .profile-dialog input { width: 100%; padding: .65rem .75rem; border: 1px solid var(--border-color); border-radius: .5rem; font: inherit; }
     .profile-dialog input[readonly] { background: var(--bg-color); color: var(--text-muted); }
     .profile-dialog button { margin-top: 1rem; margin-right: .5rem; padding: .65rem .9rem; border: 0; border-radius: .5rem; font: inherit; font-weight: 700; cursor: pointer; }
+    .profile-dialog-check { display: flex; align-items: flex-start; gap: .6rem; margin: 1rem 0; color: var(--text-dark); font-size: .85rem; line-height: 1.4; }
+    .profile-dialog-check input { width: auto; margin-top: .15rem; }
+    .login-activity-list { display: grid; gap: .65rem; margin-bottom: 1rem; }
+    .login-activity-item { padding: .7rem; border: 1px solid var(--border-color); border-radius: .55rem; background: var(--bg-color); }
+    .login-activity-item strong, .login-activity-item span { display: block; }
+    .login-activity-item span { margin-top: .2rem; color: var(--text-muted); font-size: .78rem; }
 
     /* PERSONAL INFO LIST */
     .profile-info-list {
@@ -362,6 +368,7 @@ export const profileStyles = `
     .settings-item:last-child { border-bottom: none; }
     .settings-item:hover { color: var(--primary-red); }
     .settings-item svg { width: 1.1rem; height: 1.1rem; color: #94a3b8; }
+    button.settings-item[data-profile-action] { width: 100%; border: 0; background: transparent; font-family: inherit; text-align: left; cursor: pointer; }
     .settings-item-left {
         display: flex;
         align-items: center;
@@ -395,6 +402,8 @@ export const profileStyles = `
         width: 2.8rem;
         height: 1.5rem;
         background: var(--border-color);
+        border: 0;
+        padding: 0;
         border-radius: 1rem;
         position: relative;
         cursor: pointer;
@@ -414,6 +423,8 @@ export const profileStyles = `
     }
     .pref-toggle.active { background: var(--primary-red); }
     .pref-toggle.active::after { transform: translateX(1.3rem); }
+    .pref-toggle:focus-visible { outline: 3px solid var(--primary-red-border); outline-offset: 3px; }
+    .notification-feedback { min-height: 1.2rem; margin-top: .8rem; color: var(--primary-red); font-size: .78rem; }
 
     /* EMERGENCY CONTACTS */
     .emergency-list {
@@ -833,7 +844,7 @@ export const profileMarkup = `
                                     <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Change Password</div>
                                     <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                                 </a>
-                                <a href="#" class="settings-item">
+                                <a href="#profile-notifications" class="settings-item" data-profile-action="notification-settings">
                                     <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted)"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Notification Settings</div>
                                     <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                                 </a>
@@ -841,7 +852,7 @@ export const profileMarkup = `
                                     <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted)"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Emergency Contacts</div>
                                     <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                                 </a>
-                                <a href="#" class="settings-item">
+                                <a href="#" class="settings-item" data-profile-action="privacy-settings">
                                     <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Privacy Settings</div>
                                     <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                                 </a>
@@ -867,22 +878,22 @@ export const profileMarkup = `
                                 <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Change Password</div>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                             </a>
-                            <a href="#" class="settings-item">
+                            <button type="button" class="settings-item" data-profile-action="pin-security">
                                 <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> PIN / Security Settings</div>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                            </a>
-                            <a href="#" class="settings-item">
+                            </button>
+                            <button type="button" class="settings-item" data-profile-action="login-activity">
                                 <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Login Activity</div>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                            </a>
-                            <a href="#" class="settings-item">
+                            </button>
+                            <button type="button" class="settings-item" data-profile-action="privacy-settings">
                                 <div class="settings-item-left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Privacy Settings</div>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                            </a>
+                            </button>
                         </div>
                     </div>
                     
-                    <div class="profile-card">
+                    <div class="profile-card" id="profile-notifications" tabindex="-1">
                         <div class="profile-card-header">
                             <div class="profile-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Preferences / Notifications</div>
                         </div>
@@ -892,21 +903,21 @@ export const profileMarkup = `
                                     <h4>Push Notifications</h4>
                                     <p>Receive general app notifications</p>
                                 </div>
-                                <div class="pref-toggle active"></div>
+                                <button type="button" class="pref-toggle" data-notification-toggle="push" aria-pressed="false" aria-label="Toggle Push Notifications"></button>
                             </div>
                             <div class="pref-item">
                                 <div class="pref-text">
                                     <h4>Incident Updates</h4>
                                     <p>Updates on your submitted reports</p>
                                 </div>
-                                <div class="pref-toggle active"></div>
+                                <button type="button" class="pref-toggle" data-notification-toggle="incidents" aria-pressed="false" aria-label="Toggle Incident Updates"></button>
                             </div>
                             <div class="pref-item">
                                 <div class="pref-text">
                                     <h4>Emergency Alerts</h4>
                                     <p>Critical alerts and fire safety warnings</p>
                                 </div>
-                                <div class="pref-toggle active"></div>
+                                <button type="button" class="pref-toggle" data-notification-toggle="emergency" aria-pressed="false" aria-label="Toggle Emergency Alerts"></button>
                             </div>
                             <div class="pref-item">
                                 <div class="pref-text">
@@ -916,6 +927,7 @@ export const profileMarkup = `
                                 <div class="pref-toggle active"></div>
                             </div>
                         </div>
+                        <p class="notification-feedback" data-notification-feedback aria-live="polite"></p>
                     </div>
                 </div>
 
@@ -991,6 +1003,9 @@ export const profileMarkup = `
         </main>
         <div class="profile-dialog-backdrop" data-profile-dialog="edit-profile" hidden><form class="profile-dialog" data-profile-form="contact"><h2>Edit contact details</h2><p>Name and barangay are verified details and cannot be changed here.</p><label>Full name<input name="name" readonly></label><label>Barangay<input name="barangay" readonly></label><label>Mobile number<input name="phone" inputmode="tel" required></label><label>Email address<input name="email" type="email" required></label><p data-profile-feedback></p><button type="button" data-profile-close>Cancel</button><button class="btn-primary" type="submit">Save changes</button></form></div>
         <div class="profile-dialog-backdrop" data-profile-dialog="change-password" hidden><form class="profile-dialog" data-profile-form="password"><h2>Change password</h2><label>Current password<input name="currentPassword" type="password" required></label><label>New password<input name="newPassword" type="password" minlength="8" required></label><label>Confirm new password<input name="confirmPassword" type="password" minlength="8" required></label><p data-profile-feedback></p><button type="button" data-profile-close>Cancel</button><button class="btn-primary" type="submit">Update password</button></form></div>
+        <div class="profile-dialog-backdrop" data-profile-dialog="pin-security" hidden><form class="profile-dialog" data-profile-form="pin-security"><h2>PIN / Security Settings</h2><p>Set a four-digit PIN for security-sensitive actions.</p><label>Current password<input name="currentPassword" type="password" required></label><label>Four-digit PIN<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" required></label><label>Confirm PIN<input name="confirmPin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" required></label><p data-profile-feedback aria-live="polite"></p><button type="button" data-profile-close>Cancel</button><button class="btn-primary" type="submit">Save PIN</button></form></div>
+        <div class="profile-dialog-backdrop" data-profile-dialog="login-activity" hidden><section class="profile-dialog" role="dialog" aria-modal="true" aria-labelledby="login-activity-title"><h2 id="login-activity-title">Login Activity</h2><p>Recent sign-ins to your account.</p><div class="login-activity-list" data-login-activity aria-live="polite"></div><button type="button" data-profile-close>Close</button></section></div>
+        <div class="profile-dialog-backdrop" data-profile-dialog="privacy-settings" hidden><form class="profile-dialog" data-profile-form="privacy-settings"><h2>Privacy Settings</h2><label class="profile-dialog-check"><input name="bfpContactAllowed" type="checkbox"> <span>Allow the Bureau of Fire Protection to contact me for emergency follow-up.</span></label><p data-profile-feedback aria-live="polite"></p><button type="button" data-profile-close>Cancel</button><button class="btn-primary" type="submit">Save settings</button></form></div>
 
         <!-- Mobile Bottom Nav -->
     </div>

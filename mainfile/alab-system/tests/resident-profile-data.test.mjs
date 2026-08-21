@@ -148,3 +148,17 @@ test("only successful active resident logins record a bounded server-derived dev
   assert.match(login, /catch \(activityError\)/);
   assert.doesNotMatch(login, /resident_login_activity[\s\S]{0,300}x-forwarded-for/i);
 });
+
+test("resident profile security actions, notification controls, and activity endpoint are connected", () => {
+  const content = readFileSync(join(appRoot, "app", "_content", "resident-profile-content.ts"), "utf8");
+  const page = readFileSync(join(appRoot, "app", "resident", "profile", "page.tsx"), "utf8");
+
+  assert.match(content, /data-profile-action="pin-security"/);
+  assert.match(content, /data-profile-action="login-activity"/);
+  assert.match(content, /data-profile-action="privacy-settings"/);
+  ["push", "incidents", "emergency"].forEach((preference) => {
+    assert.match(content, new RegExp(`<button type="button"[^>]*data-notification-toggle="${preference}"[^>]*aria-pressed="(?:true|false)"`));
+  });
+  assert.match(page, /"\/api\/resident\/profile\/security"/);
+  assert.match(page, /"\/api\/resident\/profile\/activity"/);
+});
