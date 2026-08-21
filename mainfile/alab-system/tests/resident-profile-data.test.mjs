@@ -162,3 +162,20 @@ test("resident profile security actions, notification controls, and activity end
   assert.match(page, /"\/api\/resident\/profile\/security"/);
   assert.match(page, /"\/api\/resident\/profile\/activity"/);
 });
+
+test("resident security dialogs recover from save failures and remain non-modal", () => {
+  const content = readFileSync(join(appRoot, "app", "_content", "resident-profile-content.ts"), "utf8");
+  const page = readFileSync(join(appRoot, "app", "resident", "profile", "page.tsx"), "utf8");
+
+  assert.match(page, /try\s*\{[\s\S]*?await fetch\(endpoint,[\s\S]*?\}\s*catch\s*\{[\s\S]*?Unable to save changes\. Please try again\./);
+  assert.match(page, /\[data-profile-initial-focus\]/);
+  ["pin-security", "login-activity", "privacy-settings"].forEach((dialog) => {
+    const dialogPattern = new RegExp(`data-profile-dialog="${dialog}"[\\s\\S]*?role="dialog"[\\s\\S]*?aria-labelledby="[^"]+"`);
+    assert.match(content, dialogPattern);
+  });
+  assert.match(content, /id="pin-security-title"/);
+  assert.match(content, /id="login-activity-title"/);
+  assert.match(content, /id="privacy-settings-title"/);
+  assert.match(content, /data-profile-initial-focus/);
+  assert.doesNotMatch(content, /aria-modal="true"/);
+});

@@ -79,6 +79,7 @@ export default function ProfilePage() {
       const dialog = root.querySelector<HTMLElement>(`[data-profile-dialog="${name}"]`);
       if (!dialog) return;
       dialog.hidden = false;
+      dialog.querySelector<HTMLElement>("[data-profile-initial-focus]")?.focus({ preventScroll: true });
       if (name === "edit-profile") {
         const form = dialog.querySelector<HTMLFormElement>("form");
         ["name", "barangay", "phone", "email"].forEach((field) => { const input = form?.elements.namedItem(field) as HTMLInputElement | null; if (input) input.value = typeof profile[field] === "string" ? profile[field] : ""; });
@@ -134,13 +135,17 @@ export default function ProfilePage() {
         const checkbox = form.elements.namedItem("bfpContactAllowed") as HTMLInputElement | null;
         body.bfpContactAllowed = Boolean(checkbox?.checked);
       }
-      const response = await fetch(endpoint, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const result = await response.json() as { error?: string; profile?: Record<string, unknown>; security?: Security };
-      if (!response.ok) { if (feedback) feedback.textContent = result.error ?? "Unable to save changes."; return; }
-      if (result.profile) { profile = { ...profile, ...result.profile }; setFields(result.profile); }
-      if (result.security) security = result.security;
-      if (feedback) feedback.textContent = formKind === "password" ? "Password updated." : formKind === "contact" ? "Contact details updated." : formKind === "pin-security" ? "PIN saved." : "Privacy settings saved.";
-      if (formKind === "password" || formKind === "pin-security") form.reset();
+      try {
+        const response = await fetch(endpoint, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        const result = await response.json() as { error?: string; profile?: Record<string, unknown>; security?: Security };
+        if (!response.ok) { if (feedback) feedback.textContent = result.error ?? "Unable to save changes."; return; }
+        if (result.profile) { profile = { ...profile, ...result.profile }; setFields(result.profile); }
+        if (result.security) security = result.security;
+        if (feedback) feedback.textContent = formKind === "password" ? "Password updated." : formKind === "contact" ? "Contact details updated." : formKind === "pin-security" ? "PIN saved." : "Privacy settings saved.";
+        if (formKind === "password" || formKind === "pin-security") form.reset();
+      } catch {
+        if (feedback) feedback.textContent = "Unable to save changes. Please try again.";
+      }
     };
     root.addEventListener("click", onClick);
     root.addEventListener("submit", onSubmit);
