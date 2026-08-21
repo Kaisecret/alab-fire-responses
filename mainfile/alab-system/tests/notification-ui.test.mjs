@@ -71,6 +71,8 @@ test("desktop notification popovers retain comfortable side insets", () => {
   const styles = source("app/_components/notifications/notification-ui.module.css");
 
   assert.match(styles, /@media \(min-width:\s*641px\)[\s\S]*\.popover\s*\{[^}]*top:\s*calc\(100% \+ 14px\)[^}]*right:\s*16px[^}]*width:\s*min\(420px,\s*calc\(100vw - 48px\)\)[^}]*max-height:\s*min\(600px/s);
+  assert.match(styles, /@media \(min-width:\s*641px\)[\s\S]*\.popover \.popoverHeader\s*\{[^}]*padding:\s*14px 16px/s);
+  assert.match(styles, /@media \(min-width:\s*641px\)[\s\S]*\.popover \.popoverList\s*\{[^}]*padding:\s*10px/s);
   assert.match(styles, /\.popoverList \.card\s*\{[^}]*min-height:\s*88px[^}]*padding:\s*14px/s);
   assert.match(styles, /\.popoverList \.iconTile\s*\{[^}]*width:\s*48px[^}]*height:\s*48px/s);
   assert.match(styles, /\.popoverClose\s*\{[^}]*width:\s*40px[^}]*height:\s*40px/s);
