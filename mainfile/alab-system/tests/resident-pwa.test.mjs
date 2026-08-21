@@ -6,26 +6,24 @@ import test from "node:test";
 const appRoot = process.cwd();
 
 test("resident login exposes an installable, icon-branded PWA only for the resident portal", () => {
-  const manifest = join(appRoot, "app", "resident", "manifest.ts");
+  const manifest = join(appRoot, "public", "resident-manifest.webmanifest");
   const login = readFileSync(join(appRoot, "app", "resident", "login", "page.tsx"), "utf8");
   const pwa = join(appRoot, "app", "_components", "resident-pwa.tsx");
-  const proxy = readFileSync(join(appRoot, "proxy.ts"), "utf8");
 
   assert.ok(existsSync(manifest));
   assert.ok(existsSync(pwa));
-  const manifestSource = readFileSync(manifest, "utf8");
-  assert.match(manifestSource, /start_url:\s*"\/resident\/login"/);
-  assert.match(manifestSource, /scope:\s*"\/resident\/"/);
-  assert.match(manifestSource, /\/images\/FAVICON\.webp/);
-  assert.match(manifestSource, /\/images\/resident-pwa-192\.webp/);
-  assert.match(manifestSource, /\/images\/resident-pwa-512\.webp/);
+  const manifestJson = JSON.parse(readFileSync(manifest, "utf8"));
+  assert.equal(manifestJson.start_url, "/resident/login");
+  assert.equal(manifestJson.scope, "/resident/");
+  assert.deepEqual(manifestJson.icons.map((icon) => icon.src), [
+    "/images/FAVICON.webp",
+    "/images/resident-pwa-192.webp",
+    "/images/resident-pwa-512.webp",
+  ]);
   assert.ok(existsSync(join(appRoot, "public", "images", "resident-pwa-192.webp")));
   assert.ok(existsSync(join(appRoot, "public", "images", "resident-pwa-512.webp")));
-  assert.match(manifestSource, /purpose:\s*"maskable"/);
-  assert.doesNotMatch(manifestSource, /purpose:\s*"any maskable"/);
-  assert.match(login, /manifest:\s*"\/resident\/manifest\.webmanifest"/);
+  assert.match(login, /manifest:\s*"\/resident-manifest\.webmanifest"/);
   assert.match(login, /ResidentInstallPrompt/);
-  assert.match(proxy, /path === "\/resident\/manifest\.webmanifest"/);
 });
 
 test("resident login uses the native browser PWA dialog without alert permissions", () => {

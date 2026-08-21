@@ -72,8 +72,7 @@ export async function proxy(request: NextRequest) {
     if (
       path === "/resident/login" ||
       path === "/resident/signup" ||
-      path === "/resident/application" ||
-      path === "/resident/manifest.webmanifest"
+      path === "/resident/application"
     ) return supabaseResponse;
     if (isLocalUiPreviewEnabled()) return supabaseResponse;
     if (await verifyResidentSession(request.cookies.get(SESSION_COOKIE)?.value)) return supabaseResponse;
