@@ -40,6 +40,9 @@ test("resident login uses the native browser PWA dialog without alert permission
   assert.doesNotMatch(pwa, /window\.setInterval/);
   assert.doesNotMatch(pwa, /Notification/);
   assert.doesNotMatch(pwa, /useNotifications/);
-  assert.doesNotMatch(readFileSync(worker, "utf8"), /notificationclick/);
+  const workerSource = readFileSync(worker, "utf8");
+  assert.match(workerSource, /addEventListener\("fetch"/);
+  assert.match(workerSource, /event\.respondWith\(/);
+  assert.doesNotMatch(workerSource, /notificationclick/);
   assert.doesNotMatch(layout, /ResidentBrowserNotifications/);
 });
