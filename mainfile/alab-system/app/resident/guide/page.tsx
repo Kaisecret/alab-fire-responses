@@ -1,12 +1,12 @@
 "use client";
 
-import { guideStyles, guideMarkup } from "../../_content/resident-guide-content";
+import React, { Suspense } from "react";
+import { ResidentGuidePage } from "@/app/_components/resident-guide-page";
 
 export default function GuidePage() {
   return (
-    <>
-      <style>{guideStyles}</style>
-      <div dangerouslySetInnerHTML={{ __html: guideMarkup }} />
-    </>
+    <Suspense fallback={<div style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>Loading Emergency Guides...</div>}>
+      <ResidentGuidePage />
+    </Suspense>
   );
 }
