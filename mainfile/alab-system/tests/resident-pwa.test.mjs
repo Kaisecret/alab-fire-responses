@@ -26,7 +26,7 @@ test("resident login exposes an installable, icon-branded PWA only for the resid
   assert.match(login, /ResidentInstallPrompt/);
 });
 
-test("resident PWA installs without alert permissions or browser notification pop-ups", () => {
+test("resident login uses the native browser PWA dialog without alert permissions", () => {
   const pwa = readFileSync(join(appRoot, "app", "_components", "resident-pwa.tsx"), "utf8");
   const layout = readFileSync(join(appRoot, "app", "resident", "layout.tsx"), "utf8");
   const worker = join(appRoot, "public", "resident-sw.js");
@@ -34,10 +34,10 @@ test("resident PWA installs without alert permissions or browser notification po
   assert.ok(existsSync(worker));
   assert.match(pwa, /navigator\.serviceWorker\.register\("\/resident-sw\.js", \{ scope: "\/resident\/" \}\)/);
   assert.match(pwa, /beforeinstallprompt/);
-  assert.doesNotMatch(pwa, /if \(!installPrompt\) return null/);
-  assert.match(pwa, /setInstallHelpOpen\(true\)/);
-  assert.match(pwa, /Add to Home Screen/);
-  assert.match(pwa, /window\.setInterval\(\(\) => setInstallPromptVisible\(true\), 10_000\)/);
+  assert.match(pwa, /if \(!installPrompt \|\| isInstalled\) return null/);
+  assert.match(pwa, /await installPrompt\.prompt\(\)/);
+  assert.doesNotMatch(pwa, /Add to Home Screen/);
+  assert.doesNotMatch(pwa, /window\.setInterval/);
   assert.doesNotMatch(pwa, /Notification/);
   assert.doesNotMatch(pwa, /useNotifications/);
   assert.doesNotMatch(readFileSync(worker, "utf8"), /notificationclick/);
