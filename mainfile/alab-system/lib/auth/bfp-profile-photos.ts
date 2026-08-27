@@ -1,7 +1,6 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
-import sharp from "sharp";
 
 const bucket = "bfp-profile-photos";
 const maxPhotoBytes = 2 * 1024 * 1024;
@@ -28,31 +27,27 @@ async function profilePhotoStorage() {
   return client;
 }
 
-async function normalizedPhoto(file: File) {
+function isImageSignature(photo: Buffer, type: string) {
+  if (type === "image/jpeg") return photo.length >= 3 && photo[0] === 0xff && photo[1] === 0xd8 && photo[2] === 0xff;
+  if (type === "image/png") return photo.length >= 8 && photo.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  return photo.length >= 12 && photo.subarray(0, 4).toString("ascii") === "RIFF" && photo.subarray(8, 12).toString("ascii") === "WEBP";
+}
+
+async function verifiedPhoto(file: File) {
   if (!acceptedImageTypes.has(file.type) || file.size < 1 || file.size > maxPhotoBytes) {
     throw new Error("INVALID_PROFILE_PHOTO");
   }
 
   const input = Buffer.from(await file.arrayBuffer());
-  try {
-    const metadata = await sharp(input, { failOn: "error" }).metadata();
-    if (!metadata.width || !metadata.height) throw new Error("missing dimensions");
-  } catch {
-    throw new Error("INVALID_PROFILE_PHOTO");
-  }
-
-  return sharp(input)
-    .rotate()
-    .resize(512, 512, { fit: "cover", position: "attention", withoutEnlargement: false })
-    .webp({ quality: 88 })
-    .toBuffer();
+  if (!isImageSignature(input, file.type)) throw new Error("INVALID_PROFILE_PHOTO");
+  return input;
 }
 
 export async function uploadBfpProfilePhoto(userId: string, file: File) {
-  const photo = await normalizedPhoto(file);
-  const storageKey = `${userId}/profile.webp`;
+  const photo = await verifiedPhoto(file);
+  const storageKey = `${userId}/profile`;
   const { error } = await (await profilePhotoStorage()).storage.from(bucket).upload(storageKey, photo, {
-    contentType: "image/webp",
+    contentType: file.type,
     cacheControl: "private, max-age=60",
     upsert: true,
   });
@@ -61,7 +56,11 @@ export async function uploadBfpProfilePhoto(userId: string, file: File) {
 }
 
 export async function createBfpProfilePhotoUrl(userId: string) {
-  const storageKey = `${userId}/profile.webp`;
-  const { data, error } = await storageClient().storage.from(bucket).createSignedUrl(storageKey, 60 * 60 * 24 * 7);
-  return error || !data ? null : `${data.signedUrl}&v=${Date.now()}`;
+  try {
+    const storageKey = `${userId}/profile`;
+    const { data, error } = await storageClient().storage.from(bucket).createSignedUrl(storageKey, 60 * 60 * 24 * 7);
+    return error || !data ? null : `${data.signedUrl}&v=${Date.now()}`;
+  } catch {
+    return null;
+  }
 }

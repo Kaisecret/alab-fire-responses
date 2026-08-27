@@ -160,7 +160,7 @@ test("mobile BFP profile-photo upload is authenticated, private, and bound to th
   assert.match(storage, /image\/jpeg/);
   assert.match(storage, /image\/png/);
   assert.match(storage, /image\/webp/);
-  assert.match(storage, /sharp/);
+  assert.doesNotMatch(storage, /sharp/);
   assert.match(storage, /createSignedUrl/);
   assert.doesNotMatch(migration, /profile_photo_key/i);
   assert.match(migration, /insert into storage\.buckets/i);
@@ -174,7 +174,7 @@ test("mobile BFP personnel can use profile photos without a manual database prof
   const account = source("lib/auth/bfp-accounts.ts");
 
   assert.match(storage, /storage\.createBucket\(/);
-  assert.match(storage, /\$\{userId\}\/profile\.webp/);
+  assert.match(storage, /\$\{userId\}\/profile/);
   assert.match(storage, /upsert:\s*true/);
   assert.doesNotMatch(route, /updateBfpProfilePhoto/);
   assert.doesNotMatch(account, /profile_photo_key/);
