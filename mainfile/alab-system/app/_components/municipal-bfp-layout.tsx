@@ -38,6 +38,7 @@ const navigationGroups: NavGroup[] = [
   {
     groupTitle: 'STATION RESOURCES',
     items: [
+      { label: 'Stations', href: '/municipal-bfp/stations', icon: 'fa-solid fa-building-shield' },
       { label: 'Firetrucks', href: '/municipal-bfp/firetrucks', icon: 'fa-solid fa-truck-moving' },
       { label: 'Water Sources', href: '/municipal-bfp/water-sources', icon: 'fa-solid fa-droplet' },
       { label: 'Responders', href: '/municipal-bfp/responders', icon: 'fa-solid fa-users' },

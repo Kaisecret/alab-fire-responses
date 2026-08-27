@@ -41,3 +41,20 @@ test("municipal station and personnel APIs require a session-owned Municipal Adm
   assert.match(combined, /409/);
   assert.match(combined, /temporaryPassword/);
 });
+
+test("municipal website exposes station setup before personnel account issuance", () => {
+  const layout = source("app/_components/municipal-bfp-layout.tsx");
+  const responders = source("app/municipal-bfp/responders/page.tsx");
+  const stationPage = "app/municipal-bfp/stations/page.tsx";
+  const stationManager = "app/_components/municipal-stations-manager.tsx";
+  const personnelManager = "app/_components/municipal-personnel-manager.tsx";
+  for (const path of [stationPage, stationManager, personnelManager]) assert.equal(existsSync(join(root, path)), true, `${path} is missing`);
+  assert.match(layout, /href: '\/municipal-bfp\/stations'/);
+  assert.match(responders, /MunicipalPersonnelManager/);
+  assert.match(source(stationManager), /\/api\/municipal-bfp\/stations/);
+  const personnel = source(personnelManager);
+  assert.match(personnel, /\/api\/municipal-bfp\/personnel/);
+  assert.match(personnel, /<select/);
+  assert.match(personnel, /stations\.length === 0/);
+  assert.match(personnel, /temporaryPassword/);
+});
