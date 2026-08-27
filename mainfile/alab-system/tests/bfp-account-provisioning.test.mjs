@@ -169,6 +169,9 @@ test("mobile BFP profile-photo upload is authenticated, private, and bound to th
   assert.match(storage, /image\/jpeg/);
   assert.match(storage, /image\/png/);
   assert.match(storage, /image\/webp/);
+  assert.match(storage, /function detectedImageType/);
+  assert.match(storage, /const contentType = detectedImageType\(input\)/);
+  assert.match(storage, /contentType: photo\.contentType/);
   assert.match(storage, /5 \* 1024 \* 1024/);
   assert.doesNotMatch(storage, /sharp/);
   assert.match(storage, /createSignedUrl/);

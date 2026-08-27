@@ -4,7 +4,6 @@ import { createClient } from "@supabase/supabase-js";
 
 const bucket = "bfp-profile-photos";
 const maxPhotoBytes = 5 * 1024 * 1024;
-const acceptedImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
 
 function storageClient() {
@@ -31,27 +30,35 @@ async function profilePhotoStorage() {
   return client;
 }
 
-function isImageSignature(photo: Buffer, type: string) {
-  if (type === "image/jpeg") return photo.length >= 3 && photo[0] === 0xff && photo[1] === 0xd8 && photo[2] === 0xff;
-  if (type === "image/png") return photo.length >= 8 && photo.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
-  return photo.length >= 12 && photo.subarray(0, 4).toString("ascii") === "RIFF" && photo.subarray(8, 12).toString("ascii") === "WEBP";
+function detectedImageType(photo: Buffer) {
+  if (photo.length >= 3 && photo[0] === 0xff && photo[1] === 0xd8 && photo[2] === 0xff) {
+    return "image/jpeg";
+  }
+  if (photo.length >= 8 && photo.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
+    return "image/png";
+  }
+  if (photo.length >= 12 && photo.subarray(0, 4).toString("ascii") === "RIFF" && photo.subarray(8, 12).toString("ascii") === "WEBP") {
+    return "image/webp";
+  }
+  return null;
 }
 
 async function verifiedPhoto(file: File) {
-  if (!acceptedImageTypes.has(file.type) || file.size < 1 || file.size > maxPhotoBytes) {
+  if (file.size < 1 || file.size > maxPhotoBytes) {
     throw new Error("INVALID_PROFILE_PHOTO");
   }
 
   const input = Buffer.from(await file.arrayBuffer());
-  if (!isImageSignature(input, file.type)) throw new Error("INVALID_PROFILE_PHOTO");
-  return input;
+  const contentType = detectedImageType(input);
+  if (!contentType) throw new Error("INVALID_PROFILE_PHOTO");
+  return { bytes: input, contentType };
 }
 
 export async function uploadBfpProfilePhoto(userId: string, file: File) {
   const photo = await verifiedPhoto(file);
   const storageKey = `${userId}/profile`;
-  const { error } = await (await profilePhotoStorage()).storage.from(bucket).upload(storageKey, photo, {
-    contentType: file.type,
+  const { error } = await (await profilePhotoStorage()).storage.from(bucket).upload(storageKey, photo.bytes, {
+    contentType: photo.contentType,
     cacheControl: "private, max-age=60",
     upsert: true,
   });
