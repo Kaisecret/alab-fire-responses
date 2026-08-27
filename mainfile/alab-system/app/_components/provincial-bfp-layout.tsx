@@ -1519,15 +1519,6 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
 
           {/* Dynamic Page Content with entrance animation */}
           <main key={pathname} className="pbfp-content">{children}</main>
-
-          {/* Footer */}
-          <footer className="pbfp-footer">
-            <div className="pbfp-footer-badge">
-              <i className="fa-solid fa-fire-flame-curved" />
-              <span>ALAB Fire Response System — Provincial Operations Center</span>
-            </div>
-            <div>Antique BFP Headquarters • 24/7 Monitoring Hotline: (036) 540-9911</div>
-          </footer>
         </div>
       </div>
     </>

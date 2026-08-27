@@ -1241,12 +1241,6 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
 
           {/* Content with route entrance animation */}
           <main key={pathname} className="mbfp-content">{children}</main>
-
-          {/* Footer */}
-          <footer className="mbfp-footer">
-            <span>© 2025 ALAB Fire Response System • Municipal Command Center</span>
-            <span className="mbfp-footer-version">v2.0</span>
-          </footer>
         </div>
       </div>
     </>

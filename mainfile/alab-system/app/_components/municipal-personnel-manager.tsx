@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Station = {
   id: string;
@@ -19,6 +20,7 @@ type Personnel = {
 };
 
 export function MunicipalPersonnelManager() {
+  const [mounted, setMounted] = useState(false);
   const [stations, setStations] = useState<Station[]>([]);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +75,7 @@ export function MunicipalPersonnelManager() {
   };
 
   useEffect(() => {
+    setMounted(true);
     void load();
   }, []);
 
@@ -87,7 +90,7 @@ export function MunicipalPersonnelManager() {
       navigator.clipboard.writeText(text).then(() => {
         setCopiedEmailId(id);
         setTimeout(() => setCopiedEmailId(null), 2000);
-      }).catch(() => {});
+      }).catch(() => { });
     }
   };
 
@@ -96,7 +99,7 @@ export function MunicipalPersonnelManager() {
       navigator.clipboard.writeText(password).then(() => {
         setIssuedCopied(true);
         setTimeout(() => setIssuedCopied(false), 2200);
-      }).catch(() => {});
+      }).catch(() => { });
     }
   };
 
@@ -328,9 +331,8 @@ export function MunicipalPersonnelManager() {
 
                   <td style={{ textAlign: "right" }}>
                     <span
-                      className={`mbfp-status-pill ${
-                        member.accountStatus.toUpperCase() === "ACTIVE" ? "active" : "inactive"
-                      }`}
+                      className={`mbfp-status-pill ${member.accountStatus.toUpperCase() === "ACTIVE" ? "active" : "inactive"
+                        }`}
                     >
                       <span className="mbfp-status-pulse" />
                       {member.accountStatus.toUpperCase() === "ACTIVE" ? "Active" : "Inactive"}
@@ -399,9 +401,9 @@ export function MunicipalPersonnelManager() {
       </div>
 
       {/* =========================================================================
-          ISSUE PERSONNEL ACCOUNT MODAL
+          ISSUE PERSONNEL ACCOUNT MODAL (PORTAL TO DOCUMENT.BODY)
           ========================================================================= */}
-      {isAddModalOpen && (
+      {mounted && isAddModalOpen && createPortal(
         <div
           className="mbfp-modal-overlay"
           onClick={() => !saving && setIsAddModalOpen(false)}
@@ -564,13 +566,14 @@ export function MunicipalPersonnelManager() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* =========================================================================
-          ISSUED PASSWORD SECURITY MODAL
+          ISSUED PASSWORD SECURITY MODAL (PORTAL TO DOCUMENT.BODY)
           ========================================================================= */}
-      {issued && (
+      {mounted && issued && createPortal(
         <div className="mbfp-modal-overlay" role="presentation">
           <div
             className="mbfp-modal-content issued-modal"
@@ -612,7 +615,8 @@ export function MunicipalPersonnelManager() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );
@@ -628,7 +632,7 @@ const pageStyles = `
     margin: 0 auto;
     padding: 1.5rem 2rem 3rem;
     box-sizing: border-box;
-    font-family: inherit;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #0F172A;
   }
 
@@ -1084,16 +1088,23 @@ const pageStyles = `
   /* ================= MODAL DIALOGS ================= */
   .mbfp-modal-overlay {
     position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 99999;
+    z-index: 99999999 !important;
     padding: 1.5rem;
+    box-sizing: border-box;
     animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
   .mbfp-modal-content {
@@ -1104,6 +1115,7 @@ const pageStyles = `
     overflow: hidden;
     animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     border: 1px solid #E2E8F0;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
   .mbfp-modal-content.issued-modal {
