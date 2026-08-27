@@ -4,12 +4,12 @@ import { withTransaction, getDatabase } from "../db";
 import { hashPassword } from "../auth/password";
 import { createAccountNotifications } from "../notifications/service";
 
-type StationInput = { stationName: unknown; latitude: unknown; longitude: unknown };
+type StationInput = { stationName?: unknown; latitude?: unknown; longitude?: unknown };
 type PersonnelInput = {
-  displayName: unknown;
-  email: unknown;
+  displayName?: unknown;
+  email?: unknown;
   rankOrPosition?: unknown;
-  stationId: unknown;
+  stationId?: unknown;
   temporaryPassword?: unknown;
 };
 

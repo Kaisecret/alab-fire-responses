@@ -23,3 +23,21 @@ test("municipal station service keeps station, account, and assignment writes sc
   assert.match(service, /STATION_ASSIGNED/);
   assert.doesNotMatch(service, /JSON\.stringify\([^)]*temporaryPassword/);
 });
+
+test("municipal station and personnel APIs require a session-owned Municipal Admin scope", () => {
+  const paths = [
+    "app/api/municipal-bfp/stations/route.ts",
+    "app/api/municipal-bfp/stations/[stationId]/route.ts",
+    "app/api/municipal-bfp/personnel/route.ts",
+    "app/api/municipal-bfp/personnel/[personnelId]/route.ts",
+  ];
+  for (const path of paths) assert.equal(existsSync(join(root, path)), true, `${path} is missing`);
+  const combined = paths.map(source).join("\n");
+
+  assert.match(combined, /requireMunicipalAdmin/);
+  assert.match(combined, /identity\.municipalityId/);
+  assert.match(combined, /runtime = "nodejs"/);
+  assert.doesNotMatch(combined, /body\.municipalityId/);
+  assert.match(combined, /409/);
+  assert.match(combined, /temporaryPassword/);
+});
