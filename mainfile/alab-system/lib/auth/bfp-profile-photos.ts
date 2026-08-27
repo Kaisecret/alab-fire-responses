@@ -3,7 +3,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
 const bucket = "bfp-profile-photos";
-const maxPhotoBytes = 2 * 1024 * 1024;
+const maxPhotoBytes = 5 * 1024 * 1024;
 const acceptedImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
 
@@ -16,14 +16,18 @@ function storageClient() {
 
 async function profilePhotoStorage() {
   const client = storageClient();
-  const { error } = await client.storage.createBucket(bucket, {
+  const bucketOptions = {
     public: false,
     fileSizeLimit: maxPhotoBytes,
     allowedMimeTypes,
-  });
-  if (error && !/already exists|duplicate|exists/i.test(error.message)) {
+  };
+  const { error } = await client.storage.createBucket(bucket, bucketOptions);
+  if (!error) return client;
+  if (!/already exists|duplicate|exists/i.test(error.message)) {
     throw new Error("PROFILE_PHOTO_UPLOAD_FAILED");
   }
+  const { error: updateError } = await client.storage.updateBucket(bucket, bucketOptions);
+  if (updateError) throw new Error("PROFILE_PHOTO_UPLOAD_FAILED");
   return client;
 }
 

@@ -7,7 +7,7 @@ values (
   'bfp-profile-photos',
   'bfp-profile-photos',
   false,
-  2097152,
+  5242880,
   array['image/jpeg', 'image/png', 'image/webp']
 )
 on conflict (id) do update

@@ -145,32 +145,38 @@ test("mobile BFP profile-photo upload is authenticated, private, and bound to th
   const photoStorage = "lib/auth/bfp-profile-photos.ts";
   const migrationName = readdirSync(join(root, "supabase", "migrations"))
     .find((file) => file.endsWith("_add_bfp_profile_photo_storage.sql"));
+  const sizeLimitMigrationName = readdirSync(join(root, "supabase", "migrations"))
+    .find((file) => file.endsWith("_increase_bfp_profile_photo_size_limit.sql"));
 
   assert.equal(existsSync(join(root, photoRoute)), true, "mobile profile-photo route is missing");
   assert.equal(existsSync(join(root, photoStorage)), true, "private BFP profile-photo storage is missing");
   assert.ok(migrationName, "BFP profile-photo migration is missing");
+  assert.ok(sizeLimitMigrationName, "BFP profile-photo size-limit migration is missing");
 
   const route = source(photoRoute);
   const storage = source(photoStorage);
   const migration = source(join("supabase", "migrations", migrationName));
+  const sizeLimitMigration = source(join("supabase", "migrations", sizeLimitMigrationName));
 
   assert.match(route, /requireMobileMunicipalBfp/);
   assert.match(route, /request\.formData\(\)/);
   assert.match(route, /uploadBfpProfilePhoto/);
   assert.match(
     route,
-    /Please choose a JPG, PNG, or WebP image that is smaller than 2 MB\./,
+    /Please choose a JPG, PNG, or WebP image that is smaller than 5 MB\./,
   );
   assert.doesNotMatch(route, /Use a clear JPG/);
   assert.match(storage, /image\/jpeg/);
   assert.match(storage, /image\/png/);
   assert.match(storage, /image\/webp/);
+  assert.match(storage, /5 \* 1024 \* 1024/);
   assert.doesNotMatch(storage, /sharp/);
   assert.match(storage, /createSignedUrl/);
   assert.doesNotMatch(migration, /profile_photo_key/i);
   assert.match(migration, /insert into storage\.buckets/i);
   assert.match(migration, /'bfp-profile-photos'/i);
   assert.match(migration, /false/);
+  assert.match(sizeLimitMigration, /5242880/);
 });
 
 test("mobile BFP personnel can use profile photos without a manual database profile field", () => {
@@ -180,6 +186,7 @@ test("mobile BFP personnel can use profile photos without a manual database prof
   const mobileAuth = source("lib/auth/mobile-bfp.ts");
 
   assert.match(storage, /storage\.createBucket\(/);
+  assert.match(storage, /storage\.updateBucket\(/);
   assert.match(storage, /\$\{userId\}\/profile/);
   assert.match(storage, /upsert:\s*true/);
   assert.doesNotMatch(route, /updateBfpProfilePhoto/);
