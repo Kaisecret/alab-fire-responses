@@ -157,6 +157,11 @@ test("mobile BFP profile-photo upload is authenticated, private, and bound to th
   assert.match(route, /requireMobileMunicipalBfp/);
   assert.match(route, /request\.formData\(\)/);
   assert.match(route, /uploadBfpProfilePhoto/);
+  assert.match(
+    route,
+    /Please choose a JPG, PNG, or WebP image that is smaller than 2 MB\./,
+  );
+  assert.doesNotMatch(route, /Use a clear JPG/);
   assert.match(storage, /image\/jpeg/);
   assert.match(storage, /image\/png/);
   assert.match(storage, /image\/webp/);

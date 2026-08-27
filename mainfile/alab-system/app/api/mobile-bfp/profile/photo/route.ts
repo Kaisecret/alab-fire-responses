@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ identity: await mobileBfpIdentityWithPhoto(identity) });
   } catch (error) {
     const message = error instanceof Error && error.message === "INVALID_PROFILE_PHOTO"
-      ? "Use a clear JPG, PNG, or WebP image no larger than 2 MB."
+      ? "Please choose a JPG, PNG, or WebP image that is smaller than 2 MB."
       : "Unable to update your profile photo right now.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
