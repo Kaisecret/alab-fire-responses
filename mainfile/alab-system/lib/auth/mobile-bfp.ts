@@ -4,9 +4,12 @@ import { type BfpSession, verifyBfpSession } from "./session";
 
 export type MobileBfpIdentity = {
   userId: string;
+  email: string;
   displayName: string;
+  rankOrPosition: string | null;
   municipalityId: string | null;
   municipalityName: string | null;
+  stationName: string | null;
   assignmentRole: "MUNICIPAL_ADMIN" | "MUNICIPAL_STAFF" | null;
 };
 
@@ -31,9 +34,12 @@ export function isMobileBfpAuthorization(response: BfpSession | NextResponse): r
 export function mobileBfpIdentity(input: MobileBfpIdentity) {
   return {
     userId: input.userId,
+    email: input.email,
     displayName: input.displayName,
+    rankOrPosition: input.rankOrPosition,
     municipalityId: input.municipalityId,
     municipalityName: input.municipalityName,
+    stationName: input.stationName,
     assignmentRole: input.assignmentRole,
   };
 }

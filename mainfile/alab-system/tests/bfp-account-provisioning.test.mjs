@@ -127,6 +127,19 @@ test("mobile BFP APIs use bearer sessions and never issue Supabase credentials",
   assert.doesNotMatch(combined, /password_hash/);
 });
 
+test("mobile BFP profile settings use the signed-in account only", () => {
+  const profileRoute = source("app/api/mobile-bfp/profile/route.ts");
+  const auth = source("lib/auth/mobile-bfp.ts");
+
+  assert.match(profileRoute, /requireMobileMunicipalBfp/);
+  assert.match(profileRoute, /updateBfpDisplayName/);
+  assert.match(profileRoute, /mobileBfpIdentity/);
+  assert.match(auth, /stationName/);
+  assert.match(auth, /rankOrPosition/);
+  assert.doesNotMatch(profileRoute, /DATABASE_URL/);
+  assert.doesNotMatch(profileRoute, /password_hash/);
+});
+
 test("Provincial bootstrap reads the local database URL without requiring it in the terminal", () => {
   const bootstrap = source("scripts/bootstrap-provincial-bfp.mjs");
   assert.match(bootstrap, /\.env\.local/);

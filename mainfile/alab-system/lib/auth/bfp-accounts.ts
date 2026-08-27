@@ -19,6 +19,7 @@ export type BfpIdentity = {
   email: string;
   displayName: string;
   rankOrPosition: string | null;
+  stationName: string | null;
   role: BfpRole;
   accountStatus: "ACTIVE" | "SUSPENDED";
   mustChangePassword: boolean;
@@ -43,11 +44,14 @@ export async function getBfpIdentity(userId: string): Promise<BfpIdentity | null
   const result = await getDatabase().query<BfpIdentity>(
     `select u.id as "userId", u.email, p.display_name as "displayName", p.rank_or_position as "rankOrPosition",
             u.role, u.account_status as "accountStatus", p.must_change_password as "mustChangePassword",
-            a.municipality_id as "municipalityId", m.name as "municipalityName", a.assignment_role as "assignmentRole"
+            a.municipality_id as "municipalityId", m.name as "municipalityName", a.assignment_role as "assignmentRole",
+            s.station_name as "stationName"
        from users u
        join bfp_personnel_profiles p on p.user_id = u.id
        left join bfp_municipality_assignments a on a.personnel_profile_id = p.id and a.status = 'ACTIVE'
        left join municipalities m on m.id = a.municipality_id
+       left join bfp_station_assignments sa on sa.personnel_profile_id = p.id and sa.status = 'ACTIVE'
+       left join municipal_bfp_stations s on s.id = sa.station_id and s.status = 'ACTIVE'
       where u.id = $1 and u.role in ('PROVINCIAL_BFP', 'MUNICIPAL_BFP')
       limit 1`,
     [userId],
@@ -150,4 +154,22 @@ export async function changeBfpPassword(userId: string, currentPassword: string,
       [userId],
     );
   });
+}
+
+export async function updateBfpDisplayName(userId: string, displayNameInput: unknown) {
+  const displayName = clean(displayNameInput, 100);
+  if (displayName.length < 2) throw new Error("INVALID_DISPLAY_NAME");
+
+  const updated = await getDatabase().query<{ userId: string }>(
+    `update bfp_personnel_profiles
+        set display_name = $1, updated_at = now()
+      where user_id = $2
+        and exists (
+          select 1 from users u
+          where u.id = $2 and u.role = 'MUNICIPAL_BFP' and u.account_status = 'ACTIVE'
+        )
+      returning user_id as "userId"`,
+    [displayName, userId],
+  );
+  if (!updated.rowCount) throw new Error("PROFILE_NOT_FOUND");
 }
