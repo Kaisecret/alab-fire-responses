@@ -51,7 +51,10 @@ test("municipal website exposes station setup before personnel account issuance"
   for (const path of [stationPage, stationManager, personnelManager]) assert.equal(existsSync(join(root, path)), true, `${path} is missing`);
   assert.match(layout, /href: '\/municipal-bfp\/stations'/);
   assert.match(responders, /MunicipalPersonnelManager/);
-  assert.match(source(stationManager), /\/api\/municipal-bfp\/stations/);
+  const stations = source(stationManager);
+  assert.match(stations, /\/api\/municipal-bfp\/stations/);
+  assert.doesNotMatch(stations, /GIS Coordinates/);
+  assert.doesNotMatch(stations, /google\.com\/maps/);
   const personnel = source(personnelManager);
   assert.match(personnel, /\/api\/municipal-bfp\/personnel/);
   assert.match(personnel, /<select/);

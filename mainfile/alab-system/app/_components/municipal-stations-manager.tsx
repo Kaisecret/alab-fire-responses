@@ -22,19 +22,14 @@ export function MunicipalStationsManager() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [stationName, setStationName] = useState("");
   const [headName, setHeadName] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [showLocationSettings, setShowLocationSettings] = useState(false);
   const [modalError, setModalError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [gpsDetecting, setGpsDetecting] = useState(false);
 
   // Deactivate Confirmation Modal State
   const [stationToDeactivate, setStationToDeactivate] = useState<Station | null>(null);
   const [deactivating, setDeactivating] = useState(false);
 
   // General Notification / Feedback State
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   // Helper to parse station name and head name
@@ -71,42 +66,10 @@ export function MunicipalStationsManager() {
     void load();
   }, []);
 
-  // Quick GPS detection for fire station coordinates
-  const detectCoordinates = () => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setModalError("Geolocation is not supported by your browser.");
-      return;
-    }
-    setGpsDetecting(true);
-    setModalError("");
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLatitude(position.coords.latitude.toFixed(6));
-        setLongitude(position.coords.longitude.toFixed(6));
-        setGpsDetecting(false);
-      },
-      (err) => {
-        setGpsDetecting(false);
-        setModalError(
-          err.code === 1
-            ? "Location permission denied. Please enter coordinates manually."
-            : "Could not retrieve GPS coordinates. Please enter manually."
-        );
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
   const submitAdd = async (event: FormEvent) => {
     event.preventDefault();
     setSaving(true);
     setModalError("");
-
-    // Default coordinates (San Jose / Municipal Center) if not entered
-    const defaultLat = 10.7442;
-    const defaultLng = 121.9422;
-    const finalLat = latitude.trim() ? Number(latitude) : defaultLat;
-    const finalLng = longitude.trim() ? Number(longitude) : defaultLng;
 
     const formattedName = headName.trim()
       ? `${stationName.trim()} · Head: ${headName.trim()}`
@@ -118,8 +81,8 @@ export function MunicipalStationsManager() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           stationName: formattedName,
-          latitude: finalLat,
-          longitude: finalLng,
+          latitude: 10.7442,
+          longitude: 121.9422,
         }),
       });
 
@@ -134,9 +97,6 @@ export function MunicipalStationsManager() {
       // Reset form and close modal
       setStationName("");
       setHeadName("");
-      setLatitude("");
-      setLongitude("");
-      setShowLocationSettings(false);
       setIsAddModalOpen(false);
       void load();
     } catch {
@@ -174,21 +134,10 @@ export function MunicipalStationsManager() {
     }
   };
 
-  const copyCoordinates = (coordsText: string, stationId: string) => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(coordsText);
-    }
-    setCopiedId(stationId);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
   // Filtered stations based on search query and status filter
   const filteredStations = useMemo(() => {
     return stations.filter((station) => {
-      const matchesSearch =
-        station.stationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        station.latitude.toString().includes(searchQuery) ||
-        station.longitude.toString().includes(searchQuery);
+      const matchesSearch = station.stationName.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesStatus =
         statusFilter === "ALL" || station.status === statusFilter;
@@ -256,7 +205,7 @@ export function MunicipalStationsManager() {
             <i className="fa-solid fa-magnifying-glass" />
             <input
               type="text"
-              placeholder="Search station name or coordinates…"
+              placeholder="Search station name…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -302,18 +251,14 @@ export function MunicipalStationsManager() {
           <table className="mbfp-data-table">
             <thead>
               <tr>
-                <th style={{ width: "38%" }}>Station Name</th>
-                <th style={{ width: "32%" }}>GIS Coordinates</th>
-                <th style={{ width: "16%" }}>Operational Status</th>
-                <th style={{ width: "14%", textAlign: "right" }}>Actions</th>
+                <th style={{ width: "58%" }}>Station Name</th>
+                <th style={{ width: "22%" }}>Operational Status</th>
+                <th style={{ width: "20%", textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredStations.map((station) => {
                 const { name: displayName, head: displayHead } = parseStationName(station.stationName);
-                const coordsFormatted = `${station.latitude.toFixed(6)}, ${station.longitude.toFixed(6)}`;
-                const googleMapsUrl = `https://www.google.com/maps?q=${station.latitude},${station.longitude}`;
-
                 return (
                   <tr key={station.id}>
                     <td>
@@ -331,40 +276,6 @@ export function MunicipalStationsManager() {
                             <span className="mbfp-station-subtext">Municipal BFP Command Unit</span>
                           )}
                         </div>
-                      </div>
-                    </td>
-
-                    <td>
-                      <div className="mbfp-coords-chip-wrap">
-                        <div className="mbfp-coords-chip" title="Click to copy coordinates">
-                          <i className="fa-solid fa-location-dot" />
-                          <span>{coordsFormatted}</span>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="mbfp-icon-btn"
-                          title="Copy Coordinates"
-                          onClick={() => copyCoordinates(coordsFormatted, station.id)}
-                        >
-                          <i
-                            className={
-                              copiedId === station.id
-                                ? "fa-solid fa-check text-success"
-                                : "fa-regular fa-copy"
-                            }
-                          />
-                        </button>
-
-                        <a
-                          href={googleMapsUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mbfp-icon-btn"
-                          title="View on Map"
-                        >
-                          <i className="fa-solid fa-arrow-up-right-from-square" />
-                        </a>
                       </div>
                     </td>
 
@@ -397,7 +308,7 @@ export function MunicipalStationsManager() {
               {/* EMPTY STATE */}
               {filteredStations.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={4}>
+                  <td colSpan={3}>
                     <div className="mbfp-empty-state">
                       <div className="mbfp-empty-icon">
                         <i className="fa-solid fa-building-shield" />
@@ -444,7 +355,7 @@ export function MunicipalStationsManager() {
               {/* SKELETON / LOADING STATE */}
               {loading && stations.length === 0 && (
                 <tr>
-                  <td colSpan={4}>
+                  <td colSpan={3}>
                     <div className="mbfp-loading-state">
                       <div className="mbfp-loading-spinner" />
                       <span>Loading municipal stations…</span>
@@ -1037,91 +948,6 @@ const pageStyles = `
   .mbfp-station-head i {
     color: #D00F09;
     font-size: 0.72rem;
-  }
-
-  .mbfp-coords-toggle-area {
-    margin-top: 0.25rem;
-    border-top: 1px dashed #E2E8F0;
-    padding-top: 0.75rem;
-  }
-
-  .mbfp-coords-toggle-btn {
-    background: transparent;
-    border: none;
-    color: #64748B;
-    font-size: 0.76rem;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    cursor: pointer;
-    padding: 0.25rem 0;
-    transition: color 0.15s;
-    font-family: inherit;
-  }
-
-  .mbfp-coords-toggle-btn:hover {
-    color: #0F172A;
-  }
-
-  .mbfp-coords-drawer {
-    margin-top: 0.65rem;
-    padding: 0.85rem;
-    background: #F8FAFC;
-    border-radius: 8px;
-    border: 1px solid #E2E8F0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    animation: fadeIn 0.18s ease;
-  }
-
-  /* Coordinates */
-  .mbfp-coords-chip-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-  }
-
-  .mbfp-coords-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.3rem 0.65rem;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 6px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.78rem;
-    color: #334155;
-    font-weight: 600;
-  }
-
-  .mbfp-coords-chip i {
-    color: #D00F09;
-    font-size: 0.75rem;
-  }
-
-  .mbfp-icon-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    color: #64748B;
-    cursor: pointer;
-    font-size: 0.75rem;
-    transition: all 0.15s;
-    text-decoration: none;
-  }
-
-  .mbfp-icon-btn:hover {
-    background: #F1F5F9;
-    color: #0F172A;
-    border-color: #CBD5E1;
   }
 
   /* Status */
