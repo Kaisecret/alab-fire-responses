@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { createBfpProfilePhotoUrl } from "./bfp-profile-photos";
 import { type BfpSession, verifyBfpSession } from "./session";
 
 export type MobileBfpIdentity = {
@@ -15,6 +16,13 @@ export type MobileBfpIdentity = {
 
 function unauthorized(message = "Sign in again to continue.") {
   return NextResponse.json({ error: message }, { status: 401 });
+}
+
+export async function mobileBfpIdentityWithPhoto(input: MobileBfpIdentity) {
+  return {
+    ...mobileBfpIdentity(input),
+    profilePhotoUrl: await createBfpProfilePhotoUrl(input.userId),
+  };
 }
 
 export function requireMobileMunicipalBfp(request: Request): BfpSession | NextResponse {

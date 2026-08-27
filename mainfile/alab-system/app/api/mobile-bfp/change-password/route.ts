@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { changeBfpPassword, getBfpIdentity } from "../../../../lib/auth/bfp-accounts";
 import { createBfpSession } from "../../../../lib/auth/session";
-import { isMobileBfpAuthorization, mobileBfpIdentity, requireMobileMunicipalBfp } from "../../../../lib/auth/mobile-bfp";
+import { isMobileBfpAuthorization, mobileBfpIdentityWithPhoto, requireMobileMunicipalBfp } from "../../../../lib/auth/mobile-bfp";
 
 export const runtime = "nodejs";
 
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({
       token,
-      identity: mobileBfpIdentity(identity),
+      identity: await mobileBfpIdentityWithPhoto(identity),
       mustChangePassword: false,
     });
   } catch (error) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getBfpIdentity, updateBfpDisplayName } from "../../../../lib/auth/bfp-accounts";
-import { isMobileBfpAuthorization, mobileBfpIdentity, requireMobileMunicipalBfp } from "../../../../lib/auth/mobile-bfp";
+import { isMobileBfpAuthorization, mobileBfpIdentityWithPhoto, requireMobileMunicipalBfp } from "../../../../lib/auth/mobile-bfp";
 
 export const runtime = "nodejs";
 
@@ -22,7 +22,7 @@ export async function PATCH(request: Request) {
     if (!identity || identity.role !== "MUNICIPAL_BFP") {
       return NextResponse.json({ error: "Your account is no longer active." }, { status: 403 });
     }
-    return NextResponse.json({ identity: mobileBfpIdentity(identity) });
+    return NextResponse.json({ identity: await mobileBfpIdentityWithPhoto(identity) });
   } catch (error) {
     const message = error instanceof Error && error.message === "INVALID_DISPLAY_NAME"
       ? "Enter a name with at least 2 characters."

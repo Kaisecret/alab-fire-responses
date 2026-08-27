@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { clearLoginFailures, checkLoginRateLimit, recordLoginFailure } from "../../../../lib/auth/login-rate-limit";
 import { verifyBfpCredentials } from "../../../../lib/auth/bfp-accounts";
 import { createBfpSession } from "../../../../lib/auth/session";
-import { mobileBfpIdentity } from "../../../../lib/auth/mobile-bfp";
+import { mobileBfpIdentityWithPhoto } from "../../../../lib/auth/mobile-bfp";
 
 export const runtime = "nodejs";
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({
       token,
-      identity: mobileBfpIdentity(identity),
+      identity: await mobileBfpIdentityWithPhoto(identity),
       mustChangePassword: identity.mustChangePassword,
     });
   } catch (error) {

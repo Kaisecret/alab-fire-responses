@@ -140,6 +140,46 @@ test("mobile BFP profile settings use the signed-in account only", () => {
   assert.doesNotMatch(profileRoute, /password_hash/);
 });
 
+test("mobile BFP profile-photo upload is authenticated, private, and bound to the signed-in user", () => {
+  const photoRoute = "app/api/mobile-bfp/profile/photo/route.ts";
+  const photoStorage = "lib/auth/bfp-profile-photos.ts";
+  const migrationName = readdirSync(join(root, "supabase", "migrations"))
+    .find((file) => file.endsWith("_add_bfp_profile_photo_storage.sql"));
+
+  assert.equal(existsSync(join(root, photoRoute)), true, "mobile profile-photo route is missing");
+  assert.equal(existsSync(join(root, photoStorage)), true, "private BFP profile-photo storage is missing");
+  assert.ok(migrationName, "BFP profile-photo migration is missing");
+
+  const route = source(photoRoute);
+  const storage = source(photoStorage);
+  const migration = source(join("supabase", "migrations", migrationName));
+
+  assert.match(route, /requireMobileMunicipalBfp/);
+  assert.match(route, /request\.formData\(\)/);
+  assert.match(route, /uploadBfpProfilePhoto/);
+  assert.match(storage, /image\/jpeg/);
+  assert.match(storage, /image\/png/);
+  assert.match(storage, /image\/webp/);
+  assert.match(storage, /sharp/);
+  assert.match(storage, /createSignedUrl/);
+  assert.doesNotMatch(migration, /profile_photo_key/i);
+  assert.match(migration, /insert into storage\.buckets/i);
+  assert.match(migration, /'bfp-profile-photos'/i);
+  assert.match(migration, /false/);
+});
+
+test("mobile BFP personnel can use profile photos without a manual database profile field", () => {
+  const route = source("app/api/mobile-bfp/profile/photo/route.ts");
+  const storage = source("lib/auth/bfp-profile-photos.ts");
+  const account = source("lib/auth/bfp-accounts.ts");
+
+  assert.match(storage, /storage\.createBucket\(/);
+  assert.match(storage, /\$\{userId\}\/profile\.webp/);
+  assert.match(storage, /upsert:\s*true/);
+  assert.doesNotMatch(route, /updateBfpProfilePhoto/);
+  assert.doesNotMatch(account, /profile_photo_key/);
+});
+
 test("Provincial bootstrap reads the local database URL without requiring it in the terminal", () => {
   const bootstrap = source("scripts/bootstrap-provincial-bfp.mjs");
   assert.match(bootstrap, /\.env\.local/);
