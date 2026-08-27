@@ -98,3 +98,19 @@ test("fire reports retain protected server-side submission audit data", () => {
   assert.match(migration, /add column if not exists reporter_device_summary text/i);
   assert.match(migration, /char_length\(reporter_device_summary\) <= 160/i);
 });
+
+test("municipal BFP supports multiple stations and safe personnel station assignments", () => {
+  const migrationName = readdirSync(migrationsDirectory)
+    .find((name) => name.endsWith("_add_municipal_station_personnel_assignments.sql"));
+  assert.ok(migrationName, "municipal station/personnel migration is missing");
+  const migration = readFileSync(join(migrationsDirectory, migrationName), "utf8");
+
+  assert.match(migration, /drop constraint if exists municipal_bfp_stations_municipality_id_key/i);
+  assert.match(migration, /create unique index.*municipal_bfp_stations_active_name_idx/i);
+  assert.match(migration, /create table public\.bfp_station_assignments/i);
+  assert.match(migration, /personnel_profile_id uuid not null references public\.bfp_personnel_profiles/i);
+  assert.match(migration, /where status = 'ACTIVE'/i);
+  assert.match(migration, /bfp_station_assignments_station_status_idx/i);
+  assert.match(migration, /alter table public\.bfp_station_assignments enable row level security/i);
+  assert.match(migration, /revoke all on table public\.bfp_station_assignments from anon, authenticated/i);
+});
