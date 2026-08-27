@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { createBfpProfilePhotoUrl } from "./bfp-profile-photos";
 import { type BfpSession, verifyBfpSession } from "./session";
 
 export type MobileBfpIdentity = {
@@ -19,9 +18,17 @@ function unauthorized(message = "Sign in again to continue.") {
 }
 
 export async function mobileBfpIdentityWithPhoto(input: MobileBfpIdentity) {
+  let profilePhotoUrl: string | null = null;
+  try {
+    const { createBfpProfilePhotoUrl } = await import("./bfp-profile-photos");
+    profilePhotoUrl = await createBfpProfilePhotoUrl(input.userId);
+  } catch {
+    // A profile image must never prevent a signed-in BFP account from using
+    // the operational app when Storage is temporarily unavailable.
+  }
   return {
     ...mobileBfpIdentity(input),
-    profilePhotoUrl: await createBfpProfilePhotoUrl(input.userId),
+    profilePhotoUrl,
   };
 }
 

@@ -172,12 +172,15 @@ test("mobile BFP personnel can use profile photos without a manual database prof
   const route = source("app/api/mobile-bfp/profile/photo/route.ts");
   const storage = source("lib/auth/bfp-profile-photos.ts");
   const account = source("lib/auth/bfp-accounts.ts");
+  const mobileAuth = source("lib/auth/mobile-bfp.ts");
 
   assert.match(storage, /storage\.createBucket\(/);
   assert.match(storage, /\$\{userId\}\/profile/);
   assert.match(storage, /upsert:\s*true/);
   assert.doesNotMatch(route, /updateBfpProfilePhoto/);
   assert.doesNotMatch(account, /profile_photo_key/);
+  assert.doesNotMatch(mobileAuth, /^import .*bfp-profile-photos/m);
+  assert.match(mobileAuth, /await import\("\.\/bfp-profile-photos"\)/);
 });
 
 test("Provincial bootstrap reads the local database URL without requiring it in the terminal", () => {

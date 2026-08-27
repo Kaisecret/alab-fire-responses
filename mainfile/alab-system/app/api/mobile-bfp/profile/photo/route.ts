@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { getBfpIdentity } from "../../../../../lib/auth/bfp-accounts";
-import { uploadBfpProfilePhoto } from "../../../../../lib/auth/bfp-profile-photos";
 import { isMobileBfpAuthorization, mobileBfpIdentityWithPhoto, requireMobileMunicipalBfp } from "../../../../../lib/auth/mobile-bfp";
 
 export const runtime = "nodejs";
@@ -23,6 +22,7 @@ export async function POST(request: Request) {
   }
 
   try {
+    const { uploadBfpProfilePhoto } = await import("../../../../../lib/auth/bfp-profile-photos");
     await uploadBfpProfilePhoto(session.userId, photo);
     const identity = await getBfpIdentity(session.userId);
     if (!identity || identity.role !== "MUNICIPAL_BFP") {
