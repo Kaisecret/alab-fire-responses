@@ -1,0 +1,1610 @@
+export const reportFireStyles = `
+    /* ============================================================
+       REPORT FIRE PAGE — Premium Redesign
+       ============================================================ */
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+
+    :root {
+        --rf-red:          #d31212;
+        --rf-red-dark:     #b91c1c;
+        --rf-red-light:    #fee2e2;
+        --rf-red-glow:     rgba(211,18,18,0.18);
+        --rf-text:         #0f172a;
+        --rf-text-2:       #334155;
+        --rf-text-muted:   #64748b;
+        --rf-border:       #e2e8f0;
+        --rf-border-soft:  #f1f5f9;
+        --rf-bg:           #f8fafc;
+        --rf-white:        #ffffff;
+        --rf-card-shadow:  0 1px 3px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.07);
+        --rf-card-shadow-hover: 0 4px 8px rgba(15,23,42,0.08), 0 12px 32px rgba(15,23,42,0.10);
+        --rf-radius:       1rem;
+        --rf-radius-sm:    0.6rem;
+        --rf-radius-xs:    0.35rem;
+        --rf-transition:   0.22s cubic-bezier(0.4,0,0.2,1);
+        /* legacy aliases kept for leaflet compatibility */
+        --primary-red: #d31212;
+        --text-dark: #0f172a;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+        --card-bg: #f8fafc;
+        --bg-white: #ffffff;
+        --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ── Reset (scoped) ── */
+    .rf-root *, .rf-root *::before, .rf-root *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    .rf-root {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        background: var(--rf-bg);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* ── Emergency Warning Strip ── */
+    .rf-emergency-bar {
+        background: linear-gradient(90deg, #991b1b 0%, #b91c1c 50%, #991b1b 100%);
+        color: #fff;
+        text-align: center;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.5rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    .rf-emergency-bar svg { width: 0.9rem; height: 0.9rem; flex-shrink: 0; }
+
+    /* ── Page Grid ── */
+    .rf-page-grid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 260px 1fr 272px;
+        gap: 1.5rem;
+        max-width: 1380px;
+        width: 100%;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+        align-items: start;
+    }
+
+    /* ── Card Base ── */
+    .rf-card {
+        background: var(--rf-white);
+        border: 1px solid var(--rf-border);
+        border-radius: var(--rf-radius);
+        box-shadow: var(--rf-card-shadow);
+        transition: box-shadow var(--rf-transition);
+    }
+    .rf-card:hover { box-shadow: var(--rf-card-shadow-hover); }
+
+    /* ── Left Column ── */
+    .rf-left { display: flex; flex-direction: column; gap: 1rem; }
+    .rf-account-card { padding: 1.4rem; }
+    .rf-card-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--rf-text-muted);
+        margin-bottom: 0.9rem;
+    }
+    .rf-card-label svg { width: 1.1rem; height: 1.1rem; color: var(--rf-red); }
+    .rf-account-pill {
+        background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+        border: 1px solid #fecaca;
+        border-radius: var(--rf-radius-sm);
+        padding: 0.9rem 1rem;
+        margin-bottom: 0.9rem;
+    }
+    .rf-account-pill-title {
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: var(--rf-red-dark);
+        margin-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .rf-account-pill-title svg { width: 0.9rem; height: 0.9rem; }
+    .rf-account-pill p { font-size: 0.78rem; color: #7f1d1d; line-height: 1.5; opacity: 0.85; }
+    .rf-assist-card { padding: 1.4rem; }
+    .rf-assist-card p { font-size: 0.8rem; color: var(--rf-text-muted); line-height: 1.5; margin-bottom: 1rem; }
+    .rf-btn-outline {
+        display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+        width: 100%; padding: 0.75rem; border: 1.5px solid var(--rf-red);
+        background: transparent; color: var(--rf-red); border-radius: var(--rf-radius-sm);
+        font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all var(--rf-transition); font-family: inherit;
+    }
+    .rf-btn-outline:hover { background: var(--rf-red-light); box-shadow: 0 0 0 3px var(--rf-red-glow); }
+    .rf-btn-outline svg { width: 0.9rem; height: 0.9rem; }
+
+    /* ── Center Column ── */
+    .rf-main { display: flex; flex-direction: column; gap: 0; }
+    .rf-main-card { padding: 0; overflow: hidden; }
+    .rf-form-hero { padding: 2rem 2rem 1.5rem; border-bottom: 1px solid var(--rf-border-soft); }
+    .rf-form-title {
+        font-size: 1.65rem; font-weight: 900; color: var(--rf-text);
+        letter-spacing: -0.03em; margin-bottom: 1.2rem;
+        display: flex; align-items: center; gap: 0.6rem;
+    }
+    .rf-form-title-icon {
+        width: 2.2rem; height: 2.2rem;
+        background: linear-gradient(135deg, #ef4444, #b91c1c);
+        border-radius: 0.6rem; display: grid; place-items: center; flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(211,18,18,0.3);
+    }
+    .rf-form-title-icon img { width: 1.35rem; height: 1.35rem; object-fit: contain; filter: brightness(0) invert(1); }
+    .rf-fire-banner {
+        display: flex; align-items: center; gap: 1rem;
+        background: linear-gradient(135deg, #fff7f7 0%, #fff1f2 100%);
+        border: 1px solid #fecaca; border-radius: var(--rf-radius-sm); padding: 1rem 1.2rem;
+    }
+    .rf-fire-banner-icon {
+        width: 3rem; height: 3rem;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border-radius: 0.6rem; display: grid; place-items: center; flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(220,38,38,0.25);
+    }
+    .rf-fire-banner-icon img { width: 1.8rem; height: 1.8rem; object-fit: contain; filter: brightness(0) invert(1); }
+    .rf-fire-banner-copy h3 { font-size: 1rem; font-weight: 800; color: #991b1b; margin-bottom: 0.2rem; }
+    .rf-fire-banner-copy p { font-size: 0.82rem; color: #7f1d1d; font-weight: 500; line-height: 1.4; }
+    .rf-form-body { padding: 1.5rem 2rem 2rem; display: flex; flex-direction: column; gap: 1.75rem; }
+
+    /* ── Step Headers ── */
+    .rf-step-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
+    .rf-step-label {
+        display: flex; align-items: center; gap: 0.55rem;
+        font-size: 0.78rem; font-weight: 800; letter-spacing: 0.07em;
+        text-transform: uppercase; color: var(--rf-text-2);
+    }
+    .rf-step-num {
+        width: 1.6rem; height: 1.6rem; background: var(--rf-red); color: #fff;
+        border-radius: 50%; font-size: 0.75rem; font-weight: 800; display: grid; place-items: center;
+        flex-shrink: 0; box-shadow: 0 2px 6px rgba(211,18,18,0.3);
+    }
+
+    /* ── Location Status Badge ── */
+    .rf-loc-badge {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        padding: 0.28rem 0.65rem; border-radius: 2rem;
+        font-size: 0.64rem; font-weight: 800; letter-spacing: 0.05em;
+        text-transform: uppercase; border: 1.5px solid;
+        transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+    }
+    .rf-loc-badge::before {
+        content: ''; width: 0.45rem; height: 0.45rem;
+        border-radius: 50%; background: currentColor; display: block; flex-shrink: 0;
+    }
+    .rf-loc-badge.is-locating,
+    .rf-loc-badge.is-improving  { color: #c2410c; background: #fff7ed; border-color: #fed7aa; }
+    .rf-loc-badge.is-confirmed,
+    .rf-loc-badge.is-adjusted   { color: #15803d; background: #f0fdf4; border-color: #bbf7d0; }
+    .rf-loc-badge.is-approximate,
+    .rf-loc-badge.is-adjusting  { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+    .rf-loc-badge.is-low-accuracy,
+    .rf-loc-badge.is-outside,
+    .rf-loc-badge.is-error      { color: #b91c1c; background: #fef2f2; border-color: #fecaca; }
+
+    /* ── Two-Col Grid ── */
+    .rf-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    /* ── Location Card ── */
+    .rf-loc-card {
+        border: 1.5px solid var(--rf-border); border-radius: var(--rf-radius-sm);
+        overflow: hidden; background: #ffffff; display: flex; flex-direction: column; position: relative;
+        transition: border-color var(--rf-transition), box-shadow var(--rf-transition);
+    }
+    .rf-loc-card[data-location-state="confirmed"],
+    .rf-loc-card[data-location-state="adjusted"]  { border-color: #86efac; box-shadow: 0 0 0 3px rgba(134,239,172,0.18); }
+    .rf-loc-card[data-location-state="low-accuracy"],
+    .rf-loc-card[data-location-state="error"],
+    .rf-loc-card[data-location-state="outside"]   { border-color: #fca5a5; box-shadow: 0 0 0 3px rgba(252,165,165,0.18); }
+    .rf-loc-info { padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0; flex: 1; }
+    .rf-loc-heading {
+        display: flex; align-items: center; gap: 0.45rem;
+        font-size: 0.88rem; font-weight: 800; color: var(--rf-text); margin-bottom: 0.6rem;
+    }
+    .rf-loc-heading svg { width: 1rem; height: 1rem; color: var(--rf-red); flex-shrink: 0; }
+    .rf-loc-address {
+        display: flex; flex-direction: column; gap: 0.28rem;
+        margin-bottom: 0.55rem; padding: 0.65rem 0.75rem;
+        background: #f8fafc; border: 1px solid var(--rf-border); border-radius: var(--rf-radius-xs);
+    }
+    .rf-loc-address-row {
+        display: flex; align-items: flex-start; gap: 0.35rem;
+        font-size: 0.73rem; color: var(--rf-text-2); line-height: 1.3;
+    }
+    .rf-loc-address-row svg { width: 0.82rem; height: 0.82rem; color: var(--rf-red); flex-shrink: 0; margin-top: 0.08rem; }
+    .rf-loc-address-row strong { font-weight: 700; overflow-wrap: anywhere; }
+    .rf-loc-sep { color: var(--rf-text-muted); font-weight: 600; }
+    .rf-loc-error {
+        display: block; margin-bottom: 0.5rem; padding: 0.5rem 0.65rem;
+        background: #fef2f2; border: 1px solid #fecaca; border-left: 3px solid #dc2626;
+        border-radius: var(--rf-radius-xs); font-size: 0.7rem; color: #991b1b;
+        line-height: 1.4; font-weight: 500;
+    }
+    .rf-loc-accuracy {
+        display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem;
+        border-radius: 0.25rem; background: #f1f5f9; color: #475569;
+        font-size: 0.67rem; font-weight: 700; margin-bottom: 0.55rem;
+    }
+    .rf-loc-card[data-location-state="confirmed"] .rf-loc-accuracy,
+    .rf-loc-card[data-location-state="adjusted"]  .rf-loc-accuracy  { color: #15803d; background: #dcfce7; }
+    .rf-loc-card[data-location-state="approximate"] .rf-loc-accuracy { color: #92400e; background: #fef3c7; }
+
+    /* Button Row */
+    .rf-btn-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto; }
+    .rf-btn-sm {
+        display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+        flex: 1 1 6rem; min-height: 2.1rem; padding: 0.4rem 0.6rem;
+        border: 1.5px solid var(--rf-border); background: var(--rf-white); color: var(--rf-text-2);
+        border-radius: var(--rf-radius-xs); font-size: 0.72rem; font-weight: 700;
+        cursor: pointer; transition: all var(--rf-transition); font-family: inherit;
+    }
+    .rf-btn-sm:hover { border-color: var(--rf-red); color: var(--rf-red); background: #fff5f5; }
+    .rf-btn-sm:disabled { opacity: 0.5; cursor: default; }
+    .rf-btn-sm svg { width: 0.8rem; height: 0.8rem; flex-shrink: 0; }
+
+    /* Map Surface */
+    .rf-map-surface {
+        width: 100%; height: 10.5rem; flex: 0 0 10.5rem;
+        border-top: 1px solid var(--rf-border); position: relative;
+        z-index: 0; isolation: isolate; overflow: hidden; background: #dbeafe;
+    }
+    .rf-map-inner,
+    .rf-map-inner.leaflet-container {
+        width: 100%; height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; background: #dbeafe;
+    }
+    .rf-map-inner .leaflet-control-zoom { border: 0; border-radius: 0.4rem; overflow: hidden; box-shadow: 0 4px 12px rgba(15,23,42,0.18); }
+    .rf-map-inner .leaflet-control-zoom a { width: 1.9rem; height: 1.9rem; line-height: 1.9rem; border: 0; color: #172033; background: rgba(255,255,255,0.96); }
+    .rf-map-inner .leaflet-control-zoom a:hover { color: var(--rf-red); background: #fff; }
+    .rf-map-inner .leaflet-control-attribution { max-width: 100%; padding: 0 0.15rem; font-size: 0.38rem; line-height: 1.1; }
+    .rf-map-overlay {
+        position: absolute; right: 0.5rem; bottom: 0.5rem; left: 0.5rem; z-index: 700;
+        display: flex; align-items: center; justify-content: center; gap: 0.45rem;
+        min-height: 2.2rem; padding: 0.4rem 0.7rem;
+        background: rgba(255,255,255,0.94); border: 1px solid rgba(255,255,255,0.82);
+        border-radius: 0.4rem; box-shadow: 0 4px 12px rgba(15,23,42,0.16);
+        font-size: 0.65rem; font-weight: 800; color: var(--rf-red);
+        pointer-events: none; transition: opacity 0.22s, visibility 0.22s;
+    }
+    .rf-map-overlay.is-hidden { opacity: 0; visibility: hidden; }
+    .rf-map-pulse {
+        width: 0.8rem; height: 0.8rem; border: 2px solid var(--rf-red);
+        border-radius: 50%; flex-shrink: 0; animation: rf-pulse 1.35s ease-out infinite;
+    }
+    @keyframes rf-pulse {
+        0%   { box-shadow: 0 0 0 0 rgba(211,18,18,0.45); transform: scale(0.85); }
+        70%  { box-shadow: 0 0 0 0.75rem rgba(211,18,18,0); transform: scale(1); }
+        100% { box-shadow: 0 0 0 0 rgba(211,18,18,0); transform: scale(0.85); }
+    }
+    .location-map-marker-wrapper { background: transparent; border: 0; }
+    .location-map-marker {
+        display: grid; place-items: center; width: 2.38rem; height: 2.38rem;
+        border: 2px solid #fff; border-radius: 50%; background: var(--rf-red);
+        box-shadow: 0 4px 10px rgba(15,23,42,0.34); overflow: hidden;
+    }
+    .location-map-marker img { width: 1.72rem; height: 1.72rem; object-fit: contain; filter: brightness(0) invert(1); }
+    @media (prefers-reduced-motion: reduce) {
+        .rf-map-pulse { animation: none; }
+        .rf-map-overlay, .rf-loc-badge { transition: none; }
+    }
+
+    /* ── Landmark Card ── */
+    .rf-landmark-card {
+        border: 1.5px solid var(--rf-border); border-radius: var(--rf-radius-sm);
+        overflow: hidden; background: #ffffff; padding: 1rem;
+        display: flex; flex-direction: column; gap: 0.75rem; min-height: 12rem;
+        transition: border-color var(--rf-transition);
+    }
+    .rf-landmark-card[data-landmark-state="confirmed"]   { border-color: #86efac; }
+    .rf-landmark-card[data-landmark-state="unavailable"] { border-color: var(--rf-border); }
+    .rf-landmark-top { display: flex; align-items: flex-start; gap: 0.75rem; }
+    .rf-landmark-icon {
+        width: 2.5rem; height: 2.5rem; border-radius: 0.5rem;
+        background: linear-gradient(135deg, #ef4444, #b91c1c);
+        display: grid; place-items: center; flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(211,18,18,0.22); transition: background var(--rf-transition);
+    }
+    .rf-landmark-icon svg { width: 1.2rem; height: 1.2rem; color: #fff; }
+    .rf-landmark-card[data-landmark-state="confirmed"]   .rf-landmark-icon { background: linear-gradient(135deg, #22c55e, #15803d); box-shadow: 0 4px 10px rgba(34,197,94,0.22); }
+    .rf-landmark-card[data-landmark-state="unavailable"] .rf-landmark-icon { background: linear-gradient(135deg, #94a3b8, #64748b); box-shadow: none; }
+    .rf-landmark-copy { min-width: 0; }
+    .rf-landmark-status { display: block; font-size: 0.63rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--rf-text-muted); margin-bottom: 0.25rem; }
+    .rf-landmark-name { font-size: 0.9rem; font-weight: 800; color: var(--rf-text); line-height: 1.35; overflow-wrap: anywhere; }
+    .rf-landmark-hint { font-size: 0.74rem; color: var(--rf-text-muted); line-height: 1.45; }
+
+    /* ── Fire Type Grid ── */
+    .rf-type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+    .rf-type-btn {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 0.5rem; padding: 1rem 0.4rem; border: 1.5px solid var(--rf-border);
+        border-radius: var(--rf-radius-sm); background: var(--rf-white); color: var(--rf-text-muted);
+        font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all var(--rf-transition);
+        text-align: center; font-family: inherit;
+    }
+    .rf-type-btn svg { width: 1.8rem; height: 1.8rem; color: var(--rf-text-muted); transition: color var(--rf-transition); }
+    .rf-type-btn:hover { border-color: var(--rf-red); color: var(--rf-red); background: #fff5f5; box-shadow: 0 0 0 3px var(--rf-red-glow); }
+    .rf-type-btn:hover svg { color: var(--rf-red); }
+    .rf-type-btn.selected { border-color: var(--rf-red); color: var(--rf-red); background: linear-gradient(135deg, #fff5f5, #ffe4e6); box-shadow: 0 0 0 3px var(--rf-red-glow); }
+    .rf-type-btn.selected svg { color: var(--rf-red); }
+
+    /* ── Textarea + Photos ── */
+    .rf-textarea {
+        width: 100%; border: 1.5px solid var(--rf-border); border-radius: var(--rf-radius-sm);
+        padding: 0.85rem 1rem; font-size: 0.875rem; font-family: inherit; color: var(--rf-text);
+        resize: vertical; min-height: 90px; background: var(--rf-white);
+        transition: border-color var(--rf-transition), box-shadow var(--rf-transition);
+    }
+    .rf-textarea::placeholder { color: #94a3b8; }
+    .rf-textarea:focus { outline: none; border-color: var(--rf-red); box-shadow: 0 0 0 3px var(--rf-red-glow); }
+    .rf-photo-row { display: flex; gap: 0.75rem; }
+    .rf-photo-btn {
+        flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.45rem;
+        padding: 0.8rem; border: 1.5px dashed var(--rf-border); border-radius: var(--rf-radius-sm);
+        background: #fafbfc; color: var(--rf-text-muted); font-size: 0.78rem; font-weight: 700;
+        cursor: pointer; transition: all var(--rf-transition); font-family: inherit;
+    }
+    .rf-photo-btn svg { width: 1rem; height: 1rem; }
+    .rf-photo-btn:hover { border-color: var(--rf-red); color: var(--rf-red); background: #fff5f5; border-style: solid; }
+    .rf-optional-tag { font-size: 0.7rem; color: var(--rf-text-muted); font-weight: 500; margin-left: 0.3rem; text-transform: none; letter-spacing: 0; }
+
+    /* ── Form Footer ── */
+    .rf-form-footer {
+        display: flex; gap: 0.75rem; padding: 1.25rem 2rem;
+        border-top: 1px solid var(--rf-border-soft); background: #f8fafc;
+    }
+    .rf-btn-submit {
+        flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.55rem;
+        padding: 1rem 1.5rem; background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+        color: #fff; border: none; border-radius: var(--rf-radius-sm);
+        font-size: 1rem; font-weight: 800; cursor: pointer; transition: all var(--rf-transition);
+        font-family: inherit; letter-spacing: 0.02em; box-shadow: 0 4px 16px rgba(211,18,18,0.3);
+    }
+    .rf-btn-submit:hover { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); box-shadow: 0 6px 24px rgba(211,18,18,0.4); transform: translateY(-1px); }
+    .rf-btn-submit:active { transform: translateY(0); }
+    .rf-btn-submit svg { width: 1.1rem; height: 1.1rem; }
+    .rf-btn-cancel {
+        padding: 1rem 1.5rem; background: var(--rf-white); color: var(--rf-text-muted);
+        border: 1.5px solid var(--rf-border); border-radius: var(--rf-radius-sm);
+        font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all var(--rf-transition); font-family: inherit;
+    }
+    .rf-btn-cancel:hover { border-color: var(--rf-red); color: var(--rf-red); background: #fff5f5; }
+
+    /* ── Right Column ── */
+    .rf-right { display: flex; flex-direction: column; gap: 1rem; }
+    .rf-safety-card { padding: 1.4rem; }
+    .rf-safety-list { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; }
+    .rf-safety-list li { display: flex; align-items: flex-start; gap: 0.55rem; font-size: 0.82rem; color: var(--rf-text-2); font-weight: 500; line-height: 1.4; }
+    .rf-safety-dot { width: 0.5rem; height: 0.5rem; background: var(--rf-red); border-radius: 50%; flex-shrink: 0; margin-top: 0.32rem; }
+    .rf-incident-card { padding: 1.4rem; }
+    .rf-incident-alert {
+        background: linear-gradient(135deg, #fff7ed, #fef3c7); border: 1px solid #fde68a;
+        border-radius: var(--rf-radius-sm); padding: 0.75rem 0.9rem;
+        display: flex; align-items: flex-start; gap: 0.55rem; margin-bottom: 1rem;
+    }
+    .rf-incident-alert svg { width: 1rem; height: 1rem; color: #d97706; flex-shrink: 0; margin-top: 0.05rem; }
+    .rf-incident-alert p { font-size: 0.8rem; color: #92400e; font-weight: 500; line-height: 1.45; }
+    .rf-btn-outline-sm {
+        display: flex; align-items: center; justify-content: center; gap: 0.4rem; width: 100%;
+        padding: 0.65rem; border: 1.5px solid var(--rf-red); background: transparent; color: var(--rf-red);
+        border-radius: var(--rf-radius-sm); font-size: 0.8rem; font-weight: 700;
+        cursor: pointer; transition: all var(--rf-transition); font-family: inherit; margin-bottom: 0.6rem;
+    }
+    .rf-btn-outline-sm:hover { background: var(--rf-red-light); box-shadow: 0 0 0 3px var(--rf-red-glow); }
+    .rf-btn-solid-red {
+        display: flex; align-items: center; justify-content: center; width: 100%;
+        padding: 0.75rem; background: linear-gradient(135deg, #ef4444, #b91c1c);
+        color: #fff; border: none; border-radius: var(--rf-radius-sm);
+        font-size: 0.82rem; font-weight: 800; cursor: pointer; transition: all var(--rf-transition);
+        font-family: inherit; box-shadow: 0 3px 10px rgba(211,18,18,0.28); margin-bottom: 0.85rem;
+    }
+    .rf-btn-solid-red:hover { background: linear-gradient(135deg, #dc2626, #991b1b); box-shadow: 0 4px 16px rgba(211,18,18,0.38); }
+    .rf-hint-text { font-size: 0.75rem; color: var(--rf-text-muted); text-align: center; line-height: 1.45; }
+
+    /* ── Step Divider ── */
+    .rf-step-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--rf-border), transparent); margin: 0.25rem 0 0; }
+
+    /* ── Mobile Warning ── */
+    .rf-mobile-warning { display: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 950px) {
+        .rf-page-grid { display: flex; flex-direction: column; padding: 0; margin: 0; }
+        .rf-left, .rf-right { display: none !important; }
+        .rf-main-card { border: none; border-radius: 0; box-shadow: none; }
+        .rf-form-hero { padding: 1.2rem 1rem 1rem; }
+        .rf-form-title { font-size: 1.25rem; }
+        .rf-form-body { padding: 1rem 1rem 1.5rem; gap: 1.4rem; }
+        .rf-form-footer { padding: 1rem; flex-direction: column; }
+        .rf-btn-cancel { border: none; background: transparent; }
+        .rf-two-col { grid-template-columns: 1fr; gap: 1.2rem; }
+        .rf-type-grid { grid-template-columns: repeat(3, 1fr); }
+        .rf-map-surface { height: 12rem; flex-basis: 12rem; }
+        .rf-emergency-bar { font-size: 0.68rem; }
+        .rf-mobile-warning {
+            display: flex; align-items: center; gap: 0.6rem;
+            background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--rf-radius-sm);
+            padding: 0.8rem 1rem; margin: 0.9rem 1rem 0;
+            font-size: 0.78rem; font-weight: 700; color: #92400e; line-height: 1.4;
+        }
+        .rf-mobile-warning svg { width: 1.2rem; height: 1.2rem; flex-shrink: 0; }
+    }
+    @media (min-width: 768px) and (max-width: 950px) {
+        .rf-page-grid { max-width: 740px; margin: 1.5rem auto; }
+        .rf-main-card { border: 1px solid var(--rf-border); border-radius: var(--rf-radius); box-shadow: var(--rf-card-shadow); }
+        .rf-form-hero { padding: 2rem 2rem 1.5rem; }
+        .rf-form-body { padding: 1.5rem 2rem 2rem; }
+        .rf-form-footer { padding: 1.25rem 2rem; flex-direction: row; }
+        .rf-two-col { grid-template-columns: 1fr 1fr; }
+        .rf-type-grid { grid-template-columns: repeat(5, 1fr); }
+    }
+`;
+
+export const reportFireMarkup = `
+    <div class="rf-root">
+
+        <!-- Emergency Strip -->
+        <div class="rf-emergency-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Emergency Use Only — False Reports Are a Criminal Offense
+        </div>
+
+        <!-- Mobile Warning -->
+        <div class="rf-mobile-warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Send alerts only for real fire emergencies. False reports are illegal.
+        </div>
+
+        <div class="rf-page-grid">
+
+            <!-- LEFT COLUMN -->
+            <div class="rf-left">
+                <div class="rf-card rf-account-card">
+                    <div class="rf-card-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Your Account
+                    </div>
+                    <div class="rf-account-pill">
+                        <div class="rf-account-pill-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            Account details auto-filled
+                        </div>
+                        <p>Location and profile information are securely attached to this report.</p>
+                    </div>
+                </div>
+
+                <div class="rf-card rf-assist-card">
+                    <div class="rf-card-label">
+                        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        Need Assistance?
+                    </div>
+                    <p>For immediate assistance, contact your local BFP office or dial 911.</p>
+                    <button class="rf-btn-outline">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.21 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        View Emergency Contacts
+                    </button>
+                </div>
+            </div>
+
+            <!-- CENTER COLUMN -->
+            <div class="rf-main">
+                <div class="rf-card rf-main-card">
+                    <div class="rf-form-hero">
+                        <h1 class="rf-form-title">
+                            <span class="rf-form-title-icon" aria-hidden="true">
+                                <img src="/images/fire logo.webp" alt="" />
+                            </span>
+                            Report a Fire Incident
+                        </h1>
+                        <div class="rf-fire-banner">
+                            <div class="rf-fire-banner-icon" aria-hidden="true">
+                                <img src="/images/fire logo.webp" alt="" />
+                            </div>
+                            <div class="rf-fire-banner-copy">
+                                <h3>Fire Emergency</h3>
+                                <p>Move to a safe location before sending the report.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rf-form-body">
+
+                        <!-- STEP 1 & 2 -->
+                        <div class="rf-two-col">
+
+                            <!-- Step 1: Location -->
+                            <div>
+                                <div class="rf-step-header">
+                                    <div class="rf-step-label">
+                                        <div class="rf-step-num">1</div>
+                                        Location
+                                    </div>
+                                    <span class="rf-loc-badge is-locating" data-location-status>LOCATING...</span>
+                                </div>
+                                <div class="rf-loc-card" data-location-card
+                                    data-location-latitude="" data-location-longitude=""
+                                    data-location-accuracy="" data-location-barangay=""
+                                    data-location-municipality="" data-location-province=""
+                                    data-location-valid="false" data-location-state="locating">
+
+                                    <div class="rf-loc-info">
+                                        <h4 class="rf-loc-heading">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                            <span data-location-title>Detecting location</span>
+                                        </h4>
+                                        <div class="rf-loc-address" data-location-address data-location-result>
+                                            <div class="rf-loc-address-row">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                                <strong data-location-place><span data-location-barangay>Barangay checking</span><span class="rf-loc-sep">, </span><span data-location-municipality>Municipality checking</span></strong>
+                                            </div>
+                                            <div class="rf-loc-address-row">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="9"/></svg>
+                                                <strong data-location-coordinates>Latitude -- | Longitude --</strong>
+                                            </div>
+                                        </div>
+                                        <p data-location-text hidden style="font-size:0.73rem;color:var(--rf-text-muted);margin-bottom:0.4rem;">Barangay checking, Municipality checking</p>
+                                        <div class="rf-loc-accuracy" data-location-accuracy hidden></div>
+                                        <div class="rf-loc-error" data-location-error hidden></div>
+                                        <div class="rf-btn-row">
+                                            <button type="button" class="rf-btn-sm" data-location-adjust>
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                                                Adjust Pin
+                                            </button>
+                                            <button type="button" class="rf-btn-sm" data-location-refresh>
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                                Detect my location
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="rf-map-surface" data-location-preview data-location-map-panel data-location-map-surface>
+                                        <div class="rf-map-inner" data-location-map aria-label="OpenStreetMap with fire location"></div>
+                                        <div class="rf-map-overlay" data-location-map-overlay aria-live="polite">
+                                            <span class="rf-map-pulse" aria-hidden="true"></span>
+                                            <span data-location-map-label>Locating you...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Nearest Landmark -->
+                            <div>
+                                <div class="rf-step-header">
+                                    <div class="rf-step-label">
+                                        <div class="rf-step-num">2</div>
+                                        Nearest Landmark
+                                    </div>
+                                </div>
+                                <div class="rf-landmark-card" data-nearest-landmark data-landmark-state="waiting">
+                                    <div class="rf-landmark-top">
+                                        <span class="rf-landmark-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                        </span>
+                                        <div class="rf-landmark-copy">
+                                            <span class="rf-landmark-status" data-landmark-status>Waiting for location</span>
+                                            <h4 class="rf-landmark-name" data-landmark-name>Finding a nearby mapped place...</h4>
+                                        </div>
+                                    </div>
+                                    <p class="rf-landmark-hint">Suggested from the closest named place or road in OpenStreetMap.</p>
+                                    <div class="rf-btn-row">
+                                        <button type="button" class="rf-btn-sm" data-landmark-confirm disabled>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                                            Correct
+                                        </button>
+                                        <button type="button" class="rf-btn-sm" data-landmark-change disabled>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                            Change
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rf-step-divider"></div>
+
+                        <!-- STEP 3: FIRE TYPE -->
+                        <div>
+                            <div class="rf-step-header">
+                                <div class="rf-step-label">
+                                    <div class="rf-step-num">3</div>
+                                    What Is Burning?
+                                </div>
+                            </div>
+                            <div class="rf-type-grid">
+                                <button class="rf-type-btn selected">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                    House/Building
+                                </button>
+                                <button class="rf-type-btn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8M8 20v-5M16 20v-6M4 20v-3M20 20v-4"/></svg>
+                                    Grass Fire
+                                </button>
+                                <button class="rf-type-btn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 14 15 14 18 22 6 22 9 14 5 14 12 2"/></svg>
+                                    Forest Fire
+                                </button>
+                                <button class="rf-type-btn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 00-.84-.99L16 11l-2.7-3.6a2 2 0 00-1.6-.8H9.3a2 2 0 00-1.6.8L5 11l-5.16.86a1 1 0 00-.84.99V16h3m10 0a2 2 0 11-4 0m4 0a2 2 0 10-4 0m-10 0a2 2 0 11-4 0m4 0a2 2 0 10-4 0"/></svg>
+                                    Vehicle Fire
+                                </button>
+                                <button class="rf-type-btn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+                                    Other
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="rf-step-divider"></div>
+
+                        <!-- STEP 4 & 5 -->
+                        <div class="rf-two-col">
+                            <div>
+                                <div class="rf-step-header">
+                                    <div class="rf-step-label">
+                                        <div class="rf-step-num">4</div>
+                                        Short Description
+                                        <span class="rf-optional-tag">(optional)</span>
+                                    </div>
+                                </div>
+                                <textarea class="rf-textarea" placeholder="Example: Fire is spreading to another house." rows="4"></textarea>
+                            </div>
+
+                            <div>
+                                <div class="rf-step-header">
+                                    <div class="rf-step-label">
+                                        <div class="rf-step-num">5</div>
+                                        Add Fire Photo
+                                        <span class="rf-optional-tag">(optional)</span>
+                                    </div>
+                                </div>
+                                <p style="font-size:0.75rem;color:var(--rf-text-muted);margin-bottom:0.65rem;line-height:1.4;">Upload only when safe to do so.</p>
+                                <div class="rf-photo-row">
+                                    <button class="rf-photo-btn">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                        Take Photo
+                                    </button>
+                                    <button class="rf-photo-btn">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                        Choose Photo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Footer -->
+                    <div class="rf-form-footer">
+                        <button class="rf-btn-submit">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            SEND FIRE ALERT
+                        </button>
+                        <button class="rf-btn-cancel">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div class="rf-right">
+                <div class="rf-card rf-safety-card">
+                    <div class="rf-card-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                        Safety Reminder
+                    </div>
+                    <ul class="rf-safety-list">
+                        <li><span class="rf-safety-dot" aria-hidden="true"></span>Stay calm.</li>
+                        <li><span class="rf-safety-dot" aria-hidden="true"></span>Move away from the fire.</li>
+                        <li><span class="rf-safety-dot" aria-hidden="true"></span>Do not return for belongings.</li>
+                        <li><span class="rf-safety-dot" aria-hidden="true"></span>Follow responder instructions.</li>
+                    </ul>
+                </div>
+
+                <div class="rf-card rf-incident-card">
+                    <div class="rf-card-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Nearby Active Incident
+                    </div>
+                    <div class="rf-incident-alert">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <p>A fire incident has already been reported near your location.</p>
+                    </div>
+                    <button class="rf-btn-outline-sm">View Existing Incident</button>
+                    <button class="rf-btn-solid-red">Report a Different Fire</button>
+                    <p class="rf-hint-text">Avoid duplicate reports to help responders act faster.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+`;
+
+
+        background-color: var(--card-bg);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* HEADER */
+    .top-header {
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.4rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .brand-logo {
+        height: 6rem;
+        width: auto;
+    }
+
+    .brand-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        line-height: 1.2;
+    }
+
+    .brand-subtitle {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .header-nav {
+        display: flex;
+        align-items: center;
+        gap: 2.5rem;
+    }
+
+    .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+
+    .nav-item:hover {
+        color: var(--primary-red);
+    }
+
+    .nav-item.active {
+        color: var(--primary-red);
+    }
+
+    .nav-item.active::after {
+        content: '';
+        display: block;
+        width: 100%;
+        height: 3px;
+        background: var(--primary-red);
+        border-radius: 3px 3px 0 0;
+        position: absolute;
+        bottom: 0;
+    }
+    
+    .nav-item-wrapper {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        padding: 0.5rem 0;
+    }
+
+    .nav-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    .nav-item.report-fire-nav {
+        color: var(--primary-red);
+    }
+
+    .nav-item.report-fire-nav .nav-icon {
+        background: var(--primary-red);
+        color: white;
+        border-radius: 50%;
+        padding: 0.35rem;
+        width: 2.2rem;
+        height: 2.2rem;
+    }
+
+    .fire-logo-tint {
+        filter: brightness(0) invert(1);
+        object-fit: contain;
+        width: 100%;
+        height: 100%;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+    }
+
+    .notification-btn, .lang-btn {
+        background: none;
+        border: none;
+        position: relative;
+        cursor: pointer;
+        color: var(--text-dark);
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .notification-btn:hover, .lang-btn:hover {
+        color: var(--primary-red);
+    }
+
+    .notification-badge {
+        position: absolute;
+        top: 0.2rem;
+        right: 0.2rem;
+        background: var(--primary-red);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 800;
+        width: 1.1rem;
+        height: 1.1rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ==================== HEADER PROFILE DROPDOWN ==================== */
+    .header-profile-menu {
+        position: relative;
+        margin-left: 0.5rem;
+    }
+    .header-profile-btn {
+        background: none; border: none; cursor: pointer;
+        padding: 0.2rem; display: flex; align-items: center; justify-content: center;
+        border-radius: 50%; border: 2px solid transparent; transition: all 0.2s;
+    }
+    .header-profile-btn img {
+        width: 2.2rem; height: 2.2rem; border-radius: 50%; object-fit: cover;
+    }
+    .header-profile-btn:hover, .header-profile-menu:focus-within .header-profile-btn {
+        border-color: var(--primary-red);
+    }
+    .profile-dropdown {
+        position: absolute; top: calc(100% + 0.5rem); right: 0;
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        border-radius: 0.8rem; box-shadow: var(--shadow-md); width: 230px;
+        opacity: 0; visibility: hidden; transform: translateY(-10px);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 100;
+        padding: 0.5rem 0;
+    }
+    .header-profile-menu:focus-within .profile-dropdown,
+    .header-profile-menu:hover .profile-dropdown {
+        opacity: 1; visibility: visible; transform: translateY(0);
+    }
+    .profile-dropdown-item {
+        display: flex; align-items: center; gap: 0.8rem;
+        padding: 0.7rem 1.2rem; text-decoration: none;
+        color: var(--text-dark); font-size: 0.95rem; font-weight: 500;
+        transition: background-color 0.2s, color 0.2s;
+    }
+    .profile-dropdown-item:hover {
+        background-color: #f1f5f9;
+    }
+    .profile-dropdown-icon {
+        width: 1.2rem; height: 1.2rem; color: var(--text-muted);
+    }
+    .profile-dropdown-divider {
+        height: 1px; background-color: var(--border-color);
+        margin: 0.5rem 0;
+    }
+    .profile-dropdown-item.logout-item {
+        color: var(--primary-red);
+    }
+    .profile-dropdown-item.logout-item .profile-dropdown-icon {
+        color: var(--primary-red);
+    }
+    .profile-dropdown-item.logout-item:hover {
+        background-color: var(--primary-red-light);
+    }
+
+    /* DESKTOP LAYOUT (3 COLUMNS) */
+    .report-container {
+        flex: 1;
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+        display: grid;
+        grid-template-columns: 280px 1fr 280px;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    /* CARD STYLES */
+    .card {
+        background: var(--bg-white);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .card-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0;
+    }
+
+    .card-title svg { width: 1.25rem; height: 1.25rem; color: var(--primary-red); }
+
+    /* LEFT COLUMN */
+    .account-info {
+        background: #fff5f5;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        font-size: 0.85rem;
+        color: var(--text-dark);
+        line-height: 1.4;
+    }
+    .account-info strong { display: block; margin-bottom: 0.5rem; }
+    
+    .btn-outline-red {
+        background: transparent;
+        border: 1px solid var(--primary-red);
+        color: var(--primary-red);
+        padding: 0.8rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+        width: 100%;
+    }
+
+    /* CENTER COLUMN (MAIN FORM) */
+    .main-form-card { padding: 1.5rem; }
+    .form-header-title { font-size: 1.5rem; font-weight: 800; color: var(--text-dark); margin-bottom: 1.5rem; margin-top: 0; }
+    
+    .warning-banner {
+        background: #fff5f5;
+        border: 1px solid #ffcaca;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .warning-banner svg { width: 2.5rem; height: 2.5rem; color: var(--primary-red); }
+    .warning-banner-text h3 { color: var(--primary-red); font-size: 1.2rem; margin-bottom: 0.2rem; }
+    .warning-banner-text p { color: var(--text-dark); font-size: 0.95rem; font-weight: 500; }
+
+    .step-section { margin-bottom: 2rem; }
+    .step-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--text-dark);
+        margin-bottom: 1rem;
+    }
+    .step-number {
+        background: var(--primary-red);
+        color: white;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+
+    /* STEP 1 & 2 GRIDS */
+    .two-col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    
+    .location-box {
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+    }
+    .location-details h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .location-details p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.2rem; }
+    .location-details .accuracy { font-size: 0.8rem; font-weight: 600; color: #16a34a; margin-bottom: 1rem; }
+    
+    .map-preview { width: 100px; height: 80px; background: #e2e8f0; border-radius: 0.5rem; overflow: hidden; position: relative; }
+    .map-preview::after {
+        content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 1rem; height: 1.5rem; background: var(--primary-red);
+        clip-path: polygon(50% 100%, 0 40%, 0 0, 100% 0, 100% 40%);
+    }
+
+    .location-box[data-location-card] {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        gap: 0;
+        overflow: hidden;
+        background: #ffffff;
+        border-color: #d9e2ec;
+        align-items: stretch;
+        justify-content: flex-start;
+    }
+    .location-box[data-location-card] .location-details {
+        min-width: 0;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .location-box[data-location-card] .location-details h4 {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.32rem;
+        color: #172033;
+    }
+    .location-box[data-location-card] .location-details p {
+        margin-bottom: 0.28rem;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
+    .location-heading-icon { width: 1.1rem; height: 1.1rem; color: var(--primary-red); flex-shrink: 0; }
+    .location-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 9rem;
+        min-height: 1.65rem;
+        padding: 0.25rem 0.5rem;
+        border: 1px solid #fed7aa;
+        border-radius: 1rem;
+        background: #fff7ed;
+        color: #9a3412;
+        font-size: 0.66rem;
+        font-weight: 800;
+        line-height: 1.1;
+        text-align: center;
+        white-space: normal;
+        transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    }
+    .location-status.is-locating,
+    .location-status.is-improving { color: #9a3412; background: #fff7ed; border-color: #fed7aa; }
+    .location-status.is-confirmed,
+    .location-status.is-adjusted { color: #166534; background: #dcfce7; border-color: #bbf7d0; }
+    .location-status.is-approximate,
+    .location-status.is-adjusting { color: #854d0e; background: #fef9c3; border-color: #fde68a; }
+    .location-status.is-low-accuracy,
+    .location-status.is-outside,
+    .location-status.is-error { color: #b91c1c; background: #fee2e2; border-color: #fecaca; }
+    .location-error {
+        width: 100%;
+        margin: 0 0 0.7rem;
+        padding-left: 0.55rem;
+        border-left: 2px solid #dc2626;
+        color: #b91c1c;
+        font-size: 0.72rem;
+        line-height: 1.35;
+    }
+    .location-box[data-location-card] .accuracy {
+        display: inline-flex;
+        align-items: center;
+        min-height: 1.5rem;
+        margin: 0.25rem 0 0.72rem;
+        padding: 0.22rem 0.45rem;
+        border-radius: 0.3rem;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 0.7rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .location-box[data-location-state="confirmed"] .accuracy,
+    .location-box[data-location-state="adjusted"] .accuracy { color: #166534; background: #ecfdf5; }
+    .location-box[data-location-state="approximate"] .accuracy { color: #854d0e; background: #fefce8; }
+    .map-preview[data-location-map-surface] {
+        width: 100%;
+        height: 11rem;
+        min-height: 11rem;
+        flex: 0 0 11rem;
+        border: 0;
+        border-top: 1px solid #d9e2ec;
+        border-radius: 0;
+        background: #dbeafe;
+        overflow: hidden;
+        position: relative;
+        z-index: 0;
+        isolation: isolate;
+    }
+    .location-map,
+    .location-map.leaflet-container { width: 100%; height: 100%; min-height: inherit; font-family: 'Inter', sans-serif; background: #dbeafe; }
+    .location-map .leaflet-control-zoom { border: 0; border-radius: 0.4rem; overflow: hidden; box-shadow: 0 4px 12px rgba(15,23,42,0.18); }
+    .location-map .leaflet-control-zoom a { width: 1.9rem; height: 1.9rem; line-height: 1.9rem; border: 0; color: #172033; background: rgba(255,255,255,0.96); }
+    .location-map .leaflet-control-zoom a:hover { color: var(--primary-red); background: #ffffff; }
+    .location-map .leaflet-control-attribution { max-width: 100%; padding: 0 0.15rem; font-size: 0.38rem; line-height: 1.1; }
+    .location-map-overlay {
+        position: absolute;
+        right: 0.55rem;
+        bottom: 0.55rem;
+        left: 0.55rem;
+        z-index: 700;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-height: 2.35rem;
+        padding: 0.4rem 0.65rem;
+        border: 1px solid rgba(255,255,255,0.82);
+        border-radius: 0.4rem;
+        color: var(--primary-red);
+        background: rgba(255,255,255,0.94);
+        box-shadow: 0 4px 12px rgba(15,23,42,0.16);
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-align: center;
+        transition: opacity 0.22s ease, visibility 0.22s ease;
+        pointer-events: none;
+    }
+    .location-map-overlay.is-hidden { opacity: 0; visibility: hidden; }
+    .location-map-pulse { width: 0.82rem; height: 0.82rem; border: 2px solid var(--primary-red); border-radius: 50%; box-shadow: 0 0 0 0 rgba(211,18,18,0.38); animation: location-pulse 1.35s ease-out infinite; flex-shrink: 0; }
+    .location-map-marker-wrapper { background: transparent; border: 0; }
+    .location-map-marker { display: grid; place-items: center; width: 2.38rem; height: 2.38rem; border: 2px solid #ffffff; border-radius: 50%; background: var(--primary-red); box-shadow: 0 4px 10px rgba(15,23,42,0.34); overflow: hidden; }
+    .location-map-marker img { width: 1.72rem; height: 1.72rem; object-fit: contain; filter: brightness(0) invert(1); }
+    @keyframes location-pulse { 0% { box-shadow: 0 0 0 0 rgba(211,18,18,0.42); transform: scale(0.86); } 70% { box-shadow: 0 0 0 0.9rem rgba(211,18,18,0); transform: scale(1); } 100% { box-shadow: 0 0 0 0 rgba(211,18,18,0); transform: scale(0.86); } }
+    .location-address { display: flex; flex-direction: column; gap: 0.32rem; width: 100%; margin: 0.2rem 0 0.35rem; }
+    .location-address-row { display: flex; align-items: flex-start; gap: 0.38rem; color: var(--text-dark); font-size: 0.74rem; line-height: 1.25; }
+    .location-address-row svg { width: 0.86rem; height: 0.86rem; margin-top: 0.05rem; color: var(--primary-red); flex-shrink: 0; }
+    .location-address-row strong { min-width: 0; font-weight: 750; overflow-wrap: anywhere; }
+    .location-result:not([hidden]) { display: flex; margin: 0.45rem 0 0.65rem; padding: 0.7rem 0.75rem; border: 1px solid #fecaca; border-radius: 0.45rem; background: #fff7f7; gap: 0.5rem; }
+    .location-result .location-address-row { gap: 0.45rem; }
+    .location-result-place strong { color: #172033; font-size: 0.8rem; }
+    .location-place-separator { color: #64748b; font-weight: 700; }
+    .location-result-coordinates strong { color: #475569; font-size: 0.72rem; font-weight: 700; }
+    .map-preview[data-location-preview]::after { display: none; }
+    .location-box[data-location-card] .action-btn-row { width: 100%; margin-top: auto; flex-wrap: wrap; }
+    .location-box[data-location-card] .btn-small-outline { flex: 1 1 6.5rem; justify-content: center; min-height: 2.25rem; padding: 0.4rem 0.5rem; font-size: 0.72rem; }
+    .landmark-box { min-height: 12.5rem; padding: 1rem; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0.8rem; }
+    .landmark-heading { display: flex; align-items: flex-start; gap: 0.75rem; }
+    .landmark-icon { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; flex: 0 0 2.4rem; border-radius: 0.45rem; color: #ffffff; background: var(--primary-red); box-shadow: 0 5px 12px rgba(211,18,18,0.2); }
+    .landmark-icon svg { width: 1.25rem; height: 1.25rem; }
+    .landmark-copy { min-width: 0; }
+    .landmark-status { display: block; margin-bottom: 0.24rem; color: #64748b; font-size: 0.68rem; font-weight: 750; text-transform: uppercase; }
+    .landmark-name { margin: 0; color: #172033; font-size: 0.92rem; font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
+    .landmark-helper { margin: 0; color: var(--text-muted); font-size: 0.75rem; line-height: 1.4; }
+    .landmark-box .action-btn-row { width: 100%; margin-top: auto; flex-wrap: wrap; }
+    .landmark-box .btn-small-outline { flex: 1 1 7rem; justify-content: center; min-height: 2.35rem; }
+    .landmark-box[data-landmark-state="confirmed"] .landmark-icon { background: #15803d; }
+    .landmark-box[data-landmark-state="unavailable"] .landmark-icon { background: #64748b; box-shadow: none; }
+    .btn-small-outline:disabled { opacity: 0.55; cursor: wait; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .location-map-pulse { animation: none; }
+        .location-map-overlay, .location-status { transition: none; }
+    }
+
+    .action-btn-row { display: flex; gap: 0.5rem; }
+    .btn-small-outline {
+        padding: 0.4rem 0.8rem; border: 1px solid var(--border-color); background: var(--bg-white);
+        border-radius: 0.3rem; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 0.3rem; cursor: pointer;
+    }
+
+    /* STEP 3 GRID */
+    .type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+    .type-btn {
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 1rem 0.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--bg-white);
+        cursor: pointer;
+        color: var(--text-dark);
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    .type-btn svg { width: 2rem; height: 2rem; color: var(--text-muted); }
+    .type-btn.selected { border-color: var(--primary-red); color: var(--primary-red); }
+    .type-btn.selected svg { color: var(--primary-red); }
+
+    /* STEP 4 TEXTAREA */
+    .desc-input {
+        width: 100%; border: 1px solid var(--border-color); border-radius: 0.5rem;
+        padding: 0.8rem; font-size: 0.9rem; resize: vertical; min-height: 80px;
+    }
+    
+    /* STEP 5 PHOTOS */
+    .photo-actions { display: flex; gap: 1rem; }
+    .photo-actions button { flex: 1; }
+
+    /* FORM FOOTER */
+    .form-footer { display: flex; gap: 1rem; margin-top: 1rem; }
+    .btn-primary {
+        background: var(--primary-red); color: white; border: none; flex: 3;
+        padding: 1.2rem; border-radius: 0.5rem; font-size: 1.1rem; font-weight: 700;
+        display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer;
+    }
+    .btn-cancel {
+        background: var(--bg-white); color: var(--primary-red); border: 1px solid var(--primary-red); flex: 1;
+        padding: 1.2rem; border-radius: 0.5rem; font-size: 1.1rem; font-weight: 700; cursor: pointer;
+    }
+
+    /* RIGHT COLUMN */
+    .safety-list { list-style: none; display: flex; flex-direction: column; gap: 0.8rem; }
+    .safety-list li { font-size: 0.9rem; font-weight: 500; display: flex; align-items: flex-start; gap: 0.5rem; }
+    .safety-list li::before { content: '•'; color: var(--primary-red); font-weight: bold; font-size: 1.2rem; line-height: 0.8; }
+    
+    .btn-solid-red {
+        background: var(--primary-red); color: white; border: none;
+        padding: 0.8rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; text-align: center; width: 100%;
+    }
+    .text-sm-muted { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; text-align: center; }
+    
+    /* MOBILE HEADER */
+    .mobile-header { display: none; }
+    .mobile-warning { display: none; }
+    /* RESPONSIVE DESIGN (MOBILE) */
+    @media (max-width: 950px) {
+        .report-page-root {
+            background: var(--bg-white);
+            padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+        }
+        .top-header, .account-card, .assistance-card, .safety-card, .incident-card, .form-header-title { display: none; }
+        
+        .brand-logo {
+            height: 3rem;
+        }
+        
+        .report-container { display: flex; flex-direction: column; padding: 0; margin: 0; }
+        .main-form-card { padding: 0; border: none; box-shadow: none; border-radius: 0; }
+        
+        .mobile-header { display: none !important; }
+        
+        .mobile-warning {
+            background: #fffdeb; color: #b45309; padding: 0.8rem 1rem; font-size: 0.8rem; font-weight: 700;
+            display: flex; align-items: center; gap: 0.6rem; 
+            border: 1px solid #fde047; border-radius: 0.5rem; margin: 1rem 1rem 0.5rem 1rem;
+            line-height: 1.4;
+        }
+        .mobile-warning svg { width: 1.4rem; height: 1.4rem; flex-shrink: 0; }
+
+        /* Form adjustments */
+        .warning-banner { margin: 0.5rem 1rem 1.5rem 1rem; padding: 1rem; border-radius: 0.5rem; }
+        .step-section { margin: 0 1rem 1.5rem 1rem; }
+        
+        .two-col-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+        .type-grid { grid-template-columns: repeat(3, 1fr); }
+        
+        .location-box { flex-direction: column; gap: 1rem; }
+        .location-box[data-location-card] {
+            display: flex !important;
+            flex-direction: column;
+            min-height: 26rem;
+            gap: 0;
+            overflow: hidden;
+            border: 1px solid #d9e2ec;
+            background: #ffffff;
+        }
+        .location-box[data-location-card] .location-details {
+            display: flex !important;
+            width: 100%;
+            min-height: 13rem;
+            padding: 1rem;
+        }
+        .location-box[data-location-card] .location-result:not([hidden]) {
+            display: flex !important;
+        }
+        .location-box[data-location-card] .action-btn-row {
+            margin-top: 0.85rem;
+        }
+        .map-preview[data-location-map-surface] {
+            display: block !important;
+            width: 100%;
+            height: 13rem;
+            min-height: 13rem;
+            flex: 0 0 13rem;
+            background: #dbeafe;
+        }
+        .location-map,
+        .location-map.leaflet-container {
+            display: block !important;
+            width: 100%;
+            height: 100%;
+            min-height: 13rem;
+        }
+        .action-btn-row { flex-wrap: wrap; }
+
+        .form-footer { margin: 1rem; flex-direction: column; gap: 0.8rem; }
+        .btn-cancel { border: none; font-size: 1rem; padding: 0.8rem; }
+    }
+
+    /* TABLET ADJUSTMENTS */
+    @media (min-width: 768px) and (max-width: 950px) {
+        .report-page-root {
+            background-color: var(--card-bg);
+            padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+        }
+        .report-container {
+            margin: 2rem auto;
+            max-width: 750px;
+            width: 92%;
+            padding: 0;
+        }
+        .main-form-card {
+            background: var(--bg-white);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .mobile-warning {
+            max-width: 750px;
+            width: 92%;
+            margin: 1.5rem auto 2rem auto;
+            box-sizing: border-box;
+        }
+        .warning-banner {
+            margin: 0 0 2rem 0;
+            padding: 1.5rem;
+        }
+        .step-section {
+            margin: 0 0 2rem 0;
+        }
+        .two-col-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .location-box {
+            flex-direction: row;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+        .map-preview[data-location-map-surface] { height: 11rem; min-height: 11rem; flex-basis: 11rem; }
+        .type-grid {
+            grid-template-columns: repeat(5, 1fr);
+        }
+        .mobile-bottom-nav {
+            justify-content: center;
+            gap: 2rem;
+        }
+        .mobile-nav-item, .mobile-nav-fab-wrapper {
+            width: auto;
+            min-width: 4.5rem;
+        }
+    }
+`;
+
+export const reportFireMarkup = `
+    <div class="report-page-root">
+        <div class="mobile-warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            WARNING: Send alerts only for real fire emergencies. False reports are illegal.
+        </div>
+
+        <main class="report-container">
+            
+            <!-- LEFT COLUMN -->
+            <div class="left-col" style="display:flex; flex-direction:column; gap:1rem;">
+                <div class="card account-card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Your Account
+                    </div>
+                    <div class="account-info">
+                        <strong>Account details are automatically filled.</strong>
+                        Location and profile information are securely attached to this report.
+                    </div>
+                </div>
+
+                <div class="card assistance-card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        Need Assistance?
+                    </div>
+                    <p class="text-sm-muted" style="margin-bottom:0.5rem;">For immediate assistance, contact your local BFP office or dial 911.</p>
+                    <button class="btn-outline-red">View Emergency Contacts</button>
+                </div>
+            </div>
+
+            <!-- CENTER COLUMN -->
+            <div class="card main-form-card">
+                <h2 class="form-header-title">Report a Fire Incident</h2>
+                
+                <div class="warning-banner">
+                    <img src="/images/fire logo.webp" alt="Fire Emergency Logo" style="width: 2.8rem; height: 2.8rem; object-fit: contain; flex-shrink: 0;" />
+                    <div class="warning-banner-text">
+                        <h3>Fire Emergency</h3>
+                        <p>Move to a safe location before sending the report.</p>
+                    </div>
+                </div>
+
+                <div class="two-col-grid">
+                    <div class="step-section">
+                        <div class="step-title" style="justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <div class="step-number">1</div> LOCATION
+                            </div>
+                            <span class="location-status" data-location-status>LOCATING...</span>
+                        </div>
+                        <div class="location-box" data-location-card data-location-latitude="" data-location-longitude="" data-location-accuracy="" data-location-barangay="" data-location-municipality="" data-location-province="" data-location-valid="false" data-location-state="locating">
+                            <div class="location-details">
+                                <h4>
+                                    <svg class="location-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                    <span data-location-title>Detecting location</span>
+                                </h4>
+                                <div class="location-address location-result" data-location-address data-location-result>
+                                    <div class="location-address-row location-result-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><strong data-location-place><span data-location-barangay>Barangay checking</span><span class="location-place-separator">, </span><span data-location-municipality>Municipality checking</span></strong></div>
+                                    <div class="location-address-row location-result-coordinates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="9"/></svg><strong data-location-coordinates>Latitude -- | Longitude --</strong></div>
+                                </div>
+                                <p data-location-text hidden>Barangay checking, Municipality checking</p>
+                                <div class="accuracy" data-location-accuracy hidden></div>
+                                <div class="location-error" data-location-error hidden></div>
+                                <div class="action-btn-row">
+                                    <button type="button" class="btn-small-outline" data-location-adjust><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Adjust Pin</button>
+                                    <button type="button" class="btn-small-outline" data-location-refresh><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Detect my location</button>
+                                </div>
+                            </div>
+                            <div class="map-preview" data-location-preview data-location-map-panel data-location-map-surface>
+                                <div class="location-map" data-location-map aria-label="OpenStreetMap street map with detected fire location"></div>
+                                <div class="location-map-overlay" data-location-map-overlay aria-live="polite">
+                                    <span class="location-map-pulse" aria-hidden="true"></span>
+                                    <span data-location-map-label>Locating you...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-section">
+                        <div class="step-title">
+                            <div class="step-number">2</div> NEAREST LANDMARK
+                        </div>
+                        <div class="location-box landmark-box" data-nearest-landmark data-landmark-state="waiting">
+                            <div class="landmark-heading">
+                                <span class="landmark-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg></span>
+                                <div class="landmark-copy">
+                                    <span class="landmark-status" data-landmark-status>Waiting for location</span>
+                                    <h4 class="landmark-name" data-landmark-name>Finding a nearby mapped place...</h4>
+                                </div>
+                            </div>
+                            <p class="landmark-helper">Suggested from the closest named place or road in OpenStreetMap.</p>
+                            <div class="action-btn-row">
+                                <button type="button" class="btn-small-outline" data-landmark-confirm disabled><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Correct</button>
+                                <button type="button" class="btn-small-outline" data-landmark-change disabled><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Change</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-section">
+                    <div class="step-title">
+                        <div class="step-number">3</div> WHAT IS BURNING?
+                    </div>
+                    <div class="type-grid">
+                        <div class="type-btn selected">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                            House/Building
+                        </div>
+                        <div class="type-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8M8 20v-5M16 20v-6M4 20v-3M20 20v-4"/></svg>
+                            Grass Fire
+                        </div>
+                        <div class="type-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 14 15 14 18 22 6 22 9 14 5 14 12 2"/></svg>
+                            Forest Fire
+                        </div>
+                        <div class="type-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 00-.84-.99L16 11l-2.7-3.6a2 2 0 00-1.6-.8H9.3a2 2 0 00-1.6.8L5 11l-5.16.86a1 1 0 00-.84.99V16h3m10 0a2 2 0 11-4 0m4 0a2 2 0 10-4 0m-10 0a2 2 0 11-4 0m4 0a2 2 0 10-4 0"/></svg>
+                            Vehicle Fire
+                        </div>
+                        <div class="type-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+                            Other
+                        </div>
+                    </div>
+                </div>
+
+                <div class="two-col-grid">
+                    <div class="step-section" style="margin-bottom:0;">
+                        <div class="step-title">
+                            <div class="step-number">4</div> SHORT DESCRIPTION <span style="color:var(--text-muted); font-weight:500; font-size:0.8rem;">(OPTIONAL)</span>
+                        </div>
+                        <textarea class="desc-input" placeholder="Example: Fire is spreading to another house."></textarea>
+                    </div>
+
+                    <div class="step-section" style="margin-bottom:0;">
+                        <div class="step-title">
+                            <div class="step-number">5</div> ADD FIRE PHOTO <span style="color:var(--text-muted); font-weight:500; font-size:0.8rem;">(OPTIONAL)</span>
+                        </div>
+                        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;">Optional. Upload only when safe.</p>
+                        <div class="photo-actions">
+                            <button class="btn-small-outline" style="justify-content:center; padding:0.8rem;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Take Photo</button>
+                            <button class="btn-small-outline" style="justify-content:center; padding:0.8rem;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Choose Photo</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-footer">
+                    <button class="btn-primary">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
+                        SEND FIRE ALERT
+                    </button>
+                    <button class="btn-cancel">Cancel</button>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div class="right-col" style="display:flex; flex-direction:column; gap:1rem;">
+                <div class="card safety-card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                        Safety Reminder
+                    </div>
+                    <ul class="safety-list">
+                        <li>Stay calm.</li>
+                        <li>Move away from the fire.</li>
+                        <li>Do not return for belongings.</li>
+                        <li>Follow responder instructions.</li>
+                    </ul>
+                </div>
+
+                <div class="card incident-card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Nearby Active Incident
+                    </div>
+                    <p style="font-size:0.9rem; font-weight:500; margin-bottom:1rem; color:var(--text-dark); line-height:1.4;">A fire incident has already been reported near your location.</p>
+                    <button class="btn-outline-red" style="margin-bottom:0.8rem;">View Existing Incident</button>
+                    <button class="btn-solid-red" style="margin-bottom:1rem;">Report a Different Fire</button>
+                    <p class="text-sm-muted">Avoid duplicate reports to help responders act faster.</p>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Mobile Bottom Navigation -->
+    </div>
+`;
