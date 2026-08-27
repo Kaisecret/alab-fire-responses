@@ -101,6 +101,32 @@ test("BFP APIs provision individual staff, require a password change, and never 
   assert.doesNotMatch(me, /password_hash/);
 });
 
+test("mobile BFP APIs use bearer sessions and never issue Supabase credentials", () => {
+  const paths = [
+    "app/api/mobile-bfp/login/route.ts",
+    "app/api/mobile-bfp/me/route.ts",
+    "app/api/mobile-bfp/change-password/route.ts",
+    "lib/auth/mobile-bfp.ts",
+  ];
+  for (const path of paths) assert.equal(existsSync(join(root, path)), true, `${path} is missing`);
+
+  const [login, me, changePassword, auth] = paths.map(source);
+  assert.match(login, /verifyBfpCredentials/);
+  assert.match(login, /checkLoginRateLimit/);
+  assert.match(login, /createBfpSession/);
+  assert.match(me, /requireMobileMunicipalBfp/);
+  assert.match(changePassword, /requireMobileMunicipalBfp/);
+  assert.match(changePassword, /changeBfpPassword/);
+  assert.match(auth, /Authorization/);
+  assert.match(auth, /Bearer/);
+  assert.match(auth, /MUNICIPAL_BFP/);
+
+  const combined = [login, me, changePassword, auth].join("\n");
+  assert.doesNotMatch(combined, /DATABASE_URL/);
+  assert.doesNotMatch(combined, /SUPABASE_SECRET_KEY/);
+  assert.doesNotMatch(combined, /password_hash/);
+});
+
 test("Provincial bootstrap reads the local database URL without requiring it in the terminal", () => {
   const bootstrap = source("scripts/bootstrap-provincial-bfp.mjs");
   assert.match(bootstrap, /\.env\.local/);
