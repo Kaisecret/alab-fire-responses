@@ -1,5 +1,7 @@
 'use client';
 
+import { MunicipalPersonnelManager } from "../../_components/municipal-personnel-manager";
+
 const styles = `
   .mbfp-page { padding: 1.2rem 1.5rem 2rem; font-family: 'Plus Jakarta Sans', sans-serif; }
   .mbfp-page-header { margin-bottom: 1.5rem; }
@@ -28,6 +30,8 @@ const styles = `
 `;
 
 export default function RespondersPage() {
+  return <MunicipalPersonnelManager />;
+
   const responders = [
     { name: 'FO3 Ricardo Santos', initials: 'RS', rank: 'Fire Officer III', unit: 'Engine 1', shift: 'Day Shift', status: 'on-duty', statusLabel: 'On Duty', phone: '(036) 555-0101' },
     { name: 'FO2 Ana Reyes', initials: 'AR', rank: 'Fire Officer II', unit: 'Engine 1', shift: 'Day Shift', status: 'on-scene', statusLabel: 'On Scene', phone: '(036) 555-0102' },
