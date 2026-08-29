@@ -5,3 +5,4 @@
 # Local environment and debug output
 .env*
 *.log
+.vercel

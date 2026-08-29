@@ -557,53 +557,458 @@ const detailStyles = `
     margin: 0;
   }
 
-  /* Station-team dispatch sheet */
+  /* Station-team dispatch modal overlay */
   .mbfp-dispatch-backdrop {
     position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     inset: 0;
-    z-index: 70;
+    width: 100vw;
+    height: 100vh;
+    z-index: 99999999 !important;
     display: grid;
     place-items: center;
-    padding: 1rem;
-    background: rgba(15, 23, 42, 0.54);
-    backdrop-filter: blur(3px);
+    padding: clamp(0.75rem, 3vw, 1.5rem);
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-sizing: border-box;
+    animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .mbfp-dispatch-modal {
-    width: min(100%, 590px);
-    max-height: min(760px, calc(100vh - 2rem));
-    overflow: auto;
-    border: 1px solid #E2E8F0;
-    border-radius: 18px;
+    width: min(100%, 540px);
+    max-height: min(780px, calc(100dvh - 2.5rem));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    border-radius: 20px;
     background: #FFFFFF;
-    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.28);
+    box-shadow: 0 32px 80px -12px rgba(15, 23, 42, 0.42);
+    animation: mbfpModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  .mbfp-dispatch-header { padding: 1.15rem 1.25rem 0.9rem; border-bottom: 1px solid #E2E8F0; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-  .mbfp-dispatch-title { margin: 0; color: #0F172A; font-size: 1.1rem; font-weight: 850; display: flex; align-items: center; gap: 0.5rem; }
-  .mbfp-dispatch-title i { color: #DC2626; }
-  .mbfp-dispatch-subtitle { margin: 0.35rem 0 0; color: #64748B; font-size: 0.82rem; line-height: 1.45; font-weight: 600; }
-  .mbfp-dispatch-close { width: 34px; height: 34px; border-radius: 9px; border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569; cursor: pointer; }
-  .mbfp-dispatch-close:hover { background: #F8FAFC; color: #DC2626; }
-  .mbfp-dispatch-body { padding: 1rem 1.25rem; }
-  .mbfp-dispatch-all { width: 100%; display: flex; justify-content: space-between; gap: 1rem; align-items: center; padding: 0.85rem 0.95rem; border: 1px solid #FECACA; border-radius: 12px; background: #FFF7F7; color: #991B1B; cursor: pointer; text-align: left; }
-  .mbfp-dispatch-all strong { display: block; font-size: 0.86rem; }
-  .mbfp-dispatch-all span { display: block; margin-top: 0.15rem; font-size: 0.73rem; color: #B91C1C; }
-  .mbfp-dispatch-stations { display: grid; gap: 0.55rem; margin-top: 0.75rem; }
-  .mbfp-dispatch-station { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.78rem 0.9rem; border: 1px solid #E2E8F0; border-radius: 11px; background: #FFFFFF; color: #0F172A; cursor: pointer; text-align: left; }
-  .mbfp-dispatch-station.selected { border-color: #DC2626; background: #FFF7F7; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08); }
-  .mbfp-dispatch-station:disabled { cursor: not-allowed; opacity: 0.55; background: #F8FAFC; }
-  .mbfp-dispatch-station-name { font-size: 0.86rem; font-weight: 800; display: block; }
-  .mbfp-dispatch-station-meta { display: block; margin-top: 0.16rem; color: #64748B; font-size: 0.72rem; font-weight: 650; }
-  .mbfp-dispatch-count { white-space: nowrap; color: #047857; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 999px; padding: 0.24rem 0.48rem; font-size: 0.7rem; font-weight: 800; }
-  .mbfp-dispatch-empty, .mbfp-dispatch-error { margin: 0.75rem 0 0; border-radius: 10px; padding: 0.75rem 0.85rem; font-size: 0.78rem; font-weight: 700; }
-  .mbfp-dispatch-empty { background: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; }
-  .mbfp-dispatch-error { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
-  .mbfp-dispatch-footer { display: flex; justify-content: flex-end; gap: 0.65rem; padding: 0.9rem 1.25rem 1.15rem; border-top: 1px solid #E2E8F0; }
-  .mbfp-dispatch-cancel, .mbfp-dispatch-confirm { border-radius: 10px; padding: 0.65rem 0.9rem; font-size: 0.8rem; font-weight: 800; cursor: pointer; }
-  .mbfp-dispatch-cancel { border: 1px solid #CBD5E1; background: #FFFFFF; color: #334155; }
-  .mbfp-dispatch-confirm { border: 1px solid #DC2626; background: #DC2626; color: #FFFFFF; box-shadow: 0 3px 10px rgba(220, 38, 38, 0.22); }
-  .mbfp-dispatch-confirm:disabled { cursor: not-allowed; opacity: 0.55; }
+  @keyframes mbfpModalPop {
+    0% { opacity: 0; transform: scale(0.96) translateY(8px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .mbfp-dispatch-header {
+    padding: 1.25rem 1.4rem 1.1rem;
+    border-bottom: 1px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: #FAFCFE;
+  }
+
+  .mbfp-dispatch-header-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+  }
+
+  .mbfp-dispatch-icon-badge {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+    border: 1px solid #FCA5A5;
+    display: grid;
+    place-items: center;
+    color: #DC2626;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.12);
+  }
+
+  .mbfp-dispatch-title {
+    margin: 0;
+    color: #0F172A;
+    font-size: 1.15rem;
+    font-weight: 850;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+  }
+
+  .mbfp-dispatch-subtitle {
+    margin: 0.2rem 0 0;
+    color: #64748B;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    font-weight: 600;
+  }
+
+  .mbfp-dispatch-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid #E2E8F0;
+    background: #FFFFFF;
+    color: #64748B;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+  }
+
+  .mbfp-dispatch-close:hover {
+    background: #FEE2E2;
+    border-color: #FCA5A5;
+    color: #DC2626;
+    transform: rotate(90deg);
+  }
+
+  .mbfp-dispatch-body {
+    padding: 1.15rem 1.4rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .mbfp-dispatch-alert-dispatched {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.95rem;
+    border-radius: 12px;
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    color: #166534;
+  }
+
+  .mbfp-dispatch-dispatched-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #DCFCE7;
+    display: grid;
+    place-items: center;
+    color: #16A34A;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .mbfp-dispatch-alert-dispatched strong {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #15803D;
+  }
+
+  .mbfp-dispatch-alert-dispatched p {
+    margin: 0.1rem 0 0;
+    font-size: 0.75rem;
+    color: #166534;
+    font-weight: 600;
+  }
+
+  .mbfp-dispatch-all {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border: 1.5px solid #FEE2E2;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #FFF8F8 0%, #FFFFFF 100%);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mbfp-dispatch-all:hover:not(:disabled) {
+    border-color: #F87171;
+    background: #FFF1F2;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.08);
+  }
+
+  .mbfp-dispatch-all.is-active {
+    border-color: #DC2626;
+    background: #FEF2F2;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  }
+
+  .mbfp-dispatch-all:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    background: #F8FAFC;
+    border-color: #E2E8F0;
+  }
+
+  .mbfp-dispatch-all-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .mbfp-dispatch-all-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: #FEE2E2;
+    color: #DC2626;
+    display: grid;
+    place-items: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+
+  .mbfp-dispatch-all strong {
+    display: block;
+    font-size: 0.86rem;
+    font-weight: 800;
+    color: #991B1B;
+  }
+
+  .mbfp-dispatch-all span {
+    display: block;
+    margin-top: 0.12rem;
+    font-size: 0.72rem;
+    color: #B91C1C;
+    font-weight: 600;
+  }
+
+  .mbfp-custom-checkbox {
+    font-size: 1.25rem;
+    color: #DC2626;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  .mbfp-dispatch-stations {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .mbfp-dispatch-station {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    padding: 0.8rem 1rem;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 13px;
+    background: #FFFFFF;
+    color: #0F172A;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mbfp-dispatch-station:hover:not(:disabled) {
+    border-color: #CBD5E1;
+    background: #F8FAFC;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  }
+
+  .mbfp-dispatch-station.selected {
+    border-color: #DC2626;
+    background: linear-gradient(135deg, #FFF9F9 0%, #FFFFFF 100%);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1), 0 4px 14px rgba(220, 38, 38, 0.06);
+  }
+
+  .mbfp-dispatch-station.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background: #F8FAFC;
+  }
+
+  .mbfp-station-card-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .mbfp-station-badge-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #F1F5F9;
+    color: #64748B;
+    display: grid;
+    place-items: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    transition: all 0.18s ease;
+  }
+
+  .mbfp-station-badge-icon.is-selected {
+    background: #FEE2E2;
+    color: #DC2626;
+  }
+
+  .mbfp-station-info {
+    min-width: 0;
+  }
+
+  .mbfp-dispatch-station-name {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #0F172A;
+    display: block;
+    line-height: 1.25;
+  }
+
+  .mbfp-dispatch-station-meta {
+    display: block;
+    margin-top: 0.16rem;
+    color: #64748B;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .mbfp-station-card-right {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-shrink: 0;
+  }
+
+  .mbfp-dispatch-count {
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.22rem 0.55rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  .mbfp-dispatch-count.is-staffed {
+    color: #047857;
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+  }
+
+  .mbfp-dispatch-count.is-empty {
+    color: #64748B;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+  }
+
+  .mbfp-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .mbfp-station-check-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 1.5px solid #CBD5E1;
+    display: grid;
+    place-items: center;
+    background: #FFFFFF;
+    color: #FFFFFF;
+    font-size: 0.68rem;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mbfp-station-check-indicator.checked {
+    background: #DC2626;
+    border-color: #DC2626;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
+  }
+
+  .mbfp-dispatch-empty, .mbfp-dispatch-error {
+    margin: 0.35rem 0 0;
+    border-radius: 12px;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .mbfp-dispatch-empty {
+    background: #F8FAFC;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+    text-align: center;
+  }
+
+  .mbfp-dispatch-error {
+    background: #FEF2F2;
+    color: #B91C1C;
+    border: 1px solid #FECACA;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .mbfp-dispatch-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.4rem;
+    border-top: 1px solid #E2E8F0;
+    background: #FAFCFE;
+  }
+
+  .mbfp-dispatch-cancel {
+    border-radius: 11px;
+    padding: 0.62rem 1.1rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid #CBD5E1;
+    background: #FFFFFF;
+    color: #475569;
+    transition: all 0.18s ease;
+  }
+
+  .mbfp-dispatch-cancel:hover:not(:disabled) {
+    background: #F1F5F9;
+    color: #0F172A;
+    border-color: #94A3B8;
+  }
+
+  .mbfp-dispatch-confirm {
+    border-radius: 11px;
+    padding: 0.62rem 1.25rem;
+    font-size: 0.82rem;
+    font-weight: 800;
+    cursor: pointer;
+    border: 1px solid #DC2626;
+    background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+    color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.28);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mbfp-dispatch-confirm:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.36);
+  }
+
+  .mbfp-dispatch-confirm:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    transform: none;
+    box-shadow: none;
+  }
 
   /* PHOTO LIGHTBOX MODAL POPUP */
   .mbfp-lightbox-backdrop {
@@ -777,6 +1182,22 @@ export function MunicipalIncidentDetail({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!dispatchOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !sending) {
+        setDispatchOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [dispatchOpen, sending]);
 
   const load = useCallback(async () => {
     try {
@@ -1159,45 +1580,84 @@ export function MunicipalIncidentDetail({
       </main>
 
       {mounted && dispatchOpen && createPortal(
-        <div className="mbfp-dispatch-backdrop" role="presentation" onMouseDown={() => !sending && setDispatchOpen(false)}>
+        <div
+          className="mbfp-dispatch-backdrop"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget && !sending) setDispatchOpen(false);
+          }}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !sending) setDispatchOpen(false);
+          }}
+        >
           <section
             className="mbfp-dispatch-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="mbfp-dispatch-title"
+            onClick={(event) => event.stopPropagation()}
             onMouseDown={(event) => event.stopPropagation()}
           >
             <header className="mbfp-dispatch-header">
-              <div>
-                <h2 id="mbfp-dispatch-title" className="mbfp-dispatch-title">
+              <div className="mbfp-dispatch-header-title-row">
+                <div className="mbfp-dispatch-icon-badge">
                   <i className="fa-solid fa-truck-medical" />
-                  <span>Select station teams</span>
-                </h2>
-                <p className="mbfp-dispatch-subtitle">
-                  Every active BFP member at the selected station receives this incident in the mobile app and notification center.
-                </p>
+                </div>
+                <div>
+                  <h2 id="mbfp-dispatch-title" className="mbfp-dispatch-title">
+                    <span>Select station teams</span>
+                  </h2>
+                  <p className="mbfp-dispatch-subtitle">
+                    Alert available stations to dispatch responders.
+                  </p>
+                </div>
               </div>
-              <button className="mbfp-dispatch-close" type="button" onClick={() => setDispatchOpen(false)} disabled={sending} aria-label="Close station selection">
+              <button
+                className="mbfp-dispatch-close"
+                type="button"
+                onClick={() => setDispatchOpen(false)}
+                disabled={sending}
+                aria-label="Close station selection"
+              >
                 <i className="fa-solid fa-xmark" />
               </button>
             </header>
 
             <div className="mbfp-dispatch-body">
               {isResponding && (
-                <p className="mbfp-dispatch-empty">
-                  <i className="fa-solid fa-circle-check" /> This incident is already dispatched. Station teams can continue using their mobile route screen.
-                </p>
+                <div className="mbfp-dispatch-alert-dispatched">
+                  <div className="mbfp-dispatch-dispatched-icon">
+                    <i className="fa-solid fa-circle-check" />
+                  </div>
+                  <div>
+                    <strong>Incident Dispatched</strong>
+                    <p>Station teams are active on mobile navigation.</p>
+                  </div>
+                </div>
               )}
+
               {stationsLoading ? (
                 <BfpDataLoader theme="municipal" size="sm" title="Loading available stations" minHeight="190px" />
               ) : (
                 <>
-                  <button className="mbfp-dispatch-all" type="button" onClick={selectAllStations} disabled={!dispatchStations.some((station) => station.activePersonnelCount > 0)}>
-                    <span>
-                      <strong>Dispatch to all staffed stations</strong>
-                      <span>Send this alert to every available municipal station team.</span>
-                    </span>
-                    <i className={`fa-solid ${selectedStationIds.length === dispatchStations.filter((station) => station.activePersonnelCount > 0).length && selectedStationIds.length > 0 ? "fa-square-check" : "fa-square"}`} />
+                  <button
+                    className={`mbfp-dispatch-all ${selectedStationIds.length === dispatchStations.filter((station) => station.activePersonnelCount > 0).length && selectedStationIds.length > 0 ? "is-active" : ""}`}
+                    type="button"
+                    onClick={selectAllStations}
+                    disabled={!dispatchStations.some((station) => station.activePersonnelCount > 0)}
+                  >
+                    <div className="mbfp-dispatch-all-content">
+                      <div className="mbfp-dispatch-all-icon">
+                        <i className="fa-solid fa-layer-group" />
+                      </div>
+                      <div>
+                        <strong>Dispatch to all staffed stations</strong>
+                        <span>Alert all ready municipal stations</span>
+                      </div>
+                    </div>
+                    <div className="mbfp-custom-checkbox">
+                      <i className={`fa-solid ${selectedStationIds.length === dispatchStations.filter((station) => station.activePersonnelCount > 0).length && selectedStationIds.length > 0 ? "fa-square-check" : "fa-square"}`} />
+                    </div>
                   </button>
 
                   <div className="mbfp-dispatch-stations">
@@ -1208,32 +1668,73 @@ export function MunicipalIncidentDetail({
                         <button
                           key={station.id}
                           type="button"
-                          className={`mbfp-dispatch-station ${selected ? "selected" : ""}`}
+                          className={`mbfp-dispatch-station ${selected ? "selected" : ""} ${!staffed ? "is-disabled" : ""}`}
                           onClick={() => toggleStation(station.id)}
                           disabled={!staffed}
                           aria-pressed={selected}
                         >
-                          <span>
-                            <span className="mbfp-dispatch-station-name">{station.stationName}</span>
-                            <span className="mbfp-dispatch-station-meta">Station team receives the same live incident and route.</span>
-                          </span>
-                          <span className="mbfp-dispatch-count">{staffed ? `${station.activePersonnelCount} active` : "No active team"}</span>
+                          <div className="mbfp-station-card-left">
+                            <div className={`mbfp-station-badge-icon ${selected ? "is-selected" : ""}`}>
+                              <i className="fa-solid fa-building-shield" />
+                            </div>
+                            <div className="mbfp-station-info">
+                              <span className="mbfp-dispatch-station-name">{station.stationName}</span>
+                              <span className="mbfp-dispatch-station-meta">
+                                {staffed ? "Ready for live dispatch" : "Unavailable · No personnel on duty"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mbfp-station-card-right">
+                            <span className={`mbfp-dispatch-count ${staffed ? "is-staffed" : "is-empty"}`}>
+                              <span className="mbfp-status-dot" />
+                              {staffed ? `${station.activePersonnelCount} active` : "No active team"}
+                            </span>
+                            <div className={`mbfp-station-check-indicator ${selected ? "checked" : ""}`}>
+                              <i className={`fa-solid ${selected ? "fa-check" : ""}`} />
+                            </div>
+                          </div>
                         </button>
                       );
                     })}
                   </div>
 
-                  {!dispatchError && !dispatchStations.length && <p className="mbfp-dispatch-empty">No active municipal stations are ready to receive this incident.</p>}
-                  {dispatchError && <p className="mbfp-dispatch-error"><i className="fa-solid fa-circle-exclamation" /> {dispatchError}</p>}
+                  {!dispatchError && !dispatchStations.length && (
+                    <p className="mbfp-dispatch-empty">No active municipal stations are ready to receive this incident.</p>
+                  )}
+                  {dispatchError && (
+                    <p className="mbfp-dispatch-error"><i className="fa-solid fa-circle-exclamation" /> {dispatchError}</p>
+                  )}
                 </>
               )}
             </div>
 
             <footer className="mbfp-dispatch-footer">
-              <button className="mbfp-dispatch-cancel" type="button" onClick={() => setDispatchOpen(false)} disabled={sending}>Cancel</button>
+              <button className="mbfp-dispatch-cancel" type="button" onClick={() => setDispatchOpen(false)} disabled={sending}>
+                {isResponding ? "Close" : "Cancel"}
+              </button>
               {!isResponding && (
-                <button className="mbfp-dispatch-confirm" type="button" onClick={() => void respond()} disabled={sending || stationsLoading || selectedStationIds.length === 0}>
-                  {sending ? "Dispatching teams…" : `Dispatch ${selectedStationIds.length || ""} station team${selectedStationIds.length === 1 ? "" : "s"}`}
+                <button
+                  className="mbfp-dispatch-confirm"
+                  type="button"
+                  onClick={() => void respond()}
+                  disabled={sending || stationsLoading || selectedStationIds.length === 0}
+                >
+                  {sending ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin" />
+                      <span>Dispatching teams…</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-paper-plane" />
+                      <span>
+                        {selectedStationIds.length === 0
+                          ? "Select a Station"
+                          : `Dispatch ${selectedStationIds.length} Station Team${selectedStationIds.length === 1 ? "" : "s"}`}
+                      </span>
+                    </>
+                  )}
                 </button>
               )}
             </footer>
