@@ -1,81 +1,64 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getBfpIdentity } from "../../../../../../lib/auth/bfp-accounts";
-import { bfpSessionCookieName, verifyBfpSession } from "../../../../../../lib/auth/session";
-import { withTransaction } from "../../../../../../lib/db";
-import { canTransitionReportStatus } from "../../../../../../lib/fire-reports/validation";
-import type { FireReportStatus } from "../../../../../../lib/fire-reports/types";
-import {
-  createAccountNotifications,
-  listProvincialNotificationRecipients,
-} from "../../../../../../lib/notifications/service";
+import { isAuthorizationResponse, requireMunicipalAdmin } from "../../../../../../lib/municipal-bfp/auth";
+import { dispatchIncidentToStations, listDispatchableStations } from "../../../../../../lib/municipal-bfp/dispatch";
 
 export const runtime = "nodejs";
 
-export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
-  if (!session || session.role !== "MUNICIPAL_BFP") return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
+function validIncidentId(value: string) {
+  return /^[0-9a-f-]{36}$/i.test(value);
+}
+
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const identity = await requireMunicipalAdmin(request);
+  if (isAuthorizationResponse(identity)) return identity;
   const { id } = await context.params;
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid incident." }, { status: 400 });
+  if (!validIncidentId(id)) return NextResponse.json({ error: "Invalid incident." }, { status: 400 });
+
   try {
-    const identity = await getBfpIdentity(session.userId);
-    if (!identity?.municipalityId) return NextResponse.json({ error: "Your Municipal BFP assignment is not active." }, { status: 403 });
-    const incident = await withTransaction(async (client) => {
-      const current = await client.query<{ status: FireReportStatus; reference_number: string; resident_user_id: string }>(
-        `select fr.status, fr.reference_number, rp.user_id as resident_user_id
-           from fire_reports fr join resident_profiles rp on rp.id = fr.resident_profile_id
-          where fr.id = $1 and fr.municipality_id = $2 for update of fr`,
-        [id, identity.municipalityId],
-      );
-      if (!current.rowCount) throw new Error("NOT_FOUND");
-      if (!canTransitionReportStatus(current.rows[0].status, "RESPONDING")) throw new Error("INVALID_STATUS");
-      const now = new Date();
-      const stationName = `${identity.municipalityName ?? "Municipal"} BFP Station`;
-      await client.query(
-        `update fire_reports set status = 'RESPONDING', responding_bfp_user_id = $1, responding_station_name = $2,
-         response_started_at = $3, updated_at = $3 where id = $4`, [identity.userId, stationName, now, id],
-      );
-      await client.query(
-        `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)
-         values ($1,$2,'RESPONDING',$3,'BFP is responding to your fire report.',$4)`, [id, current.rows[0].status, identity.userId, now],
-      );
-      const report = current.rows[0];
-      await createAccountNotifications(client, {
-        recipientUserIds: [report.resident_user_id],
-        actorUserId: identity.userId,
-        eventType: "FIRE_RESPONSE_STARTED",
-        category: "RESPONSE",
-        title: "BFP is responding",
-        summary: `${report.reference_number} · ${identity.municipalityName ?? "Municipal BFP"}`,
-        actionHref: `/resident/reports/${id}`,
-        entityType: "fire_report",
-        entityId: id,
-        context: { reference: report.reference_number, stationName },
-        dedupeKey: `fire-report:${id}:responding`,
-        createdAt: now,
-      });
-      await createAccountNotifications(client, {
-        recipientUserIds: await listProvincialNotificationRecipients(client),
-        actorUserId: identity.userId,
-        eventType: "FIRE_RESPONSE_STARTED",
-        category: "RESPONSE",
-        title: "Municipal response started",
-        summary: `${report.reference_number} · ${identity.municipalityName ?? "Municipal BFP"}`,
-        actionHref: "/provincial-bfp/incidents",
-        entityType: "fire_report",
-        entityId: id,
-        context: { reference: report.reference_number, stationName },
-        dedupeKey: `fire-report:${id}:responding`,
-        createdAt: now,
-      });
-      return { status: "RESPONDING", responseStartedAt: now, stationName };
+    const stations = await listDispatchableStations(identity.municipalityId);
+    return NextResponse.json({ stations });
+  } catch (error) {
+    console.error("Municipal dispatch station list failed", error);
+    return NextResponse.json({ error: "Unable to load station dispatch choices." }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const identity = await requireMunicipalAdmin(request);
+  if (isAuthorizationResponse(identity)) return identity;
+  const { id } = await context.params;
+  if (!validIncidentId(id)) return NextResponse.json({ error: "Invalid incident." }, { status: 400 });
+
+  let body: { stationIds?: unknown; selectAllStations?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "A station selection is required." }, { status: 400 });
+  }
+  const stationIds = Array.isArray(body.stationIds) ? body.stationIds.filter((value): value is string => typeof value === "string") : [];
+  const selectAllStations = body.selectAllStations === true;
+
+  try {
+    const dispatch = await dispatchIncidentToStations({
+      fireReportId: id,
+      municipalityId: identity.municipalityId,
+      municipalityName: identity.municipalityName ?? "Municipal BFP",
+      actorUserId: identity.userId,
+      stationIds,
+      selectAllStations,
     });
-    return NextResponse.json({ incident });
+    return NextResponse.json({ dispatch }, { status: 201 });
   } catch (error) {
     const code = error instanceof Error ? error.message : "";
     if (code === "NOT_FOUND") return NextResponse.json({ error: "Incident not found in your municipality." }, { status: 404 });
-    if (code === "INVALID_STATUS") return NextResponse.json({ error: "This incident cannot be moved to responding." }, { status: 409 });
-    console.error("Municipal respond action failed", error);
-    return NextResponse.json({ error: "Unable to start the response." }, { status: 500 });
+    if (code === "INVALID_STATUS") return NextResponse.json({ error: "This incident cannot be dispatched in its current status." }, { status: 409 });
+    if (code === "STATION_SELECTION_REQUIRED") return NextResponse.json({ error: "Select at least one staffed, active station." }, { status: 400 });
+    if (code === "INVALID_STATION_SELECTION") return NextResponse.json({ error: "One or more selected stations are no longer available." }, { status: 409 });
+    if (code === "STATION_HAS_NO_ACTIVE_PERSONNEL") return NextResponse.json({ error: "Every selected station must have active BFP personnel." }, { status: 409 });
+    if (code === "INVALID_DISPATCH_INPUT") return NextResponse.json({ error: "Invalid dispatch selection." }, { status: 400 });
+    if ((error as { code?: string } | null)?.code === "23505") return NextResponse.json({ error: "This incident already has an active station dispatch." }, { status: 409 });
+    console.error("Municipal station dispatch failed", error);
+    return NextResponse.json({ error: "Unable to dispatch this incident." }, { status: 500 });
   }
 }

@@ -60,6 +60,7 @@ test("domain transactions emit connected notification events", () => {
   const combined = [
     "lib/fire-reports/service.ts",
     "app/api/municipal-bfp/incidents/[id]/respond/route.ts",
+    "lib/municipal-bfp/dispatch.ts",
     "lib/resident-applications/service.ts",
     "lib/auth/bfp-accounts.ts",
     "app/api/auth/register/route.ts",
@@ -68,7 +69,8 @@ test("domain transactions emit connected notification events", () => {
 
   for (const event of [
     "FIRE_REPORT_CREATED",
-    "FIRE_RESPONSE_STARTED",
+    "INCIDENT_DISPATCH_ASSIGNED",
+    "INCIDENT_DISPATCH_STATUS_CHANGED",
     "RESIDENT_APPLICATION_SUBMITTED",
     "RESIDENT_APPLICATION_RESUBMITTED",
     "RESIDENT_APPLICATION_APPROVED",

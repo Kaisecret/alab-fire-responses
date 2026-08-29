@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 import type { MunicipalIncident } from "./use-municipal-incident-feed";
 
@@ -43,10 +44,23 @@ function formatDate(value: string | null | undefined) {
 }
 
 export function MunicipalGisIncidentModal({ incidents, onClose }: { incidents: MunicipalIncident[]; onClose: () => void }) {
+  const [mounted, setMounted] = useState(false);
   const [requestedId, setSelectedId] = useState(incidents[0]?.id ?? "");
   const [detail, setDetail] = useState<IncidentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
   const selectedId = incidents.some((incident) => incident.id === requestedId) ? requestedId : (incidents[0]?.id ?? "");
   useEffect(() => {
@@ -80,10 +94,29 @@ export function MunicipalGisIncidentModal({ incidents, onClose }: { incidents: M
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose]);
 
+  if (!mounted || typeof document === "undefined") {
+    return null;
+  }
+
   const completion = detail?.history.slice().reverse().find((event) => terminalStatuses.has(event.status));
-  return (
-    <div className="mbfp-gis-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className="mbfp-gis-modal" role="dialog" aria-modal="true" aria-labelledby="municipal-gis-incident-title">
+  return createPortal(
+    <div
+      className="mbfp-gis-modal-backdrop"
+      role="presentation"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className="mbfp-gis-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="municipal-gis-incident-title"
+        onClick={(event) => event.stopPropagation()}
+      >
         <header className="mbfp-gis-modal-header">
           <div>
             <p className="mbfp-gis-modal-kicker">Municipality-secured incident record</p>
@@ -129,6 +162,7 @@ export function MunicipalGisIncidentModal({ incidents, onClose }: { incidents: M
           </div>
         )}
       </section>
-    </div>
+    </div>,
+    document.body
   );
 }

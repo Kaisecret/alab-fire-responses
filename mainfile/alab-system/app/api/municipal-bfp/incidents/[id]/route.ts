@@ -28,7 +28,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
          join resident_profiles rp on rp.id = fr.resident_profile_id join users u on u.id = rp.user_id
          left join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary = true
          left join barangays b on b.id = fr.barangay_id left join municipalities m on m.id = fr.municipality_id
-         left join municipal_bfp_stations s on s.municipality_id = fr.municipality_id
+         left join lateral (
+           select station_name, latitude, longitude
+             from municipal_bfp_stations
+            where municipality_id = fr.municipality_id and status = 'ACTIVE'
+            order by created_at asc
+            limit 1
+         ) s on true
         where fr.id = $1 and fr.municipality_id = $2 limit 1`, [id, identity.municipalityId],
     );
     const incident = incidentResult.rows[0];

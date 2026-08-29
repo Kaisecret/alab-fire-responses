@@ -1,5 +1,6 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const styles = `
   .mbfp-page { padding: 1.2rem 1.5rem 2rem; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -31,7 +32,7 @@ const styles = `
   .mbfp-ft-status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
   /* MODAL STYLES */
-  .mbfp-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 9999; animation: fadeIn 0.2s ease; }
+  .mbfp-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; inset: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999999 !important; padding: 1.5rem; box-sizing: border-box; animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
   .mbfp-modal-content { background: white; width: 90%; max-width: 500px; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid #e5e7eb; }
   .mbfp-modal-header { padding: 1.2rem 1.5rem; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
   .mbfp-modal-header h2 { font-size: 1.2rem; font-weight: 800; color: #1f2937; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
@@ -184,8 +185,13 @@ const styles = `
 `;
 
 export default function FiretrucksPage() {
+  const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [trucks, setTrucks] = useState([
     { name: 'Engine 1', plate: 'BFP-SJ-001', type: 'Pumper', capacity: '3,000 L', crew: '4 Personnel', station: 'Poblacion', status: 'available', statusLabel: 'Available', lastService: 'Jul 28, 2025' },
@@ -267,7 +273,7 @@ export default function FiretrucksPage() {
       </div>
 
       {/* Add Modal */}
-      {isModalOpen && (
+      {mounted && isModalOpen && createPortal(
         <div className="mbfp-modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="mbfp-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="mbfp-modal-header">
@@ -369,11 +375,12 @@ export default function FiretrucksPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ULTRA-PREMIUM ROTATING NEON FIRE LOADER (NO BG / 3 SECONDS) */}
-      {isLoading && (
+      {mounted && isLoading && createPortal(
         <div className="mbfp-fire-loader-overlay">
           <div className="mbfp-fire-loader-stage">
             {/* Outer Spinning Neon Ring */}
@@ -398,7 +405,8 @@ export default function FiretrucksPage() {
               className="mbfp-fire-logo-img"
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

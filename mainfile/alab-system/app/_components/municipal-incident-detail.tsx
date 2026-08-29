@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { MunicipalIncidentMap } from "./municipal-incident-map";
 import { BfpDataLoader } from "./bfp-data-loader";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
@@ -31,6 +32,14 @@ type Incident = {
   photos: Array<{ url: string | null }>;
   history: Array<{ status: FireReportStatus; message: string | null; createdAt: string }>;
   previousReports: Array<{ id: string; referenceNumber: string; status: FireReportStatus; submittedAt: string }>;
+};
+
+type DispatchStation = {
+  id: string;
+  stationName: string;
+  latitude: number;
+  longitude: number;
+  activePersonnelCount: number;
 };
 
 const detailStyles = `
@@ -544,6 +553,54 @@ const detailStyles = `
     margin: 0;
   }
 
+  /* Station-team dispatch sheet */
+  .mbfp-dispatch-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.54);
+    backdrop-filter: blur(3px);
+  }
+
+  .mbfp-dispatch-modal {
+    width: min(100%, 590px);
+    max-height: min(760px, calc(100vh - 2rem));
+    overflow: auto;
+    border: 1px solid #E2E8F0;
+    border-radius: 18px;
+    background: #FFFFFF;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.28);
+  }
+
+  .mbfp-dispatch-header { padding: 1.15rem 1.25rem 0.9rem; border-bottom: 1px solid #E2E8F0; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .mbfp-dispatch-title { margin: 0; color: #0F172A; font-size: 1.1rem; font-weight: 850; display: flex; align-items: center; gap: 0.5rem; }
+  .mbfp-dispatch-title i { color: #DC2626; }
+  .mbfp-dispatch-subtitle { margin: 0.35rem 0 0; color: #64748B; font-size: 0.82rem; line-height: 1.45; font-weight: 600; }
+  .mbfp-dispatch-close { width: 34px; height: 34px; border-radius: 9px; border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569; cursor: pointer; }
+  .mbfp-dispatch-close:hover { background: #F8FAFC; color: #DC2626; }
+  .mbfp-dispatch-body { padding: 1rem 1.25rem; }
+  .mbfp-dispatch-all { width: 100%; display: flex; justify-content: space-between; gap: 1rem; align-items: center; padding: 0.85rem 0.95rem; border: 1px solid #FECACA; border-radius: 12px; background: #FFF7F7; color: #991B1B; cursor: pointer; text-align: left; }
+  .mbfp-dispatch-all strong { display: block; font-size: 0.86rem; }
+  .mbfp-dispatch-all span { display: block; margin-top: 0.15rem; font-size: 0.73rem; color: #B91C1C; }
+  .mbfp-dispatch-stations { display: grid; gap: 0.55rem; margin-top: 0.75rem; }
+  .mbfp-dispatch-station { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.78rem 0.9rem; border: 1px solid #E2E8F0; border-radius: 11px; background: #FFFFFF; color: #0F172A; cursor: pointer; text-align: left; }
+  .mbfp-dispatch-station.selected { border-color: #DC2626; background: #FFF7F7; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08); }
+  .mbfp-dispatch-station:disabled { cursor: not-allowed; opacity: 0.55; background: #F8FAFC; }
+  .mbfp-dispatch-station-name { font-size: 0.86rem; font-weight: 800; display: block; }
+  .mbfp-dispatch-station-meta { display: block; margin-top: 0.16rem; color: #64748B; font-size: 0.72rem; font-weight: 650; }
+  .mbfp-dispatch-count { white-space: nowrap; color: #047857; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 999px; padding: 0.24rem 0.48rem; font-size: 0.7rem; font-weight: 800; }
+  .mbfp-dispatch-empty, .mbfp-dispatch-error { margin: 0.75rem 0 0; border-radius: 10px; padding: 0.75rem 0.85rem; font-size: 0.78rem; font-weight: 700; }
+  .mbfp-dispatch-empty { background: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; }
+  .mbfp-dispatch-error { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+  .mbfp-dispatch-footer { display: flex; justify-content: flex-end; gap: 0.65rem; padding: 0.9rem 1.25rem 1.15rem; border-top: 1px solid #E2E8F0; }
+  .mbfp-dispatch-cancel, .mbfp-dispatch-confirm { border-radius: 10px; padding: 0.65rem 0.9rem; font-size: 0.8rem; font-weight: 800; cursor: pointer; }
+  .mbfp-dispatch-cancel { border: 1px solid #CBD5E1; background: #FFFFFF; color: #334155; }
+  .mbfp-dispatch-confirm { border: 1px solid #DC2626; background: #DC2626; color: #FFFFFF; box-shadow: 0 3px 10px rgba(220, 38, 38, 0.22); }
+  .mbfp-dispatch-confirm:disabled { cursor: not-allowed; opacity: 0.55; }
+
   /* PHOTO LIGHTBOX MODAL POPUP */
   .mbfp-lightbox-backdrop {
     position: fixed;
@@ -551,13 +608,18 @@ const detailStyles = `
     left: 0;
     right: 0;
     bottom: 0;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
     background: rgba(15, 23, 42, 0.88);
     backdrop-filter: blur(12px);
-    z-index: 9999;
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 99999999 !important;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 1.5rem;
+    box-sizing: border-box;
     animation: mbfpLightboxFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
@@ -697,10 +759,20 @@ export function MunicipalIncidentDetail({
   onBack?: () => void;
   onResponded?: () => void;
 }) {
+  const [mounted, setMounted] = useState(false);
   const [incident, setIncident] = useState<Incident | null>(null);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [dispatchOpen, setDispatchOpen] = useState(false);
+  const [dispatchStations, setDispatchStations] = useState<DispatchStation[]>([]);
+  const [selectedStationIds, setSelectedStationIds] = useState<string[]>([]);
+  const [stationsLoading, setStationsLoading] = useState(false);
+  const [dispatchError, setDispatchError] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -718,17 +790,52 @@ export function MunicipalIncidentDetail({
     return () => window.clearTimeout(initialLoad);
   }, [load]);
 
+  const openDispatch = async () => {
+    setDispatchOpen(true);
+    setDispatchError("");
+    setSelectedStationIds([]);
+    setStationsLoading(true);
+    try {
+      const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}/respond`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to load station choices");
+      setDispatchStations(Array.isArray(data.stations) ? data.stations : []);
+    } catch (e) {
+      setDispatchError(e instanceof Error ? e.message : "Unable to load station choices.");
+    } finally {
+      setStationsLoading(false);
+    }
+  };
+
+  const toggleStation = (stationId: string) => {
+    setSelectedStationIds((current) => current.includes(stationId)
+      ? current.filter((id) => id !== stationId)
+      : [...current, stationId]);
+  };
+
+  const selectAllStations = () => {
+    const staffedIds = dispatchStations.filter((station) => station.activePersonnelCount > 0).map((station) => station.id);
+    setSelectedStationIds((current) => current.length === staffedIds.length ? [] : staffedIds);
+  };
+
   const respond = async () => {
     setSending(true);
-    setError("");
+    setDispatchError("");
     try {
-      const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}/respond`, { method: "POST" });
+      const staffedIds = dispatchStations.filter((station) => station.activePersonnelCount > 0).map((station) => station.id);
+      const selectAllStations = staffedIds.length > 0 && selectedStationIds.length === staffedIds.length;
+      const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}/respond`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stationIds: selectedStationIds, selectAllStations }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to start response");
       await load();
+      setDispatchOpen(false);
       onResponded?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to start response.");
+      setDispatchError(e instanceof Error ? e.message : "Unable to start response.");
     } finally {
       setSending(false);
     }
@@ -834,8 +941,8 @@ export function MunicipalIncidentDetail({
           <button
             className={`mbfp-respond-btn ${isResponding ? "active-responding" : ""}`}
             disabled={sending || isResponding}
-            onClick={respond}
-            aria-label="Acknowledge and initiate BFP response"
+            onClick={() => void openDispatch()}
+            aria-label="Choose station teams for BFP response"
           >
             {sending ? (
               <>
@@ -1047,8 +1154,85 @@ export function MunicipalIncidentDetail({
         </div>
       </main>
 
+      {mounted && dispatchOpen && createPortal(
+        <div className="mbfp-dispatch-backdrop" role="presentation" onMouseDown={() => !sending && setDispatchOpen(false)}>
+          <section
+            className="mbfp-dispatch-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mbfp-dispatch-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="mbfp-dispatch-header">
+              <div>
+                <h2 id="mbfp-dispatch-title" className="mbfp-dispatch-title">
+                  <i className="fa-solid fa-truck-medical" />
+                  <span>Select station teams</span>
+                </h2>
+                <p className="mbfp-dispatch-subtitle">
+                  Every active BFP member at the selected station receives this incident in the mobile app and notification center.
+                </p>
+              </div>
+              <button className="mbfp-dispatch-close" type="button" onClick={() => setDispatchOpen(false)} disabled={sending} aria-label="Close station selection">
+                <i className="fa-solid fa-xmark" />
+              </button>
+            </header>
+
+            <div className="mbfp-dispatch-body">
+              {stationsLoading ? (
+                <BfpDataLoader theme="municipal" size="sm" title="Loading available stations" minHeight="190px" />
+              ) : (
+                <>
+                  <button className="mbfp-dispatch-all" type="button" onClick={selectAllStations} disabled={!dispatchStations.some((station) => station.activePersonnelCount > 0)}>
+                    <span>
+                      <strong>Dispatch to all staffed stations</strong>
+                      <span>Send this alert to every available municipal station team.</span>
+                    </span>
+                    <i className={`fa-solid ${selectedStationIds.length === dispatchStations.filter((station) => station.activePersonnelCount > 0).length && selectedStationIds.length > 0 ? "fa-square-check" : "fa-square"}`} />
+                  </button>
+
+                  <div className="mbfp-dispatch-stations">
+                    {dispatchStations.map((station) => {
+                      const selected = selectedStationIds.includes(station.id);
+                      const staffed = station.activePersonnelCount > 0;
+                      return (
+                        <button
+                          key={station.id}
+                          type="button"
+                          className={`mbfp-dispatch-station ${selected ? "selected" : ""}`}
+                          onClick={() => toggleStation(station.id)}
+                          disabled={!staffed}
+                          aria-pressed={selected}
+                        >
+                          <span>
+                            <span className="mbfp-dispatch-station-name">{station.stationName}</span>
+                            <span className="mbfp-dispatch-station-meta">Station team receives the same live incident and route.</span>
+                          </span>
+                          <span className="mbfp-dispatch-count">{staffed ? `${station.activePersonnelCount} active` : "No active team"}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {!dispatchError && !dispatchStations.length && <p className="mbfp-dispatch-empty">No active municipal stations are ready to receive this incident.</p>}
+                  {dispatchError && <p className="mbfp-dispatch-error"><i className="fa-solid fa-circle-exclamation" /> {dispatchError}</p>}
+                </>
+              )}
+            </div>
+
+            <footer className="mbfp-dispatch-footer">
+              <button className="mbfp-dispatch-cancel" type="button" onClick={() => setDispatchOpen(false)} disabled={sending}>Cancel</button>
+              <button className="mbfp-dispatch-confirm" type="button" onClick={() => void respond()} disabled={sending || stationsLoading || selectedStationIds.length === 0}>
+                {sending ? "Dispatching teams…" : `Dispatch ${selectedStationIds.length || ""} station team${selectedStationIds.length === 1 ? "" : "s"}`}
+              </button>
+            </footer>
+          </section>
+        </div>,
+        document.body,
+      )}
+
       {/* Full Photo Evidence Lightbox Modal Popup */}
-      {selectedPhoto && (
+      {mounted && selectedPhoto && createPortal(
         <div
           className="mbfp-lightbox-backdrop"
           onClick={() => setSelectedPhoto(null)}
@@ -1060,7 +1244,7 @@ export function MunicipalIncidentDetail({
             <header className="mbfp-lightbox-header">
               <h3 className="mbfp-lightbox-title">
                 <i className="fa-solid fa-image" style={{ color: "#DC2626" }} />
-                <span>Incident Photo Evidence — {incident.referenceNumber}</span>
+                <span>Incident Photo Evidence — {incident?.referenceNumber || ""}</span>
               </h3>
               <button
                 className="mbfp-lightbox-close-btn"
@@ -1078,7 +1262,7 @@ export function MunicipalIncidentDetail({
             <footer className="mbfp-lightbox-footer">
               <span>
                 <i className="fa-solid fa-camera" style={{ marginRight: "0.4rem" }} />
-                Uploaded by resident ({incident.residentName}) at {new Date(incident.submittedAt).toLocaleTimeString()}
+                Uploaded by resident ({incident?.residentName || "Resident"}) at {incident?.submittedAt ? new Date(incident.submittedAt).toLocaleTimeString() : ""}
               </span>
               <a
                 href={selectedPhoto}
@@ -1091,7 +1275,8 @@ export function MunicipalIncidentDetail({
               </a>
             </footer>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
