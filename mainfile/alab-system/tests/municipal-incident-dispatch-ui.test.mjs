@@ -13,3 +13,10 @@ test("municipal incident response opens a station-team dispatch sheet", () => {
   assert.match(component, /stationIds/);
   assert.match(component, /mbfp-dispatch-modal/);
 });
+
+test("an active response keeps its green status control available for inspection", () => {
+  const component = readFileSync(join(process.cwd(), "app", "_components", "municipal-incident-detail.tsx"), "utf8");
+  assert.match(component, /VIEW DISPATCH STATUS/);
+  assert.match(component, /onClick=\{\(\) => void openDispatch\(\)\}/);
+  assert.doesNotMatch(component, /disabled=\{sending \|\| isResponding\}/);
+});

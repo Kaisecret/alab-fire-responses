@@ -220,7 +220,11 @@ const detailStyles = `
   .mbfp-respond-btn.active-responding {
     background: #059669;
     box-shadow: 0 4px 14px rgba(5, 150, 105, 0.28);
-    cursor: default;
+  }
+
+  .mbfp-respond-btn.active-responding:hover:not(:disabled) {
+    background: #047857;
+    box-shadow: 0 6px 20px rgba(5, 150, 105, 0.38);
   }
 
   .mbfp-respond-btn:disabled {
@@ -940,9 +944,9 @@ export function MunicipalIncidentDetail({
 
           <button
             className={`mbfp-respond-btn ${isResponding ? "active-responding" : ""}`}
-            disabled={sending || isResponding}
+            disabled={sending}
             onClick={() => void openDispatch()}
-            aria-label="Choose station teams for BFP response"
+            aria-label={isResponding ? "View active BFP dispatch status" : "Choose station teams for BFP response"}
           >
             {sending ? (
               <>
@@ -952,7 +956,7 @@ export function MunicipalIncidentDetail({
             ) : isResponding ? (
               <>
                 <i className="fa-solid fa-truck-fast" />
-                <span>BFP CURRENTLY RESPONDING</span>
+                <span>VIEW DISPATCH STATUS</span>
               </>
             ) : (
               <>
@@ -1179,6 +1183,11 @@ export function MunicipalIncidentDetail({
             </header>
 
             <div className="mbfp-dispatch-body">
+              {isResponding && (
+                <p className="mbfp-dispatch-empty">
+                  <i className="fa-solid fa-circle-check" /> This incident is already dispatched. Station teams can continue using their mobile route screen.
+                </p>
+              )}
               {stationsLoading ? (
                 <BfpDataLoader theme="municipal" size="sm" title="Loading available stations" minHeight="190px" />
               ) : (
@@ -1222,9 +1231,11 @@ export function MunicipalIncidentDetail({
 
             <footer className="mbfp-dispatch-footer">
               <button className="mbfp-dispatch-cancel" type="button" onClick={() => setDispatchOpen(false)} disabled={sending}>Cancel</button>
-              <button className="mbfp-dispatch-confirm" type="button" onClick={() => void respond()} disabled={sending || stationsLoading || selectedStationIds.length === 0}>
-                {sending ? "Dispatching teams…" : `Dispatch ${selectedStationIds.length || ""} station team${selectedStationIds.length === 1 ? "" : "s"}`}
-              </button>
+              {!isResponding && (
+                <button className="mbfp-dispatch-confirm" type="button" onClick={() => void respond()} disabled={sending || stationsLoading || selectedStationIds.length === 0}>
+                  {sending ? "Dispatching teams…" : `Dispatch ${selectedStationIds.length || ""} station team${selectedStationIds.length === 1 ? "" : "s"}`}
+                </button>
+              )}
             </footer>
           </section>
         </div>,
