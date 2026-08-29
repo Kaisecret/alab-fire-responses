@@ -7,6 +7,7 @@ import { getDatabase, withTransaction } from "../db";
 import { canTransitionReportStatus } from "../fire-reports/validation";
 import type { FireReportStatus } from "../fire-reports/types";
 import { createAccountNotifications, listProvincialNotificationRecipients } from "../notifications/service";
+import { sendDispatchPush } from "../notifications/fcm";
 
 type Queryable = Pick<PoolClient, "query">;
 
@@ -88,7 +89,7 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
     throw new Error("INVALID_DISPATCH_INPUT");
   }
 
-  return withTransaction(async (client) => {
+  const dispatch = await withTransaction(async (client) => {
     const current = await client.query<{
       status: FireReportStatus;
       reference_number: string;
@@ -218,13 +219,18 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
 
     return {
       dispatchId,
+      fireReportId: input.fireReportId,
       status: "RESPONDING" as const,
       dispatchedAt: now,
       stationCount: stations.length,
       recipientCount: recipientUserIds.length,
       stationNames: stations.map((station) => station.station_name),
+      recipientUserIds,
+      referenceNumber: report.reference_number,
     };
   });
+  void sendDispatchPush(dispatch).catch((error) => console.error("Dispatch FCM send failed", error));
+  return dispatch;
 }
 
 export type MobileDispatchAssignment = {

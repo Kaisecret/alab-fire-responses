@@ -12,6 +12,8 @@ Keep the existing ALAB BFP mobile visual design while replacing its hard-coded d
 - Replace dashboard demo counts, featured incident, alert modal rows, and assignment preview with live assignment data or an honest empty state.
 - Replace the painted demo map markers and fixed route with a real OpenStreetMap tile map centered on the active assignment's report latitude/longitude.
 - Display the actual incident marker and, when location permission is granted, the responder's current location marker. The route action remains the existing dispatch acknowledgement; routing instructions are not fabricated.
+- Register each authenticated BFP phone's FCM token and refresh its registration when Firebase rotates the token.
+- Send each registered recipient phone an Android FCM notification when its station is dispatched.
 
 ## Data Flow
 
@@ -19,6 +21,7 @@ Keep the existing ALAB BFP mobile visual design while replacing its hard-coded d
 2. The API returns only the dispatch-recipient records belonging to that user.
 3. A shared assignment controller/cached future exposes loading, ready, empty, and error states to the existing Home, Incidents, and Map tabs.
 4. The map reads the first current assignment. If none exists, it retains the current visual frame but states that no active destination is assigned.
+5. After sign-in or session restore, the client posts its FCM token to a protected mobile API. The server saves it in `bfp_mobile_devices` and sends dispatch alerts using Firebase Admin and a production-only secret.
 
 ## Error Handling
 
@@ -29,7 +32,7 @@ Keep the existing ALAB BFP mobile visual design while replacing its hard-coded d
 ## Constraints
 
 - Do not alter the server dispatch schema or create duplicate dispatch notifications.
-- Do not add FCM phone-push delivery in this change; it needs a Firebase server credential and a token-registration endpoint.
+- Store the Firebase Admin service-account JSON only as Vercel's protected `FIREBASE_SERVICE_ACCOUNT_JSON` variable; never commit, log, or expose it to Flutter.
 - OpenStreetMap is used only for map tiles; no API key is required.
 - The feature must work on the existing Android Flutter app and keep the existing UI design intact.
 
