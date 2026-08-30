@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { MunicipalIncidentMap } from "./municipal-incident-map";
 import { BfpDataLoader } from "./bfp-data-loader";
+import { canMunicipalResolveReport } from "../../lib/fire-reports/validation";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 
 type Incident = {
@@ -1381,6 +1382,7 @@ export function MunicipalIncidentDetail({
   }
 
   const isResponding = incident.status === "RESPONDING";
+  const canResolve = canMunicipalResolveReport(incident.status);
   const isTerminal = ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(incident.status);
   const evidencePhoto = incident.photos.find((p) => p.url)?.url;
 
@@ -1449,7 +1451,7 @@ export function MunicipalIncidentDetail({
                 </>
               )}
             </button>
-            {isResponding && (
+            {canResolve && (
               <button
                 className="mbfp-resolve-btn"
                 type="button"

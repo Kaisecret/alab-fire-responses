@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 
 import { getDatabase, withTransaction } from "../db";
-import { canTransitionReportStatus } from "../fire-reports/validation";
+import { canMunicipalResolveReport, canTransitionReportStatus } from "../fire-reports/validation";
 import type { FireReportStatus } from "../fire-reports/types";
 import { createAccountNotifications, listProvincialNotificationRecipients } from "../notifications/service";
 import { sendDispatchPush } from "../notifications/fcm";
@@ -428,7 +428,7 @@ export async function resolveMunicipalIncident(input: {
     );
     if (!current.rowCount) throw new Error("NOT_FOUND");
     const row = current.rows[0];
-    if (row.status !== "RESPONDING" || !canTransitionReportStatus(row.status, "RESOLVED")) {
+    if (!canMunicipalResolveReport(row.status) || !canTransitionReportStatus(row.status, "RESOLVED")) {
       throw new Error("INVALID_STATUS");
     }
     const now = new Date();

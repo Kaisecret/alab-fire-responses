@@ -3,6 +3,12 @@ import type { FireReportStatus, FireType } from "./types";
 const fireTypes = new Set<FireType>(["HOUSE_BUILDING", "GRASS", "FOREST", "VEHICLE", "OTHER"]);
 const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const terminalStatuses = new Set<FireReportStatus>(["RESOLVED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "CLOSED"]);
+const municipalResolutionStatuses = new Set<FireReportStatus>([
+  "RESPONDING",
+  "FIRETRUCK_DISPATCHED",
+  "RESPONDER_ARRIVED",
+  "UNDER_CONTROL",
+]);
 
 export type FireReportInput = {
   fireType: FireType;
@@ -87,4 +93,8 @@ export function canTransitionReportStatus(current: FireReportStatus, next: FireR
   if (terminalStatuses.has(current)) return false;
   if (next === "RESPONDING") return ["SUBMITTED", "PENDING_VERIFICATION", "UNDER_VERIFICATION", "VERIFIED", "CONFIRMED"].includes(current);
   return current !== next;
+}
+
+export function canMunicipalResolveReport(status: FireReportStatus) {
+  return municipalResolutionStatuses.has(status);
 }

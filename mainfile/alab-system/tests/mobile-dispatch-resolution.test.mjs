@@ -12,7 +12,8 @@ test("BFP mobile dispatches cannot resolve incidents", () => {
   assert.doesNotMatch(route, /RESOLVE_INCIDENT/);
   assert.doesNotMatch(route, /resolveDispatchIncident/);
   assert.match(service, /resolveMunicipalIncident/);
-  assert.match(service, /row\.status !== "RESPONDING"/);
+  assert.match(service, /canMunicipalResolveReport/);
+  assert.doesNotMatch(service, /row\.status !== "RESPONDING"/);
   assert.match(service, /update incident_dispatches\s+set status = 'COMPLETED'/);
   assert.doesNotMatch(service, /resolved_at/);
 });
