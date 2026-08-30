@@ -231,6 +231,37 @@ const detailStyles = `
     opacity: 0.85;
   }
 
+  .mbfp-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+
+  .mbfp-resolve-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.15rem;
+    border: 1px solid #FCA5A5;
+    border-radius: 8px;
+    background: #FFF1F2;
+    color: #BE123C;
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mbfp-resolve-btn:hover:not(:disabled) {
+    background: #FFE4E6;
+    border-color: #FB7185;
+    transform: translateY(-1.5px);
+  }
+
+  .mbfp-resolve-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
   /* 2-Column Tactical Layout Grid (Exact Provincial Spacing) */
   .mbfp-tactical-grid {
     display: grid;
@@ -1156,6 +1187,8 @@ const detailStyles = `
       width: 100%;
       justify-content: center;
     }
+    .mbfp-hero-actions { width: 100%; }
+    .mbfp-resolve-btn { flex: 1; justify-content: center; }
   }
 `;
 
@@ -1174,6 +1207,7 @@ export function MunicipalIncidentDetail({
   const [sending, setSending] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [dispatchOpen, setDispatchOpen] = useState(false);
+  const [resolveOpen, setResolveOpen] = useState(false);
   const [dispatchStations, setDispatchStations] = useState<DispatchStation[]>([]);
   const [selectedStationIds, setSelectedStationIds] = useState<string[]>([]);
   const [stationsLoading, setStationsLoading] = useState(false);
@@ -1184,12 +1218,13 @@ export function MunicipalIncidentDetail({
   }, []);
 
   useEffect(() => {
-    if (!dispatchOpen) return;
+    if (!dispatchOpen && !resolveOpen) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !sending) {
         setDispatchOpen(false);
+        setResolveOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -1197,7 +1232,7 @@ export function MunicipalIncidentDetail({
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [dispatchOpen, sending]);
+  }, [dispatchOpen, resolveOpen, sending]);
 
   const load = useCallback(async () => {
     try {
@@ -1266,6 +1301,23 @@ export function MunicipalIncidentDetail({
     }
   };
 
+  const resolveIncident = async () => {
+    setSending(true);
+    setDispatchError("");
+    try {
+      const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}/resolve`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to resolve this incident");
+      await load();
+      setResolveOpen(false);
+      onResponded?.();
+    } catch (e) {
+      setDispatchError(e instanceof Error ? e.message : "Unable to resolve this incident.");
+    } finally {
+      setSending(false);
+    }
+  };
+
   // Close lightbox on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1320,6 +1372,7 @@ export function MunicipalIncidentDetail({
   }
 
   const isResponding = incident.status === "RESPONDING";
+  const isTerminal = ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(incident.status);
   const evidencePhoto = incident.photos.find((p) => p.url)?.url;
 
   return (
@@ -1363,29 +1416,42 @@ export function MunicipalIncidentDetail({
             </div>
           </div>
 
-          <button
-            className={`mbfp-respond-btn ${isResponding ? "active-responding" : ""}`}
-            disabled={sending}
-            onClick={() => void openDispatch()}
-            aria-label={isResponding ? "View active BFP dispatch status" : "Choose station teams for BFP response"}
-          >
-            {sending ? (
-              <>
-                <i className="fa-solid fa-arrows-rotate spin" />
-                <span>Dispatching Response…</span>
-              </>
-            ) : isResponding ? (
-              <>
-                <i className="fa-solid fa-truck-fast" />
-                <span>VIEW DISPATCH STATUS</span>
-              </>
-            ) : (
-              <>
-                <i className="fa-solid fa-bell" />
-                <span>ACKNOWLEDGE &amp; RESPOND</span>
-              </>
+          {!isTerminal && <div className="mbfp-hero-actions">
+            <button
+              className={`mbfp-respond-btn ${isResponding ? "active-responding" : ""}`}
+              disabled={sending}
+              onClick={() => void openDispatch()}
+              aria-label={isResponding ? "View active BFP dispatch status" : "Choose station teams for BFP response"}
+            >
+              {sending ? (
+                <>
+                  <i className="fa-solid fa-arrows-rotate spin" />
+                  <span>Dispatching Response…</span>
+                </>
+              ) : isResponding ? (
+                <>
+                  <i className="fa-solid fa-truck-fast" />
+                  <span>VIEW DISPATCH STATUS</span>
+                </>
+              ) : (
+                <>
+                  <i className="fa-solid fa-bell" />
+                  <span>ACKNOWLEDGE &amp; RESPOND</span>
+                </>
+              )}
+            </button>
+            {isResponding && (
+              <button
+                className="mbfp-resolve-btn"
+                type="button"
+                disabled={sending}
+                onClick={() => { setDispatchError(""); setResolveOpen(true); }}
+              >
+                <i className="fa-solid fa-circle-check" />
+                <span>RESOLVE INCIDENT</span>
+              </button>
             )}
-          </button>
+          </div>}
         </header>
 
         {/* Tactical 2-Column Grid */}
@@ -1737,6 +1803,46 @@ export function MunicipalIncidentDetail({
                   )}
                 </button>
               )}
+            </footer>
+          </section>
+        </div>,
+        document.body,
+      )}
+
+      {mounted && resolveOpen && createPortal(
+        <div
+          className="mbfp-dispatch-backdrop"
+          role="presentation"
+          onClick={(event) => { if (event.target === event.currentTarget && !sending) setResolveOpen(false); }}
+        >
+          <section className="mbfp-dispatch-modal" role="dialog" aria-modal="true" aria-labelledby="mbfp-resolve-title">
+            <header className="mbfp-dispatch-header">
+              <div className="mbfp-dispatch-header-title-row">
+                <div className="mbfp-dispatch-icon-badge"><i className="fa-solid fa-circle-check" /></div>
+                <div>
+                  <h2 id="mbfp-resolve-title" className="mbfp-dispatch-title">Resolve this incident?</h2>
+                  <p className="mbfp-dispatch-subtitle">Municipal Operations closure</p>
+                </div>
+              </div>
+              <button className="mbfp-dispatch-close" type="button" onClick={() => setResolveOpen(false)} disabled={sending} aria-label="Close resolution confirmation">
+                <i className="fa-solid fa-xmark" />
+              </button>
+            </header>
+            <div className="mbfp-dispatch-body">
+              <div className="mbfp-dispatch-alert-dispatched">
+                <div className="mbfp-dispatch-dispatched-icon"><i className="fa-solid fa-building-shield" /></div>
+                <div>
+                  <strong>Municipal approval required</strong>
+                  <p>Confirm that {incident.referenceNumber} is resolved. Active BFP dispatches will be completed and the resident will be updated.</p>
+                </div>
+              </div>
+              {dispatchError && <p className="mbfp-dispatch-error"><i className="fa-solid fa-circle-exclamation" /> {dispatchError}</p>}
+            </div>
+            <footer className="mbfp-dispatch-footer">
+              <button className="mbfp-dispatch-cancel" type="button" onClick={() => setResolveOpen(false)} disabled={sending}>Cancel</button>
+              <button className="mbfp-dispatch-confirm" type="button" onClick={() => void resolveIncident()} disabled={sending}>
+                {sending ? <><i className="fa-solid fa-spinner fa-spin" /><span>Resolving incident…</span></> : <><i className="fa-solid fa-circle-check" /><span>Confirm Resolution</span></>}
+              </button>
             </footer>
           </section>
         </div>,

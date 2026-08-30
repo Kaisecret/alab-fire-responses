@@ -378,55 +378,78 @@ export async function recordDispatchLocation(userId: string, dispatchId: string,
   });
 }
 
-export async function resolveDispatchIncident(userId: string, dispatchId: string) {
-  if (!validId(userId) || !validId(dispatchId)) throw new Error("INVALID_DISPATCH_INPUT");
+export async function resolveMunicipalIncident(input: {
+  fireReportId: string;
+  municipalityId: string;
+  actorUserId: string;
+}) {
+  if (!validId(input.fireReportId) || !validId(input.municipalityId) || !validId(input.actorUserId)) {
+    throw new Error("INVALID_INCIDENT_INPUT");
+  }
   return withTransaction(async (client) => {
     const current = await client.query<{
-      recipient_id: string;
-      recipient_status: MobileDispatchAssignment["recipientStatus"];
-      report_id: string;
-      report_status: FireReportStatus;
+      id: string;
+      status: FireReportStatus;
+      reference_number: string;
+      resident_user_id: string;
     }>(
-      `select recipient.id as recipient_id, recipient.status as recipient_status, report.id as report_id, report.status as report_status
-         from incident_dispatch_recipients recipient
-         join incident_dispatches d on d.id = recipient.dispatch_id and d.status = 'ACTIVE'
-         join fire_reports report on report.id = d.fire_report_id
-        where recipient.dispatch_id = $1 and recipient.recipient_user_id = $2
-        for update of recipient, report`,
-      [dispatchId, userId],
+      `select fr.id, fr.status, fr.reference_number, resident.user_id as resident_user_id
+         from fire_reports fr
+         join resident_profiles resident on resident.id = fr.resident_profile_id
+        where fr.id = $1 and fr.municipality_id = $2
+        for update of fr`,
+      [input.fireReportId, input.municipalityId],
     );
-    if (!current.rowCount) throw new Error("ASSIGNMENT_NOT_FOUND");
+    if (!current.rowCount) throw new Error("NOT_FOUND");
     const row = current.rows[0];
-    if (row.recipient_status !== "ON_SCENE" || !canTransitionReportStatus(row.report_status, "RESOLVED")) {
-      throw new Error("INVALID_RECIPIENT_STATUS");
+    if (row.status !== "RESPONDING" || !canTransitionReportStatus(row.status, "RESOLVED")) {
+      throw new Error("INVALID_STATUS");
     }
     const now = new Date();
 
     await client.query(
       `update incident_dispatch_recipients
           set status = 'COMPLETED', completed_at = $1, updated_at = $1
-        where id = $2`,
-      [now, row.recipient_id],
+        where dispatch_id in (
+          select id from incident_dispatches
+           where fire_report_id = $2 and municipality_id = $3 and status = 'ACTIVE'
+        )`,
+      [now, input.fireReportId, input.municipalityId],
     );
 
     await client.query(
       `update incident_dispatches
           set status = 'COMPLETED', completed_at = $1, updated_at = $1
-        where id = $2`,
-      [now, dispatchId],
+        where fire_report_id = $2 and municipality_id = $3 and status = 'ACTIVE'`,
+      [now, input.fireReportId, input.municipalityId],
     );
 
     await client.query(
       `update fire_reports set status = 'RESOLVED', updated_at = $1 where id = $2`,
-      [now, row.report_id],
+      [now, input.fireReportId],
     );
 
     await client.query(
       `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)
-       values ($1, $2, 'RESOLVED', $3, 'Fire incident marked as resolved by responding BFP personnel.', $4)`,
-      [row.report_id, row.report_status, userId, now],
+       values ($1, $2, 'RESOLVED', $3, 'Municipal BFP has marked this fire incident as resolved.', $4)`,
+      [input.fireReportId, row.status, input.actorUserId, now],
     );
 
-    return { recipientStatus: "COMPLETED" as const, resolvedAt: now };
+    await createAccountNotifications(client, {
+      recipientUserIds: [row.resident_user_id],
+      actorUserId: input.actorUserId,
+      eventType: "INCIDENT_DISPATCH_STATUS_CHANGED",
+      category: "RESPONSE",
+      title: "Fire incident resolved",
+      summary: `${row.reference_number} has been resolved by Municipal BFP.`,
+      actionHref: `/resident/reports/${input.fireReportId}`,
+      entityType: "fire_report",
+      entityId: input.fireReportId,
+      context: { reference: row.reference_number },
+      dedupeKey: `incident-resolution:${input.fireReportId}`,
+      createdAt: now,
+    });
+
+    return { status: "RESOLVED" as const, resolvedAt: now };
   });
 }

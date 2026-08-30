@@ -5,13 +5,14 @@ import test from "node:test";
 
 const source = (path) => readFileSync(join(process.cwd(), path), "utf8");
 
-test("BFP incident resolution is an on-scene action that completes the dispatch without an undefined report column", () => {
+test("BFP mobile dispatches cannot resolve incidents", () => {
   const route = source("app/api/mobile-bfp/dispatches/[dispatchId]/route.ts");
   const service = source("lib/municipal-bfp/dispatch.ts");
 
-  assert.match(route, /body\.action === "RESOLVE_INCIDENT"/);
-  assert.match(route, /resolveDispatchIncident/);
-  assert.match(service, /row\.recipient_status !== "ON_SCENE"/);
+  assert.doesNotMatch(route, /RESOLVE_INCIDENT/);
+  assert.doesNotMatch(route, /resolveDispatchIncident/);
+  assert.match(service, /resolveMunicipalIncident/);
+  assert.match(service, /row\.status !== "RESPONDING"/);
   assert.match(service, /update incident_dispatches\s+set status = 'COMPLETED'/);
   assert.doesNotMatch(service, /resolved_at/);
 });
