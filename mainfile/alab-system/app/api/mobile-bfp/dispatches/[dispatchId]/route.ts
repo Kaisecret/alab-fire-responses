@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isMobileBfpAuthorization, requireMobileMunicipalBfp } from "../../../../../lib/auth/mobile-bfp";
-import { acknowledgeDispatchRoute, recordDispatchLocation } from "../../../../../lib/municipal-bfp/dispatch";
+import { acknowledgeDispatchRoute, recordDispatchLocation, resolveDispatchIncident } from "../../../../../lib/municipal-bfp/dispatch";
 
 export const runtime = "nodejs";
 
@@ -23,6 +23,9 @@ export async function POST(request: Request, context: { params: Promise<{ dispat
     }
     if (body.action === "LOCATION_PING") {
       return NextResponse.json({ arrival: await recordDispatchLocation(session.userId, dispatchId, Number(body.latitude), Number(body.longitude)) });
+    }
+    if (body.action === "RESOLVE_INCIDENT") {
+      return NextResponse.json({ resolution: await resolveDispatchIncident(session.userId, dispatchId) });
     }
     return NextResponse.json({ error: "Unsupported dispatch update." }, { status: 400 });
   } catch (error) {

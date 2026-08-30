@@ -377,3 +377,56 @@ export async function recordDispatchLocation(userId: string, dispatchId: string,
     return { onScene: true, metersAway, candidateSeconds: 30 };
   });
 }
+
+export async function resolveDispatchIncident(userId: string, dispatchId: string) {
+  if (!validId(userId) || !validId(dispatchId)) throw new Error("INVALID_DISPATCH_INPUT");
+  return withTransaction(async (client) => {
+    const current = await client.query<{
+      recipient_id: string;
+      recipient_status: MobileDispatchAssignment["recipientStatus"];
+      report_id: string;
+      report_status: FireReportStatus;
+    }>(
+      `select recipient.id as recipient_id, recipient.status as recipient_status, report.id as report_id, report.status as report_status
+         from incident_dispatch_recipients recipient
+         join incident_dispatches d on d.id = recipient.dispatch_id and d.status = 'ACTIVE'
+         join fire_reports report on report.id = d.fire_report_id
+        where recipient.dispatch_id = $1 and recipient.recipient_user_id = $2
+        for update of recipient, report`,
+      [dispatchId, userId],
+    );
+    if (!current.rowCount) throw new Error("ASSIGNMENT_NOT_FOUND");
+    const row = current.rows[0];
+    if (row.recipient_status !== "ON_SCENE" || !canTransitionReportStatus(row.report_status, "RESOLVED")) {
+      throw new Error("INVALID_RECIPIENT_STATUS");
+    }
+    const now = new Date();
+
+    await client.query(
+      `update incident_dispatch_recipients
+          set status = 'COMPLETED', completed_at = $1, updated_at = $1
+        where id = $2`,
+      [now, row.recipient_id],
+    );
+
+    await client.query(
+      `update incident_dispatches
+          set status = 'COMPLETED', completed_at = $1, updated_at = $1
+        where id = $2`,
+      [now, dispatchId],
+    );
+
+    await client.query(
+      `update fire_reports set status = 'RESOLVED', updated_at = $1 where id = $2`,
+      [now, row.report_id],
+    );
+
+    await client.query(
+      `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)
+       values ($1, $2, 'RESOLVED', $3, 'Fire incident marked as resolved by responding BFP personnel.', $4)`,
+      [row.report_id, row.report_status, userId, now],
+    );
+
+    return { recipientStatus: "COMPLETED" as const, resolvedAt: now };
+  });
+}
