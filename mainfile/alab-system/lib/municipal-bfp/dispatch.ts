@@ -229,7 +229,11 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
       referenceNumber: report.reference_number,
     };
   });
-  void sendDispatchPush(dispatch).catch((error) => console.error("Dispatch FCM send failed", error));
+  try {
+    await sendDispatchPush(dispatch);
+  } catch (error) {
+    console.error("Dispatch FCM send failed", error);
+  }
   return dispatch;
 }
 

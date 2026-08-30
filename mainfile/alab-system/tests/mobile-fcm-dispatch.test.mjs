@@ -14,5 +14,7 @@ test("dispatch registers protected BFP devices and sends Firebase alerts to assi
   assert.match(source(deviceRoute), /registerMobileDevice/);
   assert.match(source(sender), /FIREBASE_SERVICE_ACCOUNT_JSON/);
   assert.match(source(sender), /sendDispatchPush/);
-  assert.match(source("lib/municipal-bfp/dispatch.ts"), /sendDispatchPush/);
+  const dispatch = source("lib/municipal-bfp/dispatch.ts");
+  assert.match(dispatch, /await sendDispatchPush\(dispatch\)/);
+  assert.doesNotMatch(dispatch, /void sendDispatchPush\(dispatch\)/);
 });
