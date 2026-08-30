@@ -45,3 +45,8 @@ Keep the existing ALAB BFP mobile visual design while replacing its hard-coded d
 - Tests prove the map receives the active assignment coordinates and handles missing location access.
 - `flutter test` passes before device testing.
 - Manual Android test: sign in as an active member of a selected station, dispatch an incident, open/refresh Assigned Incidents, and confirm the same incident appears on the dashboard and map.
+
+## Resolve Interaction
+
+- The Map and Assigned Incidents screens use the same centered resolve confirmation dialog: a compact incident summary, clear confirmation text, and equal-width Cancel and Resolve actions.
+- Assigned Incident cards retain their current colours and glass treatment while keeping route and resolve actions aligned in a consistent action row.
