@@ -101,7 +101,8 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
          from fire_reports fr
          join resident_profiles resident on resident.id = fr.resident_profile_id
          left join barangays report_barangay on report_barangay.id = fr.barangay_id
-         left join barangays resident_barangay on resident_barangay.id = resident.barangay_id
+         left join resident_addresses ra on ra.resident_profile_id = resident.id and ra.is_primary = true
+         left join barangays resident_barangay on resident_barangay.id = ra.barangay_id
         where fr.id = $1 and fr.municipality_id = $2
         for update of fr`,
       [input.fireReportId, input.municipalityId],
@@ -277,7 +278,8 @@ export async function listMobileDispatchAssignments(userId: string): Promise<Mob
        left join municipalities municipality on municipality.id = report.municipality_id
        left join barangays b on b.id = report.barangay_id
        left join resident_profiles rp on rp.id = report.resident_profile_id
-       left join barangays rp_b on rp_b.id = rp.barangay_id
+       left join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary = true
+       left join barangays rp_b on rp_b.id = ra.barangay_id
       where recipient.recipient_user_id = $1 and recipient.status <> 'COMPLETED'
       order by recipient.assigned_at desc`,
     [userId],
