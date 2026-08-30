@@ -9,8 +9,8 @@ const styles = `
   .mbfp-kb-search { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
   .mbfp-kb-search-input { flex: 1; padding: 0.7rem 1rem; border-radius: 0.5rem; border: 1px solid #e5e7eb; font-size: 0.88rem; font-family: inherit; outline: none; transition: border-color 0.2s; }
   .mbfp-kb-search-input:focus { border-color: #D00F09; box-shadow: 0 0 0 3px rgba(211,47,47,0.1); }
-  .mbfp-kb-search-btn { padding: 0.7rem 1.2rem; border-radius: 0.5rem; background: #D00F09; color: white; border: none; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; transition: background 0.15s; }
-  .mbfp-kb-search-btn:hover { background: #B71C1C; }
+  .mbfp-kb-search-btn { padding: 0.7rem 1.2rem; border-radius: 8px; background: linear-gradient(135deg, #D00F09 0%, #EF5350 100%); color: white; border: none; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 14px rgba(208, 15, 9, 0.28); }
+  .mbfp-kb-search-btn:hover { transform: translateY(-1.5px); box-shadow: 0 6px 18px rgba(208, 15, 9, 0.38); }
   .mbfp-kb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
   .mbfp-kb-card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; padding: 1.2rem; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
   .mbfp-kb-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }

@@ -66,7 +66,14 @@ export async function registerMobileDevice(userId: string, installationId: strin
   );
 }
 
-export async function sendDispatchPush(input: { dispatchId: string; fireReportId: string; referenceNumber: string; recipientUserIds: string[] }) {
+export async function sendDispatchPush(input: {
+  dispatchId: string;
+  fireReportId: string;
+  referenceNumber: string;
+  barangay: string | null;
+  municipalityName: string;
+  recipientUserIds: string[];
+}) {
   const account = firebaseServiceAccount();
   if (!account || !input.recipientUserIds.length) return;
   const database = getDatabase();
@@ -81,6 +88,10 @@ export async function sendDispatchPush(input: { dispatchId: string; fireReportId
   );
   if (!devices.rowCount) return;
   const token = await accessToken(account);
+  const rawBarangay = input.barangay?.trim() ?? "";
+  const barangay = rawBarangay && !/^(brgy\.?|barangay)\s/i.test(rawBarangay) ? `Brgy. ${rawBarangay}` : rawBarangay;
+  const location = [barangay, input.municipalityName].filter((value): value is string => Boolean(value?.trim())).join(", ");
+  const notificationBody = location ? `${input.referenceNumber}: ${location}` : input.referenceNumber;
   await Promise.all(devices.rows.map(async (device) => {
     let status = "SENT";
     let providerMessageId: string | null = null;
@@ -91,8 +102,14 @@ export async function sendDispatchPush(input: { dispatchId: string; fireReportId
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ message: {
           token: device.fcm_token,
-          notification: { title: "Emergency dispatch assigned", body: input.referenceNumber },
-          data: { dispatchId: input.dispatchId, fireReportId: input.fireReportId, type: "INCIDENT_DISPATCH_ASSIGNED" },
+          notification: { title: "Emergency dispatch assigned", body: notificationBody },
+          data: {
+            dispatchId: input.dispatchId,
+            fireReportId: input.fireReportId,
+            type: "INCIDENT_DISPATCH_ASSIGNED",
+            barangay: input.barangay ?? "",
+            municipality: input.municipalityName,
+          },
           android: { priority: "high", notification: { channel_id: "incident_dispatches", sound: "default", notification_priority: "PRIORITY_MAX" } },
         } }),
       });

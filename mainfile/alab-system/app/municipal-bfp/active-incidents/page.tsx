@@ -439,33 +439,38 @@ const activeIncidentsStyles = `
   .mbfp-open-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    padding: 0.45rem 0.95rem;
-    background: #DC2626;
+    gap: 0.55rem;
+    padding: 0.55rem 1.15rem;
+    background: linear-gradient(135deg, #D00F09 0%, #EF5350 100%);
     border: none;
-    border-radius: 9px;
+    border-radius: 8px;
     color: #FFFFFF;
-    font-size: 0.77rem;
-    font-weight: 800;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: inherit;
     cursor: pointer;
-    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.22);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(208, 15, 9, 0.28);
     white-space: nowrap;
+    text-decoration: none;
   }
 
   .mbfp-open-btn:hover {
-    background: #B91C1C;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.32);
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 18px rgba(208, 15, 9, 0.38);
+  }
+
+  .mbfp-open-btn:active {
+    transform: translateY(0);
   }
 
   .mbfp-open-btn i {
-    font-size: 0.72rem;
-    transition: transform 0.15s ease;
+    font-size: 0.76rem;
+    transition: transform 0.18s ease;
   }
 
   .mbfp-open-btn:hover i {
-    transform: translateX(2px);
+    transform: translateX(2.5px);
   }
 
   /* Empty State */

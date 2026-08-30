@@ -94,10 +94,14 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
       status: FireReportStatus;
       reference_number: string;
       resident_user_id: string;
+      barangay: string | null;
     }>(
-      `select fr.status, fr.reference_number, resident.user_id as resident_user_id
+      `select fr.status, fr.reference_number, resident.user_id as resident_user_id,
+              coalesce(report_barangay.name, resident_barangay.name, nullif(trim(split_part(fr.address_label, ',', 1)), '')) as barangay
          from fire_reports fr
          join resident_profiles resident on resident.id = fr.resident_profile_id
+         left join barangays report_barangay on report_barangay.id = fr.barangay_id
+         left join barangays resident_barangay on resident_barangay.id = resident.barangay_id
         where fr.id = $1 and fr.municipality_id = $2
         for update of fr`,
       [input.fireReportId, input.municipalityId],
@@ -184,7 +188,7 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
       actionHref: `/municipal-bfp/incidents/${input.fireReportId}`,
       entityType: "fire_report",
       entityId: input.fireReportId,
-      context: { dispatchId, reference: report.reference_number, stationIds },
+      context: { dispatchId, reference: report.reference_number, stationIds, barangay: report.barangay, municipality: input.municipalityName },
       dedupeKey: `incident-dispatch:${dispatchId}:assigned`,
       createdAt: now,
     });
@@ -227,6 +231,8 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
       stationNames: stations.map((station) => station.station_name),
       recipientUserIds,
       referenceNumber: report.reference_number,
+      barangay: report.barangay,
+      municipalityName: input.municipalityName,
     };
   });
   try {
@@ -247,6 +253,8 @@ export type MobileDispatchAssignment = {
   reportStatus: FireReportStatus;
   latitude: number;
   longitude: number;
+  barangay: string | null;
+  municipality: string | null;
   landmark: string | null;
   stationName: string;
   stationLatitude: number;
@@ -258,17 +266,35 @@ export async function listMobileDispatchAssignments(userId: string): Promise<Mob
     `select d.id as "dispatchId", recipient.id as "recipientId", recipient.status as "recipientStatus",
             recipient.assigned_at as "assignedAt", report.reference_number as "referenceNumber", report.fire_type as "fireType",
             report.status as "reportStatus", report.latitude::float as latitude, report.longitude::float as longitude,
+            coalesce(b.name, rp_b.name, nullif(trim(split_part(report.address_label, ',', 1)), '')) as barangay,
+            municipality.name as municipality,
             report.nearest_landmark as landmark, station.station_name_snapshot as "stationName",
             station.station_latitude_snapshot::float as "stationLatitude", station.station_longitude_snapshot::float as "stationLongitude"
        from incident_dispatch_recipients recipient
        join incident_dispatches d on d.id = recipient.dispatch_id and d.status = 'ACTIVE'
        join incident_dispatch_stations station on station.id = recipient.dispatch_station_id
        join fire_reports report on report.id = d.fire_report_id
+       left join municipalities municipality on municipality.id = report.municipality_id
+       left join barangays b on b.id = report.barangay_id
+       left join resident_profiles rp on rp.id = report.resident_profile_id
+       left join barangays rp_b on rp_b.id = rp.barangay_id
       where recipient.recipient_user_id = $1 and recipient.status <> 'COMPLETED'
       order by recipient.assigned_at desc`,
     [userId],
   );
   return result.rows;
+}
+
+export async function getMobileResolvedCount(userId: string): Promise<number> {
+  const result = await getDatabase().query<{ count: string }>(
+    `select count(*)::text as count
+       from incident_dispatch_recipients recipient
+       join incident_dispatches d on d.id = recipient.dispatch_id
+       join fire_reports report on report.id = d.fire_report_id
+      where recipient.recipient_user_id = $1 and (recipient.status = 'COMPLETED' or report.status = 'RESOLVED')`,
+    [userId],
+  );
+  return Number(result.rows[0]?.count ?? 0);
 }
 
 function distanceMeters(fromLatitude: number, fromLongitude: number, toLatitude: number, toLongitude: number) {
