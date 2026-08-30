@@ -50,6 +50,13 @@ test("selfies use a watermarked review derivative instead of exposing the privat
   assert.doesNotMatch(service, /createIdentityEvidenceSignedUrl\(application\.selfieKey\)/);
 });
 
+test("queue listing does not eagerly load image processing", () => {
+  const service = source("lib/resident-applications/service.ts");
+
+  assert.doesNotMatch(service, /import \{ createIdentityEvidenceSignedUrl \} from "\.\/evidence"/);
+  assert.match(service, /await import\("\.\/evidence"\)/);
+});
+
 test("registration creates a pending applicant and never creates a resident session", () => {
   const registration = source("app/api/auth/register/route.ts");
   assert.match(registration, /request\.formData\(\)/);

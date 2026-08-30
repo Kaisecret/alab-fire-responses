@@ -5,7 +5,6 @@ import type { NextRequest } from "next/server";
 import { getBfpIdentity } from "../auth/bfp-accounts";
 import { bfpSessionCookieName, verifyBfpSession } from "../auth/session";
 import { getDatabase, withTransaction } from "../db";
-import { createIdentityEvidenceSignedUrl } from "./evidence";
 import { createAccountNotifications } from "../notifications/service";
 
 export async function getMunicipalReviewer(request: NextRequest) {
@@ -66,6 +65,7 @@ export async function getResidentApplication(municipalityId: string, application
        ) order by created_at asc`,
     [applicationId],
   );
+  const { createIdentityEvidenceSignedUrl } = await import("./evidence");
   const [frontUrl, backUrl, selfieUrl] = await Promise.all([
     createIdentityEvidenceSignedUrl(application.frontReviewKey),
     createIdentityEvidenceSignedUrl(application.backReviewKey),
