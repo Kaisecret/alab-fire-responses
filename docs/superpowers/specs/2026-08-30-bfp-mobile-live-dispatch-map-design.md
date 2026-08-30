@@ -28,12 +28,15 @@ Keep the existing ALAB BFP mobile visual design while replacing its hard-coded d
 - A failed refresh retains the most recently successful assignment data and shows a small non-blocking connection message.
 - A missing current-location permission leaves the incident map usable and shows only the incident marker.
 - An empty assignment list never displays demo incidents, false counts, fake alerts, or a fake route.
+- The tactical map never uses station coordinates as a responder position and never renders a straight-line route. It shows a clear road-route loading or unavailable state until phone GPS and OSRM road geometry are both available.
+- The truck marker updates only when a new accurate phone-GPS reading is at least five metres from the displayed position. It recalculates OSRM routing after a forty-metre movement.
 
 ## Constraints
 
 - Do not alter the server dispatch schema or create duplicate dispatch notifications.
 - Store the Firebase Admin service-account JSON only as Vercel's protected `FIREBASE_SERVICE_ACCOUNT_JSON` variable; never commit, log, or expose it to Flutter.
 - OpenStreetMap is used only for map tiles; no API key is required.
+- The existing public OSRM driving endpoint supplies road geometry. The app does not manufacture a curved or direct fallback route.
 - The feature must work on the existing Android Flutter app and keep the existing UI design intact.
 
 ## Validation
