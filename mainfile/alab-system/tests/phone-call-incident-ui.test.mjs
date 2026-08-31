@@ -18,3 +18,26 @@ test("municipal incident views expose From Phone Caller without requiring a resi
   assert.match(detailUi, /From Phone Caller/);
   assert.match(gisUi, /From Phone Caller/);
 });
+
+test("phone call intake provides a draggable map pin and explicit responder selection", () => {
+  const intake = source("app/_components/municipal-phone-call-incident-intake.tsx");
+  assert.match(intake, /import\("leaflet"\)/);
+  assert.match(intake, /draggable:\s*true/);
+  assert.match(intake, /marker\.on\("dragend"/);
+  assert.match(intake, /map\.on\("click"/);
+  assert.match(intake, /zoomControl:\s*true/);
+  assert.match(intake, /Caller name/);
+  assert.match(intake, /Caller phone/);
+  assert.match(intake, /From Phone Caller/);
+  assert.match(intake, /\/api\/municipal-bfp\/stations\/\$\{stationId\}\/responders/);
+  assert.match(intake, /Create & Dispatch/);
+});
+
+test("phone call intake submits only supported fire type values", () => {
+  const intake = source("app/_components/municipal-phone-call-incident-intake.tsx");
+  assert.match(intake, /"HOUSE_BUILDING"/);
+  assert.match(intake, /"GRASS"/);
+  assert.match(intake, /"FOREST"/);
+  assert.match(intake, /"VEHICLE"/);
+  assert.match(intake, /"OTHER"/);
+});

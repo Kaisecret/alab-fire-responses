@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { MunicipalIncidentDetail } from "../../_components/municipal-incident-detail";
 import { BfpDataLoader } from "../../_components/bfp-data-loader";
+import { MunicipalPhoneCallIncidentIntake } from "../../_components/municipal-phone-call-incident-intake";
 import { useMunicipalIncidentFeed } from "../../_components/use-municipal-incident-feed";
 
 const activeIncidentsStyles = `
@@ -87,6 +88,29 @@ const activeIncidentsStyles = `
     color: #0F172A;
     transform: translateY(-1px);
     box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+  }
+
+  .mbfp-new-phone-incident-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 38px;
+    padding: 0.5rem 0.95rem;
+    background: #DC2626;
+    border: 1px solid #B91C1C;
+    border-radius: 10px;
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(185, 28, 28, 0.2);
+    white-space: nowrap;
+  }
+
+  .mbfp-new-phone-incident-btn:hover {
+    background: #B91C1C;
+    transform: translateY(-1px);
   }
 
   .mbfp-refresh-btn i.spin {
@@ -541,6 +565,14 @@ const activeIncidentsStyles = `
     .mbfp-quick-stats {
       grid-template-columns: 1fr;
     }
+    .mbfp-header-actions {
+      width: 100%;
+      justify-content: stretch;
+    }
+    .mbfp-header-actions button {
+      flex: 1 1 0;
+      justify-content: center;
+    }
     .mbfp-toolbar {
       flex-direction: column;
       align-items: stretch;
@@ -553,6 +585,7 @@ const activeIncidentsStyles = `
 
 export default function ActiveIncidentsPage() {
   const [selected, setSelected] = useState<string | null>(null);
+  const [phoneIntakeOpen, setPhoneIntakeOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("ALL");
   const { incidents, loading, checking, refreshing, error, lastCheckedAt, refresh } = useMunicipalIncidentFeed();
@@ -612,6 +645,13 @@ export default function ActiveIncidentsPage() {
           </div>
 
           <div className="mbfp-header-actions">
+            <button
+              className="mbfp-new-phone-incident-btn"
+              onClick={() => setPhoneIntakeOpen(true)}
+            >
+              <i className="fa-solid fa-phone-volume" />
+              <span>New Phone Call Incident</span>
+            </button>
             <button
               className="mbfp-refresh-btn"
               onClick={() => refresh(true)}
@@ -848,6 +888,10 @@ export default function ActiveIncidentsPage() {
           </div>
         </div>
       </div>
+      {phoneIntakeOpen && <MunicipalPhoneCallIncidentIntake
+        onClose={() => setPhoneIntakeOpen(false)}
+        onCreated={() => { setPhoneIntakeOpen(false); void refresh(true); }}
+      />}
     </>
   );
 }
