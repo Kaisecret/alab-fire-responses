@@ -568,10 +568,20 @@ const activeIncidentsStyles = `
     .mbfp-header-actions {
       width: 100%;
       justify-content: stretch;
+      flex-wrap: wrap;
     }
     .mbfp-header-actions button {
-      flex: 1 1 0;
+      flex: 1 1 170px;
+      min-width: 0;
       justify-content: center;
+      white-space: normal;
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .mbfp-header-actions button {
+      flex-basis: 100%;
     }
     .mbfp-toolbar {
       flex-direction: column;
