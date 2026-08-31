@@ -21,6 +21,10 @@ const fireTypes = [
 
 const phonePattern = /^\+?[0-9]{10,15}$/;
 
+function normalizePlace(value: string) {
+  return value.toLowerCase().replace(/^(brgy\.?|barangay)\s*/i, "").replace(/[^a-z0-9]/g, "");
+}
+
 function localDateTimeValue() {
   const now = new Date();
   const offset = now.getTimezoneOffset() * 60_000;
@@ -37,6 +41,7 @@ function focusableElements(container: HTMLElement) {
 
 export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const [municipalityName, setMunicipalityName] = useState("");
   const [stations, setStations] = useState<Station[]>([]);
   const [barangays, setBarangays] = useState<Barangay[]>([]);
   const [responders, setResponders] = useState<Responder[]>([]);
@@ -45,6 +50,10 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [pinPlaced, setPinPlaced] = useState(false);
+  const [detectedBarangay, setDetectedBarangay] = useState("");
+  const [outOfBoundsWarning, setOutOfBoundsWarning] = useState("");
+  const [isGeocoding, setIsGeocoding] = useState(false);
+
   const [callerName, setCallerName] = useState("");
   const [callerPhone, setCallerPhone] = useState("");
   const [fireType, setFireType] = useState("");
@@ -54,11 +63,14 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
   const [reportedAt, setReportedAt] = useState(localDateTimeValue);
   const [stationId, setStationId] = useState("");
   const [responderIds, setResponderIds] = useState<string[]>([]);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
   const [loadingStations, setLoadingStations] = useState(true);
   const [loadingBarangays, setLoadingBarangays] = useState(true);
   const [loadingResponders, setLoadingResponders] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
   const firstFieldRef = useRef<HTMLInputElement>(null);
   const openingElementRef = useRef<HTMLElement | null>(typeof document === "undefined" ? null : document.activeElement as HTMLElement | null);
   const portalRootRef = useRef<HTMLDivElement>(null);
@@ -67,6 +79,84 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const locationRef = useRef<Coordinates | null>(null);
+  const barangaysRef = useRef<Barangay[]>([]);
+  const municipalityRef = useRef<string>("");
+
+  useEffect(() => {
+    barangaysRef.current = barangays;
+  }, [barangays]);
+
+  useEffect(() => {
+    municipalityRef.current = municipalityName;
+  }, [municipalityName]);
+
+  // Reverse Geocoding & Municipal Boundary Verification
+  const checkCoordinatesLocation = useCallback(async (coords: Coordinates) => {
+    setIsGeocoding(true);
+    try {
+      const response = await fetch(`/api/geocode/reverse?lat=${coords.latitude}&lon=${coords.longitude}`);
+      if (!response.ok) return;
+      const data = await response.json() as {
+        address?: {
+          village?: string;
+          quarter?: string;
+          suburb?: string;
+          hamlet?: string;
+          neighbourhood?: string;
+          municipality?: string;
+          town?: string;
+          city?: string;
+          county?: string;
+        };
+      };
+      const address = data.address;
+      if (!address) return;
+
+      // 1. Municipal Territory / Geofencing Check
+      const detectedMuni = address.municipality || address.town || address.city || "";
+      const currentMuni = municipalityRef.current;
+      if (detectedMuni && currentMuni) {
+        const normDetected = normalizePlace(detectedMuni);
+        const normCurrent = normalizePlace(currentMuni);
+        if (normDetected && normCurrent && !normDetected.includes(normCurrent) && !normCurrent.includes(normDetected)) {
+          setOutOfBoundsWarning(`Warning: Pin appears in ${detectedMuni}. Incidents dispatched by ${currentMuni} Station should be within ${currentMuni} area.`);
+        } else {
+          setOutOfBoundsWarning("");
+        }
+      } else {
+        setOutOfBoundsWarning("");
+      }
+
+      // 2. Auto-Barangay Detection
+      const candidatePlaces = [
+        address.village,
+        address.quarter,
+        address.suburb,
+        address.hamlet,
+        address.neighbourhood,
+      ].filter((p): p is string => Boolean(p && p.trim()));
+
+      const availableBarangays = barangaysRef.current;
+      let matchedBarangay: Barangay | undefined;
+      for (const place of candidatePlaces) {
+        const normPlace = normalizePlace(place);
+        matchedBarangay = availableBarangays.find((b) => {
+          const normB = normalizePlace(b.name);
+          return normB === normPlace || normB.includes(normPlace) || normPlace.includes(normB);
+        });
+        if (matchedBarangay) break;
+      }
+
+      if (matchedBarangay) {
+        setBarangayId(matchedBarangay.id);
+        setDetectedBarangay(matchedBarangay.name);
+      }
+    } catch {
+      // Graceful fallback if geocoder offline
+    } finally {
+      setIsGeocoding(false);
+    }
+  }, []);
 
   const confirmCoordinates = useCallback((coordinates: Coordinates) => {
     locationRef.current = coordinates;
@@ -76,7 +166,8 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
     setPinPlaced(true);
     markerRef.current?.setLatLng([coordinates.latitude, coordinates.longitude]);
     mapRef.current?.panTo([coordinates.latitude, coordinates.longitude]);
-  }, []);
+    void checkCoordinatesLocation(coordinates);
+  }, [checkCoordinatesLocation]);
 
   const updatePin = useCallback((latlng: import("leaflet").LatLng) => {
     confirmCoordinates({ latitude: latlng.lat, longitude: latlng.lng });
@@ -140,11 +231,14 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !submitting) onClose();
+      if (event.key === "Escape" && !submitting) {
+        if (showConfirmation) setShowConfirmation(false);
+        else onClose();
+      }
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [onClose, submitting]);
+  }, [onClose, showConfirmation, submitting]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -174,8 +268,9 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
       setLoadingBarangays(true);
       try {
         const response = await fetch("/api/municipal-bfp/barangays", { cache: "no-store", signal: controller.signal });
-        const payload = await response.json() as { barangays?: Barangay[]; error?: string };
+        const payload = await response.json() as { municipality?: string; barangays?: Barangay[]; error?: string };
         if (!response.ok) throw new Error(errorMessage(payload, "Unable to load municipal barangays."));
+        if (payload.municipality) setMunicipalityName(payload.municipality);
         setBarangays(payload.barangays ?? []);
       } catch (caught) {
         if (!controller.signal.aborted) setError(caught instanceof Error ? caught.message : "Unable to load municipal barangays.");
@@ -271,12 +366,18 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
     setResponderIds((current) => current.includes(responderId) ? current.filter((id) => id !== responderId) : [...current, responderId]);
   };
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleOpenConfirmation = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!valid || !location || submitting) {
-      setError("Complete all required caller, incident, dispatch, and precise map-pin fields before dispatching.");
+      setError("Complete all required caller, incident, dispatch, and precise map-pin fields before proceeding.");
       return;
     }
+    setError("");
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmAndDispatch = async () => {
+    if (!valid || !location || submitting) return;
     setSubmitting(true);
     setError("");
     try {
@@ -284,9 +385,17 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          callerName: callerName.trim(), callerPhone: callerPhone.trim(), fireType, description: description.trim(), barangayId: barangayId.trim(),
-          landmark: landmark.trim(), latitude: location.latitude, longitude: location.longitude, reportedAt: new Date(reportedAt).toISOString(),
-          stationId, responderIds,
+          callerName: callerName.trim(),
+          callerPhone: callerPhone.trim(),
+          fireType,
+          description: description.trim(),
+          barangayId: barangayId.trim(),
+          landmark: landmark.trim(),
+          latitude: location.latitude,
+          longitude: location.longitude,
+          reportedAt: new Date(reportedAt).toISOString(),
+          stationId,
+          responderIds,
         }),
       });
       const payload = await response.json().catch(() => null);
@@ -299,6 +408,11 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
   };
 
   if (!mounted || typeof document === "undefined") return null;
+
+  const selectedStationObj = stations.find((s) => s.id === stationId);
+  const selectedBarangayObj = barangays.find((b) => b.id === barangayId);
+  const selectedFireTypeObj = fireTypes.find(([val]) => val === fireType);
+  const selectedResponderObjs = responders.filter((r) => responderIds.includes(r.id));
 
   return createPortal(
     <div ref={portalRootRef} className="mbfp-phone-intake-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !submitting) onClose(); }}>
@@ -313,9 +427,11 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
             <div>
               <p className="mbfp-phone-header-kicker">
                 <span className="mbfp-phone-live-dot" aria-hidden="true" />
-                Municipal emergency dispatch · direct line
+                {municipalityName ? `${municipalityName} Emergency Command · Direct Line` : "Municipal emergency dispatch · direct line"}
               </p>
-              <h2 id="phone-intake-title">New phone-call incident</h2>
+              <h2 id="phone-intake-title">
+                {showConfirmation ? "Confirm Incident & Dispatch Summary" : "New phone-call incident"}
+              </h2>
             </div>
           </div>
           <button type="button" className="mbfp-phone-close" onClick={onClose} disabled={submitting} aria-label="Close phone-call intake">
@@ -323,280 +439,453 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
           </button>
         </header>
 
-        {/* SCROLLABLE FORM BODY & FIXED FOOTER */}
-        <form onSubmit={submit} className="mbfp-phone-form">
-          <div className="mbfp-phone-scrollable-body">
-            {error && (
-              <p className="mbfp-phone-error" role="alert">
-                <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
-                <span>{error}</span>
-              </p>
-            )}
-
-            <div className="mbfp-phone-grid">
-              <div className="mbfp-phone-column">
-                {/* SECTION 01: CALLER & INCIDENT */}
-                <section className="mbfp-phone-section">
-                  <div className="mbfp-phone-section-heading">
-                    <span className="mbfp-phone-step-badge">01</span>
-                    <div>
-                      <h3>Caller and incident</h3>
-                      <p>Record only what the caller can confirm.</p>
-                    </div>
-                  </div>
-
-                  <div className="mbfp-phone-fields two">
-                    <label>
-                      Caller name
-                      <input
-                        ref={firstFieldRef}
-                        value={callerName}
-                        onChange={(event) => setCallerName(event.target.value)}
-                        autoComplete="name"
-                        required
-                        minLength={2}
-                        maxLength={120}
-                        placeholder="Full name of caller"
-                      />
-                    </label>
-                    <label>
-                      Caller phone
-                      <input
-                        value={callerPhone}
-                        onChange={(event) => setCallerPhone(event.target.value)}
-                        autoComplete="tel"
-                        inputMode="tel"
-                        pattern="[+]?[0-9]{10,15}"
-                        title="Please enter a valid phone number (e.g. 09109975737 or +639109975737)"
-                        required
-                        placeholder="09XXXXXXXXX"
-                      />
-                    </label>
-                  </div>
-
-                  <div className="mbfp-phone-fields two">
-                    <label>
-                      Fire type
-                      <select value={fireType} onChange={(event) => setFireType(event.target.value)} required>
-                        <option value="">Select classification</option>
-                        {fireTypes.map(([value, label]) => (
-                          <option key={value} value={value}>{label}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Reported at
-                      <input
-                        type="datetime-local"
-                        value={reportedAt}
-                        onChange={(event) => setReportedAt(event.target.value)}
-                        required
-                      />
-                    </label>
-                  </div>
-
-                  <div className="mbfp-phone-fields two">
-                    <label>Barangay<select
-                        value={barangayId}
-                        onChange={(event) => setBarangayId(event.target.value)}
-                        required
-                        disabled={loadingBarangays}
-                      >
-                        <option value="">{loadingBarangays ? "Loading barangays…" : "Select barangay"}</option>
-                        {barangays.map((barangay) => (
-                          <option key={barangay.id} value={barangay.id}>{barangay.name}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Nearest landmark <span className="mbfp-phone-optional-tag">Optional</span>
-                      <input
-                        value={landmark}
-                        onChange={(event) => setLandmark(event.target.value)}
-                        maxLength={200}
-                        placeholder="School, plaza, bridge, chapel…"
-                      />
-                    </label>
-                  </div>
-
-                  <label className="mbfp-phone-label-full">
-                    Description
-                    <textarea
-                      value={description}
-                      onChange={(event) => setDescription(event.target.value)}
-                      required
-                      maxLength={1200}
-                      rows={3}
-                      placeholder="What is burning, visible risk, people affected, access road condition, or hazards…"
-                    />
-                  </label>
-                </section>
-
-                {/* SECTION 02: RESPONSE TEAM */}
-                <section className="mbfp-phone-section">
-                  <div className="mbfp-phone-section-heading">
-                    <span className="mbfp-phone-step-badge">02</span>
-                    <div>
-                      <h3>Response team</h3>
-                      <p>Select one station, then choose the people to receive the dispatch.</p>
-                    </div>
-                  </div>
-
-                  <label className="mbfp-phone-label-full">
-                    Dispatching station
-                    <select
-                      value={stationId}
-                      onChange={(event) => selectStation(event.target.value)}
-                      required
-                      disabled={loadingStations}
-                    >
-                      <option value="">{loadingStations ? "Loading stations…" : "Select active station"}</option>
-                      {stations.map((station) => (
-                        <option key={station.id} value={station.id}>{station.stationName}</option>
-                      ))}
-                    </select>
-                  </label>
-
-                  {stationId && (
-                    <fieldset className="mbfp-phone-responders">
-                      <legend>
-                        <i className="fa-solid fa-users-viewfinder" aria-hidden="true" />
-                        Individual responders
-                      </legend>
-                      {loadingResponders ? (
-                        <div className="mbfp-phone-responders-loading">
-                          <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" />
-                          <span>Loading active responders…</span>
-                        </div>
-                      ) : responders.length ? (
-                        <div className="mbfp-phone-responders-grid">
-                          {responders.map((responder) => {
-                            const isChecked = responderIds.includes(responder.id);
-                            return (
-                              <label
-                                key={responder.id}
-                                className={`mbfp-phone-responder ${isChecked ? "selected" : ""}`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => toggleResponder(responder.id)}
-                                />
-                                <div className="mbfp-phone-responder-info">
-                                  <span className="mbfp-phone-responder-name">{responder.displayName}</span>
-                                  <span className="mbfp-phone-responder-role">BFP Responder</span>
-                                </div>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="mbfp-phone-muted">
-                          <i className="fa-solid fa-circle-info" aria-hidden="true" />
-                          No active responders are assigned to this station.
-                        </p>
-                      )}
-                    </fieldset>
-                  )}
-                </section>
+        {showConfirmation ? (
+          /* ========================================================================= */
+          /* STAGE 2: PRE-DISPATCH CONFIRMATION SUMMARY MODAL (NON-DESTRUCTIVE BACK) */
+          /* ========================================================================= */
+          <div className="mbfp-confirmation-wrapper">
+            <div className="mbfp-confirmation-scroll-body">
+              <div className="mbfp-confirmation-banner">
+                <div className="mbfp-confirmation-banner-icon">
+                  <i className="fa-solid fa-shield-halved" aria-hidden="true" />
+                </div>
+                <div>
+                  <h3>Review Dispatch Summary</h3>
+                  <p>Please double-check all caller details and assigned response team before alerting mobile units.</p>
+                </div>
               </div>
 
-              {/* SECTION 03: MAP & PIN CONFIRMATION */}
-              <aside className="mbfp-phone-map-column">
-                <section className="mbfp-phone-section mbfp-phone-map-section">
-                  <div className="mbfp-phone-section-heading">
-                    <span className="mbfp-phone-step-badge">03</span>
-                    <div>
-                      <h3>Confirm incident pin</h3>
-                      <p>Click the map or drag the red fire pin. For keyboard use, enter coordinates and select Set precise coordinates. Station coordinates are only a starting point.</p>
+              {error && (
+                <p className="mbfp-phone-error" role="alert">
+                  <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                  <span>{error}</span>
+                </p>
+              )}
+
+              <div className="mbfp-confirmation-grid">
+                {/* 1. Incident & Caller Info */}
+                <div className="mbfp-summary-card">
+                  <div className="mbfp-summary-card-header">
+                    <i className="fa-solid fa-fire-flame-curved" />
+                    <span>Incident &amp; Caller Details</span>
+                  </div>
+                  <div className="mbfp-summary-dl">
+                    <div className="mbfp-summary-item">
+                      <label>Emergency Type</label>
+                      <strong className="mbfp-tag-fire">{selectedFireTypeObj ? selectedFireTypeObj[1] : fireType}</strong>
+                    </div>
+                    <div className="mbfp-summary-item">
+                      <label>Caller Name</label>
+                      <strong>{callerName}</strong>
+                    </div>
+                    <div className="mbfp-summary-item">
+                      <label>Caller Phone</label>
+                      <strong className="mbfp-phone-link">{callerPhone}</strong>
+                    </div>
+                    <div className="mbfp-summary-item">
+                      <label>Reported Timestamp</label>
+                      <span>{new Date(reportedAt).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}</span>
+                    </div>
+                    <div className="mbfp-summary-item full">
+                      <label>Description &amp; Access Notes</label>
+                      <p className="mbfp-summary-desc">{description}</p>
                     </div>
                   </div>
+                </div>
 
-                  <div className="mbfp-phone-map-wrapper">
-                    <div ref={mapContainerRef} className="mbfp-phone-map" aria-label="Incident location map" />
-                    <div className="mbfp-phone-map-overlay-hint">
-                      <i className="fa-solid fa-hand-pointer" aria-hidden="true" />
-                      <span>Click or drag pin to exact location</span>
+                {/* 2. Location & Map Pin */}
+                <div className="mbfp-summary-card">
+                  <div className="mbfp-summary-card-header">
+                    <i className="fa-solid fa-location-dot" />
+                    <span>Location &amp; Coordinates</span>
+                  </div>
+                  <div className="mbfp-summary-dl">
+                    <div className="mbfp-summary-item">
+                      <label>Barangay</label>
+                      <strong className="mbfp-tag-brgy">Brgy. {selectedBarangayObj?.name || "—"}</strong>
+                    </div>
+                    <div className="mbfp-summary-item">
+                      <label>Municipality</label>
+                      <strong>{municipalityName || "Assigned Municipality"}</strong>
+                    </div>
+                    <div className="mbfp-summary-item">
+                      <label>GPS Coordinates</label>
+                      <span className="mbfp-coords-chip">
+                        {location ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}` : "—"}
+                      </span>
+                    </div>
+                    <div className="mbfp-summary-item">
+                      <label>Nearest Landmark</label>
+                      <span>{landmark || "None specified"}</span>
+                    </div>
+                    {outOfBoundsWarning && (
+                      <div className="mbfp-summary-warning full">
+                        <i className="fa-solid fa-triangle-exclamation" />
+                        <span>{outOfBoundsWarning}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Dispatching Station & Responders */}
+                <div className="mbfp-summary-card full-width">
+                  <div className="mbfp-summary-card-header">
+                    <i className="fa-solid fa-truck-medical" />
+                    <span>Assigned Response Team</span>
+                  </div>
+                  <div className="mbfp-summary-dl">
+                    <div className="mbfp-summary-item">
+                      <label>Dispatching Station</label>
+                      <strong>{selectedStationObj?.stationName || "—"}</strong>
+                    </div>
+                    <div className="mbfp-summary-item full">
+                      <label>Alerted Responders ({selectedResponderObjs.length})</label>
+                      <div className="mbfp-summary-responders-chips">
+                        {selectedResponderObjs.map((res) => (
+                          <span key={res.id} className="mbfp-responder-chip">
+                            <i className="fa-solid fa-user-shield" />
+                            {res.displayName}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
-
-                  <div className="mbfp-phone-coordinate-controls" aria-describedby="phone-coordinate-help">
-                    <label>
-                      Latitude
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        step="0.000001"
-                        min="4"
-                        max="22"
-                        value={latitude}
-                        onChange={(event) => setLatitude(event.target.value)}
-                        placeholder="e.g. 10.743200"
-                      />
-                    </label>
-                    <label>
-                      Longitude
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        step="0.000001"
-                        min="116"
-                        max="127"
-                        value={longitude}
-                        onChange={(event) => setLongitude(event.target.value)}
-                        placeholder="e.g. 121.984100"
-                      />
-                    </label>
-                    <button type="button" className="mbfp-phone-coord-btn" onClick={applyKeyboardPin}>
-                      <i className="fa-solid fa-location-crosshairs" aria-hidden="true" />
-                      Set precise coordinates
-                    </button>
-                  </div>
-
-                  <p id="phone-coordinate-help" className="mbfp-phone-coordinate-help">
-                    Enter Philippine coordinates (latitude 4–22, longitude 116–127) and select Set precise coordinates to confirm the same red pin used by the map.
-                  </p>
-
-                  <p className={`mbfp-phone-pin-status ${pinPlaced ? "confirmed" : ""}`} aria-live="polite">
-                    <i className={`fa-solid ${pinPlaced ? "fa-circle-check" : "fa-location-crosshairs"}`} aria-hidden="true" />
-                    <span>
-                      {pinPlaced && location
-                        ? `Precise pin set: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
-                        : "Precise pin required — click the map or drag the red pin."}
-                    </span>
-                  </p>
-
-                  <div className="mbfp-phone-dispatch-note">
-                    <div className="mbfp-phone-dispatch-note-icon">
-                      <i className="fa-solid fa-tower-broadcast" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <strong>From Phone Caller</strong>
-                      <span>This creates and immediately assigns a municipal response dispatch.</span>
-                    </div>
-                  </div>
-                </section>
-              </aside>
+                </div>
+              </div>
             </div>
+
+            {/* CONFIRMATION FOOTER */}
+            <footer className="mbfp-phone-footer">
+              <p>
+                <i className="fa-solid fa-circle-info" aria-hidden="true" />
+                <span>Confirming will immediately send mobile emergency push notifications to the {selectedResponderObjs.length} selected firefighters.</span>
+              </p>
+              <div className="mbfp-phone-footer-buttons">
+                <button
+                  type="button"
+                  className="mbfp-phone-cancel"
+                  onClick={() => setShowConfirmation(false)}
+                  disabled={submitting}
+                >
+                  <i className="fa-solid fa-arrow-left" aria-hidden="true" />
+                  <span>Back / Edit Details</span>
+                </button>
+                <button
+                  type="button"
+                  className="mbfp-phone-submit"
+                  onClick={() => void handleConfirmAndDispatch()}
+                  disabled={submitting}
+                >
+                  <span>{submitting ? "Dispatching Responders…" : "Confirm & Dispatch Now"}</span>
+                  <i className={`fa-solid ${submitting ? "fa-circle-notch fa-spin" : "fa-truck-fast"}`} aria-hidden="true" />
+                </button>
+              </div>
+            </footer>
           </div>
+        ) : (
+          /* ========================================================================= */
+          /* STAGE 1: INTAKE WORKSPACE WITH GEOFENCING & AUTO-BARANGAY PIN DETECTION   */
+          /* ========================================================================= */
+          <form onSubmit={handleOpenConfirmation} className="mbfp-phone-form">
+            <div className="mbfp-phone-scrollable-body">
+              {error && (
+                <p className="mbfp-phone-error" role="alert">
+                  <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                  <span>{error}</span>
+                </p>
+              )}
 
-          {/* DEDICATED SPACIOUS FOOTER - AMPLE BREATHING ROOM */}
-          <footer className="mbfp-phone-footer">
-            <p>
-              <i className="fa-solid fa-shield-halved" aria-hidden="true" />
-              <span>Dispatch is enabled only after a caller, details, a manual pin, station, and responder are selected.</span>
-            </p>
-            <div className="mbfp-phone-footer-buttons">
-              <button type="button" className="mbfp-phone-cancel" onClick={onClose} disabled={submitting}>
-                Cancel
-              </button>
-              <button type="submit" className="mbfp-phone-submit" disabled={!valid || submitting}>
-                <span>{submitting ? "Dispatching…" : "Create & Dispatch"}</span>
-                <i className={`fa-solid ${submitting ? "fa-circle-notch fa-spin" : "fa-truck-fast"}`} aria-hidden="true" />
-              </button>
+              {outOfBoundsWarning && (
+                <div className="mbfp-geofence-alert" role="alert">
+                  <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+                  <span>{outOfBoundsWarning}</span>
+                </div>
+              )}
+
+              <div className="mbfp-phone-grid">
+                <div className="mbfp-phone-column">
+                  {/* SECTION 01: CALLER & INCIDENT */}
+                  <section className="mbfp-phone-section">
+                    <div className="mbfp-phone-section-heading">
+                      <span className="mbfp-phone-step-badge">01</span>
+                      <div>
+                        <h3>Caller and incident</h3>
+                        <p>Record only what the caller can confirm.</p>
+                      </div>
+                    </div>
+
+                    <div className="mbfp-phone-fields two">
+                      <label>
+                        Caller name
+                        <input
+                          ref={firstFieldRef}
+                          value={callerName}
+                          onChange={(event) => setCallerName(event.target.value)}
+                          autoComplete="name"
+                          required
+                          minLength={2}
+                          maxLength={120}
+                          placeholder="Full name of caller"
+                        />
+                      </label>
+                      <label>
+                        Caller phone
+                        <input
+                          value={callerPhone}
+                          onChange={(event) => setCallerPhone(event.target.value)}
+                          autoComplete="tel"
+                          inputMode="tel"
+                          pattern="[+]?[0-9]{10,15}"
+                          title="Please enter a valid phone number (e.g. 09109975737 or +639109975737)"
+                          required
+                          placeholder="09XXXXXXXXX"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="mbfp-phone-fields two">
+                      <label>
+                        Fire type
+                        <select value={fireType} onChange={(event) => setFireType(event.target.value)} required>
+                          <option value="">Select classification</option>
+                          {fireTypes.map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Reported at
+                        <input
+                          type="datetime-local"
+                          value={reportedAt}
+                          onChange={(event) => setReportedAt(event.target.value)}
+                          required
+                        />
+                      </label>
+                    </div>
+
+                    <div className="mbfp-phone-fields two">
+                      <label>Barangay<select
+                          value={barangayId}
+                          onChange={(event) => {
+                            setBarangayId(event.target.value);
+                            setDetectedBarangay("");
+                          }}
+                          required
+                          disabled={loadingBarangays}
+                        >
+                          <option value="">{loadingBarangays ? "Loading barangays…" : "Select barangay"}</option>
+                          {barangays.map((barangay) => (
+                            <option key={barangay.id} value={barangay.id}>{barangay.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Nearest landmark <span className="mbfp-phone-optional-tag">Optional</span>
+                        <input
+                          value={landmark}
+                          onChange={(event) => setLandmark(event.target.value)}
+                          maxLength={200}
+                          placeholder="School, plaza, bridge, chapel…"
+                        />
+                      </label>
+                    </div>
+
+                    {detectedBarangay && (
+                      <div className="mbfp-detected-badge" aria-live="polite">
+                        <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" />
+                        <span>Auto-detected from map pin: <strong>Brgy. {detectedBarangay}</strong></span>
+                      </div>
+                    )}
+
+                    <label className="mbfp-phone-label-full">
+                      Description
+                      <textarea
+                        value={description}
+                        onChange={(event) => setDescription(event.target.value)}
+                        required
+                        maxLength={1200}
+                        rows={3}
+                        placeholder="What is burning, visible risk, people affected, access road condition, or hazards…"
+                      />
+                    </label>
+                  </section>
+
+                  {/* SECTION 02: RESPONSE TEAM */}
+                  <section className="mbfp-phone-section">
+                    <div className="mbfp-phone-section-heading">
+                      <span className="mbfp-phone-step-badge">02</span>
+                      <div>
+                        <h3>Response team</h3>
+                        <p>Select one station, then choose the people to receive the dispatch.</p>
+                      </div>
+                    </div>
+
+                    <label className="mbfp-phone-label-full">
+                      Dispatching station
+                      <select
+                        value={stationId}
+                        onChange={(event) => selectStation(event.target.value)}
+                        required
+                        disabled={loadingStations}
+                      >
+                        <option value="">{loadingStations ? "Loading stations…" : "Select active station"}</option>
+                        {stations.map((station) => (
+                          <option key={station.id} value={station.id}>{station.stationName}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {stationId && (
+                      <fieldset className="mbfp-phone-responders">
+                        <legend>
+                          <i className="fa-solid fa-users-viewfinder" aria-hidden="true" />
+                          Individual responders
+                        </legend>
+                        {loadingResponders ? (
+                          <div className="mbfp-phone-responders-loading">
+                            <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" />
+                            <span>Loading active responders…</span>
+                          </div>
+                        ) : responders.length ? (
+                          <div className="mbfp-phone-responders-grid">
+                            {responders.map((responder) => {
+                              const isChecked = responderIds.includes(responder.id);
+                              return (
+                                <label
+                                  key={responder.id}
+                                  className={`mbfp-phone-responder ${isChecked ? "selected" : ""}`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => toggleResponder(responder.id)}
+                                  />
+                                  <div className="mbfp-phone-responder-info">
+                                    <span className="mbfp-phone-responder-name">{responder.displayName}</span>
+                                    <span className="mbfp-phone-responder-role">BFP Responder</span>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="mbfp-phone-muted">
+                            <i className="fa-solid fa-circle-info" aria-hidden="true" />
+                            No active responders are assigned to this station.
+                          </p>
+                        )}
+                      </fieldset>
+                    )}
+                  </section>
+                </div>
+
+                {/* SECTION 03: MAP & PIN CONFIRMATION */}
+                <aside className="mbfp-phone-map-column">
+                  <section className="mbfp-phone-section mbfp-phone-map-section">
+                    <div className="mbfp-phone-section-heading">
+                      <span className="mbfp-phone-step-badge">03</span>
+                      <div>
+                        <h3>Confirm incident pin</h3>
+                        <p>Click the map or drag the red fire pin. For keyboard use, enter coordinates and select Set precise coordinates. Station coordinates are only a starting point.</p>
+                      </div>
+                    </div>
+
+                    <div className="mbfp-phone-map-wrapper">
+                      <div ref={mapContainerRef} className="mbfp-phone-map" aria-label="Incident location map" />
+                      <div className="mbfp-phone-map-overlay-hint">
+                        {isGeocoding ? (
+                          <>
+                            <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" />
+                            <span>Detecting barangay…</span>
+                          </>
+                        ) : (
+                          <>
+                            <i className="fa-solid fa-hand-pointer" aria-hidden="true" />
+                            <span>Click or drag pin to exact location</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mbfp-phone-coordinate-controls" aria-describedby="phone-coordinate-help">
+                      <label>
+                        Latitude
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.000001"
+                          min="4"
+                          max="22"
+                          value={latitude}
+                          onChange={(event) => setLatitude(event.target.value)}
+                          placeholder="e.g. 10.743200"
+                        />
+                      </label>
+                      <label>
+                        Longitude
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.000001"
+                          min="116"
+                          max="127"
+                          value={longitude}
+                          onChange={(event) => setLongitude(event.target.value)}
+                          placeholder="e.g. 121.984100"
+                        />
+                      </label>
+                      <button type="button" className="mbfp-phone-coord-btn" onClick={applyKeyboardPin}>
+                        <i className="fa-solid fa-location-crosshairs" aria-hidden="true" />
+                        Set precise coordinates
+                      </button>
+                    </div>
+
+                    <p id="phone-coordinate-help" className="mbfp-phone-coordinate-help">
+                      Enter Philippine coordinates (latitude 4–22, longitude 116–127) and select Set precise coordinates to confirm the same red pin used by the map.
+                    </p>
+
+                    <p className={`mbfp-phone-pin-status ${pinPlaced ? "confirmed" : ""}`} aria-live="polite">
+                      <i className={`fa-solid ${pinPlaced ? "fa-circle-check" : "fa-location-crosshairs"}`} aria-hidden="true" />
+                      <span>
+                        {pinPlaced && location
+                          ? `Precise pin set: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
+                          : "Precise pin required — click the map or drag the red pin."}
+                      </span>
+                    </p>
+
+                    <div className="mbfp-phone-dispatch-note">
+                      <div className="mbfp-phone-dispatch-note-icon">
+                        <i className="fa-solid fa-tower-broadcast" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <strong>From Phone Caller</strong>
+                        <span>This creates and immediately assigns a municipal response dispatch.</span>
+                      </div>
+                    </div>
+                  </section>
+                </aside>
+              </div>
             </div>
-          </footer>
-        </form>
+
+            {/* DEDICATED SPACIOUS FOOTER - AMPLE BREATHING ROOM */}
+            <footer className="mbfp-phone-footer">
+              <p>
+                <i className="fa-solid fa-shield-halved" aria-hidden="true" />
+                <span>Dispatch is enabled only after a caller, details, a manual pin, station, and responder are selected.</span>
+              </p>
+              <div className="mbfp-phone-footer-buttons">
+                <button type="button" className="mbfp-phone-cancel" onClick={onClose} disabled={submitting}>
+                  Cancel
+                </button>
+                <button type="submit" className="mbfp-phone-submit" disabled={!valid || submitting}>
+                  <span>Create & Dispatch</span>
+                  <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+                </button>
+              </div>
+            </footer>
+          </form>
+        )}
       </section>
     </div>,
     document.body,
@@ -785,6 +1074,46 @@ const phoneIntakeStyles = `
     font-size: 0.82rem;
     font-weight: 700;
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.08);
+  }
+
+  .mbfp-geofence-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 1.2rem;
+    padding: 0.85rem 1.15rem;
+    border: 1.5px solid #fed7aa;
+    border-radius: 12px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 0.82rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(234, 88, 12, 0.1);
+  }
+
+  .mbfp-geofence-alert i {
+    color: #ea580c;
+    font-size: 1.1rem;
+    flex: 0 0 auto;
+  }
+
+  .mbfp-detected-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: -0.3rem;
+    margin-bottom: 0.85rem;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    background: #f0fdf4;
+    color: #166534;
+    font-size: 0.76rem;
+    font-weight: 600;
+  }
+
+  .mbfp-detected-badge i {
+    color: #16a34a;
   }
 
   .mbfp-phone-grid {
@@ -1190,6 +1519,214 @@ const phoneIntakeStyles = `
     color: #9a3412;
   }
 
+  /* CONFIRMATION SUMMARY STAGE */
+  .mbfp-confirmation-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    background: #f8fafc;
+  }
+
+  .mbfp-confirmation-scroll-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 1.35rem 1.6rem 2rem;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .mbfp-confirmation-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1.5px solid #bfdbfe;
+    border-radius: 14px;
+    color: #1e3a8a;
+  }
+
+  .mbfp-confirmation-banner-icon {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 10px;
+    background: #2563eb;
+    color: #ffffff;
+    font-size: 1.15rem;
+    flex: 0 0 auto;
+  }
+
+  .mbfp-confirmation-banner h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #1e3a8a;
+  }
+
+  .mbfp-confirmation-banner p {
+    margin: 0.2rem 0 0;
+    font-size: 0.78rem;
+    color: #3b82f6;
+  }
+
+  .mbfp-confirmation-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+  }
+
+  .mbfp-summary-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.15rem 1.25rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  }
+
+  .mbfp-summary-card.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .mbfp-summary-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.95rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #0f172a;
+    font-size: 0.88rem;
+    font-weight: 800;
+  }
+
+  .mbfp-summary-card-header i {
+    color: #dc2626;
+  }
+
+  .mbfp-summary-dl {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem 1.25rem;
+  }
+
+  .mbfp-summary-item {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .mbfp-summary-item.full {
+    grid-column: 1 / -1;
+  }
+
+  .mbfp-summary-item label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+  }
+
+  .mbfp-summary-item strong {
+    font-size: 0.86rem;
+    color: #0f172a;
+  }
+
+  .mbfp-summary-item span {
+    font-size: 0.84rem;
+    color: #334155;
+  }
+
+  .mbfp-tag-fire {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  .mbfp-tag-brgy {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    color: #166534;
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
+  .mbfp-coords-chip {
+    font-family: monospace;
+    font-size: 0.8rem !important;
+    background: #f1f5f9;
+    padding: 0.2rem 0.45rem;
+    border-radius: 6px;
+    color: #0f172a !important;
+    font-weight: 600;
+  }
+
+  .mbfp-phone-link {
+    font-family: monospace;
+    color: #0284c7 !important;
+  }
+
+  .mbfp-summary-desc {
+    margin: 0;
+    padding: 0.65rem 0.85rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    color: #1e293b;
+    line-height: 1.45;
+  }
+
+  .mbfp-summary-warning {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 0.85rem;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    color: #9a3412;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .mbfp-summary-responders-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.3rem;
+  }
+
+  .mbfp-responder-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 8px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .mbfp-responder-chip i {
+    color: #dc2626;
+    font-size: 0.82rem;
+  }
+
   /* DEDICATED SPACIOUS FOOTER - ZERO CRAMPING */
   .mbfp-phone-footer {
     flex: 0 0 auto;
@@ -1297,17 +1834,20 @@ const phoneIntakeStyles = `
     }
     .mbfp-phone-intake-header,
     .mbfp-phone-scrollable-body,
+    .mbfp-confirmation-scroll-body,
     .mbfp-phone-footer {
       padding-left: 1.1rem;
       padding-right: 1.1rem;
     }
-    .mbfp-phone-grid {
+    .mbfp-phone-grid,
+    .mbfp-confirmation-grid {
       grid-template-columns: 1fr;
     }
     .mbfp-phone-map {
       height: 240px;
     }
-    .mbfp-phone-fields.two {
+    .mbfp-phone-fields.two,
+    .mbfp-summary-dl {
       grid-template-columns: 1fr;
     }
     .mbfp-phone-footer {

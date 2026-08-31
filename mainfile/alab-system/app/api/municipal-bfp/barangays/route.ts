@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
       [identity.municipalityId],
     );
     const barangays = result.rows;
-    return NextResponse.json({ barangays });
+    const data = { barangays };
+    return NextResponse.json({ ...data, municipality: identity.municipalityName });
   } catch (error) {
     console.error("Municipal barangay lookup failed", error);
     return NextResponse.json({ error: "Unable to load municipal barangays." }, { status: 500 });
