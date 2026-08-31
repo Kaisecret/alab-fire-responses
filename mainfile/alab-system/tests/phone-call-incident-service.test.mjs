@@ -32,3 +32,14 @@ test("existing dispatch and resolution safely support reports without a resident
   assert.match(service, /if \(report\.resident_user_id\)/);
   assert.match(service, /if \(row\.resident_user_id\)/);
 });
+
+test("phone dispatch pushes are eligible for selected responders and provincial recipients", () => {
+  const service = source("lib/municipal-bfp/phone-incidents.ts");
+  const fcm = source("lib/notifications/fcm.ts");
+
+  assert.match(service, /const provincialRecipientUserIds = await listProvincialNotificationRecipients\(client\)/);
+  assert.match(service, /recipientUserIds: provincialRecipientUserIds,[\s\S]*eventType: "INCIDENT_DISPATCH_ASSIGNED"/);
+  assert.match(service, /const pushRecipientUserIds = \[\.\.\.new Set\(\[\.\.\.recipientUserIds, \.\.\.provincialRecipientUserIds\]\)\]/);
+  assert.match(service, /recipientUserIds: pushRecipientUserIds,/);
+  assert.match(fcm, /notification\.event_type = 'INCIDENT_DISPATCH_ASSIGNED'/);
+});

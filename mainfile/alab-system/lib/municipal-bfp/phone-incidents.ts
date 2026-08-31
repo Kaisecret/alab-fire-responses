@@ -200,16 +200,18 @@ export async function createPhoneCallIncidentAndDispatch(raw: unknown, scope: Ph
       context: { dispatchId, reference, stationId: station.id, barangay: barangay.name, municipality: scope.municipalityName },
       dedupeKey: `incident-dispatch:${dispatchId}:assigned`, createdAt: now,
     });
+    const provincialRecipientUserIds = await listProvincialNotificationRecipients(client);
     await createAccountNotifications(client, {
-      recipientUserIds: await listProvincialNotificationRecipients(client), actorUserId: scope.actorUserId,
-      eventType: "INCIDENT_DISPATCH_STATUS_CHANGED", category: "RESPONSE", title: "Municipal station responders assigned",
+      recipientUserIds: provincialRecipientUserIds, actorUserId: scope.actorUserId,
+      eventType: "INCIDENT_DISPATCH_ASSIGNED", category: "INCIDENT", title: "Municipal station responders assigned",
       summary: `${reference} · ${scope.municipalityName}`, actionHref: "/provincial-bfp/incidents",
       entityType: "fire_report", entityId: fireReportId, context: { dispatchId, reference, stationName, barangay: barangay.name },
       dedupeKey: `incident-dispatch:${dispatchId}:provincial`, createdAt: now,
     });
+    const pushRecipientUserIds = [...new Set([...recipientUserIds, ...provincialRecipientUserIds])];
     return {
       fireReportId, referenceNumber: reference, dispatchId, stationName, responderCount: recipientUserIds.length, dispatchedAt: now,
-      recipientUserIds, barangay: barangay.name, municipalityName: scope.municipalityName,
+      recipientUserIds: pushRecipientUserIds, barangay: barangay.name, municipalityName: scope.municipalityName,
     };
   });
 
