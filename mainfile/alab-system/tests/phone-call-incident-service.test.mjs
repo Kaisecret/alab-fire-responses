@@ -43,3 +43,14 @@ test("phone dispatch pushes are eligible for selected responders and provincial 
   assert.match(service, /recipientUserIds: pushRecipientUserIds,/);
   assert.match(fcm, /notification\.event_type = 'INCIDENT_DISPATCH_ASSIGNED'/);
 });
+
+test("phone incident APIs derive scope from the municipal administrator", () => {
+  const createRoute = source("app/api/municipal-bfp/phone-incidents/route.ts");
+  const respondersRoute = source("app/api/municipal-bfp/stations/[stationId]/responders/route.ts");
+  assert.match(createRoute, /requireMunicipalAdmin/);
+  assert.match(createRoute, /createPhoneCallIncidentAndDispatch/);
+  assert.match(respondersRoute, /requireMunicipalAdmin/);
+  assert.match(respondersRoute, /listStationResponders/);
+  assert.doesNotMatch(createRoute, /body\.municipalityId/);
+  assert.doesNotMatch(respondersRoute, /searchParams.*municipalityId/);
+});
