@@ -48,6 +48,10 @@ test("public images use approved WebP, Resident Guide, or PWA formats", () => {
     "kitchen-turn-off-stove.jpg",
     "resident-pwa-192.png",
     "resident-pwa-512.png",
+    "bfp app logo.png",
+    "home screen bg bfp.png",
+    "icon for bfp app.png",
+    "logo alab.png",
   ]);
   const nonWebpImages = readdirSync(join(root, "public", "images")).filter(
     (image) => !image.toLowerCase().endsWith(".webp") && !approvedNonWebpImages.has(image),

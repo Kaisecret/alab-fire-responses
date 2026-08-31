@@ -155,6 +155,7 @@ export default function VerificationQueuePage() {
             <i className="fa-solid fa-shield-halved" />
             <span>Identity &amp; Residency Control</span>
           </span>
+          <h1 style={{ fontSize: "1.25rem", fontWeight: 800, margin: 0, color: "#0F172A" }}>Resident Applications</h1>
           {municipality && (
             <span className="vq-muni-tag">
               <i className="fa-solid fa-location-dot" />
@@ -717,7 +718,7 @@ export default function VerificationQueuePage() {
                       disabled={working}
                     >
                       <i className="fa-solid fa-pen" />
-                      <span>Request Corrections</span>
+                      <span>Request corrections</span>
                     </button>
                     <button
                       type="button"
