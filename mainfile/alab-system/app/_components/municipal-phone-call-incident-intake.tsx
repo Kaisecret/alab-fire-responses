@@ -304,6 +304,7 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
     <div ref={portalRootRef} className="mbfp-phone-intake-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !submitting) onClose(); }}>
       <style>{phoneIntakeStyles}</style>
       <section ref={dialogRef} className="mbfp-phone-intake" role="dialog" aria-modal="true" aria-labelledby="phone-intake-title" onKeyDown={trapFocus}>
+        {/* FIXED HEADER - ZERO TOP INDEX */}
         <header className="mbfp-phone-intake-header">
           <div className="mbfp-phone-header-main">
             <div className="mbfp-phone-header-icon">
@@ -322,260 +323,264 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
           </button>
         </header>
 
+        {/* SCROLLABLE FORM BODY & FIXED FOOTER */}
         <form onSubmit={submit} className="mbfp-phone-form">
-          {error && (
-            <p className="mbfp-phone-error" role="alert">
-              <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
-              <span>{error}</span>
-            </p>
-          )}
+          <div className="mbfp-phone-scrollable-body">
+            {error && (
+              <p className="mbfp-phone-error" role="alert">
+                <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                <span>{error}</span>
+              </p>
+            )}
 
-          <div className="mbfp-phone-grid">
-            <div className="mbfp-phone-column">
-              {/* SECTION 01: CALLER & INCIDENT */}
-              <section className="mbfp-phone-section">
-                <div className="mbfp-phone-section-heading">
-                  <span className="mbfp-phone-step-badge">01</span>
-                  <div>
-                    <h3>Caller and incident</h3>
-                    <p>Record only what the caller can confirm.</p>
+            <div className="mbfp-phone-grid">
+              <div className="mbfp-phone-column">
+                {/* SECTION 01: CALLER & INCIDENT */}
+                <section className="mbfp-phone-section">
+                  <div className="mbfp-phone-section-heading">
+                    <span className="mbfp-phone-step-badge">01</span>
+                    <div>
+                      <h3>Caller and incident</h3>
+                      <p>Record only what the caller can confirm.</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="mbfp-phone-fields two">
-                  <label>
-                    Caller name
-                    <input
-                      ref={firstFieldRef}
-                      value={callerName}
-                      onChange={(event) => setCallerName(event.target.value)}
-                      autoComplete="name"
+                  <div className="mbfp-phone-fields two">
+                    <label>
+                      Caller name
+                      <input
+                        ref={firstFieldRef}
+                        value={callerName}
+                        onChange={(event) => setCallerName(event.target.value)}
+                        autoComplete="name"
+                        required
+                        minLength={2}
+                        maxLength={120}
+                        placeholder="Full name of caller"
+                      />
+                    </label>
+                    <label>
+                      Caller phone
+                      <input
+                        value={callerPhone}
+                        onChange={(event) => setCallerPhone(event.target.value)}
+                        autoComplete="tel"
+                        inputMode="tel"
+                        pattern="[+]?[0-9]{10,15}"
+                        title="Please enter a valid phone number (e.g. 09109975737 or +639109975737)"
+                        required
+                        placeholder="09XXXXXXXXX"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="mbfp-phone-fields two">
+                    <label>
+                      Fire type
+                      <select value={fireType} onChange={(event) => setFireType(event.target.value)} required>
+                        <option value="">Select classification</option>
+                        {fireTypes.map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Reported at
+                      <input
+                        type="datetime-local"
+                        value={reportedAt}
+                        onChange={(event) => setReportedAt(event.target.value)}
+                        required
+                      />
+                    </label>
+                  </div>
+
+                  <div className="mbfp-phone-fields two">
+                    <label>Barangay<select
+                        value={barangayId}
+                        onChange={(event) => setBarangayId(event.target.value)}
+                        required
+                        disabled={loadingBarangays}
+                      >
+                        <option value="">{loadingBarangays ? "Loading barangays…" : "Select barangay"}</option>
+                        {barangays.map((barangay) => (
+                          <option key={barangay.id} value={barangay.id}>{barangay.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Nearest landmark <span className="mbfp-phone-optional-tag">Optional</span>
+                      <input
+                        value={landmark}
+                        onChange={(event) => setLandmark(event.target.value)}
+                        maxLength={200}
+                        placeholder="School, plaza, bridge, chapel…"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="mbfp-phone-label-full">
+                    Description
+                    <textarea
+                      value={description}
+                      onChange={(event) => setDescription(event.target.value)}
                       required
-                      minLength={2}
-                      maxLength={120}
-                      placeholder="Full name of caller"
+                      maxLength={1200}
+                      rows={3}
+                      placeholder="What is burning, visible risk, people affected, access road condition, or hazards…"
                     />
                   </label>
-                  <label>
-                    Caller phone
-                    <input
-                      value={callerPhone}
-                      onChange={(event) => setCallerPhone(event.target.value)}
-                      autoComplete="tel"
-                      inputMode="tel"
-                      pattern="[+]?[0-9]{10,15}"
-                      title="Please enter a valid phone number (e.g. 09109975737 or +639109975737)"
-                      required
-                      placeholder="09XXXXXXXXX"
-                    />
-                  </label>
-                </div>
+                </section>
 
-                <div className="mbfp-phone-fields two">
-                  <label>
-                    Fire type
-                    <select value={fireType} onChange={(event) => setFireType(event.target.value)} required>
-                      <option value="">Select classification</option>
-                      {fireTypes.map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Reported at
-                    <input
-                      type="datetime-local"
-                      value={reportedAt}
-                      onChange={(event) => setReportedAt(event.target.value)}
-                      required
-                    />
-                  </label>
-                </div>
+                {/* SECTION 02: RESPONSE TEAM */}
+                <section className="mbfp-phone-section">
+                  <div className="mbfp-phone-section-heading">
+                    <span className="mbfp-phone-step-badge">02</span>
+                    <div>
+                      <h3>Response team</h3>
+                      <p>Select one station, then choose the people to receive the dispatch.</p>
+                    </div>
+                  </div>
 
-                <div className="mbfp-phone-fields two">
-                  <label>Barangay<select
-                      value={barangayId}
-                      onChange={(event) => setBarangayId(event.target.value)}
+                  <label className="mbfp-phone-label-full">
+                    Dispatching station
+                    <select
+                      value={stationId}
+                      onChange={(event) => selectStation(event.target.value)}
                       required
-                      disabled={loadingBarangays}
+                      disabled={loadingStations}
                     >
-                      <option value="">{loadingBarangays ? "Loading barangays…" : "Select barangay"}</option>
-                      {barangays.map((barangay) => (
-                        <option key={barangay.id} value={barangay.id}>{barangay.name}</option>
+                      <option value="">{loadingStations ? "Loading stations…" : "Select active station"}</option>
+                      {stations.map((station) => (
+                        <option key={station.id} value={station.id}>{station.stationName}</option>
                       ))}
                     </select>
                   </label>
-                  <label>
-                    Nearest landmark <span className="mbfp-phone-optional-tag">Optional</span>
-                    <input
-                      value={landmark}
-                      onChange={(event) => setLandmark(event.target.value)}
-                      maxLength={200}
-                      placeholder="School, plaza, bridge, chapel…"
-                    />
-                  </label>
-                </div>
 
-                <label className="mbfp-phone-label-full">
-                  Description
-                  <textarea
-                    value={description}
-                    onChange={(event) => setDescription(event.target.value)}
-                    required
-                    maxLength={1200}
-                    rows={3}
-                    placeholder="What is burning, visible risk, people affected, access road condition, or hazards…"
-                  />
-                </label>
-              </section>
+                  {stationId && (
+                    <fieldset className="mbfp-phone-responders">
+                      <legend>
+                        <i className="fa-solid fa-users-viewfinder" aria-hidden="true" />
+                        Individual responders
+                      </legend>
+                      {loadingResponders ? (
+                        <div className="mbfp-phone-responders-loading">
+                          <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" />
+                          <span>Loading active responders…</span>
+                        </div>
+                      ) : responders.length ? (
+                        <div className="mbfp-phone-responders-grid">
+                          {responders.map((responder) => {
+                            const isChecked = responderIds.includes(responder.id);
+                            return (
+                              <label
+                                key={responder.id}
+                                className={`mbfp-phone-responder ${isChecked ? "selected" : ""}`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleResponder(responder.id)}
+                                />
+                                <div className="mbfp-phone-responder-info">
+                                  <span className="mbfp-phone-responder-name">{responder.displayName}</span>
+                                  <span className="mbfp-phone-responder-role">BFP Responder</span>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="mbfp-phone-muted">
+                          <i className="fa-solid fa-circle-info" aria-hidden="true" />
+                          No active responders are assigned to this station.
+                        </p>
+                      )}
+                    </fieldset>
+                  )}
+                </section>
+              </div>
 
-              {/* SECTION 02: RESPONSE TEAM */}
-              <section className="mbfp-phone-section">
-                <div className="mbfp-phone-section-heading">
-                  <span className="mbfp-phone-step-badge">02</span>
-                  <div>
-                    <h3>Response team</h3>
-                    <p>Select one station, then choose the people to receive the dispatch.</p>
+              {/* SECTION 03: MAP & PIN CONFIRMATION */}
+              <aside className="mbfp-phone-map-column">
+                <section className="mbfp-phone-section mbfp-phone-map-section">
+                  <div className="mbfp-phone-section-heading">
+                    <span className="mbfp-phone-step-badge">03</span>
+                    <div>
+                      <h3>Confirm incident pin</h3>
+                      <p>Click the map or drag the red fire pin. For keyboard use, enter coordinates and select Set precise coordinates. Station coordinates are only a starting point.</p>
+                    </div>
                   </div>
-                </div>
 
-                <label className="mbfp-phone-label-full">
-                  Dispatching station
-                  <select
-                    value={stationId}
-                    onChange={(event) => selectStation(event.target.value)}
-                    required
-                    disabled={loadingStations}
-                  >
-                    <option value="">{loadingStations ? "Loading stations…" : "Select active station"}</option>
-                    {stations.map((station) => (
-                      <option key={station.id} value={station.id}>{station.stationName}</option>
-                    ))}
-                  </select>
-                </label>
+                  <div className="mbfp-phone-map-wrapper">
+                    <div ref={mapContainerRef} className="mbfp-phone-map" aria-label="Incident location map" />
+                    <div className="mbfp-phone-map-overlay-hint">
+                      <i className="fa-solid fa-hand-pointer" aria-hidden="true" />
+                      <span>Click or drag pin to exact location</span>
+                    </div>
+                  </div>
 
-                {stationId && (
-                  <fieldset className="mbfp-phone-responders">
-                    <legend>
-                      <i className="fa-solid fa-users-viewfinder" aria-hidden="true" />
-                      Individual responders
-                    </legend>
-                    {loadingResponders ? (
-                      <div className="mbfp-phone-responders-loading">
-                        <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" />
-                        <span>Loading active responders…</span>
-                      </div>
-                    ) : responders.length ? (
-                      <div className="mbfp-phone-responders-grid">
-                        {responders.map((responder) => {
-                          const isChecked = responderIds.includes(responder.id);
-                          return (
-                            <label
-                              key={responder.id}
-                              className={`mbfp-phone-responder ${isChecked ? "selected" : ""}`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => toggleResponder(responder.id)}
-                              />
-                              <div className="mbfp-phone-responder-info">
-                                <span className="mbfp-phone-responder-name">{responder.displayName}</span>
-                                <span className="mbfp-phone-responder-role">BFP Responder</span>
-                              </div>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="mbfp-phone-muted">
-                        <i className="fa-solid fa-circle-info" aria-hidden="true" />
-                        No active responders are assigned to this station.
-                      </p>
-                    )}
-                  </fieldset>
-                )}
-              </section>
+                  <div className="mbfp-phone-coordinate-controls" aria-describedby="phone-coordinate-help">
+                    <label>
+                      Latitude
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.000001"
+                        min="4"
+                        max="22"
+                        value={latitude}
+                        onChange={(event) => setLatitude(event.target.value)}
+                        placeholder="e.g. 10.743200"
+                      />
+                    </label>
+                    <label>
+                      Longitude
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.000001"
+                        min="116"
+                        max="127"
+                        value={longitude}
+                        onChange={(event) => setLongitude(event.target.value)}
+                        placeholder="e.g. 121.984100"
+                      />
+                    </label>
+                    <button type="button" className="mbfp-phone-coord-btn" onClick={applyKeyboardPin}>
+                      <i className="fa-solid fa-location-crosshairs" aria-hidden="true" />
+                      Set precise coordinates
+                    </button>
+                  </div>
+
+                  <p id="phone-coordinate-help" className="mbfp-phone-coordinate-help">
+                    Enter Philippine coordinates (latitude 4–22, longitude 116–127) and select Set precise coordinates to confirm the same red pin used by the map.
+                  </p>
+
+                  <p className={`mbfp-phone-pin-status ${pinPlaced ? "confirmed" : ""}`} aria-live="polite">
+                    <i className={`fa-solid ${pinPlaced ? "fa-circle-check" : "fa-location-crosshairs"}`} aria-hidden="true" />
+                    <span>
+                      {pinPlaced && location
+                        ? `Precise pin set: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
+                        : "Precise pin required — click the map or drag the red pin."}
+                    </span>
+                  </p>
+
+                  <div className="mbfp-phone-dispatch-note">
+                    <div className="mbfp-phone-dispatch-note-icon">
+                      <i className="fa-solid fa-tower-broadcast" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <strong>From Phone Caller</strong>
+                      <span>This creates and immediately assigns a municipal response dispatch.</span>
+                    </div>
+                  </div>
+                </section>
+              </aside>
             </div>
-
-            {/* SECTION 03: MAP & PIN CONFIRMATION */}
-            <aside className="mbfp-phone-map-column">
-              <section className="mbfp-phone-section mbfp-phone-map-section">
-                <div className="mbfp-phone-section-heading">
-                  <span className="mbfp-phone-step-badge">03</span>
-                  <div>
-                    <h3>Confirm incident pin</h3>
-                    <p>Click the map or drag the red fire pin. For keyboard use, enter coordinates and select Set precise coordinates. Station coordinates are only a starting point.</p>
-                  </div>
-                </div>
-
-                <div className="mbfp-phone-map-wrapper">
-                  <div ref={mapContainerRef} className="mbfp-phone-map" aria-label="Incident location map" />
-                  <div className="mbfp-phone-map-overlay-hint">
-                    <i className="fa-solid fa-hand-pointer" aria-hidden="true" />
-                    <span>Click or drag pin to exact location</span>
-                  </div>
-                </div>
-
-                <div className="mbfp-phone-coordinate-controls" aria-describedby="phone-coordinate-help">
-                  <label>
-                    Latitude
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.000001"
-                      min="4"
-                      max="22"
-                      value={latitude}
-                      onChange={(event) => setLatitude(event.target.value)}
-                      placeholder="e.g. 10.743200"
-                    />
-                  </label>
-                  <label>
-                    Longitude
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.000001"
-                      min="116"
-                      max="127"
-                      value={longitude}
-                      onChange={(event) => setLongitude(event.target.value)}
-                      placeholder="e.g. 121.984100"
-                    />
-                  </label>
-                  <button type="button" className="mbfp-phone-coord-btn" onClick={applyKeyboardPin}>
-                    <i className="fa-solid fa-location-crosshairs" aria-hidden="true" />
-                    Set precise coordinates
-                  </button>
-                </div>
-
-                <p id="phone-coordinate-help" className="mbfp-phone-coordinate-help">
-                  Enter Philippine coordinates (latitude 4–22, longitude 116–127) and select Set precise coordinates to confirm the same red pin used by the map.
-                </p>
-
-                <p className={`mbfp-phone-pin-status ${pinPlaced ? "confirmed" : ""}`} aria-live="polite">
-                  <i className={`fa-solid ${pinPlaced ? "fa-circle-check" : "fa-location-crosshairs"}`} aria-hidden="true" />
-                  <span>
-                    {pinPlaced && location
-                      ? `Precise pin set: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
-                      : "Precise pin required — click the map or drag the red pin."}
-                  </span>
-                </p>
-
-                <div className="mbfp-phone-dispatch-note">
-                  <div className="mbfp-phone-dispatch-note-icon">
-                    <i className="fa-solid fa-tower-broadcast" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <strong>From Phone Caller</strong>
-                    <span>This creates and immediately assigns a municipal response dispatch.</span>
-                  </div>
-                </div>
-              </section>
-            </aside>
           </div>
 
+          {/* DEDICATED SPACIOUS FOOTER - AMPLE BREATHING ROOM */}
           <footer className="mbfp-phone-footer">
             <p>
               <i className="fa-solid fa-shield-halved" aria-hidden="true" />
@@ -602,16 +607,19 @@ const phoneIntakeStyles = `
   /* BACKDROP & MODAL WRAPPER */
   .mbfp-phone-intake-backdrop {
     position: fixed;
-    inset: 0;
-    z-index: 1200;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
     display: grid;
     place-items: center;
-    padding: 1.25rem;
-    background: rgba(15, 23, 42, 0.72);
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.75);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    animation: mbfpBackdropFade 0.22s ease-out;
+    animation: mbfpBackdropFade 0.2s ease-out;
   }
 
   @keyframes mbfpBackdropFade {
@@ -621,57 +629,40 @@ const phoneIntakeStyles = `
 
   .mbfp-phone-intake {
     width: min(1160px, 100%);
-    max-height: min(92vh, 900px);
+    height: min(90vh, 880px);
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     background: #f8fafc;
     border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 20px;
-    box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 25px 65px -10px rgba(15, 23, 42, 0.55), 0 0 0 1px rgba(15, 23, 42, 0.1);
     color: #0f172a;
-    animation: mbfpModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-
-    /* ULTRA-SLIM CUSTOM SCROLLBAR (SLIDER) */
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
+    animation: mbfpModalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @keyframes mbfpModalPop {
-    from { opacity: 0; transform: scale(0.97) translateY(8px); }
+    from { opacity: 0; transform: scale(0.98) translateY(6px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
   }
 
-  .mbfp-phone-intake::-webkit-scrollbar {
-    width: 6px;
-  }
-  .mbfp-phone-intake::-webkit-scrollbar-track {
-    background: transparent;
-    margin: 12px 0;
-  }
-  .mbfp-phone-intake::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 9999px;
-  }
-  .mbfp-phone-intake::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-  }
-
-  /* HEADER */
+  /* FIXED HEADER - ZERO TOP INDEX */
   .mbfp-phone-intake-header {
-    position: sticky;
+    flex: 0 0 auto;
+    position: relative;
     top: 0;
-    z-index: 20;
+    left: 0;
+    right: 0;
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1rem 1.5rem;
+    padding: 1.15rem 1.6rem;
     background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 45%, #dc2626 100%);
     color: #ffffff;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 4px 16px -4px rgba(153, 27, 27, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 4px 16px -4px rgba(153, 27, 27, 0.35);
   }
 
   .mbfp-phone-header-main {
@@ -686,11 +677,11 @@ const phoneIntakeStyles = `
     width: 2.5rem;
     height: 2.5rem;
     background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 12px;
     font-size: 1.15rem;
     color: #ffffff;
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35);
   }
 
   .mbfp-phone-header-kicker {
@@ -730,26 +721,55 @@ const phoneIntakeStyles = `
   .mbfp-phone-close {
     display: grid;
     place-items: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    width: 2.35rem;
+    height: 2.35rem;
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.14);
     color: #ffffff;
-    font-size: 1rem;
+    font-size: 1.05rem;
     cursor: pointer;
     transition: all 0.18s ease;
   }
 
   .mbfp-phone-close:hover {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.5);
     transform: rotate(90deg);
   }
 
-  /* FORM & GRID */
+  /* FORM SHELL */
   .mbfp-phone-form {
-    padding: 1.25rem 1.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* SCROLLABLE INNER BODY - SLIM SCROLLBAR */
+  .mbfp-phone-scrollable-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1.35rem 1.6rem 2rem;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .mbfp-phone-scrollable-body::-webkit-scrollbar {
+    width: 5px;
+  }
+  .mbfp-phone-scrollable-body::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 8px 0;
+  }
+  .mbfp-phone-scrollable-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+  .mbfp-phone-scrollable-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 
   .mbfp-phone-error {
@@ -757,7 +777,7 @@ const phoneIntakeStyles = `
     align-items: center;
     gap: 0.65rem;
     margin: 0 0 1.2rem;
-    padding: 0.75rem 1rem;
+    padding: 0.8rem 1.1rem;
     border: 1px solid #fecaca;
     border-radius: 12px;
     background: #fef2f2;
@@ -770,18 +790,19 @@ const phoneIntakeStyles = `
   .mbfp-phone-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.22fr) minmax(360px, 0.98fr);
-    gap: 1.25rem;
+    gap: 1.35rem;
     align-items: start;
+    padding-bottom: 0.5rem;
   }
 
   .mbfp-phone-column {
     display: grid;
-    gap: 1.2rem;
+    gap: 1.3rem;
   }
 
   /* SECTIONS & CARDS */
   .mbfp-phone-section {
-    padding: 1.2rem 1.3rem;
+    padding: 1.25rem 1.35rem;
     border: 1px solid #e2e8f0;
     border-radius: 16px;
     background: #ffffff;
@@ -798,20 +819,20 @@ const phoneIntakeStyles = `
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.05rem;
   }
 
   .mbfp-phone-step-badge {
     display: grid;
     place-items: center;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 1.8rem;
+    height: 1.8rem;
     flex: 0 0 auto;
     border-radius: 8px;
     background: linear-gradient(135deg, #fee2e2, #fecaca);
     color: #991b1b;
     border: 1px solid #fca5a5;
-    font-size: 0.72rem;
+    font-size: 0.74rem;
     font-weight: 900;
     box-shadow: 0 2px 6px rgba(220, 38, 38, 0.12);
   }
@@ -819,7 +840,7 @@ const phoneIntakeStyles = `
   .mbfp-phone-section h3 {
     margin: 0;
     color: #0f172a;
-    font-size: 0.96rem;
+    font-size: 0.98rem;
     font-weight: 800;
     letter-spacing: -0.01em;
   }
@@ -827,15 +848,15 @@ const phoneIntakeStyles = `
   .mbfp-phone-section-heading p {
     margin: 0.2rem 0 0;
     color: #64748b;
-    font-size: 0.74rem;
+    font-size: 0.75rem;
     line-height: 1.4;
   }
 
   /* FIELDS & INPUTS */
   .mbfp-phone-fields {
     display: grid;
-    gap: 0.85rem;
-    margin-bottom: 0.85rem;
+    gap: 0.9rem;
+    margin-bottom: 0.9rem;
   }
 
   .mbfp-phone-fields.two {
@@ -844,16 +865,16 @@ const phoneIntakeStyles = `
 
   .mbfp-phone-section label {
     display: grid;
-    gap: 0.35rem;
+    gap: 0.38rem;
     color: #1e293b;
-    font-size: 0.75rem;
+    font-size: 0.76rem;
     font-weight: 700;
   }
 
   .mbfp-phone-label-full {
     display: grid;
-    gap: 0.35rem;
-    margin-top: 0.2rem;
+    gap: 0.38rem;
+    margin-top: 0.3rem;
   }
 
   .mbfp-phone-optional-tag {
@@ -873,11 +894,11 @@ const phoneIntakeStyles = `
     width: 100%;
     border: 1.5px solid #e2e8f0;
     border-radius: 10px;
-    padding: 0.65rem 0.8rem;
+    padding: 0.68rem 0.85rem;
     background: #ffffff;
     color: #0f172a;
     font: inherit;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 500;
     transition: all 0.18s ease;
   }
@@ -906,9 +927,9 @@ const phoneIntakeStyles = `
   /* RESPONDERS LIST */
   .mbfp-phone-responders {
     display: grid;
-    gap: 0.6rem;
-    margin: 0.95rem 0 0;
-    padding: 0.9rem;
+    gap: 0.65rem;
+    margin: 1.05rem 0 0;
+    padding: 0.95rem;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     background: #f8fafc;
@@ -920,7 +941,7 @@ const phoneIntakeStyles = `
     gap: 0.4rem;
     padding: 0 0.45rem;
     color: #1e293b;
-    font-size: 0.74rem;
+    font-size: 0.75rem;
     font-weight: 800;
   }
 
@@ -931,14 +952,14 @@ const phoneIntakeStyles = `
   .mbfp-phone-responders-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 0.55rem;
+    gap: 0.6rem;
   }
 
   .mbfp-phone-responder {
     display: flex !important;
     align-items: center;
-    gap: 0.65rem;
-    padding: 0.65rem 0.8rem;
+    gap: 0.7rem;
+    padding: 0.7rem 0.85rem;
     border: 1.5px solid #e2e8f0;
     border-radius: 10px;
     background: #ffffff;
@@ -958,8 +979,8 @@ const phoneIntakeStyles = `
   }
 
   .mbfp-phone-responder input {
-    width: 1.1rem !important;
-    height: 1.1rem !important;
+    width: 1.15rem !important;
+    height: 1.15rem !important;
     accent-color: #dc2626;
     margin: 0;
     cursor: pointer;
@@ -972,13 +993,13 @@ const phoneIntakeStyles = `
 
   .mbfp-phone-responder-name {
     color: #0f172a !important;
-    font-size: 0.82rem;
+    font-size: 0.83rem;
     font-weight: 700;
   }
 
   .mbfp-phone-responder-role {
     color: #64748b;
-    font-size: 0.68rem;
+    font-size: 0.69rem;
     font-weight: 600;
   }
 
@@ -1051,7 +1072,7 @@ const phoneIntakeStyles = `
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.65rem;
-    margin-top: 0.9rem;
+    margin-top: 0.95rem;
   }
 
   .mbfp-phone-coord-btn {
@@ -1062,11 +1083,11 @@ const phoneIntakeStyles = `
     gap: 0.45rem;
     border: 1px solid #fecaca;
     border-radius: 10px;
-    padding: 0.6rem 0.8rem;
+    padding: 0.62rem 0.85rem;
     background: #fef2f2;
     color: #991b1b;
     font: inherit;
-    font-size: 0.78rem;
+    font-size: 0.79rem;
     font-weight: 800;
     cursor: pointer;
     transition: all 0.18s ease;
@@ -1080,7 +1101,7 @@ const phoneIntakeStyles = `
   .mbfp-phone-coordinate-help {
     margin: 0.45rem 0 0;
     color: #64748b;
-    font-size: 0.69rem;
+    font-size: 0.7rem;
     line-height: 1.4;
   }
 
@@ -1111,13 +1132,13 @@ const phoneIntakeStyles = `
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin: 0.8rem 0 0;
-    padding: 0.6rem 0.75rem;
+    margin: 0.9rem 0 0;
+    padding: 0.65rem 0.85rem;
     border-radius: 10px;
     background: #fef3c7;
     border: 1px solid #fde68a;
     color: #92400e;
-    font-size: 0.74rem;
+    font-size: 0.75rem;
     font-weight: 800;
     line-height: 1.35;
   }
@@ -1132,8 +1153,8 @@ const phoneIntakeStyles = `
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    margin-top: 0.9rem;
-    padding: 0.85rem;
+    margin-top: 0.95rem;
+    padding: 0.9rem;
     border: 1px solid #fed7aa;
     border-radius: 12px;
     background: #fff7ed;
@@ -1169,43 +1190,43 @@ const phoneIntakeStyles = `
     color: #9a3412;
   }
 
-  /* FOOTER */
+  /* DEDICATED SPACIOUS FOOTER - ZERO CRAMPING */
   .mbfp-phone-footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 15;
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    margin-top: 1.25rem;
-    padding: 1rem 0 0;
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
+    gap: 1.25rem;
+    padding: 1.15rem 1.6rem 1.35rem;
+    background: #ffffff;
+    border-top: 1.5px solid #e2e8f0;
+    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.06);
   }
 
   .mbfp-phone-footer > p {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
-    max-width: 500px;
+    gap: 0.5rem;
+    max-width: 520px;
     margin: 0;
     color: #64748b;
-    font-size: 0.73rem;
+    font-size: 0.74rem;
     font-weight: 600;
     line-height: 1.4;
   }
 
   .mbfp-phone-footer > p i {
     color: #dc2626;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     flex: 0 0 auto;
   }
 
   .mbfp-phone-footer-buttons {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.85rem;
     flex-shrink: 0;
   }
 
@@ -1214,11 +1235,11 @@ const phoneIntakeStyles = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    border-radius: 10px;
-    padding: 0.7rem 1.15rem;
+    gap: 0.55rem;
+    border-radius: 11px;
+    padding: 0.75rem 1.35rem;
     font: inherit;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 800;
     cursor: pointer;
     transition: all 0.18s ease;
@@ -1275,9 +1296,10 @@ const phoneIntakeStyles = `
       border: 0;
     }
     .mbfp-phone-intake-header,
-    .mbfp-phone-form {
-      padding-left: 1rem;
-      padding-right: 1rem;
+    .mbfp-phone-scrollable-body,
+    .mbfp-phone-footer {
+      padding-left: 1.1rem;
+      padding-right: 1.1rem;
     }
     .mbfp-phone-grid {
       grid-template-columns: 1fr;
@@ -1291,13 +1313,14 @@ const phoneIntakeStyles = `
     .mbfp-phone-footer {
       flex-direction: column;
       align-items: stretch;
+      padding-bottom: 1.5rem;
     }
     .mbfp-phone-footer-buttons {
       justify-content: flex-end;
     }
     .mbfp-phone-submit,
     .mbfp-phone-cancel {
-      min-height: 44px;
+      min-height: 46px;
     }
   }
 
