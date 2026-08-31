@@ -110,7 +110,20 @@ export async function sendDispatchPush(input: {
             barangay: input.barangay ?? "",
             municipality: input.municipalityName,
           },
-          android: { priority: "high", notification: { channel_id: "incident_dispatches", sound: "default", notification_priority: "PRIORITY_MAX" } },
+          android: {
+            priority: "HIGH",
+            ttl: "0s",
+            direct_boot_ok: true,
+            notification: {
+              channel_id: "incident_dispatches",
+              sound: "default",
+              notification_priority: "PRIORITY_MAX",
+              default_sound: true,
+              default_vibrate_timings: true,
+              visibility: "PUBLIC",
+              click_action: "FLUTTER_NOTIFICATION_CLICK",
+            },
+          },
         } }),
       });
       const body = await response.json() as { name?: string; error?: { status?: string } };
