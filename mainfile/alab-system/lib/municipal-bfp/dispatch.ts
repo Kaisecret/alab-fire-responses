@@ -19,6 +19,11 @@ export type DispatchableStation = {
   activePersonnelCount: number;
 };
 
+export type DispatchableResponder = {
+  id: string;
+  displayName: string;
+};
+
 type DispatchInput = {
   fireReportId: string;
   municipalityId: string;
@@ -70,6 +75,26 @@ export async function listDispatchableStations(municipalityId: string): Promise<
   return queryDispatchableStations(getDatabase(), municipalityId);
 }
 
+export async function listStationResponders(municipalityId: string, stationId: string): Promise<DispatchableResponder[]> {
+  if (!validId(municipalityId) || !validId(stationId)) return [];
+  const result = await getDatabase().query<DispatchableResponder>(
+    `select u.id, profile.display_name as "displayName"
+       from municipal_bfp_stations station
+       join bfp_station_assignments station_assignment
+         on station_assignment.station_id = station.id and station_assignment.status = 'ACTIVE'
+       join bfp_personnel_profiles profile on profile.id = station_assignment.personnel_profile_id
+       join bfp_municipality_assignments municipality_assignment
+         on municipality_assignment.personnel_profile_id = profile.id and municipality_assignment.status = 'ACTIVE'
+       join users u on u.id = profile.user_id
+      where station.id = $2 and station.municipality_id = $1 and station.status = 'ACTIVE'
+        and municipality_assignment.municipality_id = $1
+        and u.role = 'MUNICIPAL_BFP' and u.account_status = 'ACTIVE'
+      order by profile.display_name asc`,
+    [municipalityId, stationId],
+  );
+  return result.rows;
+}
+
 async function getSelectedStations(client: Queryable, municipalityId: string, requestedStationIds: string[]) {
   const rows = await client.query<DispatchStationRow>(
     `select id, station_name, latitude::float as latitude, longitude::float as longitude
@@ -93,13 +118,13 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
     const current = await client.query<{
       status: FireReportStatus;
       reference_number: string;
-      resident_user_id: string;
+      resident_user_id: string | null;
       barangay: string | null;
     }>(
       `select fr.status, fr.reference_number, resident.user_id as resident_user_id,
               coalesce(report_barangay.name, resident_barangay.name, nullif(trim(split_part(fr.address_label, ',', 1)), '')) as barangay
          from fire_reports fr
-         join resident_profiles resident on resident.id = fr.resident_profile_id
+         left join resident_profiles resident on resident.id = fr.resident_profile_id
          left join barangays report_barangay on report_barangay.id = fr.barangay_id
          left join resident_addresses ra on ra.resident_profile_id = resident.id and ra.is_primary = true
          left join barangays resident_barangay on resident_barangay.id = ra.barangay_id
@@ -193,8 +218,9 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
       dedupeKey: `incident-dispatch:${dispatchId}:assigned`,
       createdAt: now,
     });
-    await createAccountNotifications(client, {
-      recipientUserIds: [report.resident_user_id],
+    if (report.resident_user_id) {
+      await createAccountNotifications(client, {
+        recipientUserIds: [report.resident_user_id],
       actorUserId: input.actorUserId,
       eventType: "INCIDENT_DISPATCH_STATUS_CHANGED",
       category: "RESPONSE",
@@ -207,6 +233,7 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
       dedupeKey: `incident-dispatch:${dispatchId}:resident`,
       createdAt: now,
     });
+    }
     await createAccountNotifications(client, {
       recipientUserIds: await listProvincialNotificationRecipients(client),
       actorUserId: input.actorUserId,
@@ -444,11 +471,11 @@ export async function resolveMunicipalIncident(input: {
       id: string;
       status: FireReportStatus;
       reference_number: string;
-      resident_user_id: string;
+      resident_user_id: string | null;
     }>(
       `select fr.id, fr.status, fr.reference_number, resident.user_id as resident_user_id
          from fire_reports fr
-         join resident_profiles resident on resident.id = fr.resident_profile_id
+         left join resident_profiles resident on resident.id = fr.resident_profile_id
         where fr.id = $1 and fr.municipality_id = $2
         for update of fr`,
       [input.fireReportId, input.municipalityId],
@@ -488,8 +515,9 @@ export async function resolveMunicipalIncident(input: {
       [input.fireReportId, row.status, input.actorUserId, now],
     );
 
-    await createAccountNotifications(client, {
-      recipientUserIds: [row.resident_user_id],
+    if (row.resident_user_id) {
+      await createAccountNotifications(client, {
+        recipientUserIds: [row.resident_user_id],
       actorUserId: input.actorUserId,
       eventType: "INCIDENT_DISPATCH_STATUS_CHANGED",
       category: "RESPONSE",
@@ -502,6 +530,7 @@ export async function resolveMunicipalIncident(input: {
       dedupeKey: `incident-resolution:${input.fireReportId}`,
       createdAt: now,
     });
+    }
 
     return { status: "RESOLVED" as const, resolvedAt: now };
   });
