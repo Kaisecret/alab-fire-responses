@@ -34,7 +34,7 @@ begin
     join public.users u
       on u.id = personnel.user_id
     where assignment.municipality_id = new.municipality_id
-      and assignment.assignment_role in ('MUNICIPAL_ADMIN', 'MUNICIPAL_STAFF')
+      and assignment.assignment_role = 'MUNICIPAL_ADMIN'
       and assignment.status = 'ACTIVE'
       and u.role = 'MUNICIPAL_BFP'
       and u.id = new.created_by_user_id

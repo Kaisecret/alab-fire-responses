@@ -32,7 +32,8 @@ test("phone incident creators are restricted to active municipal BFP assignments
   assert.match(migration, /fire_reports_phone_creator_scope_fn/i);
   assert.match(migration, /create trigger fire_reports_phone_creator_scope_trg/i);
   assert.match(migration, /bfp_municipality_assignments/i);
-  assert.match(migration, /assignment_role in \('MUNICIPAL_ADMIN', 'MUNICIPAL_STAFF'\)/i);
+  assert.match(migration, /assignment_role = 'MUNICIPAL_ADMIN'/i);
+  assert.doesNotMatch(migration, /assignment_role in \('MUNICIPAL_ADMIN', 'MUNICIPAL_STAFF'\)/i);
   assert.match(migration, /status = 'ACTIVE'/i);
   assert.match(migration, /assignment\.municipality_id = new\.municipality_id/i);
   assert.match(migration, /u\.role = 'MUNICIPAL_BFP'/i);
