@@ -7,11 +7,16 @@ const root = process.cwd();
 const source = (path) => readFileSync(join(root, path), "utf8");
 
 test("mobile responders receive only their dispatches and can start route or report location", () => {
-  const paths = ["app/api/mobile-bfp/dispatches/route.ts", "app/api/mobile-bfp/dispatches/[dispatchId]/route.ts"];
+  const paths = [
+    "app/api/mobile-bfp/dispatches/route.ts",
+    "app/api/mobile-bfp/dispatches/[dispatchId]/route.ts",
+    "app/api/mobile-bfp/dispatches/resolved/route.ts",
+  ];
   for (const path of paths) assert.equal(existsSync(join(root, path)), true, `${path} is missing`);
   const combined = paths.map(source).join("\n");
   assert.match(combined, /requireMobileMunicipalBfp/);
   assert.match(combined, /listMobileDispatchAssignments/);
+  assert.match(combined, /listMobileResolvedAssignments/);
   assert.match(combined, /acknowledgeDispatchRoute/);
   assert.match(combined, /recordDispatchLocation/);
   assert.match(combined, /START_ROUTE/);

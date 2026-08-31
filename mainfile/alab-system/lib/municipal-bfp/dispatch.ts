@@ -299,6 +299,31 @@ export async function getMobileResolvedCount(userId: string): Promise<number> {
   return Number(result.rows[0]?.count ?? 0);
 }
 
+export async function listMobileResolvedAssignments(userId: string): Promise<MobileDispatchAssignment[]> {
+  const result = await getDatabase().query<MobileDispatchAssignment>(
+    `select d.id as "dispatchId", recipient.id as "recipientId", recipient.status as "recipientStatus",
+            recipient.assigned_at as "assignedAt", report.reference_number as "referenceNumber", report.fire_type as "fireType",
+            report.status as "reportStatus", report.latitude::float as latitude, report.longitude::float as longitude,
+            coalesce(b.name, rp_b.name, nullif(trim(split_part(report.address_label, ',', 1)), '')) as barangay,
+            municipality.name as municipality,
+            report.nearest_landmark as landmark, station.station_name_snapshot as "stationName",
+            station.station_latitude_snapshot::float as "stationLatitude", station.station_longitude_snapshot::float as "stationLongitude"
+       from incident_dispatch_recipients recipient
+       join incident_dispatches d on d.id = recipient.dispatch_id
+       join incident_dispatch_stations station on station.id = recipient.dispatch_station_id
+       join fire_reports report on report.id = d.fire_report_id
+       left join municipalities municipality on municipality.id = report.municipality_id
+       left join barangays b on b.id = report.barangay_id
+       left join resident_profiles rp on rp.id = report.resident_profile_id
+       left join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary = true
+       left join barangays rp_b on rp_b.id = ra.barangay_id
+      where recipient.recipient_user_id = $1 and (recipient.status = 'COMPLETED' or report.status = 'RESOLVED')
+      order by coalesce(recipient.completed_at, recipient.updated_at, recipient.assigned_at) desc`,
+    [userId],
+  );
+  return result.rows;
+}
+
 function distanceMeters(fromLatitude: number, fromLongitude: number, toLatitude: number, toLongitude: number) {
   const radians = (value: number) => value * Math.PI / 180;
   const latitudeDelta = radians(toLatitude - fromLatitude);
