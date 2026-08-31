@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const result = await getDatabase().query(
       `select fr.id, fr.reference_number as "referenceNumber", fr.fire_type as "fireType", fr.status, fr.submitted_at as "submittedAt",
               fr.latitude::float as latitude, fr.longitude::float as longitude, b.name as barangay, fr.nearest_landmark as landmark,
-              fr.reporter_name_snapshot as "residentName"
+              fr.report_source as "reportSource", coalesce(fr.caller_name, fr.reporter_name_snapshot) as "residentName"
          from fire_reports fr left join barangays b on b.id = fr.barangay_id
         where fr.municipality_id = $1 ${includeHistory ? "" : "and fr.status not in ('RESOLVED','REJECTED','FALSE_REPORT','DUPLICATE','CLOSED')"}
         order by fr.submitted_at desc`, [identity.municipalityId],

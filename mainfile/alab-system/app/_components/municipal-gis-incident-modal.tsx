@@ -9,6 +9,7 @@ type HistoryEvent = { status: string; message: string | null; createdAt: string 
 type IncidentDetail = {
   id: string;
   referenceNumber: string;
+  reportSource: "ALAB_APP" | "PHONE_CALL";
   status: string;
   fireType: string;
   description: string | null;
@@ -129,7 +130,7 @@ export function MunicipalGisIncidentModal({ incidents, onClose }: { incidents: M
           <div className="mbfp-gis-modal-selector" aria-label="Reports at this reported location">
             {incidents.map((candidate) => (
               <button key={candidate.id} type="button" className={candidate.id === selectedId ? "is-selected" : ""} onClick={() => setSelectedId(candidate.id)}>
-                <strong>{candidate.referenceNumber}</strong><span>{humanize(candidate.status)} · {formatDate(candidate.submittedAt)}</span>
+                <strong>{candidate.referenceNumber}</strong><span>{candidate.reportSource === "PHONE_CALL" ? "From Phone Caller · " : ""}{humanize(candidate.status)} · {formatDate(candidate.submittedAt)}</span>
               </button>
             ))}
           </div>
@@ -139,13 +140,13 @@ export function MunicipalGisIncidentModal({ incidents, onClose }: { incidents: M
           <div className="mbfp-gis-modal-body">
             <section className="mbfp-gis-modal-hero">
               <span className="mbfp-gis-modal-fire"><i className="fa-solid fa-fire" aria-hidden="true" /></span>
-              <div><strong>{detail.referenceNumber}</strong><span className={`mbfp-gis-status status-${detail.status.toLowerCase()}`}>{humanize(detail.status)}</span></div>
+              <div><strong>{detail.referenceNumber}</strong>{detail.reportSource === "PHONE_CALL" && <span>From Phone Caller</span>}<span className={`mbfp-gis-status status-${detail.status.toLowerCase()}`}>{humanize(detail.status)}</span></div>
               <p>Reported {formatDate(detail.submittedAt)}</p>
             </section>
 
             <div className="mbfp-gis-facts">
-              <article><span>Resident</span><strong>{detail.residentName || [detail.firstName, detail.lastName].filter(Boolean).join(" ") || "Not recorded"}</strong></article>
-              <article><span>Direct contact</span><strong>{detail.phone || "Not recorded"}</strong></article>
+              <article><span>{detail.reportSource === "PHONE_CALL" ? "Caller" : "Resident"}</span><strong>{detail.residentName || [detail.firstName, detail.lastName].filter(Boolean).join(" ") || "Not recorded"}</strong></article>
+              <article><span>{detail.reportSource === "PHONE_CALL" ? "Caller contact" : "Direct contact"}</span><strong>{detail.phone || "Not recorded"}</strong></article>
               <article><span>Reported location</span><strong>{[detail.barangay, detail.municipality].filter(Boolean).join(", ") || "Not recorded"}</strong></article>
               <article><span>Nearest landmark</span><strong>{detail.landmark || "Not recorded"}</strong></article>
               <article><span>GPS coordinates</span><strong>{Number.isFinite(detail.latitude) ? `${detail.latitude.toFixed(6)}, ${detail.longitude.toFixed(6)}` : "Not recorded"}</strong></article>
@@ -154,7 +155,7 @@ export function MunicipalGisIncidentModal({ incidents, onClose }: { incidents: M
               <article><span>Completed / closed</span><strong>{completion ? formatDate(completion.createdAt) : "Not completed"}</strong></article>
             </div>
 
-            <section className="mbfp-gis-modal-section"><h3>Reported cause / description</h3><p>{detail.description || "No resident description was provided. This is a resident report, not a confirmed fire-cause assessment."}</p></section>
+            <section className="mbfp-gis-modal-section"><h3>Reported cause / description</h3><p>{detail.description || (detail.reportSource === "PHONE_CALL" ? "No caller description was provided. This is a phone-call report, not a confirmed fire-cause assessment." : "No resident description was provided. This is a resident report, not a confirmed fire-cause assessment.")}</p></section>
 
             <section className="mbfp-gis-modal-section"><h3>Status timeline</h3><ol className="mbfp-gis-timeline">{detail.history.length ? detail.history.map((event, index) => <li key={`${event.status}-${event.createdAt}-${index}`}><span /><div><strong>{humanize(event.status)}</strong><small>{formatDate(event.createdAt)}</small>{event.message && <p>{event.message}</p>}</div></li>) : <li><span /><div><strong>{humanize(detail.status)}</strong><small>{formatDate(detail.submittedAt)}</small></div></li>}</ol></section>
 

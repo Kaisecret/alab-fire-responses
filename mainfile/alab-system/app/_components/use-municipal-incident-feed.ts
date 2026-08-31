@@ -7,6 +7,7 @@ export const REFRESH_INTERVAL_MS = 5_000;
 export interface MunicipalIncident {
   id: string;
   referenceNumber: string;
+  reportSource: "ALAB_APP" | "PHONE_CALL";
   residentName: string | null;
   fireType: string;
   status: string;

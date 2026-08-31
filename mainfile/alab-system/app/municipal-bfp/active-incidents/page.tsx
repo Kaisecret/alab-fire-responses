@@ -779,6 +779,7 @@ export default function ActiveIncidentsPage() {
                             <i className="fa-solid fa-hashtag" style={{ color: "#94A3B8", fontSize: "0.75rem" }} />
                             <span>{inc.referenceNumber}</span>
                           </div>
+                          {inc.reportSource === "PHONE_CALL" && <div className="mbfp-ref-time">From Phone Caller</div>}
                           <div className="mbfp-ref-time">
                             {new Date(inc.submittedAt).toLocaleTimeString([], {
                               hour: "2-digit",
@@ -792,9 +793,9 @@ export default function ActiveIncidentsPage() {
                         <td>
                           <div className="mbfp-caller-cell">
                             <div className="mbfp-caller-avatar">
-                              {inc.residentName ? inc.residentName.charAt(0).toUpperCase() : "R"}
+                              {inc.residentName ? inc.residentName.charAt(0).toUpperCase() : inc.reportSource === "PHONE_CALL" ? "C" : "R"}
                             </div>
-                            <span className="mbfp-caller-name">{inc.residentName || "Anonymous Resident"}</span>
+                            <span className="mbfp-caller-name">{inc.residentName || (inc.reportSource === "PHONE_CALL" ? "Anonymous caller" : "Anonymous Resident")}</span>
                           </div>
                         </td>
 

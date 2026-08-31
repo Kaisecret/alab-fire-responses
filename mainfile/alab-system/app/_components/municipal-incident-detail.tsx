@@ -10,6 +10,7 @@ import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-re
 type Incident = {
   id: string;
   referenceNumber: string;
+  reportSource: "ALAB_APP" | "PHONE_CALL";
   status: FireReportStatus;
   fireType: string;
   description: string;
@@ -1381,6 +1382,7 @@ export function MunicipalIncidentDetail({
     );
   }
 
+  const isPhoneReport = incident.reportSource === "PHONE_CALL";
   const isResponding = incident.status === "RESPONDING";
   const canResolve = canMunicipalResolveReport(incident.status);
   const isTerminal = ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(incident.status);
@@ -1412,6 +1414,7 @@ export function MunicipalIncidentDetail({
           <div className="mbfp-hero-left">
             <div className="mbfp-hero-meta-row">
               <span className="mbfp-hero-ref-tag">{incident.referenceNumber}</span>
+              {isPhoneReport && <span className="mbfp-hero-ref-tag">From Phone Caller</span>}
               <span className="mbfp-hero-firetype-pill">
                 <i className="fa-solid fa-fire" />
                 <span>{incident.fireType.replaceAll("_", " ")}</span>
@@ -1469,26 +1472,26 @@ export function MunicipalIncidentDetail({
         <div className="mbfp-tactical-grid">
           {/* Left Column: Data & Photos */}
           <div>
-            {/* Resident Profile Card */}
+            {/* Caller Profile Card */}
             <section className="mbfp-card" aria-labelledby="mbfp-resident-heading">
               <div className="mbfp-card-header">
                 <h2 id="mbfp-resident-heading" className="mbfp-card-title">
                   <i className="fa-solid fa-id-card" />
-                  <span>Resident emergency profile</span>
+                  <span>{isPhoneReport ? "Phone caller details" : "Resident emergency profile"}</span>
                 </h2>
               </div>
 
               <div className="mbfp-profile-grid">
                 <div className="mbfp-data-cell">
                   <span className="mbfp-data-label">
-                    <i className="fa-regular fa-user" /> Resident Name
+                    <i className="fa-regular fa-user" /> {isPhoneReport ? "Caller name" : "Resident Name"}
                   </span>
-                  <span className="mbfp-data-value">{incident.residentName || "Anonymous Resident"}</span>
+                  <span className="mbfp-data-value">{incident.residentName || (isPhoneReport ? "Anonymous caller" : "Anonymous Resident")}</span>
                 </div>
 
                 <div className="mbfp-data-cell">
                   <span className="mbfp-data-label">
-                    <i className="fa-solid fa-phone" /> Direct Contact
+                    <i className="fa-solid fa-phone" /> {isPhoneReport ? "Caller contact" : "Direct Contact"}
                   </span>
                   <span className="mbfp-data-value">
                     <a href={`tel:${incident.phone}`} className="mbfp-phone-link">
@@ -1500,7 +1503,7 @@ export function MunicipalIncidentDetail({
 
                 <div className="mbfp-data-cell">
                   <span className="mbfp-data-label">
-                    <i className="fa-regular fa-map" /> Registered Address
+                    <i className="fa-regular fa-map" /> {isPhoneReport ? "Reported address" : "Registered Address"}
                   </span>
                   <span className="mbfp-data-value">{incident.address || "Not specified"}</span>
                 </div>
@@ -1533,19 +1536,21 @@ export function MunicipalIncidentDetail({
                   <span className="mbfp-data-value">{incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}</span>
                 </div>
 
-                <div className="mbfp-data-cell">
-                  <span className="mbfp-data-label">
-                    <i className="fa-solid fa-network-wired" /> Public IP address
-                  </span>
-                  <span className="mbfp-data-value">{incident.reporterIpAddress || "Unavailable"}</span>
-                </div>
+                {!isPhoneReport && <>
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-solid fa-network-wired" /> Public IP address
+                    </span>
+                    <span className="mbfp-data-value">{incident.reporterIpAddress || "Unavailable"}</span>
+                  </div>
 
-                <div className="mbfp-data-cell">
-                  <span className="mbfp-data-label">
-                    <i className="fa-solid fa-mobile-screen-button" /> Device / browser
-                  </span>
-                  <span className="mbfp-data-value">{incident.reporterDeviceSummary || "Unavailable"}</span>
-                </div>
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-solid fa-mobile-screen-button" /> Device / browser
+                    </span>
+                    <span className="mbfp-data-value">{incident.reporterDeviceSummary || "Unavailable"}</span>
+                  </div>
+                </>}
               </div>
             </section>
 
@@ -1844,7 +1849,7 @@ export function MunicipalIncidentDetail({
                 <div className="mbfp-dispatch-dispatched-icon"><i className="fa-solid fa-building-shield" /></div>
                 <div>
                   <strong>Municipal approval required</strong>
-                  <p>Confirm that {incident.referenceNumber} is resolved. Active BFP dispatches will be completed and the resident will be updated.</p>
+                  <p>Confirm that {incident.referenceNumber} is resolved. Active BFP dispatches will be completed and the {isPhoneReport ? "caller record" : "resident"} will be updated.</p>
                 </div>
               </div>
               {dispatchError && <p className="mbfp-dispatch-error"><i className="fa-solid fa-circle-exclamation" /> {dispatchError}</p>}
