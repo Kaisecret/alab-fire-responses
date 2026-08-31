@@ -16,10 +16,41 @@ alter table public.fire_reports
     or (
       report_source = 'PHONE_CALL' and resident_profile_id is null
       and char_length(trim(caller_name)) between 2 and 120
-      and caller_phone ~ '^\\+?[0-9]{10,15}$'
+      and caller_phone ~ E'^\\+?[0-9]{10,15}$'
       and created_by_user_id is not null
     )
   );
+
+create or replace function public.fire_reports_phone_creator_scope_fn()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.report_source = 'PHONE_CALL' and not exists (
+    select 1
+    from public.bfp_municipality_assignments assignment
+    join public.bfp_personnel_profiles personnel
+      on personnel.id = assignment.personnel_profile_id
+    join public.users u
+      on u.id = personnel.user_id
+    where assignment.municipality_id = new.municipality_id
+      and assignment.assignment_role in ('MUNICIPAL_ADMIN', 'MUNICIPAL_STAFF')
+      and assignment.status = 'ACTIVE'
+      and u.role = 'MUNICIPAL_BFP'
+      and u.id = new.created_by_user_id
+  ) then
+    raise exception 'Phone-call incident creator must be an active municipal BFP assigned to the incident municipality';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists fire_reports_phone_creator_scope_trg on public.fire_reports;
+create trigger fire_reports_phone_creator_scope_trg
+  before insert or update of report_source, created_by_user_id, municipality_id
+  on public.fire_reports
+  for each row
+  execute function public.fire_reports_phone_creator_scope_fn();
 
 create index if not exists fire_reports_municipality_source_submitted_idx
   on public.fire_reports (municipality_id, report_source, submitted_at desc);
