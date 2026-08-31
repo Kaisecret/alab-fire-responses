@@ -24,7 +24,7 @@ const phonePattern = /^\+?[0-9]{10,15}$/;
 function normalizePlace(value: string) {
   return value
     .toLowerCase()
-    .replace(/^(brgy\.?|barangay|poblacion|zone|purok|sitio)\s*/gi, "")
+    .replace(/^(brgy\.?|barangay)\s*/gi, "")
     .replace(/[^a-z0-9]/g, "");
 }
 
@@ -45,6 +45,7 @@ function focusableElements(container: HTMLElement) {
 export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [municipalityName, setMunicipalityName] = useState("");
+  const [detectedMunicipality, setDetectedMunicipality] = useState("");
   const [stations, setStations] = useState<Station[]>([]);
   const [barangays, setBarangays] = useState<Barangay[]>([]);
   const [responders, setResponders] = useState<Responder[]>([]);
@@ -54,7 +55,6 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
   const [longitude, setLongitude] = useState("");
   const [pinPlaced, setPinPlaced] = useState(false);
   const [detectedBarangay, setDetectedBarangay] = useState("");
-  const [outOfBoundsWarning, setOutOfBoundsWarning] = useState("");
   const [showOutOfBoundsModal, setShowOutOfBoundsModal] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
 
@@ -85,6 +85,7 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
   const locationRef = useRef<Coordinates | null>(null);
   const barangaysRef = useRef<Barangay[]>([]);
   const municipalityRef = useRef<string>("");
+  const lastWarnedMuniRef = useRef<string>("");
 
   useEffect(() => {
     barangaysRef.current = barangays;
@@ -101,11 +102,12 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
       const response = await fetch(`/api/geocode/reverse?lat=${coords.latitude}&lon=${coords.longitude}`);
       if (!response.ok) return;
       const data = await response.json() as {
+        display_name?: string;
         address?: {
           village?: string;
-          quarter?: string;
-          suburb?: string;
           hamlet?: string;
+          suburb?: string;
+          quarter?: string;
           neighbourhood?: string;
           municipality?: string;
           town?: string;
@@ -116,50 +118,58 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
       const address = data.address;
       if (!address) return;
 
-      // 1. Municipal Territory Check (Stored for validation popup modal)
+      // 1. Municipal Territory Boundary Detection
       const detectedMuni = address.municipality || address.town || address.city || "";
       const currentMuni = municipalityRef.current;
+      setDetectedMunicipality(detectedMuni);
+
       if (detectedMuni && currentMuni) {
         const normDetected = normalizePlace(detectedMuni);
         const normCurrent = normalizePlace(currentMuni);
         if (normDetected && normCurrent && !normDetected.includes(normCurrent) && !normCurrent.includes(normDetected)) {
-          setOutOfBoundsWarning(`The incident pin is positioned in ${detectedMuni}, while ${currentMuni} Station is selected.`);
+          // Trigger immediate pop-up modal if dragged to a foreign municipality
+          if (lastWarnedMuniRef.current !== detectedMuni) {
+            lastWarnedMuniRef.current = detectedMuni;
+            setShowOutOfBoundsModal(true);
+          }
         } else {
-          setOutOfBoundsWarning("");
+          lastWarnedMuniRef.current = "";
         }
-      } else {
-        setOutOfBoundsWarning("");
       }
 
-      // 2. Strict & Confident Auto-Barangay Detection (Prevents false Poblacion 1)
-      const rawPlaces = [
+      // 2. High-Accuracy Barangay Detection from OSM Reverse Geocoding
+      const candidates = [
         address.village,
-        address.quarter,
-        address.suburb,
         address.hamlet,
+        address.suburb,
+        address.quarter,
         address.neighbourhood,
+        ...(data.display_name ? data.display_name.split(",").map((s) => s.trim()) : []),
       ].filter((p): p is string => Boolean(p && p.trim()));
 
       const availableBarangays = barangaysRef.current;
       let matchedBarangay: Barangay | undefined;
 
-      for (const place of rawPlaces) {
-        const normPlace = normalizePlace(place);
-        // Ignore single digits, numbers, or too-short noise
-        if (normPlace.length < 3 || /^\d+$/.test(normPlace)) continue;
+      for (const candidate of candidates) {
+        const normCandidate = normalizePlace(candidate);
+        if (!normCandidate || normCandidate.length < 2) continue;
 
-        // 1st Priority: Exact Match
         matchedBarangay = availableBarangays.find((b) => {
           const normB = normalizePlace(b.name);
-          return normB === normPlace;
+          return normB === normCandidate;
         });
         if (matchedBarangay) break;
+      }
 
-        // 2nd Priority: Substantial substring match (min 5 characters)
-        if (normPlace.length >= 5) {
+      // Fallback substring matching for compound names
+      if (!matchedBarangay) {
+        for (const candidate of candidates) {
+          const normCandidate = normalizePlace(candidate);
+          if (!normCandidate || normCandidate.length < 4) continue;
+
           matchedBarangay = availableBarangays.find((b) => {
             const normB = normalizePlace(b.name);
-            return normB.length >= 5 && (normB === normPlace || normB.startsWith(normPlace) || normPlace.startsWith(normB));
+            return normB.length >= 4 && (normB.includes(normCandidate) || normCandidate.includes(normB));
           });
           if (matchedBarangay) break;
         }
@@ -170,7 +180,7 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
         setDetectedBarangay(matchedBarangay.name);
       }
     } catch {
-      // Graceful fallback if geocoder offline
+      // Graceful fallback
     } finally {
       setIsGeocoding(false);
     }
@@ -199,6 +209,14 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
     }
     setError("");
     confirmCoordinates(coordinates);
+  };
+
+  const handleBarangaySelect = (newBarangayId: string) => {
+    setBarangayId(newBarangayId);
+    const selected = barangays.find((b) => b.id === newBarangayId);
+    if (selected) {
+      setDetectedBarangay(selected.name);
+    }
   };
 
   useEffect(() => { firstFieldRef.current?.focus(); }, []);
@@ -392,11 +410,7 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
       return;
     }
     setError("");
-    if (outOfBoundsWarning) {
-      setShowOutOfBoundsModal(true);
-    } else {
-      setShowConfirmation(true);
-    }
+    setShowConfirmation(true);
   };
 
   const handleConfirmAndDispatch = async () => {
@@ -677,10 +691,7 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
                     <div className="mbfp-phone-fields two">
                       <label>Barangay<select
                           value={barangayId}
-                          onChange={(event) => {
-                            setBarangayId(event.target.value);
-                            setDetectedBarangay("");
-                          }}
+                          onChange={(event) => handleBarangaySelect(event.target.value)}
                           required
                           disabled={loadingBarangays}
                         >
@@ -807,7 +818,7 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
                         {isGeocoding ? (
                           <>
                             <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" />
-                            <span>Checking location…</span>
+                            <span>Detecting location…</span>
                           </>
                         ) : (
                           <>
@@ -898,7 +909,7 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
         )}
 
         {/* ========================================================================= */}
-        {/* OUT-OF-BOUNDS WARNING POP-UP MODAL (CLEAN DIALOG OVERLAY)                 */}
+        {/* IMMEDIATE OUT-OF-BOUNDS WARNING POP-UP MODAL                              */}
         {/* ========================================================================= */}
         {showOutOfBoundsModal && (
           <div className="mbfp-popup-modal-backdrop" role="dialog" aria-modal="true">
@@ -908,35 +919,42 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
                   <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
                 </div>
                 <div>
-                  <h4>Jurisdiction Notice</h4>
-                  <p>Incident location boundary check</p>
+                  <h4>Location Outside Jurisdiction</h4>
+                  <p>Municipal jurisdiction boundary notice</p>
                 </div>
               </div>
               <div className="mbfp-popup-modal-body">
-                <p>{outOfBoundsWarning}</p>
+                <p className="mbfp-popup-modal-highlight">
+                  ⚠️ Pin is placed in <strong>{detectedMunicipality || "Different Municipality"}</strong>.
+                </p>
+                <p>
+                  You are signed in under <strong>{municipalityName || "Hamtic"} Emergency Command</strong>. Reports dispatched from here should be within the {municipalityName || "Hamtic"} area.
+                </p>
                 <p className="mbfp-popup-modal-subtext">
-                  Please verify if this report belongs to {municipalityName || "the assigned"} station, or adjust the pin closer to the reported barangay.
+                  Would you like to re-center the map pin to {municipalityName || "your station"} area, or keep this pin position?
                 </p>
               </div>
               <div className="mbfp-popup-modal-actions">
                 <button
                   type="button"
                   className="mbfp-phone-cancel"
-                  onClick={() => setShowOutOfBoundsModal(false)}
+                  onClick={() => {
+                    setShowOutOfBoundsModal(false);
+                    if (mapStart) {
+                      confirmCoordinates(mapStart);
+                    }
+                  }}
                 >
                   <i className="fa-solid fa-location-crosshairs" aria-hidden="true" />
-                  <span>Adjust Pin on Map</span>
+                  <span>Center to {municipalityName || "Station"}</span>
                 </button>
                 <button
                   type="button"
                   className="mbfp-phone-submit"
-                  onClick={() => {
-                    setShowOutOfBoundsModal(false);
-                    setShowConfirmation(true);
-                  }}
+                  onClick={() => setShowOutOfBoundsModal(false)}
                 >
-                  <span>Proceed to Dispatch</span>
-                  <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+                  <span>Keep Position</span>
+                  <i className="fa-solid fa-check" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -1750,88 +1768,98 @@ const phoneIntakeStyles = `
     font-size: 0.82rem;
   }
 
-  /* OUT OF BOUNDS WARNING MODAL DIALOG POPUP */
+  /* IMMEDIATE OUT OF BOUNDS WARNING POP-UP MODAL */
   .mbfp-popup-modal-backdrop {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: 999;
     display: grid;
     place-items: center;
     padding: 1.5rem;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(4px);
-    animation: mbfpBackdropFade 0.16s ease-out;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(6px);
+    animation: mbfpBackdropFade 0.18s ease-out;
   }
 
   .mbfp-popup-modal {
-    width: min(480px, 100%);
+    width: min(500px, 100%);
     background: #ffffff;
-    border-radius: 16px;
+    border-radius: 18px;
     border: 1px solid #fed7aa;
-    box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(234, 88, 12, 0.15);
-    padding: 1.35rem 1.5rem;
-    animation: mbfpModalPop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(234, 88, 12, 0.2);
+    padding: 1.5rem 1.65rem;
+    animation: mbfpModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .mbfp-popup-modal-header {
     display: flex;
     align-items: center;
     gap: 0.85rem;
-    margin-bottom: 0.95rem;
+    margin-bottom: 1.1rem;
   }
 
   .mbfp-popup-modal-icon.warning {
     display: grid;
     place-items: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 12px;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 14px;
     background: #fff7ed;
     border: 1.5px solid #fed7aa;
     color: #ea580c;
-    font-size: 1.15rem;
+    font-size: 1.25rem;
     flex: 0 0 auto;
   }
 
   .mbfp-popup-modal-header h4 {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 1.12rem;
     font-weight: 800;
     color: #7c2d12;
   }
 
   .mbfp-popup-modal-header p {
-    margin: 0.15rem 0 0;
-    font-size: 0.74rem;
+    margin: 0.2rem 0 0;
+    font-size: 0.76rem;
     font-weight: 600;
     color: #9a3412;
   }
 
   .mbfp-popup-modal-body p {
-    margin: 0 0 0.5rem;
-    font-size: 0.84rem;
-    font-weight: 600;
+    margin: 0 0 0.65rem;
+    font-size: 0.86rem;
+    font-weight: 500;
     color: #334155;
-    line-height: 1.45;
+    line-height: 1.5;
+  }
+
+  .mbfp-popup-modal-highlight {
+    padding: 0.6rem 0.85rem;
+    background: #fff7ed;
+    border-radius: 8px;
+    border-left: 3.5px solid #ea580c;
+    color: #9a3412 !important;
+    font-size: 0.85rem !important;
   }
 
   .mbfp-popup-modal-subtext {
-    font-size: 0.78rem !important;
+    font-size: 0.8rem !important;
     color: #64748b !important;
     font-weight: 500 !important;
+    margin-top: 0.4rem;
   }
 
   .mbfp-popup-modal-actions {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 1.35rem;
-    padding-top: 0.95rem;
-    border-top: 1px solid #f1f5f9;
+    gap: 0.85rem;
+    margin-top: 1.4rem;
+    padding-top: 1.1rem;
+    border-top: 1.5px solid #f1f5f9;
   }
 
   /* DEDICATED SPACIOUS FOOTER - ZERO CRAMPING */
