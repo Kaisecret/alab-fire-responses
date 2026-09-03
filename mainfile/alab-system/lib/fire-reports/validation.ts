@@ -1,7 +1,7 @@
 import type { FireReportStatus, FireType, StructureMaterial, HouseDensity, RouteAccessibility } from "./types";
 
 const fireTypes = new Set<FireType>(["HOUSE_BUILDING", "GRASS", "FOREST", "VEHICLE", "OTHER"]);
-const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const imageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/jpg"]);
 const terminalStatuses = new Set<FireReportStatus>(["RESOLVED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "CLOSED"]);
 const municipalResolutionStatuses = new Set<FireReportStatus>([
   "RESPONDING",
@@ -135,8 +135,9 @@ export function validateTacticalDetailsUpdate(raw: Record<string, unknown>): {
 
 export function validateFireReportPhoto(file: File | null) {
   if (!file) return;
-  if (!imageTypes.has(file.type)) throw new Error("Use a JPEG, PNG, or WebP fire photo.");
-  if (file.size > 8 * 1024 * 1024) throw new Error("The photo must be 8 MB or smaller.");
+  const isImageMime = imageTypes.has(file.type.toLowerCase()) || file.type.startsWith("image/");
+  if (!isImageMime && file.type) throw new Error("Use a JPEG, PNG, or WebP fire photo.");
+  if (file.size > 20 * 1024 * 1024) throw new Error("The photo must be 20 MB or smaller.");
 }
 
 export function canTransitionReportStatus(current: FireReportStatus, next: FireReportStatus) {

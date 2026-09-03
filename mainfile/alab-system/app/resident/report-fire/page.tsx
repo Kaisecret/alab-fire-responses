@@ -161,6 +161,9 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     if (!errorMessage) return;
     errorMessage.hidden = !message;
     errorMessage.textContent = message;
+    if (message) {
+      errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
   const typeHandlers = new Map<HTMLButtonElement, () => void>();
 
@@ -248,7 +251,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     if (locationCard.dataset.weatherWindCondition) form.set('weatherWindCondition', locationCard.dataset.weatherWindCondition);
     if (attachedPhotos.length > 0) {
       attachedPhotos.forEach((file) => form.append('photos', file));
-      form.set('photo', attachedPhotos[0]);
+      form.set('photo', attachedPhotos[0] || photoInput.files?.[0]);
     } else if (photoInput.files?.[0]) {
       form.set("photo", photoInput.files[0]);
     }
@@ -274,6 +277,57 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     cancelButton?.removeEventListener('click', cancel);
     root.removeEventListener('resident-report:photos-updated', handlePhotosUpdated);
   };
+}
+
+async function compressImageForUpload(file: File): Promise<File> {
+  if (typeof document === 'undefined' || typeof Image === 'undefined') return file;
+  if (file.size < 280 * 1024 && (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp')) {
+    return file;
+  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const maxDimension = 1440;
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          const cleanName = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+          resolve(new File([blob], cleanName, { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        0.80
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+    img.src = objectUrl;
+  });
 }
 
 function initializePhotoCapture(root: HTMLElement): () => void {
@@ -351,21 +405,22 @@ function initializePhotoCapture(root: HTMLElement): () => void {
     photoInput.click();
   };
 
-  const handlePhotoChange = () => {
+  const handlePhotoChange = async () => {
     const newFiles = Array.from(photoInput.files ?? []);
     if (newFiles.length === 0) return;
 
     const availableSlots = 3 - photos.length;
     const toAdd = newFiles.slice(0, availableSlots);
-
-    toAdd.forEach((file) => {
-      photos.push({
-        file,
-        url: URL.createObjectURL(file),
-      });
-    });
-
     photoInput.value = '';
+
+    for (const rawFile of toAdd) {
+      const optimizedFile = await compressImageForUpload(rawFile);
+      photos.push({
+        file: optimizedFile,
+        url: URL.createObjectURL(optimizedFile),
+      });
+    }
+
     updateUI();
   };
 

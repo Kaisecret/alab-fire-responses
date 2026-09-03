@@ -28,10 +28,11 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Resident sign-in is required." }, { status: 401 });
   try {
     const form = await request.formData();
-    const photoCandidates = [
-      ...form.getAll("photos"),
-      ...form.getAll("photo"),
-    ].filter((v): v is File => v instanceof File && v.size > 0);
+    const photosList = form.getAll("photos").filter((v): v is File => v instanceof File && v.size > 0);
+    const singlePhoto = form.get("photo");
+    const photoCandidates = photosList.length > 0 
+      ? photosList 
+      : (singlePhoto instanceof File && singlePhoto.size > 0 ? [singlePhoto] : []);
 
     const seenFiles = new Set<string>();
     const photos: File[] = [];
@@ -54,8 +55,14 @@ export async function POST(request: NextRequest) {
       weatherWindCondition: form.get("weatherWindCondition"),
     });
 
+    const validPhotos: File[] = [];
     for (const photo of photos) {
-      validateFireReportPhoto(photo);
+      try {
+        validateFireReportPhoto(photo);
+        validPhotos.push(photo);
+      } catch (validationErr) {
+        console.warn("Skipping invalid photo attachment:", validationErr);
+      }
     }
 
     // Emergency routing is never dependent on optional photo storage.
@@ -63,18 +70,26 @@ export async function POST(request: NextRequest) {
     const report = await createResidentFireReport(session.userId, input, submissionAudit);
     let photoWarning: string | undefined;
 
-    if (photos.length > 0) {
-      for (const photo of photos) {
-        let storageKey: string | null = null;
-        try {
-          const uploadedPhoto = await uploadFireReportPhoto(report.id, photo);
-          storageKey = uploadedPhoto.storageKey;
-          await attachFireReportPhoto(report.id, uploadedPhoto);
-        } catch (photoError) {
-          if (storageKey) await deleteFireReportPhoto(storageKey).catch(() => undefined);
-          console.error("Resident fire report photo attachment failed", { reportId: report.id, cause: photoError });
-          photoWarning = "Your fire alert was sent, but some photos could not be uploaded.";
-        }
+    if (validPhotos.length > 0) {
+      const uploadResults = await Promise.allSettled(
+        validPhotos.map(async (photo) => {
+          let storageKey: string | null = null;
+          try {
+            const uploadedPhoto = await uploadFireReportPhoto(report.id, photo);
+            storageKey = uploadedPhoto.storageKey;
+            await attachFireReportPhoto(report.id, uploadedPhoto);
+            return { ok: true };
+          } catch (photoError) {
+            if (storageKey) await deleteFireReportPhoto(storageKey).catch(() => undefined);
+            console.error("Resident fire report photo attachment failed", { reportId: report.id, cause: photoError });
+            return { ok: false };
+          }
+        })
+      );
+
+      const hadFailure = uploadResults.some((r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok));
+      if (hadFailure) {
+        photoWarning = "Your fire alert was sent, but some photos could not be uploaded.";
       }
     }
 
