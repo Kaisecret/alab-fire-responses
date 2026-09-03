@@ -727,7 +727,7 @@ export const reportFireMarkup = `
         </div>
 
         <div class="quick-tactical-row" data-quick-tactical-row>
-          <span class="quick-tactical-label">SITWASYON SA LUGAR (OPTIONAL · 1-TAP):</span>
+          <span class="quick-tactical-label">SITWASYON SA LUGAR (OPTIONAL):</span>
           <div class="quick-pills-container">
             <button type="button" class="quick-pill-toggle" data-quick-density="PACKED_MAGKAKADIKIT" aria-pressed="false">
               <span class="quick-pill-icon" aria-hidden="true">🏘️</span>
