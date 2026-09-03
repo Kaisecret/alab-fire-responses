@@ -39,7 +39,7 @@ export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>(() => {
     if (typeof window !== "undefined") {
       try {
-        const cached = sessionStorage.getItem("alab_cache_resident_reports");
+        const cached = localStorage.getItem("alab_cache_resident_reports") || sessionStorage.getItem("alab_cache_resident_reports");
         if (cached) return JSON.parse(cached);
       } catch {}
     }
@@ -49,7 +49,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(() => {
     if (typeof window !== "undefined") {
       try {
-        return !sessionStorage.getItem("alab_cache_resident_reports");
+        return !localStorage.getItem("alab_cache_resident_reports") && !sessionStorage.getItem("alab_cache_resident_reports");
       } catch {}
     }
     return true;
@@ -66,11 +66,19 @@ export default function ReportsPage() {
         if (isMounted) {
           setReports(data.reports || []);
           try {
+            localStorage.setItem("alab_cache_resident_reports", JSON.stringify(data.reports || []));
             sessionStorage.setItem("alab_cache_resident_reports", JSON.stringify(data.reports || []));
           } catch {}
         }
       })
-      .catch((cause) => { if (isMounted) setError(cause instanceof Error ? cause.message : "Unable to load your reports."); })
+      .catch((cause) => {
+        if (isMounted) {
+          const hasCached = reports.length > 0 || (typeof window !== "undefined" && Boolean(localStorage.getItem("alab_cache_resident_reports")));
+          if (!hasCached) {
+            setError(cause instanceof Error ? cause.message : "Unable to load your reports.");
+          }
+        }
+      })
       .finally(() => { if (isMounted) setLoading(false); });
     return () => { isMounted = false; };
   }, []);

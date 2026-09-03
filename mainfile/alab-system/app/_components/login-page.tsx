@@ -168,6 +168,13 @@ export function LoginPage({
 
     if (!password || !identifier || !toggle || !eye || !form) return;
 
+    try {
+      if (localStorage.getItem("alab_resident_logged_in") === "true" || document.cookie.includes("alab_resident_session")) {
+        window.location.replace("/resident");
+        return;
+      }
+    } catch {}
+
     const submitButton = form.querySelector<HTMLButtonElement>("button[type='submit']");
     const status = root.ownerDocument.createElement("p");
     status.setAttribute("role", "alert");
@@ -236,6 +243,9 @@ export function LoginPage({
           else showLoginPopup("The login service cannot connect to the database yet. Please try again later.");
           return;
         }
+        try {
+          localStorage.setItem("alab_resident_logged_in", "true");
+        } catch {}
         window.location.assign("/resident");
       } catch {
         setIsLoading(false);

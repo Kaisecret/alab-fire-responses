@@ -83,9 +83,9 @@ export function ResidentHomePage() {
       renderRecentReports(body.reports || []);
     };
 
-    // 1. Instant Cache: Load from sessionStorage immediately in 0ms (No loading flicker when switching tabs)
+    // 1. Instant Cache: Load from localStorage/sessionStorage immediately in 0ms (No loading flicker when switching tabs or offline)
     try {
-      const cached = sessionStorage.getItem("alab_cache_resident_dashboard");
+      const cached = localStorage.getItem("alab_cache_resident_dashboard") || sessionStorage.getItem("alab_cache_resident_dashboard");
       if (cached) {
         applyDashboardData(JSON.parse(cached));
       }
@@ -97,6 +97,7 @@ export function ResidentHomePage() {
       .then(({ response, body }) => {
         if (!response.ok || !body?.resident) return;
         try {
+          localStorage.setItem("alab_cache_resident_dashboard", JSON.stringify(body));
           sessionStorage.setItem("alab_cache_resident_dashboard", JSON.stringify(body));
         } catch {}
         applyDashboardData(body);

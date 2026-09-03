@@ -69,8 +69,19 @@ export async function proxy(request: NextRequest) {
   const supabaseResponse = await updateSupabaseSession(request);
   const path = request.nextUrl.pathname;
   if (path === "/resident" || path.startsWith("/resident/")) {
+    if (path === "/resident/login") {
+      const isAuthed = await verifyResidentSession(request.cookies.get(SESSION_COOKIE)?.value);
+      if (isAuthed) {
+        const homeUrl = request.nextUrl.clone();
+        homeUrl.pathname = "/resident";
+        homeUrl.searchParams.delete("next");
+        const redirectResponse = NextResponse.redirect(homeUrl);
+        supabaseResponse.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+        return redirectResponse;
+      }
+      return supabaseResponse;
+    }
     if (
-      path === "/resident/login" ||
       path === "/resident/signup" ||
       path === "/resident/application"
     ) return supabaseResponse;

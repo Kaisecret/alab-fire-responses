@@ -7,9 +7,39 @@ import type { AccountNotification, NotificationFeed } from "@/lib/notifications/
 const POLL_INTERVAL_MS = 5_000;
 
 export function useNotifications(apiPath: string, limit = 25) {
-  const [notifications, setNotifications] = useState<AccountNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const cacheKey = `alab_cache_notifications_${apiPath}`;
+  const [notifications, setNotifications] = useState<AccountNotification[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const feed = JSON.parse(cached) as NotificationFeed;
+          return feed.notifications || [];
+        }
+      } catch {}
+    }
+    return [];
+  });
+  const [unreadCount, setUnreadCount] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const feed = JSON.parse(cached) as NotificationFeed;
+          return feed.unreadCount || 0;
+        }
+      } catch {}
+    }
+    return 0;
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return !localStorage.getItem(cacheKey);
+      } catch {}
+    }
+    return true;
+  });
   const [error, setError] = useState<string | null>(null);
   const requestInFlight = useRef(false);
 
@@ -23,13 +53,21 @@ export function useNotifications(apiPath: string, limit = 25) {
       setNotifications(feed.notifications);
       setUnreadCount(feed.unreadCount);
       setError(null);
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(feed));
+      } catch {}
     } catch {
-      setError("Notifications are temporarily unavailable.");
+      const hasCached = notifications.length > 0 || (typeof window !== "undefined" && Boolean(localStorage.getItem(cacheKey)));
+      if (!hasCached) {
+        setError("Notifications are temporarily unavailable.");
+      } else {
+        setError(null);
+      }
     } finally {
       requestInFlight.current = false;
       setIsLoading(false);
     }
-  }, [apiPath, limit]);
+  }, [apiPath, limit, cacheKey, notifications.length]);
 
   useEffect(() => {
     const initialRefresh = window.setTimeout(() => void refresh(), 0);

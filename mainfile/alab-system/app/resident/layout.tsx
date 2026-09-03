@@ -375,7 +375,12 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
     setIsLogoutDialogOpen(true);
   };
 
-  const confirmLogout = () => logoutFormRef.current?.submit();
+  const confirmLogout = () => {
+    try {
+      localStorage.removeItem("alab_resident_logged_in");
+    } catch {}
+    logoutFormRef.current?.submit();
+  };
 
   /* Don't show shared nav on login/signup */
   const isAuth = pathname.startsWith("/resident/login") || pathname.startsWith("/resident/signup");

@@ -1,21 +1,36 @@
-const RESIDENT_CACHE = "alab-resident-shell-v3";
+const RESIDENT_CACHE = "alab-resident-shell-v4";
 const PRECACHE_URLS = [
   "/resident",
   "/resident/login",
   "/resident/reports",
   "/resident/guide",
-  "/resident/water-sources",
+  "/resident/notifications",
+  "/resident/profile",
+  "/resident/report-fire",
   "/resident-manifest.webmanifest",
   "/images/resident-pwa-192.png",
   "/images/resident-pwa-512.png",
   "/images/fire logo.webp",
+  "/images/Logo.webp",
+  "/images/LOGO FIRE.webp",
+  "/images/logo white tint.webp",
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(RESIDENT_CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS.map((url) => new Request(url, { cache: "reload" }))))
-      .catch((err) => console.warn("PWA precache partial failure:", err))
+      .then((cache) => {
+        return Promise.allSettled(
+          PRECACHE_URLS.map(async (url) => {
+            try {
+              const res = await fetch(url, { cache: "reload" });
+              if (res.ok) await cache.put(url, res);
+            } catch (err) {
+              console.warn("Precache failed for", url, err);
+            }
+          }),
+        );
+      })
       .then(() => self.skipWaiting()),
   );
 });

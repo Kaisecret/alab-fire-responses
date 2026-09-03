@@ -212,9 +212,9 @@ export default function ProfilePage() {
       }
     };
 
-    // 1. Instant Cache: Load profile immediately with zero delay
+    // 1. Instant Cache: Load profile immediately with zero delay (persists offline across app restarts)
     try {
-      const cached = sessionStorage.getItem("alab_cache_resident_profile");
+      const cached = localStorage.getItem("alab_cache_resident_profile") || sessionStorage.getItem("alab_cache_resident_profile");
       if (cached) {
         applyProfile(JSON.parse(cached));
       }
@@ -229,6 +229,7 @@ export default function ProfilePage() {
       .then(({ response, body }) => {
         if (!response.ok || !body.profile) return;
         try {
+          localStorage.setItem("alab_cache_resident_profile", JSON.stringify(body.profile));
           sessionStorage.setItem("alab_cache_resident_profile", JSON.stringify(body.profile));
         } catch {}
         applyProfile(body.profile);
