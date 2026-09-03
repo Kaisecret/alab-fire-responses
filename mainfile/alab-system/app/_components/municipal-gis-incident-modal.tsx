@@ -4,6 +4,22 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 import type { MunicipalIncident } from "./use-municipal-incident-feed";
+import { densityAssessmentCopy, densityRiskClass } from "../../lib/fire-reports/building-density-presentation";
+
+export type DensityEvidencePayload = {
+  incident: { latitude: number; longitude: number };
+  assessment: {
+    status: string;
+    confidence: string;
+    buildingCount: number;
+    minimumGapMeters: number | null;
+    source: string | null;
+    assessedAt: string | null;
+    radiusMeters: number;
+  };
+  evidence: { type: "FeatureCollection"; features: Array<Record<string, unknown>> };
+  attribution: { label: string; license: string; url: string };
+};
 
 type HistoryEvent = { status: string; message: string | null; createdAt: string };
 type IncidentDetail = {
@@ -29,6 +45,13 @@ type IncidentDetail = {
   municipality: string | null;
   photos: Array<{ url: string | null }>;
   history: HistoryEvent[];
+  calculatedSeverity: string | null;
+  reportedHouseDensity: string | null;
+  houseDensity: string | null;
+  detectedBuildingDensity: string | null;
+  buildingDensityConfidence: string | null;
+  buildingDensityBuildingCount: number | null;
+  buildingDensityMinimumGapMeters: number | null;
 };
 
 const terminalStatuses = new Set(["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"]);
@@ -44,7 +67,14 @@ function formatDate(value: string | null | undefined) {
   return Number.isNaN(date.getTime()) ? "Not recorded" : new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-export function MunicipalGisIncidentModal({ incidents, onClose }: { incidents: MunicipalIncident[]; onClose: () => void }) {
+export function MunicipalGisIncidentModal({ incidents, onClose, onSelectedIncidentChange, densityEvidence, densityLoading, densityError }: {
+  incidents: MunicipalIncident[];
+  onClose: () => void;
+  onSelectedIncidentChange?: (id: string) => void;
+  densityEvidence?: DensityEvidencePayload | null;
+  densityLoading?: boolean;
+  densityError?: string;
+}) {
   const [mounted, setMounted] = useState(false);
   const [requestedId, setSelectedId] = useState(incidents[0]?.id ?? "");
   const [detail, setDetail] = useState<IncidentDetail | null>(null);
@@ -64,6 +94,9 @@ export function MunicipalGisIncidentModal({ incidents, onClose }: { incidents: M
   }, []);
 
   const selectedId = incidents.some((incident) => incident.id === requestedId) ? requestedId : (incidents[0]?.id ?? "");
+  useEffect(() => {
+    if (selectedId) onSelectedIncidentChange?.(selectedId);
+  }, [onSelectedIncidentChange, selectedId]);
   useEffect(() => {
     if (!selectedId) return;
     const controller = new AbortController();
@@ -153,7 +186,21 @@ export function MunicipalGisIncidentModal({ incidents, onClose }: { incidents: M
               <article><span>Fire classification</span><strong>{humanize(detail.fireType)}</strong></article>
               <article><span>Response started</span><strong>{formatDate(detail.responseStartedAt)}</strong></article>
               <article><span>Completed / closed</span><strong>{completion ? formatDate(completion.createdAt) : "Not completed"}</strong></article>
+              <article><span>Calculated severity</span><strong>{humanize(detail.calculatedSeverity)}</strong></article>
+              <article><span>Effective house density</span><strong>{humanize(detail.houseDensity)}</strong></article>
             </div>
+
+            <section className={`mbfp-gis-modal-section ${densityRiskClass(densityEvidence?.assessment.status, densityEvidence?.assessment.confidence)}`}>
+              <h3>Automatic building-density assessment</h3>
+              {densityLoading ? <p>Checking mapped structures around the alert location…</p> : densityError ? <p>{densityError} The incident remains visible; use Live refresh to retry.</p> : densityEvidence ? <p>
+                <strong>{densityAssessmentCopy(densityEvidence.assessment.status)}</strong><br />
+                {densityEvidence.assessment.buildingCount} mapped structures within 30 m
+                {densityEvidence.assessment.minimumGapMeters != null ? ` · minimum mapped gap ${densityEvidence.assessment.minimumGapMeters} m` : ""}
+                {` · ${humanize(densityEvidence.assessment.confidence)} confidence`}. The red polygons are the exact mapped evidence used for this report.<br />
+                <a href={densityEvidence.attribution.url} target="_blank" rel="noreferrer">{densityEvidence.attribution.label}</a> · {densityEvidence.attribution.license}<br />
+                Verify actual conditions on scene.
+              </p> : <p>Mapped building-density evidence is unavailable for this incident.</p>}
+            </section>
 
             <section className="mbfp-gis-modal-section"><h3>Reported cause / description</h3><p>{detail.description || (detail.reportSource === "PHONE_CALL" ? "No caller description was provided. This is a phone-call report, not a confirmed fire-cause assessment." : "No resident description was provided. This is a resident report, not a confirmed fire-cause assessment.")}</p></section>
 

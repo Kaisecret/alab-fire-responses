@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import type { Circle, Map as LeafletMap, Marker } from 'leaflet';
 import { ResidentFireLoader } from '../../_components/resident-fire-loader';
 import { reportFireMarkup, reportFireStyles } from '../../_content/resident-report-fire-content';
+import { getStoredLanguage, RESIDENT_TRANSLATIONS, type ResidentLanguage } from '../../_lib/resident-i18n';
 import {
   REFINEMENT_WINDOW_MS,
   chooseBetterReading,
@@ -220,6 +221,83 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   };
   confirmAlertDialog?.addEventListener('click', handleConfirmBackdropClick);
 
+  const applyReportFireLanguage = (lang: ResidentLanguage) => {
+    const dict = RESIDENT_TRANSLATIONS[lang] || RESIDENT_TRANSLATIONS.tl;
+    const titleEl = root.querySelector<HTMLElement>('#report-fire-title');
+    if (titleEl) titleEl.textContent = dict.reportFireTitle;
+
+    const typeButtonsMap: Record<string, string> = {
+      HOUSE_BUILDING: dict.typeHouse,
+      GRASS: dict.typeGrass,
+      FOREST: dict.typeForest,
+      VEHICLE: dict.typeVehicle,
+      OTHER: dict.typeOther,
+    };
+    typeButtons.forEach((btn) => {
+      const kind = btn.dataset.fireType;
+      if (kind && typeButtonsMap[kind]) {
+        const svg = btn.querySelector('svg');
+        btn.textContent = '';
+        if (svg) btn.append(svg);
+        btn.append(document.createTextNode(typeButtonsMap[kind]));
+      }
+    });
+
+    const tacticalLabel = root.querySelector<HTMLElement>('.quick-tactical-label');
+    if (tacticalLabel) tacticalLabel.textContent = dict.tacticalSituation;
+
+    if (densityButton) {
+      const strong = densityButton.querySelector('strong');
+      const small = densityButton.querySelector('small');
+      if (strong) strong.textContent = dict.tacticalPacked;
+      if (small) small.textContent = dict.tacticalPackedSub;
+    }
+    if (routeButton) {
+      const strong = routeButton.querySelector('strong');
+      const small = routeButton.querySelector('small');
+      if (strong) strong.textContent = dict.tacticalAlley;
+      if (small) small.textContent = dict.tacticalAlleySub;
+    }
+
+    const photoOpenBtn = root.querySelector<HTMLElement>('.photo-upload');
+    if (photoOpenBtn) {
+      const strong = photoOpenBtn.querySelector('strong');
+      if (strong) strong.textContent = dict.takePhotoBtn;
+    }
+
+    if (confirmAlertDialog) {
+      const h3 = confirmAlertDialog.querySelector('h3');
+      const strong = confirmAlertDialog.querySelector('.confirm-alert-warning-box strong');
+      const p = confirmAlertDialog.querySelector('.confirm-alert-warning-box p');
+      const sendBtn = confirmAlertDialog.querySelector<HTMLButtonElement>('[data-confirm-alert-send]');
+      const cancelBtn = confirmAlertDialog.querySelector<HTMLButtonElement>('[data-confirm-alert-cancel]');
+      if (h3) h3.textContent = dict.confirmAlertTitle;
+      if (strong) strong.textContent = dict.falseAlarmWarningTitle;
+      if (p) p.textContent = dict.falseAlarmWarningText;
+      if (sendBtn) {
+        const svg = sendBtn.querySelector('svg');
+        sendBtn.textContent = '';
+        if (svg) sendBtn.append(svg);
+        sendBtn.append(document.createTextNode(` ${dict.confirmSendBtn}`));
+      }
+      if (cancelBtn) cancelBtn.textContent = dict.confirmCancelBtn;
+    }
+
+    if (photoRequiredDialog) {
+      const h3 = photoRequiredDialog.querySelector('h3');
+      const p = photoRequiredDialog.querySelector('p');
+      if (h3) h3.textContent = dict.photoRequiredTitle;
+      if (p) p.textContent = dict.photoRequiredDesc;
+    }
+  };
+
+  applyReportFireLanguage(getStoredLanguage());
+  const onLangChange = (e: Event) => {
+    const detail = (e as CustomEvent<{ lang?: ResidentLanguage }>).detail;
+    if (detail?.lang) applyReportFireLanguage(detail.lang);
+  };
+  window.addEventListener('alab:resident-language-changed', onLangChange);
+
   const showError = (message: string) => {
     if (!errorMessage) return;
     errorMessage.hidden = !message;
@@ -396,6 +474,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     confirmAlertCancelBtn?.removeEventListener('click', handleConfirmCancel);
     confirmAlertDialog?.removeEventListener('click', handleConfirmBackdropClick);
     confirmAlertSendBtn?.removeEventListener('click', handleConfirmSend);
+    window.removeEventListener('alab:resident-language-changed', onLangChange);
   };
 }
 

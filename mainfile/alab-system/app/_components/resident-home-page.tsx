@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { homeMarkup, homeStyles } from "../_content/resident-home-content";
+import { getStoredLanguage, RESIDENT_TRANSLATIONS, type ResidentLanguage } from "../_lib/resident-i18n";
 
 type Dashboard = {
   resident: { name: string; municipality: string; barangay: string };
@@ -43,14 +44,50 @@ export function ResidentHomePage() {
       });
     };
 
+    const applyHomeLanguage = (lang: ResidentLanguage) => {
+      const dict = RESIDENT_TRANSLATIONS[lang] || RESIDENT_TRANSLATIONS.tl;
+      const statusLabels = document.querySelectorAll<HTMLElement>(".status-label");
+      if (statusLabels.length >= 4) {
+        statusLabels[0].textContent = dict.statusSubmitted;
+        statusLabels[1].textContent = dict.statusVerifying;
+        statusLabels[2].textContent = dict.statusResponding;
+        statusLabels[3].textContent = dict.statusResolved;
+      }
+      const recentTitle = document.querySelector<HTMLElement>(".recent-card .card-title");
+      if (recentTitle) recentTitle.textContent = dict.recentReportsTitle;
+      const viewAll = document.querySelector<HTMLElement>(".recent-card .view-all");
+      if (viewAll) viewAll.textContent = dict.viewAllReports;
+      const emergencyBtnTitle = document.querySelector<HTMLElement>(".mobile-emergency-btn h2");
+      if (emergencyBtnTitle) emergencyBtnTitle.textContent = dict.navReportFire.toUpperCase();
+      const emergencyBtnTap = document.querySelector<HTMLElement>(".mobile-emergency-btn .tap-text");
+      if (emergencyBtnTap) emergencyBtnTap.textContent = dict.navReportFire.toUpperCase();
+    };
+
+    applyHomeLanguage(getStoredLanguage());
+
+    const onLangChange = (e: Event) => {
+      const detail = (e as CustomEvent<{ lang?: ResidentLanguage }>).detail;
+      if (detail?.lang) {
+        applyHomeLanguage(detail.lang);
+        const cached = localStorage.getItem("alab_cache_resident_dashboard");
+        if (cached) {
+          try {
+            applyDashboardData(JSON.parse(cached));
+          } catch {}
+        }
+      }
+    };
+    window.addEventListener("alab:resident-language-changed", onLangChange);
+
     const renderRecentReports = (reports: Dashboard["reports"]) => {
       const list = document.querySelector<HTMLElement>("[data-dashboard-recent]");
       if (!list) return;
       list.replaceChildren();
+      const dict = RESIDENT_TRANSLATIONS[getStoredLanguage()] || RESIDENT_TRANSLATIONS.tl;
       if (!reports.length) {
         const empty = document.createElement("div");
         empty.className = "report-empty";
-        empty.textContent = "No reports yet.";
+        empty.textContent = dict.noReportsYet;
         list.append(empty);
         return;
       }
@@ -74,7 +111,8 @@ export function ResidentHomePage() {
 
     const applyDashboardData = (body: Dashboard) => {
       if (!body?.resident) return;
-      setText("[data-dashboard-name]", `Welcome, ${body.resident.name}`);
+      const dict = RESIDENT_TRANSLATIONS[getStoredLanguage()] || RESIDENT_TRANSLATIONS.tl;
+      setText("[data-dashboard-name]", `${dict.welcomeGreeting}, ${body.resident.name}`);
       setText("[data-dashboard-municipality]", body.resident.municipality);
       setText("[data-dashboard-barangay]", body.resident.barangay);
       (Object.keys(body.counts) as Array<keyof Dashboard["counts"]>).forEach((status) => {
@@ -106,6 +144,7 @@ export function ResidentHomePage() {
 
     return () => {
       clearInterval(intervalId);
+      window.removeEventListener("alab:resident-language-changed", onLangChange);
     };
   }, []);
 

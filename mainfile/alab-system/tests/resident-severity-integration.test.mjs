@@ -44,6 +44,48 @@ test("validateTacticalDetailsUpdate safely captures post-alert enrichment update
   assert.equal(update.routeAccessibility, "INTERIOR_ALLEY_ESKINITA");
 });
 
+test("automatic dense evidence raises an omitted or understated resident density before severity scoring", async () => {
+  const { prepareDensitySeverityContext } = await import("../lib/fire-reports/building-density.ts");
+  const { calculateFireSeverity } = await import("../lib/fire-reports/severity.ts");
+  const assessment = {
+    status: "DENSE_CLUSTER_DETECTED",
+    confidence: "HIGH",
+    buildingCount: 3,
+    minimumGapMeters: 1.4,
+    source: "GOOGLE_OPEN_BUILDINGS_V3_2023_05",
+    assessedAt: new Date("2026-09-04T00:00:00Z"),
+    evidence: [],
+  };
+
+  const context = prepareDensitySeverityContext({
+    fireType: "HOUSE_BUILDING",
+    houseDensity: null,
+    windSpeedKph: 8,
+    temperatureC: 28,
+    relativeHumidity: 80,
+  }, assessment);
+
+  assert.equal(context.reportedHouseDensity, null);
+  assert.equal(context.effectiveHouseDensity, "PACKED_MAGKAKADIKIT");
+  assert.equal(calculateFireSeverity(context.severityInput).level, "HIGH");
+  assert.ok(context.densityFactors.some((factor) => factor.includes("Automatic map assessment")));
+});
+
+test("resident packed density remains packed when automatic footprint data is unavailable", async () => {
+  const { prepareDensitySeverityContext } = await import("../lib/fire-reports/building-density.ts");
+  const context = prepareDensitySeverityContext({ houseDensity: "PACKED_MAGKAKADIKIT" }, {
+    status: "INSUFFICIENT_DATA",
+    confidence: "UNAVAILABLE",
+    buildingCount: 0,
+    minimumGapMeters: null,
+    source: null,
+    assessedAt: new Date("2026-09-04T00:00:00Z"),
+    evidence: [],
+  });
+
+  assert.equal(context.effectiveHouseDensity, "PACKED_MAGKAKADIKIT");
+});
+
 test("resident report markup contains 1-tap quick pills and hides weather from resident UI", () => {
   const content = read("app/_content/resident-report-fire-content.ts");
 

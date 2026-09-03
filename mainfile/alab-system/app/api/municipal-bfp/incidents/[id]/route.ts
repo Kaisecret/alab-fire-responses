@@ -28,6 +28,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                 fr.weather_temperature as "weatherTemperature", fr.weather_humidity as "weatherHumidity",
                 fr.weather_wind_speed as "weatherWindSpeed", fr.weather_wind_direction as "weatherWindDirection", fr.weather_wind_condition as "weatherWindCondition",
                 fr.calculated_severity as "calculatedSeverity", fr.severity_score as "severityScore", fr.severity_factors as "severityFactors",
+                fr.reported_house_density as "reportedHouseDensity", fr.detected_building_density as "detectedBuildingDensity",
+                fr.building_density_confidence as "buildingDensityConfidence", fr.building_density_building_count as "buildingDensityBuildingCount",
+                fr.building_density_minimum_gap_meters::float as "buildingDensityMinimumGapMeters",
+                fr.building_density_source as "buildingDensitySource", fr.building_density_assessed_at as "buildingDensityAssessedAt",
                 rp.id as "residentProfileId", rp.first_name as "firstName", rp.last_name as "lastName", u.email,
                 ra.complete_address as address, b.name as barangay, m.name as municipality,
                 s.station_name as "stationName", s.latitude::float as "stationLatitude", s.longitude::float as "stationLongitude"
@@ -57,6 +61,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                   fr.weather_temperature as "weatherTemperature", fr.weather_humidity as "weatherHumidity",
                   fr.weather_wind_speed as "weatherWindSpeed", fr.weather_wind_direction as "weatherWindDirection", fr.weather_wind_condition as "weatherWindCondition",
                   fr.calculated_severity as "calculatedSeverity", fr.severity_score as "severityScore", fr.severity_factors as "severityFactors",
+                  null::text as "reportedHouseDensity", null::text as "detectedBuildingDensity",
+                  null::text as "buildingDensityConfidence", null::integer as "buildingDensityBuildingCount",
+                  null::float as "buildingDensityMinimumGapMeters", null::text as "buildingDensitySource",
+                  null::timestamptz as "buildingDensityAssessedAt",
                   rp.id as "residentProfileId", rp.first_name as "firstName", rp.last_name as "lastName", u.email,
                   ra.complete_address as address, b.name as barangay, m.name as municipality,
                   s.station_name as "stationName", s.latitude::float as "stationLatitude", s.longitude::float as "stationLongitude"

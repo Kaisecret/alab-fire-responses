@@ -16,6 +16,11 @@ export interface MunicipalIncident {
   submittedAt: string;
   latitude: number;
   longitude: number;
+  calculatedSeverity: string | null;
+  detectedBuildingDensity: string | null;
+  buildingDensityConfidence: string | null;
+  buildingDensityBuildingCount: number | null;
+  buildingDensityMinimumGapMeters: number | null;
 }
 
 interface MunicipalIncidentResponse {

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { ResidentMobileNavigation, residentMobileNavigationStyles } from "@/app/_components/resident-mobile-navigation";
 import { NotificationBell } from "@/app/_components/notifications/notification-bell";
 import { ResidentOfflineEmergency } from "@/app/_components/resident-offline-emergency";
+import { useResidentLanguage, type ResidentLanguage } from "@/app/_lib/resident-i18n";
 
 /* ─────────────────────────────────────────────
    Shared Resident Layout
@@ -354,6 +355,7 @@ function isActive(pathname: string, href: string): boolean {
 
 export default function ResidentLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { lang, t, setLang } = useResidentLanguage();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const logoutFormRef = useRef<HTMLFormElement | null>(null);
   const cancelLogoutButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -383,12 +385,24 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
     logoutFormRef.current?.submit();
   };
 
+  const cycleLanguage = () => {
+    const nextLang: ResidentLanguage = lang === "tl" ? "hil" : lang === "hil" ? "en" : "tl";
+    setLang(nextLang);
+  };
+
   /* Don't show shared nav on login/signup */
   const isAuth = pathname.startsWith("/resident/login") || pathname.startsWith("/resident/signup");
   if (isAuth) return <>{children}<ResidentOfflineEmergency /></>;
 
   const activeKey = navItems.find((n) => isActive(pathname, n.href))?.key ?? "";
   const isProfileActive = pathname.startsWith("/resident/profile");
+
+  const localizedNavItems = [
+    { href: "/resident", label: t("navHome"), key: "home" },
+    { href: "/resident/reports", label: t("navReports"), key: "reports" },
+    { href: "/resident/report-fire", label: t("navReportFire"), key: "report-fire" },
+    { href: "/resident/guide", label: t("navGuide"), key: "guide" },
+  ] as const;
 
   return (
     <>
@@ -415,7 +429,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="rl-header-nav">
-            {navItems.map((item) => (
+            {localizedNavItems.map((item) => (
               <div className="rl-nav-item-wrap" key={item.key}>
                 <a
                   href={item.href}
@@ -437,9 +451,15 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
 
           <div className="rl-header-right">
             <NotificationBell apiPath="/api/resident/notifications" allHref="/resident/notifications" />
-            <button className="rl-lang-btn">
+            <button
+              type="button"
+              className="rl-lang-btn"
+              onClick={cycleLanguage}
+              title={t("languageSettings")}
+              aria-label={t("languageSettings")}
+            >
               <IconGlobe />
-              EN
+              {lang.toUpperCase()}
             </button>
             <div className="rl-profile-menu">
               <button className="rl-profile-btn" aria-haspopup="true">
@@ -451,17 +471,17 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
               <div className="rl-profile-dropdown">
                 <a href="/resident/profile" className="rl-dropdown-item">
                   <svg className="rl-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
-                  Profile Settings
+                  {t("navProfileSettings")}
                 </a>
                 <a href="/resident/guide" className="rl-dropdown-item">
                   <svg className="rl-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-                  Help Center
+                  {t("navHelpCenter")}
                 </a>
                 <div className="rl-dropdown-divider" />
                 <form action="/api/auth/logout" method="post" className="rl-logout-form">
                   <button type="submit" className="rl-dropdown-item rl-logout rl-logout-button">
                   <svg className="rl-dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-                  Logout
+                  {t("navLogout")}
                   </button>
                 </form>
               </div>
@@ -488,11 +508,11 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
             <div className="resident-logout-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 17l5-5-5-5" /><path d="M15 12H3" /><path d="M21 19V5a2 2 0 0 0-2-2h-6" /></svg>
             </div>
-            <h2 id="residentLogoutTitle" className="resident-logout-title">Log out?</h2>
-            <p id="residentLogoutDescription" className="resident-logout-copy">You will need to sign in again to access your resident account.</p>
+            <h2 id="residentLogoutTitle" className="resident-logout-title">{t("logoutTitle")}</h2>
+            <p id="residentLogoutDescription" className="resident-logout-copy">{t("logoutCopy")}</p>
             <div className="resident-logout-actions">
-              <button ref={cancelLogoutButtonRef} type="button" className="resident-logout-action resident-logout-cancel" onClick={() => setIsLogoutDialogOpen(false)}>Cancel</button>
-              <button type="button" className="resident-logout-action resident-logout-confirm" onClick={confirmLogout}>Yes, log out</button>
+              <button ref={cancelLogoutButtonRef} type="button" className="resident-logout-action resident-logout-cancel" onClick={() => setIsLogoutDialogOpen(false)}>{t("logoutCancel")}</button>
+              <button type="button" className="resident-logout-action resident-logout-confirm" onClick={confirmLogout}>{t("logoutConfirm")}</button>
             </div>
           </section>
         </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { profileStyles, profileMarkup } from "../../_content/resident-profile-content";
+import { getStoredLanguage, setStoredLanguage, applyResidentTranslations, type ResidentLanguage } from "../../_lib/resident-i18n";
 
 export default function ProfilePage() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -157,6 +158,16 @@ export default function ProfilePage() {
         void saveRequestedNotifications();
         return;
       }
+      const langBtn = clicked.closest<HTMLButtonElement>("[data-lang-select]");
+      if (langBtn) {
+        event.preventDefault();
+        const selected = langBtn.dataset.langSelect as ResidentLanguage;
+        if (selected === "tl" || selected === "hil" || selected === "en") {
+          setStoredLanguage(selected);
+          updateLanguageButtons(selected);
+        }
+        return;
+      }
       const target = clicked.closest<HTMLElement>("[data-profile-action], [data-profile-close]");
       if (!target) return;
       event.preventDefault();
@@ -235,7 +246,35 @@ export default function ProfilePage() {
         applyProfile(body.profile);
       })
       .catch(() => undefined);
-    return () => { closeDialogs(); root.removeEventListener("click", onClick); root.removeEventListener("submit", onSubmit); };
+
+    // 3. Language Switcher state & live updates
+    const updateLanguageButtons = (currentLang: ResidentLanguage) => {
+      root.querySelectorAll<HTMLButtonElement>("[data-lang-select]").forEach((btn) => {
+        const isMatch = btn.dataset.langSelect === currentLang;
+        btn.setAttribute("aria-pressed", String(isMatch));
+        btn.classList.toggle("active", isMatch);
+      });
+      applyResidentTranslations(root, currentLang);
+    };
+
+    let activeLang = getStoredLanguage();
+    updateLanguageButtons(activeLang);
+
+    const onLanguageChange = (e: Event) => {
+      const detail = (e as CustomEvent<{ lang?: ResidentLanguage }>).detail;
+      if (detail?.lang) {
+        activeLang = detail.lang;
+        updateLanguageButtons(activeLang);
+      }
+    };
+    window.addEventListener("alab:resident-language-changed", onLanguageChange);
+
+    return () => {
+      closeDialogs();
+      root.removeEventListener("click", onClick);
+      root.removeEventListener("submit", onSubmit);
+      window.removeEventListener("alab:resident-language-changed", onLanguageChange);
+    };
   }, []);
 
   return (

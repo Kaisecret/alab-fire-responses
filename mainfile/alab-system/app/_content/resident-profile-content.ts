@@ -517,6 +517,92 @@ export const profileStyles = `
     }
     .view-all-link svg { width: 1rem; height: 1rem; }
 
+    /* Language Picker Card */
+    .language-picker-container {
+        padding: 1.15rem 1.25rem 1.35rem;
+    }
+    .language-picker-desc {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 0.85rem;
+        font-weight: 500;
+    }
+    .language-options-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+    }
+    @media (max-width: 640px) {
+        .language-options-grid {
+            grid-template-columns: 1fr;
+            gap: 0.55rem;
+        }
+    }
+    .lang-option-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.8rem 0.95rem;
+        border: 1.5px solid var(--border-color);
+        border-radius: 0.85rem;
+        background: #ffffff;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        text-align: left;
+        position: relative;
+    }
+    .lang-option-btn:hover {
+        border-color: #fca5a5;
+        background: #fef2f2;
+        transform: translateY(-1px);
+    }
+    .lang-option-btn.active, .lang-option-btn[aria-pressed="true"] {
+        border-color: var(--primary-red);
+        background: linear-gradient(135deg, #fff5f5, #fffdfd);
+        box-shadow: 0 4px 14px rgba(212, 20, 11, 0.12);
+    }
+    .lang-flag {
+        font-size: 1.45rem;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+    .lang-details {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+    .lang-details strong {
+        font-size: 0.86rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        line-height: 1.2;
+    }
+    .lang-option-btn.active .lang-details strong,
+    .lang-option-btn[aria-pressed="true"] .lang-details strong {
+        color: var(--primary-red);
+    }
+    .lang-details small {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+    .lang-check {
+        display: none;
+        width: 1.3rem;
+        height: 1.3rem;
+        border-radius: 50%;
+        background: var(--primary-red);
+        color: #ffffff;
+        font-size: 0.72rem;
+        font-weight: 900;
+        place-items: center;
+        flex-shrink: 0;
+    }
+    .lang-option-btn.active .lang-check,
+    .lang-option-btn[aria-pressed="true"] .lang-check {
+        display: grid;
+    }
+
     /* ==================== MOBILE RESPONSIVE ==================== */
     /* Mobile nav */
 
@@ -832,6 +918,45 @@ export const profileMarkup = `
                     
                     <!-- Mobile Dashboard Row -->
                     <div class="mobile-dashboard-row mobile-only">
+                        <!-- Mobile Language Card -->
+                        <div class="profile-card language-card" style="margin-bottom: 1rem;">
+                            <div class="profile-card-header no-border">
+                                <div class="profile-card-title">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg>
+                                    <span data-i18n="languageSettings">Wika / Language</span>
+                                </div>
+                            </div>
+                            <div class="language-picker-container">
+                                <p class="language-picker-desc" data-i18n="languageDesc">Pumili ng wika para sa resident portal:</p>
+                                <div class="language-options-grid">
+                                    <button type="button" class="lang-option-btn" data-lang-select="tl" aria-pressed="false">
+                                        <span class="lang-flag">🇵🇭</span>
+                                        <div class="lang-details">
+                                            <strong>Tagalog</strong>
+                                            <small>Filipino</small>
+                                        </div>
+                                        <span class="lang-check" aria-hidden="true">✓</span>
+                                    </button>
+                                    <button type="button" class="lang-option-btn" data-lang-select="hil" aria-pressed="false">
+                                        <span class="lang-flag">🏝️</span>
+                                        <div class="lang-details">
+                                            <strong>Hiligaynon</strong>
+                                            <small>Ilonggo / Panay</small>
+                                        </div>
+                                        <span class="lang-check" aria-hidden="true">✓</span>
+                                    </button>
+                                    <button type="button" class="lang-option-btn" data-lang-select="en" aria-pressed="false">
+                                        <span class="lang-flag">🌐</span>
+                                        <div class="lang-details">
+                                            <strong>English</strong>
+                                            <small>Default</small>
+                                        </div>
+                                        <span class="lang-check" aria-hidden="true">✓</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Mobile Settings Menu -->
                         <div class="profile-card settings-menu-card">
                             <div class="profile-card-header no-border">
@@ -879,6 +1004,45 @@ export const profileMarkup = `
 
                 <!-- COLUMN 2 (Desktop Only) -->
                 <div class="profile-col-mid desktop-only">
+                    <!-- Desktop Language Card -->
+                    <div class="profile-card language-card" style="margin-bottom: 1.5rem;">
+                        <div class="profile-card-header">
+                            <div class="profile-card-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg>
+                                <span data-i18n="languageSettings">Wika / Language</span>
+                            </div>
+                        </div>
+                        <div class="language-picker-container">
+                            <p class="language-picker-desc" data-i18n="languageDesc">Pumili ng wika para sa resident portal:</p>
+                            <div class="language-options-grid">
+                                <button type="button" class="lang-option-btn" data-lang-select="tl" aria-pressed="false">
+                                    <span class="lang-flag">🇵🇭</span>
+                                    <div class="lang-details">
+                                        <strong>Tagalog</strong>
+                                        <small>Filipino</small>
+                                    </div>
+                                    <span class="lang-check" aria-hidden="true">✓</span>
+                                </button>
+                                <button type="button" class="lang-option-btn" data-lang-select="hil" aria-pressed="false">
+                                    <span class="lang-flag">🏝️</span>
+                                    <div class="lang-details">
+                                        <strong>Hiligaynon</strong>
+                                        <small>Ilonggo / Panay</small>
+                                    </div>
+                                    <span class="lang-check" aria-hidden="true">✓</span>
+                                </button>
+                                <button type="button" class="lang-option-btn" data-lang-select="en" aria-pressed="false">
+                                    <span class="lang-flag">🌐</span>
+                                    <div class="lang-details">
+                                        <strong>English</strong>
+                                        <small>Default</small>
+                                    </div>
+                                    <span class="lang-check" aria-hidden="true">✓</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="profile-card">
                         <div class="profile-card-header">
                             <div class="profile-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Security</div>

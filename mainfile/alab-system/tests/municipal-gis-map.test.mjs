@@ -44,7 +44,7 @@ test("Municipal GIS operations map draws every incident from the live municipal 
   assert.match(operationsMap, /useMunicipalIncidentFeed/);
   assert.match(operationsMap, /clusterIncidents/);
   assert.match(operationsMap, /includeHistory:\s*true/);
-  assert.match(operationsMap, /autoRefresh:\s*false/);
+  assert.doesNotMatch(operationsMap, /autoRefresh:\s*false/);
   assert.match(operationsMap, /onSelectIncident/);
   assert.match(operationsMap, /Live refresh/);
   assert.doesNotMatch(operationsMap, /Manual refresh only/);

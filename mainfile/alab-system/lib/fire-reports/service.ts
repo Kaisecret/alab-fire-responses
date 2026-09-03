@@ -16,6 +16,12 @@ import {
   listProvincialNotificationRecipients,
 } from "../notifications/service";
 import { fetchLiveWeather } from "../weather/service";
+import {
+  assessBuildingDensity,
+  prepareDensitySeverityContext,
+  type BuildingDensityConfidence,
+  type BuildingDensityStatus,
+} from "./building-density";
 import { calculateFireSeverity } from "./severity";
 
 export type PhotoMetadata = { storageKey: string; originalFileName: string; mimeType: string; fileSizeBytes: number };
@@ -72,7 +78,8 @@ export async function createResidentFireReport(userId: string, input: FireReport
       }
     }
 
-    const severityAssessment = calculateFireSeverity({
+    const densityAssessment = await assessBuildingDensity(client, input.latitude, input.longitude);
+    const densityContext = prepareDensitySeverityContext({
       fireType: input.fireType,
       structureMaterial: input.structureMaterial,
       houseDensity: input.houseDensity,
@@ -81,7 +88,12 @@ export async function createResidentFireReport(userId: string, input: FireReport
       windDirectionDeg: weatherWindDirection ?? undefined,
       temperatureC: weatherTemperature ?? undefined,
       relativeHumidity: weatherHumidity ?? undefined,
-    });
+    }, densityAssessment);
+    const baseSeverityAssessment = calculateFireSeverity(densityContext.severityInput);
+    const severityAssessment = {
+      ...baseSeverityAssessment,
+      factors: [...baseSeverityAssessment.factors, ...densityContext.densityFactors],
+    };
 
     const reportId = randomUUID();
     const reference = referenceNumber();
@@ -92,21 +104,39 @@ export async function createResidentFireReport(userId: string, input: FireReport
         id, reference_number, resident_profile_id, reporter_name_snapshot, reporter_phone_snapshot, fire_type, description,
         status, latitude, longitude, location_accuracy_meters, location_method, location_quality, is_within_antique,
         municipality_id, barangay_id, address_label, nearest_landmark, reporter_ip_address, reporter_device_summary,
-        structure_material, house_density, route_accessibility, weather_temperature, weather_humidity,
+        structure_material, reported_house_density, house_density, route_accessibility, weather_temperature, weather_humidity,
         weather_wind_speed, weather_wind_direction, weather_wind_condition, calculated_severity, severity_score, severity_factors,
+        detected_building_density, building_density_confidence, building_density_building_count,
+        building_density_minimum_gap_meters, building_density_source, building_density_assessed_at,
         submitted_at, updated_at
-      ) values ($1,$2,$3,$4,$5,$6,$7,'PENDING_VERIFICATION',$8,$9,$10,'GPS',$11,true,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$29)`,
+      ) values ($1,$2,$3,$4,$5,$6,$7,'PENDING_VERIFICATION',$8,$9,$10,'GPS',$11,true,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$36)`,
       [
         reportId, reference, resident.id, resident.name, resident.phone, input.fireType, input.description || "No description provided.",
         input.latitude, input.longitude, input.locationAccuracy,
         barangay.needsVerification ? "BARANGAY_NEEDS_VERIFICATION" : "DETECTED", municipalityId, barangay.barangayId,
         `${barangay.barangayName}, ${detectedMunicipality}, Antique`, input.landmark || null, audit.ipAddress, audit.deviceSummary,
-        input.structureMaterial || null, input.houseDensity || null, input.routeAccessibility || null,
+        input.structureMaterial || null, densityContext.reportedHouseDensity, densityContext.effectiveHouseDensity, input.routeAccessibility || null,
         weatherTemperature ?? null, weatherHumidity ?? null, weatherWindSpeed ?? null, weatherWindDirection ?? null,
         weatherWindCondition || null, severityAssessment.level, severityAssessment.score, JSON.stringify(severityAssessment.factors),
+        densityAssessment.status, densityAssessment.confidence, densityAssessment.buildingCount,
+        densityAssessment.minimumGapMeters, densityAssessment.source, densityAssessment.assessedAt,
         now
       ],
     );
+    for (const evidence of densityAssessment.evidence) {
+      await client.query(
+        `insert into gis.fire_report_density_evidence (
+          fire_report_id, source_feature_id, geometry, source_confidence, distance_to_incident_meters
+        ) values ($1, $2, extensions.ST_Multi(extensions.ST_SetSRID(extensions.ST_GeomFromGeoJSON($3), 4326)), $4, $5)`,
+        [
+          reportId,
+          evidence.sourceFeatureId,
+          JSON.stringify(evidence.geometry),
+          evidence.sourceConfidence,
+          evidence.distanceToIncidentMeters,
+        ],
+      );
+    }
     await client.query(
       `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)
        values ($1, null, 'PENDING_VERIFICATION', $2, 'Your fire report was submitted and is pending verification.', $3)`, [reportId, userId, now],
@@ -151,6 +181,9 @@ export async function createResidentFireReport(userId: string, input: FireReport
       calculatedSeverity: severityAssessment.level,
       severityScore: severityAssessment.score,
       severityFactors: severityAssessment.factors,
+      detectedBuildingDensity: densityAssessment.status,
+      buildingDensityConfidence: densityAssessment.confidence,
+      buildingDensityBuildingCount: densityAssessment.buildingCount,
     };
   });
 }
@@ -171,10 +204,17 @@ export async function updateResidentReportTacticalDetails(
   return withTransaction(async (client) => {
     const current = await client.query<{
       id: string; fire_type: string; structure_material: string | null; house_density: string | null;
+      reported_house_density: string | null; detected_building_density: BuildingDensityStatus;
+      building_density_confidence: BuildingDensityConfidence; building_density_building_count: number | null;
+      building_density_minimum_gap_meters: string | null; building_density_source: string | null;
+      building_density_assessed_at: Date | string | null;
       route_accessibility: string | null; weather_wind_speed: string | null; weather_wind_direction: string | null;
       weather_temperature: string | null; weather_humidity: string | null;
     }>(
-      `select fr.id, fr.fire_type, fr.structure_material, fr.house_density, fr.route_accessibility,
+      `select fr.id, fr.fire_type, fr.structure_material, fr.reported_house_density, fr.house_density,
+              fr.detected_building_density, fr.building_density_confidence, fr.building_density_building_count,
+              fr.building_density_minimum_gap_meters, fr.building_density_source, fr.building_density_assessed_at,
+              fr.route_accessibility,
               fr.weather_wind_speed, fr.weather_wind_direction, fr.weather_temperature, fr.weather_humidity
          from fire_reports fr
          join resident_profiles rp on rp.id = fr.resident_profile_id
@@ -186,31 +226,51 @@ export async function updateResidentReportTacticalDetails(
     const row = current.rows[0];
 
     const newMaterial = updates.structureMaterial !== undefined ? updates.structureMaterial : row.structure_material;
-    const newDensity = updates.houseDensity !== undefined ? updates.houseDensity : row.house_density;
+    const reportedDensity = updates.houseDensity !== undefined
+      ? updates.houseDensity
+      : (row.reported_house_density ?? row.house_density);
     const newRoute = updates.routeAccessibility !== undefined ? updates.routeAccessibility : row.route_accessibility;
 
-    const reassessment = calculateFireSeverity({
+    const densityAssessment: import("./building-density").BuildingDensityAssessment = {
+      status: row.detected_building_density ?? "INSUFFICIENT_DATA" as BuildingDensityStatus,
+      confidence: row.building_density_confidence ?? "UNAVAILABLE" as BuildingDensityConfidence,
+      buildingCount: row.building_density_building_count ?? 0,
+      minimumGapMeters: row.building_density_minimum_gap_meters == null ? null : Number(row.building_density_minimum_gap_meters),
+      source: row.building_density_source === "GOOGLE_OPEN_BUILDINGS_V3_2023_05"
+        ? "GOOGLE_OPEN_BUILDINGS_V3_2023_05"
+        : null,
+      assessedAt: row.building_density_assessed_at ? new Date(row.building_density_assessed_at) : new Date(),
+      evidence: [],
+    };
+    const densityContext = prepareDensitySeverityContext({
       fireType: row.fire_type,
       structureMaterial: newMaterial,
-      houseDensity: newDensity,
+      houseDensity: reportedDensity,
       routeAccessibility: newRoute,
       windSpeedKph: row.weather_wind_speed != null ? Number(row.weather_wind_speed) : undefined,
       windDirectionDeg: row.weather_wind_direction != null ? Number(row.weather_wind_direction) : undefined,
       temperatureC: row.weather_temperature != null ? Number(row.weather_temperature) : undefined,
       relativeHumidity: row.weather_humidity != null ? Number(row.weather_humidity) : undefined,
-    });
+    }, densityAssessment);
+    const baseReassessment = calculateFireSeverity(densityContext.severityInput);
+    const reassessment = {
+      ...baseReassessment,
+      factors: [...baseReassessment.factors, ...densityContext.densityFactors],
+    };
 
     await client.query(
       `update fire_reports
           set structure_material = $1,
-              house_density = $2,
-              route_accessibility = $3,
-              calculated_severity = $4,
-              severity_score = $5,
-              severity_factors = $6,
+              reported_house_density = $2,
+              house_density = $3,
+              route_accessibility = $4,
+              calculated_severity = $5,
+              severity_score = $6,
+              severity_factors = $7,
               updated_at = now()
-        where id = $7`,
-      [newMaterial, newDensity, newRoute, reassessment.level, reassessment.score, JSON.stringify(reassessment.factors), reportId]
+        where id = $8`,
+      [newMaterial, reportedDensity, densityContext.effectiveHouseDensity, newRoute,
+        reassessment.level, reassessment.score, JSON.stringify(reassessment.factors), reportId]
     );
 
     return {
@@ -219,7 +279,8 @@ export async function updateResidentReportTacticalDetails(
       severityScore: reassessment.score,
       severityFactors: reassessment.factors,
       structureMaterial: newMaterial,
-      houseDensity: newDensity,
+      reportedHouseDensity: reportedDensity,
+      houseDensity: densityContext.effectiveHouseDensity,
       routeAccessibility: newRoute,
     };
   });
