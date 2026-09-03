@@ -29,18 +29,16 @@ export const reportFireStyles = `
     animation: report-rise .4s cubic-bezier(.16, 1, .3, 1) both;
   }
 
-  .report-form-heading { max-width: 44rem; margin-bottom: clamp(1.35rem, 3vw, 2rem); }
-  .report-eyebrow { display: inline-flex; align-items: center; gap: .45rem; color: var(--report-red); font-size: .72rem; font-weight: 850; letter-spacing: .13em; }
-  .report-eyebrow::before { content: ''; width: 1.8rem; height: 2px; border-radius: 4px; background: currentColor; }
-  .report-form-heading h1 { margin: .65rem 0 .45rem; color: var(--report-ink); font-size: clamp(1.7rem, 3vw, 2.55rem); line-height: 1.08; letter-spacing: -.045em; }
-  .report-form-heading p { max-width: 34rem; margin: 0; color: var(--report-muted); font-size: .94rem; line-height: 1.55; }
+  .report-form-heading { margin-bottom: clamp(0.75rem, 1.8vw, 1.1rem); }
+  .report-eyebrow { display: inline-flex; align-items: center; gap: .55rem; color: var(--report-red); font-size: clamp(0.95rem, 2.2vw, 1.3rem); font-weight: 850; letter-spacing: .02em; text-transform: uppercase; margin: 0; line-height: 1.2; }
+  .report-eyebrow::before { content: ''; width: 1.8rem; height: 3px; border-radius: 4px; background: currentColor; }
 
   .warning-banner {
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
-    padding: 1rem 1.1rem;
+    margin-bottom: clamp(1rem, 2vw, 1.45rem);
+    padding: 0.85rem 1.1rem;
     border: 1px solid #FFD4CF;
     border-radius: 1rem;
     background: linear-gradient(105deg, #FFF2F0, #FFF9F8);
@@ -651,7 +649,6 @@ export const reportFireStyles = `
   @media (max-width: 540px) {
     .report-page-root { padding: 0 0 calc(6rem + env(safe-area-inset-bottom)); }
     .report-form-shell { padding: 1rem 0.85rem 1.5rem; border: none; border-radius: 0; box-shadow: none; }
-    .report-form-heading h1 { font-size: 1.7rem; }
     .warning-banner { align-items: flex-start; padding: .85rem; }
     .warning-banner-icon { width: 2.45rem; height: 2.45rem; flex-basis: 2.45rem; }
     .action-btn-row { grid-template-columns: 1fr; }
@@ -667,9 +664,7 @@ export const reportFireMarkup = `
   <div class="report-page-root">
     <main class="report-form-shell" aria-labelledby="report-fire-title">
       <header class="report-form-heading">
-        <span class="report-eyebrow">ALAB EMERGENCY RESPONSE</span>
-        <h1 id="report-fire-title">Report a Fire Incident</h1>
-        <p>Share the clearest details you can so responders can act faster.</p>
+        <h1 id="report-fire-title" class="report-eyebrow">Report a Fire Incident</h1>
       </header>
 
       <section class="warning-banner" aria-label="Fire emergency safety reminder">
