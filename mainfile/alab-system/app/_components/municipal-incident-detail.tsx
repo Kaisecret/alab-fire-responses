@@ -297,20 +297,22 @@ const detailStyles = `
   .mbfp-severity-hero-badge.LOW { background: #047857; color: #ECFDF5; border: 1px solid #10B981; }
 
   .mbfp-tactical-severity-card {
-    border: 1.5px solid #FCA5A5;
-    background: linear-gradient(135deg, #FFFFFF 0%, #FFF8F8 100%);
-    box-shadow: 0 4px 18px rgba(220, 38, 38, 0.07);
-    margin-bottom: 1rem;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    margin-bottom: 1.25rem;
   }
   .mbfp-severity-tag {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.25rem 0.65rem;
+    padding: 0.28rem 0.65rem;
     border-radius: 6px;
     font-size: 0.72rem;
     font-weight: 850;
     text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
   .mbfp-severity-tag.CRITICAL { background: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }
   .mbfp-severity-tag.HIGH { background: #FEF2F2; color: #DC2626; border: 1px solid #FCA5A5; }
@@ -324,79 +326,97 @@ const detailStyles = `
     margin-bottom: 0.85rem;
   }
   .mbfp-metric-item {
-    padding: 0.75rem 0.9rem;
+    padding: 0.85rem 1rem;
     border: 1px solid #E2E8F0;
     border-radius: 10px;
-    background: #FFFFFF;
+    background: #F8FAFC;
+    transition: all 0.15s ease;
   }
   .mbfp-metric-item.alert-conflagration {
-    border-color: #F87171;
-    background: #FFF5F5;
+    border-color: #FECACA;
+    background: #FFFBFB;
+    border-left: 4px solid #DC2626;
   }
   .mbfp-metric-item.alert-wind {
-    border-color: #FDE68A;
-    background: #FFFDF0;
+    border-color: #BFDBFE;
+    background: #F8FAFC;
+    border-left: 4px solid #2563EB;
   }
   .mbfp-metric-item.alert-route {
-    border-color: #FDBA74;
-    background: #FFF7ED;
+    border-color: #FED7AA;
+    background: #FFFDFB;
+    border-left: 4px solid #EA580C;
   }
   .mbfp-metric-label {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    font-size: 0.7rem;
+    gap: 0.45rem;
+    font-size: 0.71rem;
     font-weight: 750;
     color: #64748B;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 0.35rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.4rem;
+  }
+  .mbfp-metric-label i {
+    font-size: 0.85rem;
+    color: #475569;
   }
   .mbfp-metric-val {
     display: block;
-    font-size: 0.82rem;
-    font-weight: 800;
+    font-size: 0.88rem;
+    font-weight: 750;
     color: #0F172A;
     line-height: 1.35;
   }
   .mbfp-metric-item.alert-conflagration .mbfp-metric-val {
-    color: #DC2626;
+    color: #B91C1C;
+  }
+  .mbfp-metric-item.alert-route .mbfp-metric-val {
+    color: #9A3412;
   }
 
   .mbfp-factors-list {
-    padding: 0.75rem 0.95rem;
+    padding: 0.8rem 1rem;
     border-radius: 8px;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
+    background: #FEF2F2;
+    border: 1px solid #FEE2E2;
   }
   .mbfp-factors-title {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
     font-size: 0.72rem;
     font-weight: 800;
-    color: #475569;
+    color: #991B1B;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 0.4rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
   }
   .mbfp-factors-list ul {
     margin: 0;
     padding: 0;
     list-style: none;
     display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
   .mbfp-factors-list li {
-    font-size: 0.78rem;
-    color: #334155;
-    font-weight: 650;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.45rem;
+    background: #FFFFFF;
+    border: 1px solid #FECACA;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #991B1B;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
   .mbfp-factors-list li i {
     color: #DC2626;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
   }
   @media (max-width: 640px) {
     .mbfp-tactical-metrics-grid { grid-template-columns: 1fr; }
@@ -1612,12 +1632,12 @@ export function MunicipalIncidentDetail({
         <div className="mbfp-tactical-grid">
           {/* Left Column: Data & Photos */}
           <div>
-            {/* AHP Tactical Severity & Environmental Intelligence Card */}
+            {/* Tactical Severity & Conflagration Assessment Card */}
             <section className="mbfp-card mbfp-tactical-severity-card" aria-labelledby="mbfp-severity-heading">
               <div className="mbfp-card-header">
                 <h2 id="mbfp-severity-heading" className="mbfp-card-title">
-                  <i className="fa-solid fa-fire-flame-curved" style={{ color: "#DC2626" }} />
-                  <span>AHP Tactical Severity &amp; Conflagration Assessment</span>
+                  <i className="fa-solid fa-shield-halved" style={{ color: "#DC2626" }} />
+                  <span>Tactical Severity &amp; Conflagration Assessment</span>
                 </h2>
                 <span className={`mbfp-severity-tag ${incident.calculatedSeverity || "MODERATE"}`}>
                   {incident.calculatedSeverity || "MODERATE"} ({incident.severityScore ?? 45}/100)
@@ -1633,7 +1653,7 @@ export function MunicipalIncidentDetail({
                   </div>
                   <strong className="mbfp-metric-val">
                     {incident.houseDensity === "PACKED_MAGKAKADIKIT"
-                      ? "🔥 DIKIT-DIKIT (< 2m Conflagration Hazard)"
+                      ? "DIKIT-DIKIT (< 2m Conflagration Hazard)"
                       : incident.houseDensity === "MODERATE_SPACING"
                         ? "May Agwat (2-5m spacing)"
                         : incident.houseDensity === "ISOLATED_FAR"
@@ -1650,8 +1670,8 @@ export function MunicipalIncidentDetail({
                   </div>
                   <strong className="mbfp-metric-val">
                     {incident.weatherWindSpeed != null
-                      ? `💨 ${incident.weatherWindSpeed} km/h (${incident.weatherWindCondition || "Normal"}) · 🌡️ ${incident.weatherTemperature ?? 29}°C (${incident.weatherHumidity ?? 70}% RH)`
-                      : "💨 12 km/h Moderate Breeze · 🌡️ 29°C"}
+                      ? `${incident.weatherWindSpeed} km/h (${incident.weatherWindCondition || "Normal"}) · ${incident.weatherTemperature ?? 29}°C (${incident.weatherHumidity ?? 70}% RH)`
+                      : "12 km/h Moderate Breeze · 29°C"}
                   </strong>
                 </div>
 
@@ -1663,13 +1683,13 @@ export function MunicipalIncidentDetail({
                   </div>
                   <strong className="mbfp-metric-val">
                     {incident.structureMaterial === "LIGHT_MATERIALS"
-                      ? "🪵 Light Combustible (Kahoy / Bamboo / Nipa)"
+                      ? "Light Combustible (Kahoy / Bamboo / Nipa)"
                       : incident.structureMaterial === "COMMERCIAL_STORAGE"
-                        ? "🏢 Commercial / Flammable Storage"
+                        ? "Commercial / Flammable Storage"
                         : incident.structureMaterial === "MIXED_SEMI_CONCRETE"
-                          ? "🏠 Semi-Concrete"
+                          ? "Semi-Concrete"
                           : incident.structureMaterial === "CONCRETE"
-                            ? "🧱 Concrete / Semento"
+                            ? "Concrete / Semento"
                             : "Residential Standard"}
                   </strong>
                 </div>
@@ -1682,11 +1702,11 @@ export function MunicipalIncidentDetail({
                   </div>
                   <strong className="mbfp-metric-val">
                     {incident.routeAccessibility === "INTERIOR_ALLEY_ESKINITA"
-                      ? "🚶 ESKINITA / LOOBAN (Restricted: Prepare Long Hose)"
+                      ? "ESKINITA / LOOBAN (Restricted: Prepare Long Hose)"
                       : incident.routeAccessibility === "NARROW_STREET"
                         ? "Makipot na Kalsada (1-Lane)"
                         : incident.routeAccessibility === "WIDE_ROAD"
-                          ? "🚛 Malapad na Daan (Direct Access)"
+                          ? "Malapad na Daan (Direct Access)"
                           : "Standard Municipal Access"}
                   </strong>
                 </div>
@@ -1695,10 +1715,14 @@ export function MunicipalIncidentDetail({
               {/* Active Risk Factors */}
               {Array.isArray(incident.severityFactors) && incident.severityFactors.length > 0 && (
                 <div className="mbfp-factors-list">
-                  <span className="mbfp-factors-title">Primary Operational Hazard Factors:</span>
+                  <span className="mbfp-factors-title">
+                    <i className="fa-solid fa-triangle-exclamation" /> Primary Operational Hazard Factors:
+                  </span>
                   <ul>
                     {incident.severityFactors.map((factor, idx) => (
-                      <li key={idx}><i className="fa-solid fa-triangle-exclamation" /> {factor}</li>
+                      <li key={idx}>
+                        <i className="fa-solid fa-circle-exclamation" /> {factor}
+                      </li>
                     ))}
                   </ul>
                 </div>

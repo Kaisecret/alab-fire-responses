@@ -739,22 +739,15 @@ const layoutStyles = `
 
   .mbfp-header-titles {
     display: flex;
-    flex-direction: column;
+    align-items: center;
   }
 
   .mbfp-header-title {
-    font-size: 0.88rem;
+    font-size: 1.15rem;
     font-weight: 800;
     color: #0F172A;
     line-height: 1.25;
-  }
-
-  .mbfp-header-subtitle {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #E23632;
-    line-height: 1.2;
-    margin-top: 2px;
+    letter-spacing: -0.01em;
   }
 
   .mbfp-header-right {
@@ -1023,6 +1016,28 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
     return pathname.startsWith(item.href);
   };
 
+  const getTabTitle = (path: string): string => {
+    if (path === '/municipal-bfp' || path === '/municipal-bfp/') return 'Dashboard';
+    if (path.startsWith('/municipal-bfp/active-incidents')) return 'Active Incidents';
+    if (path.startsWith('/municipal-bfp/incident-reports')) return 'Incident Reports';
+    if (path.startsWith('/municipal-bfp/dispatch-routing')) return 'Dispatch & Routing';
+    if (path.startsWith('/municipal-bfp/gis-map')) return 'GIS Map';
+    if (path.startsWith('/municipal-bfp/verification-queue') || path.startsWith('/municipal-bfp/resident-applications')) return 'Resident Applications';
+    if (path.startsWith('/municipal-bfp/stations')) return 'Fire Stations';
+    if (path.startsWith('/municipal-bfp/firetrucks')) return 'Firetrucks';
+    if (path.startsWith('/municipal-bfp/water-sources')) return 'Water Sources';
+    if (path.startsWith('/municipal-bfp/responders')) return 'Responders';
+    if (path.startsWith('/municipal-bfp/knowledge-base')) return 'Knowledge Base';
+    if (path.startsWith('/municipal-bfp/profile')) return 'Profile Settings';
+    if (path.startsWith('/municipal-bfp/notifications')) return 'Notifications';
+
+    const match = navigationGroups
+      .flatMap((g) => g.items)
+      .find((item) => (item.exact ? path === item.href : path.startsWith(item.href)));
+
+    return match?.label || 'Municipal Operations';
+  };
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/bfp/logout', {
@@ -1219,10 +1234,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                 </button>
                 <div className="mbfp-header-titles">
                   <span className="mbfp-header-title">
-                    Bureau of Fire Protection • Municipal Operations
-                  </span>
-                  <span className="mbfp-header-subtitle">
-                    {identity?.municipalityName ? `${identity.municipalityName} Fire Station Command` : 'Municipal BFP Station'}
+                    {getTabTitle(pathname)}
                   </span>
                 </div>
               </div>
