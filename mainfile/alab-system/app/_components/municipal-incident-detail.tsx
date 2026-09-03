@@ -422,12 +422,27 @@ const detailStyles = `
     .mbfp-tactical-metrics-grid { grid-template-columns: 1fr; }
   }
 
-  /* 2-Column Tactical Layout Grid (Exact Provincial Spacing) */
+  /* 2-Column Tactical Layout Grid (Balanced Mission Control) */
   .mbfp-tactical-grid {
     display: grid;
-    grid-template-columns: 1.15fr 0.95fr;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 14px;
     align-items: start;
+  }
+
+  @media (max-width: 1080px) {
+    .mbfp-tactical-grid {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+  }
+
+  .mbfp-intel-column,
+  .mbfp-map-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
   }
 
   /* Card Containers */
@@ -436,12 +451,8 @@ const detailStyles = `
     border: 1px solid #E2E8F0;
     border-radius: 16px;
     padding: 1.15rem 1.35rem;
-    margin-bottom: 10px;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
-  }
-
-  .mbfp-card:last-child {
     margin-bottom: 0;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
   }
 
   .mbfp-card-header {
@@ -648,11 +659,99 @@ const detailStyles = `
     font-weight: 600;
   }
 
-  /* Right Column: Route Map Card */
-  .mbfp-map-card-wrapper {
-    position: sticky;
-    top: 1rem;
+  /* Right Column: Route Map & Evidence Showcase */
+  .mbfp-photo-thumbs-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
   }
+  .mbfp-photo-thumb-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 8px;
+    background: #F8FAFC;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 750;
+    color: #475569;
+  }
+  .mbfp-photo-thumb-btn:hover {
+    border-color: #DC2626;
+    background: #FEF2F2;
+    color: #DC2626;
+  }
+  .mbfp-photo-thumb-btn.is-active {
+    border-color: #DC2626;
+    background: #FEF2F2;
+    color: #DC2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+  }
+  .mbfp-photo-thumb-btn img {
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+  .mbfp-no-photo-card {
+    background: #FAFAFA;
+    border: 1.5px dashed #CBD5E1;
+  }
+  .mbfp-no-photo-badge {
+    font-size: 0.69rem;
+    font-weight: 800;
+    color: #64748B;
+    background: #F1F5F9;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+  }
+  .mbfp-no-photo-body {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.5rem 0.25rem;
+    color: #64748B;
+  }
+  .mbfp-no-photo-body i {
+    font-size: 1.8rem;
+    color: #94A3B8;
+    flex-shrink: 0;
+  }
+  .mbfp-no-photo-body p {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+  .mbfp-lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2.85rem;
+    height: 2.85rem;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    background: rgba(15, 23, 42, 0.85);
+    color: #FFFFFF;
+    font-size: 1.8rem;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.15s ease;
+  }
+  .mbfp-lightbox-nav:hover {
+    background: #DC2626;
+    border-color: #DC2626;
+    transform: translateY(-50%) scale(1.1);
+  }
+  .mbfp-lightbox-nav.prev { left: 1rem; }
+  .mbfp-lightbox-nav.next { right: 1rem; }
 
   .mbfp-route-stats-bar {
     display: flex;
@@ -1371,6 +1470,7 @@ export function MunicipalIncidentDetail({
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [dispatchStations, setDispatchStations] = useState<DispatchStation[]>([]);
@@ -1540,7 +1640,8 @@ export function MunicipalIncidentDetail({
   const isResponding = incident.status === "RESPONDING";
   const canResolve = canMunicipalResolveReport(incident.status);
   const isTerminal = ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(incident.status);
-  const evidencePhoto = incident.photos.find((p) => p.url)?.url;
+  const validPhotos = (incident.photos ?? []).filter((p): p is { url: string } => Boolean(p && p.url));
+  const evidencePhoto = validPhotos[activePhotoIdx]?.url || validPhotos[0]?.url || incident.photoUrl || null;
 
   return (
     <>
@@ -1823,9 +1924,24 @@ export function MunicipalIncidentDetail({
                 {incident.description || "No written description provided with initial transmission."}
               </p>
             </section>
+          </div>
 
-            {/* Photo Evidence Section with Lightbox */}
-            {evidencePhoto && (
+          {/* Right Column: Live Route Map, Evidence Photos, and Status Logs */}
+          <div className="mbfp-map-card-wrapper">
+            {/* 1. Tactical Route & GIS Map */}
+            <section className="mbfp-card" aria-labelledby="mbfp-map-heading">
+              <div className="mbfp-card-header">
+                <h2 id="mbfp-map-heading" className="mbfp-card-title">
+                  <i className="fa-solid fa-map-location-dot" />
+                  <span>Tactical Route &amp; GIS Map</span>
+                </h2>
+              </div>
+
+              <MunicipalIncidentMap incident={incident} />
+            </section>
+
+            {/* 2. Photo Evidence Section with Multi-Photo Switcher */}
+            {validPhotos.length > 0 && evidencePhoto ? (
               <section className="mbfp-card" aria-labelledby="mbfp-photo-heading">
                 <div className="mbfp-card-header">
                   <h2 id="mbfp-photo-heading" className="mbfp-card-title">
@@ -1833,7 +1949,7 @@ export function MunicipalIncidentDetail({
                     <span>Attached Evidence Photo</span>
                   </h2>
                   <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748B" }}>
-                    1 Photo Attached
+                    {validPhotos.length} {validPhotos.length === 1 ? "Photo Attached" : "Photos Attached"}
                   </span>
                 </div>
 
@@ -1852,18 +1968,53 @@ export function MunicipalIncidentDetail({
                   </span>
                   <img
                     src={evidencePhoto}
-                    alt="Resident fire evidence submission"
+                    alt={`Resident fire evidence submission ${activePhotoIdx + 1}`}
                     className="mbfp-photo-img"
                   />
                   <div className="mbfp-photo-overlay-badge">
                     <i className="fa-solid fa-expand" />
-                    <span>Inspect High-Res Photo Evidence</span>
+                    <span>Inspect High-Res Photo Evidence {validPhotos.length > 1 ? `(${activePhotoIdx + 1}/${validPhotos.length})` : ""}</span>
                   </div>
+                </div>
+
+                {validPhotos.length > 1 && (
+                  <div className="mbfp-photo-thumbs-strip">
+                    {validPhotos.map((p, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`mbfp-photo-thumb-btn ${idx === activePhotoIdx ? "is-active" : ""}`}
+                        onClick={() => setActivePhotoIdx(idx)}
+                        aria-label={`Select photo ${idx + 1}`}
+                      >
+                        <img src={p.url} alt={`Evidence thumb ${idx + 1}`} />
+                        <span>Photo {idx + 1}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section className="mbfp-card mbfp-no-photo-card" aria-labelledby="mbfp-photo-heading">
+                <div className="mbfp-card-header">
+                  <h2 id="mbfp-photo-heading" className="mbfp-card-title">
+                    <i className="fa-solid fa-camera" />
+                    <span>Attached Evidence Photo</span>
+                  </h2>
+                  <span className="mbfp-no-photo-badge">No Camera Attachment</span>
+                </div>
+                <div className="mbfp-no-photo-body">
+                  <i className="fa-regular fa-image" />
+                  <p>
+                    {isPhoneReport
+                      ? "Phone caller emergency report logged without photo evidence. Dispatch guided by verified location coordinates."
+                      : "Resident submitted alert without attached photos. Responder units proceed with visual confirmation on-site."}
+                  </p>
                 </div>
               </section>
             )}
 
-            {/* Timeline / Response History */}
+            {/* 3. Timeline / Response History */}
             <section className="mbfp-card" aria-labelledby="mbfp-history-heading">
               <div className="mbfp-card-header">
                 <h2 id="mbfp-history-heading" className="mbfp-card-title">
@@ -1899,20 +2050,6 @@ export function MunicipalIncidentDetail({
                   </li>
                 )}
               </ol>
-            </section>
-          </div>
-
-          {/* Right Column: Live Route Map */}
-          <div className="mbfp-map-card-wrapper">
-            <section className="mbfp-card" aria-labelledby="mbfp-map-heading">
-              <div className="mbfp-card-header">
-                <h2 id="mbfp-map-heading" className="mbfp-card-title">
-                  <i className="fa-solid fa-map-location-dot" />
-                  <span>Tactical Route &amp; GIS Map</span>
-                </h2>
-              </div>
-
-              <MunicipalIncidentMap incident={incident} />
             </section>
           </div>
         </div>
@@ -2135,7 +2272,7 @@ export function MunicipalIncidentDetail({
             <header className="mbfp-lightbox-header">
               <h3 className="mbfp-lightbox-title">
                 <i className="fa-solid fa-image" style={{ color: "#DC2626" }} />
-                <span>Incident Photo Evidence — {incident?.referenceNumber || ""}</span>
+                <span>Incident Photo Evidence {validPhotos.length > 1 ? `(${activePhotoIdx + 1} of ${validPhotos.length})` : ""} — {incident?.referenceNumber || ""}</span>
               </h3>
               <button
                 className="mbfp-lightbox-close-btn"
@@ -2146,8 +2283,38 @@ export function MunicipalIncidentDetail({
               </button>
             </header>
 
-            <div className="mbfp-lightbox-body">
+            <div className="mbfp-lightbox-body" style={{ position: "relative" }}>
+              {validPhotos.length > 1 && (
+                <button
+                  type="button"
+                  className="mbfp-lightbox-nav prev"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const nextIdx = activePhotoIdx > 0 ? activePhotoIdx - 1 : validPhotos.length - 1;
+                    setActivePhotoIdx(nextIdx);
+                    setSelectedPhoto(validPhotos[nextIdx].url);
+                  }}
+                  aria-label="Previous photo"
+                >
+                  ‹
+                </button>
+              )}
               <img src={selectedPhoto} alt="Enlarged resident fire report evidence" />
+              {validPhotos.length > 1 && (
+                <button
+                  type="button"
+                  className="mbfp-lightbox-nav next"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const nextIdx = (activePhotoIdx + 1) % validPhotos.length;
+                    setActivePhotoIdx(nextIdx);
+                    setSelectedPhoto(validPhotos[nextIdx].url);
+                  }}
+                  aria-label="Next photo"
+                >
+                  ›
+                </button>
+              )}
             </div>
 
             <footer className="mbfp-lightbox-footer">
