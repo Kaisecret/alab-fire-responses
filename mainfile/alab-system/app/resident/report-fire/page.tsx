@@ -147,6 +147,9 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const photoReqTakeBtn = root.querySelector<HTMLButtonElement>('[data-photo-req-take]');
   const photoReqCloseBtn = root.querySelector<HTMLButtonElement>('[data-photo-req-close]');
   const photoOpenTrigger = root.querySelector<HTMLElement>('[data-photo-open]');
+  const confirmAlertDialog = root.querySelector<HTMLElement>('[data-confirm-alert-dialog]');
+  const confirmAlertSendBtn = root.querySelector<HTMLButtonElement>('[data-confirm-alert-send]');
+  const confirmAlertCancelBtn = root.querySelector<HTMLButtonElement>('[data-confirm-alert-cancel]');
   const fireTypeSection = root.querySelector<HTMLElement>('[data-step-fire-type]');
   const fireTypeHint = root.querySelector<HTMLElement>('[data-fire-type-hint]');
   if (!submitButton || !locationCard || !landmarkInput || !photoInput || typeButtons.length === 0) return () => {};
@@ -195,6 +198,27 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     }
   };
   photoReqTakeBtn?.addEventListener('click', handleReqTakeClick);
+
+  const showConfirmDialog = () => {
+    if (!confirmAlertDialog) return;
+    confirmAlertDialog.hidden = false;
+  };
+
+  const hideConfirmDialog = () => {
+    if (!confirmAlertDialog) return;
+    confirmAlertDialog.hidden = true;
+  };
+
+  const handleConfirmCancel = () => {
+    hideConfirmDialog();
+    resetSubmission();
+  };
+
+  confirmAlertCancelBtn?.addEventListener('click', handleConfirmCancel);
+  const handleConfirmBackdropClick = (e: MouseEvent) => {
+    if (e.target === confirmAlertDialog) handleConfirmCancel();
+  };
+  confirmAlertDialog?.addEventListener('click', handleConfirmBackdropClick);
 
   const showError = (message: string) => {
     if (!errorMessage) return;
@@ -248,48 +272,9 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   densityButton?.addEventListener('click', handleDensityClick);
   routeButton?.addEventListener('click', handleRouteClick);
 
-  const submit = async () => {
-    if (submitting) return;
-    showError('');
-
-    // 1. Fire type required (must click 1)
-    if (!fireType) {
-      if (fireTypeHint) fireTypeHint.style.display = 'inline-block';
-      if (fireTypeSection) {
-        fireTypeSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      showError('Pumili kung anong nasusunog (Please select 1 fire type).');
-      resetSubmission();
-      return;
-    }
-
-    // 2. Photo required (at least 1 photo)
-    const totalPhotos = attachedPhotos.length > 0 ? attachedPhotos.length : (photoInput.files?.length ?? 0);
-    if (totalPhotos === 0) {
-      showPhotoWarning();
-      const photoUploadSection = root.querySelector<HTMLElement>('.photo-field');
-      if (photoUploadSection) {
-        photoUploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      showError('Kailangan mag-attach ng kahit 1 larawan ng insidente (At least 1 photo required).');
-      resetSubmission();
-      return;
-    }
-
-    if (locationCard.dataset.locationValid !== 'true') {
-      submitting = true;
-      submitButton.disabled = true;
-      submitButton.textContent = 'DETECTING LOCATION…';
-      setSubmissionLoading(true);
-      const locationDetected = await detectLocationForSubmission();
-      if (!locationDetected) {
-        showError('We could not verify your current location. Turn on precise location, then try again.');
-        resetSubmission();
-        return;
-      }
-    }
+  const executeFinalSubmission = async () => {
     const { locationLatitude, locationLongitude, locationAccuracy, locationMunicipality, locationBarangay } = locationCard.dataset;
-    if (!locationLatitude || !locationLongitude || !locationMunicipality || !locationBarangay) {
+    if (!locationLatitude || !locationLongitude || !locationMunicipality || !locationBarangay || !fireType) {
       showError('Current GPS location, municipality, and barangay are required.');
       resetSubmission();
       return;
@@ -330,6 +315,70 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       resetSubmission();
     }
   };
+
+  const handleConfirmSend = () => {
+    hideConfirmDialog();
+    void executeFinalSubmission();
+  };
+  confirmAlertSendBtn?.addEventListener('click', handleConfirmSend);
+
+  const submit = async () => {
+    if (submitting) return;
+    showError('');
+
+    // 1. Fire type required (must click 1)
+    if (!fireType) {
+      if (fireTypeHint) fireTypeHint.style.display = 'inline-block';
+      if (fireTypeSection) {
+        fireTypeSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      showError('Pumili kung anong nasusunog (Please select 1 fire type).');
+      resetSubmission();
+      return;
+    }
+
+    // 2. Photo required (at least 1 photo)
+    const totalPhotos = attachedPhotos.length > 0 ? attachedPhotos.length : (photoInput.files?.length ?? 0);
+    if (totalPhotos === 0) {
+      showPhotoWarning();
+      const photoUploadSection = root.querySelector<HTMLElement>('.photo-field');
+      if (photoUploadSection) {
+        photoUploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      showError('Kailangan mag-attach ng kahit 1 larawan ng insidente (At least 1 photo required).');
+      resetSubmission();
+      return;
+    }
+
+    if (locationCard.dataset.locationValid !== 'true') {
+      submitting = true;
+      submitButton.disabled = true;
+      submitButton.textContent = 'DETECTING LOCATION…';
+      setSubmissionLoading(true);
+      const locationDetected = await detectLocationForSubmission();
+      if (!locationDetected) {
+        showError('We could not verify your current location. Turn on precise location, then try again.');
+        resetSubmission();
+        return;
+      }
+      resetSubmission();
+    }
+
+    const { locationLatitude, locationLongitude, locationMunicipality, locationBarangay } = locationCard.dataset;
+    if (!locationLatitude || !locationLongitude || !locationMunicipality || !locationBarangay) {
+      showError('Current GPS location, municipality, and barangay are required.');
+      resetSubmission();
+      return;
+    }
+
+    // 3. Confirm Fire Alert Modal with False Alarm warning
+    if (confirmAlertDialog) {
+      showConfirmDialog();
+      return;
+    }
+
+    await executeFinalSubmission();
+  };
   const cancel = () => window.location.assign('/resident');
   submitButton.addEventListener('click', submit);
   cancelButton?.addEventListener('click', cancel);
@@ -344,6 +393,9 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     photoReqCloseBtn?.removeEventListener('click', hidePhotoWarning);
     photoRequiredDialog?.removeEventListener('click', handleDialogBackdropClick);
     photoReqTakeBtn?.removeEventListener('click', handleReqTakeClick);
+    confirmAlertCancelBtn?.removeEventListener('click', handleConfirmCancel);
+    confirmAlertDialog?.removeEventListener('click', handleConfirmBackdropClick);
+    confirmAlertSendBtn?.removeEventListener('click', handleConfirmSend);
   };
 }
 

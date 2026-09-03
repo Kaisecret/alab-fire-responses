@@ -631,6 +631,135 @@ export const reportFireStyles = `
     color: #0F172A;
   }
 
+  /* Confirm Alert Modal with False Alarm Warning */
+  .confirm-alert-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    animation: photoReqFadeIn 0.2s ease forwards;
+  }
+  .confirm-alert-dialog-backdrop[hidden] {
+    display: none !important;
+  }
+  .confirm-alert-dialog {
+    width: min(92vw, 25rem);
+    background: #FFFFFF;
+    border: 1.5px solid #FECACA;
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(220, 38, 38, 0.15);
+    padding: 1.6rem 1.4rem 1.35rem;
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    animation: photoReqSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .confirm-alert-icon {
+    position: relative;
+    width: 3.8rem;
+    height: 3.8rem;
+    margin: 0 auto 0.9rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FEF2F2, #FEE2E2);
+    border: 2px solid #FECACA;
+    display: grid;
+    place-items: center;
+    color: #DC2626;
+  }
+  .confirm-alert-icon svg {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+  .confirm-alert-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid #EF4444;
+    opacity: 0;
+    animation: confirmPulseRing 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  }
+  @keyframes confirmPulseRing {
+    0% { opacity: 0.8; transform: scale(0.95); }
+    50% { opacity: 0; transform: scale(1.2); }
+    100% { opacity: 0; transform: scale(1.25); }
+  }
+  .confirm-alert-dialog h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1.18rem;
+    font-weight: 850;
+    color: #7F1D1D;
+    letter-spacing: -0.02em;
+  }
+  .confirm-alert-warning-box {
+    background: #FFF5F5;
+    border: 1px solid #FED7D7;
+    border-radius: 0.9rem;
+    padding: 0.85rem 0.95rem;
+    margin-bottom: 1.25rem;
+    text-align: left;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #7F1D1D;
+  }
+  .confirm-alert-warning-box strong {
+    display: block;
+    font-size: 0.76rem;
+    font-weight: 850;
+    letter-spacing: 0.04em;
+    color: #991B1B;
+    margin-bottom: 0.25rem;
+  }
+  .confirm-alert-warning-box p {
+    margin: 0;
+    color: #4B3B3A;
+  }
+  .confirm-alert-actions {
+    display: grid;
+    gap: 0.55rem;
+  }
+  .confirm-btn-send {
+    width: 100%;
+    padding: 0.82rem 1rem;
+    border-radius: 0.85rem;
+    font-size: 0.88rem;
+    font-weight: 850;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #DC2626, #B91C1C);
+    color: #FFFFFF;
+    border: 1px solid #991B1B;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+    transition: all 0.15s ease;
+  }
+  .confirm-btn-send:hover {
+    box-shadow: 0 6px 18px rgba(220, 38, 38, 0.45);
+    transform: translateY(-1px);
+  }
+  .confirm-btn-cancel {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.85rem;
+    font-size: 0.84rem;
+    font-weight: 750;
+    cursor: pointer;
+    background: #F8FAFC;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+    transition: all 0.15s ease;
+  }
+  .confirm-btn-cancel:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+  }
+
   @media (max-width: 950px) {
     .report-page-root { padding: 0 0 calc(6rem + env(safe-area-inset-bottom)); padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
     .report-form-shell { padding: 1.15rem 1rem 1.75rem; border: none; border-radius: 0; box-shadow: none; }
@@ -823,6 +952,36 @@ export const reportFireMarkup = `
           </button>
           <button type="button" class="photo-req-btn photo-req-close" data-photo-req-close>
             Isara
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Fire Alert Modal with False Alarm Warning -->
+    <div class="confirm-alert-dialog-backdrop" data-confirm-alert-dialog hidden>
+      <div class="confirm-alert-dialog" role="alertdialog" aria-labelledby="confirmAlertTitle">
+        <div class="confirm-alert-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="confirm-alert-ring" aria-hidden="true"></span>
+        </div>
+        <h3 id="confirmAlertTitle">Kumpirmahin ang Fire Alert</h3>
+        <div class="confirm-alert-warning-box">
+          <strong>⚠️ BABALA SA FALSE ALARM:</strong>
+          <p>
+            Ang pagpapadala ng <strong>pekeng ulat o false alarm ay may karampatang parusa at pagkakakulong</strong> sa ilalim ng batas. Naka-record ang iyong eksaktong <strong>GPS location at device details</strong> na matutunton ng BFP at kapulisan.
+          </p>
+        </div>
+        <div class="confirm-alert-actions">
+          <button type="button" class="confirm-btn-send" data-confirm-alert-send>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+            Oo, Ipadala ang Alert
+          </button>
+          <button type="button" class="confirm-btn-cancel" data-confirm-alert-cancel>
+            Kanselahin / Cancel
           </button>
         </div>
       </div>

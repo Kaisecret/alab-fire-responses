@@ -83,3 +83,18 @@ test("resident fire report requires user selection for burning type and requires
   assert.doesNotMatch(status, /Tulong sa Responders \(Opsyonal\)/);
 });
 
+test("resident fire report triggers confirmation popup with false alarm warning before sending alert", () => {
+  const content = read("app/_content/resident-report-fire-content.ts");
+  const page = read("app/resident/report-fire/page.tsx");
+
+  assert.match(content, /data-confirm-alert-dialog/);
+  assert.match(content, /BABALA SA FALSE ALARM/);
+  assert.match(content, /GPS location at device details/);
+  assert.match(content, /data-confirm-alert-send/);
+  assert.match(content, /data-confirm-alert-cancel/);
+  assert.match(page, /showConfirmDialog\(\)/);
+  assert.match(page, /executeFinalSubmission/);
+  assert.match(page, /data-confirm-alert-send/);
+  assert.match(page, /data-confirm-alert-cancel/);
+});
+
