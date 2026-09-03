@@ -82,8 +82,10 @@ function LegacyResidentReportFirePage() {
     const disposeLocation = initializeLocationLogic(root);
     const disposePhotoCapture = initializePhotoCapture(root);
     const disposeSubmission = initializeReportSubmission(root);
+    const disposeScrollIndicator = initializeScrollDownIndicator(root);
 
     return () => {
+      disposeScrollIndicator();
       disposeSubmission();
       disposePhotoCapture();
       disposeLocation();
@@ -98,6 +100,37 @@ function LegacyResidentReportFirePage() {
       {isSubmitting && <ResidentFireLoader label="Sending your fire alert…" />}
     </>
   );
+}
+
+function initializeScrollDownIndicator(root: HTMLElement): () => void {
+  const scrollDownBtn = root.querySelector<HTMLButtonElement>('[data-scroll-down-btn]');
+  if (!scrollDownBtn) return () => {};
+
+  const handleScroll = () => {
+    const scrollY = window.scrollY || document.documentElement.scrollTop;
+    if (scrollY > 50) {
+      scrollDownBtn.classList.add('is-hidden');
+    } else {
+      scrollDownBtn.classList.remove('is-hidden');
+    }
+  };
+
+  const handleScrollDownClick = () => {
+    const target = root.querySelector('.landmark-box') || root.querySelector('.tactical-grid-3') || root.querySelector('.photo-field');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollBy({ top: 380, behavior: 'smooth' });
+    }
+  };
+
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  scrollDownBtn.addEventListener('click', handleScrollDownClick);
+
+  return () => {
+    window.removeEventListener('scroll', handleScroll);
+    scrollDownBtn.removeEventListener('click', handleScrollDownClick);
+  };
 }
 
 function initializeReportSubmission(root: HTMLElement): () => void {
@@ -553,8 +586,8 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       if (!marker) {
         marker = leaflet.marker(point, {
           title: 'Detected resident location',
-          draggable: true,
-          autoPan: true,
+          draggable: false,
+          autoPan: false,
           icon: leaflet.divIcon({
             className: 'location-map-marker-wrapper',
             html: '<span class="location-map-marker"><img src="/images/fire logo.webp" alt="" /></span>',
@@ -868,13 +901,21 @@ function initializeLocationLogic(root: HTMLElement): () => void {
           minZoom: 6,
           maxZoom: 19,
           zoomControl: false,
+          dragging: false,
+          touchZoom: false,
+          scrollWheelZoom: false,
+          doubleClickZoom: false,
+          boxZoom: false,
+          keyboard: false,
           attributionControl: true,
         });
         leaflet.tileLayer(OSM_TILE_URL, {
           maxZoom: 19,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(map);
-        leaflet.control.zoom({ position: 'topright' }).addTo(map);
+        if (false as boolean) {
+          leaflet.control.zoom({ position: 'topright' }).addTo(map);
+        }
         map.on('click', (event) => {
           if (!isAdjusting) return;
           void finalizeManualLocation(event.latlng.lat, event.latlng.lng);

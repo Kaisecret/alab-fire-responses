@@ -84,8 +84,34 @@ export const reportFireStyles = `
   .btn-small-outline:focus-visible, .btn-cancel:focus-visible, .btn-primary:focus-visible, .type-btn:focus-visible { outline: 3px solid rgba(219, 27, 13, .22); outline-offset: 2px; }
   .btn-small-outline:disabled { cursor: not-allowed; color: #B7C0CC; background: #FBFCFD; border-color: #EDF0F4; box-shadow: none; }
 
-  .map-preview[data-location-map-surface] { position: relative; z-index: 0; display: block; height: 11rem; overflow: hidden; border-top: 1px solid var(--report-line); background: #D9EEF1; }
-  .location-map { width: 100%; height: 100%; }
+  .map-preview[data-location-map-surface] {
+    position: relative;
+    z-index: 0;
+    display: block;
+    height: 11rem;
+    overflow: hidden;
+    border-top: 1px solid var(--report-line);
+    background: #D9EEF1;
+    pointer-events: none !important;
+    touch-action: pan-y !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+  }
+  .location-map,
+  .leaflet-container {
+    width: 100%;
+    height: 100%;
+    pointer-events: none !important;
+    touch-action: pan-y !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+  }
+  .leaflet-control-container,
+  .leaflet-control-zoom {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
   .location-map-overlay { position: absolute; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; gap: .55rem; color: var(--report-ink); background: rgba(255, 255, 255, .78); font-size: .75rem; font-weight: 800; backdrop-filter: blur(2px); pointer-events: none; }
   .location-map-overlay.is-hidden { display: none; }
   .location-map-pulse { width: .75rem; height: .75rem; border-radius: 50%; background: var(--report-red); box-shadow: 0 0 0 .35rem rgba(219, 27, 13, .13); animation: report-pulse 1.2s ease-in-out infinite; }
@@ -338,6 +364,69 @@ export const reportFireStyles = `
   }
   .photo-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; clip-path: inset(50%); }
 
+  /* Floating Animated Scroll Down Button (vanishes when scrolled) */
+  .scroll-down-btn {
+    position: fixed;
+    bottom: calc(1.35rem + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 150;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 1.15rem 0.65rem 1.25rem;
+    border-radius: 9999px;
+    background: rgba(15, 23, 42, 0.90);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #FFFFFF;
+    border: 1.5px solid rgba(255, 255, 255, 0.28);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.28), 0 4px 12px rgba(219, 27, 13, 0.25);
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s;
+  }
+  .scroll-down-btn:hover {
+    background: rgba(15, 23, 42, 0.98);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38);
+  }
+  .scroll-down-btn:active {
+    transform: translateX(-50%) translateY(0);
+  }
+  .scroll-down-btn.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(14px);
+  }
+  .scroll-arrow-box {
+    display: grid;
+    place-items: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #EF2A1E, #B91C1C);
+    color: #FFFFFF;
+    box-shadow: 0 2px 6px rgba(219, 27, 13, 0.4);
+    animation: scrollArrowBounce 1.5s infinite ease-in-out;
+  }
+  .scroll-arrow-box svg {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+  @keyframes scrollArrowBounce {
+    0%, 100% {
+      transform: translateY(-2.5px);
+    }
+    50% {
+      transform: translateY(2.5px);
+    }
+  }
+
   .form-footer { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(10rem, .65fr); gap: 1rem; margin-top: clamp(.3rem, 2vw, .75rem); padding-top: 1.2rem; border-top: 1px solid var(--report-line); }
   .btn-primary { display: inline-flex; min-height: 3.4rem; align-items: center; justify-content: center; gap: .65rem; border: 0; border-radius: .85rem; color: #fff; background: linear-gradient(135deg, #EF2A1E, var(--report-red-deep)); box-shadow: 0 .8rem 1.6rem rgba(219, 27, 13, .25); font-size: .9rem; font-weight: 900; letter-spacing: .01em; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
   .btn-primary svg { width: 1.25rem; height: 1.25rem; }
@@ -508,5 +597,15 @@ export const reportFireMarkup = `
       <img data-photo-summary-preview hidden />
       <div data-photo-placeholder hidden></div>
     </div>
+
+    <!-- Floating Animated Scroll-Down Button (vanishes when scrolled) -->
+    <button type="button" class="scroll-down-btn" data-scroll-down-btn aria-label="Scroll down to complete report">
+      <span>Scroll down to continue</span>
+      <span class="scroll-arrow-box" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M7 11l5 5 5-5M7 4l5 5 5-5"/>
+        </svg>
+      </span>
+    </button>
   </div>
 `;
