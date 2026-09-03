@@ -1641,7 +1641,7 @@ export function MunicipalIncidentDetail({
   const canResolve = canMunicipalResolveReport(incident.status);
   const isTerminal = ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(incident.status);
   const validPhotos = (incident.photos ?? []).filter((p): p is { url: string } => Boolean(p && p.url));
-  const evidencePhoto = validPhotos[activePhotoIdx]?.url || validPhotos[0]?.url || incident.photoUrl || null;
+  const evidencePhoto = validPhotos[activePhotoIdx]?.url || validPhotos[0]?.url || null;
 
   return (
     <>
