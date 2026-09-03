@@ -418,42 +418,65 @@ export const homeStyles = `
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding-bottom: 0.8rem;
-        border-bottom: 1px solid var(--border-color);
+        padding: 0.75rem 0.9rem;
+        background: #F8FAFC;
+        border: 1px solid #F1F5F9;
+        border-radius: 0.75rem;
+        transition: all 0.18s ease;
+    }
+    .report-item:hover {
+        background: #FFFFFF;
+        border-color: #E2E8F0;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+        transform: translateY(-1px);
     }
     .report-item:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
+        margin-bottom: 0;
     }
 
     .report-id {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--text-dark);
+        font-size: 0.86rem;
+        font-weight: 750;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: #0F172A;
     }
 
     .report-badge {
-        padding: 0.2rem 0.6rem;
-        border-radius: 0.3rem;
-        font-size: 0.75rem;
-        font-weight: 600;
+        padding: 0.25rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: capitalize;
+        letter-spacing: 0.01em;
     }
-    .report-badge.verifying { background: #ffedd5; color: #ea580c; }
-    .report-badge.submitted { background: #e0f2fe; color: #0369a1; }
-    .report-badge.responding { background: #dcfce7; color: #047857; }
-    .report-badge.confirmed { background: #dcfce7; color: #15803d; }
-    .report-badge.closed { background: #f1f5f9; color: #475569; }
-    .report-empty { padding: 0.35rem 0; color: var(--text-muted); font-size: 0.85rem; }
+    .report-badge.verifying { background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
+    .report-badge.submitted { background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD; }
+    .report-badge.responding { background: #DCFCE7; color: #16A34A; border: 1px solid #BBF7D0; }
+    .report-badge.confirmed { background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0; }
+    .report-badge.closed { background: #F1F5F9; color: #64748B; border: 1px solid #E2E8F0; }
+    .report-empty { padding: 1rem 0; text-align: center; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; }
 
     .btn-view {
-        padding: 0.3rem 0.8rem;
-        border: 1px solid var(--primary-red);
-        color: var(--primary-red);
-        background: transparent;
-        border-radius: 0.3rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.32rem 0.85rem;
+        border: 1.5px solid #FCA5A5;
+        color: #DC2626;
+        background: #FFFFFF;
+        border-radius: 999px;
         font-size: 0.75rem;
-        font-weight: 600;
+        font-weight: 750;
         cursor: pointer;
+        text-decoration: none !important;
+        transition: all 0.15s ease;
+    }
+    .btn-view:hover {
+        background: #DC2626;
+        border-color: #DC2626;
+        color: #FFFFFF !important;
+        box-shadow: 0 3px 10px rgba(220, 38, 38, 0.22);
+        text-decoration: none !important;
     }
 
     /* FIRE SAFETY REMINDER */

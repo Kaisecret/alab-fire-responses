@@ -65,24 +65,41 @@ export function ResidentHomePage() {
         badge.textContent = report.label;
         const view = document.createElement("a");
         view.className = "btn-view";
-        view.href = "/resident/reports";
+        view.href = report.id ? `/resident/reports/${report.id}` : "/resident/reports";
         view.textContent = "View";
         item.append(reference, badge, view);
         list.append(item);
       });
     };
 
+    const applyDashboardData = (body: Dashboard) => {
+      if (!body?.resident) return;
+      setText("[data-dashboard-name]", `Welcome, ${body.resident.name}`);
+      setText("[data-dashboard-municipality]", body.resident.municipality);
+      setText("[data-dashboard-barangay]", body.resident.barangay);
+      (Object.keys(body.counts) as Array<keyof Dashboard["counts"]>).forEach((status) => {
+        setText(`[data-dashboard-count="${status}"]`, String(body.counts[status]));
+      });
+      renderRecentReports(body.reports || []);
+    };
+
+    // 1. Instant Cache: Load from sessionStorage immediately in 0ms (No loading flicker when switching tabs)
+    try {
+      const cached = sessionStorage.getItem("alab_cache_resident_dashboard");
+      if (cached) {
+        applyDashboardData(JSON.parse(cached));
+      }
+    } catch {}
+
+    // 2. Background Revalidation: Fetch fresh data and update cache silently
     fetch("/api/resident/dashboard")
       .then(async (response) => ({ response, body: await response.json() as Dashboard }))
       .then(({ response, body }) => {
-        if (!response.ok || !body.resident) return;
-        setText("[data-dashboard-name]", `Welcome, ${body.resident.name}`);
-        setText("[data-dashboard-municipality]", body.resident.municipality);
-        setText("[data-dashboard-barangay]", body.resident.barangay);
-        (Object.keys(body.counts) as Array<keyof Dashboard["counts"]>).forEach((status) => {
-          setText(`[data-dashboard-count="${status}"]`, String(body.counts[status]));
-        });
-        renderRecentReports(body.reports);
+        if (!response.ok || !body?.resident) return;
+        try {
+          sessionStorage.setItem("alab_cache_resident_dashboard", JSON.stringify(body));
+        } catch {}
+        applyDashboardData(body);
       })
       .catch(() => undefined);
 

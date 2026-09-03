@@ -199,6 +199,28 @@ export default function ProfilePage() {
     };
     root.addEventListener("click", onClick);
     root.addEventListener("submit", onSubmit);
+
+    const applyProfile = (loadedProfile: Record<string, unknown>) => {
+      profile = loadedProfile;
+      setFields(profile);
+      const loadedNotifications = profile.notifications;
+      if (loadedNotifications && typeof loadedNotifications === "object" && !Array.isArray(loadedNotifications)) {
+        const values = loadedNotifications as Partial<Notifications>;
+        if (typeof values.push === "boolean" && typeof values.incidents === "boolean" && typeof values.emergency === "boolean") {
+          syncNotifications({ push: values.push, incidents: values.incidents, emergency: values.emergency });
+        }
+      }
+    };
+
+    // 1. Instant Cache: Load profile immediately with zero delay
+    try {
+      const cached = sessionStorage.getItem("alab_cache_resident_profile");
+      if (cached) {
+        applyProfile(JSON.parse(cached));
+      }
+    } catch {}
+
+    // 2. Background Revalidation
     fetch("/api/resident/profile")
       .then(async (response) => {
         const body = await response.json() as { profile?: Record<string, unknown> };
@@ -206,15 +228,10 @@ export default function ProfilePage() {
       })
       .then(({ response, body }) => {
         if (!response.ok || !body.profile) return;
-        profile = body.profile;
-        setFields(profile);
-        const loadedNotifications = profile.notifications;
-        if (loadedNotifications && typeof loadedNotifications === "object" && !Array.isArray(loadedNotifications)) {
-          const values = loadedNotifications as Partial<Notifications>;
-          if (typeof values.push === "boolean" && typeof values.incidents === "boolean" && typeof values.emergency === "boolean") {
-            syncNotifications({ push: values.push, incidents: values.incidents, emergency: values.emergency });
-          }
-        }
+        try {
+          sessionStorage.setItem("alab_cache_resident_profile", JSON.stringify(body.profile));
+        } catch {}
+        applyProfile(body.profile);
       })
       .catch(() => undefined);
     return () => { closeDialogs(); root.removeEventListener("click", onClick); root.removeEventListener("submit", onSubmit); };

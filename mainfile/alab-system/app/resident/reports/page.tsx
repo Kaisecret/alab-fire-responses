@@ -36,9 +36,24 @@ const liveReportsStyles = `
 `;
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<Report[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = sessionStorage.getItem("alab_cache_resident_reports");
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return [];
+  });
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return !sessionStorage.getItem("alab_cache_resident_reports");
+      } catch {}
+    }
+    return true;
+  });
   const [filter, setFilter] = useState<Filter>("ALL");
   const [query, setQuery] = useState("");
 
@@ -48,7 +63,12 @@ export default function ReportsPage() {
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Unable to load your reports.");
-        if (isMounted) setReports(data.reports);
+        if (isMounted) {
+          setReports(data.reports || []);
+          try {
+            sessionStorage.setItem("alab_cache_resident_reports", JSON.stringify(data.reports || []));
+          } catch {}
+        }
       })
       .catch((cause) => { if (isMounted) setError(cause instanceof Error ? cause.message : "Unable to load your reports."); })
       .finally(() => { if (isMounted) setLoading(false); });
