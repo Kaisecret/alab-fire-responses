@@ -70,7 +70,7 @@ export function ResidentInstallPrompt() {
           border: 1px solid #E2E8F0;
           border-radius: 999px;
           box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
-          padding: 0.45rem 0.65rem 0.45rem 0.75rem;
+          padding: 0.58rem 0.85rem;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -184,7 +184,7 @@ export function ResidentInstallPrompt() {
           .resident-chrome-install-sheet {
             top: 0.65rem;
             width: calc(100vw - 1.25rem);
-            padding: 0.4rem 0.5rem 0.4rem 0.65rem;
+            padding: 0.52rem 0.75rem;
           }
         }
       `}</style>
