@@ -471,6 +471,8 @@ function initializeLocationLogic(root: HTMLElement): () => void {
     const landmarkInput = root.querySelector<HTMLInputElement>('[data-landmark-input]');
     const landmarkConfirm = root.querySelector<HTMLButtonElement>('[data-landmark-confirm]');
     const landmarkChange = root.querySelector<HTMLButtonElement>('[data-landmark-change]');
+    const radarState = root.querySelector<HTMLElement>('[data-location-detecting-state]');
+    const radarLabel = root.querySelector<HTMLElement>('[data-location-radar-label]');
 
     const stateClasses = [
       'is-locating',
@@ -529,6 +531,36 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       if (status) status.textContent = stateLabels[kind];
       locationCard.dataset.locationState = kind;
       refreshButton.disabled = kind === 'locating' || kind === 'improving';
+
+      if (radarState && radarLabel) {
+        if (kind === 'locating') {
+          radarState.classList.remove('is-verified');
+          radarLabel.textContent = 'Detecting live GPS coordinates...';
+        } else if (kind === 'improving') {
+          radarState.classList.remove('is-verified');
+          radarLabel.textContent = 'Improving GPS accuracy...';
+        } else if (kind === 'confirmed' || kind === 'adjusted') {
+          radarState.classList.add('is-verified');
+          radarLabel.textContent = '✓ GPS location verified';
+        } else if (kind === 'approximate' || kind === 'low-accuracy') {
+          radarState.classList.remove('is-verified');
+          radarLabel.textContent = 'Approximate GPS signal acquired';
+        } else if (kind === 'outside') {
+          radarState.classList.remove('is-verified');
+          radarLabel.textContent = 'Location outside Antique jurisdiction';
+        } else if (kind === 'error') {
+          radarState.classList.remove('is-verified');
+          radarLabel.textContent = 'GPS signal unavailable - Tap below to retry';
+        }
+      }
+
+      if (refreshButton) {
+        if (kind === 'locating' || kind === 'improving') {
+          refreshButton.innerHTML = `<span class="detect-btn-spinner" aria-hidden="true"></span> Detecting location...`;
+        } else {
+          refreshButton.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Detect my location`;
+        }
+      }
     }
 
     function setMapOverlay(visible: boolean, label: string) {
@@ -567,6 +599,10 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       if (accuracy) {
         accuracy.hidden = true;
         accuracy.textContent = '';
+      }
+      if (radarState && radarLabel && barangayValue && !barangayValue.includes('checking') && municipalityValue && !municipalityValue.includes('checking')) {
+        radarState.classList.add('is-verified');
+        radarLabel.textContent = `✓ Detected: ${barangayValue}, ${municipalityValue}`;
       }
     }
 

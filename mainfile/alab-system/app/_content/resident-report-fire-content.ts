@@ -66,8 +66,8 @@ export const reportFireStyles = `
   .location-status.is-outside, .location-status.is-error { background: #FFF0F0; }
 
   .location-box { overflow: hidden; border: 1px solid var(--report-line); border-radius: 1rem; background: #fff; box-shadow: 0 .45rem 1.25rem rgba(17, 34, 49, .045); }
-  .location-box[data-location-card] { display: flex; min-height: 22.75rem; flex-direction: column; }
-  .location-box[data-location-card] .location-details { display: flex; flex: 1 1 auto; flex-direction: column; padding: 1.05rem; }
+  .location-box[data-location-card] { display: flex; min-height: 22.75rem; min-height: auto !important; height: 100%; flex-direction: column; justify-content: space-between; }
+  .location-box[data-location-card] .location-details { display: flex; flex: 1 1 auto; flex-direction: column; justify-content: space-between; padding: 1.15rem; }
   .location-details h4 { display: flex; align-items: center; gap: .45rem; margin: 0 0 .8rem; color: var(--report-ink); font-size: .98rem; }
   .location-heading-icon { width: 1.2rem; height: 1.2rem; color: var(--report-red); }
   .location-address { display: grid; gap: .42rem; margin-bottom: .72rem; padding: .7rem; border: 1px solid #FFD9D5; border-radius: .75rem; background: #FFF9F8; }
@@ -76,6 +76,76 @@ export const reportFireStyles = `
   .location-address-row strong { color: #334155; font-weight: 750; }
   .location-error { margin: 0 0 .8rem; padding-left: .7rem; border-left: 2px solid var(--report-red); color: var(--report-red-deep); font-size: .76rem; line-height: 1.45; }
   .accuracy { margin: 0 0 .8rem; color: #087E3E; font-size: .75rem; font-weight: 750; }
+
+  /* GPS RADAR & DETECTING ANIMATION */
+  .location-detecting-state {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 0.75rem;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, #FFF5F5, #FFF0EE);
+    border: 1px solid #FFD9D5;
+    color: var(--report-red);
+    font-size: 0.76rem;
+    font-weight: 750;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .location-detecting-state.is-verified {
+    background: linear-gradient(135deg, #F0FDF4, #ECFDF5);
+    border-color: #BBF7D0;
+    color: #15803D;
+  }
+  .detecting-radar-ring {
+    position: relative;
+    width: 1.15rem;
+    height: 1.15rem;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+  }
+  .detecting-radar-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--report-red);
+    box-shadow: 0 0 0 0 rgba(226, 54, 50, 0.75);
+    animation: gpsPulse 1.4s infinite cubic-bezier(0.66, 0, 0, 1);
+  }
+  .location-detecting-state.is-verified .detecting-radar-dot {
+    background: #16A34A;
+    box-shadow: none;
+    animation: none;
+  }
+  @keyframes gpsPulse {
+    0% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(226, 54, 50, 0.75);
+    }
+    70% {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 0.55rem rgba(226, 54, 50, 0);
+    }
+    100% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(226, 54, 50, 0);
+    }
+  }
+  .detect-btn-spinner {
+    display: inline-block;
+    width: 0.85rem;
+    height: 0.85rem;
+    border: 2px solid rgba(226, 54, 50, 0.25);
+    border-top-color: var(--report-red);
+    border-radius: 50%;
+    animation: btnSpin 0.7s linear infinite;
+    margin-right: 0.25rem;
+    vertical-align: middle;
+  }
+  @keyframes btnSpin {
+    to { transform: rotate(360deg); }
+  }
 
   .action-btn-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-top: auto; }
   .action-btn-row-single { grid-template-columns: minmax(0, 1fr); }
@@ -88,23 +158,25 @@ export const reportFireStyles = `
     position: relative;
     z-index: 0;
     display: block;
+    display: none !important;
     height: 11rem;
-    overflow: hidden;
-    border-top: 1px solid var(--report-line);
-    background: #D9EEF1;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    border: none !important;
+    visibility: hidden !important;
     pointer-events: none !important;
-    touch-action: pan-y !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
   }
   .location-map,
   .leaflet-container {
-    width: 100%;
-    height: 100%;
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    visibility: hidden !important;
     pointer-events: none !important;
-    touch-action: pan-y !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
   }
   .leaflet-control-container,
   .leaflet-control-zoom {
@@ -112,8 +184,7 @@ export const reportFireStyles = `
     pointer-events: none !important;
     visibility: hidden !important;
   }
-  .location-map-overlay { position: absolute; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; gap: .55rem; color: var(--report-ink); background: rgba(255, 255, 255, .78); font-size: .75rem; font-weight: 800; backdrop-filter: blur(2px); pointer-events: none; }
-  .location-map-overlay.is-hidden { display: none; }
+  .location-map-overlay { display: none !important; }
   .location-map-pulse { width: .75rem; height: .75rem; border-radius: 50%; background: var(--report-red); box-shadow: 0 0 0 .35rem rgba(219, 27, 13, .13); animation: report-pulse 1.2s ease-in-out infinite; }
   .location-map-marker-wrapper { background: transparent; border: 0; }
   .location-map-marker { display: grid; width: 2.4rem; height: 2.4rem; place-items: center; border: 2px solid #fff; border-radius: 50% 50% 50% 0; background: var(--report-red); box-shadow: 0 .5rem 1.1rem rgba(219, 27, 13, .35); transform: rotate(-45deg); }
@@ -447,9 +518,9 @@ export const reportFireStyles = `
     .report-page-root { padding: 0 0 calc(6rem + env(safe-area-inset-bottom)); padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
     .report-form-shell { padding: 1.15rem 1rem 1.75rem; border: none; border-radius: 0; box-shadow: none; }
     .two-col-grid { grid-template-columns: 1fr; }
-    .location-box[data-location-card] { min-height: 26rem; }
+    .location-box[data-location-card] { min-height: 26rem; min-height: auto !important; height: auto; }
     .location-box[data-location-card] .location-details { display: flex; }
-    .map-preview[data-location-map-surface] { display: block; height: 12.25rem; }
+    .map-preview[data-location-map-surface] { display: block; display: none !important; height: 12.25rem; height: 0 !important; max-height: 0 !important; }
     .landmark-box { min-height: auto; }
     .type-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .type-btn { min-height: 5.8rem; font-size: .7rem; }
@@ -498,6 +569,10 @@ export const reportFireMarkup = `
           <div class="location-box" data-location-card data-location-latitude="" data-location-longitude="" data-location-accuracy="" data-location-barangay="" data-location-municipality="" data-location-province="" data-location-valid="false" data-location-state="locating">
             <div class="location-details">
               <h4><svg class="location-heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><span data-location-title>Detecting location</span></h4>
+              <div class="location-detecting-state" data-location-detecting-state>
+                <span class="detecting-radar-ring" aria-hidden="true"><span class="detecting-radar-dot"></span></span>
+                <span class="detecting-radar-label" data-location-radar-label>Detecting live GPS coordinates...</span>
+              </div>
               <div class="location-address location-result" data-location-address data-location-result>
                 <div class="location-address-row location-result-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><strong data-location-place><span data-location-barangay>Barangay checking</span><span>, </span><span data-location-municipality>Municipality checking</span></strong></div>
                 <div class="location-address-row location-result-coordinates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="9"/></svg><strong data-location-coordinates>Latitude -- | Longitude --</strong></div>
