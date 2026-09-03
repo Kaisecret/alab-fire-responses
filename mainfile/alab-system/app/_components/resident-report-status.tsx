@@ -323,8 +323,226 @@ const detailStyles = `
   .resident-timeline-date { display:block; margin-top:.18rem; color:#8da0b5; font-size:.58rem; font-weight:600; }
   .resident-bfp-update { margin:0; border-radius:.7rem; padding:.8rem; background:#fff3f2; color:#4a5568; font-size:.84rem; line-height:1.45; }
   .resident-update-time { margin:.65rem 0 0; color:#718096; font-size:.72rem; font-weight:700; }
-  .resident-photo-button { width:100%; border:1px solid #e32118; border-radius:.75rem; padding:.75rem 1rem; color:#c91f17; background:#fffafa; font:inherit; font-weight:800; cursor:pointer; }
-  .resident-photo-backdrop { position:fixed; inset:0; z-index:300; display:grid; place-items:center; padding:1rem; background:rgba(13,18,30,.76); }.resident-photo-dialog { position:relative; width:min(100%,48rem); padding:.75rem; border-radius:1rem; background:#fff; }.resident-photo-dialog-image { display:block; width:100%; max-height:78dvh; object-fit:contain; border-radius:.7rem; background:#101827; }.resident-photo-close { position:absolute; top:1.2rem; right:1.2rem; width:2.35rem; height:2.35rem; border:0; border-radius:50%; background:rgba(0,0,0,.68); color:#fff; font-size:1.3rem; cursor:pointer; }
+  /* Incident Photo Showcase & Slideshow */
+  .resident-photos-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+    margin-bottom: 0.85rem;
+  }
+  .resident-photo-preview-thumb {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border: 1.5px solid #E2E8F0;
+    cursor: pointer;
+    background: #0F172A;
+    padding: 0;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .resident-photo-preview-thumb:hover {
+    border-color: #DB1B0D;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(219, 27, 13, 0.22);
+  }
+  .resident-photo-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.25s ease;
+  }
+  .resident-photo-preview-thumb:hover .resident-photo-preview-img {
+    transform: scale(1.06);
+  }
+  .resident-photo-preview-badge {
+    position: absolute;
+    bottom: 0.3rem;
+    left: 0.3rem;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: #FFFFFF;
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+  .resident-photo-button {
+    width: 100%;
+    border: 1.5px solid #DB1B0D;
+    border-radius: 0.85rem;
+    padding: 0.75rem 1rem;
+    color: #DB1B0D;
+    background: #FFF8F7;
+    font: inherit;
+    font-weight: 800;
+    font-size: 0.84rem;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .resident-photo-button:hover {
+    background: #DB1B0D;
+    color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(219, 27, 13, 0.28);
+    transform: translateY(-1px);
+  }
+
+  /* Fullscreen Slideshow Modal */
+  .resident-photo-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(10, 15, 29, 0.90);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    animation: fadeIn 0.2s ease-out;
+  }
+  .resident-photo-dialog {
+    position: relative;
+    width: min(100%, 50rem);
+    max-height: 92dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 0.9rem;
+    border-radius: 1.25rem;
+    background: #0F172A;
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65);
+    box-sizing: border-box;
+  }
+  .resident-photo-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.65rem;
+    margin-bottom: 0.65rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .resident-photo-counter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.32rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #F8FAFC;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+  .resident-photo-close {
+    width: 2.2rem;
+    height: 2.2rem;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+    font-size: 1.35rem;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .resident-photo-close:hover {
+    background: #DB1B0D;
+    color: #FFFFFF;
+    transform: scale(1.08);
+  }
+  .resident-photo-stage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 250px;
+    max-height: 64dvh;
+    border-radius: 0.85rem;
+    background: #020617;
+    overflow: hidden;
+  }
+  .resident-photo-dialog-image {
+    display: block;
+    max-width: 100%;
+    max-height: 64dvh;
+    object-fit: contain;
+    border-radius: 0.85rem;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .photo-nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2.85rem;
+    height: 2.85rem;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #FFFFFF;
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .photo-nav-arrow:hover {
+    background: #DB1B0D;
+    border-color: #DB1B0D;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 6px 18px rgba(219, 27, 13, 0.45);
+  }
+  .photo-nav-arrow:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+  .photo-nav-arrow.prev {
+    left: 0.75rem;
+  }
+  .photo-nav-arrow.next {
+    right: 0.75rem;
+  }
+  .resident-photo-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    margin-top: 0.75rem;
+  }
+  .photo-slide-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 0;
+    background: rgba(255, 255, 255, 0.28);
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .photo-slide-dot:hover {
+    background: rgba(255, 255, 255, 0.65);
+  }
+  .photo-slide-dot.active {
+    width: 24px;
+    border-radius: 999px;
+    background: #DB1B0D;
+    box-shadow: 0 0 10px rgba(219, 27, 13, 0.7);
+  }
   .resident-safety-card { display:flex; gap:.8rem; padding:1rem; border:1px solid #ffd1cf; border-radius:1rem; background:#fff7f6; color:#44546a; }.resident-safety-icon { display:grid; place-items:center; width:2.2rem; height:2.2rem; flex:none; border-radius:.7rem; background:#ffe0de; }.resident-safety-icon img { width:1.35rem; height:1.35rem; object-fit:contain; }.resident-safety-card h2 { margin:0 0 .25rem; color:#e32118; font-size:.9rem; }.resident-safety-card p { margin:0; font-size:.78rem; line-height:1.45; }
   .resident-report-detail-loading { padding:3rem 1rem; text-align:center; color:#64748b; font-weight:700; }
   @media (min-width:760px) { .resident-report-detail { padding-top:2rem; }.resident-detail-card { padding:1.25rem; } }
@@ -343,6 +561,8 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState("");
   const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
   const [updatingField, setUpdatingField] = useState<string | null>(null);
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
 
@@ -410,9 +630,44 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   }
 
   const latest = report.history.at(-1);
-  const photoUrl = report.photos[0]?.url;
+  const photos = useMemo(() => {
+    return (report.photos ?? []).filter((p): p is { url: string } => Boolean(p && p.url));
+  }, [report.photos]);
+  const hasPhotos = photos.length > 0;
+  const currentPhoto = photos[activePhotoIndex] ?? photos[0];
+  const photoUrl = currentPhoto?.url || "";
   const windSpeed = Number(report.weather_wind_speed) || 0;
   const severity = report.calculated_severity || "MODERATE";
+
+  useEffect(() => {
+    if (!isPhotoDialogOpen || photos.length <= 1) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsPhotoDialogOpen(false);
+      } else if (e.key === "ArrowLeft") {
+        setActivePhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1));
+      } else if (e.key === "ArrowRight") {
+        setActivePhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isPhotoDialogOpen, photos.length]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientX);
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart === null || photos.length <= 1) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const diff = touchStart - touchEnd;
+    if (diff > 45) {
+      setActivePhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0));
+    } else if (diff < -45) {
+      setActivePhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1));
+    }
+    setTouchStart(null);
+  };
 
   return (
     <Shell>
@@ -641,20 +896,47 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
         </p>
       </section>
 
-      {photoUrl && (
+      {hasPhotos && (
         <section className="resident-detail-card">
+          <h2>
+            <span>📷</span> Incident Photos ({photos.length})
+          </h2>
+
+          {photos.length > 1 && (
+            <div className="resident-photos-preview-grid">
+              {photos.map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className="resident-photo-preview-thumb"
+                  onClick={() => {
+                    setActivePhotoIndex(idx);
+                    setIsPhotoDialogOpen(true);
+                  }}
+                  aria-label={`Open photo ${idx + 1}`}
+                >
+                  <img src={p.url} alt={`Fire incident ${idx + 1}`} className="resident-photo-preview-img" />
+                  <span className="resident-photo-preview-badge">Photo {idx + 1}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <button
             type="button"
             className="resident-photo-button"
-            onClick={() => setIsPhotoDialogOpen(true)}
+            onClick={() => {
+              setActivePhotoIndex(0);
+              setIsPhotoDialogOpen(true);
+            }}
             aria-haspopup="dialog"
           >
-            View incident photo
+            <span>View incident photo {photos.length > 1 ? `slideshow (${photos.length} photos)` : ""}</span>
           </button>
         </section>
       )}
 
-      {isPhotoDialogOpen && photoUrl && (
+      {isPhotoDialogOpen && hasPhotos && currentPhoto && (
         <div
           className="resident-photo-backdrop"
           role="presentation"
@@ -664,18 +946,71 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
             className="resident-photo-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label="Submitted incident photo"
+            aria-label="Submitted incident photo gallery"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <button
-              type="button"
-              className="resident-photo-close"
-              onClick={() => setIsPhotoDialogOpen(false)}
-              aria-label="Close photo"
+            <div className="resident-photo-dialog-header">
+              <span className="resident-photo-counter-pill">
+                📷 {photos.length > 1 ? `Photo ${activePhotoIndex + 1} of ${photos.length}` : "Incident Photo"}
+              </span>
+              <button
+                type="button"
+                className="resident-photo-close"
+                onClick={() => setIsPhotoDialogOpen(false)}
+                aria-label="Close photo"
+              >
+                ×
+              </button>
+            </div>
+
+            <div
+              className="resident-photo-stage"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
             >
-              ×
-            </button>
-            <img className="resident-photo-dialog-image" src={photoUrl} alt="Submitted fire incident" />
+              {photos.length > 1 && (
+                <button
+                  type="button"
+                  className="photo-nav-arrow prev"
+                  onClick={() => setActivePhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1))}
+                  aria-label="Previous photo"
+                >
+                  ‹
+                </button>
+              )}
+
+              <img
+                key={currentPhoto.url}
+                className="resident-photo-dialog-image"
+                src={currentPhoto.url}
+                alt={`Submitted fire incident photo ${activePhotoIndex + 1}`}
+              />
+
+              {photos.length > 1 && (
+                <button
+                  type="button"
+                  className="photo-nav-arrow next"
+                  onClick={() => setActivePhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0))}
+                  aria-label="Next photo"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+
+            {photos.length > 1 && (
+              <div className="resident-photo-dots">
+                {photos.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`photo-slide-dot ${idx === activePhotoIndex ? "active" : ""}`}
+                    onClick={() => setActivePhotoIndex(idx)}
+                    aria-label={`Go to photo ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
