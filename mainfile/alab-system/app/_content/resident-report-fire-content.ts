@@ -8,8 +8,8 @@ export const reportFireStyles = `
     --report-pink: #FFF2F0;
     --report-warm: #FFF9F6;
     min-height: 100vh;
-    padding: clamp(1rem, 3vw, 3.25rem) clamp(1rem, 4vw, 2.75rem) calc(6.8rem + env(safe-area-inset-bottom));
-    background: radial-gradient(circle at 100% 0%, rgba(255, 219, 213, .72), transparent 30rem), #FFF9F6;
+    padding: 0 0 calc(6.8rem + env(safe-area-inset-bottom));
+    background: #FFFFFF;
     color: var(--report-ink);
     font-family: var(--font-plus-jakarta, Inter, ui-sans-serif, system-ui, sans-serif);
   }
@@ -18,15 +18,15 @@ export const reportFireStyles = `
   .report-page-root button, .report-page-root input, .report-page-root select, .report-page-root textarea { font: inherit; }
 
   .report-form-shell {
-    width: min(100%, 1180px);
+    width: 100%;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: clamp(1.15rem, 3vw, 2.65rem);
-    overflow: hidden;
-    border: 1px solid rgba(219, 27, 13, .10);
-    border-radius: clamp(1.35rem, 3vw, 2rem);
-    background: rgba(255, 255, 255, .96);
-    box-shadow: 0 1.25rem 4rem rgba(49, 31, 23, .10);
-    animation: report-rise .5s cubic-bezier(.16, 1, .3, 1) both;
+    padding: clamp(1.25rem, 3vw, 2.5rem) clamp(1rem, 3.5vw, 2.5rem);
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    animation: report-rise .4s cubic-bezier(.16, 1, .3, 1) both;
   }
 
   .report-form-heading { max-width: 44rem; margin-bottom: clamp(1.35rem, 3vw, 2rem); }
@@ -265,8 +265,8 @@ export const reportFireStyles = `
   @keyframes report-pulse { 50% { transform: scale(1.05); box-shadow: 0 0 0 .35rem rgba(219, 27, 13, .08); } }
 
   @media (max-width: 950px) {
-    .report-page-root { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
-    .report-form-shell { padding: 1rem; border-radius: 1.25rem; }
+    .report-page-root { padding: 0 0 calc(6rem + env(safe-area-inset-bottom)); padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
+    .report-form-shell { padding: 1.15rem 1rem 1.75rem; border: none; border-radius: 0; box-shadow: none; }
     .two-col-grid { grid-template-columns: 1fr; }
     .location-box[data-location-card] { min-height: 26rem; }
     .location-box[data-location-card] .location-details { display: flex; }
@@ -282,7 +282,8 @@ export const reportFireStyles = `
     .quick-pills-container { grid-template-columns: 1fr; gap: 0.55rem; }
   }
   @media (max-width: 540px) {
-    .report-page-root { padding: .85rem .75rem calc(6rem + env(safe-area-inset-bottom)); }
+    .report-page-root { padding: 0 0 calc(6rem + env(safe-area-inset-bottom)); }
+    .report-form-shell { padding: 1rem 0.85rem 1.5rem; border: none; border-radius: 0; box-shadow: none; }
     .report-form-heading h1 { font-size: 1.7rem; }
     .warning-banner { align-items: flex-start; padding: .85rem; }
     .warning-banner-icon { width: 2.45rem; height: 2.45rem; flex-basis: 2.45rem; }
