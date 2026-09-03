@@ -1755,11 +1755,9 @@ export function MunicipalIncidentDetail({
                   <strong className="mbfp-metric-val">
                     {incident.houseDensity === "PACKED_MAGKAKADIKIT"
                       ? "DIKIT-DIKIT (< 2m Conflagration Hazard)"
-                      : incident.houseDensity === "MODERATE_SPACING"
-                        ? "May Agwat (2-5m spacing)"
-                        : incident.houseDensity === "ISOLATED_FAR"
-                          ? "Nahihiwalay / Malayo"
-                          : "Standard Residential"}
+                      : incident.houseDensity === "ISOLATED_FAR" || incident.houseDensity === "MODERATE_SPACING"
+                        ? "Magkakalayo na Bahay (> 15m spacing)"
+                        : "Standard Residential"}
                   </strong>
                 </div>
 

@@ -113,37 +113,119 @@ const detailStyles = `
     border-color: #86EFAC;
   }
 
-  /* Wizard Guide Banner */
-  .tactical-wizard-banner {
+  /* Interactive Animated Onboarding Guide */
+  @keyframes onboardingSlideIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.97);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  @keyframes onboardingFadeOut {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.97);
+      pointer-events: none;
+    }
+  }
+  @keyframes pulseSubtleGlow {
+    0%, 100% {
+      box-shadow: 0 4px 16px rgba(220, 38, 38, 0.08), 0 0 0 0 rgba(220, 38, 38, 0.2);
+    }
+    50% {
+      box-shadow: 0 6px 22px rgba(220, 38, 38, 0.16), 0 0 0 6px rgba(220, 38, 38, 0);
+    }
+  }
+
+  .interactive-onboarding-toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-radius: 0.85rem;
+    background: #FFFFFF;
+    border: 1.5px solid #FCA5A5;
+    box-shadow: 0 4px 18px rgba(220, 38, 38, 0.12);
+    margin-bottom: 1rem;
+    animation: onboardingSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards, pulseSubtleGlow 3s infinite;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .interactive-onboarding-toast.is-dismissing {
+    animation: onboardingFadeOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .onboarding-icon {
+    font-size: 1.35rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+  .onboarding-content {
+    flex: 1;
+    min-width: 0;
+  }
+  .onboarding-title {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
-    padding: 0.65rem 0.85rem;
-    border-radius: 0.75rem;
-    background: #FFF7ED;
-    border: 1px solid #FED7AA;
-    margin-bottom: 0.95rem;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
   }
-  .tactical-wizard-icon {
-    font-size: 1.25rem;
-    flex-shrink: 0;
-    line-height: 1;
-  }
-  .tactical-wizard-text {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-  .tactical-wizard-text strong {
-    font-size: 0.79rem;
+  .onboarding-title strong {
+    font-size: 0.82rem;
     font-weight: 850;
-    color: #9A3412;
+    color: #991B1B;
   }
-  .tactical-wizard-text small {
-    font-size: 0.69rem;
-    color: #C2410C;
-    font-weight: 600;
-    line-height: 1.3;
+  .onboarding-close-btn {
+    border: 0;
+    background: transparent;
+    color: #94A3B8;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    transition: all 0.15s ease;
+  }
+  .onboarding-close-btn:hover {
+    background: #FEE2E2;
+    color: #DC2626;
+  }
+  .onboarding-desc {
+    margin: 0 0 0.55rem;
+    font-size: 0.74rem;
+    color: #475569;
+    line-height: 1.4;
+    font-weight: 550;
+  }
+  .onboarding-dismiss-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #DC2626;
+    font-size: 0.7rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .onboarding-dismiss-pill:hover {
+    background: #DC2626;
+    color: #FFFFFF;
+    border-color: #DC2626;
   }
 
   /* Equal-width grid rows */
@@ -589,6 +671,27 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [updatingField, setUpdatingField] = useState<string | null>(null);
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isDismissingOnboarding, setIsDismissingOnboarding] = useState(false);
+
+  useEffect(() => {
+    try {
+      const alreadyOnboarded = localStorage.getItem("alab_tactical_onboarded") === "true";
+      if (!alreadyOnboarded && report && (!report.structure_material || !report.house_density || !report.route_accessibility)) {
+        setShowOnboarding(true);
+      }
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
+  }, [report]);
+
+  const dismissOnboarding = () => {
+    setIsDismissingOnboarding(true);
+    setTimeout(() => setShowOnboarding(false), 320);
+    try {
+      localStorage.setItem("alab_tactical_onboarded", "true");
+    } catch {}
+  };
 
   useEffect(() => {
     let active = true;
@@ -649,6 +752,12 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
 
   const updateTacticalDetail = async (key: "structureMaterial" | "houseDensity" | "routeAccessibility", val: string) => {
     if (!report) return;
+
+    // Auto-vanish interactive onboarding wizard as soon as the user selects any option!
+    if (showOnboarding) {
+      dismissOnboarding();
+    }
+
     const fieldMap = {
       structureMaterial: "structure_material",
       houseDensity: "house_density",
@@ -783,14 +892,39 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
               Kung ligtas ka sa iyong pwesto, pindutin ang karagdagang impormasyon upang maihanda ng BFP ang tamang pumper, hose relay, at kagamitan bago sila dumating:
             </p>
 
-            {/* Wizard Guide Banner */}
-            <div className="tactical-wizard-banner">
-              <span className="tactical-wizard-icon">👉</span>
-              <div className="tactical-wizard-text">
-                <strong>Gabay: Pumili ng isa (Select 1) sa bawat kahon</strong>
-                <small>Awtomatikong mare-receive ng BFP fire station ang iyong pinili nang walang kailangang i-submit na panibago.</small>
+            {/* Interactive Onboarding Guide (Auto-vanishes when user interacts or taps 'Naintindihan ko') */}
+            {showOnboarding && (
+              <div
+                className={`interactive-onboarding-toast ${isDismissingOnboarding ? "is-dismissing" : ""}`}
+                role="status"
+                aria-live="polite"
+              >
+                <div className="onboarding-icon" aria-hidden="true">✨</div>
+                <div className="onboarding-content">
+                  <div className="onboarding-title">
+                    <strong>Gabay sa Pagpili (Interactive Guide)</strong>
+                    <button
+                      type="button"
+                      className="onboarding-close-btn"
+                      onClick={dismissOnboarding}
+                      aria-label="Isara ang gabay"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <p className="onboarding-desc">
+                    Pumili ng isa sa bawat kahon sa ibaba. Awtomatiko itong maipapadala agad sa BFP responders nang hindi na kailangang mag-submit muli!
+                  </p>
+                  <button
+                    type="button"
+                    className="onboarding-dismiss-pill"
+                    onClick={dismissOnboarding}
+                  >
+                    <span>✓ Naintindihan ko</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="tactical-group">
               <div className="tactical-group-header">
@@ -857,13 +991,13 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 </button>
                 <button
                   type="button"
-                  className={`tactical-btn ${report.house_density === "MODERATE_SPACING" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("houseDensity", "MODERATE_SPACING")}
+                  className={`tactical-btn ${report.house_density === "ISOLATED_FAR" || report.house_density === "MODERATE_SPACING" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("houseDensity", "ISOLATED_FAR")}
                   role="radio"
-                  aria-checked={report.house_density === "MODERATE_SPACING"}
+                  aria-checked={report.house_density === "ISOLATED_FAR" || report.house_density === "MODERATE_SPACING"}
                 >
                   <span className="tactical-btn-icon">🏡</span>
-                  <span className="tactical-btn-text">May Agwat (2-5m)</span>
+                  <span className="tactical-btn-text">Magkakalayo na Bahay (&gt; 15m)</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
               </div>

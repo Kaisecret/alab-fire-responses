@@ -61,11 +61,9 @@ export function calculateFireSeverity(input: SeverityInput): SeverityAssessment 
   if (input.houseDensity === "PACKED_MAGKAKADIKIT") {
     densityScore = 100;
     factors.push("Dikit-dikit na kabahayan (High conflagration risk)");
-  } else if (input.houseDensity === "MODERATE_SPACING") {
-    densityScore = 50;
-    factors.push("Katamtamang agwat ng mga bahay (2–5m)");
-  } else if (input.houseDensity === "ISOLATED_FAR") {
+  } else if (input.houseDensity === "ISOLATED_FAR" || input.houseDensity === "MODERATE_SPACING") {
     densityScore = 10;
+    factors.push("Magkakalayo na bahay (> 15m)");
   }
 
   // 2. Wind Speed & Velocity Criterion (Weight: 0.25)
