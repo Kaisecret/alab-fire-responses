@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const RESIDENT_SESSION_COOKIE = "alab_resident_session";
 export const RESIDENT_APPLICANT_COOKIE = "alab_resident_application";
-const SESSION_DURATION_MS = 1000 * 60 * 60 * 8;
+const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 30; // 30 days persistent session for emergency PWA
 const APPLICANT_SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 7;
 
 export type ResidentSession = {
