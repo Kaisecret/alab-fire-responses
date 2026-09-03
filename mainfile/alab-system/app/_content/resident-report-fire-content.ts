@@ -93,14 +93,21 @@ export const reportFireStyles = `
   .location-map-marker { display: grid; width: 2.4rem; height: 2.4rem; place-items: center; border: 2px solid #fff; border-radius: 50% 50% 50% 0; background: var(--report-red); box-shadow: 0 .5rem 1.1rem rgba(219, 27, 13, .35); transform: rotate(-45deg); }
   .location-map-marker img { width: 1.55rem; height: 1.55rem; object-fit: contain; transform: rotate(45deg); filter: brightness(0) invert(1); }
 
-  .landmark-box { display: flex; min-height: 22.75rem; flex-direction: column; padding: 1.05rem; }
+  .landmark-box {
+    display: flex;
+    min-height: auto;
+    height: auto;
+    flex-direction: column;
+    padding: 1.15rem;
+    box-sizing: border-box;
+  }
   .landmark-heading { display: flex; align-items: flex-start; gap: .75rem; }
   .landmark-icon { display: grid; width: 2.5rem; height: 2.5rem; flex: 0 0 2.5rem; place-items: center; border-radius: .82rem; color: #fff; background: var(--report-red); box-shadow: 0 .55rem 1.2rem rgba(219, 27, 13, .18); }
   .landmark-icon svg { width: 1.22rem; height: 1.22rem; }
   .landmark-status { display: block; margin-bottom: .22rem; color: var(--report-muted); font-size: .64rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
   .landmark-name { margin: 0; color: var(--report-ink); font-size: .95rem; line-height: 1.35; overflow-wrap: anywhere; }
-  .landmark-helper { margin: .95rem 0 1rem; color: var(--report-muted); font-size: .78rem; line-height: 1.55; }
-  .landmark-input { width: 100%; min-height: 3rem; margin-top: .9rem; padding: .7rem .8rem; border: 1px solid #E0E6ED; border-radius: .75rem; color: var(--report-ink); background: #FCFDFE; font-size: .78rem; outline: none; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+  .landmark-helper { margin: .65rem 0 0; color: var(--report-muted); font-size: .76rem; line-height: 1.45; }
+  .landmark-input { width: 100%; min-height: 2.85rem; margin-top: .75rem; padding: .65rem .8rem; border: 1px solid #E0E6ED; border-radius: .75rem; color: var(--report-ink); background: #FCFDFE; font-size: .78rem; outline: none; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
   .landmark-input::placeholder { color: #8794A5; }
   .landmark-input:focus { border-color: var(--report-red); background: #fff; box-shadow: 0 0 0 .22rem rgba(219, 27, 13, .10); }
   .landmark-box[data-landmark-state="confirmed"] .landmark-icon { background: #0C8B48; box-shadow: 0 .55rem 1.2rem rgba(12, 139, 72, .18); }
@@ -215,9 +222,11 @@ export const reportFireStyles = `
   .photo-upload strong, .photo-upload span { display: block; }
   .photo-upload strong { color: var(--report-ink); font-size: .78rem; }
   .photo-upload span { margin-top: .18rem; color: var(--report-muted); font-size: .66rem; line-height: 1.45; }
-  .photo-upload-summary { display: none; align-items: center; gap: .8rem; text-align: left; }
-  .photo-upload[data-photo-state="selected"] .photo-upload-empty { display: none; }
-  .photo-upload[data-photo-state="selected"] .photo-upload-summary { display: flex; }
+  .photo-upload-summary { display: none !important; align-items: center; gap: .8rem; text-align: left; }
+  .photo-upload[data-photo-state="selected"] .photo-upload-empty { display: none !important; }
+  .photo-upload[data-photo-state="selected"] .photo-upload-summary:not([hidden]) { display: flex !important; }
+  .photo-upload[data-photo-state="empty"] .photo-upload-summary { display: none !important; }
+  .photo-upload[data-photo-state="empty"] .photo-upload-empty { display: block !important; }
   .photo-upload-summary img { width: 3.7rem; height: 3.7rem; border-radius: .7rem; object-fit: cover; box-shadow: 0 .45rem 1rem rgba(16, 34, 49, .16); }
   .photo-upload-summary img[hidden],
   .photo-upload-summary img:not([src]),
@@ -271,7 +280,7 @@ export const reportFireStyles = `
     .location-box[data-location-card] { min-height: 26rem; }
     .location-box[data-location-card] .location-details { display: flex; }
     .map-preview[data-location-map-surface] { display: block; height: 12.25rem; }
-    .landmark-box { min-height: 16rem; }
+    .landmark-box { min-height: auto; }
     .type-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .type-btn { min-height: 5.8rem; font-size: .7rem; }
     .type-btn svg { width: 1.42rem; height: 1.42rem; }
@@ -384,7 +393,7 @@ export const reportFireMarkup = `
       </section>
 
       <section class="report-detail-grid">
-        <div class="photo-field"><span class="field-label"><span class="step-number">4</span>ADD FIRE PHOTO <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">Take a photo only when it is safe to do so.</span><button type="button" class="photo-upload" data-photo-open data-photo-state="empty"><span class="photo-upload-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Take a photo</strong><span>Your camera opens in a secure popup</span></span><span class="photo-upload-summary"><img data-photo-summary-preview alt="Selected fire photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" hidden /><span><strong>Photo ready</strong><span>Tap to retake it</span></span></span></button><input class="photo-input" id="fire-photo" data-photo-input type="file" accept="image/jpeg,image/png" capture="environment" /></div>
+        <div class="photo-field"><span class="field-label"><span class="step-number">4</span>ADD FIRE PHOTO <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">Take a photo only when it is safe to do so.</span><button type="button" class="photo-upload" data-photo-open data-photo-state="empty"><span class="photo-upload-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Take a photo</strong><span>Your camera opens in a secure popup</span></span><span class="photo-upload-summary" hidden><img data-photo-summary-preview alt="Selected fire photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" hidden /><span><strong>Photo ready</strong><span>Tap to retake it</span></span></span></button><input class="photo-input" id="fire-photo" data-photo-input type="file" accept="image/jpeg,image/png" capture="environment" /></div>
       </section>
 
       <p class="report-submit-error" data-report-submit-error role="alert" hidden></p>

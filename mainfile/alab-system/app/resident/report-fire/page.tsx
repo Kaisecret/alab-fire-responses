@@ -240,15 +240,29 @@ function initializePhotoCapture(root: HTMLElement): () => void {
   const preview = root.querySelector<HTMLImageElement>('[data-photo-preview]');
   const summaryPreview = root.querySelector<HTMLImageElement>('[data-photo-summary-preview]');
   const placeholder = root.querySelector<HTMLElement>('[data-photo-placeholder]');
+  const summary = root.querySelector<HTMLElement>('.photo-upload-summary');
 
   if (!openButton || !dialog || !photoInput || !takeButton || !retakeButton || !useButton || !preview || !summaryPreview || !placeholder) {
     return () => {};
   }
 
+  // Ensure default state is strictly empty
+  openButton.dataset.photoState = 'empty';
+  dialog.dataset.photoReady = 'false';
+  summaryPreview.hidden = true;
+  summaryPreview.removeAttribute('src');
+  if (summary) summary.hidden = true;
+
   let previewUrl = '';
 
   const closeDialog = () => {
     dialog.hidden = true;
+    if (!photoInput.files?.[0] || openButton.dataset.photoState !== 'selected') {
+      openButton.dataset.photoState = 'empty';
+      dialog.dataset.photoReady = 'false';
+      summaryPreview.hidden = true;
+      if (summary) summary.hidden = true;
+    }
   };
 
   const openDialog = () => {
@@ -263,13 +277,19 @@ function initializePhotoCapture(root: HTMLElement): () => void {
 
   const handlePhotoChange = () => {
     const [photo] = Array.from(photoInput.files ?? []);
-    if (!photo) return;
+    if (!photo) {
+      openButton.dataset.photoState = 'empty';
+      dialog.dataset.photoReady = 'false';
+      summaryPreview.hidden = true;
+      if (summary) summary.hidden = true;
+      preview.hidden = true;
+      placeholder.hidden = false;
+      return;
+    }
 
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     previewUrl = URL.createObjectURL(photo);
     preview.src = previewUrl;
-    summaryPreview.src = previewUrl;
-    summaryPreview.hidden = false;
     preview.hidden = false;
     placeholder.hidden = true;
     dialog.dataset.photoReady = 'true';
@@ -277,7 +297,19 @@ function initializePhotoCapture(root: HTMLElement): () => void {
   };
 
   const usePhoto = () => {
+    const [photo] = Array.from(photoInput.files ?? []);
+    if (!photo || !previewUrl) {
+      openButton.dataset.photoState = 'empty';
+      dialog.dataset.photoReady = 'false';
+      summaryPreview.hidden = true;
+      if (summary) summary.hidden = true;
+      closeDialog();
+      return;
+    }
+
+    summaryPreview.src = previewUrl;
     summaryPreview.hidden = false;
+    if (summary) summary.hidden = false;
     openButton.dataset.photoState = 'selected';
     closeDialog();
     openButton.focus();
