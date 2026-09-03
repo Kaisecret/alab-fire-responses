@@ -318,27 +318,6 @@ export function ResidentOfflineEmergency() {
           color: #FFFFFF;
         }
 
-        .offline-footer-note {
-          text-align: center;
-          margin-top: 0.65rem;
-        }
-
-        .offline-dismiss-link {
-          background: none;
-          border: none;
-          color: #64748B;
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-decoration: underline;
-          cursor: pointer;
-          padding: 0.2rem 0.5rem;
-          transition: color 0.15s ease;
-        }
-
-        .offline-dismiss-link:hover {
-          color: #0F172A;
-        }
-
         /* Minimized Floating Alert Pill (When Sheet is Dismissed) */
         .offline-minimized-pill {
           position: fixed;
@@ -490,16 +469,6 @@ export function ResidentOfflineEmergency() {
                 </div>
                 <span className="offline-dial-pill">Dial BFP 🚒</span>
               </a>
-            </div>
-
-            <div className="offline-footer-note">
-              <button
-                type="button"
-                className="offline-dismiss-link"
-                onClick={() => setIsDismissed(true)}
-              >
-                Mag-browse muna sa offline cached records
-              </button>
             </div>
           </aside>
         </div>
