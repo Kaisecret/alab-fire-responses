@@ -49,10 +49,11 @@ export const reportFireStyles = `
   .warning-banner h2 { margin: 0 0 .15rem; color: var(--report-red-deep); font-size: 1rem; line-height: 1.2; }
   .warning-banner p { margin: 0; color: #4B3B3A; font-size: .85rem; line-height: 1.45; }
 
-  .two-col-grid { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(18rem, .82fr); gap: clamp(1rem, 2vw, 1.5rem); }
-  .step-section { min-width: 0; margin: 0 0 clamp(1.55rem, 3vw, 2.15rem); }
-  .step-title { display: flex; align-items: center; gap: .55rem; margin-bottom: .75rem; color: var(--report-ink); font-size: .82rem; font-weight: 850; letter-spacing: .055em; }
-  .step-number { display: grid; width: 1.55rem; height: 1.55rem; flex: 0 0 1.55rem; place-items: center; border-radius: 50%; background: var(--report-red); color: #fff; font-size: .72rem; box-shadow: 0 .28rem .75rem rgba(219, 27, 13, .22); }
+  .two-col-grid { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(18rem, .82fr); gap: clamp(1.15rem, 2.2vw, 1.65rem); margin-bottom: clamp(1.65rem, 3.2vw, 2.4rem); }
+  .two-col-grid > .step-section { margin-bottom: 0; }
+  .step-section { min-width: 0; margin: 0 0 clamp(1.65rem, 3.2vw, 2.4rem); }
+  .step-title { display: flex; align-items: center; gap: .6rem; margin-bottom: .85rem; color: var(--report-ink); font-size: .84rem; font-weight: 850; letter-spacing: .05em; }
+  .step-number { display: grid; width: 1.6rem; height: 1.6rem; flex: 0 0 1.6rem; place-items: center; border-radius: 50%; background: var(--report-red); color: #fff; font-size: .74rem; box-shadow: 0 .28rem .75rem rgba(219, 27, 13, .22); }
   .step-title-spread { justify-content: space-between; }
   .step-title-leading { display: inline-flex; align-items: center; gap: .55rem; }
   .optional-label { color: var(--report-muted); font-size: .72rem; font-weight: 650; letter-spacing: 0; }
@@ -214,13 +215,13 @@ export const reportFireStyles = `
   .type-btn:hover { transform: translateY(-2px); border-color: #F0AAA3; color: var(--report-red); box-shadow: 0 .75rem 1.5rem rgba(16, 34, 49, .07); }
   .type-btn.selected { border-color: var(--report-red); color: var(--report-red); background: linear-gradient(145deg, #FFF7F6, #FFFDFC); box-shadow: inset 0 0 0 1px rgba(219, 27, 13, .08), 0 .75rem 1.5rem rgba(219, 27, 13, .08); }
 
-  /* Quick Tactical 1-Tap Toggle Pills */
+  /* Quick Tactical Toggle Pills */
   .quick-tactical-row {
-    margin-top: 1.1rem;
-    padding: 0.95rem 1rem;
-    border: 1px solid #F1F5F9;
+    margin-top: 1.25rem;
+    padding: 1.05rem 1.15rem;
+    border: 1px solid #E2E8F0;
     border-radius: 1rem;
-    background: #FAFBFD;
+    background: #F8FAFC;
   }
   .quick-tactical-label {
     display: block;
@@ -307,9 +308,10 @@ export const reportFireStyles = `
 
   .report-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(.9rem, 2vw, 1.25rem); align-items: stretch; }
   .photo-field { display: flex; min-width: 0; flex-direction: column; }
-  .field-label { display: flex; align-items: center; gap: .5rem; margin-bottom: .65rem; color: var(--report-ink); font-size: .79rem; font-weight: 850; }
-  .field-label .step-number { width: 1.42rem; height: 1.42rem; flex-basis: 1.42rem; font-size: .68rem; }
-  .field-helper { min-height: 2.25rem; margin: 0 0 .65rem; color: var(--report-muted); font-size: .73rem; line-height: 1.48; }
+  .report-detail-grid { margin-bottom: clamp(1.65rem, 3.2vw, 2.4rem); }
+  .field-label { display: flex; align-items: center; gap: .6rem; margin-bottom: .45rem; color: var(--report-ink); font-size: .84rem; font-weight: 850; letter-spacing: .05em; }
+  .field-label .step-number { width: 1.6rem; height: 1.6rem; flex-basis: 1.6rem; font-size: .74rem; }
+  .field-helper { min-height: auto; margin: 0 0 .85rem; color: var(--report-muted); font-size: .76rem; line-height: 1.45; }
   .photo-upload { display: flex; min-height: 7.2rem; align-items: center; justify-content: center; padding: 1rem; border: 1.5px dashed #F0B8B1; border-radius: .85rem; background: #FFFDFD; text-align: center; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease; width: 100%; box-sizing: border-box; }
   .photo-upload:hover { border-color: var(--report-red); background: #FFF8F7; box-shadow: 0 .7rem 1.45rem rgba(219, 27, 13, .09); transform: translateY(-1px); }
   .photo-upload:focus-visible { outline: 3px solid rgba(219, 27, 13, .22); outline-offset: 2px; }
@@ -501,7 +503,7 @@ export const reportFireStyles = `
     }
   }
 
-  .form-footer { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(10rem, .65fr); gap: 1rem; margin-top: clamp(.3rem, 2vw, .75rem); padding-top: 1.2rem; border-top: 1px solid var(--report-line); }
+  .form-footer { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(10rem, .65fr); gap: 1rem; margin-top: clamp(1.4rem, 3vw, 2.2rem); padding-top: 1.4rem; border-top: 1px solid var(--report-line); }
   .btn-primary { display: inline-flex; min-height: 3.4rem; align-items: center; justify-content: center; gap: .65rem; border: 0; border-radius: .85rem; color: #fff; background: linear-gradient(135deg, #EF2A1E, var(--report-red-deep)); box-shadow: 0 .8rem 1.6rem rgba(219, 27, 13, .25); font-size: .9rem; font-weight: 900; letter-spacing: .01em; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
   .btn-primary svg { width: 1.25rem; height: 1.25rem; }
   .btn-primary:hover { filter: saturate(1.1); transform: translateY(-2px); box-shadow: 0 1rem 2rem rgba(219, 27, 13, .30); }
@@ -632,11 +634,13 @@ export const reportFireStyles = `
   @media (max-width: 950px) {
     .report-page-root { padding: 0 0 calc(6rem + env(safe-area-inset-bottom)); padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
     .report-form-shell { padding: 1.15rem 1rem 1.75rem; border: none; border-radius: 0; box-shadow: none; }
-    .two-col-grid { grid-template-columns: 1fr; }
+    .two-col-grid { grid-template-columns: 1fr; gap: clamp(1.4rem, 3vw, 1.9rem); margin-bottom: clamp(1.75rem, 3.5vw, 2.5rem); }
+    .two-col-grid > .step-section { margin-bottom: 0; }
     .location-box[data-location-card] { min-height: 26rem; min-height: auto !important; height: auto; }
     .location-box[data-location-card] .location-details { display: flex; }
     .map-preview[data-location-map-surface] { display: block; display: none !important; height: 12.25rem; height: 0 !important; max-height: 0 !important; }
     .landmark-box { min-height: auto; }
+    .step-section[data-step-fire-type] { margin-bottom: clamp(1.75rem, 3.5vw, 2.5rem); }
     .type-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .type-btn { min-height: 5.8rem; font-size: .7rem; }
     .type-btn svg { width: 1.42rem; height: 1.42rem; }
