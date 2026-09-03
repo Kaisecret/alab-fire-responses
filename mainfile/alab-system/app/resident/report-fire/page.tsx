@@ -226,6 +226,38 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     const titleEl = root.querySelector<HTMLElement>('#report-fire-title');
     if (titleEl) titleEl.textContent = dict.reportFireTitle;
 
+    const warnH2 = root.querySelector<HTMLElement>('.warning-banner h2');
+    const warnP = root.querySelector<HTMLElement>('.warning-banner p');
+    if (warnH2) warnH2.textContent = dict.fireEmergency;
+    if (warnP) warnP.textContent = dict.moveSafeLocation;
+
+    const step1Title = root.querySelector<HTMLElement>('.step-section:nth-of-type(1) .step-title-leading');
+    if (step1Title) {
+      step1Title.innerHTML = `<span class="step-number">1</span> ${dict.step1Location}`;
+    }
+    const detectBtn = root.querySelector<HTMLElement>('[data-location-refresh]');
+    if (detectBtn) {
+      const svg = detectBtn.querySelector('svg');
+      detectBtn.textContent = '';
+      if (svg) detectBtn.append(svg);
+      detectBtn.append(document.createTextNode(` ${dict.detectMyLocation}`));
+    }
+
+    const step2Title = root.querySelector<HTMLElement>('.two-col-grid > .step-section:nth-of-type(2) .step-title');
+    if (step2Title) {
+      step2Title.innerHTML = `<span class="step-number">2</span> ${dict.step2Landmark}`;
+    }
+    const landmarkHelperEl = root.querySelector<HTMLElement>('.landmark-helper');
+    if (landmarkHelperEl) landmarkHelperEl.textContent = dict.landmarkHelper;
+    if (landmarkInput) landmarkInput.placeholder = dict.landmarkPlaceholder;
+
+    const step3Title = root.querySelector<HTMLElement>('[data-step-fire-type] .step-title');
+    const step3Hint = root.querySelector<HTMLElement>('[data-fire-type-hint]');
+    if (step3Title) {
+      const hintDisplay = step3Hint ? step3Hint.style.display : 'none';
+      step3Title.innerHTML = `<span class="step-number">3</span> ${dict.step3WhatIsBurning} <span class="step-hint" data-fire-type-hint style="display:${hintDisplay}; color:#DC2626; font-size:0.75rem; font-weight:800; margin-left:0.5rem;">${dict.selectOneHint}</span>`;
+    }
+
     const typeButtonsMap: Record<string, string> = {
       HOUSE_BUILDING: dict.typeHouse,
       GRASS: dict.typeGrass,
@@ -259,11 +291,29 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       if (small) small.textContent = dict.tacticalAlleySub;
     }
 
+    const step4Label = root.querySelector<HTMLElement>('.photo-field .field-label');
+    if (step4Label) {
+      step4Label.innerHTML = `<span class="step-number">4</span>${dict.step4Photo} <span class="required-label" style="color: #DC2626; font-size: 0.72rem; font-weight: 800; margin-left: 0.35rem;">${dict.step4PhotoReq}</span>`;
+    }
+    const step4Helper = root.querySelector<HTMLElement>('.photo-field .field-helper');
+    if (step4Helper) step4Helper.textContent = dict.step4PhotoHelper;
+
     const photoOpenBtn = root.querySelector<HTMLElement>('.photo-upload');
     if (photoOpenBtn) {
       const strong = photoOpenBtn.querySelector('strong');
       if (strong) strong.textContent = dict.takePhotoBtn;
     }
+    const photoAddAnother = root.querySelector<HTMLElement>('[data-photo-add-another] span');
+    if (photoAddAnother) photoAddAnother.textContent = dict.addPhotoBtn;
+
+    if (!submitting && submitButton) {
+      const svg = submitButton.querySelector('svg');
+      submitButton.textContent = '';
+      if (svg) submitButton.append(svg);
+      submitButton.append(document.createTextNode(dict.sendFireAlert));
+    }
+    const cancelFormBtn = root.querySelector<HTMLElement>('[data-report-cancel]');
+    if (cancelFormBtn) cancelFormBtn.textContent = dict.cancelBtn;
 
     if (confirmAlertDialog) {
       const h3 = confirmAlertDialog.querySelector('h3');

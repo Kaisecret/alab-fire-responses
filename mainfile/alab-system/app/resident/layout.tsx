@@ -397,13 +397,6 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
   const activeKey = navItems.find((n) => isActive(pathname, n.href))?.key ?? "";
   const isProfileActive = pathname.startsWith("/resident/profile");
 
-  const localizedNavItems = [
-    { href: "/resident", label: t("navHome"), key: "home" },
-    { href: "/resident/reports", label: t("navReports"), key: "reports" },
-    { href: "/resident/report-fire", label: t("navReportFire"), key: "report-fire" },
-    { href: "/resident/guide", label: t("navGuide"), key: "guide" },
-  ] as const;
-
   return (
     <>
       <style>{layoutStyles}</style>
@@ -429,7 +422,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="rl-header-nav">
-            {localizedNavItems.map((item) => (
+            {navItems.map((item) => (
               <div className="rl-nav-item-wrap" key={item.key}>
                 <a
                   href={item.href}

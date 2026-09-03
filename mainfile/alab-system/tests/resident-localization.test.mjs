@@ -17,9 +17,7 @@ test("resident localization module provides comprehensive Hiligaynon, Tagalog, a
   assert.match(i18nSource, /code:\s*"en"/);
 
   // 2. Hiligaynon translations presence
-  assert.match(i18nSource, /navHome:\s*"Balay"/);
-  assert.match(i18nSource, /navReports:\s*"Mga Report"/);
-  assert.match(i18nSource, /navReportFire:\s*"I-report ang Kalayo"/);
+  assert.match(i18nSource, /fullName:\s*"Bug-os nga Ngalan"/);
   assert.match(i18nSource, /typeHouse:\s*"Balay \/ Gusali"/);
   assert.match(i18nSource, /typeGrass:\s*"Sunog sa Hilamon"/);
   assert.match(i18nSource, /tacticalPacked:\s*"Dinikit ang mga balay"/);
@@ -27,14 +25,13 @@ test("resident localization module provides comprehensive Hiligaynon, Tagalog, a
   assert.match(i18nSource, /falseAlarmWarningText:\s*"Ang pagpadala sang peke nga report/);
 
   // 3. Tagalog translations presence
-  assert.match(i18nSource, /navHome:\s*"Home"/);
-  assert.match(i18nSource, /navReportFire:\s*"Mag-ulat ng Sunog"/);
+  assert.match(i18nSource, /fullName:\s*"Buong Pangalan"/);
   assert.match(i18nSource, /typeHouse:\s*"Bahay \/ Gusali"/);
   assert.match(i18nSource, /tacticalPacked:\s*"Dikit-dikit ang mga bahay"/);
   assert.match(i18nSource, /falseAlarmWarningText:\s*"Ang pagpapadala ng pekeng ulat/);
 
   // 4. English translations presence
-  assert.match(i18nSource, /navReportFire:\s*"Report Fire"/);
+  assert.match(i18nSource, /fullName:\s*"Full Name"/);
   assert.match(i18nSource, /typeHouse:\s*"House \/ Building"/);
   assert.match(i18nSource, /tacticalPacked:\s*"Packed Houses \/ Dense"/);
   assert.match(i18nSource, /falseAlarmWarningText:\s*"Filing a false fire alarm is strictly prohibited/);
@@ -44,7 +41,7 @@ test("resident localization module provides comprehensive Hiligaynon, Tagalog, a
   assert.match(i18nSource, /alab:resident-language-changed/);
 });
 
-test("resident profile page and content expose interactive 3-language switcher", () => {
+test("resident profile page and content expose interactive 3-language switcher and full data-i18n labels", () => {
   const profileContentPath = join(appRoot, "app", "_content", "resident-profile-content.ts");
   const profilePagePath = join(appRoot, "app", "resident", "profile", "page.tsx");
 
@@ -64,14 +61,31 @@ test("resident profile page and content expose interactive 3-language switcher",
   assert.match(contentSource, /\.language-picker-container/);
   assert.match(contentSource, /\.lang-option-btn/);
 
+  // Profile labels have data-i18n
+  assert.match(contentSource, /data-i18n="fullName"/);
+  assert.match(contentSource, /data-i18n="mobileNumber"/);
+  assert.match(contentSource, /data-i18n="municipality"/);
+  assert.match(contentSource, /data-i18n="barangay"/);
+  assert.match(contentSource, /data-i18n="emailAddress"/);
+  assert.match(contentSource, /data-i18n="homeAddress"/);
+  assert.match(contentSource, /data-i18n="accountStatus"/);
+  assert.match(contentSource, /data-i18n="verified"/);
+  assert.match(contentSource, /data-i18n="saveChanges"/);
+  assert.match(contentSource, /data-i18n="changePassword"/);
+  assert.match(contentSource, /data-i18n="pinSecurity"/);
+  assert.match(contentSource, /data-i18n="loginActivity"/);
+  assert.match(contentSource, /data-i18n="notificationSettings"/);
+  assert.match(contentSource, /data-i18n="privacySettings"/);
+
   // Page logic wires up selection and storage
   assert.match(pageSource, /getStoredLanguage/);
   assert.match(pageSource, /setStoredLanguage/);
   assert.match(pageSource, /data-lang-select/);
+  assert.match(pageSource, /applyResidentTranslations/);
   assert.match(pageSource, /alab:resident-language-changed/);
 });
 
-test("resident layout and mobile navigation adapt dynamically to selected language", () => {
+test("resident navigation bar remains fixed in English per user request", () => {
   const layoutPath = join(appRoot, "app", "resident", "layout.tsx");
   const mobileNavPath = join(appRoot, "app", "_components", "resident-mobile-navigation.tsx");
 
@@ -81,19 +95,18 @@ test("resident layout and mobile navigation adapt dynamically to selected langua
   const layoutSource = readFileSync(layoutPath, "utf8");
   const mobileNavSource = readFileSync(mobileNavPath, "utf8");
 
-  // Layout integrates useResidentLanguage and language button
-  assert.match(layoutSource, /useResidentLanguage/);
-  assert.match(layoutSource, /cycleLanguage/);
-  assert.match(layoutSource, /rl-lang-btn/);
-  assert.match(layoutSource, /localizedNavItems/);
+  // Desktop nav words are fixed English
+  assert.match(layoutSource, /label:\s*"Home"/);
+  assert.match(layoutSource, /label:\s*"Reports"/);
+  assert.match(layoutSource, /label:\s*"Report Fire"/);
+  assert.match(layoutSource, /label:\s*"Guide"/);
 
-  // Mobile nav integrates useResidentLanguage
-  assert.match(mobileNavSource, /useResidentLanguage/);
-  assert.match(mobileNavSource, /t\("navHome"\)/);
-  assert.match(mobileNavSource, /t\("navReports"\)/);
-  assert.match(mobileNavSource, /t\("navReportFire"\)/);
-  assert.match(mobileNavSource, /t\("navGuide"\)/);
-  assert.match(mobileNavSource, /t\("navProfile"\)/);
+  // Mobile nav labels are fixed English
+  assert.match(mobileNavSource, /<span>Home<\/span>/);
+  assert.match(mobileNavSource, /<span>Reports<\/span>/);
+  assert.match(mobileNavSource, /<span>Report Fire<\/span>/);
+  assert.match(mobileNavSource, /<span>Guide<\/span>/);
+  assert.match(mobileNavSource, /<span>Profile<\/span>/);
 });
 
 test("resident report fire form dynamically translates steps, tactical pills, and false alarm modal", () => {
