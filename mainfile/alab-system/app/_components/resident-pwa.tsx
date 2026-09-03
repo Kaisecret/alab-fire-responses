@@ -61,28 +61,29 @@ export function ResidentInstallPrompt() {
       <style>{`
         .resident-chrome-install-sheet {
           position: fixed;
-          bottom: 1.25rem;
+          top: 0.85rem;
           left: 50%;
           transform: translateX(-50%);
           z-index: 9999;
-          width: min(92vw, 26rem);
+          width: min(94vw, 24rem);
           background: #FFFFFF;
           border: 1px solid #E2E8F0;
-          border-radius: 1.25rem;
-          box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
-          padding: 1.1rem 1.2rem;
+          border-radius: 999px;
+          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
+          padding: 0.45rem 0.65rem 0.45rem 0.75rem;
           display: flex;
-          flex-direction: column;
-          gap: 0.9rem;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.65rem;
           color: #0F172A;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-          animation: chromeSheetSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: chromeSheetSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        @keyframes chromeSheetSlideUp {
+        @keyframes chromeSheetSlideDown {
           from {
             opacity: 0;
-            transform: translate(-50%, 1.5rem);
+            transform: translate(-50%, -1rem);
           }
           to {
             opacity: 1;
@@ -93,81 +94,62 @@ export function ResidentInstallPrompt() {
         .chrome-sheet-header {
           display: flex;
           align-items: center;
-          gap: 0.85rem;
+          gap: 0.55rem;
+          min-width: 0;
+          flex: 1;
         }
 
         .chrome-sheet-icon {
-          width: 3rem;
-          height: 3rem;
-          border-radius: 0.75rem;
+          width: 2.1rem;
+          height: 2.1rem;
+          border-radius: 0.55rem;
           object-fit: cover;
           flex-shrink: 0;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
           border: 1px solid #E2E8F0;
         }
 
         .chrome-sheet-info {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .chrome-sheet-title {
-          font-size: 0.96rem;
-          font-weight: 800;
-          color: #0F172A;
-          margin: 0 0 0.15rem;
-          letter-spacing: -0.01em;
           display: flex;
           align-items: center;
           gap: 0.35rem;
+          min-width: 0;
+          white-space: nowrap;
+        }
+
+        .chrome-sheet-title {
+          font-size: 0.86rem;
+          font-weight: 800;
+          color: #0F172A;
+          margin: 0;
+          letter-spacing: -0.01em;
         }
 
         .chrome-sheet-badge {
           display: inline-flex;
           align-items: center;
-          gap: 0.25rem;
-          font-size: 0.73rem;
+          font-size: 0.68rem;
           color: #0369A1;
-          font-weight: 600;
+          font-weight: 700;
           background: #E0F2FE;
-          padding: 0.15rem 0.5rem;
+          padding: 0.1rem 0.4rem;
           border-radius: 999px;
-        }
-
-        .chrome-sheet-url {
-          font-size: 0.78rem;
-          color: #64748B;
-          margin: 0;
-          display: flex;
-          align-items: center;
-          gap: 0.3rem;
-        }
-
-        .chrome-sheet-desc {
-          font-size: 0.8rem;
-          color: #475569;
-          margin: 0;
-          line-height: 1.4;
-          background: #F8FAFC;
-          padding: 0.5rem 0.75rem;
-          border-radius: 0.65rem;
-          border: 1px solid #F1F5F9;
         }
 
         .chrome-sheet-actions {
           display: flex;
           align-items: center;
-          justify-content: flex-end;
-          gap: 0.6rem;
+          gap: 0.35rem;
+          flex-shrink: 0;
         }
 
         .chrome-btn-cancel {
           background: transparent;
-          border: 1px solid #E2E8F0;
+          border: none;
           border-radius: 999px;
-          padding: 0.5rem 1rem;
-          font-size: 0.82rem;
-          font-weight: 700;
+          padding: 0.35rem 0.6rem;
+          font-size: 0.76rem;
+          font-weight: 600;
           color: #64748B;
           cursor: pointer;
           transition: all 0.15s ease;
@@ -182,48 +164,43 @@ export function ResidentInstallPrompt() {
           background: #DC2626;
           border: none;
           border-radius: 999px;
-          padding: 0.52rem 1.25rem;
-          font-size: 0.82rem;
+          padding: 0.38rem 0.95rem;
+          font-size: 0.78rem;
           font-weight: 800;
           color: #FFFFFF;
           cursor: pointer;
-          box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+          box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
           transition: all 0.15s ease;
+          white-space: nowrap;
         }
 
         .chrome-btn-install:hover {
           background: #B91C1C;
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+          box-shadow: 0 3px 8px rgba(220, 38, 38, 0.35);
         }
 
         @media (max-width: 600px) {
           .resident-chrome-install-sheet {
-            bottom: 4.8rem;
-            width: calc(100vw - 1.5rem);
+            top: 0.65rem;
+            width: calc(100vw - 1.25rem);
+            padding: 0.4rem 0.5rem 0.4rem 0.65rem;
           }
         }
       `}</style>
       <div className="chrome-sheet-header">
         <img className="chrome-sheet-icon" src="/images/resident-pwa-192.png" alt="ALAB" />
         <div className="chrome-sheet-info">
-          <h4 className="chrome-sheet-title">
-            ALAB Emergency
-            <span className="chrome-sheet-badge">Official</span>
-          </h4>
-          <p className="chrome-sheet-url">
-            <span>🔒</span> alab-fire-responses.vercel.app
-          </p>
+          <span className="chrome-sheet-title">ALAB Emergency</span>
+          <span className="chrome-sheet-badge">Official</span>
         </div>
       </div>
-      <p className="chrome-sheet-desc">
-        ⚡ Gumagana kahit offline • Mabilisang pag-report ng sunog at alert notifications.
-      </p>
       <div className="chrome-sheet-actions">
         <button
           type="button"
           className="chrome-btn-cancel"
           onClick={() => setIsDismissed(true)}
+          aria-label="Dismiss"
         >
           Hindi muna
         </button>
