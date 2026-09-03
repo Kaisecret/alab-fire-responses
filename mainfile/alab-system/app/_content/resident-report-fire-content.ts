@@ -367,10 +367,10 @@ export const reportFireStyles = `
   /* Floating Animated Scroll Down Button (vanishes when scrolled) */
   .scroll-down-btn {
     position: fixed;
-    bottom: calc(1.35rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(7.2rem + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
-    z-index: 150;
+    z-index: 90;
     display: inline-flex;
     align-items: center;
     gap: 0.65rem;
@@ -387,6 +387,11 @@ export const reportFireStyles = `
     letter-spacing: 0.01em;
     cursor: pointer;
     transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s;
+  }
+  @media (min-width: 769px) {
+    .scroll-down-btn {
+      bottom: 2.2rem;
+    }
   }
   .scroll-down-btn:hover {
     background: rgba(15, 23, 42, 0.98);
