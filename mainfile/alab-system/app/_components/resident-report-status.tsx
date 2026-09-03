@@ -866,10 +866,10 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
           {/* Phase 2 Tactical Enrichment Card (On Top for instant emergency response) */}
           <section className="resident-detail-card tactical-enrichment-card">
             <h2>
-              <i className="fa-solid fa-bolt" style={{ color: "#DC2626", marginRight: "0.4rem" }} /> Tulong sa Responders (Opsyonal)
+              <i className="fa-solid fa-bolt" style={{ color: "#DC2626", marginRight: "0.4rem" }} /> Tulong sa Responders
             </h2>
             <p className="tactical-header-desc">
-              Opsyonal: Piliin para maihanda ang angkop na kagamitan ng BFP habang papunta:
+              Piliin para maihanda ang angkop na kagamitan ng BFP habang papunta:
             </p>
 
             {/* Interactive Onboarding Guide (Auto-vanishes when user interacts or taps 'Naintindihan ko') */}

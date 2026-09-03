@@ -143,9 +143,15 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const typeButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-fire-type]'));
   const densityButton = root.querySelector<HTMLButtonElement>('[data-quick-density]');
   const routeButton = root.querySelector<HTMLButtonElement>('[data-quick-route]');
+  const photoRequiredDialog = root.querySelector<HTMLElement>('[data-photo-required-dialog]');
+  const photoReqTakeBtn = root.querySelector<HTMLButtonElement>('[data-photo-req-take]');
+  const photoReqCloseBtn = root.querySelector<HTMLButtonElement>('[data-photo-req-close]');
+  const photoOpenTrigger = root.querySelector<HTMLElement>('[data-photo-open]');
+  const fireTypeSection = root.querySelector<HTMLElement>('[data-step-fire-type]');
+  const fireTypeHint = root.querySelector<HTMLElement>('[data-fire-type-hint]');
   if (!submitButton || !locationCard || !landmarkInput || !photoInput || typeButtons.length === 0) return () => {};
 
-  let fireType = typeButtons.find((button) => button.classList.contains('selected'))?.dataset.fireType ?? 'HOUSE_BUILDING';
+  let fireType: string | null = typeButtons.find((button) => button.classList.contains('selected'))?.dataset.fireType ?? null;
   let selectedDensity: string | null = null;
   let selectedRoute: string | null = null;
   let submitting = false;
@@ -154,8 +160,41 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const handlePhotosUpdated = (event: Event) => {
     const detail = (event as CustomEvent<{ files?: File[] }>).detail;
     attachedPhotos = detail?.files ?? [];
+    if (attachedPhotos.length > 0 && photoRequiredDialog) {
+      photoRequiredDialog.hidden = true;
+    }
   };
   root.addEventListener('resident-report:photos-updated', handlePhotosUpdated);
+
+  const showPhotoWarning = () => {
+    if (!photoRequiredDialog) return;
+    photoRequiredDialog.hidden = false;
+  };
+
+  const hidePhotoWarning = () => {
+    if (!photoRequiredDialog) return;
+    photoRequiredDialog.hidden = true;
+  };
+
+  photoReqCloseBtn?.addEventListener('click', hidePhotoWarning);
+  const handleDialogBackdropClick = (e: MouseEvent) => {
+    if (e.target === photoRequiredDialog) hidePhotoWarning();
+  };
+  photoRequiredDialog?.addEventListener('click', handleDialogBackdropClick);
+
+  const handleReqTakeClick = () => {
+    hidePhotoWarning();
+    const photoUploadSection = root.querySelector<HTMLElement>('.photo-field');
+    if (photoUploadSection) {
+      photoUploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    if (photoOpenTrigger) {
+      photoOpenTrigger.click();
+    } else {
+      photoInput.click();
+    }
+  };
+  photoReqTakeBtn?.addEventListener('click', handleReqTakeClick);
 
   const showError = (message: string) => {
     if (!errorMessage) return;
@@ -184,8 +223,9 @@ function initializeReportSubmission(root: HTMLElement): () => void {
 
   typeButtons.forEach((button) => {
     const handler = () => {
-      fireType = button.dataset.fireType ?? 'HOUSE_BUILDING';
+      fireType = button.dataset.fireType ?? null;
       typeButtons.forEach((item) => item.classList.toggle('selected', item === button));
+      if (fireTypeHint) fireTypeHint.style.display = 'none';
     };
     typeHandlers.set(button, handler);
     button.addEventListener('click', handler);
@@ -211,6 +251,31 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const submit = async () => {
     if (submitting) return;
     showError('');
+
+    // 1. Fire type required (must click 1)
+    if (!fireType) {
+      if (fireTypeHint) fireTypeHint.style.display = 'inline-block';
+      if (fireTypeSection) {
+        fireTypeSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      showError('Pumili kung anong nasusunog (Please select 1 fire type).');
+      resetSubmission();
+      return;
+    }
+
+    // 2. Photo required (at least 1 photo)
+    const totalPhotos = attachedPhotos.length > 0 ? attachedPhotos.length : (photoInput.files?.length ?? 0);
+    if (totalPhotos === 0) {
+      showPhotoWarning();
+      const photoUploadSection = root.querySelector<HTMLElement>('.photo-field');
+      if (photoUploadSection) {
+        photoUploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      showError('Kailangan mag-attach ng kahit 1 larawan ng insidente (At least 1 photo required).');
+      resetSubmission();
+      return;
+    }
+
     if (locationCard.dataset.locationValid !== 'true') {
       submitting = true;
       submitButton.disabled = true;
@@ -276,6 +341,9 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     submitButton.removeEventListener('click', submit);
     cancelButton?.removeEventListener('click', cancel);
     root.removeEventListener('resident-report:photos-updated', handlePhotosUpdated);
+    photoReqCloseBtn?.removeEventListener('click', hidePhotoWarning);
+    photoRequiredDialog?.removeEventListener('click', handleDialogBackdropClick);
+    photoReqTakeBtn?.removeEventListener('click', handleReqTakeClick);
   };
 }
 

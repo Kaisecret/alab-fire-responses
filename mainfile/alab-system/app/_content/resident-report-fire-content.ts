@@ -514,6 +514,123 @@ export const reportFireStyles = `
   @keyframes photo-dialog-in { from { opacity: 0; transform: translateY(1rem) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
   @keyframes report-pulse { 50% { transform: scale(1.05); box-shadow: 0 0 0 .35rem rgba(219, 27, 13, .08); } }
 
+  /* Photo Required Simple Warning Modal */
+  .photo-required-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    animation: photoReqFadeIn 0.2s ease forwards;
+  }
+  .photo-required-dialog-backdrop[hidden] {
+    display: none !important;
+  }
+  .photo-required-dialog {
+    width: min(90vw, 22rem);
+    background: #FFFFFF;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    border-radius: 1.4rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(220, 38, 38, 0.1);
+    padding: 1.6rem 1.4rem 1.3rem;
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    animation: photoReqSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes photoReqFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes photoReqSlideIn {
+    from { opacity: 0; transform: scale(0.92) translateY(1rem); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .photo-req-icon {
+    position: relative;
+    width: 3.8rem;
+    height: 3.8rem;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FEF2F2, #FEE2E2);
+    border: 1px solid #FECACA;
+    display: grid;
+    place-items: center;
+    color: #DC2626;
+  }
+  .photo-req-icon svg {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+  .photo-req-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 1.3rem;
+    height: 1.3rem;
+    border-radius: 50%;
+    background: #DC2626;
+    color: #FFFFFF;
+    font-size: 0.8rem;
+    font-weight: 850;
+    display: grid;
+    place-items: center;
+    border: 2px solid #FFFFFF;
+  }
+  .photo-required-dialog h3 {
+    margin: 0 0 0.35rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #7F1D1D;
+    letter-spacing: -0.02em;
+  }
+  .photo-required-dialog p {
+    margin: 0 0 1.25rem;
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: #475569;
+  }
+  .photo-req-actions {
+    display: grid;
+    gap: 0.55rem;
+  }
+  .photo-req-btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.85rem;
+    font-size: 0.84rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    transition: all 0.15s ease;
+  }
+  .photo-req-take {
+    background: linear-gradient(135deg, #DC2626, #B91C1C);
+    color: #FFFFFF;
+    border: 1px solid #991B1B;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  }
+  .photo-req-take:hover {
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+    transform: translateY(-1px);
+  }
+  .photo-req-close {
+    background: #F8FAFC;
+    color: #64748B;
+    border: 1px solid #E2E8F0;
+  }
+  .photo-req-close:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+  }
+
   @media (max-width: 950px) {
     .report-page-root { padding: 0 0 calc(6rem + env(safe-area-inset-bottom)); padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
     .report-form-shell { padding: 1.15rem 1rem 1.75rem; border: none; border-radius: 0; box-shadow: none; }
@@ -604,10 +721,10 @@ export const reportFireMarkup = `
         </section>
       </div>
 
-      <section class="step-section">
-        <div class="step-title"><span class="step-number">3</span> WHAT IS BURNING?</div>
+      <section class="step-section" data-step-fire-type>
+        <div class="step-title"><span class="step-number">3</span> WHAT IS BURNING? <span class="step-hint" data-fire-type-hint style="display:none; color:#DC2626; font-size:0.75rem; font-weight:800; margin-left:0.5rem;">• Pumili ng isa (Need to click 1)</span></div>
         <div class="type-grid" role="list" aria-label="Fire type">
-          <button type="button" class="type-btn selected" data-fire-type="HOUSE_BUILDING" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>House/Building</button>
+          <button type="button" class="type-btn" data-fire-type="HOUSE_BUILDING" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>House/Building</button>
           <button type="button" class="type-btn" data-fire-type="GRASS" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8M8 20v-5M16 20v-6M4 20v-3M20 20v-4"/></svg>Grass Fire</button>
           <button type="button" class="type-btn" data-fire-type="FOREST" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 14 15 14 18 22 6 22 9 14 5 14 12 2"/></svg>Forest Fire</button>
           <button type="button" class="type-btn" data-fire-type="VEHICLE" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H9.3a2 2 0 0 0-1.6.8L5 11l-5.16.86a1 1 0 0 0-.84.99V16h3m10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0m-10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0"/></svg>Vehicle Fire</button>
@@ -639,7 +756,7 @@ export const reportFireMarkup = `
 
       <section class="report-detail-grid">
         <div class="photo-field">
-          <span class="field-label"><span class="step-number">4</span>ADD FIRE PHOTO <span class="optional-label">(OPTIONAL · UP TO 3 PHOTOS)</span></span>
+          <span class="field-label"><span class="step-number">4</span>ADD FIRE PHOTO <span class="required-label" style="color: #DC2626; font-size: 0.72rem; font-weight: 800; margin-left: 0.35rem;">(REQUIRED · AT LEAST 1 PHOTO)</span></span>
           <span class="field-helper">Take a photo only when it is safe to do so.</span>
           
           <button type="button" class="photo-upload" data-photo-open data-photo-state="empty">
@@ -687,5 +804,29 @@ export const reportFireMarkup = `
         </svg>
       </span>
     </button>
+
+    <!-- Photo Required Simple Warning Dialog -->
+    <div class="photo-required-dialog-backdrop" data-photo-required-dialog hidden>
+      <div class="photo-required-dialog" role="alertdialog" aria-labelledby="photoReqTitle">
+        <div class="photo-req-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span class="photo-req-badge">!</span>
+        </div>
+        <h3 id="photoReqTitle">Kailangan ng Larawan</h3>
+        <p>Mag-attach ng kahit 1 larawan ng sunog bago ipadala ang alert.</p>
+        <div class="photo-req-actions">
+          <button type="button" class="photo-req-btn photo-req-take" data-photo-req-take>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Kumuha ng Larawan
+          </button>
+          <button type="button" class="photo-req-btn photo-req-close" data-photo-req-close>
+            Isara
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 `;

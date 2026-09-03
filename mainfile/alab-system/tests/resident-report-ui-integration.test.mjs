@@ -61,3 +61,25 @@ test("incident photos open in a controlled dialog instead of expanding in the re
   assert.match(status, /className="resident-photo-dialog"/);
   assert.match(status, /resident-photo-dialog-image/);
 });
+
+test("resident fire report requires user selection for burning type and requires at least 1 photo", () => {
+  const content = read("app/_content/resident-report-fire-content.ts");
+  const page = read("app/resident/report-fire/page.tsx");
+  const status = read("app/_components/resident-report-status.tsx");
+
+  // Fire type is not preselected
+  assert.doesNotMatch(content, /class="type-btn selected" data-fire-type="HOUSE_BUILDING"/);
+  assert.match(content, /data-fire-type-hint/);
+  assert.match(page, /if \(!fireType\) \{/);
+
+  // Photo required
+  assert.match(content, /REQUIRED · AT LEAST 1 PHOTO/);
+  assert.match(content, /data-photo-required-dialog/);
+  assert.match(page, /totalPhotos === 0/);
+  assert.match(page, /showPhotoWarning\(\)/);
+
+  // Tulong sa responders: Opsyonal word removed
+  assert.match(status, /Tulong sa Responders\s*<\/h2>/);
+  assert.doesNotMatch(status, /Tulong sa Responders \(Opsyonal\)/);
+});
+
