@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { reportsStyles } from "../../_content/resident-reports-content";
-import { fireReportStatusLabels, type FireReportStatus } from "../../../lib/fire-reports/types";
+import type { FireReportStatus } from "../../../lib/fire-reports/types";
+import { useResidentLanguage, getLocalizedStatusLabel, type ResidentLanguage } from "../../_lib/resident-i18n";
 
 type Report = { id: string; reference_number: string; status: FireReportStatus; fire_type: string; submitted_at: string; municipality: string | null; barangay: string | null; };
 type Filter = "ALL" | "ACTIVE" | "CLOSED";
@@ -36,6 +37,7 @@ const liveReportsStyles = `
 `;
 
 export default function ReportsPage() {
+  const { lang, t } = useResidentLanguage();
   const [reports, setReports] = useState<Report[]>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -102,23 +104,88 @@ export default function ReportsPage() {
       <div className="reports-main-layout">
         <section className="reports-left-col">
           <div className="reports-live-heading">
-            <div><h1 className="reports-page-title">My fire reports</h1><p className="reports-page-subtitle">Track every update from your Municipal BFP station.</p></div>
-            <span className="reports-count-note">{reports.length} report{reports.length === 1 ? "" : "s"}</span>
+            <div>
+              <h1 className="reports-page-title">{t("reportsTitle")}</h1>
+              <p className="reports-page-subtitle">{t("reportsSubtitle")}</p>
+            </div>
+            <span className="reports-count-note">{reports.length} {reports.length === 1 ? t("reportsCountSingular") : t("reportsCountPlural")}</span>
           </div>
           {error && <p className="reports-load-error" role="alert">{error}</p>}
           <div className="status-summary-row" aria-label="Report status summary">
-            <SummaryCard label="Submitted" count={submittedCount} tone="submitted" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
-            <SummaryCard label="Verifying" count={verifyingCount} tone="verifying" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
-            <SummaryCard label="Responding" count={respondingCount} tone="responding" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
-            <SummaryCard label="Closed" count={closedCount} tone="closed" onClick={() => setFilter("CLOSED")} active={filter === "CLOSED"} />
+            <SummaryCard label={t("statusSubmitted")} count={submittedCount} tone="submitted" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
+            <SummaryCard label={t("statusVerifying")} count={verifyingCount} tone="verifying" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
+            <SummaryCard label={t("statusResponding")} count={respondingCount} tone="responding" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
+            <SummaryCard label={t("statusResolved")} count={closedCount} tone="closed" onClick={() => setFilter("CLOSED")} active={filter === "CLOSED"} />
           </div>
           <div className="reports-controls">
-            <div className="reports-search-wrapper"><SearchIcon /><input className="reports-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by reference or location" aria-label="Search fire reports" /></div>
-            <div className="reports-filter-tabs" aria-label="Report filters">{(["ALL", "ACTIVE", "CLOSED"] as Filter[]).map((item) => <button key={item} type="button" className={`filter-tab${filter === item ? " active" : ""}`} onClick={() => setFilter(item)}>{item === "ALL" ? "All" : item === "ACTIVE" ? "Active" : "Closed"}</button>)}</div>
+            <div className="reports-search-wrapper">
+              <SearchIcon />
+              <input className="reports-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("reportsSearchPlaceholder")} aria-label="Search fire reports" />
+            </div>
+            <div className="reports-filter-tabs" aria-label="Report filters">
+              {(["ALL", "ACTIVE", "CLOSED"] as Filter[]).map((item) => (
+                <button key={item} type="button" className={`filter-tab${filter === item ? " active" : ""}`} onClick={() => setFilter(item)}>
+                  {item === "ALL" ? t("filterAll") : item === "ACTIVE" ? t("filterActive") : t("filterClosed")}
+                </button>
+              ))}
+            </div>
           </div>
-          {loading ? <p className="reports-loading">Loading your fire reports…</p> : filteredReports.length === 0 ? <EmptyState /> : <>
-            <div className="reports-table-card"><table className="reports-table"><thead><tr><th>Reference no.</th><th>Location</th><th>Date reported</th><th>Status</th><th>Action</th></tr></thead><tbody>{filteredReports.map((report) => <tr key={report.id}><td><Link className="reports-live-table-link" href={`/resident/reports/${report.id}`}><span className="ref-number">{report.reference_number}</span></Link></td><td><LocationCell report={report} /></td><td className="date-cell">{formatDate(report.submitted_at)}</td><td><StatusBadge status={report.status} /></td><td><Link className="view-details-btn" href={`/resident/reports/${report.id}`}>View details</Link></td></tr>)}</tbody></table><div className="table-footer"><span>Showing {filteredReports.length} of {reports.length} report{reports.length === 1 ? "" : "s"}</span></div></div>
-            <div className="mobile-reports-list">{filteredReports.map((report) => <Link key={report.id} href={`/resident/reports/${report.id}`} className={`mobile-report-card${report.status === "RESPONDING" ? " selected" : ""}`}><span className="mobile-report-fire-icon" aria-hidden><FireLogo /></span><span className="mobile-report-info"><span className="mobile-report-ref">{report.reference_number}</span><span className="mobile-report-location"><PinIcon />{formatLocation(report)}</span><span className="mobile-report-date">{formatDate(report.submitted_at)}</span></span><span className="mobile-report-right"><StatusBadge status={report.status} /><span className="mobile-report-chevron">›</span></span></Link>)}</div>
+          {loading ? (
+            <p className="reports-loading">{t("reportsLoading")}</p>
+          ) : filteredReports.length === 0 ? (
+            <EmptyState t={t} />
+          ) : <>
+            <div className="reports-table-card">
+              <table className="reports-table">
+                <thead>
+                  <tr>
+                    <th>{t("thReference")}</th>
+                    <th>{t("thLocation")}</th>
+                    <th>{t("thDateReported")}</th>
+                    <th>{t("thStatus")}</th>
+                    <th>{t("thAction")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredReports.map((report) => (
+                    <tr key={report.id}>
+                      <td>
+                        <Link className="reports-live-table-link" href={`/resident/reports/${report.id}`}>
+                          <span className="ref-number">{report.reference_number}</span>
+                        </Link>
+                      </td>
+                      <td><LocationCell report={report} /></td>
+                      <td className="date-cell">{formatDate(report.submitted_at)}</td>
+                      <td><StatusBadge status={report.status} lang={lang} /></td>
+                      <td>
+                        <Link className="view-details-btn" href={`/resident/reports/${report.id}`}>
+                          {t("btnViewDetails")}
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="table-footer">
+                <span>{t("reportsShowing")} {filteredReports.length} {t("reportsOf")} {reports.length} {reports.length === 1 ? t("reportsCountSingular") : t("reportsCountPlural")}</span>
+              </div>
+            </div>
+            <div className="mobile-reports-list">
+              {filteredReports.map((report) => (
+                <Link key={report.id} href={`/resident/reports/${report.id}`} className={`mobile-report-card${report.status === "RESPONDING" ? " selected" : ""}`}>
+                  <span className="mobile-report-fire-icon" aria-hidden><FireLogo /></span>
+                  <span className="mobile-report-info">
+                    <span className="mobile-report-ref">{report.reference_number}</span>
+                    <span className="mobile-report-location"><PinIcon />{formatLocation(report)}</span>
+                    <span className="mobile-report-date">{formatDate(report.submitted_at)}</span>
+                  </span>
+                  <span className="mobile-report-right">
+                    <StatusBadge status={report.status} lang={lang} />
+                    <span className="mobile-report-chevron">›</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
           </>}
         </section>
       </div>
@@ -126,14 +193,90 @@ export default function ReportsPage() {
   </>;
 }
 
-function SummaryCard({ label, count, tone, onClick, active }: { label: string; count: number; tone: string; onClick: () => void; active: boolean }) { return <button type="button" className="status-summary-card" onClick={onClick} aria-pressed={active}><span className={`status-summary-icon ${tone}`}><FireLogo /></span><span className="status-summary-text"><span className="status-summary-label">{label}</span><span className="status-summary-count">{count}</span></span></button>; }
-function StatusBadge({ status }: { status: FireReportStatus }) { return <span className={`status-badge ${statusClass(status)}`}>{fireReportStatusLabels[status]}</span>; }
-function LocationCell({ report }: { report: Report }) { return <span className="location-cell"><PinIcon /><span className="location-text">{report.barangay || "Barangay not available"}<br />{report.municipality || "Municipality not available"}</span></span>; }
-function EmptyState() { return <div className="reports-empty-state"><h2>No fire reports found</h2><p>When you submit an emergency report, its live BFP status will appear here.</p><Link href="/resident/report-fire">Report a fire</Link></div>; }
-function isClosed(status: FireReportStatus) { return ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(status); }
-function statusClass(status: FireReportStatus) { if (["RESPONDING", "FIRETRUCK_DISPATCHED", "RESPONDER_ARRIVED"].includes(status)) return "responding"; if (isClosed(status)) return "closed"; if (["VERIFIED", "CONFIRMED", "UNDER_CONTROL"].includes(status)) return "confirmed"; if (["PENDING_VERIFICATION", "UNDER_VERIFICATION", "NEEDS_MORE_INFO"].includes(status)) return "verifying"; return "submitted"; }
-function formatLocation(report: Report) { return [report.barangay, report.municipality].filter(Boolean).join(", ") || "Location not available"; }
-function formatDate(value: string) { return new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value)); }
-function FireLogo() { return <img className="resident-fire-logo" src="/images/fire logo.webp" alt="" aria-hidden />; }
-function PinIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg>; }
-function SearchIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="11" cy="11" r="8" /><path d="m21 21-4.4-4.4" /></svg>; }
+function SummaryCard({ label, count, tone, onClick, active }: { label: string; count: number; tone: string; onClick: () => void; active: boolean }) {
+  return (
+    <button type="button" className="status-summary-card" onClick={onClick} aria-pressed={active}>
+      <span className={`status-summary-icon ${tone}`}><FireLogo /></span>
+      <span className="status-summary-text">
+        <span className="status-summary-label">{label}</span>
+        <span className="status-summary-count">{count}</span>
+      </span>
+    </button>
+  );
+}
+
+function StatusBadge({ status, lang }: { status: FireReportStatus; lang: ResidentLanguage }) {
+  return <span className={`status-badge ${statusClass(status)}`}>{getLocalizedStatusLabel(status, lang)}</span>;
+}
+
+function LocationCell({ report }: { report: Report }) {
+  return (
+    <span className="location-cell">
+      <PinIcon />
+      <span className="location-text">
+        {report.barangay || "Barangay not available"}
+        <br />
+        {report.municipality || "Municipality not available"}
+      </span>
+    </span>
+  );
+}
+
+function EmptyState({ t }: { t: (key: any) => string }) {
+  return (
+    <div className="reports-empty-state">
+      <h2>{t("reportsEmptyTitle")}</h2>
+      <p>{t("reportsEmptyDesc")}</p>
+      <Link href="/resident/report-fire">{t("btnFileReport")}</Link>
+    </div>
+  );
+}
+
+function isClosed(status: FireReportStatus) {
+  return ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(status);
+}
+
+function statusClass(status: FireReportStatus) {
+  if (["RESPONDING", "FIRETRUCK_DISPATCHED", "RESPONDER_ARRIVED"].includes(status)) return "responding";
+  if (isClosed(status)) return "closed";
+  if (["VERIFIED", "CONFIRMED", "UNDER_CONTROL"].includes(status)) return "confirmed";
+  if (["PENDING_VERIFICATION", "UNDER_VERIFICATION", "NEEDS_MORE_INFO"].includes(status)) return "verifying";
+  return "submitted";
+}
+
+function formatLocation(report: Report) {
+  return [report.barangay, report.municipality].filter(Boolean).join(", ") || "Location not available";
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function FireLogo() {
+  return <img className="resident-fire-logo" src="/images/fire logo.webp" alt="" aria-hidden />;
+}
+
+function PinIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.4-4.4" />
+    </svg>
+  );
+}
+

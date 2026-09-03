@@ -78,8 +78,8 @@ test("resident fire report requires user selection for burning type and requires
   assert.match(page, /totalPhotos === 0/);
   assert.match(page, /showPhotoWarning\(\)/);
 
-  // Tulong sa responders: Opsyonal word removed
-  assert.match(status, /Tulong sa Responders\s*<\/h2>/);
+  // Tulong sa responders: Opsyonal word removed and localized
+  assert.match(status, /Tulong sa Responders/);
   assert.doesNotMatch(status, /Tulong sa Responders \(Opsyonal\)/);
 });
 

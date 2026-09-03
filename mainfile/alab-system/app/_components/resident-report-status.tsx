@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
+import { useResidentLanguage, getLocalizedStatusLabel, type ResidentLanguage } from "../_lib/resident-i18n";
 
 type Report = {
   id: string;
@@ -685,6 +686,7 @@ const timeline = [
 ] as const;
 
 export function ResidentReportStatus({ reportId }: { reportId: string }) {
+  const { lang, t } = useResidentLanguage();
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState("");
   const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
@@ -694,6 +696,30 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isDismissingOnboarding, setIsDismissingOnboarding] = useState(false);
+
+  const getTimelineLabel = (status: FireReportStatus, defaultLabel: string) => {
+    if (lang === "hil") {
+      switch (status) {
+        case "PENDING_VERIFICATION": return "Napadala";
+        case "VERIFIED": return "Nakumpirma";
+        case "RESPONDING": return "Nagaresponde";
+        case "FIRETRUCK_DISPATCHED": return "Nalarga";
+        case "RESOLVED": return "Naapula";
+        default: return defaultLabel;
+      }
+    }
+    if (lang === "tl") {
+      switch (status) {
+        case "PENDING_VERIFICATION": return "Naipasa";
+        case "VERIFIED": return "Nakumpirma";
+        case "RESPONDING": return "Tumutugon";
+        case "FIRETRUCK_DISPATCHED": return "Napadala";
+        case "RESOLVED": return "Naapula";
+        default: return defaultLabel;
+      }
+    }
+    return defaultLabel;
+  };
 
   useEffect(() => {
     try {
@@ -831,7 +857,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
         <a className="resident-detail-back" href="/resident/reports" aria-label="Back to reports">
           ‹
         </a>
-        <h1>Report Details</h1>
+        <h1>{lang === "en" ? "Report Details" : lang === "hil" ? "Detalye sang Report" : "Mga Detalye ng Ulat"}</h1>
       </div>
 
       <section className="resident-detail-hero">
@@ -841,9 +867,9 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
         </div>
         <div className="resident-hero-badges">
           <span className={`severity-pill ${severity}`}>
-            {severity} Severity
+            {severity} {lang === "en" ? "Severity" : lang === "hil" ? "Kagrabehon" : "Kaselanan"}
           </span>
-          <span className="resident-status-pill">{fireReportStatusLabels[report.status]}</span>
+          <span className="resident-status-pill">{getLocalizedStatusLabel(report.status, lang)}</span>
         </div>
       </section>
 
@@ -859,20 +885,21 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
         </section>
       )}
 
-      {/* Responsive 2-Column Bento Grid */}
       <div className="resident-detail-grid">
-        {/* Left Column: Tactical Enrichment on top, then Timeline & Latest Update */}
         <div className="resident-grid-col">
-          {/* Phase 2 Tactical Enrichment Card (On Top for instant emergency response) */}
           <section className="resident-detail-card tactical-enrichment-card">
             <h2>
-              <i className="fa-solid fa-bolt" style={{ color: "#DC2626", marginRight: "0.4rem" }} /> Tulong sa Responders
+              <i className="fa-solid fa-bolt" style={{ color: "#DC2626", marginRight: "0.4rem" }} />{" "}
+              {lang === "en" ? "Help Responders" : lang === "hil" ? "Bulig sa mga Responders" : "Tulong sa Responders"}
             </h2>
             <p className="tactical-header-desc">
-              Piliin para maihanda ang angkop na kagamitan ng BFP habang papunta:
+              {lang === "en"
+                ? "Select to help BFP prepare appropriate equipment while en route:"
+                : lang === "hil"
+                ? "Pilia agud mahanda sang BFP ang insakto nga kagamitan samtang nagapadulong:"
+                : "Piliin para maihanda ang angkop na kagamitan ng BFP habang papunta:"}
             </p>
 
-            {/* Interactive Onboarding Guide (Auto-vanishes when user interacts or taps 'Naintindihan ko') */}
             {showOnboarding && (
               <div
                 className={`interactive-onboarding-toast ${isDismissingOnboarding ? "is-dismissing" : ""}`}
@@ -918,33 +945,27 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   type="button"
                   className={`tactical-btn ${report.structure_material === "LIGHT_MATERIALS" ? "is-selected" : ""}`}
                   onClick={() => updateTacticalDetail("structureMaterial", "LIGHT_MATERIALS")}
-                  role="radio"
-                  aria-checked={report.structure_material === "LIGHT_MATERIALS"}
+                  aria-pressed={report.structure_material === "LIGHT_MATERIALS"}
                 >
-                  <span className="tactical-btn-icon icon-wood"><i className="fa-solid fa-tree" /></span>
-                  <span className="tactical-btn-text">Kahoy / Nipa</span>
+                  <span className="tactical-btn-text">Kahoy / Light</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
-                  className={`tactical-btn ${report.structure_material === "MIXED_SEMI_CONCRETE" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("structureMaterial", "MIXED_SEMI_CONCRETE")}
-                  role="radio"
-                  aria-checked={report.structure_material === "MIXED_SEMI_CONCRETE"}
+                  className={`tactical-btn ${report.structure_material === "CONCRETE_MIXED" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("structureMaterial", "CONCRETE_MIXED")}
+                  aria-pressed={report.structure_material === "CONCRETE_MIXED"}
                 >
-                  <span className="tactical-btn-icon icon-semi"><i className="fa-solid fa-house-chimney" /></span>
-                  <span className="tactical-btn-text">Semi-Concrete</span>
+                  <span className="tactical-btn-text">Semento / Halos</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
-                  className={`tactical-btn ${report.structure_material === "CONCRETE" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("structureMaterial", "CONCRETE")}
-                  role="radio"
-                  aria-checked={report.structure_material === "CONCRETE"}
+                  className={`tactical-btn ${report.structure_material === "COMMERCIAL_STEEL" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("structureMaterial", "COMMERCIAL_STEEL")}
+                  aria-pressed={report.structure_material === "COMMERCIAL_STEEL"}
                 >
-                  <span className="tactical-btn-icon icon-concrete"><i className="fa-solid fa-building" /></span>
-                  <span className="tactical-btn-text">Semento</span>
+                  <span className="tactical-btn-text">Bakal / Warehouse</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
               </div>
@@ -952,32 +973,37 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
 
             <div className="tactical-group">
               <div className="tactical-group-header">
-                <span className="tactical-label">Agwat ng Bahay (Density):</span>
+                <span className="tactical-label">Dikit-dikit ng Kabahayan:</span>
                 <span className={`tactical-select-guide ${report.house_density ? "is-done" : ""}`}>
                   {report.house_density ? "✓ Napili" : "Pumili ng 1"}
                 </span>
               </div>
-              <div className="tactical-grid-2">
+              <div className="tactical-grid-3">
                 <button
                   type="button"
-                  className={`tactical-btn ${report.house_density === "PACKED_MAGKAKADIKIT" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("houseDensity", "PACKED_MAGKAKADIKIT")}
-                  role="radio"
-                  aria-checked={report.house_density === "PACKED_MAGKAKADIKIT"}
+                  className={`tactical-btn ${report.house_density === "ISOLATED" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("houseDensity", "ISOLATED")}
+                  aria-pressed={report.house_density === "ISOLATED"}
                 >
-                  <span className="tactical-btn-icon icon-packed"><i className="fa-solid fa-city" /></span>
-                  <span className="tactical-btn-text">Dikit-dikit (&lt; 2m)</span>
+                  <span className="tactical-btn-text">Malayo (Hiwalay)</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
-                  className={`tactical-btn ${report.house_density === "ISOLATED_FAR" || report.house_density === "MODERATE_SPACING" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("houseDensity", "ISOLATED_FAR")}
-                  role="radio"
-                  aria-checked={report.house_density === "ISOLATED_FAR" || report.house_density === "MODERATE_SPACING"}
+                  className={`tactical-btn ${report.house_density === "MODERATE" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("houseDensity", "MODERATE")}
+                  aria-pressed={report.house_density === "MODERATE"}
                 >
-                  <span className="tactical-btn-icon icon-spaced"><i className="fa-solid fa-house" /></span>
-                  <span className="tactical-btn-text">Magkakalayo (&gt; 15m)</span>
+                  <span className="tactical-btn-text">Katamtaman</span>
+                  <span className="tactical-radio-dot" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={`tactical-btn ${report.house_density === "HIGH_DENSITY" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("houseDensity", "HIGH_DENSITY")}
+                  aria-pressed={report.house_density === "HIGH_DENSITY"}
+                >
+                  <span className="tactical-btn-text">Dikit-dikit (Kumpul-kumpol)</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
               </div>
@@ -985,7 +1011,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
 
             <div className="tactical-group">
               <div className="tactical-group-header">
-                <span className="tactical-label">Daanan (Access):</span>
+                <span className="tactical-label">Luwang ng Daanan (Truck Access):</span>
                 <span className={`tactical-select-guide ${report.route_accessibility ? "is-done" : ""}`}>
                   {report.route_accessibility ? "✓ Napili" : "Pumili ng 1"}
                 </span>
@@ -993,30 +1019,26 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
               <div className="tactical-grid-2">
                 <button
                   type="button"
-                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "INTERIOR_ALLEY_ESKINITA" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("routeAccessibility", "INTERIOR_ALLEY_ESKINITA")}
-                  role="radio"
-                  aria-checked={report.route_accessibility === "INTERIOR_ALLEY_ESKINITA"}
+                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "WIDE_ROAD" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("routeAccessibility", "WIDE_ROAD")}
+                  aria-pressed={report.route_accessibility === "WIDE_ROAD"}
                 >
-                  <span className="tactical-btn-icon icon-alley"><i className="fa-solid fa-person-walking" /></span>
-                  <div className="tactical-btn-content">
-                    <strong>Eskinita</strong>
-                    <small>Mahabang hose</small>
-                  </div>
+                  <span className="tactical-btn-content">
+                    <strong>Malapad na Kalsada</strong>
+                    <small>Kasya ang malalaking firetruck</small>
+                  </span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
-                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "WIDE_ROAD" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("routeAccessibility", "WIDE_ROAD")}
-                  role="radio"
-                  aria-checked={report.route_accessibility === "WIDE_ROAD"}
+                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "NARROW_ALLEY" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("routeAccessibility", "NARROW_ALLEY")}
+                  aria-pressed={report.route_accessibility === "NARROW_ALLEY"}
                 >
-                  <span className="tactical-btn-icon icon-truck"><i className="fa-solid fa-truck-fire" /></span>
-                  <div className="tactical-btn-content">
-                    <strong>Malapad na Daan</strong>
-                    <small>Kasya ang truck</small>
-                  </div>
+                  <span className="tactical-btn-content">
+                    <strong>Makipot / Eskenita</strong>
+                    <small>Maaaring mahirapan o kailangan ng hose extension</small>
+                  </span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
               </div>
@@ -1025,10 +1047,9 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
             {savedFeedback && <span className="tactical-saved-pill">{savedFeedback}</span>}
           </section>
 
-          {/* Status Timeline */}
           <section className="resident-detail-card">
             <h2>
-              <span>⏱</span> Status Timeline
+              <span>⏱</span> {lang === "en" ? "Status Timeline" : lang === "hil" ? "Timeline sang Status" : "Timeline ng Katayuan"}
             </h2>
             <div className="resident-timeline">
               {timeline.map((item, index) => {
@@ -1041,7 +1062,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                     className={`resident-timeline-step ${isComplete ? "complete" : ""} ${isCurrent ? "current" : ""}`}
                   >
                     <div className="resident-timeline-dot">{isComplete ? "✓" : index + 1}</div>
-                    {item.label}
+                    {getTimelineLabel(item.status, item.label)}
                     {historyItem && (
                       <span className="resident-timeline-date">{formatDate(historyItem.created_at)}</span>
                     )}
@@ -1051,15 +1072,18 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
             </div>
           </section>
 
-          {/* Latest Update from Municipal BFP */}
           <section className="resident-detail-card">
             <h2>
-              <span>▣</span> Latest Update from Municipal BFP
+              <span>▣</span> {lang === "en" ? "Latest Update from Municipal BFP" : lang === "hil" ? "Pinakabag-o nga Update halin sa BFP" : "Pinakabagong Update mula sa BFP"}
             </h2>
             <p className="resident-bfp-update">
               {report.status === "RESPONDING"
-                ? "BFP is responding to your fire report. Please stay in a safe location and follow responder instructions."
-                : latest?.resident_message || "Your report has been received and is being processed."}
+                ? (lang === "hil"
+                    ? "Nagaresponde na ang BFP sa imo report sang sunog. Magpabilin sa luwas nga lugar kag sunda ang mga panudlo."
+                    : lang === "tl"
+                    ? "Tumutugon na ang BFP sa iyong ulat ng sunog. Manatili sa ligtas na lugar at sundin ang mga tagubilin."
+                    : "BFP is responding to your fire report. Please stay in a safe location and follow responder instructions.")
+                : latest?.resident_message || (lang === "hil" ? "Nabaton na ang imo report kag ginaproseso na ini." : lang === "tl" ? "Natanggap na ang iyong ulat at kasalukuyan itong pinoproseso." : "Your report has been received and is being processed.")}
             </p>
             <p className="resident-update-time">
               {latest ? formatDate(latest.created_at) : formatDate(report.submitted_at)}
@@ -1067,28 +1091,27 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
           </section>
         </div>
 
-        {/* Right Column: Incident Data, Report ID, Photos, Safety */}
         <div className="resident-grid-col">
           <section className="resident-detail-card">
             <h2>
-              <span>⌖</span> Incident Information
+              <span>⌖</span> {lang === "en" ? "Incident Information" : lang === "hil" ? "Impormasyon sang Insidente" : "Impormasyon ng Insidente"}
             </h2>
             <div className="resident-detail-info">
-              <Info label="Location" value={`${report.barangay}, ${report.municipality}`} icon="pin" />
-              <Info label="Nearest Landmark" value={report.nearest_landmark || "Not provided"} icon="home" />
-              <Info label="Date Reported" value={formatDate(report.submitted_at)} icon="calendar" />
-              <Info label="Fire Type" value={formatFireType(report.fire_type)} icon="fire" />
+              <Info label={lang === "en" ? "Location" : "Lokasyon"} value={`${report.barangay}, ${report.municipality}`} icon="pin" />
+              <Info label={lang === "en" ? "Nearest Landmark" : lang === "hil" ? "Pinakamalapit nga Landmark" : "Pinakamalapit na Landmark"} value={report.nearest_landmark || (lang === "en" ? "Not provided" : "Hindi tinukoy")} icon="home" />
+              <Info label={t("thDateReported")} value={formatDate(report.submitted_at)} icon="calendar" />
+              <Info label={lang === "en" ? "Fire Type" : lang === "hil" ? "Klase sang Kalayo" : "Uri ng Sunog"} value={formatFireType(report.fire_type)} icon="fire" />
             </div>
           </section>
 
           <section className="resident-detail-card">
             <h2>
-              <span>▧</span> Report Information
+              <span>▧</span> {lang === "en" ? "Report Information" : lang === "hil" ? "Impormasyon sang Report" : "Impormasyon ng Ulat"}
             </h2>
             <div className="resident-detail-info">
-              <Info label="Report ID" value={report.id} icon="file" />
-              <Info label="Status" value={fireReportStatusLabels[report.status]} icon="file" status />
-              <Info label="Municipality" value={report.municipality} icon="pin" />
+              <Info label={lang === "en" ? "Report ID" : lang === "hil" ? "Report ID" : "ID ng Ulat"} value={report.id} icon="file" />
+              <Info label={t("thStatus")} value={getLocalizedStatusLabel(report.status, lang)} icon="file" status />
+              <Info label={lang === "en" ? "Municipality" : lang === "hil" ? "Munisipyo" : "Munisipalidad"} value={report.municipality} icon="pin" />
               <Info label="Barangay" value={report.barangay} icon="pin" />
             </div>
           </section>
@@ -1096,7 +1119,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
           {hasPhotos && (
             <section className="resident-detail-card">
               <h2>
-                <span>📷</span> Incident Photos ({photos.length})
+                <span>📷</span> {lang === "en" ? "Incident Photos" : lang === "hil" ? "Mga Litrato sang Insidente" : "Mga Litrato ng Insidente"} ({photos.length})
               </h2>
 
               {photos.length > 1 && (
@@ -1128,7 +1151,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 }}
                 aria-haspopup="dialog"
               >
-                <span>View incident photo {photos.length > 1 ? `slideshow (${photos.length} photos)` : ""}</span>
+                <span>{lang === "en" ? "View incident photo" : lang === "hil" ? "Tan-awon ang litrato" : "Tingnan ang litrato"} {photos.length > 1 ? `slideshow (${photos.length} photos)` : ""}</span>
               </button>
             </section>
           )}
@@ -1138,8 +1161,8 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
               <img src="/images/fire logo.webp" alt="" aria-hidden />
             </span>
             <div>
-              <h2>Fire Safety Reminder</h2>
-              <p>Stay calm, move away from the fire, and follow the instructions of responders.</p>
+              <h2>{lang === "en" ? "Fire Safety Reminder" : lang === "hil" ? "Pahanumdom sa Kaluwasan" : "Paalala sa Kaligtasan"}</h2>
+              <p>{lang === "en" ? "Stay calm, move away from the fire, and follow the instructions of responders." : lang === "hil" ? "Magpabilin nga kalmado, magpalayo sa kalayo, kag sunda ang mga panudlo sang mga responder." : "Manatiling kalmado, lumayo sa sunog, at sundin ang mga tagubilin ng mga responder."}</p>
             </div>
           </section>
         </div>

@@ -186,6 +186,56 @@ export const RESIDENT_TRANSLATIONS = {
     // Offline Emergency
     offlineCallTitle: "Walang Koneksyon sa Internet",
     offlineCallDesc: "Naka-offline ang iyong device. Para sa agarang tulong, direktang tumawag sa mga hotline sa ibaba:",
+
+    // Reports Page
+    reportsTitle: "Aking mga Ulat ng Sunog",
+    reportsSubtitle: "Subaybayan ang bawat update mula sa iyong estasyon ng BFP.",
+    reportsCountSingular: "ulat",
+    reportsCountPlural: "mga ulat",
+    reportsSearchPlaceholder: "Maghanap ayon sa reference o lokasyon",
+    filterAll: "Lahat",
+    filterActive: "Aktibo",
+    filterClosed: "Naresolba",
+    thReference: "Reference Blg.",
+    thLocation: "Lokasyon",
+    thDateReported: "Petsa ng Ulat",
+    thStatus: "Katayuan",
+    thAction: "Aksyon",
+    btnViewDetails: "Tingnan ang detalye",
+    reportsEmptyTitle: "Walang nahanap na ulat",
+    reportsEmptyDesc: "Wala pang naitalang ulat ng insidente ng sunog sa kategoryang ito.",
+    btnFileReport: "Mag-ulat ng Sunog",
+    reportsLoading: "Ikinakarga ang iyong mga ulat ng sunog…",
+    reportsShowing: "Ipinapakita ang",
+    reportsOf: "sa",
+
+    // Guide Page
+    guideTitle: "Gabay sa Emerhensya",
+    guideSubtitle: "Basahin ang opisyal na mga gabay sa kaligtasan at tamang pag-uulat.",
+    guideSearchPlaceholder: "Maghanap ng gabay sa kaligtasan, pamamaraan, o tips",
+    guideCatAll: "Lahat ng Gabay",
+    guideCatPrevention: "Pag-iwas sa Sunog",
+    guideCatReporting: "Pag-uulat ng Sunog",
+    guideCatEvacuation: "Paglikas",
+    guideCatFirstAid: "Pangunang Lunas",
+    guideCatElectrical: "Kaligtasan sa Kuryente",
+    guideHeroTitle: "Ano ang Dapat Gawin sa Oras ng Sunog",
+    guideHeroSubtitle: "Mabilisang mga hakbang para sa kaligtasan ng iyong sarili at pamilya.",
+    guideHeroStepsTitle: "Mga Hakbang sa Sunog",
+    guideHeroStepsSub: "Sundin ang mga hakbang na ito para sa kaligtasan.",
+    guideStep1Title: "1. I-report Agad",
+    guideStep1Desc: "Tumawag agad sa 911 o BFP",
+    guideStep2Title: "2. Lumikas Nang Ligtas",
+    guideStep2Desc: "Sundin ang ligtas na labasan",
+    guideStep3Title: "3. Kaligtasan sa Kusina",
+    guideStep3Desc: "Mag-ingat sa kalan at mantika",
+    guideStep4Title: "4. Sunog sa Damo at Gubat",
+    guideStep4Desc: "Linisin ang tuyong damo at dahon",
+    guideBackBtn: "← Bumalik sa mga Gabay",
+    guideReadFull: "Basahin ang buong gabay",
+    guideHotlinesHelp: "Kailangan ng agarang tulong?",
+    guideHotlinesHelpSub: "Tumawag agad sa 911 o sa iyong lokal na istasyon ng BFP:",
+    guidePopularSection: "Mga Karaniwang Gabay",
   },
 
   hil: {
@@ -339,6 +389,56 @@ export const RESIDENT_TRANSLATIONS = {
     // Offline Emergency
     offlineCallTitle: "Wala sing Koneksyon sa Internet",
     offlineCallDesc: "Naka-offline ang imo aparato. Para sa madasig nga bulig, direkta nga magtawag sa mga hotline sa idalom:",
+
+    // Reports Page
+    reportsTitle: "Akon mga Report sang Kalayo",
+    reportsSubtitle: "Sundon ang kada update halin sa imo estasyon sang BFP.",
+    reportsCountSingular: "report",
+    reportsCountPlural: "mga report",
+    reportsSearchPlaceholder: "Mangita gamit ang reference ukon lokasyon",
+    filterAll: "Tanan",
+    filterActive: "Aktibo",
+    filterClosed: "Naresolba",
+    thReference: "Reference Blg.",
+    thLocation: "Lokasyon",
+    thDateReported: "Petsa sang Report",
+    thStatus: "Kaimtangan",
+    thAction: "Aksyon",
+    btnViewDetails: "Tan-awa ang detalye",
+    reportsEmptyTitle: "Wala sing nakit-an nga report",
+    reportsEmptyDesc: "Wala pa sang narekord nga report sang insidente sang kalayo sa sini nga kategorya.",
+    btnFileReport: "Mag-report sang Kalayo",
+    reportsLoading: "Ginapasahe ang imo mga report sang kalayo…",
+    reportsShowing: "Ginatipon ang",
+    reportsOf: "sa",
+
+    // Guide Page
+    guideTitle: "Giya sa Emerhensya",
+    guideSubtitle: "Basaha ang opisyal nga mga giya sa kaluwasan kag insakto nga pag-report.",
+    guideSearchPlaceholder: "Mangita sang giya sa kaluwasan, pamaagi, ukon tips",
+    guideCatAll: "Tanan nga Giya",
+    guideCatPrevention: "Paglikaw sa Kalayo",
+    guideCatReporting: "Pag-report sang Kalayo",
+    guideCatEvacuation: "Pagbakwit",
+    guideCatFirstAid: "Una nga Bulig",
+    guideCatElectrical: "Kaluwasan sa Kuryente",
+    guideHeroTitle: "Ano ang Dapat Himuon kon May Kalayo",
+    guideHeroSubtitle: "Madasig nga mga tikang para sa kaluwasan sang imo kaugalingon kag pamilya.",
+    guideHeroStepsTitle: "Mga Tikang sa Kalayo",
+    guideHeroStepsSub: "Sunda ang mga tikang nga ini para sa kaluwasan.",
+    guideStep1Title: "1. I-report Dayon",
+    guideStep1Desc: "Tawag dayon sa 911 ukon BFP",
+    guideStep2Title: "2. Magbakwit sing Luwas",
+    guideStep2Desc: "Sunda ang luwas nga guwaan",
+    guideStep3Title: "3. Kaluwasan sa Kusina",
+    guideStep3Desc: "Maghalong sa kalan kag mantika",
+    guideStep4Title: "4. Sunog sa Talon kag Bukid",
+    guideStep4Desc: "Hukson ang laya nga hilamon",
+    guideBackBtn: "← Magbalik sa mga Giya",
+    guideReadFull: "Basaha ang bilog nga giya",
+    guideHotlinesHelp: "Kinahanglan sang madasig nga bulig?",
+    guideHotlinesHelpSub: "Tawag dayon sa 911 ukon sa lokal nga estasyon sang BFP:",
+    guidePopularSection: "Masami Ginatan-aw nga mga Giya",
   },
 
   en: {
@@ -492,6 +592,56 @@ export const RESIDENT_TRANSLATIONS = {
     // Offline Emergency
     offlineCallTitle: "No Internet Connection",
     offlineCallDesc: "Your device is offline. For immediate life-safety assistance, call the emergency hotlines directly below:",
+
+    // Reports Page
+    reportsTitle: "My Fire Reports",
+    reportsSubtitle: "Track every update from your Municipal BFP station.",
+    reportsCountSingular: "report",
+    reportsCountPlural: "reports",
+    reportsSearchPlaceholder: "Search by reference or location",
+    filterAll: "All",
+    filterActive: "Active",
+    filterClosed: "Closed",
+    thReference: "Reference No.",
+    thLocation: "Location",
+    thDateReported: "Date Reported",
+    thStatus: "Status",
+    thAction: "Action",
+    btnViewDetails: "View details",
+    reportsEmptyTitle: "No reports found",
+    reportsEmptyDesc: "No fire incident reports recorded in this category yet.",
+    btnFileReport: "Report a Fire",
+    reportsLoading: "Loading your fire reports…",
+    reportsShowing: "Showing",
+    reportsOf: "of",
+
+    // Guide Page
+    guideTitle: "Emergency Guide",
+    guideSubtitle: "Read official fire safety guidance and reporting procedures.",
+    guideSearchPlaceholder: "Search fire safety guides, procedures, or tips",
+    guideCatAll: "All Guides",
+    guideCatPrevention: "Fire Prevention",
+    guideCatReporting: "Fire Reporting",
+    guideCatEvacuation: "Evacuation",
+    guideCatFirstAid: "First Aid",
+    guideCatElectrical: "Electrical Safety",
+    guideHeroTitle: "What to Do During a Fire Emergency",
+    guideHeroSubtitle: "Quick steps to protect yourself, your family, and your community.",
+    guideHeroStepsTitle: "Fire Emergency Steps",
+    guideHeroStepsSub: "Follow these steps to stay safe.",
+    guideStep1Title: "1. Report Immediately",
+    guideStep1Desc: "Call 911 or BFP fast",
+    guideStep2Title: "2. Evacuate Safely",
+    guideStep2Desc: "Follow exit routes",
+    guideStep3Title: "3. Kitchen Safety",
+    guideStep3Desc: "Handle stove and grease",
+    guideStep4Title: "4. Wildfire Tips",
+    guideStep4Desc: "Clear dry brush & leaves",
+    guideBackBtn: "← Back to Emergency Guides",
+    guideReadFull: "Read full guide",
+    guideHotlinesHelp: "Need immediate help?",
+    guideHotlinesHelpSub: "Call 911 or your local station right away:",
+    guidePopularSection: "Popular Fire Safety Guides",
   },
 } as const;
 
@@ -564,4 +714,58 @@ export function applyResidentTranslations(root: ParentNode, lang: ResidentLangua
       el.textContent = dict[key];
     }
   });
+}
+
+/**
+ * Localized fire report status badge helper for residents across Tagalog, Hiligaynon, and English
+ */
+export function getLocalizedStatusLabel(status: string, lang: ResidentLanguage): string {
+  if (lang === "en") {
+    switch (status) {
+      case "PENDING_VERIFICATION":
+      case "SUBMITTED":
+        return "Submitted";
+      case "UNDER_VERIFICATION":
+      case "NEEDS_MORE_INFO":
+        return "Verifying";
+      case "VERIFIED":
+      case "CONFIRMED":
+        return "Verified";
+      case "RESPONDING":
+        return "Responding";
+      case "FIRETRUCK_DISPATCHED":
+        return "Dispatched";
+      case "RESPONDER_ARRIVED":
+        return "On Scene";
+      case "UNDER_CONTROL":
+        return "Under Control";
+      case "RESOLVED":
+      case "CLOSED":
+        return "Resolved";
+      case "REJECTED":
+      case "FALSE_REPORT":
+        return "Rejected";
+      default:
+        return status;
+    }
+  }
+  if (lang === "hil") {
+    if (["SUBMITTED", "PENDING_VERIFICATION"].includes(status)) return "Napasa";
+    if (["UNDER_VERIFICATION", "NEEDS_MORE_INFO"].includes(status)) return "Ginasusi";
+    if (["VERIFIED", "CONFIRMED"].includes(status)) return "Kumpirmado";
+    if (["RESPONDING", "FIRETRUCK_DISPATCHED", "RESPONDER_ARRIVED"].includes(status)) return "Garesponde";
+    if (status === "UNDER_CONTROL") return "Kontrolado";
+    if (["RESOLVED", "CLOSED"].includes(status)) return "Naresolba";
+    if (["REJECTED", "FALSE_REPORT"].includes(status)) return "Ginpangindi";
+    return status;
+  }
+  // Tagalog default
+  if (["SUBMITTED", "PENDING_VERIFICATION"].includes(status)) return "Naipasa";
+  if (["UNDER_VERIFICATION", "NEEDS_MORE_INFO"].includes(status)) return "Sinusuri";
+  if (["VERIFIED", "CONFIRMED"].includes(status)) return "Kumpirmado";
+  if (["RESPONDING", "FIRETRUCK_DISPATCHED", "RESPONDER_ARRIVED"].includes(status)) return "Rumeresponde";
+  if (status === "UNDER_CONTROL") return "Kontrolado na";
+  if (["RESOLVED", "CLOSED"].includes(status)) return "Naresolba";
+  if (["REJECTED", "FALSE_REPORT"].includes(status)) return "Tinanggihan";
+  return status;
 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import { useResidentLanguage, type ResidentLanguage } from "../_lib/resident-i18n";
 
 // Category type definitions
 type CategoryId = "all" | "prevention" | "reporting" | "evacuation" | "first-aid" | "electrical" | "gas";
@@ -106,12 +107,196 @@ const GUIDES_LIST: GuideItem[] = [
   },
 ];
 
+function getLocalizedGuides(lang: ResidentLanguage): GuideItem[] {
+  if (lang === "hil") {
+    return [
+      {
+        id: "1",
+        slug: "how-to-report-a-fire-correctly",
+        category: "reporting",
+        number: 1,
+        title: "1. Insakto nga Pag-report sang Kalayo",
+        desc: "Maghatag sang insakto nga detalye agud madasig ang pagresponde sang mga bombero kag makasalbar sang kabuhi.",
+        iconType: "phone",
+        accentColor: "#d91b10",
+        isPopular: true,
+      },
+      {
+        id: "2",
+        slug: "evacuation-safety-guide",
+        category: "evacuation",
+        number: 2,
+        title: "2. Giya sa Luwas nga Pagbakwit",
+        desc: "Hibalua ang mga husto nga tikang kag guwaan agud makabakwit sing luwas sa tion sang kalayo.",
+        iconType: "evacuation",
+        accentColor: "#16a34a",
+        isPopular: true,
+      },
+      {
+        id: "3",
+        slug: "kitchen-and-electrical-fire-tips",
+        category: "electrical",
+        number: 3,
+        title: "3. Kaluwasan sa Kusina kag Kuryente",
+        desc: "Hibalua kon paano malikawan ang peligro sang sunog sa kuryente kag pagluto sa kusina.",
+        iconType: "electrical",
+        accentColor: "#f59e0b",
+        isPopular: true,
+      },
+      {
+        id: "4",
+        slug: "grass-and-forest-fire-safety",
+        category: "prevention",
+        number: 4,
+        title: "4. Kaluwasan sa Sunog sa Talon kag Bukid",
+        desc: "Magbulig likaw sa sunog sa talon kag hibalua ang himuon kon may magluntad nga kalayo.",
+        iconType: "wildfire",
+        accentColor: "#059669",
+        isPopular: true,
+      },
+      {
+        id: "5",
+        slug: "proper-use-of-fire-extinguishers",
+        category: "prevention",
+        title: "Insakto nga Paggamit sang Fire Extinguisher",
+        desc: "Hibalua ang PASS nga pamaagi kag nagkalain-lain nga klase sang fire extinguisher.",
+        iconType: "extinguisher",
+        accentColor: "#d91b10",
+        date: "Mayo 10, 2024",
+      },
+      {
+        id: "6",
+        slug: "smoke-alarm-guide",
+        category: "prevention",
+        title: "Giya sa Smoke Alarm",
+        desc: "Mga laygay sa pagtakod, pagtesting, kag pagmentenar sang smoke alarm.",
+        iconType: "smoke-alarm",
+        accentColor: "#d91b10",
+        date: "Mayo 03, 2024",
+      },
+      {
+        id: "7",
+        slug: "family-fire-safety-plan",
+        category: "prevention",
+        title: "Plano sa Kaluwasan sang Pamilya",
+        desc: "Maghimo sang plano sa kaluwasan kag ipraktis ini kaupod ang imo pamilya.",
+        iconType: "family",
+        accentColor: "#d91b10",
+        date: "Abr 28, 2024",
+      },
+      {
+        id: "8",
+        slug: "after-a-fire-what-to-do",
+        category: "first-aid",
+        title: "Pagkatapos sang Kalayo: Ano ang Dapat Himuon",
+        desc: "Importante nga mga tikang nga dapat himuon sa tapos mapatay ang kalayo.",
+        iconType: "after-fire",
+        accentColor: "#d91b10",
+        date: "Abr 15, 2024",
+      },
+    ];
+  }
+  if (lang === "en") {
+    return GUIDES_LIST;
+  }
+  // Tagalog default
+  return [
+    {
+      id: "1",
+      slug: "how-to-report-a-fire-correctly",
+      category: "reporting",
+      number: 1,
+      title: "1. Paano Mag-ulat ng Sunog Nang Wasto",
+      desc: "Magbigay ng tumpak na detalye upang mas mabilis na makatugon ang mga bumbero at magligtas ng buhay.",
+      iconType: "phone",
+      accentColor: "#d91b10",
+      isPopular: true,
+    },
+    {
+      id: "2",
+      slug: "evacuation-safety-guide",
+      category: "evacuation",
+      number: 2,
+      title: "2. Gabay sa Ligtas na Paglikas",
+      desc: "Alamin ang tamang mga hakbang at lagusan para sa ligtas na paglikas sa oras ng sunog.",
+      iconType: "evacuation",
+      accentColor: "#16a34a",
+      isPopular: true,
+    },
+    {
+      id: "3",
+      slug: "kitchen-and-electrical-fire-tips",
+      category: "electrical",
+      number: 3,
+      title: "3. Kaligtasan sa Kusina at Kuryente",
+      desc: "Alamin kung paano maiiwasan ang karaniwang peligro ng sunog sa kuryente at kusina.",
+      iconType: "electrical",
+      accentColor: "#f59e0b",
+      isPopular: true,
+    },
+    {
+      id: "4",
+      slug: "grass-and-forest-fire-safety",
+      category: "prevention",
+      number: 4,
+      title: "4. Kaligtasan sa Sunog sa Damo at Gubat",
+      desc: "Tumulong maiwasan ang wildfire at alamin ang gagawin kung sakaling maganap ito.",
+      iconType: "wildfire",
+      accentColor: "#059669",
+      isPopular: true,
+    },
+    {
+      id: "5",
+      slug: "proper-use-of-fire-extinguishers",
+      category: "prevention",
+      title: "Tamang Paggamit ng Fire Extinguisher",
+      desc: "Alamin ang PASS na pamamaraan at iba't ibang uri ng fire extinguisher.",
+      iconType: "extinguisher",
+      accentColor: "#d91b10",
+      date: "Mayo 10, 2024",
+    },
+    {
+      id: "6",
+      slug: "smoke-alarm-guide",
+      category: "prevention",
+      title: "Gabay sa Smoke Alarm",
+      desc: "Mga payo ukol sa pagkakabit, pagsubok, at pagpapanatili ng smoke alarm.",
+      iconType: "smoke-alarm",
+      accentColor: "#d91b10",
+      date: "Mayo 03, 2024",
+    },
+    {
+      id: "7",
+      slug: "family-fire-safety-plan",
+      category: "prevention",
+      title: "Plano sa Kaligtasan ng Pamilya",
+      desc: "Gumawa ng plano sa sunog at magsanay kasama ang iyong pamilya.",
+      iconType: "family",
+      accentColor: "#d91b10",
+      date: "Abr 28, 2024",
+    },
+    {
+      id: "8",
+      slug: "after-a-fire-what-to-do",
+      category: "first-aid",
+      title: "Pagkatapos ng Sunog: Ano ang Dapat Gawin",
+      desc: "Mahahalagang hakbang na dapat gawin kapag naapula na ang sunog.",
+      iconType: "after-fire",
+      accentColor: "#d91b10",
+      date: "Abr 15, 2024",
+    },
+  ];
+}
+
 export function ResidentGuidePage() {
+  const { lang, t } = useResidentLanguage();
   const searchParams = useSearchParams();
 
   const [selectedGuideSlug, setSelectedGuideSlug] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryId>("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const currentGuidesList = useMemo(() => getLocalizedGuides(lang), [lang]);
 
   // Sync state with URL params / hash
   useEffect(() => {
@@ -136,11 +321,11 @@ export function ResidentGuidePage() {
         setSelectedGuideSlug("family-fire-safety-plan");
       } else if (hash === "after-a-fire-what-to-do" || hash === "8-after-a-fire-what-to-do" || hash === "after-fire") {
         setSelectedGuideSlug("after-a-fire-what-to-do");
-      } else if (GUIDES_LIST.some((g) => g.slug === hash)) {
+      } else if (currentGuidesList.some((g) => g.slug === hash)) {
         setSelectedGuideSlug(hash);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, currentGuidesList]);
 
   const handleOpenGuide = (slug: string) => {
     setSelectedGuideSlug(slug);
@@ -158,7 +343,7 @@ export function ResidentGuidePage() {
   };
 
   const filteredGuides = useMemo(() => {
-    return GUIDES_LIST.filter((g) => {
+    return currentGuidesList.filter((g) => {
       const matchesCategory = activeCategory === "all" || g.category === activeCategory;
       const matchesSearch =
         searchQuery.trim() === "" ||
@@ -166,7 +351,7 @@ export function ResidentGuidePage() {
         g.desc.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [currentGuidesList, activeCategory, searchQuery]);
 
   return (
     <div className="rg-root">
@@ -195,8 +380,8 @@ export function ResidentGuidePage() {
           {/* Top Section */}
           <div className="rg-top-section">
             <div className="rg-title-area">
-              <h1>Emergency Guide</h1>
-              <p>Read official fire safety guidance and reporting procedures.</p>
+              <h1>{t("guideTitle")}</h1>
+              <p>{t("guideSubtitle")}</p>
             </div>
             <div className="rg-search-wrapper">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -206,7 +391,7 @@ export function ResidentGuidePage() {
               <input
                 type="text"
                 className="rg-search-input"
-                placeholder="Search fire safety guides, procedures, or tips"
+                placeholder={t("guideSearchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -227,7 +412,7 @@ export function ResidentGuidePage() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
-              All Guides
+              {t("guideCatAll")}
             </button>
             <button
               className={`rg-category-pill ${activeCategory === "prevention" ? "active" : ""}`}
@@ -236,7 +421,7 @@ export function ResidentGuidePage() {
               <svg className="pill-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
-              Fire Prevention
+              {t("guideCatPrevention")}
             </button>
             <button
               className={`rg-category-pill ${activeCategory === "reporting" ? "active" : ""}`}
@@ -248,7 +433,7 @@ export function ResidentGuidePage() {
                 <line x1="16" y1="13" x2="8" y2="13" />
                 <line x1="16" y1="17" x2="8" y2="17" />
               </svg>
-              Fire Reporting
+              {t("guideCatReporting")}
             </button>
             <button
               className={`rg-category-pill ${activeCategory === "evacuation" ? "active" : ""}`}
@@ -261,7 +446,7 @@ export function ResidentGuidePage() {
                 <path d="M10 12v.01" />
                 <path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z" />
               </svg>
-              Evacuation
+              {t("guideCatEvacuation")}
             </button>
             <button
               className={`rg-category-pill ${activeCategory === "first-aid" ? "active" : ""}`}
@@ -270,7 +455,7 @@ export function ResidentGuidePage() {
               <svg className="pill-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
               </svg>
-              First Aid
+              {t("guideCatFirstAid")}
             </button>
             <button
               className={`rg-category-pill ${activeCategory === "electrical" ? "active" : ""}`}
@@ -281,7 +466,7 @@ export function ResidentGuidePage() {
                 <path d="M14 6 10.5 3 7 6" />
                 <path d="m12 6 3 9-3 9" />
               </svg>
-              Electrical Safety
+              {t("guideCatElectrical")}
             </button>
           </div>
 
@@ -291,10 +476,10 @@ export function ResidentGuidePage() {
               <div className="rg-hero-section">
                 <img src="/images/burning-house.webp" alt="Burning House" className="rg-hero-img" />
                 <div className="rg-hero-content">
-                  <h2 className="rg-desktop-only">What to Do During a Fire Emergency</h2>
-                  <h2 className="rg-mobile-only">Fire Emergency Steps</h2>
-                  <p className="rg-desktop-only">Quick steps to protect yourself, your family, and your community.</p>
-                  <p className="rg-mobile-only">Follow these steps to stay safe.</p>
+                  <h2 className="rg-desktop-only">{t("guideHeroTitle")}</h2>
+                  <h2 className="rg-mobile-only">{t("guideHeroStepsTitle")}</h2>
+                  <p className="rg-desktop-only">{t("guideHeroSubtitle")}</p>
+                  <p className="rg-mobile-only">{t("guideHeroStepsSub")}</p>
 
                   <div className="rg-steps-row">
                     <div className="rg-step" onClick={() => handleOpenGuide("how-to-report-a-fire-correctly")}>
@@ -302,32 +487,32 @@ export function ResidentGuidePage() {
                         <div className="rg-step-number">1</div>
                         <img src="/images/step1_calm.webp" alt="Stay Calm" />
                       </div>
-                      <h3>Stay Calm</h3>
-                      <p>Keep yourself calm and think clearly.</p>
+                      <h3>{lang === "en" ? "Stay Calm" : lang === "hil" ? "Mangin Kalmado" : "Maging Kalmado"}</h3>
+                      <p>{lang === "en" ? "Keep yourself calm and think clearly." : lang === "hil" ? "Magpabilin nga kalmado kag maghuna-huna sing maathag." : "Manatiling kalmado at mag-isip nang malinaw."}</p>
                     </div>
                     <div className="rg-step" onClick={() => handleOpenGuide("evacuation-safety-guide")}>
                       <div className="rg-step-icon-wrapper">
                         <div className="rg-step-number">2</div>
                         <img src="/images/step2_exit.webp" alt="Move to Safety" />
                       </div>
-                      <h3>Move to Safety</h3>
-                      <p>Exit the building using safe routes.</p>
+                      <h3>{lang === "en" ? "Move to Safety" : lang === "hil" ? "Magkadto sa Luwas nga Lugar" : "Pumunta sa Ligtas na Lugar"}</h3>
+                      <p>{lang === "en" ? "Exit the building using safe routes." : lang === "hil" ? "Maggwa sa bilding gamit ang luwas nga dalan." : "Lumabas ng gusali gamit ang ligtas na daan."}</p>
                     </div>
                     <div className="rg-step" onClick={() => handleOpenGuide("how-to-report-a-fire-correctly")}>
                       <div className="rg-step-icon-wrapper">
                         <div className="rg-step-number">3</div>
                         <img src="/images/step3_phone.webp" alt="Send Fire Alert" />
                       </div>
-                      <h3>Send Fire Alert</h3>
-                      <p>Report the fire immediately.</p>
+                      <h3>{lang === "en" ? "Send Fire Alert" : lang === "hil" ? "Magpadala sang Fire Alert" : "Magpadala ng Fire Alert"}</h3>
+                      <p>{lang === "en" ? "Report the fire immediately." : lang === "hil" ? "I-report dayon ang kalayo sa BFP." : "I-report agad ang sunog sa BFP."}</p>
                     </div>
                     <div className="rg-step" onClick={() => handleOpenGuide("how-to-report-a-fire-correctly")}>
                       <div className="rg-step-icon-wrapper">
                         <div className="rg-step-number">4</div>
                         <img src="/images/step4_firefighter.webp" alt="Wait for Responders" />
                       </div>
-                      <h3>Wait for Responders</h3>
-                      <p>Stay in a safe area and follow instructions.</p>
+                      <h3>{lang === "en" ? "Wait for Responders" : lang === "hil" ? "Hulata ang mga Bombero" : "Hintayin ang mga Bumbero"}</h3>
+                      <p>{lang === "en" ? "Stay in a safe area and follow instructions." : lang === "hil" ? "Magpabilin sa luwas nga lugar kag sunda ang panudlo." : "Manatili sa ligtas na lugar at sundin ang tagubilin."}</p>
                     </div>
                   </div>
                 </div>
@@ -351,7 +536,7 @@ export function ResidentGuidePage() {
                       </div>
                       <div className="rg-card-desc">{guide.desc}</div>
                       <div className="rg-card-footer">
-                        <span>Read Guide</span>
+                        <span>{t("guideReadFull")}</span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="9 18 15 12 9 6" />
                         </svg>
@@ -370,9 +555,9 @@ export function ResidentGuidePage() {
                       <line x1="16" y1="13" x2="8" y2="13" />
                       <line x1="16" y1="17" x2="8" y2="17" />
                     </svg>
-                    Recent &amp; Recommended Guides
+                    {t("guidePopularSection")}
                   </div>
-                  <span className="rg-view-all-count">{filteredGuides.length} articles</span>
+                  <span className="rg-view-all-count">{filteredGuides.length} {lang === "en" ? "articles" : "artikulo"}</span>
                 </div>
                 <div className="rg-recent-grid">
                   {filteredGuides
@@ -419,14 +604,34 @@ export function ResidentGuidePage() {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
-                  Quick Safety Reminder
+                  {lang === "en" ? "Quick Safety Reminder" : lang === "hil" ? "Madasig nga Pahanumdom sa Kaluwasan" : "Mabilisang Paalala sa Kaligtasan"}
                 </div>
                 <ul className="rg-reminder-list">
-                  <li>Never ignore smoke or fire odors.</li>
-                  <li>Know at least two exits from every room.</li>
-                  <li>Keep fire extinguishers inspected &amp; accessible.</li>
-                  <li>Never use elevators during a fire evacuation.</li>
-                  <li>Report fires immediately via ALAB or 911.</li>
+                  {lang === "hil" ? (
+                    <>
+                      <li>Indi pagpabay-i ang baho sang aso ukon kalayo.</li>
+                      <li>Hibalua ang bisan duha ka guwaan sa kada kwarto.</li>
+                      <li>Siguruha nga na-inspeksyon kag mahapos lab-uton ang fire extinguisher.</li>
+                      <li>Indi maggamit sang elevator kon may sunog.</li>
+                      <li>I-report dayon ang kalayo gamit ang ALAB ukon 911.</li>
+                    </>
+                  ) : lang === "tl" ? (
+                    <>
+                      <li>Huwag balewalain ang amoy ng usok o sunog.</li>
+                      <li>Alamin ang hindi bababa sa dalawang labasan sa bawat silid.</li>
+                      <li>Panatilihing nasusuri at madaling maabot ang fire extinguisher.</li>
+                      <li>Huwag gumamit ng elevator sa panahon ng sunog.</li>
+                      <li>I-report agad ang sunog gamit ang ALAB o 911.</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Never ignore smoke or fire odors.</li>
+                      <li>Know at least two exits from every room.</li>
+                      <li>Keep fire extinguishers inspected &amp; accessible.</li>
+                      <li>Never use elevators during a fire evacuation.</li>
+                      <li>Report fires immediately via ALAB or 911.</li>
+                    </>
+                  )}
                 </ul>
               </div>
 
@@ -435,7 +640,7 @@ export function ResidentGuidePage() {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                   </svg>
-                  Emergency Contacts
+                  {t("emergencyContacts")}
                 </div>
                 <div className="rg-contacts-list">
                   <div className="rg-contact-item">
@@ -448,7 +653,7 @@ export function ResidentGuidePage() {
                       <div className="rg-contact-label">BFP Hotline</div>
                       <div className="rg-contact-desc">Bureau of Fire Protection</div>
                     </div>
-                    <a href="tel:0365405967" className="rg-contact-number">(036) 540-5967</a>
+                    <a href="tel:0365404222" className="rg-contact-number">(036) 540-4222</a>
                   </div>
                   <div className="rg-contact-item">
                     <div className="rg-contact-icon">
@@ -459,8 +664,8 @@ export function ResidentGuidePage() {
                       </svg>
                     </div>
                     <div className="rg-contact-info">
-                      <div className="rg-contact-label">National Hotline</div>
-                      <div className="rg-contact-desc">Emergency Hotline</div>
+                      <div className="rg-contact-label">911</div>
+                      <div className="rg-contact-desc">{t("nationalEmergencyHotline")}</div>
                     </div>
                     <a href="tel:911" className="rg-contact-number rg-contact-number-highlight">911</a>
                   </div>
@@ -472,10 +677,10 @@ export function ResidentGuidePage() {
                       </svg>
                     </div>
                     <div className="rg-contact-info">
-                      <div className="rg-contact-label">Municipal Station</div>
-                      <div className="rg-contact-desc">Local Fire Station</div>
+                      <div className="rg-contact-label">{t("bfpStationLabel")}</div>
+                      <div className="rg-contact-desc">San Jose Fire Station</div>
                     </div>
-                    <a href="tel:0365405842" className="rg-contact-number">(036) 540-5842</a>
+                    <a href="tel:0365411111" className="rg-contact-number">(036) 541-1111</a>
                   </div>
                 </div>
               </div>

@@ -124,3 +124,35 @@ test("resident report fire form dynamically translates steps, tactical pills, an
   assert.match(reportPageSource, /falseAlarmWarningText/);
   assert.match(reportPageSource, /alab:resident-language-changed/);
 });
+
+test("resident reports page dynamically adapts table headers, filter tabs, and status badges to selected language", () => {
+  const reportsPagePath = join(appRoot, "app", "resident", "reports", "page.tsx");
+  assert.ok(existsSync(reportsPagePath), "resident reports page must exist");
+
+  const reportsPageSource = readFileSync(reportsPagePath, "utf8");
+
+  assert.match(reportsPageSource, /useResidentLanguage/);
+  assert.match(reportsPageSource, /t\("reportsTitle"\)/);
+  assert.match(reportsPageSource, /t\("reportsSubtitle"\)/);
+  assert.match(reportsPageSource, /t\("thReference"\)/);
+  assert.match(reportsPageSource, /t\("thLocation"\)/);
+  assert.match(reportsPageSource, /t\("btnViewDetails"\)/);
+  assert.match(reportsPageSource, /getLocalizedStatusLabel/);
+});
+
+test("resident guide page dynamically translates categories, hero emergency steps, and articles to selected language", () => {
+  const guideComponentPath = join(appRoot, "app", "_components", "resident-guide-page.tsx");
+  assert.ok(existsSync(guideComponentPath), "resident guide component must exist");
+
+  const guideSource = readFileSync(guideComponentPath, "utf8");
+
+  assert.match(guideSource, /useResidentLanguage/);
+  assert.match(guideSource, /getLocalizedGuides/);
+  assert.match(guideSource, /t\("guideTitle"\)/);
+  assert.match(guideSource, /t\("guideCatAll"\)/);
+  assert.match(guideSource, /t\("guideCatPrevention"\)/);
+  assert.match(guideSource, /t\("guideHeroTitle"\)/);
+  assert.match(guideSource, /t\("guideReadFull"\)/);
+  assert.match(guideSource, /t\("guidePopularSection"\)/);
+});
+
