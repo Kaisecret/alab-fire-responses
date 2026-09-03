@@ -48,34 +48,32 @@ const detailStyles = `
   .severity-pill.CRITICAL { background:#7F1D1D; color:#FEE2E2; border:1px solid #B91C1C; }
   .severity-pill.HIGH { background:#991B1B; color:#FEF2F2; border:1px solid #DC2626; }
   .severity-pill.MODERATE { background:#D97706; color:#FFFBEB; border:1px solid #F59E0B; }
-  .severity-pill.LOW { background:#047857; color:#ECFDF5; border:1px solid #10B981; }
+  .severity-pill.LOW { background:#065F46; color:#D1FAE5; border:1px solid #10B981; }
 
-  .resident-detail-card { padding:1rem; margin-bottom:.9rem; border:1px solid #e6ebf1; border-radius:1rem; background:#fff; box-shadow:0 2px 8px rgba(15,23,42,.035); }
-  .resident-detail-card h2 { display:flex; align-items:center; gap:.5rem; margin:0 0 .85rem; padding-bottom:.75rem; border-bottom:1px solid #edf0f3; font-size:1rem; }
+  .resident-detail-card { margin-bottom:1rem; padding:1.2rem; border:1px solid #f0e6e5; border-radius:1.1rem; background:#fff; box-shadow:0 2px 10px rgba(15,23,42,.03); }
+  .resident-detail-card h2 { margin:0 0 .95rem; font-size:.95rem; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:.5rem; }
   .resident-detail-card h2 span { color:#e32118; }
-  .resident-detail-info { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem .9rem; }
-  .resident-detail-info-item { display:grid; grid-template-columns:1.15rem 1fr; gap:.45rem; align-items:start; }
-  .resident-detail-info-item svg { width:1.1rem; height:1.1rem; color:#e32118; margin-top:.08rem; }
-  .resident-detail-info-item small { display:block; color:#7c8ba1; font-size:.72rem; font-weight:700; }
-  .resident-detail-info-item strong { display:block; margin-top:.08rem; color:#334155; font-size:.84rem; line-height:1.3; }
+  .resident-detail-info { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.1rem 1rem; }
+  .resident-detail-info-item { display:flex; align-items:flex-start; gap:.65rem; }
+  .resident-detail-info-item svg { width:1.15rem; height:1.15rem; color:#e32118; flex:none; margin-top:.15rem; }
+  .resident-detail-info-item span { display:flex; flex-direction:column; gap:.15rem; }
+  .resident-detail-info-item small { color:#64748b; font-size:.73rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  .resident-detail-info-item strong { color:#1e293b; font-size:.88rem; font-weight:750; word-break:break-word; }
   .resident-detail-info-item strong.status { color:#e32118; }
 
-  /* Phase 2 Tactical Enrichment Card */
+  /* Phase 2 Tactical Enrichment Styling */
   .tactical-enrichment-card {
-    border: 1px solid #E2E8F0;
-    border-radius: 1.15rem;
-    background: #FFFFFF;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
-    padding: 1.25rem 1.15rem;
+    border: 1.5px solid #FED7AA;
+    background: #FFFDFB;
   }
   .tactical-header-desc {
-    font-size: 0.8rem;
+    margin: -0.4rem 0 0.95rem;
+    font-size: 0.78rem;
     color: #64748B;
-    margin: 0 0 1.15rem;
-    line-height: 1.5;
+    line-height: 1.45;
   }
   .tactical-group {
-    margin-bottom: 1.1rem;
+    margin-bottom: 1.15rem;
   }
   .tactical-group:last-child {
     margin-bottom: 0;
@@ -323,6 +321,7 @@ const detailStyles = `
   .resident-timeline-date { display:block; margin-top:.18rem; color:#8da0b5; font-size:.58rem; font-weight:600; }
   .resident-bfp-update { margin:0; border-radius:.7rem; padding:.8rem; background:#fff3f2; color:#4a5568; font-size:.84rem; line-height:1.45; }
   .resident-update-time { margin:.65rem 0 0; color:#718096; font-size:.72rem; font-weight:700; }
+
   /* Incident Photo Showcase & Slideshow */
   .resident-photos-preview-grid {
     display: grid;
@@ -543,6 +542,7 @@ const detailStyles = `
     background: #DB1B0D;
     box-shadow: 0 0 10px rgba(219, 27, 13, 0.7);
   }
+
   .resident-safety-card { display:flex; gap:.8rem; padding:1rem; border:1px solid #ffd1cf; border-radius:1rem; background:#fff7f6; color:#44546a; }.resident-safety-icon { display:grid; place-items:center; width:2.2rem; height:2.2rem; flex:none; border-radius:.7rem; background:#ffe0de; }.resident-safety-icon img { width:1.35rem; height:1.35rem; object-fit:contain; }.resident-safety-card h2 { margin:0 0 .25rem; color:#e32118; font-size:.9rem; }.resident-safety-card p { margin:0; font-size:.78rem; line-height:1.45; }
   .resident-report-detail-loading { padding:3rem 1rem; text-align:center; color:#64748b; font-weight:700; }
   @media (min-width:760px) { .resident-report-detail { padding-top:2rem; }.resident-detail-card { padding:1.25rem; } }
@@ -588,6 +588,41 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
 
   const activeTimelineIndex = useMemo(() => (report ? timelineIndex(report.status) : 0), [report]);
 
+  const photos = useMemo(() => {
+    return (report?.photos ?? []).filter((p): p is { url: string } => Boolean(p && p.url));
+  }, [report?.photos]);
+
+  useEffect(() => {
+    if (!isPhotoDialogOpen || photos.length <= 1) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsPhotoDialogOpen(false);
+      } else if (e.key === "ArrowLeft") {
+        setActivePhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1));
+      } else if (e.key === "ArrowRight") {
+        setActivePhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isPhotoDialogOpen, photos.length]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart === null || photos.length <= 1) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const diff = touchStart - touchEnd;
+    if (diff > 45) {
+      setActivePhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0));
+    } else if (diff < -45) {
+      setActivePhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1));
+    }
+    setTouchStart(null);
+  };
+
   const updateTacticalDetail = async (key: "structureMaterial" | "houseDensity" | "routeAccessibility", val: string) => {
     if (!report) return;
     const fieldMap = {
@@ -630,44 +665,11 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   }
 
   const latest = report.history.at(-1);
-  const photos = useMemo(() => {
-    return (report.photos ?? []).filter((p): p is { url: string } => Boolean(p && p.url));
-  }, [report.photos]);
-  const hasPhotos = photos.length > 0;
   const currentPhoto = photos[activePhotoIndex] ?? photos[0];
   const photoUrl = currentPhoto?.url || "";
   const windSpeed = Number(report.weather_wind_speed) || 0;
   const severity = report.calculated_severity || "MODERATE";
-
-  useEffect(() => {
-    if (!isPhotoDialogOpen || photos.length <= 1) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsPhotoDialogOpen(false);
-      } else if (e.key === "ArrowLeft") {
-        setActivePhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1));
-      } else if (e.key === "ArrowRight") {
-        setActivePhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0));
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isPhotoDialogOpen, photos.length]);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.touches[0].clientX);
-  };
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStart === null || photos.length <= 1) return;
-    const touchEnd = e.changedTouches[0].clientX;
-    const diff = touchStart - touchEnd;
-    if (diff > 45) {
-      setActivePhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0));
-    } else if (diff < -45) {
-      setActivePhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1));
-    }
-    setTouchStart(null);
-  };
+  const hasPhotos = photos.length > 0;
 
   return (
     <Shell>
@@ -857,28 +859,35 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
           <span>▧</span> Report Information
         </h2>
         <div className="resident-detail-info">
-          <Info label="Current Status" value={fireReportStatusLabels[report.status]} icon="fire" status />
-          <Info label="Reference Number" value={report.reference_number} icon="file" />
-          <Info label="Reported By" value="You" icon="person" />
-          <Info label="Municipal BFP" value={`${report.municipality} Fire Station`} icon="phone" />
+          <Info label="Report ID" value={report.id} icon="file" />
+          <Info label="Status" value={fireReportStatusLabels[report.status]} icon="file" status />
+          <Info label="Municipality" value={report.municipality} icon="pin" />
+          <Info label="Barangay" value={report.barangay} icon="pin" />
         </div>
       </section>
 
       <section className="resident-detail-card">
         <h2>
-          <span>◷</span> Status Timeline
+          <span>⏱</span> Status Timeline
         </h2>
         <div className="resident-timeline">
-          {timeline.map((step, index) => (
-            <div
-              key={step.status}
-              className={`resident-timeline-step${index < activeTimelineIndex ? " complete" : ""}${index === activeTimelineIndex ? " current" : ""}`}
-            >
-              <span className="resident-timeline-dot">{index <= activeTimelineIndex ? "✓" : ""}</span>
-              {step.label}
-              {index === activeTimelineIndex && <span className="resident-timeline-date">Current</span>}
-            </div>
-          ))}
+          {timeline.map((item, index) => {
+            const isComplete = index < activeTimelineIndex;
+            const isCurrent = index === activeTimelineIndex;
+            const historyItem = report.history.find((entry) => entry.next_status === item.status);
+            return (
+              <div
+                key={item.status}
+                className={`resident-timeline-step ${isComplete ? "complete" : ""} ${isCurrent ? "current" : ""}`}
+              >
+                <div className="resident-timeline-dot">{isComplete ? "✓" : index + 1}</div>
+                {item.label}
+                {historyItem && (
+                  <span className="resident-timeline-date">{formatDate(historyItem.created_at)}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
 
