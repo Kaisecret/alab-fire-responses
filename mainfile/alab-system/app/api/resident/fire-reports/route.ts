@@ -34,6 +34,11 @@ export async function POST(request: NextRequest) {
       fireType: form.get("fireType"), latitude: form.get("latitude"), longitude: form.get("longitude"),
       locationAccuracy: form.get("locationAccuracy"), municipality: form.get("municipality"), barangay: form.get("barangay"),
       landmark: form.get("landmark"), description: form.get("description"),
+      structureMaterial: form.get("structureMaterial"), houseDensity: form.get("houseDensity"),
+      routeAccessibility: form.get("routeAccessibility"),
+      weatherTemperature: form.get("weatherTemperature"), weatherHumidity: form.get("weatherHumidity"),
+      weatherWindSpeed: form.get("weatherWindSpeed"), weatherWindDirection: form.get("weatherWindDirection"),
+      weatherWindCondition: form.get("weatherWindCondition"),
     });
     validateFireReportPhoto(photo);
     // Emergency routing is never dependent on optional photo storage.

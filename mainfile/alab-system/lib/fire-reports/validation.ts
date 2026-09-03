@@ -1,4 +1,4 @@
-import type { FireReportStatus, FireType } from "./types";
+import type { FireReportStatus, FireType, StructureMaterial, HouseDensity, RouteAccessibility } from "./types";
 
 const fireTypes = new Set<FireType>(["HOUSE_BUILDING", "GRASS", "FOREST", "VEHICLE", "OTHER"]);
 const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -19,6 +19,14 @@ export type FireReportInput = {
   barangay: string;
   landmark: string;
   description: string;
+  structureMaterial?: StructureMaterial | string | null;
+  houseDensity?: HouseDensity | string | null;
+  routeAccessibility?: RouteAccessibility | string | null;
+  weatherTemperature?: number | null;
+  weatherHumidity?: number | null;
+  weatherWindSpeed?: number | null;
+  weatherWindDirection?: number | null;
+  weatherWindCondition?: string | null;
 };
 
 export type OfficialBarangay = { id: string; name: string };
@@ -75,12 +83,54 @@ export function validateFireReportInput(raw: Record<string, unknown>): FireRepor
   const barangay = text(raw.barangay, 120);
   const landmark = text(raw.landmark, 180);
   const description = text(raw.description, 1200);
+
+  // Optional environmental and tactical inputs (defaults gracefully)
+  const structureMaterial = text(raw.structureMaterial, 60) || null;
+  const houseDensity = text(raw.houseDensity, 60) || null;
+  const routeAccessibility = text(raw.routeAccessibility, 60) || null;
+
+  const weatherTemperature = raw.weatherTemperature != null && raw.weatherTemperature !== "" ? Number(raw.weatherTemperature) : null;
+  const weatherHumidity = raw.weatherHumidity != null && raw.weatherHumidity !== "" ? Number(raw.weatherHumidity) : null;
+  const weatherWindSpeed = raw.weatherWindSpeed != null && raw.weatherWindSpeed !== "" ? Number(raw.weatherWindSpeed) : null;
+  const weatherWindDirection = raw.weatherWindDirection != null && raw.weatherWindDirection !== "" ? Number(raw.weatherWindDirection) : null;
+  const weatherWindCondition = text(raw.weatherWindCondition, 40) || null;
+
   if (!fireTypes.has(fireType)) throw new Error("Select what is burning.");
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < 4 || latitude > 22 || longitude < 116 || longitude > 127) throw new Error("A valid Philippine location is required.");
   if (locationAccuracy !== null && (!Number.isFinite(locationAccuracy) || locationAccuracy < 0 || locationAccuracy > 100000)) throw new Error("Invalid location accuracy.");
   if (!municipality || !barangay) throw new Error("Detected municipality and barangay are required.");
   if (landmark.length > 180 || description.length > 1200) throw new Error("Report details are too long.");
-  return { fireType, latitude, longitude, locationAccuracy, municipality, barangay, landmark, description };
+
+  return {
+    fireType,
+    latitude,
+    longitude,
+    locationAccuracy,
+    municipality,
+    barangay,
+    landmark,
+    description,
+    structureMaterial,
+    houseDensity,
+    routeAccessibility,
+    weatherTemperature,
+    weatherHumidity,
+    weatherWindSpeed,
+    weatherWindDirection,
+    weatherWindCondition,
+  };
+}
+
+export function validateTacticalDetailsUpdate(raw: Record<string, unknown>): {
+  structureMaterial?: string | null;
+  houseDensity?: string | null;
+  routeAccessibility?: string | null;
+} {
+  return {
+    structureMaterial: raw.structureMaterial !== undefined ? text(raw.structureMaterial, 60) || null : undefined,
+    houseDensity: raw.houseDensity !== undefined ? text(raw.houseDensity, 60) || null : undefined,
+    routeAccessibility: raw.routeAccessibility !== undefined ? text(raw.routeAccessibility, 60) || null : undefined,
+  };
 }
 
 export function validateFireReportPhoto(file: File | null) {

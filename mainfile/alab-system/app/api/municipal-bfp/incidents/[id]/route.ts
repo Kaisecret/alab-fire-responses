@@ -24,6 +24,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                 fr.responding_station_name as "respondingStationName", fr.report_source as "reportSource",
                 coalesce(fr.caller_name, fr.reporter_name_snapshot) as "residentName", coalesce(fr.caller_phone, fr.reporter_phone_snapshot) as "phone",
                 fr.reporter_ip_address::text as "reporterIpAddress", fr.reporter_device_summary as "reporterDeviceSummary",
+                fr.structure_material as "structureMaterial", fr.house_density as "houseDensity", fr.route_accessibility as "routeAccessibility",
+                fr.weather_temperature as "weatherTemperature", fr.weather_humidity as "weatherHumidity",
+                fr.weather_wind_speed as "weatherWindSpeed", fr.weather_wind_direction as "weatherWindDirection", fr.weather_wind_condition as "weatherWindCondition",
+                fr.calculated_severity as "calculatedSeverity", fr.severity_score as "severityScore", fr.severity_factors as "severityFactors",
                 rp.id as "residentProfileId", rp.first_name as "firstName", rp.last_name as "lastName", u.email,
                 ra.complete_address as address, b.name as barangay, m.name as municipality,
                 s.station_name as "stationName", s.latitude::float as "stationLatitude", s.longitude::float as "stationLongitude"
@@ -49,6 +53,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                   fr.responding_station_name as "respondingStationName", 'ALAB_APP' as "reportSource",
                   fr.reporter_name_snapshot as "residentName", fr.reporter_phone_snapshot as "phone",
                   fr.reporter_ip_address::text as "reporterIpAddress", fr.reporter_device_summary as "reporterDeviceSummary",
+                  fr.structure_material as "structureMaterial", fr.house_density as "houseDensity", fr.route_accessibility as "routeAccessibility",
+                  fr.weather_temperature as "weatherTemperature", fr.weather_humidity as "weatherHumidity",
+                  fr.weather_wind_speed as "weatherWindSpeed", fr.weather_wind_direction as "weatherWindDirection", fr.weather_wind_condition as "weatherWindCondition",
+                  fr.calculated_severity as "calculatedSeverity", fr.severity_score as "severityScore", fr.severity_factors as "severityFactors",
                   rp.id as "residentProfileId", rp.first_name as "firstName", rp.last_name as "lastName", u.email,
                   ra.complete_address as address, b.name as barangay, m.name as municipality,
                   s.station_name as "stationName", s.latitude::float as "stationLatitude", s.longitude::float as "stationLongitude"

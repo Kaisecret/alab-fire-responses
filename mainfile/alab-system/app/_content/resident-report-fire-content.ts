@@ -35,6 +35,67 @@ export const reportFireStyles = `
   .report-form-heading h1 { margin: .65rem 0 .45rem; color: var(--report-ink); font-size: clamp(1.7rem, 3vw, 2.55rem); line-height: 1.08; letter-spacing: -.045em; }
   .report-form-heading p { max-width: 34rem; margin: 0; color: var(--report-muted); font-size: .94rem; line-height: 1.55; }
 
+  /* Live Weather & Wind Telemetry Card */
+  .live-weather-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    margin-bottom: 1.15rem;
+    padding: 0.85rem 1.15rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 0.95rem;
+    background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    flex-wrap: wrap;
+  }
+  .weather-meta-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .weather-radar-dot {
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    background: #10B981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    animation: weather-pulse 1.8s infinite;
+  }
+  .weather-title {
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.06em;
+    color: #475569;
+    text-transform: uppercase;
+  }
+  .weather-values {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 0.84rem;
+    font-weight: 750;
+    color: #0F172A;
+  }
+  .weather-stat { display: inline-flex; align-items: center; gap: 0.25rem; }
+  .weather-divider { color: #CBD5E1; }
+  .weather-pill-alert {
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.66rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+  }
+  .weather-pill-alert.moderate {
+    background: #FFFBEB;
+    color: #D97706;
+    border-color: #FDE68A;
+  }
+
   .warning-banner {
     display: flex;
     align-items: center;
@@ -112,6 +173,97 @@ export const reportFireStyles = `
   .type-btn:hover { transform: translateY(-2px); border-color: #F0AAA3; color: var(--report-red); box-shadow: 0 .75rem 1.5rem rgba(16, 34, 49, .07); }
   .type-btn.selected { border-color: var(--report-red); color: var(--report-red); background: linear-gradient(145deg, #FFF7F6, #FFFDFC); box-shadow: inset 0 0 0 1px rgba(219, 27, 13, .08), 0 .75rem 1.5rem rgba(219, 27, 13, .08); }
 
+  /* Quick Tactical 1-Tap Toggle Pills */
+  .quick-tactical-row {
+    margin-top: 1.1rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid #F1F5F9;
+    border-radius: 1rem;
+    background: #FAFBFD;
+  }
+  .quick-tactical-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.07em;
+    color: #475569;
+    margin-bottom: 0.65rem;
+    text-transform: uppercase;
+  }
+  .quick-pills-container {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  .quick-pill-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 0.85rem;
+    background: #FFFFFF;
+    color: #1E293B;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    min-height: 48px;
+    touch-action: manipulation;
+  }
+  .quick-pill-toggle:hover {
+    border-color: #CBD5E1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  }
+  .quick-pill-toggle.is-active {
+    border-color: #DB1B0D;
+    background: #FFF9F9;
+    box-shadow: 0 0 0 1px #DB1B0D, 0 6px 18px rgba(219, 27, 13, 0.12);
+  }
+  .quick-pill-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+  .quick-pill-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    flex-grow: 1;
+  }
+  .quick-pill-body strong {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #0F172A;
+    line-height: 1.25;
+  }
+  .quick-pill-body small {
+    font-size: 0.68rem;
+    color: #64748B;
+    font-weight: 600;
+  }
+  .quick-pill-toggle.is-active .quick-pill-body strong {
+    color: #B8150C;
+  }
+  .quick-pill-check {
+    display: grid;
+    place-items: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    border: 1px solid #CBD5E1;
+    color: transparent;
+    font-size: 0.72rem;
+    font-weight: 900;
+    flex-shrink: 0;
+    transition: all 0.18s ease;
+  }
+  .quick-pill-toggle.is-active .quick-pill-check {
+    background: #DB1B0D;
+    border-color: #DB1B0D;
+    color: #FFFFFF;
+  }
+
   .report-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(.9rem, 2vw, 1.25rem); align-items: stretch; }
   .photo-field { display: flex; min-width: 0; flex-direction: column; }
   .field-label { display: flex; align-items: center; gap: .5rem; margin-bottom: .65rem; color: var(--report-ink); font-size: .79rem; font-weight: 850; }
@@ -166,6 +318,8 @@ export const reportFireStyles = `
   @keyframes report-rise { from { opacity: 0; transform: translateY(.85rem); } to { opacity: 1; transform: translateY(0); } }
   @keyframes photo-dialog-in { from { opacity: 0; transform: translateY(1rem) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
   @keyframes report-pulse { 50% { transform: scale(1.05); box-shadow: 0 0 0 .35rem rgba(219, 27, 13, .08); } }
+  @keyframes weather-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.7; } }
+
   @media (max-width: 950px) {
     .report-page-root { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
     .report-form-shell { padding: 1rem; border-radius: 1.25rem; }
@@ -180,6 +334,10 @@ export const reportFireStyles = `
     .field-helper { min-height: auto; }
     .photo-upload { min-height: 7rem; }
   }
+  @media (max-width: 640px) {
+    .quick-pills-container { grid-template-columns: 1fr; gap: 0.55rem; }
+    .live-weather-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  }
   @media (max-width: 540px) {
     .report-page-root { padding: .85rem .75rem calc(6rem + env(safe-area-inset-bottom)); }
     .report-form-heading h1 { font-size: 1.7rem; }
@@ -191,7 +349,7 @@ export const reportFireStyles = `
     .form-footer { grid-template-columns: 1fr; gap: .65rem; }
     .btn-primary, .btn-cancel { min-height: 3.25rem; }
   }
-  @media (prefers-reduced-motion: reduce) { .report-form-shell, .location-status.is-improving, .location-status.is-locating, .location-map-pulse { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .report-form-shell, .location-status.is-improving, .location-status.is-locating, .location-map-pulse, .weather-radar-dot { animation: none; } }
 `;
 
 export const reportFireMarkup = `
@@ -202,6 +360,19 @@ export const reportFireMarkup = `
         <h1 id="report-fire-title">Report a Fire Incident</h1>
         <p>Share the clearest details you can so responders can act faster.</p>
       </header>
+
+      <div class="live-weather-card" data-live-weather-card>
+        <div class="weather-meta-left">
+          <span class="weather-radar-dot" aria-hidden="true"></span>
+          <span class="weather-title">LOCAL WEATHER & WIND (GPS AUTO-DETECTED)</span>
+        </div>
+        <div class="weather-values" data-weather-values>
+          <span class="weather-stat" data-weather-temp-display>🌡️ Detecting temp…</span>
+          <span class="weather-divider" aria-hidden="true">·</span>
+          <span class="weather-stat" data-weather-wind-display>💨 Checking wind speed…</span>
+          <span class="weather-pill-alert" data-weather-alert-badge hidden></span>
+        </div>
+      </div>
 
       <section class="warning-banner" aria-label="Fire emergency safety reminder">
         <span class="warning-banner-icon" aria-hidden="true"><img src="/images/fire logo.webp" alt="" /></span>
@@ -256,6 +427,28 @@ export const reportFireMarkup = `
           <button type="button" class="type-btn" data-fire-type="FOREST" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 14 15 14 18 22 6 22 9 14 5 14 12 2"/></svg>Forest Fire</button>
           <button type="button" class="type-btn" data-fire-type="VEHICLE" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H9.3a2 2 0 0 0-1.6.8L5 11l-5.16.86a1 1 0 0 0-.84.99V16h3m10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0m-10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0"/></svg>Vehicle Fire</button>
           <button type="button" class="type-btn" data-fire-type="OTHER" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>Other</button>
+        </div>
+
+        <div class="quick-tactical-row" data-quick-tactical-row>
+          <span class="quick-tactical-label">SITWASYON SA LUGAR (OPTIONAL · 1-TAP):</span>
+          <div class="quick-pills-container">
+            <button type="button" class="quick-pill-toggle" data-quick-density="PACKED_MAGKAKADIKIT" aria-pressed="false">
+              <span class="quick-pill-icon" aria-hidden="true">🏘️</span>
+              <span class="quick-pill-body">
+                <strong>Dikit-dikit ang mga bahay</strong>
+                <small>High conflagration hazard (&lt; 2m)</small>
+              </span>
+              <span class="quick-pill-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="quick-pill-toggle" data-quick-route="INTERIOR_ALLEY_ESKINITA" aria-pressed="false">
+              <span class="quick-pill-icon" aria-hidden="true">🚶</span>
+              <span class="quick-pill-body">
+                <strong>Eskinita / Makipot na daan</strong>
+                <small>Hindi mapasok ng truck · Needs long hose</small>
+              </span>
+              <span class="quick-pill-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
         </div>
       </section>
 

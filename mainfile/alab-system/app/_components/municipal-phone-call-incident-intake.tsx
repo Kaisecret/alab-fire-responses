@@ -43,7 +43,7 @@ function focusableElements(container: HTMLElement) {
 }
 
 export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const mounted = useSyncExternalStore(() => () => { }, () => true, () => false);
   const [municipalityName, setMunicipalityName] = useState("");
   const [detectedMunicipality, setDetectedMunicipality] = useState("");
   const [stations, setStations] = useState<Station[]>([]);
@@ -690,16 +690,16 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
 
                     <div className="mbfp-phone-fields two">
                       <label>Barangay<select
-                          value={barangayId}
-                          onChange={(event) => handleBarangaySelect(event.target.value)}
-                          required
-                          disabled={loadingBarangays}
-                        >
-                          <option value="">{loadingBarangays ? "Loading barangays…" : "Select barangay"}</option>
-                          {barangays.map((barangay) => (
-                            <option key={barangay.id} value={barangay.id}>{barangay.name}</option>
-                          ))}
-                        </select>
+                        value={barangayId}
+                        onChange={(event) => handleBarangaySelect(event.target.value)}
+                        required
+                        disabled={loadingBarangays}
+                      >
+                        <option value="">{loadingBarangays ? "Loading barangays…" : "Select barangay"}</option>
+                        {barangays.map((barangay) => (
+                          <option key={barangay.id} value={barangay.id}>{barangay.name}</option>
+                        ))}
+                      </select>
                       </label>
                       <label>
                         Nearest landmark <span className="mbfp-phone-optional-tag">Optional</span>

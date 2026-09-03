@@ -5,7 +5,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 
-type Report = { reference_number: string; status: FireReportStatus; fire_type: string; description: string; nearest_landmark: string | null; municipality: string; barangay: string; submitted_at: string; history: Array<{ next_status: FireReportStatus; resident_message: string | null; created_at: string }>; photos: Array<{ url: string | null }>; };
+type Report = {
+  id: string;
+  reference_number: string;
+  status: FireReportStatus;
+  fire_type: string;
+  description: string;
+  nearest_landmark: string | null;
+  municipality: string;
+  barangay: string;
+  submitted_at: string;
+  structure_material?: string | null;
+  house_density?: string | null;
+  route_accessibility?: string | null;
+  weather_temperature?: number | string | null;
+  weather_humidity?: number | string | null;
+  weather_wind_speed?: number | string | null;
+  weather_wind_direction?: number | string | null;
+  weather_wind_condition?: string | null;
+  calculated_severity?: "LOW" | "MODERATE" | "HIGH" | "CRITICAL" | null;
+  severity_score?: number | null;
+  severity_factors?: string[] | null;
+  history: Array<{ next_status: FireReportStatus; resident_message: string | null; created_at: string }>;
+  photos: Array<{ url: string | null }>;
+};
 
 const detailStyles = `
   .resident-report-detail { min-height: 100vh; padding: 1.4rem 1rem 8rem; background: #fbfaf9; color: #1e293b; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -13,11 +36,20 @@ const detailStyles = `
   .resident-detail-heading { display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; }
   .resident-detail-back { width:2.25rem; height:2.25rem; display:grid; place-items:center; border:0; border-radius:.65rem; color:#334155; background:#fff; font-size:1.5rem; text-decoration:none; box-shadow:0 1px 3px rgba(15,23,42,.1); }
   .resident-detail-heading h1 { margin:0; font-size:1.32rem; font-weight:800; }
-  .resident-detail-hero { display:flex; justify-content:space-between; align-items:center; gap:.8rem; padding:1rem; margin-bottom:1rem; border:1px solid #ffcaca; border-radius:1rem; background:#fff7f6; }
+  .resident-detail-hero { display:flex; justify-content:space-between; align-items:center; gap:.8rem; padding:1rem; margin-bottom:1rem; border:1px solid #ffcaca; border-radius:1rem; background:#fff7f6; flex-wrap:wrap; }
   .resident-detail-reference { display:flex; align-items:center; gap:.7rem; font-size:1.08rem; font-weight:800; }
   .resident-detail-reference-icon { display:block; width:1.55rem; height:1.55rem; object-fit:contain; }
+  .resident-hero-badges { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
   .resident-status-pill { display:inline-flex; align-items:center; gap:.35rem; border-radius:99px; padding:.4rem .7rem; background:#e32118; color:#fff; font-size:.75rem; font-weight:800; white-space:nowrap; }
   .resident-status-pill::before { content:''; width:.4rem; height:.4rem; border-radius:50%; background:currentColor; }
+
+  /* Severity Badge */
+  .severity-pill { display:inline-flex; align-items:center; gap:.3rem; border-radius:99px; padding:.4rem .7rem; font-size:.72rem; font-weight:850; letter-spacing:.03em; text-transform:uppercase; }
+  .severity-pill.CRITICAL { background:#7F1D1D; color:#FEE2E2; border:1px solid #B91C1C; }
+  .severity-pill.HIGH { background:#991B1B; color:#FEF2F2; border:1px solid #DC2626; }
+  .severity-pill.MODERATE { background:#D97706; color:#FFFBEB; border:1px solid #F59E0B; }
+  .severity-pill.LOW { background:#047857; color:#ECFDF5; border:1px solid #10B981; }
+
   .resident-detail-card { padding:1rem; margin-bottom:.9rem; border:1px solid #e6ebf1; border-radius:1rem; background:#fff; box-shadow:0 2px 8px rgba(15,23,42,.035); }
   .resident-detail-card h2 { display:flex; align-items:center; gap:.5rem; margin:0 0 .85rem; padding-bottom:.75rem; border-bottom:1px solid #edf0f3; font-size:1rem; }
   .resident-detail-card h2 span { color:#e32118; }
@@ -27,6 +59,25 @@ const detailStyles = `
   .resident-detail-info-item small { display:block; color:#7c8ba1; font-size:.72rem; font-weight:700; }
   .resident-detail-info-item strong { display:block; margin-top:.08rem; color:#334155; font-size:.84rem; line-height:1.3; }
   .resident-detail-info-item strong.status { color:#e32118; }
+
+  /* Phase 2 Tactical Enrichment Card */
+  .tactical-enrichment-card { border:1.5px solid #FBCFE8; background:linear-gradient(135deg, #FFFDFE 0%, #FFF5F7 100%); }
+  .tactical-header-desc { font-size:.78rem; color:#64748B; margin:0 0 1rem; line-height:1.45; }
+  .tactical-group { margin-bottom:1rem; }
+  .tactical-group:last-child { margin-bottom:0; }
+  .tactical-label { display:block; font-size:.72rem; font-weight:800; color:#475569; letter-spacing:.04em; text-transform:uppercase; margin-bottom:.45rem; }
+  .tactical-pill-row { display:flex; gap:.5rem; flex-wrap:wrap; }
+  .tactical-btn { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem .85rem; border:1.5px solid #CBD5E1; border-radius:.65rem; background:#fff; color:#334155; font-size:.78rem; font-weight:750; cursor:pointer; transition:all .18s cubic-bezier(0.16,1,0.3,1); }
+  .tactical-btn:hover { border-color:#DB1B0D; transform:translateY(-1px); }
+  .tactical-btn.is-selected { border-color:#DB1B0D; background:#DB1B0D; color:#fff; box-shadow:0 3px 10px rgba(219,27,13,.25); }
+  .tactical-saved-pill { display:inline-flex; align-items:center; gap:.35rem; color:#047857; font-size:.72rem; font-weight:800; margin-top:.4rem; }
+
+  /* Environmental Wind Hazard Alert */
+  .wind-hazard-banner { display:flex; align-items:flex-start; gap:.8rem; padding:.9rem 1rem; border-radius:.85rem; background:#FEF3C7; border:1px solid #FDE68A; margin-bottom:.9rem; }
+  .wind-hazard-icon { font-size:1.4rem; line-height:1; }
+  .wind-hazard-body strong { display:block; font-size:.82rem; font-weight:800; color:#92400E; margin-bottom:.2rem; }
+  .wind-hazard-body p { margin:0; font-size:.75rem; color:#78350F; line-height:1.4; }
+
   .resident-timeline { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); margin-top:.2rem; }
   .resident-timeline-step { position:relative; text-align:center; padding-top:1.8rem; color:#94a3b8; font-size:.64rem; font-weight:700; line-height:1.2; }
   .resident-timeline-step::before { content:''; position:absolute; top:.58rem; left:0; width:100%; height:2px; background:#d9e1ea; }
@@ -45,21 +96,402 @@ const detailStyles = `
 `;
 
 const timeline = [
-  { status: "PENDING_VERIFICATION", label: "Submitted" }, { status: "VERIFIED", label: "Verified" }, { status: "RESPONDING", label: "Responding" }, { status: "FIRETRUCK_DISPATCHED", label: "Dispatched" }, { status: "RESOLVED", label: "Resolved" },
+  { status: "PENDING_VERIFICATION", label: "Submitted" },
+  { status: "VERIFIED", label: "Verified" },
+  { status: "RESPONDING", label: "Responding" },
+  { status: "FIRETRUCK_DISPATCHED", label: "Dispatched" },
+  { status: "RESOLVED", label: "Resolved" },
 ] as const;
 
 export function ResidentReportStatus({ reportId }: { reportId: string }) {
-  const [report, setReport] = useState<Report | null>(null); const [error, setError] = useState(""); const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
-  useEffect(() => { let active = true; const load = async () => { try { const response = await fetch(`/api/resident/fire-reports/${reportId}`, { cache: "no-store" }); const data = await response.json(); if (!response.ok) throw new Error(data.error); if (active) setReport(data.report); } catch (cause) { if (active) setError(cause instanceof Error ? cause.message : "Unable to load report."); } }; void load(); const timer = window.setInterval(load, 10_000); return () => { active = false; window.clearInterval(timer); }; }, [reportId]);
-  const activeTimelineIndex = useMemo(() => report ? timelineIndex(report.status) : 0, [report]);
-  if (!report) return <Shell><p className="resident-report-detail-loading" role={error ? "alert" : undefined}>{error || "Loading your fire report…"}</p></Shell>;
-  const latest = report.history.at(-1); const photoUrl = report.photos[0]?.url;
-  return <Shell><div className="resident-detail-heading"><a className="resident-detail-back" href="/resident/reports" aria-label="Back to reports">‹</a><h1>Report Details</h1></div><section className="resident-detail-hero"><div className="resident-detail-reference"><img className="resident-detail-reference-icon" src="/images/fire logo.webp" alt="" aria-hidden />{report.reference_number}</div><span className="resident-status-pill">{fireReportStatusLabels[report.status]}</span></section><section className="resident-detail-card"><h2><span>⌖</span> Incident Information</h2><div className="resident-detail-info"><Info label="Location" value={`${report.barangay}, ${report.municipality}`} icon="pin" /><Info label="Nearest Landmark" value={report.nearest_landmark || "Not provided"} icon="home" /><Info label="Date Reported" value={formatDate(report.submitted_at)} icon="calendar" /><Info label="Fire Type" value={formatFireType(report.fire_type)} icon="fire" /></div></section><section className="resident-detail-card"><h2><span>▧</span> Report Information</h2><div className="resident-detail-info"><Info label="Current Status" value={fireReportStatusLabels[report.status]} icon="fire" status /><Info label="Reference Number" value={report.reference_number} icon="file" /><Info label="Reported By" value="You" icon="person" /><Info label="Municipal BFP" value={`${report.municipality} Fire Station`} icon="phone" /></div></section><section className="resident-detail-card"><h2><span>◷</span> Status Timeline</h2><div className="resident-timeline">{timeline.map((step, index) => <div key={step.status} className={`resident-timeline-step${index < activeTimelineIndex ? " complete" : ""}${index === activeTimelineIndex ? " current" : ""}`}><span className="resident-timeline-dot">{index <= activeTimelineIndex ? "✓" : ""}</span>{step.label}{index === activeTimelineIndex && <span className="resident-timeline-date">Current</span>}</div>)}</div></section><section className="resident-detail-card"><h2><span>▣</span> Latest Update from Municipal BFP</h2><p className="resident-bfp-update">{report.status === "RESPONDING" ? "BFP is responding to your fire report. Please stay in a safe location and follow responder instructions." : latest?.resident_message || "Your report has been received and is being processed."}</p><p className="resident-update-time">{latest ? formatDate(latest.created_at) : formatDate(report.submitted_at)}</p></section>{photoUrl && <section className="resident-detail-card"><button type="button" className="resident-photo-button" onClick={() => setIsPhotoDialogOpen(true)} aria-haspopup="dialog">View incident photo</button></section>}{isPhotoDialogOpen && photoUrl && <div className="resident-photo-backdrop" role="presentation" onMouseDown={() => setIsPhotoDialogOpen(false)}><div className="resident-photo-dialog" role="dialog" aria-modal="true" aria-label="Submitted incident photo" onMouseDown={(event) => event.stopPropagation()}><button type="button" className="resident-photo-close" onClick={() => setIsPhotoDialogOpen(false)} aria-label="Close photo">×</button><img className="resident-photo-dialog-image" src={photoUrl} alt="Submitted fire incident" /></div></div>}<section className="resident-safety-card"><span className="resident-safety-icon"><img src="/images/fire logo.webp" alt="" aria-hidden /></span><div><h2>Fire Safety Reminder</h2><p>Stay calm, move away from the fire, and follow the instructions of responders.</p></div></section></Shell>;
+  const [report, setReport] = useState<Report | null>(null);
+  const [error, setError] = useState("");
+  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
+  const [updatingField, setUpdatingField] = useState<string | null>(null);
+  const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const response = await fetch(`/api/resident/fire-reports/${reportId}`, { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        if (active) setReport(data.report);
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : "Unable to load report.");
+      }
+    };
+    void load();
+    const timer = window.setInterval(load, 8_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [reportId]);
+
+  const activeTimelineIndex = useMemo(() => (report ? timelineIndex(report.status) : 0), [report]);
+
+  const updateTacticalDetail = async (key: "structureMaterial" | "houseDensity" | "routeAccessibility", val: string) => {
+    if (!report || updatingField) return;
+    setUpdatingField(key);
+    try {
+      const response = await fetch(`/api/resident/fire-reports/${reportId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: val }),
+      });
+      const data = await response.json();
+      if (response.ok && data.report) {
+        setReport((prev) => (prev ? { ...prev, ...data.report } : prev));
+        setSavedFeedback("✓ Responders updated in real-time");
+        setTimeout(() => setSavedFeedback(null), 3000);
+      }
+    } catch {
+      // Non-blocking
+    } finally {
+      setUpdatingField(null);
+    }
+  };
+
+  if (!report) {
+    return (
+      <Shell>
+        <p className="resident-report-detail-loading" role={error ? "alert" : undefined}>
+          {error || "Loading your fire report…"}
+        </p>
+      </Shell>
+    );
+  }
+
+  const latest = report.history.at(-1);
+  const photoUrl = report.photos[0]?.url;
+  const windSpeed = Number(report.weather_wind_speed) || 0;
+  const severity = report.calculated_severity || "MODERATE";
+
+  return (
+    <Shell>
+      <div className="resident-detail-heading">
+        <a className="resident-detail-back" href="/resident/reports" aria-label="Back to reports">
+          ‹
+        </a>
+        <h1>Report Details</h1>
+      </div>
+
+      <section className="resident-detail-hero">
+        <div className="resident-detail-reference">
+          <img className="resident-detail-reference-icon" src="/images/fire logo.webp" alt="" aria-hidden />
+          {report.reference_number}
+        </div>
+        <div className="resident-hero-badges">
+          <span className={`severity-pill ${severity}`}>
+            {severity} Severity
+          </span>
+          <span className="resident-status-pill">{fireReportStatusLabels[report.status]}</span>
+        </div>
+      </section>
+
+      {windSpeed >= 25 && (
+        <section className="wind-hazard-banner">
+          <span className="wind-hazard-icon" aria-hidden="true">💨</span>
+          <div className="wind-hazard-body">
+            <strong>Malakas ang Hangin ({Math.round(windSpeed)} km/h {report.weather_wind_condition})</strong>
+            <p>
+              Mabilis kumalat ang apoy sa direksyon ng hangin. Lumikas patungong <strong>UPWIND</strong> (salungat sa direksyon ng hangin at usok) upang manatiling ligtas.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* Phase 2 Tactical Enrichment Card (Optional helper for en route responders) */}
+      <section className="resident-detail-card tactical-enrichment-card">
+        <h2>
+          <span>⚡</span> Tulong sa BFP Responders habang papunta (Optional)
+        </h2>
+        <p className="tactical-header-desc">
+          Kung ligtas ka sa iyong pwesto, pindutin ang karagdagang impormasyon upang maihanda ng BFP ang tamang pumper, hose relay, at kagamitan bago sila dumating:
+        </p>
+
+        <div className="tactical-group">
+          <span className="tactical-label">Materyales ng Nasusunog (Structural Fuel):</span>
+          <div className="tactical-pill-row">
+            <button
+              type="button"
+              className={`tactical-btn ${report.structure_material === "LIGHT_MATERIALS" ? "is-selected" : ""}`}
+              onClick={() => updateTacticalDetail("structureMaterial", "LIGHT_MATERIALS")}
+            >
+              🪵 Kahoy / Bamboo / Nipa
+            </button>
+            <button
+              type="button"
+              className={`tactical-btn ${report.structure_material === "MIXED_SEMI_CONCRETE" ? "is-selected" : ""}`}
+              onClick={() => updateTacticalDetail("structureMaterial", "MIXED_SEMI_CONCRETE")}
+            >
+              🏠 Semi-Concrete
+            </button>
+            <button
+              type="button"
+              className={`tactical-btn ${report.structure_material === "CONCRETE" ? "is-selected" : ""}`}
+              onClick={() => updateTacticalDetail("structureMaterial", "CONCRETE")}
+            >
+              🧱 Semento / Concrete
+            </button>
+          </div>
+        </div>
+
+        <div className="tactical-group">
+          <span className="tactical-label">Dikit-dikit ba ang mga Bahay (Conflagration Risk):</span>
+          <div className="tactical-pill-row">
+            <button
+              type="button"
+              className={`tactical-btn ${report.house_density === "PACKED_MAGKAKADIKIT" ? "is-selected" : ""}`}
+              onClick={() => updateTacticalDetail("houseDensity", "PACKED_MAGKAKADIKIT")}
+            >
+              🏘️ Dikit-dikit (&lt; 2m)
+            </button>
+            <button
+              type="button"
+              className={`tactical-btn ${report.house_density === "MODERATE_SPACING" ? "is-selected" : ""}`}
+              onClick={() => updateTacticalDetail("houseDensity", "MODERATE_SPACING")}
+            >
+              🏡 May katamtamang agwat (2-5m)
+            </button>
+          </div>
+        </div>
+
+        <div className="tactical-group">
+          <span className="tactical-label">Daanan papunta sa Apoy (Accessibility):</span>
+          <div className="tactical-pill-row">
+            <button
+              type="button"
+              className={`tactical-btn ${report.route_accessibility === "INTERIOR_ALLEY_ESKINITA" ? "is-selected" : ""}`}
+              onClick={() => updateTacticalDetail("routeAccessibility", "INTERIOR_ALLEY_ESKINITA")}
+            >
+              🚶 Looban / Eskinita (Kailangan ng mahabang hose)
+            </button>
+            <button
+              type="button"
+              className={`tactical-btn ${report.route_accessibility === "WIDE_ROAD" ? "is-selected" : ""}`}
+              onClick={() => updateTacticalDetail("routeAccessibility", "WIDE_ROAD")}
+            >
+              🚛 Malapad na kalsada (Kasyang pumasok ang firetruck)
+            </button>
+          </div>
+        </div>
+
+        {savedFeedback && <span className="tactical-saved-pill">{savedFeedback}</span>}
+      </section>
+
+      <section className="resident-detail-card">
+        <h2>
+          <span>⌖</span> Incident Information
+        </h2>
+        <div className="resident-detail-info">
+          <Info label="Location" value={`${report.barangay}, ${report.municipality}`} icon="pin" />
+          <Info label="Nearest Landmark" value={report.nearest_landmark || "Not provided"} icon="home" />
+          <Info label="Date Reported" value={formatDate(report.submitted_at)} icon="calendar" />
+          <Info label="Fire Type" value={formatFireType(report.fire_type)} icon="fire" />
+        </div>
+      </section>
+
+      <section className="resident-detail-card">
+        <h2>
+          <span>▧</span> Report Information
+        </h2>
+        <div className="resident-detail-info">
+          <Info label="Current Status" value={fireReportStatusLabels[report.status]} icon="fire" status />
+          <Info label="Reference Number" value={report.reference_number} icon="file" />
+          <Info label="Reported By" value="You" icon="person" />
+          <Info label="Municipal BFP" value={`${report.municipality} Fire Station`} icon="phone" />
+        </div>
+      </section>
+
+      <section className="resident-detail-card">
+        <h2>
+          <span>◷</span> Status Timeline
+        </h2>
+        <div className="resident-timeline">
+          {timeline.map((step, index) => (
+            <div
+              key={step.status}
+              className={`resident-timeline-step${index < activeTimelineIndex ? " complete" : ""}${index === activeTimelineIndex ? " current" : ""}`}
+            >
+              <span className="resident-timeline-dot">{index <= activeTimelineIndex ? "✓" : ""}</span>
+              {step.label}
+              {index === activeTimelineIndex && <span className="resident-timeline-date">Current</span>}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="resident-detail-card">
+        <h2>
+          <span>▣</span> Latest Update from Municipal BFP
+        </h2>
+        <p className="resident-bfp-update">
+          {report.status === "RESPONDING"
+            ? "BFP is responding to your fire report. Please stay in a safe location and follow responder instructions."
+            : latest?.resident_message || "Your report has been received and is being processed."}
+        </p>
+        <p className="resident-update-time">
+          {latest ? formatDate(latest.created_at) : formatDate(report.submitted_at)}
+        </p>
+      </section>
+
+      {photoUrl && (
+        <section className="resident-detail-card">
+          <button
+            type="button"
+            className="resident-photo-button"
+            onClick={() => setIsPhotoDialogOpen(true)}
+            aria-haspopup="dialog"
+          >
+            View incident photo
+          </button>
+        </section>
+      )}
+
+      {isPhotoDialogOpen && photoUrl && (
+        <div
+          className="resident-photo-backdrop"
+          role="presentation"
+          onMouseDown={() => setIsPhotoDialogOpen(false)}
+        >
+          <div
+            className="resident-photo-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Submitted incident photo"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="resident-photo-close"
+              onClick={() => setIsPhotoDialogOpen(false)}
+              aria-label="Close photo"
+            >
+              ×
+            </button>
+            <img className="resident-photo-dialog-image" src={photoUrl} alt="Submitted fire incident" />
+          </div>
+        </div>
+      )}
+
+      <section className="resident-safety-card">
+        <span className="resident-safety-icon">
+          <img src="/images/fire logo.webp" alt="" aria-hidden />
+        </span>
+        <div>
+          <h2>Fire Safety Reminder</h2>
+          <p>Stay calm, move away from the fire, and follow the instructions of responders.</p>
+        </div>
+      </section>
+    </Shell>
+  );
 }
 
-function Shell({ children }: { children: React.ReactNode }) { return <><style>{detailStyles}</style><main className="resident-report-detail"><div className="resident-report-detail-inner">{children}</div></main></>; }
-function Info({ label, value, icon, status = false }: { label: string; value: string; icon: "pin" | "home" | "calendar" | "fire" | "file" | "person" | "phone"; status?: boolean }) { return <div className="resident-detail-info-item"><InfoIcon icon={icon} /><span><small>{label}</small><strong className={status ? "status" : undefined}>{value}</strong></span></div>; }
-function InfoIcon({ icon }: { icon: string }) { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{icon === "pin" && <><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></>}{icon === "home" && <><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10" /></>}{icon === "calendar" && <><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>}{icon === "fire" && <path d="M12 22c4 0 7-2.8 7-6.6 0-3.1-1.9-5.1-4.1-7.8-.4 2.3-1.4 3.7-2.9 4.6.1-3-1.1-5.3-3.2-7.3.2 3-1.6 5-2.8 6.8C4.7 13.7 5 22 12 22Z" />}{icon === "file" && <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></>}{icon === "person" && <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>}{icon === "phone" && <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7A2 2 0 0 1 22 16.9Z" />}</svg>; }
-function timelineIndex(status: FireReportStatus) { if (["RESOLVED", "CLOSED"].includes(status)) return 4; if (status === "FIRETRUCK_DISPATCHED" || status === "RESPONDER_ARRIVED" || status === "UNDER_CONTROL") return 3; if (status === "RESPONDING") return 2; if (["VERIFIED", "CONFIRMED"].includes(status)) return 1; return 0; }
-function formatDate(value: string) { return new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value)); }
-function formatFireType(value: string) { return ({ HOUSE_BUILDING: "House/Building Fire", GRASS: "Grass Fire", FOREST: "Forest Fire", VEHICLE: "Vehicle Fire", OTHER: "Other" } as Record<string, string>)[value] || "Fire incident"; }
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <style>{detailStyles}</style>
+      <main className="resident-report-detail">
+        <div className="resident-report-detail-inner">{children}</div>
+      </main>
+    </>
+  );
+}
+
+function Info({
+  label,
+  value,
+  icon,
+  status = false,
+}: {
+  label: string;
+  value: string;
+  icon: "pin" | "home" | "calendar" | "fire" | "file" | "person" | "phone";
+  status?: boolean;
+}) {
+  return (
+    <div className="resident-detail-info-item">
+      <InfoIcon icon={icon} />
+      <span>
+        <small>{label}</small>
+        <strong className={status ? "status" : undefined}>{value}</strong>
+      </span>
+    </div>
+  );
+}
+
+function InfoIcon({ icon }: { icon: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      {icon === "pin" && (
+        <>
+          <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0Z" />
+          <circle cx="12" cy="10" r="3" />
+        </>
+      )}
+      {icon === "home" && (
+        <>
+          <path d="m3 11 9-8 9 8" />
+          <path d="M5 10v10h14V10" />
+        </>
+      )}
+      {icon === "calendar" && (
+        <>
+          <rect x="3" y="4" width="18" height="17" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </>
+      )}
+      {icon === "fire" && (
+        <path d="M12 22c4 0 7-2.8 7-6.6 0-3.1-1.9-5.1-4.1-7.8-.4 2.3-1.4 3.7-2.9 4.6.1-3-1.1-5.3-3.2-7.3.2 3-1.6 5-2.8 6.8C4.7 13.7 5 22 12 22Z" />
+      )}
+      {icon === "file" && (
+        <>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+          <path d="M14 2v6h6" />
+        </>
+      )}
+      {icon === "person" && (
+        <>
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21a8 8 0 0 1 16 0" />
+        </>
+      )}
+      {icon === "phone" && (
+        <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7A2 2 0 0 1 22 16.9Z" />
+      )}
+    </svg>
+  );
+}
+
+function timelineIndex(status: FireReportStatus) {
+  if (["RESOLVED", "CLOSED"].includes(status)) return 4;
+  if (status === "FIRETRUCK_DISPATCHED" || status === "RESPONDER_ARRIVED" || status === "UNDER_CONTROL") return 3;
+  if (status === "RESPONDING") return 2;
+  if (["VERIFIED", "CONFIRMED"].includes(status)) return 1;
+  return 0;
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatFireType(value: string) {
+  return (
+    ({
+      HOUSE_BUILDING: "House/Building Fire",
+      GRASS: "Grass Fire",
+      FOREST: "Forest Fire",
+      VEHICLE: "Vehicle Fire",
+      OTHER: "Other",
+    } as Record<string, string>)[value] || "Fire incident"
+  );
+}

@@ -31,6 +31,17 @@ type Incident = {
   stationName: string | null;
   stationLatitude: number | null;
   stationLongitude: number | null;
+  structureMaterial?: string | null;
+  houseDensity?: string | null;
+  routeAccessibility?: string | null;
+  weatherTemperature?: number | string | null;
+  weatherHumidity?: number | string | null;
+  weatherWindSpeed?: number | string | null;
+  weatherWindDirection?: number | string | null;
+  weatherWindCondition?: string | null;
+  calculatedSeverity?: "LOW" | "MODERATE" | "HIGH" | "CRITICAL" | null;
+  severityScore?: number | null;
+  severityFactors?: string[] | null;
   photos: Array<{ url: string | null }>;
   history: Array<{ status: FireReportStatus; message: string | null; createdAt: string }>;
   previousReports: Array<{ id: string; referenceNumber: string; status: FireReportStatus; submittedAt: string }>;
@@ -267,6 +278,129 @@ const detailStyles = `
   }
 
   .mbfp-resolve-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* Tactical Severity & Conflagration Assessment */
+  .mbfp-severity-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.28rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 850;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .mbfp-severity-hero-badge.CRITICAL { background: #7F1D1D; color: #FEE2E2; border: 1px solid #B91C1C; }
+  .mbfp-severity-hero-badge.HIGH { background: #991B1B; color: #FEF2F2; border: 1px solid #DC2626; }
+  .mbfp-severity-hero-badge.MODERATE { background: #D97706; color: #FFFBEB; border: 1px solid #F59E0B; }
+  .mbfp-severity-hero-badge.LOW { background: #047857; color: #ECFDF5; border: 1px solid #10B981; }
+
+  .mbfp-tactical-severity-card {
+    border: 1.5px solid #FCA5A5;
+    background: linear-gradient(135deg, #FFFFFF 0%, #FFF8F8 100%);
+    box-shadow: 0 4px 18px rgba(220, 38, 38, 0.07);
+    margin-bottom: 1rem;
+  }
+  .mbfp-severity-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+  .mbfp-severity-tag.CRITICAL { background: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }
+  .mbfp-severity-tag.HIGH { background: #FEF2F2; color: #DC2626; border: 1px solid #FCA5A5; }
+  .mbfp-severity-tag.MODERATE { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
+  .mbfp-severity-tag.LOW { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+
+  .mbfp-tactical-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+  .mbfp-metric-item {
+    padding: 0.75rem 0.9rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    background: #FFFFFF;
+  }
+  .mbfp-metric-item.alert-conflagration {
+    border-color: #F87171;
+    background: #FFF5F5;
+  }
+  .mbfp-metric-item.alert-wind {
+    border-color: #FDE68A;
+    background: #FFFDF0;
+  }
+  .mbfp-metric-item.alert-route {
+    border-color: #FDBA74;
+    background: #FFF7ED;
+  }
+  .mbfp-metric-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 750;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.35rem;
+  }
+  .mbfp-metric-val {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #0F172A;
+    line-height: 1.35;
+  }
+  .mbfp-metric-item.alert-conflagration .mbfp-metric-val {
+    color: #DC2626;
+  }
+
+  .mbfp-factors-list {
+    padding: 0.75rem 0.95rem;
+    border-radius: 8px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+  }
+  .mbfp-factors-title {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.4rem;
+  }
+  .mbfp-factors-list ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .mbfp-factors-list li {
+    font-size: 0.78rem;
+    color: #334155;
+    font-weight: 650;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .mbfp-factors-list li i {
+    color: #DC2626;
+    font-size: 0.72rem;
+  }
+  @media (max-width: 640px) {
+    .mbfp-tactical-metrics-grid { grid-template-columns: 1fr; }
+  }
 
   /* 2-Column Tactical Layout Grid (Exact Provincial Spacing) */
   .mbfp-tactical-grid {
@@ -1419,6 +1553,12 @@ export function MunicipalIncidentDetail({
                 <i className="fa-solid fa-fire" />
                 <span>{incident.fireType.replaceAll("_", " ")}</span>
               </span>
+              {incident.calculatedSeverity && (
+                <span className={`mbfp-severity-hero-badge ${incident.calculatedSeverity}`}>
+                  <i className="fa-solid fa-triangle-exclamation" />
+                  <span>{incident.calculatedSeverity} SEVERITY ({incident.severityScore ?? '--'}/100)</span>
+                </span>
+              )}
             </div>
             <h1 className="mbfp-hero-title">
               <i className="fa-solid fa-tower-broadcast" style={{ color: "#DC2626", fontSize: "1.5rem" }} />
@@ -1472,6 +1612,99 @@ export function MunicipalIncidentDetail({
         <div className="mbfp-tactical-grid">
           {/* Left Column: Data & Photos */}
           <div>
+            {/* AHP Tactical Severity & Environmental Intelligence Card */}
+            <section className="mbfp-card mbfp-tactical-severity-card" aria-labelledby="mbfp-severity-heading">
+              <div className="mbfp-card-header">
+                <h2 id="mbfp-severity-heading" className="mbfp-card-title">
+                  <i className="fa-solid fa-fire-flame-curved" style={{ color: "#DC2626" }} />
+                  <span>AHP Tactical Severity &amp; Conflagration Assessment</span>
+                </h2>
+                <span className={`mbfp-severity-tag ${incident.calculatedSeverity || "MODERATE"}`}>
+                  {incident.calculatedSeverity || "MODERATE"} ({incident.severityScore ?? 45}/100)
+                </span>
+              </div>
+
+              <div className="mbfp-tactical-metrics-grid">
+                {/* House Density */}
+                <div className={`mbfp-metric-item ${incident.houseDensity === "PACKED_MAGKAKADIKIT" ? "alert-conflagration" : ""}`}>
+                  <div className="mbfp-metric-label">
+                    <i className="fa-solid fa-people-roof" />
+                    <span>House Density (Agwat)</span>
+                  </div>
+                  <strong className="mbfp-metric-val">
+                    {incident.houseDensity === "PACKED_MAGKAKADIKIT"
+                      ? "🔥 DIKIT-DIKIT (< 2m Conflagration Hazard)"
+                      : incident.houseDensity === "MODERATE_SPACING"
+                        ? "May Agwat (2-5m spacing)"
+                        : incident.houseDensity === "ISOLATED_FAR"
+                          ? "Nahihiwalay / Malayo"
+                          : "Standard Residential"}
+                  </strong>
+                </div>
+
+                {/* Wind & Weather Telemetry */}
+                <div className={`mbfp-metric-item ${(Number(incident.weatherWindSpeed) || 0) >= 25 ? "alert-wind" : ""}`}>
+                  <div className="mbfp-metric-label">
+                    <i className="fa-solid fa-wind" />
+                    <span>Live Wind &amp; Weather</span>
+                  </div>
+                  <strong className="mbfp-metric-val">
+                    {incident.weatherWindSpeed != null
+                      ? `💨 ${incident.weatherWindSpeed} km/h (${incident.weatherWindCondition || "Normal"}) · 🌡️ ${incident.weatherTemperature ?? 29}°C`
+                      : "💨 12 km/h Moderate Breeze (Amihan) · 🌡️ 29°C"}
+                  </strong>
+                </div>
+
+                {/* Structure Fuel */}
+                <div className="mbfp-metric-item">
+                  <div className="mbfp-metric-label">
+                    <i className="fa-solid fa-cubes-stacked" />
+                    <span>Structure Material</span>
+                  </div>
+                  <strong className="mbfp-metric-val">
+                    {incident.structureMaterial === "LIGHT_MATERIALS"
+                      ? "🪵 Light Combustible (Kahoy / Bamboo / Nipa)"
+                      : incident.structureMaterial === "COMMERCIAL_STORAGE"
+                        ? "🏢 Commercial / Flammable Storage"
+                        : incident.structureMaterial === "MIXED_SEMI_CONCRETE"
+                          ? "🏠 Semi-Concrete"
+                          : incident.structureMaterial === "CONCRETE"
+                            ? "🧱 Concrete / Semento"
+                            : "Residential Standard"}
+                  </strong>
+                </div>
+
+                {/* Route Accessibility */}
+                <div className={`mbfp-metric-item ${incident.routeAccessibility === "INTERIOR_ALLEY_ESKINITA" ? "alert-route" : ""}`}>
+                  <div className="mbfp-metric-label">
+                    <i className="fa-solid fa-road-barrier" />
+                    <span>Road &amp; Alley Access</span>
+                  </div>
+                  <strong className="mbfp-metric-val">
+                    {incident.routeAccessibility === "INTERIOR_ALLEY_ESKINITA"
+                      ? "🚶 ESKINITA / LOOBAN (Restricted: Prepare Long Hose)"
+                      : incident.routeAccessibility === "NARROW_STREET"
+                        ? "Makipot na Kalsada (1-Lane)"
+                        : incident.routeAccessibility === "WIDE_ROAD"
+                          ? "🚛 Malapad na Daan (Direct Access)"
+                          : "Standard Municipal Access"}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Active Risk Factors */}
+              {Array.isArray(incident.severityFactors) && incident.severityFactors.length > 0 && (
+                <div className="mbfp-factors-list">
+                  <span className="mbfp-factors-title">Primary Operational Hazard Factors:</span>
+                  <ul>
+                    {incident.severityFactors.map((factor, idx) => (
+                      <li key={idx}><i className="fa-solid fa-triangle-exclamation" /> {factor}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+
             {/* Caller Profile Card */}
             <section className="mbfp-card" aria-labelledby="mbfp-resident-heading">
               <div className="mbfp-card-header">

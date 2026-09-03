@@ -108,9 +108,13 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const landmarkInput = root.querySelector<HTMLInputElement>('[data-landmark-input]');
   const photoInput = root.querySelector<HTMLInputElement>('[data-photo-input]');
   const typeButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-fire-type]'));
+  const densityButton = root.querySelector<HTMLButtonElement>('[data-quick-density]');
+  const routeButton = root.querySelector<HTMLButtonElement>('[data-quick-route]');
   if (!submitButton || !locationCard || !landmarkInput || !photoInput || typeButtons.length === 0) return () => {};
 
   let fireType = typeButtons.find((button) => button.classList.contains('selected'))?.dataset.fireType ?? 'HOUSE_BUILDING';
+  let selectedDensity: string | null = null;
+  let selectedRoute: string | null = null;
   let submitting = false;
   const showError = (message: string) => {
     if (!errorMessage) return;
@@ -142,6 +146,23 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     typeHandlers.set(button, handler);
     button.addEventListener('click', handler);
   });
+
+  const handleDensityClick = () => {
+    if (!densityButton) return;
+    const active = densityButton.classList.toggle('is-active');
+    densityButton.setAttribute('aria-pressed', String(active));
+    selectedDensity = active ? (densityButton.dataset.quickDensity || 'PACKED_MAGKAKADIKIT') : null;
+  };
+
+  const handleRouteClick = () => {
+    if (!routeButton) return;
+    const active = routeButton.classList.toggle('is-active');
+    routeButton.setAttribute('aria-pressed', String(active));
+    selectedRoute = active ? (routeButton.dataset.quickRoute || 'INTERIOR_ALLEY_ESKINITA') : null;
+  };
+
+  densityButton?.addEventListener('click', handleDensityClick);
+  routeButton?.addEventListener('click', handleRouteClick);
 
   const submit = async () => {
     if (submitting) return;
@@ -177,6 +198,13 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     form.set('barangay', locationBarangay);
     form.set('landmark', landmarkInput.value.trim());
     form.set('description', '');
+    if (selectedDensity) form.set('houseDensity', selectedDensity);
+    if (selectedRoute) form.set('routeAccessibility', selectedRoute);
+    if (locationCard.dataset.weatherTemperature) form.set('weatherTemperature', locationCard.dataset.weatherTemperature);
+    if (locationCard.dataset.weatherHumidity) form.set('weatherHumidity', locationCard.dataset.weatherHumidity);
+    if (locationCard.dataset.weatherWindSpeed) form.set('weatherWindSpeed', locationCard.dataset.weatherWindSpeed);
+    if (locationCard.dataset.weatherWindDirection) form.set('weatherWindDirection', locationCard.dataset.weatherWindDirection);
+    if (locationCard.dataset.weatherWindCondition) form.set('weatherWindCondition', locationCard.dataset.weatherWindCondition);
     if (photoInput.files?.[0]) form.set("photo", photoInput.files[0]);
     try {
       const response = await fetch("/api/resident/fire-reports", { method: "POST", body: form });
@@ -194,6 +222,8 @@ function initializeReportSubmission(root: HTMLElement): () => void {
 
   return () => {
     typeHandlers.forEach((handler, button) => button.removeEventListener('click', handler));
+    densityButton?.removeEventListener('click', handleDensityClick);
+    routeButton?.removeEventListener('click', handleRouteClick);
     submitButton.removeEventListener('click', submit);
     cancelButton?.removeEventListener('click', cancel);
   };
@@ -439,6 +469,46 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       locationCard.dataset.locationLongitude = reading.longitude.toFixed(6);
       locationCard.dataset.locationAccuracy = String(Math.round(reading.accuracy));
       showLocationSummary(reading, 'Barangay checking', 'Municipality checking');
+
+      if (!locationCard.dataset.weatherFetched) {
+        locationCard.dataset.weatherFetched = 'pending';
+        fetch(`/api/weather/current?lat=${reading.latitude}&lng=${reading.longitude}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data?.weather) return;
+            const w = data.weather;
+            locationCard.dataset.weatherTemperature = String(w.temperatureC);
+            locationCard.dataset.weatherHumidity = String(w.relativeHumidity);
+            locationCard.dataset.weatherWindSpeed = String(w.windSpeedKph);
+            locationCard.dataset.weatherWindDirection = String(w.windDirectionDeg);
+            locationCard.dataset.weatherWindCondition = w.windCondition;
+            locationCard.dataset.weatherFetched = 'done';
+
+            const tempEl = root.querySelector('[data-weather-temp-display]');
+            const windEl = root.querySelector('[data-weather-wind-display]');
+            const alertEl = root.querySelector<HTMLElement>('[data-weather-alert-badge]');
+
+            if (tempEl) tempEl.textContent = `🌡️ ${w.temperatureC}°C (${w.relativeHumidity}% RH)`;
+            if (windEl) windEl.textContent = `💨 Hangin: ${w.windSpeedKph} km/h`;
+
+            if (alertEl) {
+              if (w.windSpeedKph >= 25) {
+                alertEl.hidden = false;
+                alertEl.textContent = `Malakas ang hangin (${w.windCondition})`;
+                alertEl.classList.remove('moderate');
+              } else if (w.windSpeedKph >= 12) {
+                alertEl.hidden = false;
+                alertEl.textContent = `Katamtamang hangin`;
+                alertEl.classList.add('moderate');
+              } else {
+                alertEl.hidden = true;
+              }
+            }
+          })
+          .catch(() => {
+            locationCard.dataset.weatherFetched = '';
+          });
+      }
 
       if (!leaflet || !map) return;
 
