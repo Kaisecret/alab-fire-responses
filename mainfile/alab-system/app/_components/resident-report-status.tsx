@@ -61,16 +61,153 @@ const detailStyles = `
   .resident-detail-info-item strong.status { color:#e32118; }
 
   /* Phase 2 Tactical Enrichment Card */
-  .tactical-enrichment-card { border:1.5px solid #FBCFE8; background:linear-gradient(135deg, #FFFDFE 0%, #FFF5F7 100%); }
-  .tactical-header-desc { font-size:.78rem; color:#64748B; margin:0 0 1rem; line-height:1.45; }
-  .tactical-group { margin-bottom:1rem; }
-  .tactical-group:last-child { margin-bottom:0; }
-  .tactical-label { display:block; font-size:.72rem; font-weight:800; color:#475569; letter-spacing:.04em; text-transform:uppercase; margin-bottom:.45rem; }
-  .tactical-pill-row { display:flex; gap:.5rem; flex-wrap:wrap; }
-  .tactical-btn { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem .85rem; border:1.5px solid #CBD5E1; border-radius:.65rem; background:#fff; color:#334155; font-size:.78rem; font-weight:750; cursor:pointer; transition:all .18s cubic-bezier(0.16,1,0.3,1); }
-  .tactical-btn:hover { border-color:#DB1B0D; transform:translateY(-1px); }
-  .tactical-btn.is-selected { border-color:#DB1B0D; background:#DB1B0D; color:#fff; box-shadow:0 3px 10px rgba(219,27,13,.25); }
-  .tactical-saved-pill { display:inline-flex; align-items:center; gap:.35rem; color:#047857; font-size:.72rem; font-weight:800; margin-top:.4rem; }
+  .tactical-enrichment-card {
+    border: 1px solid #E2E8F0;
+    border-radius: 1.15rem;
+    background: #FFFFFF;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+    padding: 1.25rem 1.15rem;
+  }
+  .tactical-header-desc {
+    font-size: 0.8rem;
+    color: #64748B;
+    margin: 0 0 1.15rem;
+    line-height: 1.5;
+  }
+  .tactical-group {
+    margin-bottom: 1.1rem;
+  }
+  .tactical-group:last-child {
+    margin-bottom: 0;
+  }
+  .tactical-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 850;
+    color: #475569;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 0.55rem;
+  }
+
+  /* Equal-width grid rows */
+  .tactical-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+  .tactical-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .tactical-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.75rem 0.65rem;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 0.85rem;
+    background: #F8FAFC;
+    color: #1E293B;
+    font-size: 0.82rem;
+    font-weight: 750;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    min-height: 48px;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+  }
+  .tactical-btn:hover {
+    border-color: #CBD5E1;
+    background: #F1F5F9;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.05);
+  }
+  .tactical-btn.is-selected {
+    border-color: #DB1B0D;
+    background: #DB1B0D;
+    color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(219, 27, 13, 0.28);
+  }
+  .tactical-btn-icon {
+    font-size: 1.15rem;
+    flex-shrink: 0;
+  }
+  .tactical-btn-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Stacked card buttons for accessibility */
+  .tactical-btn.tactical-btn-stacked {
+    padding: 0.75rem 0.85rem;
+    text-align: left;
+    justify-content: flex-start;
+    gap: 0.65rem;
+  }
+  .tactical-btn-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+  .tactical-btn-content strong {
+    font-size: 0.82rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: inherit;
+  }
+  .tactical-btn-content small {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #64748B;
+    line-height: 1.3;
+  }
+  .tactical-btn.is-selected .tactical-btn-content small {
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .tactical-saved-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #047857;
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    margin-top: 0.75rem;
+  }
+
+  @media (max-width: 580px) {
+    .tactical-grid-2 {
+      grid-template-columns: 1fr;
+    }
+    .tactical-grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.45rem;
+    }
+    .tactical-btn {
+      font-size: 0.76rem;
+      padding: 0.65rem 0.4rem;
+    }
+  }
+  @media (max-width: 420px) {
+    .tactical-grid-3 {
+      grid-template-columns: 1fr;
+    }
+    .tactical-btn {
+      justify-content: flex-start;
+      padding: 0.7rem 0.85rem;
+    }
+  }
 
   /* Environmental Wind Hazard Alert */
   .wind-hazard-banner { display:flex; align-items:flex-start; gap:.8rem; padding:.9rem 1rem; border-radius:.85rem; background:#FEF3C7; border:1px solid #FDE68A; margin-bottom:.9rem; }
@@ -214,67 +351,80 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
 
         <div className="tactical-group">
           <span className="tactical-label">Materyales ng Nasusunog (Structural Fuel):</span>
-          <div className="tactical-pill-row">
+          <div className="tactical-grid-3">
             <button
               type="button"
               className={`tactical-btn ${report.structure_material === "LIGHT_MATERIALS" ? "is-selected" : ""}`}
               onClick={() => updateTacticalDetail("structureMaterial", "LIGHT_MATERIALS")}
             >
-              🪵 Kahoy / Bamboo / Nipa
+              <span className="tactical-btn-icon">🪵</span>
+              <span className="tactical-btn-text">Kahoy / Nipa</span>
             </button>
             <button
               type="button"
               className={`tactical-btn ${report.structure_material === "MIXED_SEMI_CONCRETE" ? "is-selected" : ""}`}
               onClick={() => updateTacticalDetail("structureMaterial", "MIXED_SEMI_CONCRETE")}
             >
-              🏠 Semi-Concrete
+              <span className="tactical-btn-icon">🏠</span>
+              <span className="tactical-btn-text">Semi-Concrete</span>
             </button>
             <button
               type="button"
               className={`tactical-btn ${report.structure_material === "CONCRETE" ? "is-selected" : ""}`}
               onClick={() => updateTacticalDetail("structureMaterial", "CONCRETE")}
             >
-              🧱 Semento / Concrete
+              <span className="tactical-btn-icon">🧱</span>
+              <span className="tactical-btn-text">Semento</span>
             </button>
           </div>
         </div>
 
         <div className="tactical-group">
           <span className="tactical-label">Dikit-dikit ba ang mga Bahay (Conflagration Risk):</span>
-          <div className="tactical-pill-row">
+          <div className="tactical-grid-2">
             <button
               type="button"
               className={`tactical-btn ${report.house_density === "PACKED_MAGKAKADIKIT" ? "is-selected" : ""}`}
               onClick={() => updateTacticalDetail("houseDensity", "PACKED_MAGKAKADIKIT")}
             >
-              🏘️ Dikit-dikit (&lt; 2m)
+              <span className="tactical-btn-icon">🏘️</span>
+              <span className="tactical-btn-text">Dikit-dikit (&lt; 2m)</span>
             </button>
             <button
               type="button"
               className={`tactical-btn ${report.house_density === "MODERATE_SPACING" ? "is-selected" : ""}`}
               onClick={() => updateTacticalDetail("houseDensity", "MODERATE_SPACING")}
             >
-              🏡 May katamtamang agwat (2-5m)
+              <span className="tactical-btn-icon">🏡</span>
+              <span className="tactical-btn-text">May Agwat (2-5m)</span>
             </button>
           </div>
         </div>
 
         <div className="tactical-group">
           <span className="tactical-label">Daanan papunta sa Apoy (Accessibility):</span>
-          <div className="tactical-pill-row">
+          <div className="tactical-grid-2">
             <button
               type="button"
-              className={`tactical-btn ${report.route_accessibility === "INTERIOR_ALLEY_ESKINITA" ? "is-selected" : ""}`}
+              className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "INTERIOR_ALLEY_ESKINITA" ? "is-selected" : ""}`}
               onClick={() => updateTacticalDetail("routeAccessibility", "INTERIOR_ALLEY_ESKINITA")}
             >
-              🚶 Looban / Eskinita (Kailangan ng mahabang hose)
+              <span className="tactical-btn-icon">🚶</span>
+              <div className="tactical-btn-content">
+                <strong>Eskinita / Looban</strong>
+                <small>Kailangan ng mahabang hose</small>
+              </div>
             </button>
             <button
               type="button"
-              className={`tactical-btn ${report.route_accessibility === "WIDE_ROAD" ? "is-selected" : ""}`}
+              className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "WIDE_ROAD" ? "is-selected" : ""}`}
               onClick={() => updateTacticalDetail("routeAccessibility", "WIDE_ROAD")}
             >
-              🚛 Malapad na kalsada (Kasyang pumasok ang firetruck)
+              <span className="tactical-btn-icon">🚛</span>
+              <div className="tactical-btn-content">
+                <strong>Malapad na Daan</strong>
+                <small>Kasyang pumasok ang firetruck</small>
+              </div>
             </button>
           </div>
         </div>
