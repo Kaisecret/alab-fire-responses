@@ -269,6 +269,7 @@ function initializePhotoCapture(root: HTMLElement): () => void {
     previewUrl = URL.createObjectURL(photo);
     preview.src = previewUrl;
     summaryPreview.src = previewUrl;
+    summaryPreview.hidden = false;
     preview.hidden = false;
     placeholder.hidden = true;
     dialog.dataset.photoReady = 'true';
@@ -276,6 +277,7 @@ function initializePhotoCapture(root: HTMLElement): () => void {
   };
 
   const usePhoto = () => {
+    summaryPreview.hidden = false;
     openButton.dataset.photoState = 'selected';
     closeDialog();
     openButton.focus();
@@ -483,27 +485,6 @@ function initializeLocationLogic(root: HTMLElement): () => void {
             locationCard.dataset.weatherWindDirection = String(w.windDirectionDeg);
             locationCard.dataset.weatherWindCondition = w.windCondition;
             locationCard.dataset.weatherFetched = 'done';
-
-            const tempEl = root.querySelector('[data-weather-temp-display]');
-            const windEl = root.querySelector('[data-weather-wind-display]');
-            const alertEl = root.querySelector<HTMLElement>('[data-weather-alert-badge]');
-
-            if (tempEl) tempEl.textContent = `🌡️ ${w.temperatureC}°C (${w.relativeHumidity}% RH)`;
-            if (windEl) windEl.textContent = `💨 Hangin: ${w.windSpeedKph} km/h`;
-
-            if (alertEl) {
-              if (w.windSpeedKph >= 25) {
-                alertEl.hidden = false;
-                alertEl.textContent = `Malakas ang hangin (${w.windCondition})`;
-                alertEl.classList.remove('moderate');
-              } else if (w.windSpeedKph >= 12) {
-                alertEl.hidden = false;
-                alertEl.textContent = `Katamtamang hangin`;
-                alertEl.classList.add('moderate');
-              } else {
-                alertEl.hidden = true;
-              }
-            }
           })
           .catch(() => {
             locationCard.dataset.weatherFetched = '';

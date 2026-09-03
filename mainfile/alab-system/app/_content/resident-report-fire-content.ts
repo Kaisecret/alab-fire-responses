@@ -35,67 +35,6 @@ export const reportFireStyles = `
   .report-form-heading h1 { margin: .65rem 0 .45rem; color: var(--report-ink); font-size: clamp(1.7rem, 3vw, 2.55rem); line-height: 1.08; letter-spacing: -.045em; }
   .report-form-heading p { max-width: 34rem; margin: 0; color: var(--report-muted); font-size: .94rem; line-height: 1.55; }
 
-  /* Live Weather & Wind Telemetry Card */
-  .live-weather-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.85rem;
-    margin-bottom: 1.15rem;
-    padding: 0.85rem 1.15rem;
-    border: 1px solid #E2E8F0;
-    border-radius: 0.95rem;
-    background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%);
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-    flex-wrap: wrap;
-  }
-  .weather-meta-left {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .weather-radar-dot {
-    width: 0.65rem;
-    height: 0.65rem;
-    border-radius: 50%;
-    background: #10B981;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-    animation: weather-pulse 1.8s infinite;
-  }
-  .weather-title {
-    font-size: 0.68rem;
-    font-weight: 850;
-    letter-spacing: 0.06em;
-    color: #475569;
-    text-transform: uppercase;
-  }
-  .weather-values {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.65rem;
-    font-size: 0.84rem;
-    font-weight: 750;
-    color: #0F172A;
-  }
-  .weather-stat { display: inline-flex; align-items: center; gap: 0.25rem; }
-  .weather-divider { color: #CBD5E1; }
-  .weather-pill-alert {
-    padding: 0.22rem 0.6rem;
-    border-radius: 999px;
-    font-size: 0.66rem;
-    font-weight: 850;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    background: #FEF2F2;
-    color: #DC2626;
-    border: 1px solid #FECACA;
-  }
-  .weather-pill-alert.moderate {
-    background: #FFFBEB;
-    color: #D97706;
-    border-color: #FDE68A;
-  }
-
   .warning-banner {
     display: flex;
     align-items: center;
@@ -280,6 +219,12 @@ export const reportFireStyles = `
   .photo-upload[data-photo-state="selected"] .photo-upload-empty { display: none; }
   .photo-upload[data-photo-state="selected"] .photo-upload-summary { display: flex; }
   .photo-upload-summary img { width: 3.7rem; height: 3.7rem; border-radius: .7rem; object-fit: cover; box-shadow: 0 .45rem 1rem rgba(16, 34, 49, .16); }
+  .photo-upload-summary img[hidden],
+  .photo-upload-summary img:not([src]),
+  .photo-upload-summary img[src=""],
+  .photo-upload-summary img[src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E"] {
+    display: none !important;
+  }
   .photo-upload-summary span { margin: 0; }
   .photo-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; clip-path: inset(50%); }
   .photo-dialog { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; }
@@ -318,7 +263,6 @@ export const reportFireStyles = `
   @keyframes report-rise { from { opacity: 0; transform: translateY(.85rem); } to { opacity: 1; transform: translateY(0); } }
   @keyframes photo-dialog-in { from { opacity: 0; transform: translateY(1rem) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
   @keyframes report-pulse { 50% { transform: scale(1.05); box-shadow: 0 0 0 .35rem rgba(219, 27, 13, .08); } }
-  @keyframes weather-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.7; } }
 
   @media (max-width: 950px) {
     .report-page-root { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
@@ -336,7 +280,6 @@ export const reportFireStyles = `
   }
   @media (max-width: 640px) {
     .quick-pills-container { grid-template-columns: 1fr; gap: 0.55rem; }
-    .live-weather-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
   }
   @media (max-width: 540px) {
     .report-page-root { padding: .85rem .75rem calc(6rem + env(safe-area-inset-bottom)); }
@@ -349,7 +292,7 @@ export const reportFireStyles = `
     .form-footer { grid-template-columns: 1fr; gap: .65rem; }
     .btn-primary, .btn-cancel { min-height: 3.25rem; }
   }
-  @media (prefers-reduced-motion: reduce) { .report-form-shell, .location-status.is-improving, .location-status.is-locating, .location-map-pulse, .weather-radar-dot { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .report-form-shell, .location-status.is-improving, .location-status.is-locating, .location-map-pulse { animation: none; } }
 `;
 
 export const reportFireMarkup = `
@@ -360,19 +303,6 @@ export const reportFireMarkup = `
         <h1 id="report-fire-title">Report a Fire Incident</h1>
         <p>Share the clearest details you can so responders can act faster.</p>
       </header>
-
-      <div class="live-weather-card" data-live-weather-card>
-        <div class="weather-meta-left">
-          <span class="weather-radar-dot" aria-hidden="true"></span>
-          <span class="weather-title">LOCAL WEATHER & WIND (GPS AUTO-DETECTED)</span>
-        </div>
-        <div class="weather-values" data-weather-values>
-          <span class="weather-stat" data-weather-temp-display>🌡️ Detecting temp…</span>
-          <span class="weather-divider" aria-hidden="true">·</span>
-          <span class="weather-stat" data-weather-wind-display>💨 Checking wind speed…</span>
-          <span class="weather-pill-alert" data-weather-alert-badge hidden></span>
-        </div>
-      </div>
 
       <section class="warning-banner" aria-label="Fire emergency safety reminder">
         <span class="warning-banner-icon" aria-hidden="true"><img src="/images/fire logo.webp" alt="" /></span>
@@ -453,7 +383,7 @@ export const reportFireMarkup = `
       </section>
 
       <section class="report-detail-grid">
-        <div class="photo-field"><span class="field-label"><span class="step-number">4</span>ADD FIRE PHOTO <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">Take a photo only when it is safe to do so.</span><button type="button" class="photo-upload" data-photo-open data-photo-state="empty"><span class="photo-upload-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Take a photo</strong><span>Your camera opens in a secure popup</span></span><span class="photo-upload-summary"><img data-photo-summary-preview alt="Selected fire photo" /><span><strong>Photo ready</strong><span>Tap to retake it</span></span></span></button><input class="photo-input" id="fire-photo" data-photo-input type="file" accept="image/jpeg,image/png" capture="environment" /></div>
+        <div class="photo-field"><span class="field-label"><span class="step-number">4</span>ADD FIRE PHOTO <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">Take a photo only when it is safe to do so.</span><button type="button" class="photo-upload" data-photo-open data-photo-state="empty"><span class="photo-upload-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Take a photo</strong><span>Your camera opens in a secure popup</span></span><span class="photo-upload-summary"><img data-photo-summary-preview alt="Selected fire photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" hidden /><span><strong>Photo ready</strong><span>Tap to retake it</span></span></span></button><input class="photo-input" id="fire-photo" data-photo-input type="file" accept="image/jpeg,image/png" capture="environment" /></div>
       </section>
 
       <p class="report-submit-error" data-report-submit-error role="alert" hidden></p>

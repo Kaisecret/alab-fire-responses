@@ -1646,12 +1646,12 @@ export function MunicipalIncidentDetail({
                 <div className={`mbfp-metric-item ${(Number(incident.weatherWindSpeed) || 0) >= 25 ? "alert-wind" : ""}`}>
                   <div className="mbfp-metric-label">
                     <i className="fa-solid fa-wind" />
-                    <span>Live Wind &amp; Weather</span>
+                    <span>Weather at Incident Site ({incident.barangay})</span>
                   </div>
                   <strong className="mbfp-metric-val">
                     {incident.weatherWindSpeed != null
-                      ? `💨 ${incident.weatherWindSpeed} km/h (${incident.weatherWindCondition || "Normal"}) · 🌡️ ${incident.weatherTemperature ?? 29}°C`
-                      : "💨 12 km/h Moderate Breeze (Amihan) · 🌡️ 29°C"}
+                      ? `💨 ${incident.weatherWindSpeed} km/h (${incident.weatherWindCondition || "Normal"}) · 🌡️ ${incident.weatherTemperature ?? 29}°C (${incident.weatherHumidity ?? 70}% RH)`
+                      : "💨 12 km/h Moderate Breeze · 🌡️ 29°C"}
                   </strong>
                 </div>
 

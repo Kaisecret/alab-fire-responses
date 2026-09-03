@@ -44,12 +44,12 @@ test("validateTacticalDetailsUpdate safely captures post-alert enrichment update
   assert.equal(update.routeAccessibility, "INTERIOR_ALLEY_ESKINITA");
 });
 
-test("resident report markup contains live weather card and 1-tap quick pills", () => {
+test("resident report markup contains 1-tap quick pills and hides weather from resident UI", () => {
   const content = read("app/_content/resident-report-fire-content.ts");
 
-  assert.match(content, /data-live-weather-card/);
-  assert.match(content, /data-weather-temp-display/);
-  assert.match(content, /data-weather-wind-display/);
+  assert.doesNotMatch(content, /data-live-weather-card/);
+  assert.match(content, /data-photo-summary-preview/);
+  assert.match(content, /hidden/);
   assert.match(content, /data-quick-density="PACKED_MAGKAKADIKIT"/);
   assert.match(content, /data-quick-route="INTERIOR_ALLEY_ESKINITA"/);
   assert.match(content, /Dikit-dikit ang mga bahay/);
@@ -61,19 +61,18 @@ test("resident report status contains AHP severity badge and Phase 2 tactical en
 
   assert.match(status, /severity-pill/);
   assert.match(status, /tactical-enrichment-card/);
-  assert.match(status, /wind-hazard-banner/);
   assert.match(status, /updateTacticalDetail/);
   assert.match(status, /fetch\(`\/api\/resident\/fire-reports\/\$\{reportId\}`, \{/);
   assert.match(status, /method:\s*"PATCH"/);
 });
 
-test("municipal incident detail displays the AHP severity badge and tactical conflagration card", () => {
+test("municipal incident detail displays the AHP severity badge and localized incident site weather", () => {
   const detail = read("app/_components/municipal-incident-detail.tsx");
 
   assert.match(detail, /mbfp-severity-hero-badge/);
   assert.match(detail, /mbfp-tactical-severity-card/);
   assert.match(detail, /House Density \(Agwat\)/);
   assert.match(detail, /DIKIT-DIKIT/);
-  assert.match(detail, /Live Wind &amp; Weather/);
+  assert.match(detail, /Weather at Incident Site/);
   assert.match(detail, /ESKINITA \/ LOOBAN/);
 });
