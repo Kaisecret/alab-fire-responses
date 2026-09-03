@@ -495,6 +495,9 @@ const detailStyles = `
     flex-direction: column;
     gap: 0.2rem;
   }
+  .mbfp-data-cell.mbfp-data-cell--full {
+    grid-column: 1 / -1;
+  }
 
   .mbfp-data-label {
     font-size: 0.7rem;
@@ -1900,7 +1903,7 @@ export function MunicipalIncidentDetail({
                     <span className="mbfp-data-value">{incident.reporterIpAddress || "Unavailable"}</span>
                   </div>
 
-                  <div className="mbfp-data-cell">
+                  <div className="mbfp-data-cell mbfp-data-cell--full">
                     <span className="mbfp-data-label">
                       <i className="fa-solid fa-mobile-screen-button" /> Device / browser
                     </span>

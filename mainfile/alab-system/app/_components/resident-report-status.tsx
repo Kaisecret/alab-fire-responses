@@ -67,13 +67,13 @@ const detailStyles = `
     background: #FFFDFB;
   }
   .tactical-header-desc {
-    margin: -0.4rem 0 0.95rem;
-    font-size: 0.78rem;
+    margin: -0.3rem 0 0.65rem;
+    font-size: 0.76rem;
     color: #64748B;
-    line-height: 1.45;
+    line-height: 1.4;
   }
   .tactical-group {
-    margin-bottom: 1.15rem;
+    margin-bottom: 0.75rem;
   }
   .tactical-group:last-child {
     margin-bottom: 0;
@@ -277,12 +277,33 @@ const detailStyles = `
   .tactical-btn-icon {
     font-size: 1.15rem;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 0.5rem;
+    background: rgba(15, 23, 42, 0.05);
+    transition: all 0.15s ease;
+  }
+  .tactical-btn-icon.icon-wood { color: #854D0E; }
+  .tactical-btn-icon.icon-semi { color: #EA580C; }
+  .tactical-btn-icon.icon-concrete { color: #475569; }
+  .tactical-btn-icon.icon-packed { color: #DC2626; }
+  .tactical-btn-icon.icon-spaced { color: #0284C7; }
+  .tactical-btn-icon.icon-alley { color: #D97706; }
+  .tactical-btn-icon.icon-truck { color: #DC2626; }
+
+  .tactical-btn.is-selected .tactical-btn-icon {
+    background: rgba(255, 255, 255, 0.22);
+    color: #FFFFFF !important;
   }
   .tactical-btn-text {
     white-space: normal;
     word-break: break-word;
     line-height: 1.2;
     text-align: center;
+    font-size: 0.8rem;
   }
 
   /* Radio dot indicators */
@@ -840,8 +861,170 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
 
       {/* Responsive 2-Column Bento Grid */}
       <div className="resident-detail-grid">
-        {/* Left Column: Timeline, Latest Update, Tactical Enrichment */}
+        {/* Left Column: Tactical Enrichment on top, then Timeline & Latest Update */}
         <div className="resident-grid-col">
+          {/* Phase 2 Tactical Enrichment Card (On Top for instant emergency response) */}
+          <section className="resident-detail-card tactical-enrichment-card">
+            <h2>
+              <i className="fa-solid fa-bolt" style={{ color: "#DC2626", marginRight: "0.4rem" }} /> Tulong sa Responders (Opsyonal)
+            </h2>
+            <p className="tactical-header-desc">
+              Opsyonal: Piliin para maihanda ang angkop na kagamitan ng BFP habang papunta:
+            </p>
+
+            {/* Interactive Onboarding Guide (Auto-vanishes when user interacts or taps 'Naintindihan ko') */}
+            {showOnboarding && (
+              <div
+                className={`interactive-onboarding-toast ${isDismissingOnboarding ? "is-dismissing" : ""}`}
+                role="status"
+                aria-live="polite"
+              >
+                <div className="onboarding-icon" aria-hidden="true">✨</div>
+                <div className="onboarding-content">
+                  <div className="onboarding-title">
+                    <strong>Gabay sa Pagpili (Interactive Guide)</strong>
+                    <button
+                      type="button"
+                      className="onboarding-close-btn"
+                      onClick={dismissOnboarding}
+                      aria-label="Isara ang gabay"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <p className="onboarding-desc">
+                    Pumili ng isa sa bawat kahon sa ibaba. Awtomatiko itong maipapadala agad sa BFP responders nang hindi na kailangang mag-submit muli!
+                  </p>
+                  <button
+                    type="button"
+                    className="onboarding-dismiss-pill"
+                    onClick={dismissOnboarding}
+                  >
+                    <span>✓ Naintindihan ko</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="tactical-group">
+              <div className="tactical-group-header">
+                <span className="tactical-label">Materyales (Fuel):</span>
+                <span className={`tactical-select-guide ${report.structure_material ? "is-done" : ""}`}>
+                  {report.structure_material ? "✓ Napili" : "Pumili ng 1"}
+                </span>
+              </div>
+              <div className="tactical-grid-3">
+                <button
+                  type="button"
+                  className={`tactical-btn ${report.structure_material === "LIGHT_MATERIALS" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("structureMaterial", "LIGHT_MATERIALS")}
+                  role="radio"
+                  aria-checked={report.structure_material === "LIGHT_MATERIALS"}
+                >
+                  <span className="tactical-btn-icon icon-wood"><i className="fa-solid fa-tree" /></span>
+                  <span className="tactical-btn-text">Kahoy / Nipa</span>
+                  <span className="tactical-radio-dot" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={`tactical-btn ${report.structure_material === "MIXED_SEMI_CONCRETE" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("structureMaterial", "MIXED_SEMI_CONCRETE")}
+                  role="radio"
+                  aria-checked={report.structure_material === "MIXED_SEMI_CONCRETE"}
+                >
+                  <span className="tactical-btn-icon icon-semi"><i className="fa-solid fa-house-chimney" /></span>
+                  <span className="tactical-btn-text">Semi-Concrete</span>
+                  <span className="tactical-radio-dot" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={`tactical-btn ${report.structure_material === "CONCRETE" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("structureMaterial", "CONCRETE")}
+                  role="radio"
+                  aria-checked={report.structure_material === "CONCRETE"}
+                >
+                  <span className="tactical-btn-icon icon-concrete"><i className="fa-solid fa-building" /></span>
+                  <span className="tactical-btn-text">Semento</span>
+                  <span className="tactical-radio-dot" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            <div className="tactical-group">
+              <div className="tactical-group-header">
+                <span className="tactical-label">Agwat ng Bahay (Density):</span>
+                <span className={`tactical-select-guide ${report.house_density ? "is-done" : ""}`}>
+                  {report.house_density ? "✓ Napili" : "Pumili ng 1"}
+                </span>
+              </div>
+              <div className="tactical-grid-2">
+                <button
+                  type="button"
+                  className={`tactical-btn ${report.house_density === "PACKED_MAGKAKADIKIT" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("houseDensity", "PACKED_MAGKAKADIKIT")}
+                  role="radio"
+                  aria-checked={report.house_density === "PACKED_MAGKAKADIKIT"}
+                >
+                  <span className="tactical-btn-icon icon-packed"><i className="fa-solid fa-city" /></span>
+                  <span className="tactical-btn-text">Dikit-dikit (&lt; 2m)</span>
+                  <span className="tactical-radio-dot" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={`tactical-btn ${report.house_density === "ISOLATED_FAR" || report.house_density === "MODERATE_SPACING" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("houseDensity", "ISOLATED_FAR")}
+                  role="radio"
+                  aria-checked={report.house_density === "ISOLATED_FAR" || report.house_density === "MODERATE_SPACING"}
+                >
+                  <span className="tactical-btn-icon icon-spaced"><i className="fa-solid fa-house" /></span>
+                  <span className="tactical-btn-text">Magkakalayo (&gt; 15m)</span>
+                  <span className="tactical-radio-dot" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            <div className="tactical-group">
+              <div className="tactical-group-header">
+                <span className="tactical-label">Daanan (Access):</span>
+                <span className={`tactical-select-guide ${report.route_accessibility ? "is-done" : ""}`}>
+                  {report.route_accessibility ? "✓ Napili" : "Pumili ng 1"}
+                </span>
+              </div>
+              <div className="tactical-grid-2">
+                <button
+                  type="button"
+                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "INTERIOR_ALLEY_ESKINITA" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("routeAccessibility", "INTERIOR_ALLEY_ESKINITA")}
+                  role="radio"
+                  aria-checked={report.route_accessibility === "INTERIOR_ALLEY_ESKINITA"}
+                >
+                  <span className="tactical-btn-icon icon-alley"><i className="fa-solid fa-person-walking" /></span>
+                  <div className="tactical-btn-content">
+                    <strong>Eskinita</strong>
+                    <small>Mahabang hose</small>
+                  </div>
+                  <span className="tactical-radio-dot" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "WIDE_ROAD" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("routeAccessibility", "WIDE_ROAD")}
+                  role="radio"
+                  aria-checked={report.route_accessibility === "WIDE_ROAD"}
+                >
+                  <span className="tactical-btn-icon icon-truck"><i className="fa-solid fa-truck-fire" /></span>
+                  <div className="tactical-btn-content">
+                    <strong>Malapad na Daan</strong>
+                    <small>Kasya ang truck</small>
+                  </div>
+                  <span className="tactical-radio-dot" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            {savedFeedback && <span className="tactical-saved-pill">{savedFeedback}</span>}
+          </section>
+
           {/* Status Timeline */}
           <section className="resident-detail-card">
             <h2>
@@ -881,168 +1064,6 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
             <p className="resident-update-time">
               {latest ? formatDate(latest.created_at) : formatDate(report.submitted_at)}
             </p>
-          </section>
-
-          {/* Phase 2 Tactical Enrichment Card (Optional helper for en route responders) */}
-          <section className="resident-detail-card tactical-enrichment-card">
-            <h2>
-              <span>⚡</span> Tulong sa BFP Responders habang papunta (Optional)
-            </h2>
-            <p className="tactical-header-desc">
-              Kung ligtas ka sa iyong pwesto, pindutin ang karagdagang impormasyon upang maihanda ng BFP ang tamang pumper, hose relay, at kagamitan bago sila dumating:
-            </p>
-
-            {/* Interactive Onboarding Guide (Auto-vanishes when user interacts or taps 'Naintindihan ko') */}
-            {showOnboarding && (
-              <div
-                className={`interactive-onboarding-toast ${isDismissingOnboarding ? "is-dismissing" : ""}`}
-                role="status"
-                aria-live="polite"
-              >
-                <div className="onboarding-icon" aria-hidden="true">✨</div>
-                <div className="onboarding-content">
-                  <div className="onboarding-title">
-                    <strong>Gabay sa Pagpili (Interactive Guide)</strong>
-                    <button
-                      type="button"
-                      className="onboarding-close-btn"
-                      onClick={dismissOnboarding}
-                      aria-label="Isara ang gabay"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <p className="onboarding-desc">
-                    Pumili ng isa sa bawat kahon sa ibaba. Awtomatiko itong maipapadala agad sa BFP responders nang hindi na kailangang mag-submit muli!
-                  </p>
-                  <button
-                    type="button"
-                    className="onboarding-dismiss-pill"
-                    onClick={dismissOnboarding}
-                  >
-                    <span>✓ Naintindihan ko</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="tactical-group">
-              <div className="tactical-group-header">
-                <span className="tactical-label">Materyales ng Nasusunog (Structural Fuel):</span>
-                <span className={`tactical-select-guide ${report.structure_material ? "is-done" : ""}`}>
-                  {report.structure_material ? "✓ Napili na" : "👉 Pumili ng isa (Select 1)"}
-                </span>
-              </div>
-              <div className="tactical-grid-3">
-                <button
-                  type="button"
-                  className={`tactical-btn ${report.structure_material === "LIGHT_MATERIALS" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("structureMaterial", "LIGHT_MATERIALS")}
-                  role="radio"
-                  aria-checked={report.structure_material === "LIGHT_MATERIALS"}
-                >
-                  <span className="tactical-btn-icon">🪵</span>
-                  <span className="tactical-btn-text">Kahoy / Nipa</span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className={`tactical-btn ${report.structure_material === "MIXED_SEMI_CONCRETE" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("structureMaterial", "MIXED_SEMI_CONCRETE")}
-                  role="radio"
-                  aria-checked={report.structure_material === "MIXED_SEMI_CONCRETE"}
-                >
-                  <span className="tactical-btn-icon">🏠</span>
-                  <span className="tactical-btn-text">Semi-Concrete</span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className={`tactical-btn ${report.structure_material === "CONCRETE" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("structureMaterial", "CONCRETE")}
-                  role="radio"
-                  aria-checked={report.structure_material === "CONCRETE"}
-                >
-                  <span className="tactical-btn-icon">🧱</span>
-                  <span className="tactical-btn-text">Semento</span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-
-            <div className="tactical-group">
-              <div className="tactical-group-header">
-                <span className="tactical-label">Dikit-dikit ba ang mga Bahay (Conflagration Risk):</span>
-                <span className={`tactical-select-guide ${report.house_density ? "is-done" : ""}`}>
-                  {report.house_density ? "✓ Napili na" : "👉 Pumili ng isa (Select 1)"}
-                </span>
-              </div>
-              <div className="tactical-grid-2">
-                <button
-                  type="button"
-                  className={`tactical-btn ${report.house_density === "PACKED_MAGKAKADIKIT" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("houseDensity", "PACKED_MAGKAKADIKIT")}
-                  role="radio"
-                  aria-checked={report.house_density === "PACKED_MAGKAKADIKIT"}
-                >
-                  <span className="tactical-btn-icon">🏘️</span>
-                  <span className="tactical-btn-text">Dikit-dikit (&lt; 2m)</span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className={`tactical-btn ${report.house_density === "ISOLATED_FAR" || report.house_density === "MODERATE_SPACING" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("houseDensity", "ISOLATED_FAR")}
-                  role="radio"
-                  aria-checked={report.house_density === "ISOLATED_FAR" || report.house_density === "MODERATE_SPACING"}
-                >
-                  <span className="tactical-btn-icon">🏡</span>
-                  <span className="tactical-btn-text">Magkakalayo na Bahay (&gt; 15m)</span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-
-            <div className="tactical-group">
-              <div className="tactical-group-header">
-                <span className="tactical-label">Daanan papunta sa Apoy (Accessibility):</span>
-                <span className={`tactical-select-guide ${report.route_accessibility ? "is-done" : ""}`}>
-                  {report.route_accessibility ? "✓ Napili na" : "👉 Pumili ng isa (Select 1)"}
-                </span>
-              </div>
-              <div className="tactical-grid-2">
-                <button
-                  type="button"
-                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "INTERIOR_ALLEY_ESKINITA" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("routeAccessibility", "INTERIOR_ALLEY_ESKINITA")}
-                  role="radio"
-                  aria-checked={report.route_accessibility === "INTERIOR_ALLEY_ESKINITA"}
-                >
-                  <span className="tactical-btn-icon">🚶</span>
-                  <div className="tactical-btn-content">
-                    <strong>Eskinita / Looban</strong>
-                    <small>Kailangan ng mahabang hose</small>
-                  </div>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "WIDE_ROAD" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("routeAccessibility", "WIDE_ROAD")}
-                  role="radio"
-                  aria-checked={report.route_accessibility === "WIDE_ROAD"}
-                >
-                  <span className="tactical-btn-icon">🚛</span>
-                  <div className="tactical-btn-content">
-                    <strong>Malapad na Daan</strong>
-                    <small>Kasyang pumasok ang firetruck</small>
-                  </div>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-
-            {savedFeedback && <span className="tactical-saved-pill">{savedFeedback}</span>}
           </section>
         </div>
 
