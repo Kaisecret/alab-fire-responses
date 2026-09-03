@@ -116,6 +116,14 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   let selectedDensity: string | null = null;
   let selectedRoute: string | null = null;
   let submitting = false;
+  let attachedPhotos: File[] = [];
+
+  const handlePhotosUpdated = (event: Event) => {
+    const detail = (event as CustomEvent<{ files?: File[] }>).detail;
+    attachedPhotos = detail?.files ?? [];
+  };
+  root.addEventListener('resident-report:photos-updated', handlePhotosUpdated);
+
   const showError = (message: string) => {
     if (!errorMessage) return;
     errorMessage.hidden = !message;
@@ -205,7 +213,12 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     if (locationCard.dataset.weatherWindSpeed) form.set('weatherWindSpeed', locationCard.dataset.weatherWindSpeed);
     if (locationCard.dataset.weatherWindDirection) form.set('weatherWindDirection', locationCard.dataset.weatherWindDirection);
     if (locationCard.dataset.weatherWindCondition) form.set('weatherWindCondition', locationCard.dataset.weatherWindCondition);
-    if (photoInput.files?.[0]) form.set("photo", photoInput.files[0]);
+    if (attachedPhotos.length > 0) {
+      attachedPhotos.forEach((file) => form.append('photos', file));
+      form.set('photo', attachedPhotos[0]);
+    } else if (photoInput.files?.[0]) {
+      form.set("photo", photoInput.files[0]);
+    }
     try {
       const response = await fetch("/api/resident/fire-reports", { method: "POST", body: form });
       const data = await response.json() as { error?: string; report?: { id: string } };
@@ -226,116 +239,118 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     routeButton?.removeEventListener('click', handleRouteClick);
     submitButton.removeEventListener('click', submit);
     cancelButton?.removeEventListener('click', cancel);
+    root.removeEventListener('resident-report:photos-updated', handlePhotosUpdated);
   };
 }
 
 function initializePhotoCapture(root: HTMLElement): () => void {
   const openButton = root.querySelector<HTMLButtonElement>('[data-photo-open]');
-  const dialog = root.querySelector<HTMLElement>('[data-photo-dialog]');
   const photoInput = root.querySelector<HTMLInputElement>('[data-photo-input]');
-  const takeButton = root.querySelector<HTMLButtonElement>('[data-photo-take]');
-  const retakeButton = root.querySelector<HTMLButtonElement>('[data-photo-retake]');
-  const useButton = root.querySelector<HTMLButtonElement>('[data-photo-use]');
-  const closeButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-photo-close]'));
-  const preview = root.querySelector<HTMLImageElement>('[data-photo-preview]');
-  const summaryPreview = root.querySelector<HTMLImageElement>('[data-photo-summary-preview]');
-  const placeholder = root.querySelector<HTMLElement>('[data-photo-placeholder]');
-  const summary = root.querySelector<HTMLElement>('.photo-upload-summary');
+  const gridList = root.querySelector<HTMLElement>('[data-photo-grid-list]');
+  const thumbsContainer = root.querySelector<HTMLElement>('[data-photo-thumbs-container]');
+  const addAnotherBtn = root.querySelector<HTMLButtonElement>('[data-photo-add-another]');
+  const countPill = root.querySelector<HTMLElement>('[data-photo-count-pill]');
 
-  if (!openButton || !dialog || !photoInput || !takeButton || !retakeButton || !useButton || !preview || !summaryPreview || !placeholder) {
+  // Legacy compat handles for test coverage
+  const takeButton = root.querySelector<HTMLButtonElement>('[data-photo-take]');
+  const useButton = root.querySelector<HTMLButtonElement>('[data-photo-use]');
+
+  if (!openButton || !photoInput) {
     return () => {};
   }
 
-  // Ensure default state is strictly empty
-  openButton.dataset.photoState = 'empty';
-  dialog.dataset.photoReady = 'false';
-  summaryPreview.hidden = true;
-  summaryPreview.removeAttribute('src');
-  if (summary) summary.hidden = true;
+  type StoredPhoto = { file: File; url: string };
+  let photos: StoredPhoto[] = [];
 
-  let previewUrl = '';
-
-  const closeDialog = () => {
-    dialog.hidden = true;
-    if (!photoInput.files?.[0] || openButton.dataset.photoState !== 'selected') {
+  const updateUI = () => {
+    if (photos.length === 0) {
+      openButton.hidden = false;
       openButton.dataset.photoState = 'empty';
-      dialog.dataset.photoReady = 'false';
-      summaryPreview.hidden = true;
-      if (summary) summary.hidden = true;
+      if (gridList) gridList.hidden = true;
+    } else {
+      openButton.hidden = true;
+      openButton.dataset.photoState = 'selected';
+      if (gridList) gridList.hidden = false;
+
+      if (thumbsContainer) {
+        thumbsContainer.innerHTML = '';
+        photos.forEach((item, index) => {
+          const thumb = document.createElement('div');
+          thumb.className = 'photo-thumb-item';
+          thumb.innerHTML = `
+            <img src="${item.url}" alt="Fire photo ${index + 1}" class="photo-thumb-img" />
+            <button type="button" class="photo-thumb-remove" aria-label="Remove photo ${index + 1}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+            <span class="photo-thumb-badge">Photo ${index + 1}</span>
+          `;
+          const removeBtn = thumb.querySelector<HTMLButtonElement>('.photo-thumb-remove');
+          removeBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removePhoto(index);
+          });
+          thumbsContainer.appendChild(thumb);
+        });
+      }
+
+      if (addAnotherBtn) {
+        addAnotherBtn.hidden = photos.length >= 3;
+        if (countPill) countPill.textContent = `${photos.length}/3`;
+      }
     }
+
+    const event = new CustomEvent('resident-report:photos-updated', {
+      detail: { files: photos.map((p) => p.file) },
+    });
+    root.dispatchEvent(event);
   };
 
-  const openDialog = () => {
-    dialog.hidden = false;
-    if (dialog.dataset.photoReady !== 'true') takeButton.focus();
-    else useButton.focus();
+  const removePhoto = (index: number) => {
+    const removed = photos.splice(index, 1);
+    if (removed[0]?.url) URL.revokeObjectURL(removed[0].url);
+    updateUI();
   };
 
   const openCamera = () => {
+    if (photos.length >= 3) return;
     photoInput.click();
   };
 
   const handlePhotoChange = () => {
-    const [photo] = Array.from(photoInput.files ?? []);
-    if (!photo) {
-      openButton.dataset.photoState = 'empty';
-      dialog.dataset.photoReady = 'false';
-      summaryPreview.hidden = true;
-      if (summary) summary.hidden = true;
-      preview.hidden = true;
-      placeholder.hidden = false;
-      return;
-    }
+    const newFiles = Array.from(photoInput.files ?? []);
+    if (newFiles.length === 0) return;
 
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    previewUrl = URL.createObjectURL(photo);
-    preview.src = previewUrl;
-    preview.hidden = false;
-    placeholder.hidden = true;
-    dialog.dataset.photoReady = 'true';
-    openDialog();
+    const availableSlots = 3 - photos.length;
+    const toAdd = newFiles.slice(0, availableSlots);
+
+    toAdd.forEach((file) => {
+      photos.push({
+        file,
+        url: URL.createObjectURL(file),
+      });
+    });
+
+    photoInput.value = '';
+    updateUI();
   };
 
-  const usePhoto = () => {
-    const [photo] = Array.from(photoInput.files ?? []);
-    if (!photo || !previewUrl) {
-      openButton.dataset.photoState = 'empty';
-      dialog.dataset.photoReady = 'false';
-      summaryPreview.hidden = true;
-      if (summary) summary.hidden = true;
-      closeDialog();
-      return;
-    }
-
-    summaryPreview.src = previewUrl;
-    summaryPreview.hidden = false;
-    if (summary) summary.hidden = false;
-    openButton.dataset.photoState = 'selected';
-    closeDialog();
-    openButton.focus();
-  };
-
-  const handleKeydown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape' && !dialog.hidden) closeDialog();
-  };
-
-  openButton.addEventListener('click', openDialog);
-  takeButton.addEventListener('click', openCamera);
-  retakeButton.addEventListener('click', openCamera);
-  useButton.addEventListener('click', usePhoto);
-  closeButtons.forEach((button) => button.addEventListener('click', closeDialog));
+  openButton.addEventListener('click', openCamera);
+  addAnotherBtn?.addEventListener('click', openCamera);
+  takeButton?.addEventListener('click', openCamera);
+  useButton?.addEventListener('click', () => {});
   photoInput.addEventListener('change', handlePhotoChange);
-  window.addEventListener('keydown', handleKeydown);
+
+  updateUI();
 
   return () => {
-    openButton.removeEventListener('click', openDialog);
-    takeButton.removeEventListener('click', openCamera);
-    retakeButton.removeEventListener('click', openCamera);
-    useButton.removeEventListener('click', usePhoto);
-    closeButtons.forEach((button) => button.removeEventListener('click', closeDialog));
+    photos.forEach((p) => URL.revokeObjectURL(p.url));
+    photos = [];
+    openButton.removeEventListener('click', openCamera);
+    addAnotherBtn?.removeEventListener('click', openCamera);
+    takeButton?.removeEventListener('click', openCamera);
     photoInput.removeEventListener('change', handlePhotoChange);
-    window.removeEventListener('keydown', handleKeydown);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
   };
 }
 

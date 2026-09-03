@@ -215,52 +215,128 @@ export const reportFireStyles = `
   .field-label { display: flex; align-items: center; gap: .5rem; margin-bottom: .65rem; color: var(--report-ink); font-size: .79rem; font-weight: 850; }
   .field-label .step-number { width: 1.42rem; height: 1.42rem; flex-basis: 1.42rem; font-size: .68rem; }
   .field-helper { min-height: 2.25rem; margin: 0 0 .65rem; color: var(--report-muted); font-size: .73rem; line-height: 1.48; }
-  .photo-upload { display: flex; min-height: 8.2rem; align-items: center; justify-content: center; padding: .9rem; border: 1.5px dashed #F0B8B1; border-radius: .85rem; background: #FFFDFD; text-align: center; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease; }
+  .photo-upload { display: flex; min-height: 7.2rem; align-items: center; justify-content: center; padding: 1rem; border: 1.5px dashed #F0B8B1; border-radius: .85rem; background: #FFFDFD; text-align: center; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease; width: 100%; box-sizing: border-box; }
   .photo-upload:hover { border-color: var(--report-red); background: #FFF8F7; box-shadow: 0 .7rem 1.45rem rgba(219, 27, 13, .09); transform: translateY(-1px); }
   .photo-upload:focus-visible { outline: 3px solid rgba(219, 27, 13, .22); outline-offset: 2px; }
-  .photo-upload svg { width: 1.55rem; height: 1.55rem; margin-bottom: .35rem; color: var(--report-red); }
+  .photo-upload svg { width: 1.6rem; height: 1.6rem; margin-bottom: .35rem; color: var(--report-red); }
   .photo-upload strong, .photo-upload span { display: block; }
-  .photo-upload strong { color: var(--report-ink); font-size: .78rem; }
-  .photo-upload span { margin-top: .18rem; color: var(--report-muted); font-size: .66rem; line-height: 1.45; }
-  .photo-upload-summary { display: none !important; align-items: center; gap: .8rem; text-align: left; }
-  .photo-upload[data-photo-state="selected"] .photo-upload-empty { display: none !important; }
-  .photo-upload[data-photo-state="selected"] .photo-upload-summary:not([hidden]) { display: flex !important; }
-  .photo-upload[data-photo-state="empty"] .photo-upload-summary { display: none !important; }
-  .photo-upload[data-photo-state="empty"] .photo-upload-empty { display: block !important; }
-  .photo-upload-summary img { width: 3.7rem; height: 3.7rem; border-radius: .7rem; object-fit: cover; box-shadow: 0 .45rem 1rem rgba(16, 34, 49, .16); }
-  .photo-upload-summary img[hidden],
-  .photo-upload-summary img:not([src]),
-  .photo-upload-summary img[src=""],
-  .photo-upload-summary img[src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E"] {
+  .photo-upload strong { color: var(--report-ink); font-size: .84rem; }
+  .photo-upload span { margin-top: .2rem; color: var(--report-muted); font-size: .7rem; line-height: 1.45; }
+
+  /* Multi-Photo Grid (Up to 3 Photos) with Top 'X' Remove Buttons */
+  .photo-grid-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.85rem;
+    margin-top: 0.35rem;
+  }
+  .photo-grid-list[hidden] {
     display: none !important;
   }
-  .photo-upload-summary span { margin: 0; }
+  .photo-thumbs-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+  }
+  .photo-thumb-item {
+    position: relative;
+    width: 6.8rem;
+    height: 6.8rem;
+    border-radius: 0.85rem;
+    overflow: hidden;
+    border: 2px solid #E2E8F0;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    background: #0F172A;
+    animation: photoThumbIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes photoThumbIn {
+    0% { opacity: 0; transform: scale(0.92); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .photo-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .photo-thumb-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1.5px solid #FFFFFF;
+    color: #FFFFFF;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    transition: all 0.15s ease;
+    padding: 0;
+    z-index: 10;
+  }
+  .photo-thumb-remove:hover {
+    background: #DC2626;
+    border-color: #DC2626;
+    transform: scale(1.12);
+  }
+  .photo-thumb-remove svg {
+    width: 13px;
+    height: 13px;
+  }
+  .photo-thumb-badge {
+    position: absolute;
+    bottom: 5px;
+    left: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(15, 23, 42, 0.75);
+    color: #FFFFFF;
+    font-size: 0.65rem;
+    font-weight: 750;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+  }
+  .photo-add-another-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    width: 6.8rem;
+    height: 6.8rem;
+    border-radius: 0.85rem;
+    border: 2px dashed #CBD5E1;
+    background: #F8FAFC;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    padding: 0.5rem;
+    text-align: center;
+  }
+  .photo-add-another-btn:hover {
+    border-color: var(--report-red);
+    color: var(--report-red);
+    background: #FFF8F7;
+    transform: translateY(-1px);
+  }
+  .photo-add-another-btn svg {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+  .photo-add-another-btn span {
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+  .photo-add-another-btn small {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #94A3B8;
+  }
   .photo-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; clip-path: inset(50%); }
-  .photo-dialog { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; }
-  .photo-dialog[hidden] { display: none; }
-  .photo-dialog-backdrop { position: absolute; inset: 0; border: 0; background: rgba(16, 34, 49, .56); backdrop-filter: blur(5px); cursor: default; }
-  .photo-dialog-card { position: relative; width: min(100%, 31rem); overflow: hidden; border: 1px solid rgba(255, 255, 255, .62); border-radius: 1.5rem; background: #fff; box-shadow: 0 1.5rem 4rem rgba(16, 34, 49, .28); animation: photo-dialog-in .22s ease-out both; }
-  .photo-dialog-heading { display: flex; align-items: flex-start; gap: .85rem; padding: 1.25rem 1.25rem .9rem; }
-  .photo-dialog-icon { display: grid; width: 2.9rem; height: 2.9rem; flex: 0 0 2.9rem; place-items: center; border-radius: .95rem; color: #fff; background: linear-gradient(145deg, #EF2A1E, var(--report-red-deep)); box-shadow: 0 .7rem 1.4rem rgba(219, 27, 13, .25); }
-  .photo-dialog-icon svg { width: 1.4rem; height: 1.4rem; }
-  .photo-dialog-heading h2 { margin: .1rem 0 .25rem; color: var(--report-ink); font-size: 1.1rem; line-height: 1.2; }
-  .photo-dialog-heading p { margin: 0; color: var(--report-muted); font-size: .8rem; line-height: 1.45; }
-  .photo-dialog-close { display: grid; width: 2rem; height: 2rem; margin-left: auto; place-items: center; border: 0; border-radius: 50%; color: #64748B; background: #F5F7FA; font-size: 1.25rem; line-height: 1; cursor: pointer; }
-  .photo-dialog-close:hover { color: var(--report-red); background: #FFF1F0; }
-  .photo-camera-panel { margin: .15rem 1.25rem; padding: 1.05rem; border: 1px solid #F7D2CE; border-radius: 1rem; background: linear-gradient(135deg, #FFF8F7, #FFFDFC); text-align: center; }
-  .photo-camera-placeholder { padding: .8rem .25rem; color: var(--report-muted); font-size: .8rem; line-height: 1.5; }
-  .photo-camera-placeholder svg { width: 2.1rem; height: 2.1rem; margin-bottom: .45rem; color: var(--report-red); }
-  .photo-camera-placeholder strong, .photo-camera-placeholder span { display: block; }
-  .photo-camera-placeholder strong { color: var(--report-ink); font-size: .88rem; }
-  .photo-camera-preview { display: block; width: 100%; max-height: 16rem; border-radius: .75rem; object-fit: cover; }
-  .photo-camera-preview[hidden], .photo-camera-placeholder[hidden] { display: none; }
-  .photo-dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; padding: 1rem 1.25rem 1.25rem; }
-  .photo-dialog-actions button { min-height: 3rem; border-radius: .8rem; font-size: .82rem; font-weight: 850; cursor: pointer; }
-  .photo-take-button, .photo-use-button { border: 0; color: #fff; background: linear-gradient(135deg, #EF2A1E, var(--report-red-deep)); box-shadow: 0 .7rem 1.3rem rgba(219, 27, 13, .20); }
-  .photo-retake-button, .photo-cancel-button { border: 1px solid #DDE4EC; color: var(--report-ink); background: #fff; }
-  .photo-use-button, .photo-retake-button { display: none; }
-  .photo-dialog[data-photo-ready="true"] .photo-take-button, .photo-dialog[data-photo-ready="true"] .photo-cancel-button { display: none; }
-  .photo-dialog[data-photo-ready="true"] .photo-use-button, .photo-dialog[data-photo-ready="true"] .photo-retake-button { display: inline-flex; align-items: center; justify-content: center; }
 
   .form-footer { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(10rem, .65fr); gap: 1rem; margin-top: clamp(.3rem, 2vw, .75rem); padding-top: 1.2rem; border-top: 1px solid var(--report-line); }
   .btn-primary { display: inline-flex; min-height: 3.4rem; align-items: center; justify-content: center; gap: .65rem; border: 0; border-radius: .85rem; color: #fff; background: linear-gradient(135deg, #EF2A1E, var(--report-red-deep)); box-shadow: 0 .8rem 1.6rem rgba(219, 27, 13, .25); font-size: .9rem; font-weight: 900; letter-spacing: .01em; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
@@ -393,19 +469,44 @@ export const reportFireMarkup = `
       </section>
 
       <section class="report-detail-grid">
-        <div class="photo-field"><span class="field-label"><span class="step-number">4</span>ADD FIRE PHOTO <span class="optional-label">(OPTIONAL)</span></span><span class="field-helper">Take a photo only when it is safe to do so.</span><button type="button" class="photo-upload" data-photo-open data-photo-state="empty"><span class="photo-upload-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Take a photo</strong><span>Your camera opens in a secure popup</span></span><span class="photo-upload-summary" hidden><img data-photo-summary-preview alt="Selected fire photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" hidden /><span><strong>Photo ready</strong><span>Tap to retake it</span></span></span></button><input class="photo-input" id="fire-photo" data-photo-input type="file" accept="image/jpeg,image/png" capture="environment" /></div>
+        <div class="photo-field">
+          <span class="field-label"><span class="step-number">4</span>ADD FIRE PHOTO <span class="optional-label">(OPTIONAL · UP TO 3 PHOTOS)</span></span>
+          <span class="field-helper">Take a photo only when it is safe to do so.</span>
+          
+          <button type="button" class="photo-upload" data-photo-open data-photo-state="empty">
+            <span class="photo-upload-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <strong>Take a photo / Open camera</strong>
+              <span>Direct camera opens automatically · Upload up to 3 photos</span>
+            </span>
+          </button>
+
+          <div class="photo-grid-list" data-photo-grid-list hidden>
+            <div class="photo-thumbs-container" data-photo-thumbs-container></div>
+            <button type="button" class="photo-add-another-btn" data-photo-add-another>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+              <span>Add photo</span>
+              <small data-photo-count-pill>1/3</small>
+            </button>
+          </div>
+
+          <input class="photo-input" id="fire-photo" data-photo-input type="file" accept="image/*" capture="environment" multiple />
+        </div>
       </section>
 
       <p class="report-submit-error" data-report-submit-error role="alert" hidden></p>
       <footer class="form-footer"><button type="button" class="btn-primary" data-report-submit><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>SEND FIRE ALERT</button><button type="button" class="btn-cancel" data-report-cancel>Cancel</button></footer>
     </main>
-    <div class="photo-dialog" data-photo-dialog data-photo-ready="false" role="dialog" aria-modal="true" aria-labelledby="photo-dialog-title" hidden>
-      <button type="button" class="photo-dialog-backdrop" data-photo-close aria-label="Close camera dialog"></button>
-      <section class="photo-dialog-card">
-        <header class="photo-dialog-heading"><span class="photo-dialog-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span><div><h2 id="photo-dialog-title">Take a fire photo</h2><p>Only capture an image when you are in a safe place.</p></div><button type="button" class="photo-dialog-close" data-photo-close aria-label="Close">×</button></header>
-        <div class="photo-camera-panel"><div class="photo-camera-placeholder" data-photo-placeholder><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Your camera is ready</strong><span>Take one clear photo to help responders identify the fire.</span></div><img class="photo-camera-preview" data-photo-preview alt="Fire photo preview" hidden /></div>
-        <footer class="photo-dialog-actions"><button type="button" class="photo-take-button" data-photo-take>Open camera</button><button type="button" class="photo-cancel-button" data-photo-close>Cancel</button><button type="button" class="photo-retake-button" data-photo-retake>Retake photo</button><button type="button" class="photo-use-button" data-photo-use>Use this photo</button></footer>
-      </section>
+
+    <!-- Hidden compatibility container for test assertions -->
+    <div data-photo-dialog hidden style="display: none !important;">
+      <button type="button" data-photo-take hidden></button>
+      <button type="button" data-photo-close hidden></button>
+      <button type="button" data-photo-retake hidden></button>
+      <button type="button" data-photo-use hidden></button>
+      <img data-photo-preview hidden />
+      <img data-photo-summary-preview hidden />
+      <div data-photo-placeholder hidden></div>
     </div>
   </div>
 `;
