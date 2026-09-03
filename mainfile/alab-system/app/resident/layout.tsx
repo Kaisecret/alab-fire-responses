@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ResidentMobileNavigation, residentMobileNavigationStyles } from "@/app/_components/resident-mobile-navigation";
 import { NotificationBell } from "@/app/_components/notifications/notification-bell";
+import { ResidentOfflineEmergency } from "@/app/_components/resident-offline-emergency";
 
 /* ─────────────────────────────────────────────
    Shared Resident Layout
@@ -384,7 +385,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
 
   /* Don't show shared nav on login/signup */
   const isAuth = pathname.startsWith("/resident/login") || pathname.startsWith("/resident/signup");
-  if (isAuth) return <>{children}</>;
+  if (isAuth) return <>{children}<ResidentOfflineEmergency /></>;
 
   const activeKey = navItems.find((n) => isActive(pathname, n.href))?.key ?? "";
   const isProfileActive = pathname.startsWith("/resident/profile");
@@ -496,6 +497,7 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
           </section>
         </div>
       )}
+      <ResidentOfflineEmergency />
     </>
   );
 }
