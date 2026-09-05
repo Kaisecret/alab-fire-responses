@@ -118,3 +118,43 @@ test("municipal incident detail displays the AHP severity badge and localized in
   assert.match(detail, /Weather at Incident Site/);
   assert.match(detail, /ESKINITA \/ LOOBAN/);
 });
+
+test("validateTacticalDetailsUpdate and validateFireReportInput normalize alias tactical values into canonical database enums", async () => {
+  const { validateTacticalDetailsUpdate, validateFireReportInput } = await import("../lib/fire-reports/validation.ts");
+
+  const normalizedUpdate = validateTacticalDetailsUpdate({
+    structureMaterial: "CONCRETE_MIXED",
+    houseDensity: "HIGH_DENSITY",
+    routeAccessibility: "NARROW_ALLEY",
+  });
+
+  assert.equal(normalizedUpdate.structureMaterial, "MIXED_SEMI_CONCRETE");
+  assert.equal(normalizedUpdate.houseDensity, "PACKED_MAGKAKADIKIT");
+  assert.equal(normalizedUpdate.routeAccessibility, "INTERIOR_ALLEY_ESKINITA");
+
+  const normalizedFromAliases = validateFireReportInput({
+    fireType: "HOUSE_BUILDING",
+    latitude: 10.74,
+    longitude: 121.92,
+    municipality: "San Jose",
+    barangay: "Barangay 1",
+    structureMaterial: "COMMERCIAL_STEEL",
+    houseDensity: "ISOLATED",
+    routeAccessibility: "WIDE_ROAD",
+  });
+
+  assert.equal(normalizedFromAliases.structureMaterial, "COMMERCIAL_STORAGE");
+  assert.equal(normalizedFromAliases.houseDensity, "ISOLATED_FAR");
+  assert.equal(normalizedFromAliases.routeAccessibility, "WIDE_ROAD");
+});
+
+test("resident report status contains canonical enums matching initial report submission without disappearing", () => {
+  const status = read("app/_components/resident-report-status.tsx");
+
+  assert.match(status, /PACKED_MAGKAKADIKIT/);
+  assert.match(status, /INTERIOR_ALLEY_ESKINITA/);
+  assert.match(status, /MIXED_SEMI_CONCRETE/);
+  assert.match(status, /COMMERCIAL_STORAGE/);
+  assert.match(status, /reported_house_density/);
+});
+

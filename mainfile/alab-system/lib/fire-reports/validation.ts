@@ -98,6 +98,60 @@ export function resolveDetectedBarangay(officialBarangays: OfficialBarangay[], d
   };
 }
 
+export function normalizeStructureMaterial(value: unknown): StructureMaterial | null {
+  const clean = text(value, 60).toUpperCase();
+  if (!clean) return null;
+  if (clean.includes("LIGHT") || clean.includes("WOOD") || clean.includes("KAHOY")) {
+    return "LIGHT_MATERIALS";
+  }
+  if (clean.includes("SEMI") || clean.includes("MIXED") || clean.includes("HALOS") || clean.includes("SEMENTO") || clean.includes("CONCRETE_MIXED")) {
+    return "MIXED_SEMI_CONCRETE";
+  }
+  if (clean.includes("COMMERCIAL") || clean.includes("STEEL") || clean.includes("WAREHOUSE") || clean.includes("BAKAL") || clean.includes("STORAGE")) {
+    return "COMMERCIAL_STORAGE";
+  }
+  if (clean === "CONCRETE") {
+    return "CONCRETE";
+  }
+  if (clean === "OTHER") {
+    return "OTHER";
+  }
+  return null;
+}
+
+export function normalizeHouseDensity(value: unknown): HouseDensity | null {
+  const clean = text(value, 60).toUpperCase();
+  if (!clean) return null;
+  if (clean.includes("PACKED") || clean.includes("DIKIT") || clean.includes("HIGH") || clean.includes("DENSE") || clean.includes("KUMPUL")) {
+    return "PACKED_MAGKAKADIKIT";
+  }
+  if (clean.includes("ISOLATED") || clean.includes("FAR") || clean.includes("HIWALAY") || clean.includes("MALAYO") || clean.includes("SPACED")) {
+    return "ISOLATED_FAR";
+  }
+  if (clean.includes("MODERATE") || clean.includes("KATAMTAMAN") || clean.includes("SPACING")) {
+    return "MODERATE_SPACING";
+  }
+  return null;
+}
+
+export function normalizeRouteAccessibility(value: unknown): RouteAccessibility | null {
+  const clean = text(value, 60).toUpperCase();
+  if (!clean) return null;
+  if (clean.includes("WIDE") || clean.includes("MALAPAD") || clean.includes("MAIN")) {
+    return "WIDE_ROAD";
+  }
+  if (clean.includes("ESKINITA") || clean.includes("ALLEY") || clean.includes("INTERIOR") || clean.includes("LOOBAN") || clean.includes("MAKIPOT") || clean.includes("NARROW_ALLEY")) {
+    return "INTERIOR_ALLEY_ESKINITA";
+  }
+  if (clean.includes("NARROW_STREET") || clean.includes("STREET")) {
+    return "NARROW_STREET";
+  }
+  if (clean.includes("DEAD_END") || clean.includes("BLOCKED")) {
+    return "DEAD_END_OR_BLOCKED";
+  }
+  return null;
+}
+
 export function validateFireReportInput(raw: Record<string, unknown>): FireReportInput {
   const fireType = text(raw.fireType, 40) as FireType;
   const latitude = Number(raw.latitude);
@@ -109,9 +163,9 @@ export function validateFireReportInput(raw: Record<string, unknown>): FireRepor
   const description = text(raw.description, 1200);
 
   // Optional environmental and tactical inputs (defaults gracefully)
-  const structureMaterial = text(raw.structureMaterial, 60) || null;
-  const houseDensity = text(raw.houseDensity, 60) || null;
-  const routeAccessibility = text(raw.routeAccessibility, 60) || null;
+  const structureMaterial = raw.structureMaterial !== undefined ? normalizeStructureMaterial(raw.structureMaterial) : null;
+  const houseDensity = raw.houseDensity !== undefined ? normalizeHouseDensity(raw.houseDensity) : null;
+  const routeAccessibility = raw.routeAccessibility !== undefined ? normalizeRouteAccessibility(raw.routeAccessibility) : null;
 
   const weatherTemperature = raw.weatherTemperature != null && raw.weatherTemperature !== "" ? Number(raw.weatherTemperature) : null;
   const weatherHumidity = raw.weatherHumidity != null && raw.weatherHumidity !== "" ? Number(raw.weatherHumidity) : null;
@@ -151,9 +205,9 @@ export function validateTacticalDetailsUpdate(raw: Record<string, unknown>): {
   routeAccessibility?: string | null;
 } {
   return {
-    structureMaterial: raw.structureMaterial !== undefined ? text(raw.structureMaterial, 60) || null : undefined,
-    houseDensity: raw.houseDensity !== undefined ? text(raw.houseDensity, 60) || null : undefined,
-    routeAccessibility: raw.routeAccessibility !== undefined ? text(raw.routeAccessibility, 60) || null : undefined,
+    structureMaterial: raw.structureMaterial !== undefined ? normalizeStructureMaterial(raw.structureMaterial) : undefined,
+    houseDensity: raw.houseDensity !== undefined ? normalizeHouseDensity(raw.houseDensity) : undefined,
+    routeAccessibility: raw.routeAccessibility !== undefined ? normalizeRouteAccessibility(raw.routeAccessibility) : undefined,
   };
 }
 

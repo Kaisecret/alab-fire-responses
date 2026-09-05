@@ -282,6 +282,13 @@ export async function updateResidentReportTacticalDetails(
       reportedHouseDensity: reportedDensity,
       houseDensity: densityContext.effectiveHouseDensity,
       routeAccessibility: newRoute,
+      structure_material: newMaterial,
+      reported_house_density: reportedDensity,
+      house_density: densityContext.effectiveHouseDensity,
+      route_accessibility: newRoute,
+      calculated_severity: reassessment.level,
+      severity_score: reassessment.score,
+      severity_factors: reassessment.factors,
     };
   });
 }
@@ -290,13 +297,13 @@ export async function findResidentReport(userId: string, reportId: string) {
   const result = await getDatabase().query<{
     id: string; reference_number: string; status: FireReportStatus; fire_type: string; description: string; nearest_landmark: string | null;
     latitude: string; longitude: string; submitted_at: string; municipality: string; barangay: string; resident_profile_id: string;
-    structure_material: string | null; house_density: string | null; route_accessibility: string | null;
+    structure_material: string | null; reported_house_density: string | null; house_density: string | null; route_accessibility: string | null;
     weather_temperature: string | null; weather_humidity: string | null; weather_wind_speed: string | null;
     weather_wind_direction: string | null; weather_wind_condition: string | null;
     calculated_severity: string | null; severity_score: number | null; severity_factors: string[] | null;
   }>(`select fr.id, fr.reference_number, fr.status, fr.fire_type, fr.description, fr.nearest_landmark, fr.latitude, fr.longitude, fr.submitted_at,
              m.name as municipality, b.name as barangay, fr.resident_profile_id,
-             fr.structure_material, fr.house_density, fr.route_accessibility,
+             fr.structure_material, fr.reported_house_density, fr.house_density, fr.route_accessibility,
              fr.weather_temperature, fr.weather_humidity, fr.weather_wind_speed, fr.weather_wind_direction, fr.weather_wind_condition,
              fr.calculated_severity, fr.severity_score, fr.severity_factors
         from fire_reports fr join resident_profiles rp on rp.id = fr.resident_profile_id

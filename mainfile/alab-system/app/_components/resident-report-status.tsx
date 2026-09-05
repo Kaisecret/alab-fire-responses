@@ -17,6 +17,7 @@ type Report = {
   barangay: string;
   submitted_at: string;
   structure_material?: string | null;
+  reported_house_density?: string | null;
   house_density?: string | null;
   route_accessibility?: string | null;
   weather_temperature?: number | string | null;
@@ -815,7 +816,14 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
     const mappedField = fieldMap[key];
 
     // 1. INSTANT OPTIMISTIC UI: Fill red in 0ms immediately on tap!
-    setReport((prev) => (prev ? { ...prev, [mappedField]: val } : prev));
+    setReport((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, [mappedField]: val };
+      if (key === "houseDensity") {
+        updated.reported_house_density = val;
+      }
+      return updated;
+    });
     setSavedFeedback("✓ Na-save agad (Sent to BFP)");
     setTimeout(() => setSavedFeedback(null), 2500);
 
@@ -828,7 +836,20 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
       });
       const data = await response.json();
       if (response.ok && data.report) {
-        setReport((prev) => (prev ? { ...prev, ...data.report } : prev));
+        setReport((prev) => {
+          if (!prev) return prev;
+          const r = data.report;
+          return {
+            ...prev,
+            structure_material: r.structure_material ?? r.structureMaterial ?? prev.structure_material,
+            reported_house_density: r.reported_house_density ?? r.reportedHouseDensity ?? prev.reported_house_density,
+            house_density: r.house_density ?? r.houseDensity ?? prev.house_density,
+            route_accessibility: r.route_accessibility ?? r.routeAccessibility ?? prev.route_accessibility,
+            calculated_severity: r.calculated_severity ?? r.calculatedSeverity ?? prev.calculated_severity,
+            severity_score: r.severity_score ?? r.severityScore ?? prev.severity_score,
+            severity_factors: r.severity_factors ?? r.severityFactors ?? prev.severity_factors,
+          };
+        });
       }
     } catch {
       // Non-blocking background sync
@@ -944,9 +965,9 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
               <div className="tactical-grid-3">
                 <button
                   type="button"
-                  className={`tactical-btn ${report.structure_material === "LIGHT_MATERIALS" ? "is-selected" : ""}`}
+                  className={`tactical-btn ${report.structure_material === "LIGHT_MATERIALS" || report.structure_material === "LIGHT_WOOD" ? "is-selected" : ""}`}
                   onClick={() => updateTacticalDetail("structureMaterial", "LIGHT_MATERIALS")}
-                  aria-pressed={report.structure_material === "LIGHT_MATERIALS"}
+                  aria-pressed={report.structure_material === "LIGHT_MATERIALS" || report.structure_material === "LIGHT_WOOD"}
                 >
                   <span className="tactical-btn-icon icon-wood"><i className="fa-solid fa-tree" /></span>
                   <span className="tactical-btn-text">Kahoy / Light</span>
@@ -954,9 +975,9 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 </button>
                 <button
                   type="button"
-                  className={`tactical-btn ${report.structure_material === "CONCRETE_MIXED" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("structureMaterial", "CONCRETE_MIXED")}
-                  aria-pressed={report.structure_material === "CONCRETE_MIXED"}
+                  className={`tactical-btn ${report.structure_material === "MIXED_SEMI_CONCRETE" || report.structure_material === "CONCRETE_MIXED" || report.structure_material === "CONCRETE" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("structureMaterial", "MIXED_SEMI_CONCRETE")}
+                  aria-pressed={report.structure_material === "MIXED_SEMI_CONCRETE" || report.structure_material === "CONCRETE_MIXED" || report.structure_material === "CONCRETE"}
                 >
                   <span className="tactical-btn-icon icon-semi"><i className="fa-solid fa-house-chimney" /></span>
                   <span className="tactical-btn-text">Semento / Halos</span>
@@ -964,9 +985,9 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 </button>
                 <button
                   type="button"
-                  className={`tactical-btn ${report.structure_material === "COMMERCIAL_STEEL" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("structureMaterial", "COMMERCIAL_STEEL")}
-                  aria-pressed={report.structure_material === "COMMERCIAL_STEEL"}
+                  className={`tactical-btn ${report.structure_material === "COMMERCIAL_STORAGE" || report.structure_material === "COMMERCIAL_STEEL" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("structureMaterial", "COMMERCIAL_STORAGE")}
+                  aria-pressed={report.structure_material === "COMMERCIAL_STORAGE" || report.structure_material === "COMMERCIAL_STEEL"}
                 >
                   <span className="tactical-btn-icon icon-concrete"><i className="fa-solid fa-building" /></span>
                   <span className="tactical-btn-text">Bakal / Warehouse</span>
@@ -978,16 +999,16 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
             <div className="tactical-group">
               <div className="tactical-group-header">
                 <span className="tactical-label">Dikit-dikit ng Kabahayan:</span>
-                <span className={`tactical-select-guide ${report.house_density ? "is-done" : ""}`}>
-                  {report.house_density ? "✓ Napili" : "Pumili ng 1"}
+                <span className={`tactical-select-guide ${report.house_density || report.reported_house_density ? "is-done" : ""}`}>
+                  {report.house_density || report.reported_house_density ? "✓ Napili" : "Pumili ng 1"}
                 </span>
               </div>
               <div className="tactical-grid-3">
                 <button
                   type="button"
-                  className={`tactical-btn ${report.house_density === "ISOLATED" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("houseDensity", "ISOLATED")}
-                  aria-pressed={report.house_density === "ISOLATED"}
+                  className={`tactical-btn ${report.house_density === "ISOLATED_FAR" || report.reported_house_density === "ISOLATED_FAR" || report.house_density === "ISOLATED" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("houseDensity", "ISOLATED_FAR")}
+                  aria-pressed={report.house_density === "ISOLATED_FAR" || report.reported_house_density === "ISOLATED_FAR" || report.house_density === "ISOLATED"}
                 >
                   <span className="tactical-btn-icon icon-spaced"><i className="fa-solid fa-house" /></span>
                   <span className="tactical-btn-text">Malayo (Hiwalay)</span>
@@ -995,9 +1016,9 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 </button>
                 <button
                   type="button"
-                  className={`tactical-btn ${report.house_density === "MODERATE" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("houseDensity", "MODERATE")}
-                  aria-pressed={report.house_density === "MODERATE"}
+                  className={`tactical-btn ${report.house_density === "MODERATE_SPACING" || report.reported_house_density === "MODERATE_SPACING" || report.house_density === "MODERATE" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("houseDensity", "MODERATE_SPACING")}
+                  aria-pressed={report.house_density === "MODERATE_SPACING" || report.reported_house_density === "MODERATE_SPACING" || report.house_density === "MODERATE"}
                 >
                   <span className="tactical-btn-icon icon-semi"><i className="fa-solid fa-house-chimney-window" /></span>
                   <span className="tactical-btn-text">Katamtaman</span>
@@ -1005,9 +1026,9 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 </button>
                 <button
                   type="button"
-                  className={`tactical-btn ${report.house_density === "HIGH_DENSITY" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("houseDensity", "HIGH_DENSITY")}
-                  aria-pressed={report.house_density === "HIGH_DENSITY"}
+                  className={`tactical-btn ${report.house_density === "PACKED_MAGKAKADIKIT" || report.reported_house_density === "PACKED_MAGKAKADIKIT" || report.house_density === "HIGH_DENSITY" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("houseDensity", "PACKED_MAGKAKADIKIT")}
+                  aria-pressed={report.house_density === "PACKED_MAGKAKADIKIT" || report.reported_house_density === "PACKED_MAGKAKADIKIT" || report.house_density === "HIGH_DENSITY"}
                 >
                   <span className="tactical-btn-icon icon-packed"><i className="fa-solid fa-city" /></span>
                   <span className="tactical-btn-text">Dikit-dikit (Kumpul-kumpol)</span>
@@ -1039,9 +1060,9 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 </button>
                 <button
                   type="button"
-                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "NARROW_ALLEY" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("routeAccessibility", "NARROW_ALLEY")}
-                  aria-pressed={report.route_accessibility === "NARROW_ALLEY"}
+                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "INTERIOR_ALLEY_ESKINITA" || report.route_accessibility === "NARROW_ALLEY" || report.route_accessibility === "NARROW_STREET" ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("routeAccessibility", "INTERIOR_ALLEY_ESKINITA")}
+                  aria-pressed={report.route_accessibility === "INTERIOR_ALLEY_ESKINITA" || report.route_accessibility === "NARROW_ALLEY" || report.route_accessibility === "NARROW_STREET"}
                 >
                   <span className="tactical-btn-icon icon-alley"><i className="fa-solid fa-person-walking" /></span>
                   <span className="tactical-btn-content">
