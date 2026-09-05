@@ -9,5 +9,12 @@ export const metadata: Metadata = {
 };
 
 export default function ResidentLoginRoute() {
-  return <><LoginPage fontVariableClassName="" /><ResidentInstallPrompt /></>;
+  return (
+    <>
+      <link rel="preload" as="image" href="/images/side%20pic%20for%20login.webp" type="image/webp" fetchPriority="high" />
+      <link rel="preload" as="image" href="/images/Logo.webp" type="image/webp" />
+      <LoginPage fontVariableClassName="" />
+      <ResidentInstallPrompt />
+    </>
+  );
 }

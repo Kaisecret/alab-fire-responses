@@ -1184,7 +1184,7 @@ export const signupMarkup = `<main class="signup-container">
         <!-- Left Column: Side Image -->
         <aside class="signup-banner">
             <img src="/images/for sign up.webp"
-                alt="ALAB Fire Response System dashboard showcase" class="bg-image">
+                alt="ALAB Fire Response System dashboard showcase" class="bg-image" loading="eager" fetchpriority="high" decoding="async">
 
             <div class="banner-content">
                 <h2>Respond Faster.<br><span>Save More Lives.</span></h2>
@@ -1207,7 +1207,7 @@ export const signupMarkup = `<main class="signup-container">
             <header class="form-header">
                 <div class="logo-row">
                     <a href="/" title="Back to ALAB Home">
-                        <img src="/images/Logo.webp" alt="ALAB Logo" class="logo-icon">
+                        <img src="/images/Logo.webp" alt="ALAB Logo" class="logo-icon" loading="eager" decoding="async">
                     </a>
                 </div>
                 <div class="step-indicator" id="stepIndicator">Step 1 of 5</div>

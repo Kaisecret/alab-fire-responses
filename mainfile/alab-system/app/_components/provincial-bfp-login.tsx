@@ -551,6 +551,9 @@ export function ProvincialBfpLogin() {
             src="/images/FOR%20PROVOCIAL%20SIDE.webp"
             alt="BFP Provincial Command Center"
             className="prov-banner-img"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
           />
           <div className="prov-banner-content">
             <div className="prov-logo-lockup">
@@ -558,6 +561,8 @@ export function ProvincialBfpLogin() {
                 src="/images/WHITE%20LOGO.webp"
                 alt="ALAB Logo"
                 className="prov-brand-text-logo"
+                loading="eager"
+                decoding="async"
               />
             </div>
 

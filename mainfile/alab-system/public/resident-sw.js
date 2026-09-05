@@ -1,4 +1,4 @@
-const RESIDENT_CACHE = "alab-resident-shell-v4";
+const RESIDENT_CACHE = "alab-resident-shell-v5";
 const PRECACHE_URLS = [
   "/resident",
   "/resident/login",
@@ -11,9 +11,27 @@ const PRECACHE_URLS = [
   "/images/resident-pwa-192.png",
   "/images/resident-pwa-512.png",
   "/images/fire logo.webp",
+  "/images/fire%20logo.webp",
   "/images/Logo.webp",
   "/images/LOGO FIRE.webp",
+  "/images/LOGO%20FIRE.webp",
   "/images/logo white tint.webp",
+  "/images/logo%20white%20tint.webp",
+  "/images/formunicipallogin.webp",
+  "/images/FOR PROVOCIAL SIDE.webp",
+  "/images/FOR%20PROVOCIAL%20SIDE.webp",
+  "/images/for sign up.webp",
+  "/images/for%20sign%20up.webp",
+  "/images/side pic for login.webp",
+  "/images/side%20pic%20for%20login.webp",
+  "/images/WHITE LOGO.webp",
+  "/images/WHITE%20LOGO.webp",
+  "/images/bg images.webp",
+  "/images/bg%20images.webp",
+  "/images/phone.webp",
+  "/images/BFPBACK.webp",
+  "/images/panay.webp",
+  "/images/FAVICON.webp",
 ];
 
 self.addEventListener("install", (event) => {

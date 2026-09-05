@@ -523,6 +523,9 @@ export function MunicipalBfpLogin() {
             src="/images/formunicipallogin.webp"
             alt="BFP Fire Station and Firetruck"
             className="muni-banner-img"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
           />
 
           <div className="muni-banner-content">
@@ -531,6 +534,8 @@ export function MunicipalBfpLogin() {
                 src="/images/WHITE%20LOGO.webp"
                 alt="ALAB Logo"
                 className="muni-brand-text-logo"
+                loading="eager"
+                decoding="async"
               />
             </div>
 

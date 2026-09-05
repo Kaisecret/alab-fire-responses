@@ -9,5 +9,13 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <LandingPage />;
+  return (
+    <>
+      <link rel="preload" as="image" href="/images/bg%20images.webp" type="image/webp" fetchPriority="high" />
+      <link rel="preload" as="image" href="/images/phone.webp" type="image/webp" fetchPriority="high" />
+      <link rel="preload" as="image" href="/images/BFPBACK.webp" type="image/webp" />
+      <link rel="preload" as="image" href="/images/Logo.webp" type="image/webp" />
+      <LandingPage />
+    </>
+  );
 }

@@ -9,5 +9,11 @@ export const metadata: Metadata = {
 };
 
 export default function ResidentSignupRoute() {
-  return <SignupPage fontVariableClassName="" />;
+  return (
+    <>
+      <link rel="preload" as="image" href="/images/for%20sign%20up.webp" type="image/webp" fetchPriority="high" />
+      <link rel="preload" as="image" href="/images/Logo.webp" type="image/webp" />
+      <SignupPage fontVariableClassName="" />
+    </>
+  );
 }

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 
+import { AssetCacheWarmer } from "./_components/asset-cache-warmer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -40,7 +41,10 @@ export default function RootLayout({
           referrerPolicy="no-referrer"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <AssetCacheWarmer />
+        {children}
+      </body>
     </html>
   );
 }
