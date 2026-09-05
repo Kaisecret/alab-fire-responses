@@ -23,7 +23,7 @@ const DEFAULT_MAP_CENTER: [number, number] = [11.2753568, 121.7387252];
 const LOCATION_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
   timeout: 12000,
-  maximumAge: 0,
+  maximumAge: 10000,
 };
 
 type LocationUiState =
@@ -825,6 +825,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
     let marker: Marker | null = null;
     let accuracyCircle: Circle | null = null;
     let resizeObserver: ResizeObserver | null = null;
+    const clientGeocodeCache = new Map<string, ReverseGeocodePayload>();
     const locationRequestResolvers = new Map<number, Set<(valid: boolean) => void>>();
 
     function settleLocationRequests(run: number, valid: boolean) {
@@ -1051,13 +1052,19 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       });
 
       try {
-        const response = await fetch(`${REVERSE_GEOCODE_URL}?${query.toString()}`, {
-          headers: { Accept: 'application/json' },
-          signal: controller.signal,
-        });
-        if (!response.ok) throw new Error(`Reverse geocode HTTP ${response.status}`);
+        const cacheKey = `${reading.latitude.toFixed(4)},${reading.longitude.toFixed(4)}`;
+        let payload = clientGeocodeCache.get(cacheKey);
 
-        const payload = await response.json() as ReverseGeocodePayload;
+        if (!payload) {
+          const response = await fetch(`${REVERSE_GEOCODE_URL}?${query.toString()}`, {
+            headers: { Accept: 'application/json' },
+            signal: controller.signal,
+          });
+          if (!response.ok) throw new Error(`Reverse geocode HTTP ${response.status}`);
+          payload = await response.json() as ReverseGeocodePayload;
+          clientGeocodeCache.set(cacheKey, payload);
+        }
+
         if (disposed || requestRun !== detectionRun) return false;
 
         const resolved = resolvePhilippineAddress(payload.address ?? {});
@@ -1181,6 +1188,55 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       if (title) title.textContent = 'Improving location accuracy';
       setLandmark('waiting', 'Finding a reliable nearby place...', 'Improving GPS accuracy');
       showError('');
+
+      // Fast eager address pre-fetch for Antique coords:
+      // Don't wait to start detecting barangay - resolve immediately in background!
+      if (isWithinAntiqueBounds(selected)) {
+        const cacheKey = `${selected.latitude.toFixed(4)},${selected.longitude.toFixed(4)}`;
+        const cached = clientGeocodeCache.get(cacheKey);
+        if (cached) {
+          const resolved = resolvePhilippineAddress(cached.address ?? {});
+          if (resolved.barangay && resolved.isAntique) {
+            locationCard.dataset.locationBarangay = resolved.barangay;
+            locationCard.dataset.locationMunicipality = resolved.municipality;
+            locationCard.dataset.locationProvince = 'Antique';
+            if (!isFinalizing) {
+              showLocationSummary(
+                selected,
+                barangayLabel(resolved.barangay),
+                resolved.municipality || 'Municipality unavailable',
+              );
+            }
+          }
+        } else {
+          const eagerQuery = new URLSearchParams({
+            lat: String(selected.latitude),
+            lon: String(selected.longitude),
+          });
+          fetch(`${REVERSE_GEOCODE_URL}?${eagerQuery.toString()}`, {
+            headers: { Accept: 'application/json' },
+          })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((payload: ReverseGeocodePayload | null) => {
+              if (!payload || disposed || run !== detectionRun) return;
+              clientGeocodeCache.set(cacheKey, payload);
+              const resolved = resolvePhilippineAddress(payload.address ?? {});
+              if (resolved.barangay && resolved.isAntique) {
+                locationCard.dataset.locationBarangay = resolved.barangay;
+                locationCard.dataset.locationMunicipality = resolved.municipality;
+                locationCard.dataset.locationProvince = 'Antique';
+                if (!isFinalizing) {
+                  showLocationSummary(
+                    selected,
+                    barangayLabel(resolved.barangay),
+                    resolved.municipality || 'Municipality unavailable',
+                  );
+                }
+              }
+            })
+            .catch(() => {});
+        }
+      }
 
       if (classifyAccuracy(selected.accuracy) === 'precise' && isWithinAntiqueBounds(selected)) {
         void finalizeAutomaticLocation(selected, run);

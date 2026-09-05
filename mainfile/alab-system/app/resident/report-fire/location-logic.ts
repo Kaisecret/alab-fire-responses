@@ -1,6 +1,6 @@
 export const TARGET_ACCURACY_METERS = 50;
 export const ACCEPTABLE_ACCURACY_METERS = 150;
-export const REFINEMENT_WINDOW_MS = 10_000;
+export const REFINEMENT_WINDOW_MS = 2_500;
 
 export type LocationReading = {
   latitude: number;
@@ -72,7 +72,9 @@ export function resolvePhilippineAddress(address: Record<string, string>): Resol
     || address.town
     || '';
   const isAntique = address['ISO3166-2-lvl4'] === 'PH-ANT'
-    || address.state?.trim().toLowerCase() === 'antique';
+    || address.state?.trim().toLowerCase() === 'antique'
+    || address.county?.trim().toLowerCase() === 'antique'
+    || address.province?.trim().toLowerCase() === 'antique';
 
   return { barangay, municipality, isAntique };
 }
