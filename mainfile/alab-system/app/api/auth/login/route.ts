@@ -100,7 +100,19 @@ export async function POST(request: Request) {
         : failure.attemptsRemaining > 0
           ? `Invalid username/email or password. (${failure.attemptsRemaining} attempt${failure.attemptsRemaining > 1 ? "s" : ""} remaining)`
           : "Invalid username/email or password.";
-      return NextResponse.json({ error: message, attemptsRemaining: failure.attemptsRemaining, locked: failure.locked }, { status: failure.locked ? 429 : 401 });
+      const retryAfterSeconds = failure.locked ? 120 : undefined;
+      return NextResponse.json(
+        {
+          error: message,
+          attemptsRemaining: failure.attemptsRemaining,
+          locked: failure.locked,
+          retryAfterSeconds,
+        },
+        {
+          status: failure.locked ? 429 : 401,
+          headers: failure.locked ? { "Retry-After": "120" } : undefined,
+        },
+      );
     }
 
     clearAllLoginFailures(rateLimitKeys);
@@ -147,6 +159,27 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     console.error("Resident login failed", error);
-    return NextResponse.json({ error: "Unable to log in right now." }, { status: 500 });
+    const failure = recordLoginFailures(rateLimitKeys);
+    if (failure.locked) {
+      return NextResponse.json(
+        {
+          error: "Too many login attempts. Please wait 2 minutes before trying again.",
+          attemptsRemaining: 0,
+          locked: true,
+          retryAfterSeconds: 120,
+        },
+        { status: 429, headers: { "Retry-After": "120" } },
+      );
+    }
+    return NextResponse.json(
+      {
+        error: failure.attemptsRemaining > 0
+          ? `Incorrect username/email or password. (${failure.attemptsRemaining} attempt${failure.attemptsRemaining > 1 ? "s" : ""} remaining)`
+          : "Incorrect username/email or password.",
+        attemptsRemaining: failure.attemptsRemaining,
+        locked: false,
+      },
+      { status: 401 },
+    );
   }
 }

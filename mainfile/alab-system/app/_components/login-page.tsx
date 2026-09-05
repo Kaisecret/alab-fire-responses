@@ -149,6 +149,42 @@ export function LoginPage({
 }: LoginPageProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  const lockoutSecondsRef = useRef(0);
+  lockoutSecondsRef.current = lockoutSeconds;
+
+  // Restore lockout countdown from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("alab_resident_login_lockout");
+      if (raw) {
+        const until = Number(raw);
+        const remaining = Math.ceil((until - Date.now()) / 1000);
+        if (remaining > 0) {
+          setLockoutSeconds(remaining);
+        } else {
+          localStorage.removeItem("alab_resident_login_lockout");
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Live second-by-second countdown timer ("oras ay bumabawas")
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        if (prev <= 1) {
+          try {
+            localStorage.removeItem("alab_resident_login_lockout");
+          } catch {}
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutSeconds]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -212,7 +248,35 @@ export function LoginPage({
     };
     const hideLoginPopup = () => {
       popup.style.display = "none";
-      password.focus();
+      if (password) password.focus();
+    };
+
+    // Keep submit button and popup countdown in sync with live lockout timer
+    const updateLockoutDisplay = () => {
+      const remaining = lockoutSecondsRef.current;
+      if (remaining > 0) {
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        const timeFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = `LOCKED (${timeFormatted})`;
+        }
+        if (popup.style.display === "flex" && popupTitle.textContent === "Login locked") {
+          popupMessage.textContent = `Too many login attempts. Please wait ${timeFormatted} before trying again.`;
+          popupClose.textContent = `Wait (${timeFormatted})`;
+        }
+      } else {
+        if (submitButton && !submitButton.dataset.submitting) {
+          submitButton.disabled = false;
+          submitButton.textContent = "RESIDENT LOGIN";
+        }
+        if (popupTitle.textContent === "Login locked") {
+          popupTitle.textContent = "Login ready";
+          popupMessage.textContent = "You can now try logging in again.";
+          popupClose.textContent = "Try again";
+        }
+      }
     };
 
     const handleToggle = () => {
@@ -220,53 +284,107 @@ export function LoginPage({
       password.type = isPassword ? "text" : "password";
       eye.innerHTML = isPassword ? visibleEye : hiddenEye;
     };
-    const handleSubmit = async (event: SubmitEvent) => {
+
+    const handleSubmit = async (event: Event) => {
       event.preventDefault();
+      if (lockoutSecondsRef.current > 0) {
+        const remaining = lockoutSecondsRef.current;
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        const timeFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+        popupTitle.textContent = "Login locked";
+        showLoginPopup(`Too many login attempts. Please wait ${timeFormatted} before trying again.`);
+        return;
+      }
+
       status.textContent = "";
-      if (submitButton) submitButton.disabled = true;
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.dataset.submitting = "true";
+      }
       setIsLoading(true);
+
       try {
-        const response = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ identifier: identifier.value, password: password.value }),
-        });
-        const result = await response.json() as { error?: string; code?: string; redirectTo?: string; message?: string };
+        const [response] = await Promise.all([
+          fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ identifier: identifier.value, password: password.value }),
+          }),
+          new Promise((resolve) => setTimeout(resolve, 450)), // Minimum duration ensures smooth neon flame loader renders on every attempt
+        ]);
+
+        const result = (await response.json()) as {
+          error?: string;
+          code?: string;
+          redirectTo?: string;
+          message?: string;
+          locked?: boolean;
+          retryAfterSeconds?: number;
+          attemptsRemaining?: number;
+        };
+
         if (!response.ok) {
           if ((result.code === "ACCOUNT_UNDER_REVIEW" || result.code === "APPLICATION_CHANGES_REQUESTED") && result.redirectTo) {
             window.location.assign(result.redirectTo);
             return;
           }
-          setIsLoading(false);
-          if (response.status === 401) showLoginPopup(result.error || "Incorrect username/email or password.");
-          else if (response.status === 429) showLoginPopup(result.error || "Too many login attempts. Please wait 2 minutes before trying again.");
-          else showLoginPopup("The login service cannot connect to the database yet. Please try again later.");
+
+          if (response.status === 429 || result.locked) {
+            const waitSec = result.retryAfterSeconds || 120;
+            setLockoutSeconds(waitSec);
+            lockoutSecondsRef.current = waitSec;
+            try {
+              localStorage.setItem("alab_resident_login_lockout", String(Date.now() + waitSec * 1000));
+            } catch {}
+            popupTitle.textContent = "Login locked";
+            const mins = Math.floor(waitSec / 60);
+            const secs = waitSec % 60;
+            const timeFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+            showLoginPopup(`Too many login attempts. Please wait ${timeFormatted} before trying again.`);
+          } else if (response.status === 401) {
+            popupTitle.textContent = "Login failed";
+            popupClose.textContent = "Try again";
+            showLoginPopup(result.error || "Incorrect username/email or password.");
+          } else {
+            popupTitle.textContent = "Login failed";
+            popupClose.textContent = "Try again";
+            showLoginPopup(result.error || "Incorrect username/email or password. Please try again.");
+          }
           return;
         }
+
         try {
+          localStorage.removeItem("alab_resident_login_lockout");
           localStorage.setItem("alab_resident_logged_in", "true");
         } catch {}
         window.location.assign("/resident");
       } catch {
-        setIsLoading(false);
+        popupTitle.textContent = "Login error";
+        popupClose.textContent = "Try again";
         showLoginPopup("Unable to reach the login service. Please try again.");
       } finally {
-        if (submitButton) submitButton.disabled = false;
+        setIsLoading(false);
+        if (submitButton) {
+          delete submitButton.dataset.submitting;
+          if (lockoutSecondsRef.current <= 0) {
+            submitButton.disabled = false;
+            submitButton.textContent = "RESIDENT LOGIN";
+          }
+        }
       }
     };
+
     const handleForgot = (event: Event) => {
       event.preventDefault();
       window.alert("Password reset link sent to your email.");
     };
+
     const handleRegister = (event: Event) => {
       event.preventDefault();
       window.location.assign("/resident/signup");
     };
 
-    toggle.addEventListener("click", handleToggle);
-    form.addEventListener("submit", handleSubmit);
-    forgot?.addEventListener("click", handleForgot);
-    register?.addEventListener("click", handleRegister);
     const handleGoogle = () => {
       if (google) {
         google.disabled = true;
@@ -275,13 +393,21 @@ export function LoginPage({
       setIsLoading(true);
       window.location.assign("/api/auth/google/start");
     };
+
+    toggle.addEventListener("click", handleToggle);
+    form.addEventListener("submit", handleSubmit);
+    forgot?.addEventListener("click", handleForgot);
+    register?.addEventListener("click", handleRegister);
     google?.addEventListener("click", handleGoogle);
     popupClose.addEventListener("click", hideLoginPopup);
     popup.addEventListener("click", (event) => {
       if (event.target === popup) hideLoginPopup();
     });
 
+    const displayInterval = setInterval(updateLockoutDisplay, 250);
+
     return () => {
+      clearInterval(displayInterval);
       toggle.removeEventListener("click", handleToggle);
       form.removeEventListener("submit", handleSubmit);
       forgot?.removeEventListener("click", handleForgot);
