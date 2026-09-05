@@ -29,8 +29,9 @@ export async function POST(request: Request) {
   const key = clientKey(request, email);
   const limit = checkLoginRateLimit(key);
   if (!limit.allowed) {
+    const minutes = Math.ceil(limit.retryAfterSeconds / 60);
     return NextResponse.json(
-      { error: "Too many login attempts. Try again later." },
+      { error: `Too many login attempts. Please wait ${minutes} minute${minutes > 1 ? "s" : ""} before trying again.` },
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
@@ -39,8 +40,13 @@ export async function POST(request: Request) {
     const identity = await verifyBfpCredentials(email, password, "MUNICIPAL_BFP");
     if (!identity) {
       const failure = recordLoginFailure(key);
+      const message = failure.locked
+        ? "Too many login attempts. Please wait 2 minutes before trying again."
+        : failure.attemptsRemaining > 0
+          ? `Incorrect BFP email or password. (${failure.attemptsRemaining} attempt${failure.attemptsRemaining > 1 ? "s" : ""} remaining)`
+          : "Incorrect BFP email or password.";
       return NextResponse.json(
-        { error: failure.locked ? "Too many login attempts. Try again in 15 minutes." : "Incorrect BFP email or password." },
+        { error: message, attemptsRemaining: failure.attemptsRemaining },
         { status: failure.locked ? 429 : 401 },
       );
     }

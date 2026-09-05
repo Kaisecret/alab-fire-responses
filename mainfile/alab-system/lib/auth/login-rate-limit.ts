@@ -1,5 +1,6 @@
-export const MAX_LOGIN_ATTEMPTS = 5;
-const WINDOW_MS = 1000 * 60 * 15;
+// Legacy reference: MAX_LOGIN_ATTEMPTS = 5
+export const MAX_LOGIN_ATTEMPTS = 3;
+export const WINDOW_MS = 1000 * 60 * 2; // 2 minutes lockout
 
 type AttemptState = {
   count: number;

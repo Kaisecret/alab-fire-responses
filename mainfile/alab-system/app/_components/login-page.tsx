@@ -238,8 +238,8 @@ export function LoginPage({
             return;
           }
           setIsLoading(false);
-          if (response.status === 401) showLoginPopup("Incorrect username/email or password.");
-          else if (response.status === 429) showLoginPopup(result.error ?? "Too many login attempts. Please wait before trying again.");
+          if (response.status === 401) showLoginPopup(result.error || "Incorrect username/email or password.");
+          else if (response.status === 429) showLoginPopup(result.error || "Too many login attempts. Please wait 2 minutes before trying again.");
           else showLoginPopup("The login service cannot connect to the database yet. Please try again later.");
           return;
         }

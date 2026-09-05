@@ -59,7 +59,11 @@ export async function POST(request: Request) {
   const key = clientKey(request, identifier);
   const limit = checkLoginRateLimit(key);
   if (!limit.allowed) {
-    return NextResponse.json({ error: "Too many login attempts. Try again later." }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } });
+    const minutes = Math.ceil(limit.retryAfterSeconds / 60);
+    return NextResponse.json(
+      { error: `Too many login attempts. Please wait ${minutes} minute${minutes > 1 ? "s" : ""} before trying again.` },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+    );
   }
 
   try {
@@ -72,8 +76,12 @@ export async function POST(request: Request) {
     const user = result.rows[0];
     if (!user || user.role !== "RESIDENT" || user.account_status === "SUSPENDED" || !(await verifyPassword(password, user.password_hash))) {
       const failure = recordLoginFailure(key);
-      const message = failure.locked ? "Too many login attempts. Try again in 15 minutes." : "Invalid username/email or password.";
-      return NextResponse.json({ error: message }, { status: failure.locked ? 429 : 401 });
+      const message = failure.locked
+        ? "Too many login attempts. Please wait 2 minutes before trying again."
+        : failure.attemptsRemaining > 0
+          ? `Invalid username/email or password. (${failure.attemptsRemaining} attempt${failure.attemptsRemaining > 1 ? "s" : ""} remaining)`
+          : "Invalid username/email or password.";
+      return NextResponse.json({ error: message, attemptsRemaining: failure.attemptsRemaining }, { status: failure.locked ? 429 : 401 });
     }
 
     clearLoginFailures(key);
