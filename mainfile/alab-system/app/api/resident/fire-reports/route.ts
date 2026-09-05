@@ -5,6 +5,11 @@ import { attachFireReportPhoto, createResidentFireReport, listResidentReports } 
 import { submissionAuditFromHeaders } from "../../../../lib/fire-reports/submission-audit";
 import { validateFireReportInput, validateFireReportPhoto } from "../../../../lib/fire-reports/validation";
 import { deleteFireReportPhoto, uploadFireReportPhoto } from "../../../../lib/supabase/server-storage";
+import {
+  checkResidentSosRateLimit,
+  recordSuccessfulSosReportMemory,
+  SOS_RATE_LIMIT_ERROR_EN,
+} from "../../../../lib/fire-reports/rate-limiter";
 
 export const runtime = "nodejs";
 
@@ -26,6 +31,26 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = sessionFor(request);
   if (!session) return NextResponse.json({ error: "Resident sign-in is required." }, { status: 401 });
+
+  const submissionAudit = submissionAuditFromHeaders(request.headers);
+
+  // Rate Limiting Security Check: Max 2 successful reports per 5 minutes
+  const rateLimit = await checkResidentSosRateLimit(session.userId, submissionAudit.ipAddress);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        error: rateLimit.message || SOS_RATE_LIMIT_ERROR_EN,
+        retryAfter: rateLimit.retryAfterSeconds,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+      }
+    );
+  }
+
   try {
     const form = await request.formData();
     const photosList = form.getAll("photos").filter((v): v is File => v instanceof File && v.size > 0);
@@ -68,6 +93,10 @@ export async function POST(request: NextRequest) {
     // Emergency routing is never dependent on optional photo storage.
     const submissionAudit = submissionAuditFromHeaders(request.headers);
     const report = await createResidentFireReport(session.userId, input, submissionAudit);
+    recordSuccessfulSosReportMemory(session.userId);
+    if (submissionAudit.ipAddress) {
+      recordSuccessfulSosReportMemory(`ip:${submissionAudit.ipAddress}`);
+    }
     let photoWarning: string | undefined;
 
     if (validPhotos.length > 0) {

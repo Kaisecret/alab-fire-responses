@@ -151,6 +151,8 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const confirmAlertDialog = root.querySelector<HTMLElement>('[data-confirm-alert-dialog]');
   const confirmAlertSendBtn = root.querySelector<HTMLButtonElement>('[data-confirm-alert-send]');
   const confirmAlertCancelBtn = root.querySelector<HTMLButtonElement>('[data-confirm-alert-cancel]');
+  const rateLimitDialog = root.querySelector<HTMLElement>('[data-rate-limit-dialog]');
+  const rateLimitCloseBtn = root.querySelector<HTMLButtonElement>('[data-rate-limit-close]');
   const fireTypeSection = root.querySelector<HTMLElement>('[data-step-fire-type]');
   const fireTypeHint = root.querySelector<HTMLElement>('[data-fire-type-hint]');
   if (!submitButton || !locationCard || !landmarkInput || !photoInput || typeButtons.length === 0) return () => {};
@@ -220,6 +222,52 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     if (e.target === confirmAlertDialog) handleConfirmCancel();
   };
   confirmAlertDialog?.addEventListener('click', handleConfirmBackdropClick);
+
+  const showRateLimitDialog = () => {
+    if (!rateLimitDialog) return;
+    rateLimitDialog.hidden = false;
+  };
+
+  const hideRateLimitDialog = () => {
+    if (!rateLimitDialog) return;
+    rateLimitDialog.hidden = true;
+  };
+
+  rateLimitCloseBtn?.addEventListener('click', hideRateLimitDialog);
+  const handleRateLimitBackdropClick = (e: MouseEvent) => {
+    if (e.target === rateLimitDialog) hideRateLimitDialog();
+  };
+  rateLimitDialog?.addEventListener('click', handleRateLimitBackdropClick);
+
+  const checkClientSosRateLimit = (): boolean => {
+    try {
+      const now = Date.now();
+      const raw = localStorage.getItem('alab_successful_sos_reports');
+      const timestamps: number[] = raw ? JSON.parse(raw) : [];
+      const windowStart = now - 5 * 60 * 1000;
+      const recent = timestamps.filter((t) => typeof t === 'number' && t > windowStart);
+      if (recent.length >= 2) {
+        return false;
+      }
+      return true;
+    } catch {
+      return true;
+    }
+  };
+
+  const recordClientSuccessfulSos = () => {
+    try {
+      const now = Date.now();
+      const raw = localStorage.getItem('alab_successful_sos_reports');
+      const timestamps: number[] = raw ? JSON.parse(raw) : [];
+      const windowStart = now - 5 * 60 * 1000;
+      const recent = timestamps.filter((t) => typeof t === 'number' && t > windowStart);
+      recent.push(now);
+      localStorage.setItem('alab_successful_sos_reports', JSON.stringify(recent));
+    } catch {
+      // Non-blocking
+    }
+  };
 
   const applyReportFireLanguage = (lang: ResidentLanguage) => {
     const dict = RESIDENT_TRANSLATIONS[lang] || RESIDENT_TRANSLATIONS.tl;
@@ -436,7 +484,16 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     try {
       const response = await fetch("/api/resident/fire-reports", { method: "POST", body: form });
       const data = await response.json() as { error?: string; report?: { id: string } };
-      if (!response.ok || !data.report?.id) throw new Error(data.error || 'Unable to submit the fire report.');
+      if (!response.ok || !data.report?.id) {
+        if (response.status === 429) {
+          showRateLimitDialog();
+          resetSubmission();
+          return;
+        }
+        throw new Error(data.error || 'Unable to submit the fire report.');
+      }
+      // Only count towards rate limit if report was successfully sent!
+      recordClientSuccessfulSos();
       window.location.assign(`/resident/reports/${data.report.id}`);
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Unable to submit the fire report.');
@@ -453,6 +510,12 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const submit = async () => {
     if (submitting) return;
     showError('');
+
+    // Pre-flight UI security check: Max 2 successful reports per 5 minutes
+    if (!checkClientSosRateLimit()) {
+      showRateLimitDialog();
+      return;
+    }
 
     // 1. Fire type required (must click 1)
     if (!fireType) {
@@ -524,6 +587,8 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     confirmAlertCancelBtn?.removeEventListener('click', handleConfirmCancel);
     confirmAlertDialog?.removeEventListener('click', handleConfirmBackdropClick);
     confirmAlertSendBtn?.removeEventListener('click', handleConfirmSend);
+    rateLimitCloseBtn?.removeEventListener('click', hideRateLimitDialog);
+    rateLimitDialog?.removeEventListener('click', handleRateLimitBackdropClick);
     window.removeEventListener('alab:resident-language-changed', onLangChange);
   };
 }

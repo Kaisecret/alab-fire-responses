@@ -760,6 +760,98 @@ export const reportFireStyles = `
     color: #0F172A;
   }
 
+  /* Rate Limit Warning Popup Dialog (English) */
+  .rate-limit-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10002;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    animation: photoReqFadeIn 0.2s ease forwards;
+  }
+  .rate-limit-dialog-backdrop[hidden] {
+    display: none !important;
+  }
+  .rate-limit-dialog {
+    width: min(92vw, 23rem);
+    background: #FFFFFF;
+    border: 1.5px solid #FECACA;
+    border-radius: 1.4rem;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(220, 38, 38, 0.12);
+    padding: 1.6rem 1.4rem 1.35rem;
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    animation: photoReqSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .rate-limit-icon {
+    position: relative;
+    width: 3.6rem;
+    height: 3.6rem;
+    margin: 0 auto 0.9rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FEF2F2, #FEE2E2);
+    border: 2px solid #FECACA;
+    display: grid;
+    place-items: center;
+    color: #DC2626;
+  }
+  .rate-limit-icon svg {
+    width: 1.85rem;
+    height: 1.85rem;
+  }
+  .rate-limit-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 1.3rem;
+    height: 1.3rem;
+    border-radius: 50%;
+    background: #DC2626;
+    color: #FFFFFF;
+    font-size: 0.76rem;
+    font-weight: 850;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4);
+  }
+  .rate-limit-dialog h3 {
+    margin: 0 0 0.45rem;
+    color: #991B1B;
+    font-size: 1.15rem;
+    font-weight: 850;
+  }
+  .rate-limit-dialog p {
+    margin: 0 0 1.25rem;
+    color: #334155;
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+  .rate-limit-actions {
+    display: grid;
+  }
+  .rate-limit-btn-close {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 0.85rem;
+    font-size: 0.88rem;
+    font-weight: 850;
+    cursor: pointer;
+    background: linear-gradient(135deg, #DC2626, #B91C1C);
+    color: #FFFFFF;
+    border: 1px solid #991B1B;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+    transition: all 0.15s ease;
+  }
+  .rate-limit-btn-close:hover {
+    box-shadow: 0 6px 18px rgba(220, 38, 38, 0.4);
+    transform: translateY(-1px);
+  }
+
   @media (max-width: 950px) {
     .report-page-root { padding: 0 0 calc(6rem + env(safe-area-inset-bottom)); padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
     .report-form-shell { padding: 1.15rem 1rem 1.75rem; border: none; border-radius: 0; box-shadow: none; }
@@ -982,6 +1074,27 @@ export const reportFireMarkup = `
           </button>
           <button type="button" class="confirm-btn-cancel" data-confirm-alert-cancel>
             Kanselahin / Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Short Rate Limit Warning Popup Dialog (English) -->
+    <div class="rate-limit-dialog-backdrop" data-rate-limit-dialog hidden>
+      <div class="rate-limit-dialog" role="alertdialog" aria-labelledby="rateLimitTitle">
+        <div class="rate-limit-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span class="rate-limit-badge">!</span>
+        </div>
+        <h3 id="rateLimitTitle">Report Limit Reached</h3>
+        <p>You can only send up to <strong>2 fire reports every 5 minutes</strong>. Please wait before submitting again.</p>
+        <div class="rate-limit-actions">
+          <button type="button" class="rate-limit-btn-close" data-rate-limit-close>
+            Okay, Understood
           </button>
         </div>
       </div>

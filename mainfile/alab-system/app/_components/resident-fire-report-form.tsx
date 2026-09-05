@@ -41,6 +41,18 @@ export function ResidentFireReportForm() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError("");
     if (!location) return setError("Current GPS location, municipality, and barangay are required.");
+
+    // Client-side rate limit check: max 2 reports per 5 minutes
+    try {
+      const now = Date.now();
+      const raw = localStorage.getItem("alab_successful_sos_reports");
+      const timestamps: number[] = raw ? JSON.parse(raw) : [];
+      const recent = timestamps.filter((t) => typeof t === "number" && t > now - 5 * 60 * 1000);
+      if (recent.length >= 2) {
+        return setError("You can only send up to 2 fire reports every 5 minutes. Please wait before submitting again.");
+      }
+    } catch {}
+
     setSubmitting(true);
     const form = new FormData(event.currentTarget);
     form.set("fireType", fireType); form.set("latitude", String(location.latitude)); form.set("longitude", String(location.longitude));
@@ -50,6 +62,15 @@ export function ResidentFireReportForm() {
       const response = await fetch("/api/resident/fire-reports", { method:"POST", body:form });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to submit the fire report.");
+      // Record success only!
+      try {
+        const now = Date.now();
+        const raw = localStorage.getItem("alab_successful_sos_reports");
+        const timestamps: number[] = raw ? JSON.parse(raw) : [];
+        const recent = timestamps.filter((t) => typeof t === "number" && t > now - 5 * 60 * 1000);
+        recent.push(now);
+        localStorage.setItem("alab_successful_sos_reports", JSON.stringify(recent));
+      } catch {}
       router.push(`/resident/reports/${data.report.id}`);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to submit the fire report."); }
     finally { setSubmitting(false); }
