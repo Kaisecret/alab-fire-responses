@@ -138,6 +138,30 @@ test("resident reports page dynamically adapts table headers, filter tabs, and s
   assert.match(reportsPageSource, /t\("thLocation"\)/);
   assert.match(reportsPageSource, /t\("btnViewDetails"\)/);
   assert.match(reportsPageSource, /getLocalizedStatusLabel/);
+
+  // Tab filter names stay strictly in English per user request
+  assert.match(reportsPageSource, /item === "ALL" \? "All" : item === "ACTIVE" \? "Active" : "Closed"/);
+});
+
+test("resident report status contains restored FontAwesome tactical icons and English Report Details header", () => {
+  const statusPath = join(appRoot, "app", "_components", "resident-report-status.tsx");
+  assert.ok(existsSync(statusPath), "resident report status must exist");
+
+  const statusSource = readFileSync(statusPath, "utf8");
+
+  // Header remains English
+  assert.match(statusSource, /<h1>Report Details<\/h1>/);
+
+  // Tactical enrichment card has BFP help title and all tactical button icons
+  assert.match(statusSource, /tactical-enrichment-card/);
+  assert.match(statusSource, /Tulong sa Responders/);
+  assert.match(statusSource, /fa-solid fa-tree/);
+  assert.match(statusSource, /fa-solid fa-house-chimney/);
+  assert.match(statusSource, /fa-solid fa-building/);
+  assert.match(statusSource, /fa-solid fa-house/);
+  assert.match(statusSource, /fa-solid fa-city/);
+  assert.match(statusSource, /fa-solid fa-truck-fire/);
+  assert.match(statusSource, /fa-solid fa-person-walking/);
 });
 
 test("resident guide page dynamically translates categories, hero emergency steps, and articles to selected language", () => {
@@ -155,4 +179,5 @@ test("resident guide page dynamically translates categories, hero emergency step
   assert.match(guideSource, /t\("guideReadFull"\)/);
   assert.match(guideSource, /t\("guidePopularSection"\)/);
 });
+
 

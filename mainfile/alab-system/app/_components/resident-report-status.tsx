@@ -857,13 +857,13 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
         <a className="resident-detail-back" href="/resident/reports" aria-label="Back to reports">
           ‹
         </a>
-        <h1>{lang === "en" ? "Report Details" : lang === "hil" ? "Detalye sang Report" : "Mga Detalye ng Ulat"}</h1>
+        <h1>Report Details</h1>
       </div>
 
       <section className="resident-detail-hero">
-        <div className="resident-detail-reference">
-          <img className="resident-detail-reference-icon" src="/images/fire logo.webp" alt="" aria-hidden />
-          {report.reference_number}
+        <div className="resident-hero-main">
+          <p className="resident-ref-badge">REPORT #{report.reference_number || report.id.slice(0, 8)}</p>
+          <p className="resident-hero-time">Reported on {formatDate(report.submitted_at)}</p>
         </div>
         <div className="resident-hero-badges">
           <span className={`severity-pill ${severity}`}>
@@ -874,7 +874,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
       </section>
 
       {windSpeed >= 25 && (
-        <section className="wind-hazard-banner">
+        <section className="wind-hazard-banner" role="alert">
           <span className="wind-hazard-icon" aria-hidden="true">💨</span>
           <div className="wind-hazard-body">
             <strong>Malakas ang Hangin ({Math.round(windSpeed)} km/h {report.weather_wind_condition})</strong>
@@ -947,6 +947,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   onClick={() => updateTacticalDetail("structureMaterial", "LIGHT_MATERIALS")}
                   aria-pressed={report.structure_material === "LIGHT_MATERIALS"}
                 >
+                  <span className="tactical-btn-icon icon-wood"><i className="fa-solid fa-tree" /></span>
                   <span className="tactical-btn-text">Kahoy / Light</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
@@ -956,6 +957,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   onClick={() => updateTacticalDetail("structureMaterial", "CONCRETE_MIXED")}
                   aria-pressed={report.structure_material === "CONCRETE_MIXED"}
                 >
+                  <span className="tactical-btn-icon icon-semi"><i className="fa-solid fa-house-chimney" /></span>
                   <span className="tactical-btn-text">Semento / Halos</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
@@ -965,6 +967,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   onClick={() => updateTacticalDetail("structureMaterial", "COMMERCIAL_STEEL")}
                   aria-pressed={report.structure_material === "COMMERCIAL_STEEL"}
                 >
+                  <span className="tactical-btn-icon icon-concrete"><i className="fa-solid fa-building" /></span>
                   <span className="tactical-btn-text">Bakal / Warehouse</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
@@ -985,6 +988,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   onClick={() => updateTacticalDetail("houseDensity", "ISOLATED")}
                   aria-pressed={report.house_density === "ISOLATED"}
                 >
+                  <span className="tactical-btn-icon icon-spaced"><i className="fa-solid fa-house" /></span>
                   <span className="tactical-btn-text">Malayo (Hiwalay)</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
@@ -994,6 +998,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   onClick={() => updateTacticalDetail("houseDensity", "MODERATE")}
                   aria-pressed={report.house_density === "MODERATE"}
                 >
+                  <span className="tactical-btn-icon icon-semi"><i className="fa-solid fa-house-chimney-window" /></span>
                   <span className="tactical-btn-text">Katamtaman</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
@@ -1003,6 +1008,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   onClick={() => updateTacticalDetail("houseDensity", "HIGH_DENSITY")}
                   aria-pressed={report.house_density === "HIGH_DENSITY"}
                 >
+                  <span className="tactical-btn-icon icon-packed"><i className="fa-solid fa-city" /></span>
                   <span className="tactical-btn-text">Dikit-dikit (Kumpul-kumpol)</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
@@ -1023,6 +1029,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   onClick={() => updateTacticalDetail("routeAccessibility", "WIDE_ROAD")}
                   aria-pressed={report.route_accessibility === "WIDE_ROAD"}
                 >
+                  <span className="tactical-btn-icon icon-truck"><i className="fa-solid fa-truck-fire" /></span>
                   <span className="tactical-btn-content">
                     <strong>Malapad na Kalsada</strong>
                     <small>Kasya ang malalaking firetruck</small>
@@ -1035,6 +1042,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   onClick={() => updateTacticalDetail("routeAccessibility", "NARROW_ALLEY")}
                   aria-pressed={report.route_accessibility === "NARROW_ALLEY"}
                 >
+                  <span className="tactical-btn-icon icon-alley"><i className="fa-solid fa-person-walking" /></span>
                   <span className="tactical-btn-content">
                     <strong>Makipot / Eskenita</strong>
                     <small>Maaaring mahirapan o kailangan ng hose extension</small>

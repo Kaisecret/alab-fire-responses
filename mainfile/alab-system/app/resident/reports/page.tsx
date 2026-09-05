@@ -125,7 +125,7 @@ export default function ReportsPage() {
             <div className="reports-filter-tabs" aria-label="Report filters">
               {(["ALL", "ACTIVE", "CLOSED"] as Filter[]).map((item) => (
                 <button key={item} type="button" className={`filter-tab${filter === item ? " active" : ""}`} onClick={() => setFilter(item)}>
-                  {item === "ALL" ? t("filterAll") : item === "ACTIVE" ? t("filterActive") : t("filterClosed")}
+                  {item === "ALL" ? "All" : item === "ACTIVE" ? "Active" : "Closed"}
                 </button>
               ))}
             </div>
