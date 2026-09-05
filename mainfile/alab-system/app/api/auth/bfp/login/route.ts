@@ -70,12 +70,23 @@ export async function POST(request: Request) {
         { status: failure.locked ? 429 : 401 }
       );
     }
+
+    if (expectedRole === "MUNICIPAL_BFP" && identity.assignmentRole !== "MUNICIPAL_ADMIN") {
+      return NextResponse.json(
+        {
+          error: "This account is provisioned for the ALAB BFP Mobile App only. Field responder accounts cannot log in to the Municipal Web Command Portal.",
+        },
+        { status: 403 },
+      );
+    }
+
     clearAllLoginFailures(rateLimitKeys);
     const session = createBfpSession({
       userId: identity.userId,
       displayName: identity.displayName,
       role: identity.role,
       municipalityId: identity.municipalityId,
+      assignmentRole: identity.assignmentRole,
       mustChangePassword: identity.mustChangePassword,
     });
     const response = NextResponse.json({

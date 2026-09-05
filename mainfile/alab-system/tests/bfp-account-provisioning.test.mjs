@@ -272,8 +272,7 @@ test("BFP login artwork uses the converted WebP assets", () => {
   assert.match(provincial, /\/images\/WHITE%20LOGO\.webp/);
   assert.doesNotMatch(`${municipal}\n${provincial}`, /\/images\/[^"']+\.png/);
 });
-
-test("BFP login fields keep browser autofill from applying a blue background", () => {
+test("BFP login fields keep browser autofill from applying a blue background", () => {
   const municipal = source("app/_components/municipal-bfp-login.tsx");
   const provincial = source("app/_components/provincial-bfp-login.tsx");
 
@@ -281,4 +280,14 @@ test("BFP login fields keep browser autofill from applying a blue background", (
   assert.match(provincial, /\.prov-input:-webkit-autofill/);
   assert.match(municipal, /-webkit-box-shadow:\s*0 0 0 1000px #FFFFFF inset/);
   assert.match(provincial, /-webkit-box-shadow:\s*0 0 0 1000px #FFFFFF inset/);
+});
+
+
+test("Municipal web portal restricts login to MUNICIPAL_ADMIN and rejects mobile responder accounts", () => {
+  const login = source("app/api/auth/bfp/login/route.ts");
+  const proxy = source("proxy.ts");
+
+  assert.match(login, /identity\.assignmentRole !== "MUNICIPAL_ADMIN"/);
+  assert.match(login, /ALAB BFP Mobile App/);
+  assert.match(proxy, /session\.assignmentRole !== "MUNICIPAL_ADMIN"/);
 });

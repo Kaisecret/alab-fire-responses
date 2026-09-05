@@ -57,8 +57,14 @@ async function verifyBfpSession(token: string | undefined, requiredRole: "MUNICI
   if (difference !== 0) return false;
 
   try {
-    const session = JSON.parse(new TextDecoder().decode(base64UrlToBytes(payload))) as { role?: string; expiresAt?: number; mustChangePassword?: boolean };
+    const session = JSON.parse(new TextDecoder().decode(base64UrlToBytes(payload))) as {
+      role?: string;
+      expiresAt?: number;
+      mustChangePassword?: boolean;
+      assignmentRole?: string | null;
+    };
     if (session.role !== requiredRole || typeof session.expiresAt !== "number" || session.expiresAt <= Date.now()) return null;
+    if (requiredRole === "MUNICIPAL_BFP" && session.assignmentRole && session.assignmentRole !== "MUNICIPAL_ADMIN") return null;
     return session.mustChangePassword ? "PASSWORD_CHANGE_REQUIRED" : "AUTHORIZED";
   } catch {
     return false;

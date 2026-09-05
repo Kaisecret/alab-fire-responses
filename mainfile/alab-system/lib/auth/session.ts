@@ -35,6 +35,7 @@ export type BfpSession = {
   displayName: string;
   role: BfpRole;
   municipalityId: string | null;
+  assignmentRole?: "MUNICIPAL_ADMIN" | "MUNICIPAL_STAFF" | null;
   mustChangePassword: boolean;
   expiresAt: number;
 };
