@@ -5,7 +5,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 import { useResidentLanguage, getLocalizedStatusLabel, type ResidentLanguage } from "../_lib/resident-i18n";
-import { translateNlp, type NlpLanguage } from "../_lib/nlp-translator";
 
 type Report = {
   id: string;
@@ -380,57 +379,6 @@ const detailStyles = `
     animation: fadeIn 0.2s ease-in;
   }
 
-  .nlp-micro-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    margin-top: 0.35rem;
-  }
-  .nlp-micro-trigger {
-    align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.22rem 0.58rem;
-    border-radius: 999px;
-    border: 1px solid #E2E8F0;
-    background: #F8FAFC;
-    color: #DC2626;
-    font-size: 0.72rem;
-    font-weight: 800;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-  .nlp-micro-trigger:hover {
-    background: #FEE2E2;
-    border-color: #FECACA;
-  }
-  .nlp-micro-bubble {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    padding: 0.45rem 0.7rem;
-    border-radius: 0.6rem;
-    background: #FEF2F2;
-    border: 1px solid #FECACA;
-    color: #991B1B;
-    font-size: 0.82rem;
-    font-weight: 650;
-    line-height: 1.35;
-  }
-  .nlp-micro-bubble small {
-    font-size: 0.64rem;
-    font-weight: 800;
-    color: #DC2626;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-  .nlp-bfp-msg-container {
-    margin-top: 0.65rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
 
   @media (max-width: 580px) {
     .tactical-grid-2 {
@@ -749,8 +697,6 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isDismissingOnboarding, setIsDismissingOnboarding] = useState(false);
-  const [landmarkNlpLang, setLandmarkNlpLang] = useState<NlpLanguage | null>(null);
-  const [bfpMsgNlpLang, setBfpMsgNlpLang] = useState<NlpLanguage | null>(null);
 
   const getTimelineLabel = (status: FireReportStatus, defaultLabel: string) => {
     if (lang === "hil") {
@@ -1084,7 +1030,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   onClick={() => updateTacticalDetail("routeAccessibility", "WIDE_ROAD")}
                   aria-pressed={report.route_accessibility === "WIDE_ROAD"}
                 >
-                  <span className="tactical-btn-icon icon-truck"><i className="fa-solid fa-truck-fire" /></span>
+                  <span className="tactical-btn-icon icon-truck"><i className="fa-solid fa-truck-fast" /></span>
                   <span className="tactical-btn-content">
                     <strong>Malapad na Kalsada</strong>
                     <small>Kasya ang malalaking firetruck</small>
@@ -1148,29 +1094,6 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                     : "BFP is responding to your fire report. Please stay in a safe location and follow responder instructions.")
                 : latest?.resident_message || (lang === "hil" ? "Nabaton na ang imo report kag ginaproseso na ini." : lang === "tl" ? "Natanggap na ang iyong ulat at kasalukuyan itong pinoproseso." : "Your report has been received and is being processed.")}
             </p>
-            {latest?.resident_message && (
-              <div className="nlp-bfp-msg-container">
-                <button
-                  type="button"
-                  className="nlp-micro-trigger"
-                  onClick={() => {
-                    const next: NlpLanguage =
-                      bfpMsgNlpLang === "hil" ? "tl" : bfpMsgNlpLang === "tl" ? "en" : "hil";
-                    setBfpMsgNlpLang(next);
-                  }}
-                  title="Translate update message using ALAB NLP"
-                >
-                  <i className="fa-solid fa-language" />{" "}
-                  {bfpMsgNlpLang ? `NLP (${bfpMsgNlpLang.toUpperCase()})` : "NLP Translate"}
-                </button>
-                {bfpMsgNlpLang && (
-                  <span className="nlp-micro-bubble">
-                    <small>✨ ALAB NLP ({translateNlp(latest.resident_message, bfpMsgNlpLang).detectedLang.toUpperCase()} ➔ {bfpMsgNlpLang.toUpperCase()}):</small>
-                    {translateNlp(latest.resident_message, bfpMsgNlpLang).translatedText}
-                  </span>
-                )}
-              </div>
-            )}
             <p className="resident-update-time">
               {latest ? formatDate(latest.created_at) : formatDate(report.submitted_at)}
             </p>
@@ -1188,33 +1111,6 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 label={lang === "en" ? "Nearest Landmark" : lang === "hil" ? "Pinakamalapit nga Landmark" : "Pinakamalapit na Landmark"}
                 value={report.nearest_landmark || (lang === "en" ? "Not provided" : "Hindi tinukoy")}
                 icon="home"
-                extra={
-                  report.nearest_landmark ? (
-                    <div className="nlp-micro-container">
-                      <button
-                        type="button"
-                        className="nlp-micro-trigger"
-                        onClick={() => {
-                          const next: NlpLanguage =
-                            landmarkNlpLang === "hil" ? "tl" : landmarkNlpLang === "tl" ? "en" : "hil";
-                          setLandmarkNlpLang(next);
-                        }}
-                        title="Translate landmark using ALAB NLP"
-                      >
-                        <i className="fa-solid fa-language" />{" "}
-                        {landmarkNlpLang ? `NLP (${landmarkNlpLang.toUpperCase()})` : "NLP Translate"}
-                      </button>
-                      {landmarkNlpLang && (
-                        <span className="nlp-micro-bubble">
-                          <small>
-                            ✨ ALAB NLP ({translateNlp(report.nearest_landmark, landmarkNlpLang).detectedLang.toUpperCase()} ➔ {landmarkNlpLang.toUpperCase()}):
-                          </small>
-                          {translateNlp(report.nearest_landmark, landmarkNlpLang).translatedText}
-                        </span>
-                      )}
-                    </div>
-                  ) : null
-                }
               />
               <Info label={t("thDateReported")} value={formatDate(report.submitted_at)} icon="calendar" />
               <Info label={lang === "en" ? "Fire Type" : lang === "hil" ? "Klase sang Kalayo" : "Uri ng Sunog"} value={formatFireType(report.fire_type)} icon="fire" />

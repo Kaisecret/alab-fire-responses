@@ -105,7 +105,7 @@ export default function FiretrucksStationsPage() {
             <div className="pbfp-ft-card" key={truck.plate}>
               <div className="pbfp-ft-top">
                 <div className="pbfp-ft-icon">
-                  <i className="fa-solid fa-truck-fire" />
+                  <i className="fa-solid fa-truck-moving" />
                 </div>
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{truck.name}</div>

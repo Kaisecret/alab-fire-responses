@@ -102,19 +102,16 @@ test("NLP Translator handles identity translation and empty string safely", asyn
   assert.equal(empty.translatedText, "");
 });
 
-test("Resident report details and guide page integrate ALAB NLP emergency translator", () => {
+test("Resident guide page integrates ALAB NLP emergency translator and report details stays clean", () => {
   const statusPath = join(appRoot, "app", "_components", "resident-report-status.tsx");
   const guidePagePath = join(appRoot, "app", "resident", "guide", "page.tsx");
 
   const statusSource = readFileSync(statusPath, "utf8");
   const guidePageSource = readFileSync(guidePagePath, "utf8");
 
-  // Report status contains NLP triggers
-  assert.match(statusSource, /translateNlp/);
-  assert.match(statusSource, /landmarkNlpLang/);
-  assert.match(statusSource, /bfpMsgNlpLang/);
-  assert.match(statusSource, /nlp-micro-trigger/);
-  assert.match(statusSource, /nlp-micro-bubble/);
+  // Report status stays clean without micro trigger buttons
+  assert.ok(!statusSource.includes("nlp-micro-trigger"), "Report status should not have micro NLP buttons");
+  assert.ok(!statusSource.includes("bfpMsgNlpLang"), "Report status should not have bfpMsgNlpLang");
 
   // Guide page embeds NlpEmergencyTranslator
   assert.match(guidePageSource, /NlpEmergencyTranslator/);

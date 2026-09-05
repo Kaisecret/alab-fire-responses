@@ -160,7 +160,7 @@ test("resident report status contains restored FontAwesome tactical icons and En
   assert.match(statusSource, /fa-solid fa-building/);
   assert.match(statusSource, /fa-solid fa-house/);
   assert.match(statusSource, /fa-solid fa-city/);
-  assert.match(statusSource, /fa-solid fa-truck-fire/);
+  assert.match(statusSource, /fa-solid fa-truck-fast/);
   assert.match(statusSource, /fa-solid fa-person-walking/);
 });
 
