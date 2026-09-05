@@ -35,13 +35,32 @@ function text(value: unknown, maximum: number) {
   return typeof value === "string" ? value.trim().slice(0, maximum) : "";
 }
 
+const OFFICIAL_MUNICIPALITIES = [
+  'Anini-y', 'Barbaza', 'Belison', 'Bugasong', 'Caluya', 'Culasi',
+  'Tobias Fornier', 'Hamtic', 'Laua-an', 'Libertad', 'Pandan', 'Patnongon',
+  'San Jose de Buenavista', 'San Remigio', 'Sebaste', 'Sibalom', 'Tibiao', 'Valderrama',
+];
+
+const MUNICIPALITY_ALIASES: Record<string, string> = {
+  'san jose': 'San Jose de Buenavista',
+  'san jose antique': 'San Jose de Buenavista',
+  'dao': 'Tobias Fornier',
+  'valderama': 'Valderrama',
+  'lauaan': 'Laua-an',
+};
+
 export function normalizeDetectedMunicipality(value: unknown) {
   const municipality = text(value, 120);
-  const normalized = municipality.toLocaleLowerCase();
+  const clean = municipality.replace(/\b(municipality|bayan|city)\s+of\b/gi, '').trim().toLowerCase();
 
-  // Nominatim commonly returns the short local name, while the official PSGC
-  // municipality stored by ALAB uses the full name.
-  if (normalized === "san jose") return "San Jose de Buenavista";
+  for (const m of OFFICIAL_MUNICIPALITIES) {
+    if (m.toLowerCase() === clean) return m;
+  }
+  if (MUNICIPALITY_ALIASES[clean]) return MUNICIPALITY_ALIASES[clean];
+  for (const m of OFFICIAL_MUNICIPALITIES) {
+    const mLower = m.toLowerCase();
+    if (mLower.includes(clean) || clean.includes(mLower)) return m;
+  }
 
   return municipality;
 }
@@ -64,8 +83,13 @@ function barangayKey(value: string) {
 }
 
 export function resolveDetectedBarangay(officialBarangays: OfficialBarangay[], detectedValue: unknown) {
+  const rawBarangay = text(detectedValue, 120);
+  let officialMatch = officialBarangays.find((barangay) => barangayKey(barangay.name) === barangayKey(rawBarangay));
+
   const barangayName = normalizeDetectedBarangay(detectedValue);
-  const officialMatch = officialBarangays.find((barangay) => barangayKey(barangay.name) === barangayKey(barangayName));
+  if (!officialMatch) {
+    officialMatch = officialBarangays.find((barangay) => barangayKey(barangay.name) === barangayKey(barangayName));
+  }
 
   return {
     barangayId: officialMatch?.id ?? null,

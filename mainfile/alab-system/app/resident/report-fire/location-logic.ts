@@ -148,24 +148,37 @@ export function resolvePhilippineAddress(
 
   let barangay = '';
   if (municipality && antiqueBarangays[municipality]) {
-    const mBrgys = antiqueBarangays[municipality];
+    const sortedBrgys = [...antiqueBarangays[municipality]].sort((a, b) => b.length - a.length);
+
     for (const c of candidates) {
       const cNorm = normalizeTokens(c);
       if (!cNorm) continue;
-      const found = mBrgys.find((b) => normalizeTokens(b) === cNorm);
+      const found = sortedBrgys.find((b) => normalizeTokens(b) === cNorm);
       if (found) {
         barangay = found;
         break;
       }
     }
+
+    if (!barangay && displayName) {
+      for (const b of sortedBrgys) {
+        const reg = new RegExp('(^|[^a-z0-9])' + b.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') + '($|[^a-z0-9])', 'i');
+        if (reg.test(displayName)) {
+          barangay = b;
+          break;
+        }
+      }
+    }
   }
 
-  if (!barangay && isAntique) {
+  if (!barangay && (!municipality || !(municipality in antiqueBarangays)) && isAntique) {
     for (const c of candidates) {
+      if (c.trim().length <= 2 && /^\d+$/.test(c.trim())) continue;
       const cNorm = normalizeTokens(c);
       if (!cNorm) continue;
       for (const [mName, mBrgys] of Object.entries(antiqueBarangays)) {
-        const found = mBrgys.find((b) => normalizeTokens(b) === cNorm);
+        const sorted = [...mBrgys].sort((a, b) => b.length - a.length);
+        const found = sorted.find((b) => normalizeTokens(b) === cNorm);
         if (found) {
           barangay = found;
           if (!municipality) municipality = mName;
