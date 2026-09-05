@@ -1060,7 +1060,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
         const payload = await response.json() as ReverseGeocodePayload;
         if (disposed || requestRun !== detectionRun) return false;
 
-        const resolved = resolvePhilippineAddress(payload.address ?? {});
+        const resolved = resolvePhilippineAddress(payload.address ?? {}, payload);
         const mappedLandmark = resolveNearestLandmark(payload);
         const placeSummary = `${barangayLabel(resolved.barangay)}, ${resolved.municipality || 'Municipality unavailable'}`;
         locationCard.dataset.locationBarangay = resolved.barangay;

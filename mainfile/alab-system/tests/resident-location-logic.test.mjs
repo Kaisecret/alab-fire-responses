@@ -82,3 +82,63 @@ test("selects the nearest mapped landmark from reverse-geocode data", () => {
     },
   }), "Tito Navarro Street");
 });
+
+test("super accurately resolves and normalizes Antique barangays and municipalities", () => {
+  // Hamtic with Purok 2 in neighbourhood
+  assert.deepEqual(resolvePhilippineAddress({
+    road: "Anini-y–Tobias Fornier Road",
+    neighbourhood: "Purok 2",
+    village: "Mapatag",
+    town: "Hamtic",
+    state: "Antique",
+  }, "Anini-y–Tobias Fornier Road, Purok 2, Mapatag, Hamtic, Antique, Western Visayas, 5715, Philippines"), {
+    barangay: "Mapatag",
+    municipality: "Hamtic",
+    isAntique: true,
+  });
+
+  // San Jose with "Maybato North" and "San Jose"
+  assert.deepEqual(resolvePhilippineAddress({
+    road: "Villavert Street",
+    village: "Maybato North",
+    town: "San Jose",
+  }, "Villavert Street, Maybato North, San Jose, Antique"), {
+    barangay: "Maybato Norte",
+    municipality: "San Jose de Buenavista",
+    isAntique: true,
+  });
+
+  // Sibalom with Unicode Roman numeral "District Ⅱ"
+  assert.deepEqual(resolvePhilippineAddress({
+    quarter: "District Ⅱ",
+    town: "Sibalom",
+    state: "Antique",
+  }, "District Ⅱ, Sibalom, Antique"), {
+    barangay: "District II",
+    municipality: "Sibalom",
+    isAntique: true,
+  });
+
+  // Hamtic with hyphen variation "Villavert Jimenez"
+  assert.deepEqual(resolvePhilippineAddress({
+    village: "Villavert Jimenez",
+    municipality: "Municipality of Hamtic",
+    state: "Antique",
+  }), {
+    barangay: "Villavert-Jimenez",
+    municipality: "Hamtic",
+    isAntique: true,
+  });
+
+  // Tobias Fornier with alias "Dao"
+  assert.deepEqual(resolvePhilippineAddress({
+    village: "Poblacion Norte",
+    town: "Dao",
+    state: "Antique",
+  }), {
+    barangay: "Poblacion Norte",
+    municipality: "Tobias Fornier",
+    isAntique: true,
+  });
+});
+
