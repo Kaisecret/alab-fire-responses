@@ -1089,7 +1089,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
           return false;
         } else {
           setLocationValidity(true);
-          setState(source === 'manual' ? 'adjusted' : quality === 'precise' ? 'confirmed' : 'approximate');
+          setState(source === 'manual' ? 'adjusted' : 'confirmed');
           setLandmark(
             mappedLandmark ? 'suggested' : 'unavailable',
             mappedLandmark || 'No named landmark is mapped nearby',
@@ -1127,19 +1127,6 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       isFinalizing = true;
       stopDetection();
       const quality = classifyAccuracy(reading.accuracy);
-
-      if (quality === 'poor') {
-        isFinalizing = false;
-        setLocationValidity(false);
-        setState('low-accuracy');
-        setLandmark('unavailable', 'Waiting for a more accurate location', 'Landmark not selected');
-        if (title) title.textContent = 'Location is still too approximate';
-        showError('The current reading is too broad for a fire report. Keep GPS on, move near a window, then try again or adjust the pin.');
-        setMapOverlay(false, 'Low accuracy');
-        settleLocationRequests(run, false);
-        return;
-      }
-
       settleLocationRequests(run, await resolveReading(reading, 'automatic', quality));
     }
 
@@ -1182,7 +1169,7 @@ function initializeLocationLogic(root: HTMLElement): () => void {
       setLandmark('waiting', 'Finding a reliable nearby place...', 'Improving GPS accuracy');
       showError('');
 
-      if (classifyAccuracy(selected.accuracy) === 'precise' && isWithinAntiqueBounds(selected)) {
+      if (isWithinAntiqueBounds(selected)) {
         void finalizeAutomaticLocation(selected, run);
         return;
       }
