@@ -288,6 +288,7 @@ test("Municipal web portal restricts login to MUNICIPAL_ADMIN and rejects mobile
   const proxy = source("proxy.ts");
 
   assert.match(login, /identity\.assignmentRole !== "MUNICIPAL_ADMIN"/);
-  assert.match(login, /ALAB BFP Mobile App/);
+  assert.match(login, /Incorrect BFP email or password/);
   assert.match(proxy, /session\.assignmentRole !== "MUNICIPAL_ADMIN"/);
 });
+

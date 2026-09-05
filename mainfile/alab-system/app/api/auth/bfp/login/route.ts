@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
   try {
     const identity = await verifyBfpCredentials(email, password, expectedRole);
-    if (!identity) {
+    if (!identity || (expectedRole === "MUNICIPAL_BFP" && identity.assignmentRole !== "MUNICIPAL_ADMIN")) {
       const failure = recordLoginFailures(rateLimitKeys);
       const message = failure.locked
         ? "Too many login attempts. Please wait 2 minutes before trying again."
@@ -68,15 +68,6 @@ export async function POST(request: Request) {
           retryAfterSeconds: failure.locked ? 120 : 0,
         },
         { status: failure.locked ? 429 : 401 }
-      );
-    }
-
-    if (expectedRole === "MUNICIPAL_BFP" && identity.assignmentRole !== "MUNICIPAL_ADMIN") {
-      return NextResponse.json(
-        {
-          error: "This account is provisioned for the ALAB BFP Mobile App only. Field responder accounts cannot log in to the Municipal Web Command Portal.",
-        },
-        { status: 403 },
       );
     }
 
