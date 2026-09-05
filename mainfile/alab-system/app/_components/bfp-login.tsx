@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 interface BfpLoginProps {
   portal: "MUNICIPAL" | "PROVINCIAL";
@@ -16,6 +16,7 @@ export function BfpLogin({ portal: initialPortal }: BfpLoginProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
 
   const isProvincial = activePortal === "PROVINCIAL";
   const portalTitle = isProvincial ? "Provincial Command Center" : "Municipal Fire Station";
@@ -26,8 +27,45 @@ export function BfpLogin({ portal: initialPortal }: BfpLoginProps) {
     ? "e.g. province.admin@bfp.gov.ph"
     : "e.g. station.sanjose@bfp.gov.ph";
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("alab_bfp_login_lockout");
+      if (raw) {
+        const until = Number(raw);
+        const remaining = Math.ceil((until - Date.now()) / 1000);
+        if (remaining > 0) {
+          setLockoutSeconds(remaining);
+        } else {
+          localStorage.removeItem("alab_bfp_login_lockout");
+        }
+      }
+    } catch {
+      // Ignore storage errors in restricted browser contexts
+    }
+  }, []);
+
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        if (prev <= 1) {
+          try {
+            localStorage.removeItem("alab_bfp_login_lockout");
+          } catch {}
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutSeconds]);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (lockoutSeconds > 0) {
+      setError(`Too many login attempts. Please wait ${lockoutSeconds} seconds before trying again.`);
+      return;
+    }
     setError("");
     setLoading(true);
     try {
@@ -36,10 +74,25 @@ export function BfpLogin({ portal: initialPortal }: BfpLoginProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, portal: activePortal }),
       });
-      const result = (await response.json()) as { error?: string; redirectTo?: string };
+      const result = (await response.json()) as {
+        error?: string;
+        redirectTo?: string;
+        locked?: boolean;
+        retryAfterSeconds?: number;
+      };
       if (!response.ok || !result.redirectTo) {
+        if (response.status === 429 || result.locked) {
+          const waitSec = result.retryAfterSeconds || 120;
+          setLockoutSeconds(waitSec);
+          try {
+            localStorage.setItem("alab_bfp_login_lockout", String(Date.now() + waitSec * 1000));
+          } catch {}
+        }
         throw new Error(result.error || "Unable to authenticate credentials.");
       }
+      try {
+        localStorage.removeItem("alab_bfp_login_lockout");
+      } catch {}
       window.location.assign(result.redirectTo);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to authenticate credentials.");
@@ -732,8 +785,13 @@ export function BfpLogin({ portal: initialPortal }: BfpLoginProps) {
             )}
 
             {/* Submit Button */}
-            <button disabled={loading} type="submit" className="bfp-submit-btn">
-              {loading ? (
+            <button disabled={loading || lockoutSeconds > 0} type="submit" className="bfp-submit-btn">
+              {lockoutSeconds > 0 ? (
+                <>
+                  <i className="fa-solid fa-lock" />
+                  <span>Locked for Security ({lockoutSeconds}s wait)</span>
+                </>
+              ) : loading ? (
                 <>
                   <span className="bfp-spinner" />
                   <span>Verifying Clearance…</span>

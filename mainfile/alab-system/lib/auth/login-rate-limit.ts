@@ -38,3 +38,37 @@ export function recordLoginFailure(key: string) {
 export function clearLoginFailures(key: string) {
   attempts.delete(key);
 }
+
+export function checkLoginRateLimits(keys: string[]) {
+  let maxRetrySeconds = 0;
+  for (const key of keys) {
+    const result = checkLoginRateLimit(key);
+    if (!result.allowed) {
+      if (result.retryAfterSeconds > maxRetrySeconds) {
+        maxRetrySeconds = result.retryAfterSeconds;
+      }
+    }
+  }
+  if (maxRetrySeconds > 0) {
+    return { allowed: false, retryAfterSeconds: maxRetrySeconds };
+  }
+  return { allowed: true, retryAfterSeconds: 0 };
+}
+
+export function recordLoginFailures(keys: string[]) {
+  let isLocked = false;
+  let minRemaining = MAX_LOGIN_ATTEMPTS;
+  for (const key of keys) {
+    const result = recordLoginFailure(key);
+    if (result.locked) isLocked = true;
+    if (result.attemptsRemaining < minRemaining) minRemaining = result.attemptsRemaining;
+  }
+  return { locked: isLocked, attemptsRemaining: minRemaining };
+}
+
+export function clearAllLoginFailures(keys: string[]) {
+  for (const key of keys) {
+    attempts.delete(key);
+  }
+}
+

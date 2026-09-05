@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { getDatabase } from "../../../../lib/db";
-import { clearLoginFailures, checkLoginRateLimit, recordLoginFailure } from "../../../../lib/auth/login-rate-limit";
+import {
+  clearLoginFailures,
+  checkLoginRateLimit,
+  recordLoginFailure,
+  checkLoginRateLimits,
+  recordLoginFailures,
+  clearAllLoginFailures,
+} from "../../../../lib/auth/login-rate-limit";
 import { verifyPassword } from "../../../../lib/auth/password";
 import {
   createResidentApplicantSession,
@@ -56,12 +63,24 @@ export async function POST(request: Request) {
   const password = typeof body.password === "string" ? body.password : "";
   if (!identifier || !password) return NextResponse.json({ error: "Enter your username/email and password." }, { status: 400 });
 
-  const key = clientKey(request, identifier);
-  const limit = checkLoginRateLimit(key);
+  const forwardedFor = request.headers.get("cf-connecting-ip")?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "local";
+  const ipKey = `resident:ip:${forwardedFor}`;
+  const accountKey = `resident:acc:${identifier.toLowerCase()}`;
+  const comboKey = `resident:${forwardedFor}:${identifier.toLowerCase()}`;
+  const rateLimitKeys = [ipKey, accountKey, comboKey];
+
+  const limit = checkLoginRateLimits(rateLimitKeys);
   if (!limit.allowed) {
     const minutes = Math.ceil(limit.retryAfterSeconds / 60);
     return NextResponse.json(
-      { error: `Too many login attempts. Please wait ${minutes} minute${minutes > 1 ? "s" : ""} before trying again.` },
+      {
+        error: `Too many login attempts. Please wait ${minutes} minute${minutes > 1 ? "s" : ""} before trying again.`,
+        retryAfterSeconds: limit.retryAfterSeconds,
+        locked: true,
+      },
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
@@ -75,16 +94,16 @@ export async function POST(request: Request) {
     );
     const user = result.rows[0];
     if (!user || user.role !== "RESIDENT" || user.account_status === "SUSPENDED" || !(await verifyPassword(password, user.password_hash))) {
-      const failure = recordLoginFailure(key);
+      const failure = recordLoginFailures(rateLimitKeys);
       const message = failure.locked
         ? "Too many login attempts. Please wait 2 minutes before trying again."
         : failure.attemptsRemaining > 0
           ? `Invalid username/email or password. (${failure.attemptsRemaining} attempt${failure.attemptsRemaining > 1 ? "s" : ""} remaining)`
           : "Invalid username/email or password.";
-      return NextResponse.json({ error: message, attemptsRemaining: failure.attemptsRemaining }, { status: failure.locked ? 429 : 401 });
+      return NextResponse.json({ error: message, attemptsRemaining: failure.attemptsRemaining, locked: failure.locked }, { status: failure.locked ? 429 : 401 });
     }
 
-    clearLoginFailures(key);
+    clearAllLoginFailures(rateLimitKeys);
     if (user.account_status !== "ACTIVE") {
       const application = await database.query<{ status: string; rejection_reason: string | null }>(
         `select rv.status, rv.rejection_reason

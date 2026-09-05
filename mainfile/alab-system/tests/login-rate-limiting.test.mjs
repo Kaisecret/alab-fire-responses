@@ -63,3 +63,41 @@ test("BFP municipal and provincial login route enforces 2-minute lockout on 3 fa
   assert.match(bfpLogin, /recordLoginFailure/);
   assert.match(bfpLogin, /2 minutes/i, "BFP login error message must state 2 minutes");
 });
+
+test("failing wrong account locks out client device and blocks login even if real account is submitted", async () => {
+  const rateLimitModule = await import("../lib/auth/login-rate-limit.ts");
+
+  const clientIp = `test-ip-${Date.now()}`;
+  const wrongEmail = "wrong-account@bfp.gov.ph";
+  const realEmail = "real-station@bfp.gov.ph";
+
+  const ipKey = `bfp:ip:${clientIp}`;
+  const wrongAccountKey = `bfp:acc:${wrongEmail}`;
+  const realAccountKey = `bfp:acc:${realEmail}`;
+
+  const wrongKeys = [ipKey, wrongAccountKey, `bfp:${clientIp}:${wrongEmail}`];
+  const realKeys = [ipKey, realAccountKey, `bfp:${clientIp}:${realEmail}`];
+
+  // 1. Initial check on wrong account is allowed
+  assert.equal(rateLimitModule.checkLoginRateLimits(wrongKeys).allowed, true);
+
+  // 2. Fail 3 times on wrong account
+  rateLimitModule.recordLoginFailures(wrongKeys);
+  rateLimitModule.recordLoginFailures(wrongKeys);
+  const thirdFail = rateLimitModule.recordLoginFailures(wrongKeys);
+  assert.equal(thirdFail.locked, true);
+
+  // 3. Client IP is now locked out
+  assert.equal(rateLimitModule.checkLoginRateLimits(wrongKeys).allowed, false);
+
+  // 4. User now tries logging into real account from the same client IP -> MUST BE BLOCKED!
+  const realAttempt = rateLimitModule.checkLoginRateLimits(realKeys);
+  assert.equal(realAttempt.allowed, false, "Real account attempt from locked client device must be blocked!");
+  assert.ok(realAttempt.retryAfterSeconds > 0, "Must have active retry-after seconds");
+
+  // 5. Clean up
+  rateLimitModule.clearAllLoginFailures(wrongKeys);
+  rateLimitModule.clearAllLoginFailures(realKeys);
+  assert.equal(rateLimitModule.checkLoginRateLimits(realKeys).allowed, true);
+});
+
