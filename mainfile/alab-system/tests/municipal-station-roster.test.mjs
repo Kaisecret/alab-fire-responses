@@ -44,7 +44,7 @@ test("municipal stations manager opens assigned responder cards on station click
   assert.match(manager, /Official Email/);
   assert.match(manager, /Station Assignment/);
   assert.match(manager, /Duty Status/);
-  assert.match(manager, /Mobile App/);
+  assert.match(manager, /Account Status/);
   assert.match(manager, /\.mbfp-roster-card-top\s*\{[^}]*#B91C1C/);
   assert.doesNotMatch(manager, /\.mbfp-roster-card-top\s*\{[^}]*#00695C/);
   assert.doesNotMatch(manager, /\.mbfp-roster-card-top\s*\{[^}]*#26A69A/);

@@ -432,15 +432,21 @@ export function MunicipalStationsManager() {
             <div className="mbfp-roster-grid">
               {[1, 2, 3, 4].map((n) => (
                 <div className="mbfp-roster-card mbfp-roster-skeleton" key={n}>
-                  <div className="mbfp-roster-card-top skeleton-top" />
+                  <div className="mbfp-roster-card-top skeleton-top">
+                    <div className="mbfp-skeleton-avatar-orbit">
+                      <div className="mbfp-skeleton-avatar-circle" />
+                    </div>
+                  </div>
                   <div className="mbfp-roster-card-body">
-                    <div className="mbfp-skeleton-row short" />
-                    <div className="mbfp-skeleton-row tiny" />
+                    <div className="mbfp-skeleton-row short skeleton-center" />
+                    <div className="mbfp-skeleton-row tiny skeleton-center" />
+                    <div className="mbfp-skeleton-pill" />
                     <div className="mbfp-skeleton-row" />
                     <div className="mbfp-skeleton-row" />
                     <div className="mbfp-skeleton-row" />
                     <div className="mbfp-skeleton-row" />
                   </div>
+                  <div className="mbfp-roster-card-bottom-accent" />
                 </div>
               ))}
             </div>
@@ -457,41 +463,13 @@ export function MunicipalStationsManager() {
 
                 return (
                   <div className="mbfp-roster-card" key={responder.id}>
-                    {/* TOP BIG PICTURE DISPLAY - PURE UNBLURRED UNCROPPED PROFILE DISPLAY */}
+                    {/* TOP HEADER: BADGES & CENTERED CIRCULAR AVATAR (JOEYLENE RIVERA STYLE) */}
                     <div className="mbfp-roster-card-top">
-                      {responder.profilePhotoUrl ? (
-                        <div className="mbfp-roster-avatar-stage">
-                          <div
-                            className="mbfp-roster-avatar-ambient"
-                            style={{ backgroundImage: `url(${responder.profilePhotoUrl})` }}
-                            aria-hidden="true"
-                          />
-                          <img
-                            src={responder.profilePhotoUrl}
-                            alt={responder.displayName}
-                            className="mbfp-roster-avatar-img"
-                            onError={(e) => {
-                              const target = e.currentTarget as HTMLImageElement;
-                              target.style.display = "none";
-                              const stage = target.parentElement;
-                              if (stage) stage.style.display = "none";
-                              const fallback = stage?.parentElement?.querySelector(".mbfp-roster-avatar-fallback");
-                              if (fallback) (fallback as HTMLElement).style.display = "flex";
-                            }}
-                          />
+                      <div className="mbfp-roster-top-bar">
+                        <div className="mbfp-roster-top-emblem" title="BFP Fire Responder">
+                          <i className="fa-solid fa-shield-halved" />
                         </div>
-                      ) : null}
-                      <div
-                        className="mbfp-roster-avatar-fallback"
-                        style={{ display: responder.profilePhotoUrl ? "none" : "flex" }}
-                      >
-                        <i className="fa-solid fa-user-shield mbfp-roster-fallback-shield" />
-                        <span className="mbfp-roster-initials">{initials}</span>
-                      </div>
-
-                      {/* FLOATING OVERLAYS ON PHOTO */}
-                      <div className="mbfp-roster-photo-overlay-top">
-                        <span className={`mbfp-roster-photo-duty ${responder.dutyStatus?.toLowerCase() || "standby"}`}>
+                        <span className={`mbfp-roster-duty-pill ${responder.dutyStatus?.toLowerCase() || "standby"}`}>
                           {responder.dutyStatus === "DISPATCHED" ? (
                             <>🚨 Dispatched</>
                           ) : responder.dutyStatus === "ON_DUTY" ? (
@@ -500,37 +478,71 @@ export function MunicipalStationsManager() {
                             <>Standby</>
                           )}
                         </span>
+                      </div>
 
-                        {responder.mobilePlatform ? (
-                          <span
-                            className="mbfp-roster-photo-tag"
-                            title={`Active on ${responder.mobilePlatform} App`}
+                      {/* CENTERED AVATAR WITH ORBIT RING */}
+                      <div className="mbfp-roster-avatar-orbit">
+                        <div className="mbfp-roster-avatar-ring" aria-hidden="true" />
+                        <div className="mbfp-roster-avatar-circle">
+                          {responder.profilePhotoUrl ? (
+                            <img
+                              src={responder.profilePhotoUrl}
+                              alt={responder.displayName}
+                              className="mbfp-roster-avatar-img"
+                              onError={(e) => {
+                                const target = e.currentTarget as HTMLImageElement;
+                                target.style.display = "none";
+                                const fallback = target.parentElement?.querySelector(".mbfp-roster-avatar-fallback");
+                                if (fallback) (fallback as HTMLElement).style.display = "flex";
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className="mbfp-roster-avatar-fallback"
+                            style={{ display: responder.profilePhotoUrl ? "none" : "flex" }}
                           >
-                            <i className={responder.mobilePlatform === "IOS" ? "fa-brands fa-apple" : "fa-brands fa-android"} />
-                          </span>
-                        ) : (
-                          <span
-                            className="mbfp-roster-photo-tag"
-                            title="ALAB Responder"
-                          >
-                            <i className="fa-solid fa-fire" />
-                          </span>
-                        )}
+                            <i className="fa-solid fa-user-shield mbfp-roster-fallback-shield" />
+                            <span className="mbfp-roster-initials">{initials}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* BODY DETAILS - EXACT WATER SOURCES CARD KEY-VALUE STRUCTURE */}
+                    {/* CARD BODY: CENTERED IDENTITY & DETAILS */}
                     <div className="mbfp-roster-card-body">
                       <div className="mbfp-roster-profile-header">
-                        <div className="mbfp-roster-profile-name" title={responder.displayName}>
+                        <h3 className="mbfp-roster-profile-name" title={responder.displayName}>
                           <span>{responder.displayName}</span>
                           <i className="fa-solid fa-circle-check mbfp-roster-verified" title="BFP Verified Responder" />
+                        </h3>
+                        <div className="mbfp-roster-profile-role">
+                          {responder.rankOrPosition || "Fire Officer"}
                         </div>
-                        <div className="mbfp-roster-profile-kicker">
-                          {responder.rankOrPosition || "Fire Officer"} · {parsed.name}
+                        <div className="mbfp-roster-profile-station">
+                          {parsed.name}
                         </div>
                       </div>
 
+                      {/* CENTERED EMAIL PILL BUTTON (JOEYLENE RIVERA STYLE) */}
+                      {responder.email && (
+                        <div className="mbfp-roster-email-pill-wrap">
+                          <button
+                            type="button"
+                            className="mbfp-roster-email-pill"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyEmail(responder.email!, responder.id);
+                            }}
+                            title="Click to copy official email"
+                          >
+                            <i className="fa-regular fa-envelope" />
+                            <span className="mbfp-roster-email-pill-text">{responder.email}</span>
+                            <i className={`fa-solid ${copiedEmailId === responder.id ? "fa-check text-green-400" : "fa-copy"}`} />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* DETAILS KEY-VALUE LIST (WITHOUT MOBILE APP) */}
                       <div className="mbfp-roster-details-list">
                         <div className="mbfp-roster-detail">
                           <span className="mbfp-roster-detail-label">Rank / Position</span>
@@ -540,19 +552,6 @@ export function MunicipalStationsManager() {
                           <span className="mbfp-roster-detail-label">Official Email</span>
                           <span className="mbfp-roster-detail-value email-value" title={responder.email}>
                             <span className="email-text">{responder.email || "—"}</span>
-                            {responder.email && (
-                              <button
-                                type="button"
-                                className="mbfp-roster-copy-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  copyEmail(responder.email!, responder.id);
-                                }}
-                                title="Copy email address"
-                              >
-                                <i className={`fa-solid ${copiedEmailId === responder.id ? "fa-check text-green-500" : "fa-copy"}`} />
-                              </button>
-                            )}
                           </span>
                         </div>
                         <div className="mbfp-roster-detail">
@@ -572,19 +571,6 @@ export function MunicipalStationsManager() {
                           </span>
                         </div>
                         <div className="mbfp-roster-detail">
-                          <span className="mbfp-roster-detail-label">Mobile App</span>
-                          <span className="mbfp-roster-detail-value">
-                            {responder.mobilePlatform ? (
-                              <span className="mbfp-roster-app-tag">
-                                <i className={responder.mobilePlatform === "IOS" ? "fa-brands fa-apple" : "fa-brands fa-android"} />
-                                <span>{responder.mobilePlatform === "IOS" ? "iOS App" : "Android App"}</span>
-                              </span>
-                            ) : (
-                              <span className="mbfp-roster-unregistered">Registered</span>
-                            )}
-                          </span>
-                        </div>
-                        <div className="mbfp-roster-detail">
                           <span className="mbfp-roster-detail-label">Account Status</span>
                           <span className={`mbfp-roster-status ${responder.accountStatus === "ACTIVE" ? "active" : "inactive"}`}>
                             <span className="mbfp-roster-status-dot" />
@@ -593,6 +579,9 @@ export function MunicipalStationsManager() {
                         </div>
                       </div>
                     </div>
+
+                    {/* SIGNATURE BOTTOM ACCENT (JOEYLENE RIVERA STYLE) */}
+                    <div className="mbfp-roster-card-bottom-accent" />
                   </div>
                 );
               })}
@@ -2375,53 +2364,138 @@ const pageStyles = `
     border-color: #FECDD3;
   }
 
-  /* CARD TOP: RED/CRIMSON GRADIENT (STRICTLY NOT GREEN) - PURE PROFILE DISPLAY */
+  /* ================= ROSTER PERSONNEL CARDS (JOEYLENE RIVERA REDESIGN) ================= */
+  .mbfp-roster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 310px));
+    gap: 14px;
+  }
+
+  .mbfp-roster-card {
+    background: #FFFFFF;
+    border-radius: 24px;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+    border: 1px solid #F1F5F9;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s;
+  }
+
+  .mbfp-roster-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 36px rgba(185, 28, 28, 0.12), 0 4px 12px rgba(15, 23, 42, 0.06);
+    border-color: #FECDD3;
+  }
+
+  /* CARD TOP: RED/CRIMSON ACCENT (STRICTLY NOT GREEN) */
   .mbfp-roster-card-top {
-    background: linear-gradient(135deg, #B91C1C 0%, #991B1B 60%, #7F1D1D 100%);
     position: relative;
     width: 100%;
-    height: 190px;
-    border-radius: 12px;
-    overflow: hidden;
+    padding: 16px 16px 8px;
+    background: linear-gradient(180deg, #B91C1C0D 0%, rgba(255, 255, 255, 0) 100%);
+    border-top: 3px solid #B91C1C;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
   }
 
-  .mbfp-roster-avatar-stage {
-    position: relative;
+  .mbfp-roster-top-bar {
     width: 100%;
-    height: 100%;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .mbfp-roster-top-emblem {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     background: #0F172A;
+    color: #F59E0B;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
   }
 
-  .mbfp-roster-avatar-ambient {
+  .mbfp-roster-duty-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.22rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 750;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .mbfp-roster-duty-pill.dispatched {
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+  }
+
+  .mbfp-roster-duty-pill.on_duty {
+    background: #ECFDF5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+  }
+
+  .mbfp-roster-duty-pill.standby {
+    background: #FFFBEB;
+    color: #D97706;
+    border: 1px solid #FDE68A;
+  }
+
+  /* AVATAR ORBIT & CIRCLE (JOEYLENE RIVERA STYLE) */
+  .mbfp-roster-avatar-orbit {
+    position: relative;
+    width: 116px;
+    height: 116px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px auto 6px;
+  }
+
+  .mbfp-roster-avatar-ring {
     position: absolute;
-    inset: -14px;
-    background-size: cover;
-    background-position: center center;
-    filter: blur(18px) brightness(0.5) saturate(1.25);
-    transform: scale(1.15);
-    z-index: 0;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2.5px solid transparent;
+    border-top-color: #B91C1C;
+    border-right-color: #F59E0B;
+    border-bottom-color: #B91C1C;
+    transform: rotate(-25deg);
     pointer-events: none;
   }
 
-  .mbfp-roster-avatar-img {
+  .mbfp-roster-avatar-circle {
+    width: 106px;
+    height: 106px;
+    border-radius: 50%;
+    border: 3.5px solid #FFFFFF;
+    box-shadow: 0 8px 24px rgba(185, 28, 28, 0.16);
+    overflow: hidden;
+    background: linear-gradient(135deg, #B91C1C 0%, #991B1B 60%, #7F1D1D 100%);
     position: relative;
     z-index: 1;
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mbfp-roster-avatar-img {
+    width: 100%;
     height: 100%;
-    object-fit: contain;
-    object-position: center center;
+    object-fit: cover;
+    object-position: center;
     display: block;
-    border-radius: 6px;
-    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
+    border-radius: 50%;
   }
 
   .mbfp-roster-avatar-fallback {
@@ -2431,123 +2505,117 @@ const pageStyles = `
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
+    gap: 0.2rem;
     background: linear-gradient(135deg, #B91C1C 0%, #991B1B 60%, #7F1D1D 100%);
-    color: white;
-    border-radius: 12px;
+    color: #FFFFFF;
   }
 
   .mbfp-roster-fallback-shield {
-    font-size: 2.2rem;
-    opacity: 0.85;
-    color: rgba(255, 255, 255, 0.92);
+    font-size: 1.8rem;
+    opacity: 0.9;
+    color: rgba(255, 255, 255, 0.95);
   }
 
   .mbfp-roster-initials {
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     font-weight: 800;
     letter-spacing: 0.05em;
     color: #FFFFFF;
   }
 
-  .mbfp-roster-photo-overlay-top {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    pointer-events: none;
-    z-index: 2;
-  }
-
-  .mbfp-roster-photo-duty {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.22rem 0.55rem;
-    border-radius: 9999px;
-    font-size: 0.68rem;
-    font-weight: 750;
-    background: rgba(15, 23, 42, 0.78);
-    backdrop-filter: blur(8px);
-    color: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  }
-
-  .mbfp-roster-photo-duty.dispatched {
-    background: rgba(220, 38, 38, 0.88);
-    border-color: rgba(254, 202, 202, 0.4);
-  }
-
-  .mbfp-roster-photo-duty.on_duty {
-    background: rgba(5, 150, 105, 0.88);
-    border-color: rgba(167, 243, 208, 0.4);
-  }
-
-  .mbfp-roster-photo-duty.standby {
-    background: rgba(217, 119, 6, 0.88);
-    border-color: rgba(253, 230, 138, 0.4);
-  }
-
-  .mbfp-roster-photo-tag {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #FFFFFF;
-    font-size: 0.82rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  }
-
+  /* CARD BODY & CENTERED IDENTITY */
   .mbfp-roster-card-body {
-    padding: 0.15rem 0.35rem 0.35rem;
-    background: transparent;
+    padding: 0 16px 14px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
   }
 
   .mbfp-roster-profile-header {
-    margin-bottom: 0.65rem;
+    text-align: center;
+    margin-bottom: 6px;
   }
 
   .mbfp-roster-profile-name {
-    font-size: 1.02rem;
+    font-size: 1.12rem;
     font-weight: 800;
     color: #0F172A;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 0.35rem;
+    margin: 0;
     line-height: 1.3;
   }
 
   .mbfp-roster-verified {
     color: #2563EB;
-    font-size: 0.92rem;
+    font-size: 0.95rem;
   }
 
-  .mbfp-roster-profile-kicker {
-    font-size: 0.74rem;
-    font-weight: 600;
+  .mbfp-roster-profile-role {
+    font-size: 0.84rem;
+    font-weight: 750;
+    color: #B91C1C;
+    margin-top: 2px;
+  }
+
+  .mbfp-roster-profile-station {
+    font-size: 0.75rem;
+    font-weight: 500;
     color: #64748B;
-    margin-top: 0.15rem;
+    margin-top: 1px;
   }
 
+  /* CENTERED EMAIL PILL BUTTON (JOEYLENE RIVERA STYLE) */
+  .mbfp-roster-email-pill-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 8px 0 14px;
+  }
+
+  .mbfp-roster-email-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #0F172A;
+    color: #FFFFFF;
+    padding: 0.44rem 1.05rem;
+    border-radius: 9999px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 100%;
+  }
+
+  .mbfp-roster-email-pill:hover {
+    background: #B91C1C;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(185, 28, 28, 0.25);
+  }
+
+  .mbfp-roster-email-pill-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+  }
+
+  /* DETAILS LIST */
   .mbfp-roster-details-list {
     display: flex;
     flex-direction: column;
+    margin-top: 2px;
   }
 
   .mbfp-roster-detail {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.35rem 0;
+    padding: 0.36rem 0;
     border-bottom: 1px solid #F1F5F9;
     font-size: 0.76rem;
     gap: 0.5rem;
@@ -2573,34 +2641,13 @@ const pageStyles = `
   }
 
   .mbfp-roster-detail-value.email-value {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    max-width: 170px;
+    max-width: 160px;
   }
 
   .mbfp-roster-detail-value .email-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .mbfp-roster-copy-btn {
-    background: transparent;
-    border: none;
-    color: #94A3B8;
-    cursor: pointer;
-    font-size: 0.75rem;
-    padding: 2px 4px;
-    border-radius: 4px;
-    display: inline-flex;
-    align-items: center;
-    transition: color 0.15s, background-color 0.15s;
-  }
-
-  .mbfp-roster-copy-btn:hover {
-    color: #B91C1C;
-    background: #FEE2E2;
   }
 
   .mbfp-roster-duty-badge {
@@ -2626,24 +2673,6 @@ const pageStyles = `
   .mbfp-roster-duty-badge.standby {
     background: #FFFBEB;
     color: #D97706;
-  }
-
-  .mbfp-roster-app-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    color: #2563EB;
-    font-size: 0.72rem;
-    font-weight: 700;
-    background: #EFF6FF;
-    padding: 0.15rem 0.45rem;
-    border-radius: 4px;
-  }
-
-  .mbfp-roster-unregistered {
-    color: #94A3B8;
-    font-weight: 600;
-    font-size: 0.72rem;
   }
 
   .mbfp-roster-status {
@@ -2673,50 +2702,53 @@ const pageStyles = `
     background: currentColor;
   }
 
-  .mbfp-roster-empty {
-    padding: 3rem 1.5rem;
-    text-align: center;
-    background: #FFFFFF;
-    border-radius: 12px;
-    border: 1px dashed #CBD5E1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  /* SIGNATURE BOTTOM ACCENT (JOEYLENE RIVERA STYLE) */
+  .mbfp-roster-card-bottom-accent {
+    height: 10px;
+    width: 100%;
+    background: linear-gradient(90deg, #B91C1C 0%, #0F172A 100%);
+    border-radius: 0 0 24px 24px;
+    margin-top: auto;
   }
 
-  .mbfp-roster-empty-icon {
-    width: 3.5rem;
-    height: 3.5rem;
-    border-radius: 50%;
-    background: #FEE2E2;
-    color: #B91C1C;
+  /* SKELETON SHIMMER (CIRCULAR AVATAR SKELETON) */
+  .mbfp-roster-skeleton .skeleton-top {
+    width: 100%;
+    height: 135px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
-    margin-bottom: 0.85rem;
+    background: transparent;
   }
 
-  .mbfp-roster-empty h3 {
-    font-size: 1rem;
-    font-weight: 800;
-    color: #0F172A;
-    margin: 0 0 0.35rem;
+  .mbfp-skeleton-avatar-orbit {
+    width: 106px;
+    height: 106px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .mbfp-roster-empty p {
-    font-size: 0.82rem;
-    color: #64748B;
-    margin: 0 0 1.2rem;
-    max-width: 24rem;
+  .mbfp-skeleton-avatar-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+    background-size: 200% 100%;
+    animation: mbfpShimmer 1.5s infinite;
   }
 
-  /* SKELETON SHIMMER FOR ROSTER CARDS */
-  .mbfp-roster-skeleton .skeleton-top {
-    width: 100%;
-    height: 190px;
-    border-radius: 12px;
-    background: linear-gradient(90deg, #B91C1C 0%, #DC2626 50%, #B91C1C 100%);
+  .mbfp-skeleton-row.skeleton-center {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .mbfp-skeleton-pill {
+    width: 160px;
+    height: 28px;
+    border-radius: 9999px;
+    margin: 6px auto 14px;
+    background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
     background-size: 200% 100%;
     animation: mbfpShimmer 1.5s infinite;
   }
