@@ -84,3 +84,15 @@ export async function createBfpProfilePhotoUrl(userId: string) {
     return null;
   }
 }
+
+export async function deleteBfpProfilePhoto(userId: string) {
+  const storageKey = `${userId}/profile`;
+  signedUrlCache.delete(userId);
+  try {
+    const client = await profilePhotoStorage();
+    await client.storage.from(bucket).remove([storageKey]);
+  } catch (error) {
+    console.error("Failed to delete BFP profile photo", error);
+  }
+}
+

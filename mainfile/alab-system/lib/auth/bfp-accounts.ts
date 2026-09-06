@@ -157,19 +157,43 @@ export async function changeBfpPassword(userId: string, currentPassword: string,
 }
 
 export async function updateBfpDisplayName(userId: string, displayNameInput: unknown) {
-  const displayName = clean(displayNameInput, 100);
+  return updateBfpProfile(userId, { displayName: displayNameInput });
+}
+
+export async function updateBfpProfile(
+  userId: string,
+  input: { displayName?: unknown; rankOrPosition?: unknown },
+) {
+  const displayName = clean(input.displayName, 100);
+  const rankOrPosition = input.rankOrPosition !== undefined
+    ? (clean(input.rankOrPosition, 100) || null)
+    : undefined;
+
   if (displayName.length < 2) throw new Error("INVALID_DISPLAY_NAME");
 
-  const updated = await getDatabase().query<{ userId: string }>(
-    `update bfp_personnel_profiles
-        set display_name = $1, updated_at = now()
-      where user_id = $2
-        and exists (
-          select 1 from users u
-          where u.id = $2 and u.role = 'MUNICIPAL_BFP' and u.account_status = 'ACTIVE'
-        )
-      returning user_id as "userId"`,
-    [displayName, userId],
-  );
+  const query = rankOrPosition !== undefined
+    ? `update bfp_personnel_profiles
+          set display_name = $1, rank_or_position = $2, updated_at = now()
+        where user_id = $3
+          and exists (
+            select 1 from users u
+            where u.id = $3 and u.role in ('PROVINCIAL_BFP', 'MUNICIPAL_BFP') and u.account_status = 'ACTIVE'
+          )
+        returning user_id as "userId"`
+    : `update bfp_personnel_profiles
+          set display_name = $1, updated_at = now()
+        where user_id = $2
+          and exists (
+            select 1 from users u
+            where u.id = $2 and u.role in ('PROVINCIAL_BFP', 'MUNICIPAL_BFP') and u.account_status = 'ACTIVE'
+          )
+        returning user_id as "userId"`;
+
+  const params = rankOrPosition !== undefined
+    ? [displayName, rankOrPosition, userId]
+    : [displayName, userId];
+
+  const updated = await getDatabase().query<{ userId: string }>(query, params);
   if (!updated.rowCount) throw new Error("PROFILE_NOT_FOUND");
 }
+

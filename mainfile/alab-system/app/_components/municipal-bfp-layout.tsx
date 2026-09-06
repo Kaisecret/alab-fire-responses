@@ -969,6 +969,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
     municipalityName: string | null;
     assignmentRole: string | null;
     mustChangePassword?: boolean;
+    photoUrl?: string | null;
   } | null>(null);
 
   const isAuthenticationPage = pathname === '/municipal-bfp/login' || pathname === '/municipal-bfp/change-password';
@@ -1152,8 +1153,16 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               title="Station Officer Profile"
             >
-              <div className="mbfp-profile-avatar">
-                <i className="fa-solid fa-user-shield" />
+              <div className="mbfp-profile-avatar" style={{ overflow: "hidden" }}>
+                {identity?.photoUrl ? (
+                  <img
+                    src={identity.photoUrl}
+                    alt={identity?.displayName || 'Officer'}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+                  />
+                ) : (
+                  <i className="fa-solid fa-user-shield" />
+                )}
               </div>
               <div className="mbfp-profile-info">
                 <div className="mbfp-profile-name">
