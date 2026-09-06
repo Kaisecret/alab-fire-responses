@@ -567,27 +567,42 @@ const dashboardStyles = `
     line-height: 1.25;
   }
 
+  .mbfp-fire-tag-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+  }
+
   .mbfp-fire-type-tag {
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    font-size: 0.75rem;
+    gap: 0.25rem;
+    font-size: 0.7rem;
     font-weight: 700;
     color: #E23632;
     background: #FFF1F2;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
+    padding: 0.18rem 0.45rem;
+    border-radius: 5px;
     border: 1px solid #FFE4E6;
     text-transform: capitalize;
+    white-space: nowrap;
+    line-height: 1.2;
   }
 
   .mbfp-severity-tag {
-    font-size: 0.65rem;
+    font-size: 0.58rem;
     font-weight: 800;
-    padding: 0.15rem 0.45rem;
+    padding: 0.14rem 0.4rem;
     border-radius: 4px;
     text-transform: uppercase;
-    margin-left: 0.35rem;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.15;
+    flex-shrink: 0;
   }
   .mbfp-severity-tag.critical { background: #EF4444; color: #FFFFFF; }
   .mbfp-severity-tag.high { background: #F97316; color: #FFFFFF; }
@@ -1365,7 +1380,7 @@ export function MunicipalBfpDashboard() {
                     <tr>
                       <th style={{ width: '1%', whiteSpace: 'nowrap' }}>Ref. No.</th>
                       <th>Barangay &amp; Landmark</th>
-                      <th>Fire Type &amp; Severity</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Fire Type &amp; Severity</th>
                       <th style={{ whiteSpace: 'nowrap' }}>Reported</th>
                       <th>Status</th>
                     </tr>
@@ -1381,10 +1396,10 @@ export function MunicipalBfpDashboard() {
                             <div className="mbfp-skeleton-line" style={{ width: '140px', height: '14px', marginBottom: '4px' }} />
                             <div className="mbfp-skeleton-line" style={{ width: '90px', height: '10px' }} />
                           </td>
-                          <td>
-                            <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
-                              <div className="mbfp-skeleton-pill" style={{ width: '95px', height: '20px' }} />
-                              <div className="mbfp-skeleton-pill" style={{ width: '45px', height: '18px' }} />
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            <div className="mbfp-fire-tag-group">
+                              <div className="mbfp-skeleton-pill" style={{ width: '90px', height: '20px' }} />
+                              <div className="mbfp-skeleton-pill" style={{ width: '50px', height: '18px' }} />
                             </div>
                           </td>
                           <td>
@@ -1415,12 +1430,14 @@ export function MunicipalBfpDashboard() {
                             <div style={{ fontWeight: 800, color: '#0F172A' }}>{inc.barangay || 'Barangay not identified'}</div>
                             {inc.landmark && <div style={{ fontSize: '0.7rem', color: '#64748B' }}>near {inc.landmark}</div>}
                           </td>
-                          <td>
-                            <span className="mbfp-fire-type-tag">
-                              <i className="fa-solid fa-fire-flame-simple" />
-                              <span>{inc.fireType.replaceAll('_', ' ')}</span>
-                            </span>
-                            {getSeverityBadge(inc.calculatedSeverity)}
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            <div className="mbfp-fire-tag-group">
+                              <span className="mbfp-fire-type-tag">
+                                <i className="fa-solid fa-fire-flame-simple" />
+                                <span>{inc.fireType.replaceAll('_', ' ')}</span>
+                              </span>
+                              {getSeverityBadge(inc.calculatedSeverity)}
+                            </div>
                           </td>
                           <td style={{ color: '#64748B', fontFeatureSettings: 'tnum' }}>
                             {formatTime(inc.submittedAt)}
