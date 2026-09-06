@@ -43,6 +43,9 @@ export function MunicipalStationsManager() {
   const [rosterError, setRosterError] = useState("");
   const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
 
+  // Municipal Personnel Overview State
+  const [personnelList, setPersonnelList] = useState<{ userId?: string; displayName?: string; accountStatus?: string }[]>([]);
+
   // Add Station Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [stationName, setStationName] = useState("");
@@ -53,6 +56,104 @@ export function MunicipalStationsManager() {
   // Deactivate Confirmation Modal State
   const [stationToDeactivate, setStationToDeactivate] = useState<Station | null>(null);
   const [deactivating, setDeactivating] = useState(false);
+
+  // Issue Account Modal State
+  const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
+  const [issueDisplayName, setIssueDisplayName] = useState("");
+  const [issueEmail, setIssueEmail] = useState("");
+  const [issueRank, setIssueRank] = useState("FO1");
+  const [issueStationId, setIssueStationId] = useState("");
+  const [issueTemporaryPassword, setIssueTemporaryPassword] = useState("");
+  const [issueSaving, setIssueSaving] = useState(false);
+  const [issueModalError, setIssueModalError] = useState("");
+
+  // Issued Credentials Confirmation Modal State
+  const [issuedPassword, setIssuedPassword] = useState<string | null>(null);
+  const [issuedOfficerName, setIssuedOfficerName] = useState("");
+  const [issuedOfficerEmail, setIssuedOfficerEmail] = useState("");
+  const [issuedOfficerStation, setIssuedOfficerStation] = useState("");
+  const [issuedCopied, setIssuedCopied] = useState(false);
+
+  const generateTemporaryPassword = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    let pass = "Bfp#";
+    for (let i = 0; i < 8; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    pass += "!2026";
+    setIssueTemporaryPassword(pass);
+  };
+
+  const openIssueAccount = (targetStationId?: string) => {
+    const activeStations = stations.filter((s) => s.status === "ACTIVE");
+    const defaultStation = targetStationId || selectedRosterStation?.id || activeStations[0]?.id || "";
+    setIssueStationId(defaultStation);
+    setIssueDisplayName("");
+    setIssueEmail("");
+    setIssueRank("FO1");
+    setIssueTemporaryPassword("");
+    setIssueModalError("");
+    setIsIssueModalOpen(true);
+  };
+
+  const closeIssueAccount = () => {
+    if (issueSaving) return;
+    setIsIssueModalOpen(false);
+    setIssueModalError("");
+  };
+
+  const copyIssuedPassword = (password: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(password).then(() => {
+        setIssuedCopied(true);
+        setTimeout(() => setIssuedCopied(false), 2200);
+      }).catch(() => {});
+    }
+  };
+
+  const submitIssueAccount = async (event: FormEvent) => {
+    event.preventDefault();
+    setIssueSaving(true);
+    setIssueModalError("");
+
+    try {
+      const response = await fetch("/api/municipal-bfp/personnel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          displayName: issueDisplayName.trim(),
+          email: issueEmail.trim().toLowerCase(),
+          rankOrPosition: issueRank.trim() || undefined,
+          stationId: issueStationId,
+          temporaryPassword: issueTemporaryPassword.trim() || undefined,
+        }),
+      });
+
+      const result = (await response.json()) as { error?: string; temporaryPassword?: string };
+      setIssueSaving(false);
+
+      if (!response.ok) {
+        setIssueModalError(result.error ?? "Unable to issue account.");
+        return;
+      }
+
+      const stationObj = stations.find((s) => s.id === issueStationId);
+      setIssuedOfficerName(issueDisplayName.trim());
+      setIssuedOfficerEmail(issueEmail.trim().toLowerCase());
+      setIssuedOfficerStation(stationObj ? parseStationName(stationObj.stationName).name : "Assigned Station");
+      setIssuedPassword(result.temporaryPassword || issueTemporaryPassword.trim() || "Issued");
+      setIsIssueModalOpen(false);
+
+      // Refresh roster immediately if current station matches
+      if (selectedRosterStation && selectedRosterStation.id === issueStationId) {
+        void openStationRoster(selectedRosterStation);
+      }
+      void load();
+    } catch {
+      setIssueSaving(false);
+      setIssueModalError("Network error: Failed to issue account.");
+    }
+  };
 
   // General Notification / Feedback State
   const [error, setError] = useState("");
@@ -122,13 +223,25 @@ export function MunicipalStationsManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/municipal-bfp/stations", { cache: "no-store" });
-      const result = (await response.json()) as { stations?: Station[]; error?: string };
-      if (!response.ok) {
-        setError(result.error ?? "Unable to load stations.");
+      const [stationsResponse, personnelResponse] = await Promise.all([
+        fetch("/api/municipal-bfp/stations", { cache: "no-store" }),
+        fetch("/api/municipal-bfp/personnel", { cache: "no-store" }),
+      ]);
+      const stationsResult = (await stationsResponse.json()) as { stations?: Station[]; error?: string };
+      const personnelResult = (await personnelResponse.json()) as {
+        personnel?: { userId?: string; displayName?: string; accountStatus?: string }[];
+        error?: string;
+      };
+
+      if (!stationsResponse.ok) {
+        setError(stationsResult.error ?? "Unable to load stations.");
       } else {
-        setStations(result.stations ?? []);
+        setStations(stationsResult.stations ?? []);
         setError("");
+      }
+
+      if (personnelResponse.ok && personnelResult.personnel) {
+        setPersonnelList(personnelResult.personnel);
       }
     } catch {
       setError("Network error: Unable to load municipal stations.");
@@ -419,10 +532,15 @@ export function MunicipalStationsManager() {
             </button>
           </div>
 
-          <a href="/municipal-bfp/responders" className="mbfp-roster-manage-btn">
-            <i className="fa-solid fa-user-gear" />
-            <span>Manage Personnel</span>
-          </a>
+          <button
+            type="button"
+            className="mbfp-issue-account-btn"
+            onClick={() => openIssueAccount(selectedRosterStation?.id)}
+            title="Issue a BFP account for this station"
+          >
+            <i className="fa-solid fa-user-plus" />
+            <span>Issue Account</span>
+          </button>
         </div>
 
         {/* ROSTER SCREEN CONTENT: CARDS GRID */}
@@ -613,10 +731,14 @@ export function MunicipalStationsManager() {
                   Clear Filters
                 </button>
               ) : (
-                <a href="/municipal-bfp/responders" className="mbfp-add-btn">
+                <button
+                  type="button"
+                  className="mbfp-add-btn"
+                  onClick={() => openIssueAccount(selectedRosterStation?.id)}
+                >
                   <i className="fa-solid fa-user-plus" />
-                  <span>Manage Personnel Roster</span>
-                </a>
+                  <span>Issue Account for Station</span>
+                </button>
               )}
             </div>
           )}
@@ -644,6 +766,15 @@ export function MunicipalStationsManager() {
         <div className="mbfp-header-actions">
           <button
             type="button"
+            className="mbfp-issue-account-btn"
+            onClick={() => openIssueAccount()}
+            title="Issue a BFP officer account"
+          >
+            <i className="fa-solid fa-user-plus" />
+            <span>Issue Account</span>
+          </button>
+          <button
+            type="button"
             className="mbfp-add-btn"
             onClick={() => {
               setModalError("");
@@ -653,6 +784,42 @@ export function MunicipalStationsManager() {
             <i className="fa-solid fa-plus" />
             <span>Add Station</span>
           </button>
+        </div>
+      </div>
+
+      {/* MUNICIPAL OVERVIEW STATS ROW */}
+      <div className="mbfp-stats-overview-row">
+        <div className="mbfp-overview-stat-card">
+          <div className="mbfp-overview-stat-icon red">
+            <i className="fa-solid fa-building-shield" />
+          </div>
+          <div className="mbfp-overview-stat-info">
+            <span className="mbfp-overview-stat-val">{stations.length}</span>
+            <span className="mbfp-overview-stat-lbl">Stations ({activeCount} Active)</span>
+          </div>
+        </div>
+
+        <div className="mbfp-overview-stat-card">
+          <div className="mbfp-overview-stat-icon blue">
+            <i className="fa-solid fa-users" />
+          </div>
+          <div className="mbfp-overview-stat-info">
+            <span className="mbfp-overview-stat-val">{personnelList.length}</span>
+            <span className="mbfp-overview-stat-lbl">Total Personnel</span>
+          </div>
+        </div>
+
+        <div className="mbfp-overview-stat-card green">
+          <div className="mbfp-overview-stat-icon green">
+            <i className="fa-solid fa-user-check" />
+          </div>
+          <div className="mbfp-overview-stat-info">
+            <span className="mbfp-overview-stat-val">
+              <span className="mbfp-stat-dot on-duty" />
+              {personnelList.filter((p) => p.accountStatus === "ACTIVE").length}
+            </span>
+            <span className="mbfp-overview-stat-lbl">Active Accounts</span>
+          </div>
         </div>
       </div>
 
@@ -1034,6 +1201,308 @@ export function MunicipalStationsManager() {
                     <span>Deactivate Station</span>
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* =========================================================================
+          ISSUE OFFICER ACCOUNT MODAL (PORTAL TO DOCUMENT.BODY)
+          ========================================================================= */}
+      {mounted && isIssueModalOpen && createPortal(
+        <div
+          className="mbfp-modal-overlay"
+          onClick={closeIssueAccount}
+          role="presentation"
+        >
+          <div
+            className="mbfp-modal-content mbfp-issue-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="issue-account-title"
+          >
+            {/* HERO HEADER WITH GLOWING BADGE */}
+            <div className="mbfp-modal-header mbfp-issue-header">
+              <div className="mbfp-modal-header-hero">
+                <div className="mbfp-modal-badge-glow">
+                  <i className="fa-solid fa-user-plus" />
+                </div>
+                <div className="mbfp-modal-header-text">
+                  <h2 id="issue-account-title">
+                    Issue Officer Account
+                  </h2>
+                  <p>Register a municipal fire officer and designate station assignment.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="mbfp-modal-close"
+                onClick={closeIssueAccount}
+                aria-label="Close dialog"
+                disabled={issueSaving}
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+            </div>
+
+            <form onSubmit={submitIssueAccount}>
+              <div className="mbfp-modal-body">
+                {issueModalError && (
+                  <div className="mbfp-modal-alert">
+                    <i className="fa-solid fa-triangle-exclamation" />
+                    <span>{issueModalError}</span>
+                  </div>
+                )}
+
+                {/* FULL NAME */}
+                <div className="mbfp-form-group">
+                  <label htmlFor="issue-display-name">
+                    Personnel Full Name <span className="mbfp-required">*</span>
+                  </label>
+                  <div className="mbfp-input-icon-wrap">
+                    <i className="fa-solid fa-user" />
+                    <input
+                      id="issue-display-name"
+                      required
+                      type="text"
+                      className="mbfp-form-input with-icon"
+                      placeholder="e.g. Juan Dela Cruz"
+                      value={issueDisplayName}
+                      onChange={(e) => setIssueDisplayName(e.target.value)}
+                      disabled={issueSaving}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* RANK / POSITION WITH QUICK SELECT CHIPS */}
+                <div className="mbfp-form-group">
+                  <div className="mbfp-label-with-hint">
+                    <label htmlFor="issue-rank">
+                      Rank / Position <span className="mbfp-required">*</span>
+                    </label>
+                    <span className="mbfp-hint-pill">Tap to select</span>
+                  </div>
+                  <div className="mbfp-input-icon-wrap">
+                    <i className="fa-solid fa-award" />
+                    <input
+                      id="issue-rank"
+                      required
+                      type="text"
+                      className="mbfp-form-input with-icon"
+                      placeholder="e.g. FO1, FO2, SFO1, Fire Officer"
+                      value={issueRank}
+                      onChange={(e) => setIssueRank(e.target.value)}
+                      disabled={issueSaving}
+                    />
+                  </div>
+                  <div className="mbfp-quick-ranks">
+                    {["FO1", "FO2", "FO3", "SFO1", "SFO2", "SFO3", "SFO4", "Insp"].map((rank) => (
+                      <button
+                        key={rank}
+                        type="button"
+                        className={`mbfp-rank-chip ${issueRank === rank ? "active" : ""}`}
+                        onClick={() => setIssueRank(rank)}
+                        disabled={issueSaving}
+                      >
+                        {rank}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* STATION ASSIGNMENT DROPDOWN */}
+                <div className="mbfp-form-group">
+                  <label htmlFor="issue-station-select">
+                    Station Assignment <span className="mbfp-required">*</span>
+                  </label>
+                  <div className="mbfp-input-icon-wrap">
+                    <i className="fa-solid fa-building-shield" />
+                    <select
+                      id="issue-station-select"
+                      required
+                      className="mbfp-form-input with-icon"
+                      value={issueStationId}
+                      onChange={(e) => setIssueStationId(e.target.value)}
+                      disabled={issueSaving}
+                    >
+                      {stations
+                        .filter((s) => s.status === "ACTIVE")
+                        .map((station) => (
+                          <option key={station.id} value={station.id}>
+                            {parseStationName(station.stationName).name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* OFFICIAL EMAIL */}
+                <div className="mbfp-form-group">
+                  <label htmlFor="issue-email">
+                    Official Email <span className="mbfp-required">*</span>
+                  </label>
+                  <div className="mbfp-input-icon-wrap">
+                    <i className="fa-solid fa-envelope" />
+                    <input
+                      id="issue-email"
+                      required
+                      type="email"
+                      className="mbfp-form-input with-icon"
+                      placeholder="e.g. officer@bfp.gov.ph"
+                      value={issueEmail}
+                      onChange={(e) => setIssueEmail(e.target.value)}
+                      disabled={issueSaving}
+                    />
+                  </div>
+                </div>
+
+                {/* TEMPORARY PASSWORD */}
+                <div className="mbfp-form-group">
+                  <div className="mbfp-label-with-hint">
+                    <label htmlFor="issue-temp-password">
+                      Temporary Password <span className="mbfp-optional">(Optional)</span>
+                    </label>
+                    <button
+                      type="button"
+                      className="mbfp-generate-pass-btn"
+                      onClick={generateTemporaryPassword}
+                      disabled={issueSaving}
+                      title="Generate a random secure temporary password"
+                    >
+                      <i className="fa-solid fa-wand-magic-sparkles" />
+                      <span>Generate</span>
+                    </button>
+                  </div>
+                  <div className="mbfp-input-icon-wrap">
+                    <i className="fa-solid fa-key" />
+                    <input
+                      id="issue-temp-password"
+                      type="text"
+                      className="mbfp-form-input with-icon font-mono"
+                      placeholder="Leave blank to auto-generate (e.g. Bfp#2026!)"
+                      value={issueTemporaryPassword}
+                      onChange={(e) => setIssueTemporaryPassword(e.target.value)}
+                      disabled={issueSaving}
+                    />
+                  </div>
+                  <p className="mbfp-form-hint">
+                    <i className="fa-solid fa-circle-info" /> The officer will be required to change their temporary password upon their first login.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mbfp-modal-footer">
+                <button
+                  type="button"
+                  className="mbfp-cancel-btn"
+                  onClick={closeIssueAccount}
+                  disabled={issueSaving}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="mbfp-submit-btn" disabled={issueSaving}>
+                  {issueSaving ? (
+                    <>
+                      <i className="fa-solid fa-circle-notch fa-spin" />
+                      <span>Issuing Account…</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-user-plus" />
+                      <span>Issue Account</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* =========================================================================
+          ISSUED CREDENTIALS SUCCESS MODAL (PORTAL TO DOCUMENT.BODY)
+          ========================================================================= */}
+      {mounted && issuedPassword && createPortal(
+        <div
+          className="mbfp-modal-overlay"
+          onClick={() => setIssuedPassword(null)}
+          role="presentation"
+        >
+          <div
+            className="mbfp-modal-content mbfp-issued-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="issued-success-title"
+          >
+            <div className="mbfp-issued-hero">
+              <div className="mbfp-issued-badge">
+                <i className="fa-solid fa-circle-check" />
+              </div>
+              <h2 id="issued-success-title">Account Successfully Issued!</h2>
+              <p>The municipal fire officer account is now active and assigned.</p>
+            </div>
+
+            <div className="mbfp-issued-body">
+              <div className="mbfp-issued-card">
+                <div className="mbfp-issued-row">
+                  <span className="mbfp-issued-label">Officer</span>
+                  <strong className="mbfp-issued-val">{issuedOfficerName}</strong>
+                </div>
+                <div className="mbfp-issued-row">
+                  <span className="mbfp-issued-label">Station</span>
+                  <span className="mbfp-issued-val">{issuedOfficerStation}</span>
+                </div>
+                <div className="mbfp-issued-row">
+                  <span className="mbfp-issued-label">Official Email</span>
+                  <span className="mbfp-issued-val text-mono">{issuedOfficerEmail}</span>
+                </div>
+
+                <div className="mbfp-issued-pass-section">
+                  <span className="mbfp-issued-pass-label">TEMPORARY PASSWORD</span>
+                  <div className="mbfp-issued-pass-box">
+                    <code>{issuedPassword}</code>
+                    <button
+                      type="button"
+                      className="mbfp-copy-pass-btn"
+                      onClick={() => copyIssuedPassword(issuedPassword)}
+                    >
+                      {issuedCopied ? (
+                        <>
+                          <i className="fa-solid fa-check text-green-400" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa-regular fa-copy" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mbfp-issued-notice">
+                <i className="fa-solid fa-shield-halved" />
+                <span>Provide these credentials to the officer. They can sign in on the mobile app or web portal and will be prompted to set a permanent password.</span>
+              </div>
+            </div>
+
+            <div className="mbfp-modal-footer" style={{ justifyContent: "center" }}>
+              <button
+                type="button"
+                className="mbfp-submit-btn"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={() => setIssuedPassword(null)}
+              >
+                <i className="fa-solid fa-check" />
+                <span>Done</span>
               </button>
             </div>
           </div>
@@ -2771,6 +3240,383 @@ const pageStyles = `
     background-size: 200% 100%;
     animation: mbfpShimmer 1.5s infinite;
     margin: 0.45rem 0;
+  }
+
+  /* ================= ISSUE ACCOUNT BUTTON & MODAL ================= */
+  .mbfp-issue-account-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.65rem 1.35rem;
+    background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 750;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.32);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: inherit;
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+  }
+
+  .mbfp-issue-account-btn:hover {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.42);
+  }
+
+  .mbfp-issue-account-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+  }
+
+  .mbfp-issue-account-btn i {
+    font-size: 0.95rem;
+  }
+
+  /* MODAL OVERLAY & CARD */
+  .mbfp-issue-modal {
+    max-width: 520px;
+    width: 100%;
+    border-radius: 20px;
+    background: #FFFFFF;
+    box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+    animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mbfp-issue-header {
+    background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 100%);
+    border-top: 4px solid #DC2626;
+    padding: 1.4rem 1.6rem 1.15rem;
+    border-bottom: 1px solid #F1F5F9;
+  }
+
+  .mbfp-modal-header-hero {
+    display: flex;
+    align-items: center;
+    gap: 0.95rem;
+  }
+
+  .mbfp-modal-badge-glow {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
+    color: #FFFFFF;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.32);
+    flex-shrink: 0;
+  }
+
+  .mbfp-label-with-hint {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mbfp-hint-pill {
+    font-size: 0.7rem;
+    color: #64748B;
+    background: #F1F5F9;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
+    font-weight: 600;
+  }
+
+  .mbfp-quick-ranks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.45rem;
+  }
+
+  .mbfp-rank-chip {
+    padding: 0.3rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    border: 1px solid #E2E8F0;
+    background: #FFFFFF;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+
+  .mbfp-rank-chip:hover {
+    background: #FFF1F2;
+    border-color: #FECDD3;
+    color: #B91C1C;
+  }
+
+  .mbfp-rank-chip.active {
+    background: #B91C1C;
+    border-color: #B91C1C;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25);
+  }
+
+  .mbfp-generate-pass-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #2563EB;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    padding: 0.22rem 0.65rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+
+  .mbfp-generate-pass-btn:hover:not(:disabled) {
+    background: #DBEAFE;
+    border-color: #93C5FD;
+    color: #1D4ED8;
+    transform: translateY(-1px);
+  }
+
+  .mbfp-form-hint {
+    font-size: 0.74rem;
+    color: #64748B;
+    margin: 0.4rem 0 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    line-height: 1.4;
+  }
+
+  .mbfp-optional {
+    font-size: 0.75rem;
+    color: #94A3B8;
+    font-weight: 500;
+    margin-left: 0.25rem;
+  }
+
+  /* ================= ISSUED CREDENTIALS SUCCESS MODAL ================= */
+  .mbfp-issued-modal {
+    max-width: 460px;
+    width: 100%;
+    border-radius: 20px;
+    background: #FFFFFF;
+    box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+    animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mbfp-issued-hero {
+    padding: 1.85rem 1.6rem 1.15rem;
+    background: linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%);
+    border-top: 4px solid #10B981;
+    text-align: center;
+  }
+
+  .mbfp-issued-badge {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: #ECFDF5;
+    border: 2px solid #A7F3D0;
+    color: #059669;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.85rem;
+    margin: 0 auto 0.75rem;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
+  }
+
+  .mbfp-issued-hero h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #065F46;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .mbfp-issued-hero p {
+    font-size: 0.84rem;
+    color: #047857;
+    margin: 0.3rem 0 0;
+  }
+
+  .mbfp-issued-body {
+    padding: 0 1.6rem 1.35rem;
+  }
+
+  .mbfp-issued-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    text-align: left;
+  }
+
+  .mbfp-issued-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+  }
+
+  .mbfp-issued-label {
+    color: #64748B;
+    font-weight: 600;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .mbfp-issued-val {
+    color: #0F172A;
+    font-weight: 700;
+  }
+
+  .mbfp-issued-pass-section {
+    margin-top: 0.4rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed #CBD5E1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .mbfp-issued-pass-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #475569;
+    letter-spacing: 0.06em;
+  }
+
+  .mbfp-issued-pass-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0F172A;
+    border-radius: 8px;
+    padding: 0.65rem 0.9rem;
+    color: #F8FAFC;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .mbfp-copy-pass-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #FFFFFF;
+    padding: 0.3rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+
+  .mbfp-copy-pass-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .mbfp-issued-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin-top: 0.85rem;
+    padding: 0.75rem 0.9rem;
+    background: #EFF6FF;
+    border: 1px solid #DBEAFE;
+    border-radius: 8px;
+    font-size: 0.76rem;
+    color: #1E40AF;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  /* ================= MUNICIPAL OVERVIEW STATS ROW ================= */
+  .mbfp-stats-overview-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .mbfp-overview-stat-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 0.9rem 1.15rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  }
+
+  .mbfp-overview-stat-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+  }
+
+  .mbfp-overview-stat-icon.red {
+    background: #FEF2F2;
+    color: #DC2626;
+  }
+
+  .mbfp-overview-stat-icon.blue {
+    background: #EFF6FF;
+    color: #2563EB;
+  }
+
+  .mbfp-overview-stat-icon.green {
+    background: #ECFDF5;
+    color: #059669;
+  }
+
+  .mbfp-overview-stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .mbfp-overview-stat-val {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0F172A;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1.1;
+  }
+
+  .mbfp-overview-stat-lbl {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 
   /* ================= ANIMATIONS & RESPONSIVENESS ================= */

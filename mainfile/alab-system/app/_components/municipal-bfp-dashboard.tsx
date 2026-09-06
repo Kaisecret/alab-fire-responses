@@ -1365,7 +1365,7 @@ export function MunicipalBfpDashboard() {
           </Link>
 
           {/* Card 4: Responders On Duty */}
-          <Link href="/municipal-bfp/responders" className="mbfp-stat-card emerald">
+          <Link href="/municipal-bfp/stations" className="mbfp-stat-card emerald">
             <div className="mbfp-stat-header">
               <div className="mbfp-stat-icon emerald">
                 <i className="fa-solid fa-users-gear" />
