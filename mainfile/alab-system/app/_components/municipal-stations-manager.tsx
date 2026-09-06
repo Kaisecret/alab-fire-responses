@@ -457,19 +457,29 @@ export function MunicipalStationsManager() {
 
                 return (
                   <div className="mbfp-roster-card" key={responder.id}>
-                    {/* TOP BIG PICTURE DISPLAY - FRAMED LIKE POOJA ARORA CARD */}
+                    {/* TOP BIG PICTURE DISPLAY - PURE UNBLURRED UNCROPPED PROFILE DISPLAY */}
                     <div className="mbfp-roster-card-top">
                       {responder.profilePhotoUrl ? (
-                        <img
-                          src={responder.profilePhotoUrl}
-                          alt={responder.displayName}
-                          className="mbfp-roster-avatar-img"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.display = "none";
-                            const fallback = e.currentTarget.parentElement?.querySelector(".mbfp-roster-avatar-fallback");
-                            if (fallback) (fallback as HTMLElement).style.display = "flex";
-                          }}
-                        />
+                        <div className="mbfp-roster-avatar-stage">
+                          <div
+                            className="mbfp-roster-avatar-ambient"
+                            style={{ backgroundImage: `url(${responder.profilePhotoUrl})` }}
+                            aria-hidden="true"
+                          />
+                          <img
+                            src={responder.profilePhotoUrl}
+                            alt={responder.displayName}
+                            className="mbfp-roster-avatar-img"
+                            onError={(e) => {
+                              const target = e.currentTarget as HTMLImageElement;
+                              target.style.display = "none";
+                              const stage = target.parentElement;
+                              if (stage) stage.style.display = "none";
+                              const fallback = stage?.parentElement?.querySelector(".mbfp-roster-avatar-fallback");
+                              if (fallback) (fallback as HTMLElement).style.display = "flex";
+                            }}
+                          />
+                        </div>
                       ) : null}
                       <div
                         className="mbfp-roster-avatar-fallback"
@@ -2365,7 +2375,7 @@ const pageStyles = `
     border-color: #FECDD3;
   }
 
-  /* CARD TOP: RED/CRIMSON GRADIENT (STRICTLY NOT GREEN) - BIG PICTURE DISPLAY LIKE IMAGE 3 */
+  /* CARD TOP: RED/CRIMSON GRADIENT (STRICTLY NOT GREEN) - PURE PROFILE DISPLAY */
   .mbfp-roster-card-top {
     background: linear-gradient(135deg, #B91C1C 0%, #991B1B 60%, #7F1D1D 100%);
     position: relative;
@@ -2378,13 +2388,40 @@ const pageStyles = `
     justify-content: center;
   }
 
-  .mbfp-roster-avatar-img {
+  .mbfp-roster-avatar-stage {
+    position: relative;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    object-position: center top;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #0F172A;
+  }
+
+  .mbfp-roster-avatar-ambient {
+    position: absolute;
+    inset: -14px;
+    background-size: cover;
+    background-position: center center;
+    filter: blur(18px) brightness(0.5) saturate(1.25);
+    transform: scale(1.15);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .mbfp-roster-avatar-img {
+    position: relative;
+    z-index: 1;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: 100%;
+    object-fit: contain;
+    object-position: center center;
     display: block;
-    border-radius: 12px;
+    border-radius: 6px;
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
   }
 
   .mbfp-roster-avatar-fallback {
