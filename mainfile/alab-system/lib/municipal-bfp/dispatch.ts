@@ -22,6 +22,15 @@ export type DispatchableStation = {
 export type DispatchableResponder = {
   id: string;
   displayName: string;
+  email?: string;
+  rankOrPosition?: string | null;
+  accountStatus?: string;
+  stationName?: string;
+  assignedAt?: string;
+  profilePhotoUrl?: string | null;
+  dutyStatus?: "ON_DUTY" | "STANDBY" | "DISPATCHED" | "OFF_DUTY";
+  mobilePlatform?: "ANDROID" | "IOS" | null;
+  lastSeenAt?: string | null;
 };
 
 type DispatchInput = {
@@ -77,8 +86,28 @@ export async function listDispatchableStations(municipalityId: string): Promise<
 
 export async function listStationResponders(municipalityId: string, stationId: string): Promise<DispatchableResponder[]> {
   if (!validId(municipalityId) || !validId(stationId)) return [];
-  const result = await getDatabase().query<DispatchableResponder>(
-    `select u.id, profile.display_name as "displayName"
+  const result = await getDatabase().query<{
+    id: string;
+    displayName: string;
+    email: string;
+    rankOrPosition: string | null;
+    accountStatus: string;
+    stationName: string;
+    assignedAt: string;
+    mobilePlatform: "ANDROID" | "IOS" | null;
+    lastSeenAt: string | null;
+    dispatchStatus: string | null;
+  }>(
+    `select u.id,
+            profile.display_name as "displayName",
+            u.email,
+            profile.rank_or_position as "rankOrPosition",
+            u.account_status as "accountStatus",
+            station.station_name as "stationName",
+            station_assignment.assigned_at as "assignedAt",
+            dev.platform as "mobilePlatform",
+            dev.last_seen_at as "lastSeenAt",
+            disp.status as "dispatchStatus"
        from municipal_bfp_stations station
        join bfp_station_assignments station_assignment
          on station_assignment.station_id = station.id and station_assignment.status = 'ACTIVE'
@@ -86,13 +115,40 @@ export async function listStationResponders(municipalityId: string, stationId: s
        join bfp_municipality_assignments municipality_assignment
          on municipality_assignment.personnel_profile_id = profile.id and municipality_assignment.status = 'ACTIVE'
        join users u on u.id = profile.user_id
-      where station.id = $2 and station.municipality_id = $1 and station.status = 'ACTIVE'
+       left join (
+         select distinct on (user_id) user_id, platform, last_seen_at
+           from bfp_mobile_devices
+          where revoked_at is null
+          order by user_id, last_seen_at desc
+       ) dev on dev.user_id = u.id
+       left join (
+         select distinct on (recipient_user_id) recipient_user_id, status
+           from incident_dispatch_recipients
+          where status in ('ASSIGNED', 'ACKNOWLEDGED', 'EN_ROUTE', 'ON_SCENE')
+          order by recipient_user_id, assigned_at desc
+       ) disp on disp.recipient_user_id = u.id
+      where station.id = $2 and station.municipality_id = $1
         and municipality_assignment.municipality_id = $1
         and u.role = 'MUNICIPAL_BFP' and u.account_status = 'ACTIVE'
       order by profile.display_name asc`,
     [municipalityId, stationId],
   );
-  return result.rows;
+  return result.rows.map((row) => ({
+    id: row.id,
+    displayName: row.displayName,
+    email: row.email,
+    rankOrPosition: row.rankOrPosition,
+    accountStatus: row.accountStatus,
+    stationName: row.stationName,
+    assignedAt: row.assignedAt,
+    mobilePlatform: row.mobilePlatform,
+    lastSeenAt: row.lastSeenAt,
+    dutyStatus: row.dispatchStatus
+      ? ("DISPATCHED" as const)
+      : row.lastSeenAt
+      ? ("ON_DUTY" as const)
+      : ("STANDBY" as const),
+  }));
 }
 
 async function getSelectedStations(client: Queryable, municipalityId: string, requestedStationIds: string[]) {

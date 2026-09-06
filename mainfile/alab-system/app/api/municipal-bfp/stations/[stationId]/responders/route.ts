@@ -17,7 +17,22 @@ export async function GET(request: NextRequest, context: { params: Promise<{ sta
   if (!isUuid(stationId)) return NextResponse.json({ error: "Invalid station." }, { status: 400 });
 
   try {
-    const responders = await listStationResponders(identity.municipalityId, stationId);
+    const rawResponders = await listStationResponders(identity.municipalityId, stationId);
+    const { createBfpProfilePhotoUrl } = await import("../../../../../../lib/auth/bfp-profile-photos");
+    const responders = await Promise.all(
+      rawResponders.map(async (responder) => {
+        let profilePhotoUrl: string | null = null;
+        try {
+          profilePhotoUrl = await createBfpProfilePhotoUrl(responder.id);
+        } catch {
+          // Fall back gracefully if storage is temporarily unreachable
+        }
+        return {
+          ...responder,
+          profilePhotoUrl,
+        };
+      }),
+    );
     return NextResponse.json({ responders });
   } catch (error) {
     console.error("Municipal station responder list failed", error);
