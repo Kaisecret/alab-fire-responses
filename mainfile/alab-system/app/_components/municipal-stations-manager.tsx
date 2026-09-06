@@ -3470,23 +3470,73 @@ const pageStyles = `
     padding: 1.35rem 1.85rem 1.15rem;
     border-bottom: 1px solid #F1F5F9;
     flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mbfp-modal-header-hero {
+    display: flex;
+    align-items: center;
+    gap: 0.95rem;
+  }
+
+  .mbfp-modal-badge-glow {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
+    color: #FFFFFF !important;
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.32);
+    flex-shrink: 0;
+  }
+
+  .mbfp-modal-badge-glow i {
+    color: #FFFFFF !important;
+    font-size: 1.15rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .mbfp-modal-badge-glow.edit {
     background: linear-gradient(135deg, #B91C1C 0%, #DC2626 100%);
+    color: #FFFFFF !important;
+    box-shadow: 0 6px 16px rgba(185, 28, 28, 0.32);
+  }
+
+  .mbfp-edit-officer-modal .mbfp-modal-header-hero {
+    display: flex;
+    align-items: center;
+    gap: 0.95rem;
   }
 
   .mbfp-edit-officer-modal .mbfp-modal-badge-glow {
     width: 44px;
     height: 44px;
     border-radius: 12px;
+    background: linear-gradient(135deg, #B91C1C 0%, #DC2626 100%);
+    color: #FFFFFF !important;
     font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     box-shadow: 0 6px 16px rgba(185, 28, 28, 0.32);
     flex-shrink: 0;
   }
 
-  .mbfp-edit-officer-modal .mbfp-modal-header-hero {
-    gap: 0.95rem;
+  .mbfp-edit-officer-modal .mbfp-modal-badge-glow i {
+    color: #FFFFFF !important;
+    font-size: 1.15rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .mbfp-edit-officer-modal .mbfp-modal-header-text h2 {
@@ -3494,6 +3544,7 @@ const pageStyles = `
     font-weight: 800;
     letter-spacing: -0.015em;
     color: #0F172A;
+    margin: 0;
   }
 
   .mbfp-edit-officer-modal .mbfp-modal-header-text p {
@@ -3508,6 +3559,20 @@ const pageStyles = `
     height: 36px;
     font-size: 1.05rem;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: rgba(0, 0, 0, 0.04);
+    color: #64748B;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-modal-close:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #0F172A;
   }
 
   .mbfp-edit-officer-modal .mbfp-modal-body {
@@ -3808,6 +3873,9 @@ const pageStyles = `
     padding: 1.35rem 1.85rem 1.15rem;
     border-bottom: 1px solid #F1F5F9;
     flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .mbfp-issue-modal .mbfp-modal-header-hero {
@@ -3821,13 +3889,22 @@ const pageStyles = `
     height: 44px;
     border-radius: 12px;
     background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
-    color: #FFFFFF;
+    color: #FFFFFF !important;
     font-size: 1.15rem;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 6px 16px rgba(220, 38, 38, 0.32);
     flex-shrink: 0;
+  }
+
+  .mbfp-issue-modal .mbfp-modal-badge-glow i {
+    color: #FFFFFF !important;
+    font-size: 1.15rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .mbfp-issue-modal .mbfp-modal-header-text h2 {
@@ -3850,6 +3927,20 @@ const pageStyles = `
     height: 36px;
     font-size: 1.05rem;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: rgba(0, 0, 0, 0.04);
+    color: #64748B;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .mbfp-issue-modal .mbfp-modal-close:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #0F172A;
   }
 
   .mbfp-issue-modal .mbfp-modal-body {
