@@ -107,6 +107,85 @@ const dashboardStyles = `
     to { transform: rotate(360deg); }
   }
 
+  @keyframes mbfpShimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* ========== REAL SKELETON SHIMMER SYSTEM ========== */
+  .mbfp-skeleton-val,
+  .mbfp-skeleton-line,
+  .mbfp-skeleton-pill,
+  .mbfp-skeleton-icon,
+  .mbfp-skeleton-accent {
+    background: linear-gradient(
+      90deg,
+      #E2E8F0 0%,
+      #F8FAFC 50%,
+      #E2E8F0 100%
+    );
+    background-size: 200% 100%;
+    animation: mbfpShimmer 1.5s ease-in-out infinite;
+    display: inline-block;
+    border-radius: 6px;
+    vertical-align: middle;
+  }
+
+  /* Translucent white shimmer tuned for pastel stat cards */
+  .mbfp-stat-card .mbfp-skeleton-val {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(255, 255, 255, 0.85) 50%,
+      rgba(255, 255, 255, 0.4) 100%
+    );
+    background-size: 200% 100%;
+    animation: mbfpShimmer 1.4s ease-in-out infinite;
+    width: 44px;
+    height: 30px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+  }
+
+  .mbfp-skeleton-line {
+    height: 14px;
+    border-radius: 4px;
+  }
+
+  .mbfp-skeleton-pill {
+    height: 22px;
+    border-radius: 9999px;
+  }
+
+  .mbfp-skeleton-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .mbfp-skeleton-accent {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .mbfp-skeleton-row {
+    pointer-events: none;
+    opacity: 0.85;
+  }
+
+  .mbfp-skeleton-card {
+    pointer-events: none;
+    opacity: 0.85;
+    border-color: #E2E8F0;
+  }
+
   /* ========== DASHBOARD BASE ========== */
   .mbfp-dash {
     padding: 0.85rem 1.4rem 2.5rem;
@@ -1183,7 +1262,9 @@ export function MunicipalBfpDashboard() {
               </span>
             </div>
             <div className="mbfp-stat-body">
-              <span className="mbfp-stat-value">{incidentsLoading ? '...' : incidents.length}</span>
+              <span className="mbfp-stat-value">
+                {incidentsLoading ? <span className="mbfp-skeleton-val" /> : incidents.length}
+              </span>
               <span className="mbfp-stat-label">Active Incidents</span>
             </div>
           </Link>
@@ -1200,7 +1281,9 @@ export function MunicipalBfpDashboard() {
               </span>
             </div>
             <div className="mbfp-stat-body">
-              <span className="mbfp-stat-value">{incidentsLoading || dashLoading ? '...' : totalPending}</span>
+              <span className="mbfp-stat-value">
+                {incidentsLoading || dashLoading ? <span className="mbfp-skeleton-val" /> : totalPending}
+              </span>
               <span className="mbfp-stat-label">Pending Verifications</span>
             </div>
           </Link>
@@ -1216,7 +1299,9 @@ export function MunicipalBfpDashboard() {
               </span>
             </div>
             <div className="mbfp-stat-body">
-              <span className="mbfp-stat-value">{dashLoading ? '...' : (stations.length || stats?.availableFiretrucks || 0)}</span>
+              <span className="mbfp-stat-value">
+                {dashLoading ? <span className="mbfp-skeleton-val" /> : (stations.length || stats?.availableFiretrucks || 0)}
+              </span>
               <span className="mbfp-stat-label">Stations &amp; Fleet</span>
             </div>
           </Link>
@@ -1232,7 +1317,9 @@ export function MunicipalBfpDashboard() {
               </span>
             </div>
             <div className="mbfp-stat-body">
-              <span className="mbfp-stat-value">{dashLoading ? '...' : (stats?.respondersOnDuty ?? 0)}</span>
+              <span className="mbfp-stat-value">
+                {dashLoading ? <span className="mbfp-skeleton-val" /> : (stats?.respondersOnDuty ?? 0)}
+              </span>
               <span className="mbfp-stat-label">Responders on Duty</span>
             </div>
           </Link>
@@ -1248,7 +1335,9 @@ export function MunicipalBfpDashboard() {
               </span>
             </div>
             <div className="mbfp-stat-body">
-              <span className="mbfp-stat-value">{dashLoading ? '...' : (stats?.assistanceRequests ?? 0)}</span>
+              <span className="mbfp-stat-value">
+                {dashLoading ? <span className="mbfp-skeleton-val" /> : (stats?.assistanceRequests ?? 0)}
+              </span>
               <span className="mbfp-stat-label">Active Dispatches</span>
             </div>
           </Link>
@@ -1283,12 +1372,29 @@ export function MunicipalBfpDashboard() {
                   </thead>
                   <tbody>
                     {incidentsLoading ? (
-                      <tr className="mbfp-incident-row">
-                        <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748B' }}>
-                          <i className="fa-solid fa-circle-notch mbfp-spin-icon" style={{ marginRight: '0.5rem' }} />
-                          Loading live incident feed...
-                        </td>
-                      </tr>
+                      [1, 2, 3, 4, 5].map((idx) => (
+                        <tr key={`skel-inc-${idx}`} className="mbfp-incident-row mbfp-skeleton-row">
+                          <td style={{ whiteSpace: 'nowrap', width: '1%' }}>
+                            <div className="mbfp-skeleton-pill" style={{ width: '120px', height: '20px' }} />
+                          </td>
+                          <td>
+                            <div className="mbfp-skeleton-line" style={{ width: '140px', height: '14px', marginBottom: '4px' }} />
+                            <div className="mbfp-skeleton-line" style={{ width: '90px', height: '10px' }} />
+                          </td>
+                          <td>
+                            <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                              <div className="mbfp-skeleton-pill" style={{ width: '95px', height: '20px' }} />
+                              <div className="mbfp-skeleton-pill" style={{ width: '45px', height: '18px' }} />
+                            </div>
+                          </td>
+                          <td>
+                            <div className="mbfp-skeleton-line" style={{ width: '55px', height: '13px' }} />
+                          </td>
+                          <td>
+                            <div className="mbfp-skeleton-pill" style={{ width: '85px', height: '22px' }} />
+                          </td>
+                        </tr>
+                      ))
                     ) : recentIncidents.length === 0 ? (
                       <tr className="mbfp-incident-row">
                         <td colSpan={5} style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#64748B' }}>
@@ -1356,10 +1462,23 @@ export function MunicipalBfpDashboard() {
 
               <div className="mbfp-verif-list">
                 {incidentsLoading || dashLoading ? (
-                  <div style={{ textAlign: 'center', padding: '2rem', color: '#64748B' }}>
-                    <i className="fa-solid fa-circle-notch mbfp-spin-icon" style={{ marginRight: '0.5rem' }} />
-                    Checking verification requests...
-                  </div>
+                  [1, 2].map((k) => (
+                    <div className="mbfp-verif-card mbfp-skeleton-card" key={`skel-verif-${k}`}>
+                      <div className="mbfp-skeleton-accent" />
+                      <div className="mbfp-verif-content" style={{ gap: '0.45rem' }}>
+                        <div className="mbfp-verif-top-row">
+                          <div className="mbfp-skeleton-pill" style={{ width: '105px', height: '18px' }} />
+                          <div className="mbfp-skeleton-pill" style={{ width: '55px', height: '16px' }} />
+                        </div>
+                        <div className="mbfp-skeleton-line" style={{ width: '55%', height: '13px' }} />
+                        <div className="mbfp-skeleton-line" style={{ width: '75%', height: '11px' }} />
+                        <div className="mbfp-verif-btn-row">
+                          <div className="mbfp-skeleton-pill" style={{ width: '95px', height: '26px' }} />
+                          <div className="mbfp-skeleton-pill" style={{ width: '90px', height: '26px' }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))
                 ) : totalPending === 0 ? (
                   <div className="mbfp-empty-verif-box">
                     <div className="mbfp-empty-verif-icon">
@@ -1531,9 +1650,16 @@ export function MunicipalBfpDashboard() {
 
               <div className="mbfp-stations-list">
                 {dashLoading ? (
-                  <div style={{ textAlign: 'center', padding: '1rem', color: '#64748B', fontSize: '0.8rem' }}>
-                    Loading station roster...
-                  </div>
+                  [1, 2].map((k) => (
+                    <div className="mbfp-station-row mbfp-skeleton-row" key={`skel-st-${k}`}>
+                      <div className="mbfp-skeleton-icon" />
+                      <div className="mbfp-station-meta" style={{ gap: '0.35rem', display: 'flex', flexDirection: 'column' }}>
+                        <div className="mbfp-skeleton-line" style={{ width: '140px', height: '13px' }} />
+                        <div className="mbfp-skeleton-line" style={{ width: '95px', height: '10px' }} />
+                      </div>
+                      <div className="mbfp-skeleton-pill" style={{ width: '55px', height: '20px', marginLeft: 'auto' }} />
+                    </div>
+                  ))
                 ) : stations.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '1.2rem', color: '#64748B', fontSize: '0.8rem' }}>
                     No stations registered in this municipality yet.{' '}
@@ -1577,21 +1703,34 @@ export function MunicipalBfpDashboard() {
               </div>
 
               <div className="mbfp-mutual-aid-wrap">
-                {mutualAid.map((aid) => (
-                  <div className="mbfp-aid-item" key={aid.id}>
-                    <div className="mbfp-aid-meta">
-                      <span className="mbfp-aid-title">{aid.stationName}</span>
-                      <span className="mbfp-aid-sub">{aid.municipalityName} · Regional Support</span>
-                      <a href={`tel:${aid.phone}`} className="mbfp-aid-phone">
-                        <i className="fa-solid fa-phone-volume" />
-                        <span>{aid.phone}</span>
-                      </a>
+                {dashLoading ? (
+                  [1, 2].map((k) => (
+                    <div className="mbfp-aid-item mbfp-skeleton-row" key={`skel-aid-${k}`}>
+                      <div className="mbfp-aid-meta" style={{ gap: '0.35rem', display: 'flex', flexDirection: 'column' }}>
+                        <div className="mbfp-skeleton-line" style={{ width: '135px', height: '13px' }} />
+                        <div className="mbfp-skeleton-line" style={{ width: '110px', height: '10px' }} />
+                        <div className="mbfp-skeleton-line" style={{ width: '85px', height: '10px' }} />
+                      </div>
+                      <div className="mbfp-skeleton-pill" style={{ width: '95px', height: '26px', marginLeft: 'auto' }} />
                     </div>
-                    <Link href="/municipal-bfp/dispatch-routing" className="mbfp-aid-btn support">
-                      <i className="fa-solid fa-handshake" /> Request Backup
-                    </Link>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  mutualAid.map((aid) => (
+                    <div className="mbfp-aid-item" key={aid.id}>
+                      <div className="mbfp-aid-meta">
+                        <span className="mbfp-aid-title">{aid.stationName}</span>
+                        <span className="mbfp-aid-sub">{aid.municipalityName} · Regional Support</span>
+                        <a href={`tel:${aid.phone}`} className="mbfp-aid-phone">
+                          <i className="fa-solid fa-phone-volume" />
+                          <span>{aid.phone}</span>
+                        </a>
+                      </div>
+                      <Link href="/municipal-bfp/dispatch-routing" className="mbfp-aid-btn support">
+                        <i className="fa-solid fa-handshake" /> Request Backup
+                      </Link>
+                    </div>
+                  ))
+                )}
 
                 {/* Provincial Command Center Hotline */}
                 <div className="mbfp-aid-item" style={{ background: '#FFF1F2', borderColor: '#FFE4E6' }}>
