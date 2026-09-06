@@ -335,6 +335,7 @@ const activeIncidentsStyles = `
     display: flex;
     align-items: center;
     gap: 0.35rem;
+    white-space: nowrap;
   }
 
   .mbfp-ref-time {

@@ -109,87 +109,76 @@ const dashboardStyles = `
 
   /* ========== DASHBOARD BASE ========== */
   .mbfp-dash {
-    padding: 12px 1.5rem 3rem;
+    padding: 0.85rem 1.4rem 2.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.85rem;
     background: #EEF5FD;
     min-height: 100%;
-    max-width: 1640px;
+    max-width: 1600px;
     margin: 0 auto;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #1E293B;
   }
 
-  /* ========== COMMAND BANNER HEADER ========== */
-  .mbfp-top-banner {
+  /* ========== COMPACT HEADER STRIP ========== */
+  .mbfp-dash-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 1rem;
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 0.9rem 1.4rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-    animation: mbfpEntryFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    gap: 0.75rem;
+    padding: 0.2rem 0.25rem 0.1rem;
+    animation: mbfpEntryFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  .mbfp-top-title-wrap {
+  .mbfp-dash-title-wrap {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
+    gap: 0.6rem;
   }
 
-  .mbfp-top-shield-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #B91C1C 0%, #E23632 100%);
+  .mbfp-dash-fire-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #B91C1C 0%, #E23632 50%, #FF6B35 100%);
     color: #FFFFFF;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
-    box-shadow: 0 3px 10px rgba(185, 28, 28, 0.25);
+    font-size: 0.95rem;
+    box-shadow: 0 3px 10px rgba(226, 54, 50, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
   }
 
-  .mbfp-top-title-text h1 {
+  .mbfp-dash-heading {
     font-size: 1.25rem;
     font-weight: 800;
     color: #0F172A;
     margin: 0;
+    letter-spacing: -0.02em;
     line-height: 1.2;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .mbfp-top-title-text p {
-    font-size: 0.8rem;
-    color: #64748B;
-    margin: 0.2rem 0 0 0;
-    font-weight: 500;
   }
 
   .mbfp-top-ctrls {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
 
   .mbfp-status-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    padding: 0.4rem 0.85rem;
+    padding: 0.35rem 0.75rem;
     border-radius: 9999px;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    background: #F8FAFC;
+    background: #FFFFFF;
     border: 1px solid #E2E8F0;
     color: #334155;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   }
 
   .mbfp-status-dot-radar {
@@ -204,15 +193,16 @@ const dashboardStyles = `
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.4rem 0.85rem;
+    padding: 0.35rem 0.75rem;
     border-radius: 8px;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     background: #FFFFFF;
     border: 1px solid #CBD5E1;
     color: #475569;
     cursor: pointer;
     transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   }
 
   .mbfp-refresh-btn:hover {
@@ -225,21 +215,21 @@ const dashboardStyles = `
     animation: mbfpSpin 0.9s linear infinite;
   }
 
-  /* ========== 5 PASTEL KPI METRIC CARDS ROW ========== */
+  /* ========== 5 CLEAN KPI METRIC CARDS ROW ========== */
   .mbfp-stats-row {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.85rem;
+    gap: 0.75rem;
   }
 
   .mbfp-stat-card {
     position: relative;
-    border-radius: 14px;
-    padding: 0.95rem 1rem 0.85rem;
+    border-radius: 12px;
+    padding: 0.8rem 0.95rem;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    gap: 0.4rem;
+    transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
     cursor: pointer;
     overflow: hidden;
     text-decoration: none;
@@ -350,12 +340,12 @@ const dashboardStyles = `
   .mbfp-stat-body {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
-    margin: 0.2rem 0 0.4rem;
+    gap: 0.1rem;
+    margin: 0.15rem 0 0.1rem;
   }
 
   .mbfp-stat-label {
-    font-size: 0.72rem;
+    font-size: 0.69rem;
     font-weight: 750;
     color: #475569;
     text-transform: uppercase;
@@ -366,43 +356,30 @@ const dashboardStyles = `
     font-size: 1.85rem;
     font-weight: 900;
     color: #0F172A;
-    line-height: 1.1;
+    line-height: 1.05;
     font-feature-settings: "tnum";
     font-variant-numeric: tabular-nums;
   }
 
-  .mbfp-stat-subtext {
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: #64748B;
-    margin-top: 0.1rem;
-  }
-
-  .mbfp-stat-foot {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.68rem;
-    font-weight: 700;
-    color: #64748B;
-    padding-top: 0.45rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-  }
-
-  .mbfp-stat-link-arrow {
-    font-size: 0.7rem;
-    transition: transform 0.2s ease;
-  }
-  .mbfp-stat-card:hover .mbfp-stat-link-arrow {
-    transform: translateX(3px);
-  }
-
-  /* ========== 2-COLUMN TACTICAL GRID ========== */
-  .mbfp-grid {
+  /* ========== UNIFIED 2-COLUMN WORKSPACE ========== */
+  .mbfp-columns {
     display: grid;
-    grid-template-columns: 1.6fr 1fr;
-    gap: 1rem;
+    grid-template-columns: 1.55fr 1fr;
+    gap: 0.85rem;
     align-items: start;
+  }
+
+  .mbfp-col-main,
+  .mbfp-col-side {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  @media (max-width: 1100px) {
+    .mbfp-columns {
+      grid-template-columns: 1fr;
+    }
   }
 
   .mbfp-card {
@@ -497,14 +474,18 @@ const dashboardStyles = `
   }
 
   .mbfp-ref-code {
+    display: inline-block;
+    white-space: nowrap;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.78rem;
-    font-weight: 800;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     color: #0F172A;
     background: #F1F5F9;
-    padding: 0.2rem 0.45rem;
-    border-radius: 6px;
+    padding: 0.15rem 0.42rem;
+    border-radius: 5px;
     border: 1px solid #CBD5E1;
+    line-height: 1.25;
   }
 
   .mbfp-fire-type-tag {
@@ -1161,16 +1142,13 @@ export function MunicipalBfpDashboard() {
     <>
       <style>{dashboardStyles}</style>
       <div className="mbfp-dash">
-        {/* Top Command Banner Header */}
-        <div className="mbfp-top-banner">
-          <div className="mbfp-top-title-wrap">
-            <div className="mbfp-top-shield-icon">
-              <i className="fa-solid fa-shield-halved" />
-            </div>
-            <div className="mbfp-top-title-text">
-              <h1>{municipality} Fire Station</h1>
-              <p>Municipal Incident Command &amp; Emergency Coordination Center</p>
-            </div>
+        {/* Sleek Compact Header */}
+        <div className="mbfp-dash-header">
+          <div className="mbfp-dash-title-wrap">
+            <span className="mbfp-dash-fire-icon" aria-hidden="true">
+              <i className="fa-solid fa-fire-flame-curved" />
+            </span>
+            <h1 className="mbfp-dash-heading">{municipality} Fire Command</h1>
           </div>
 
           <div className="mbfp-top-ctrls">
@@ -1191,7 +1169,7 @@ export function MunicipalBfpDashboard() {
           </div>
         </div>
 
-        {/* 5 KPI Metric Cards Row (100% Bound to Database) */}
+        {/* 5 Clean KPI Metric Cards Row */}
         <div className="mbfp-stats-row">
           {/* Card 1: Active Incidents */}
           <Link href="/municipal-bfp/active-incidents" className="mbfp-stat-card red">
@@ -1201,17 +1179,12 @@ export function MunicipalBfpDashboard() {
               </div>
               <span className="mbfp-stat-trend-tag red">
                 <i className="fa-solid fa-triangle-exclamation" />
-                {incidents.length > 0 ? 'Priority Alarm' : 'Normal'}
+                {incidents.length > 0 ? 'Priority' : 'Normal'}
               </span>
             </div>
             <div className="mbfp-stat-body">
-              <span className="mbfp-stat-label">Active Incidents</span>
               <span className="mbfp-stat-value">{incidentsLoading ? '...' : incidents.length}</span>
-              <span className="mbfp-stat-subtext">Live Fire Events</span>
-            </div>
-            <div className="mbfp-stat-foot">
-              <span>View Active Queue</span>
-              <i className="fa-solid fa-arrow-right mbfp-stat-link-arrow" />
+              <span className="mbfp-stat-label">Active Incidents</span>
             </div>
           </Link>
 
@@ -1223,19 +1196,12 @@ export function MunicipalBfpDashboard() {
               </div>
               <span className="mbfp-stat-trend-tag amber">
                 <i className="fa-solid fa-hourglass-half" />
-                {totalPending > 0 ? 'Action Req.' : 'Cleared'}
+                {totalPending > 0 ? 'Pending' : 'Cleared'}
               </span>
             </div>
             <div className="mbfp-stat-body">
-              <span className="mbfp-stat-label">Pending Verification</span>
               <span className="mbfp-stat-value">{incidentsLoading || dashLoading ? '...' : totalPending}</span>
-              <span className="mbfp-stat-subtext">
-                {`${pendingIncidents.length} Reports · ${pendingResidentApps.length} Resident IDs`}
-              </span>
-            </div>
-            <div className="mbfp-stat-foot">
-              <span>Process Requests</span>
-              <i className="fa-solid fa-arrow-right mbfp-stat-link-arrow" />
+              <span className="mbfp-stat-label">Pending Verifications</span>
             </div>
           </Link>
 
@@ -1250,13 +1216,8 @@ export function MunicipalBfpDashboard() {
               </span>
             </div>
             <div className="mbfp-stat-body">
-              <span className="mbfp-stat-label">Active Stations &amp; Fleet</span>
               <span className="mbfp-stat-value">{dashLoading ? '...' : (stations.length || stats?.availableFiretrucks || 0)}</span>
-              <span className="mbfp-stat-subtext">{stations.length} Station{stations.length === 1 ? '' : 's'} Operational</span>
-            </div>
-            <div className="mbfp-stat-foot">
-              <span>Station Resources</span>
-              <i className="fa-solid fa-arrow-right mbfp-stat-link-arrow" />
+              <span className="mbfp-stat-label">Stations &amp; Fleet</span>
             </div>
           </Link>
 
@@ -1267,17 +1228,12 @@ export function MunicipalBfpDashboard() {
                 <i className="fa-solid fa-users-gear" />
               </div>
               <span className="mbfp-stat-trend-tag emerald">
-                <i className="fa-solid fa-shield" /> Roster
+                <i className="fa-solid fa-shield" /> Active
               </span>
             </div>
             <div className="mbfp-stat-body">
-              <span className="mbfp-stat-label">Responders On Duty</span>
               <span className="mbfp-stat-value">{dashLoading ? '...' : (stats?.respondersOnDuty ?? 0)}</span>
-              <span className="mbfp-stat-subtext">Duty Personnel Assigned</span>
-            </div>
-            <div className="mbfp-stat-foot">
-              <span>Duty Roster</span>
-              <i className="fa-solid fa-arrow-right mbfp-stat-link-arrow" />
+              <span className="mbfp-stat-label">Responders on Duty</span>
             </div>
           </Link>
 
@@ -1292,278 +1248,273 @@ export function MunicipalBfpDashboard() {
               </span>
             </div>
             <div className="mbfp-stat-body">
-              <span className="mbfp-stat-label">Active Dispatches</span>
               <span className="mbfp-stat-value">{dashLoading ? '...' : (stats?.assistanceRequests ?? 0)}</span>
-              <span className="mbfp-stat-subtext">Active Incident Runs</span>
-            </div>
-            <div className="mbfp-stat-foot">
-              <span>Dispatch Routing</span>
-              <i className="fa-solid fa-arrow-right mbfp-stat-link-arrow" />
+              <span className="mbfp-stat-label">Active Dispatches</span>
             </div>
           </Link>
         </div>
 
-        {/* Top Grid: Recent Incident Queue & Tactical Quick Actions */}
-        <div className="mbfp-grid">
-          {/* Recent Incident Queue */}
-          <div className="mbfp-card">
-            <div className="mbfp-card-header">
-              <div className="mbfp-card-title-wrap">
-                <div className="mbfp-card-title-icon">
-                  <i className="fa-solid fa-fire" />
+        {/* Unified 2-Column Responsive Workspace */}
+        <div className="mbfp-columns">
+          {/* Main Column: Live Incident Queue & Verification Stream */}
+          <div className="mbfp-col-main">
+            {/* Recent Incident Queue */}
+            <div className="mbfp-card">
+              <div className="mbfp-card-header">
+                <div className="mbfp-card-title-wrap">
+                  <div className="mbfp-card-title-icon">
+                    <i className="fa-solid fa-fire" />
+                  </div>
+                  <span className="mbfp-card-title">Recent / Active Incident Queue</span>
                 </div>
-                <span className="mbfp-card-title">Recent / Active Incident Queue</span>
+                <span className="mbfp-card-badge">{recentIncidents.length} Active in {municipality}</span>
               </div>
-              <span className="mbfp-card-badge">{recentIncidents.length} Active in {municipality}</span>
-            </div>
 
-            <div className="mbfp-incident-table-wrap">
-              <table className="mbfp-incident-table">
-                <thead>
-                  <tr>
-                    <th>Ref. No.</th>
-                    <th>Barangay &amp; Landmark</th>
-                    <th>Fire Type &amp; Severity</th>
-                    <th>Reported</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {incidentsLoading ? (
-                    <tr className="mbfp-incident-row">
-                      <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748B' }}>
-                        <i className="fa-solid fa-circle-notch mbfp-spin-icon" style={{ marginRight: '0.5rem' }} />
-                        Loading live municipal incident feed...
-                      </td>
+              <div className="mbfp-incident-table-wrap">
+                <table className="mbfp-incident-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '1%', whiteSpace: 'nowrap' }}>Ref. No.</th>
+                      <th>Barangay &amp; Landmark</th>
+                      <th>Fire Type &amp; Severity</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Reported</th>
+                      <th>Status</th>
                     </tr>
-                  ) : recentIncidents.length === 0 ? (
-                    <tr className="mbfp-incident-row">
-                      <td colSpan={5} style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#64748B' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-                          <i className="fa-solid fa-shield-check" style={{ fontSize: '1.8rem', color: '#10B981' }} />
-                          <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>All Clear in {municipality}</strong>
-                          <span style={{ fontSize: '0.78rem' }}>No active fire emergencies currently reported. Monitoring 24/7.</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    incidents.slice(0, 5).map((inc) => (
-                      <tr key={inc.id} className="mbfp-incident-row">
-                        <td>
-                          <span className="mbfp-ref-code">{inc.referenceNumber}</span>
-                        </td>
-                        <td>
-                          <div style={{ fontWeight: 800, color: '#0F172A' }}>{inc.barangay || 'Barangay not identified'}</div>
-                          {inc.landmark && <div style={{ fontSize: '0.7rem', color: '#64748B' }}>near {inc.landmark}</div>}
-                        </td>
-                        <td>
-                          <span className="mbfp-fire-type-tag">
-                            <i className="fa-solid fa-fire-flame-simple" />
-                            <span>{inc.fireType.replaceAll('_', ' ')}</span>
-                          </span>
-                          {getSeverityBadge(inc.calculatedSeverity)}
-                        </td>
-                        <td style={{ color: '#64748B', fontFeatureSettings: 'tnum' }}>
-                          {formatTime(inc.submittedAt)}
-                        </td>
-                        <td>
-                          <span className={`mbfp-status-pill ${getStatusClass(inc.status)}`}>
-                            <span className="mbfp-pill-dot" />
-                            <span>{inc.status.replaceAll('_', ' ')}</span>
-                          </span>
+                  </thead>
+                  <tbody>
+                    {incidentsLoading ? (
+                      <tr className="mbfp-incident-row">
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748B' }}>
+                          <i className="fa-solid fa-circle-notch mbfp-spin-icon" style={{ marginRight: '0.5rem' }} />
+                          Loading live incident feed...
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <Link href="/municipal-bfp/active-incidents" className="mbfp-view-all-footer">
-              <span>View All Active Incidents in Municipality</span>
-              <i className="fa-solid fa-arrow-right" />
-            </Link>
-          </div>
-
-          {/* Tactical Quick Actions */}
-          <div className="mbfp-card">
-            <div className="mbfp-card-header">
-              <div className="mbfp-card-title-wrap">
-                <div className="mbfp-card-title-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
-                  <i className="fa-solid fa-bolt" />
-                </div>
-                <span className="mbfp-card-title">Tactical Quick Actions</span>
-              </div>
-              <span className="mbfp-card-badge">Instant Access</span>
-            </div>
-
-            <div className="mbfp-quick-actions-wrap">
-              <div className="mbfp-qa-grid-top">
-                <Link href="/municipal-bfp/verification-queue" className="mbfp-qa-box">
-                  <div className="mbfp-qa-icon-wrap amber">
-                    <i className="fa-solid fa-clipboard-check" />
-                  </div>
-                  <div>
-                    <div className="mbfp-qa-text">Verify Reports</div>
-                    <div className="mbfp-qa-sub">{totalPending} Pending Actions</div>
-                  </div>
-                </Link>
-
-                <Link href="/municipal-bfp/gis-map" className="mbfp-qa-box">
-                  <div className="mbfp-qa-icon-wrap blue">
-                    <i className="fa-solid fa-map-location-dot" />
-                  </div>
-                  <div>
-                    <div className="mbfp-qa-text">Open GIS Map</div>
-                    <div className="mbfp-qa-sub">Live Satellite &amp; Hydrants</div>
-                  </div>
-                </Link>
-
-                <Link href="/municipal-bfp/dispatch-routing" className="mbfp-qa-box">
-                  <div className="mbfp-qa-icon-wrap red">
-                    <i className="fa-solid fa-truck-moving" />
-                  </div>
-                  <div>
-                    <div className="mbfp-qa-text">Dispatch Units</div>
-                    <div className="mbfp-qa-sub">Route Teams to Alarms</div>
-                  </div>
-                </Link>
-
-                <Link href="/municipal-bfp/water-sources" className="mbfp-qa-box">
-                  <div className="mbfp-qa-icon-wrap emerald">
-                    <i className="fa-solid fa-droplet" />
-                  </div>
-                  <div>
-                    <div className="mbfp-qa-text">Water Sources</div>
-                    <div className="mbfp-qa-sub">Hydrants &amp; Drafting Points</div>
-                  </div>
-                </Link>
+                    ) : recentIncidents.length === 0 ? (
+                      <tr className="mbfp-incident-row">
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#64748B' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+                            <i className="fa-solid fa-shield-check" style={{ fontSize: '1.8rem', color: '#10B981' }} />
+                            <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>All Clear in {municipality}</strong>
+                            <span style={{ fontSize: '0.78rem' }}>No active fire emergencies reported. Monitoring 24/7.</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      incidents.slice(0, 5).map((inc) => (
+                        <tr key={inc.id} className="mbfp-incident-row">
+                          <td style={{ whiteSpace: 'nowrap', width: '1%' }}>
+                            <span className="mbfp-ref-code">{inc.referenceNumber}</span>
+                          </td>
+                          <td>
+                            <div style={{ fontWeight: 800, color: '#0F172A' }}>{inc.barangay || 'Barangay not identified'}</div>
+                            {inc.landmark && <div style={{ fontSize: '0.7rem', color: '#64748B' }}>near {inc.landmark}</div>}
+                          </td>
+                          <td>
+                            <span className="mbfp-fire-type-tag">
+                              <i className="fa-solid fa-fire-flame-simple" />
+                              <span>{inc.fireType.replaceAll('_', ' ')}</span>
+                            </span>
+                            {getSeverityBadge(inc.calculatedSeverity)}
+                          </td>
+                          <td style={{ color: '#64748B', fontFeatureSettings: 'tnum' }}>
+                            {formatTime(inc.submittedAt)}
+                          </td>
+                          <td>
+                            <span className={`mbfp-status-pill ${getStatusClass(inc.status)}`}>
+                              <span className="mbfp-pill-dot" />
+                              <span>{inc.status.replaceAll('_', ' ')}</span>
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
 
-              <Link href="/municipal-bfp/incident-reports" className="mbfp-qa-box full-width">
-                <div className="mbfp-qa-icon-wrap red">
-                  <i className="fa-solid fa-file-circle-plus" />
+              <Link href="/municipal-bfp/active-incidents" className="mbfp-view-all-footer">
+                <span>View All Active Incidents</span>
+                <i className="fa-solid fa-arrow-right" />
+              </Link>
+            </div>
+
+            {/* Verification Requests (Live Database Stream) */}
+            <div className="mbfp-card">
+              <div className="mbfp-card-header">
+                <div className="mbfp-card-title-wrap">
+                  <div className="mbfp-card-title-icon" style={{ background: '#FFFBEB', color: '#D97706' }}>
+                    <i className="fa-solid fa-triangle-exclamation" />
+                  </div>
+                  <span className="mbfp-card-title">
+                    Verification Requests ({totalPending})
+                  </span>
                 </div>
-                <div>
-                  <div className="mbfp-qa-text">Log Phone-In Alarm / Generate Official Incident Report</div>
-                  <div className="mbfp-qa-sub">Record emergency call or generate BFP investigation paperwork</div>
-                </div>
-                <i className="fa-solid fa-arrow-right" style={{ marginLeft: 'auto', color: '#E23632', fontSize: '0.85rem' }} />
+                <span className="mbfp-card-badge" style={{ color: '#D97706', background: '#FFFBEB', borderColor: '#FDE68A' }}>
+                  Citizen Reports &amp; Resident KYC
+                </span>
+              </div>
+
+              <div className="mbfp-verif-list">
+                {incidentsLoading || dashLoading ? (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#64748B' }}>
+                    <i className="fa-solid fa-circle-notch mbfp-spin-icon" style={{ marginRight: '0.5rem' }} />
+                    Checking verification requests...
+                  </div>
+                ) : totalPending === 0 ? (
+                  <div className="mbfp-empty-verif-box">
+                    <div className="mbfp-empty-verif-icon">
+                      <i className="fa-solid fa-check" />
+                    </div>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>Verification Queue Cleared</strong>
+                    <p style={{ margin: 0, fontSize: '0.78rem' }}>
+                      All incoming citizen fire reports and resident account applications in {municipality} have been verified.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Unverified Fire Reports */}
+                    {pendingIncidents.slice(0, 3).map((rep) => (
+                      <div className="mbfp-verif-card" key={`report-${rep.id}`}>
+                        <div className="mbfp-verif-accent-box fire">
+                          <i className="fa-solid fa-fire" />
+                          <span>ALERT</span>
+                        </div>
+                        <div className="mbfp-verif-content">
+                          <div className="mbfp-verif-top-row">
+                            <span className="mbfp-verif-id-pill">{rep.referenceNumber}</span>
+                            <span className="mbfp-verif-time-badge">{formatTime(rep.submittedAt)}</span>
+                          </div>
+                          <div className="mbfp-verif-loc">
+                            <i className="fa-solid fa-location-dot" />
+                            <span>{rep.barangay || 'Barangay not specified'}, {municipality}</span>
+                          </div>
+                          <div className="mbfp-verif-summary">
+                            Fire Type: <strong>{rep.fireType.replaceAll('_', ' ')}</strong>
+                            {rep.landmark ? ` · Landmark: ${rep.landmark}` : ''}
+                            {rep.residentName ? ` · Reported by: ${rep.residentName}` : ''}
+                          </div>
+                          <div className="mbfp-verif-btn-row">
+                            <Link href="/municipal-bfp/verification-queue" className="mbfp-btn-action verify-now">
+                              <i className="fa-solid fa-check" /> Verify Report
+                            </Link>
+                            <Link href="/municipal-bfp/gis-map" className="mbfp-btn-action open-map">
+                              <i className="fa-solid fa-map-location-dot" /> View on Map
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Pending Resident KYC Applications */}
+                    {pendingResidentApps.slice(0, 3).map((app) => (
+                      <div className="mbfp-verif-card" key={`app-${app.id}`}>
+                        <div className="mbfp-verif-accent-box resident">
+                          <i className="fa-solid fa-id-card" />
+                          <span>KYC</span>
+                        </div>
+                        <div className="mbfp-verif-content">
+                          <div className="mbfp-verif-top-row">
+                            <span className="mbfp-verif-id-pill">{app.reference}</span>
+                            <span className="mbfp-verif-time-badge" style={{ color: '#D97706', background: '#FEF3C7', borderColor: '#FDE68A' }}>
+                              {formatTime(app.submittedAt)}
+                            </span>
+                          </div>
+                          <div className="mbfp-verif-loc">
+                            <i className="fa-solid fa-user-check" style={{ color: '#D97706' }} />
+                            <span>{app.firstName} {app.lastName} · {app.barangay}</span>
+                          </div>
+                          <div className="mbfp-verif-summary">
+                            Resident ID verification request awaiting review.
+                          </div>
+                          <div className="mbfp-verif-btn-row">
+                            <Link href="/municipal-bfp/verification-queue" className="mbfp-btn-action verify-now">
+                              <i className="fa-solid fa-user-shield" /> Review Application
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              <Link href="/municipal-bfp/verification-queue" className="mbfp-view-all-footer">
+                <span>View Full Verification Worklist</span>
+                <i className="fa-solid fa-arrow-right" />
               </Link>
             </div>
           </div>
-        </div>
 
-        {/* Bottom Grid: Verification Stream & Station Fleet Readiness */}
-        <div className="mbfp-grid">
-          {/* Verification Requests (Live Database Stream) */}
-          <div className="mbfp-card">
-            <div className="mbfp-card-header">
-              <div className="mbfp-card-title-wrap">
-                <div className="mbfp-card-title-icon" style={{ background: '#FFFBEB', color: '#D97706' }}>
-                  <i className="fa-solid fa-triangle-exclamation" />
-                </div>
-                <span className="mbfp-card-title">
-                  Verification Requests ({totalPending})
-                </span>
-              </div>
-              <span className="mbfp-card-badge" style={{ color: '#D97706', background: '#FFFBEB', borderColor: '#FDE68A' }}>
-                Citizen Reports &amp; Resident KYC
-              </span>
-            </div>
-
-            <div className="mbfp-verif-list">
-              {incidentsLoading || dashLoading ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#64748B' }}>
-                  <i className="fa-solid fa-circle-notch mbfp-spin-icon" style={{ marginRight: '0.5rem' }} />
-                  Checking verification requests...
-                </div>
-              ) : totalPending === 0 ? (
-                <div className="mbfp-empty-verif-box">
-                  <div className="mbfp-empty-verif-icon">
-                    <i className="fa-solid fa-check" />
+          {/* Side Column: Tactical Quick Actions, Station Readiness & Mutual Aid */}
+          <div className="mbfp-col-side">
+            {/* Tactical Quick Actions */}
+            <div className="mbfp-card">
+              <div className="mbfp-card-header">
+                <div className="mbfp-card-title-wrap">
+                  <div className="mbfp-card-title-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
+                    <i className="fa-solid fa-bolt" />
                   </div>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>Verification Queue Cleared</strong>
-                  <p style={{ margin: 0, fontSize: '0.78rem' }}>
-                    All incoming citizen fire reports and resident account applications in {municipality} have been verified.
-                  </p>
+                  <span className="mbfp-card-title">Tactical Quick Actions</span>
                 </div>
-              ) : (
-                <>
-                  {/* Unverified Fire Reports */}
-                  {pendingIncidents.slice(0, 3).map((rep) => (
-                    <div className="mbfp-verif-card" key={`report-${rep.id}`}>
-                      <div className="mbfp-verif-accent-box fire">
-                        <i className="fa-solid fa-fire" />
-                        <span>ALERT</span>
-                      </div>
-                      <div className="mbfp-verif-content">
-                        <div className="mbfp-verif-top-row">
-                          <span className="mbfp-verif-id-pill">{rep.referenceNumber}</span>
-                          <span className="mbfp-verif-time-badge">{formatTime(rep.submittedAt)}</span>
-                        </div>
-                        <div className="mbfp-verif-loc">
-                          <i className="fa-solid fa-location-dot" />
-                          <span>{rep.barangay || 'Barangay not specified'}, {municipality}</span>
-                        </div>
-                        <div className="mbfp-verif-summary">
-                          Fire Type: <strong>{rep.fireType.replaceAll('_', ' ')}</strong>
-                          {rep.landmark ? ` · Landmark: ${rep.landmark}` : ''}
-                          {rep.residentName ? ` · Reported by: ${rep.residentName}` : ''}
-                        </div>
-                        <div className="mbfp-verif-btn-row">
-                          <Link href="/municipal-bfp/verification-queue" className="mbfp-btn-action verify-now">
-                            <i className="fa-solid fa-check" /> Verify Report
-                          </Link>
-                          <Link href="/municipal-bfp/gis-map" className="mbfp-btn-action open-map">
-                            <i className="fa-solid fa-map-location-dot" /> View on Map
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <span className="mbfp-card-badge">Instant Access</span>
+              </div>
 
-                  {/* Pending Resident KYC Applications */}
-                  {pendingResidentApps.slice(0, 3).map((app) => (
-                    <div className="mbfp-verif-card" key={`app-${app.id}`}>
-                      <div className="mbfp-verif-accent-box resident">
-                        <i className="fa-solid fa-id-card" />
-                        <span>KYC</span>
-                      </div>
-                      <div className="mbfp-verif-content">
-                        <div className="mbfp-verif-top-row">
-                          <span className="mbfp-verif-id-pill">{app.reference}</span>
-                          <span className="mbfp-verif-time-badge" style={{ color: '#D97706', background: '#FEF3C7', borderColor: '#FDE68A' }}>
-                            {formatTime(app.submittedAt)}
-                          </span>
-                        </div>
-                        <div className="mbfp-verif-loc">
-                          <i className="fa-solid fa-user-check" style={{ color: '#D97706' }} />
-                          <span>{app.firstName} {app.lastName} · {app.barangay}</span>
-                        </div>
-                        <div className="mbfp-verif-summary">
-                          Resident ID verification request awaiting review.
-                        </div>
-                        <div className="mbfp-verif-btn-row">
-                          <Link href="/municipal-bfp/verification-queue" className="mbfp-btn-action verify-now">
-                            <i className="fa-solid fa-user-shield" /> Review Application
-                          </Link>
-                        </div>
-                      </div>
+              <div className="mbfp-quick-actions-wrap">
+                <div className="mbfp-qa-grid-top">
+                  <Link href="/municipal-bfp/verification-queue" className="mbfp-qa-box">
+                    <div className="mbfp-qa-icon-wrap amber">
+                      <i className="fa-solid fa-clipboard-check" />
                     </div>
-                  ))}
-                </>
-              )}
+                    <div>
+                      <div className="mbfp-qa-text">Verify Reports</div>
+                      <div className="mbfp-qa-sub">{totalPending} Pending</div>
+                    </div>
+                  </Link>
+
+                  <Link href="/municipal-bfp/gis-map" className="mbfp-qa-box">
+                    <div className="mbfp-qa-icon-wrap blue">
+                      <i className="fa-solid fa-map-location-dot" />
+                    </div>
+                    <div>
+                      <div className="mbfp-qa-text">Open GIS Map</div>
+                      <div className="mbfp-qa-sub">Satellite &amp; Hydrants</div>
+                    </div>
+                  </Link>
+
+                  <Link href="/municipal-bfp/dispatch-routing" className="mbfp-qa-box">
+                    <div className="mbfp-qa-icon-wrap red">
+                      <i className="fa-solid fa-truck-moving" />
+                    </div>
+                    <div>
+                      <div className="mbfp-qa-text">Dispatch Units</div>
+                      <div className="mbfp-qa-sub">Route Teams</div>
+                    </div>
+                  </Link>
+
+                  <Link href="/municipal-bfp/water-sources" className="mbfp-qa-box">
+                    <div className="mbfp-qa-icon-wrap emerald">
+                      <i className="fa-solid fa-droplet" />
+                    </div>
+                    <div>
+                      <div className="mbfp-qa-text">Water Sources</div>
+                      <div className="mbfp-qa-sub">Hydrant Inventory</div>
+                    </div>
+                  </Link>
+                </div>
+
+                <Link href="/municipal-bfp/incident-reports" className="mbfp-qa-box full-width">
+                  <div className="mbfp-qa-icon-wrap red">
+                    <i className="fa-solid fa-file-circle-plus" />
+                  </div>
+                  <div>
+                    <div className="mbfp-qa-text">Log Phone Alarm / Incident Report</div>
+                    <div className="mbfp-qa-sub">Record emergency call or investigation report</div>
+                  </div>
+                  <i className="fa-solid fa-arrow-right" style={{ marginLeft: 'auto', color: '#E23632', fontSize: '0.85rem' }} />
+                </Link>
+              </div>
             </div>
 
-            <Link href="/municipal-bfp/verification-queue" className="mbfp-view-all-footer">
-              <span>View Full Verification Worklist</span>
-              <i className="fa-solid fa-arrow-right" />
-            </Link>
-          </div>
-
-          {/* Right Column: Active Stations & Mutual Aid Support */}
-          <div className="mbfp-col-right">
             {/* Active Municipal Stations & Fleet (Live Database) */}
             <div className="mbfp-card">
               <div className="mbfp-card-header">

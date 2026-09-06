@@ -240,36 +240,29 @@ export function LoginPage({
     popup.appendChild(popupCard);
     root.ownerDocument.body.appendChild(popup);
 
-    const showLoginPopup = (message: string) => {
-      status.textContent = message;
-      popupMessage.textContent = message;
-      popup.style.display = "flex";
-      popupClose.focus();
-    };
-    const hideLoginPopup = () => {
-      popup.style.display = "none";
-      if (password) password.focus();
-    };
+    let isSubmitting = false;
 
     // Keep submit button and popup countdown in sync with live lockout timer
     const updateLockoutDisplay = () => {
       const remaining = lockoutSecondsRef.current;
+      const currentBtn = form.querySelector<HTMLButtonElement>("button[type='submit']") || submitButton;
       if (remaining > 0) {
         const mins = Math.floor(remaining / 60);
         const secs = remaining % 60;
         const timeFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-        if (submitButton) {
-          submitButton.disabled = true;
-          submitButton.textContent = `LOCKED (${timeFormatted})`;
+        if (currentBtn) {
+          currentBtn.disabled = true;
+          currentBtn.textContent = `LOCKED (${timeFormatted})`;
         }
         if (popup.style.display === "flex" && popupTitle.textContent === "Login locked") {
           popupMessage.textContent = `Too many login attempts. Please wait ${timeFormatted} before trying again.`;
           popupClose.textContent = `Wait (${timeFormatted})`;
         }
       } else {
-        if (submitButton && !submitButton.dataset.submitting) {
-          submitButton.disabled = false;
-          submitButton.textContent = "RESIDENT LOGIN";
+        if (currentBtn && !isSubmitting) {
+          currentBtn.removeAttribute("data-submitting");
+          currentBtn.disabled = false;
+          currentBtn.textContent = "RESIDENT LOGIN";
         }
         if (popupTitle.textContent === "Login locked") {
           popupTitle.textContent = "Login ready";
@@ -279,14 +272,39 @@ export function LoginPage({
       }
     };
 
+    const showLoginPopup = (message: string) => {
+      status.textContent = message;
+      popupMessage.textContent = message;
+      popup.style.display = "flex";
+      popupClose.focus();
+    };
+
+    const hideLoginPopup = () => {
+      popup.style.display = "none";
+      isSubmitting = false;
+      const currentBtn = form.querySelector<HTMLButtonElement>("button[type='submit']") || submitButton;
+      if (currentBtn && lockoutSecondsRef.current <= 0) {
+        currentBtn.removeAttribute("data-submitting");
+        currentBtn.disabled = false;
+        currentBtn.textContent = "RESIDENT LOGIN";
+      }
+      const currentPwd = root.querySelector<HTMLInputElement>("#password") || password;
+      if (currentPwd) currentPwd.focus();
+    };
+
     const handleToggle = () => {
       const isPassword = password.type === "password";
       password.type = isPassword ? "text" : "password";
       eye.innerHTML = isPassword ? visibleEye : hiddenEye;
     };
 
-    const handleSubmit = async (event: Event) => {
-      event.preventDefault();
+    const handleSubmit = async (event?: Event) => {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      if (isSubmitting) return;
+
       if (lockoutSecondsRef.current > 0) {
         const remaining = lockoutSecondsRef.current;
         const mins = Math.floor(remaining / 60);
@@ -297,22 +315,31 @@ export function LoginPage({
         return;
       }
 
+      const idInput = root.querySelector<HTMLInputElement>("#username") || identifier;
+      const pwdInput = root.querySelector<HTMLInputElement>("#password") || password;
+      const currentBtn = form.querySelector<HTMLButtonElement>("button[type='submit']") || submitButton;
+
+      if (!idInput?.value.trim() || !pwdInput?.value) {
+        popupTitle.textContent = "Login failed";
+        popupClose.textContent = "Try again";
+        showLoginPopup("Incorrect username/email or password.");
+        return;
+      }
+
+      isSubmitting = true;
       status.textContent = "";
-      if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.dataset.submitting = "true";
+      if (currentBtn) {
+        currentBtn.disabled = true;
+        currentBtn.setAttribute("data-submitting", "true");
       }
       setIsLoading(true);
 
       try {
-        const [response] = await Promise.all([
-          fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ identifier: identifier.value, password: password.value }),
-          }),
-          new Promise((resolve) => setTimeout(resolve, 450)), // Minimum duration ensures smooth neon flame loader renders on every attempt
-        ]);
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: idInput.value.trim(), password: pwdInput.value }),
+        });
 
         const result = (await response.json()) as {
           error?: string;
@@ -364,12 +391,14 @@ export function LoginPage({
         popupClose.textContent = "Try again";
         showLoginPopup("Unable to reach the login service. Please try again.");
       } finally {
+        isSubmitting = false;
         setIsLoading(false);
-        if (submitButton) {
-          delete submitButton.dataset.submitting;
+        const btn = form.querySelector<HTMLButtonElement>("button[type='submit']") || submitButton;
+        if (btn) {
+          btn.removeAttribute("data-submitting");
           if (lockoutSecondsRef.current <= 0) {
-            submitButton.disabled = false;
-            submitButton.textContent = "RESIDENT LOGIN";
+            btn.disabled = false;
+            btn.textContent = "RESIDENT LOGIN";
           }
         }
       }
@@ -394,8 +423,24 @@ export function LoginPage({
       window.location.assign("/api/auth/google/start");
     };
 
+    const handleKeydownEnter = (event: KeyboardEvent) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleSubmit(event);
+      }
+    };
+
+    const handleDocumentKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && popup.style.display === "flex") {
+        hideLoginPopup();
+      }
+    };
+
     toggle.addEventListener("click", handleToggle);
     form.addEventListener("submit", handleSubmit);
+    submitButton?.addEventListener("click", (e) => handleSubmit(e));
+    password.addEventListener("keydown", handleKeydownEnter);
+    identifier.addEventListener("keydown", handleKeydownEnter);
     forgot?.addEventListener("click", handleForgot);
     register?.addEventListener("click", handleRegister);
     google?.addEventListener("click", handleGoogle);
@@ -403,6 +448,7 @@ export function LoginPage({
     popup.addEventListener("click", (event) => {
       if (event.target === popup) hideLoginPopup();
     });
+    root.ownerDocument.addEventListener("keydown", handleDocumentKey);
 
     const displayInterval = setInterval(updateLockoutDisplay, 250);
 
@@ -410,10 +456,13 @@ export function LoginPage({
       clearInterval(displayInterval);
       toggle.removeEventListener("click", handleToggle);
       form.removeEventListener("submit", handleSubmit);
+      password.removeEventListener("keydown", handleKeydownEnter);
+      identifier.removeEventListener("keydown", handleKeydownEnter);
       forgot?.removeEventListener("click", handleForgot);
       register?.removeEventListener("click", handleRegister);
       google?.removeEventListener("click", handleGoogle);
       popupClose.removeEventListener("click", hideLoginPopup);
+      root.ownerDocument.removeEventListener("keydown", handleDocumentKey);
       status.remove();
       popup.remove();
     };
