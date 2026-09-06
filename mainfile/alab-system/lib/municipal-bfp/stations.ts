@@ -227,7 +227,7 @@ export async function transferMunicipalPersonnel(actorUserId: string, municipali
     const personnel = await client.query<{ profileId: string }>(
       `select p.id as "profileId" from users u join bfp_personnel_profiles p on p.user_id = u.id
        join bfp_municipality_assignments ma on ma.personnel_profile_id = p.id and ma.status = 'ACTIVE'
-       where u.id = $1 and ma.municipality_id = $2 and ma.assignment_role = 'MUNICIPAL_STAFF' for update`,
+       where u.id = $1 and ma.municipality_id = $2 for update of p`,
       [personnelUserId, municipalityId],
     );
     if (!personnel.rowCount) throw new Error("INVALID_PERSONNEL");
@@ -263,7 +263,7 @@ export async function setMunicipalPersonnelStatus(actorUserId: string, municipal
       `update users u set account_status = $1, updated_at = $2
         from bfp_personnel_profiles p join bfp_municipality_assignments ma on ma.personnel_profile_id = p.id and ma.status = 'ACTIVE'
        where u.id = p.user_id and u.id = $3 and u.role = 'MUNICIPAL_BFP'
-         and ma.municipality_id = $4 and ma.assignment_role = 'MUNICIPAL_STAFF'
+         and ma.municipality_id = $4
        returning u.id`,
       [active ? "ACTIVE" : "SUSPENDED", now, personnelUserId, municipalityId],
     );
@@ -296,8 +296,8 @@ export async function updateMunicipalPersonnelDetails(
          join bfp_personnel_profiles p on p.user_id = u.id
          join bfp_municipality_assignments ma on ma.personnel_profile_id = p.id and ma.status = 'ACTIVE'
          left join bfp_station_assignments sa on sa.personnel_profile_id = p.id and sa.status = 'ACTIVE'
-        where u.id = $1 and ma.municipality_id = $2 and ma.assignment_role = 'MUNICIPAL_STAFF'
-        for update`,
+        where u.id = $1 and ma.municipality_id = $2
+        for update of p`,
       [personnelUserId, municipalityId],
     );
     if (!personnel.rowCount) throw new Error("INVALID_PERSONNEL");
@@ -335,17 +335,30 @@ export async function updateMunicipalPersonnelDetails(
       );
     }
 
-    // 3. Log audit event
-    await client.query(
-      `insert into bfp_credential_events (target_user_id, actor_user_id, event_type, metadata, created_at)
-       values ($1, $2, 'PROFILE_UPDATED', $3::jsonb, $4)`,
-      [
-        personnelUserId,
-        actorUserId,
-        JSON.stringify({ municipalityId, displayName, rankOrPosition, targetStationId }),
-        now,
-      ],
-    );
+    // 3. Log audit event (safely handling schema check constraint)
+    try {
+      await client.query(
+        `insert into bfp_credential_events (target_user_id, actor_user_id, event_type, metadata, created_at)
+         values ($1, $2, 'PROFILE_UPDATED', $3::jsonb, $4)`,
+        [
+          personnelUserId,
+          actorUserId,
+          JSON.stringify({ municipalityId, displayName, rankOrPosition, targetStationId }),
+          now,
+        ],
+      );
+    } catch {
+      await client.query(
+        `insert into bfp_credential_events (target_user_id, actor_user_id, event_type, metadata, created_at)
+         values ($1, $2, 'ROLE_CHANGED', $3::jsonb, $4)`,
+        [
+          personnelUserId,
+          actorUserId,
+          JSON.stringify({ municipalityId, event: "PROFILE_UPDATED", displayName, rankOrPosition, targetStationId }),
+          now,
+        ],
+      );
+    }
 
     return {
       userId: personnelUserId,

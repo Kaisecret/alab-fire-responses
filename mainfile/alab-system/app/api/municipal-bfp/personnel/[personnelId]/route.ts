@@ -32,6 +32,20 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Municipal personnel update failed", error);
-    return NextResponse.json({ error: "Unable to update this personnel account." }, { status: 400 });
+    const message = error instanceof Error ? error.message : "Unable to update this personnel account.";
+    return NextResponse.json(
+      {
+        error:
+          message === "INVALID_PERSONNEL"
+            ? "Personnel record not found or not assigned to this municipality."
+            : message === "INVALID_STATION"
+            ? "Selected fire station is invalid or inactive."
+            : message === "INVALID_PERSONNEL_INPUT"
+            ? "Please provide a valid officer name (at least 2 characters)."
+            : "Unable to update this personnel account.",
+        detail: message,
+      },
+      { status: 400 }
+    );
   }
 }
