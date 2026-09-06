@@ -1132,6 +1132,43 @@ const dashboardStyles = `
   }
 `;
 
+interface DashboardCacheRecord {
+  data: DashboardPayload;
+  timestamp: number;
+}
+
+const DASHBOARD_CACHE_KEY = 'alab_municipal_dashboard_cache';
+let memoryDashboardCache: DashboardCacheRecord | null = null;
+
+function getCachedDashboard(): DashboardPayload | null {
+  if (memoryDashboardCache) {
+    return memoryDashboardCache.data;
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = sessionStorage.getItem(DASHBOARD_CACHE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as DashboardCacheRecord;
+        if (Date.now() - parsed.timestamp < 30 * 60 * 1000) {
+          memoryDashboardCache = parsed;
+          return parsed.data;
+        }
+      }
+    } catch {}
+  }
+  return null;
+}
+
+function setCachedDashboard(data: DashboardPayload) {
+  const cacheObj: DashboardCacheRecord = { data, timestamp: Date.now() };
+  memoryDashboardCache = cacheObj;
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(cacheObj));
+    } catch {}
+  }
+}
+
 export function MunicipalBfpDashboard() {
   const {
     incidents,
@@ -1141,8 +1178,13 @@ export function MunicipalBfpDashboard() {
     refresh: refreshIncidents,
   } = useMunicipalIncidentFeed();
 
-  const [dashboardData, setDashboardData] = useState<DashboardPayload | null>(null);
-  const [dashLoading, setDashLoading] = useState(true);
+  const initialCache = useRef<DashboardPayload | null>(null);
+  if (initialCache.current === null) {
+    initialCache.current = getCachedDashboard();
+  }
+
+  const [dashboardData, setDashboardData] = useState<DashboardPayload | null>(initialCache.current);
+  const [dashLoading, setDashLoading] = useState(!initialCache.current);
   const [dashChecking, setDashChecking] = useState(false);
   const inFlight = useRef(false);
   const mounted = useRef(true);
@@ -1159,6 +1201,7 @@ export function MunicipalBfpDashboard() {
 
       if (mounted.current) {
         setDashboardData(payload);
+        setCachedDashboard(payload);
       }
     } catch (err) {
       console.error('Municipal dashboard fetch error:', err);

@@ -34,14 +34,63 @@ interface MunicipalIncidentFeedOptions {
   autoRefresh?: boolean;
 }
 
+interface IncidentFeedCache {
+  municipality: string;
+  incidents: MunicipalIncident[];
+  timestamp: number;
+}
+
+const FEED_CACHE_KEY = "alab_incident_feed_cache";
+const memoryFeedCache: Record<string, IncidentFeedCache> = {};
+
+function getCachedFeed(key: string): IncidentFeedCache | null {
+  if (memoryFeedCache[key]) {
+    return memoryFeedCache[key];
+  }
+  if (typeof window !== "undefined") {
+    try {
+      const stored = sessionStorage.getItem(`${FEED_CACHE_KEY}_${key}`);
+      if (stored) {
+        const parsed = JSON.parse(stored) as IncidentFeedCache;
+        if (Date.now() - parsed.timestamp < 30 * 60 * 1000) {
+          memoryFeedCache[key] = parsed;
+          return parsed;
+        }
+      }
+    } catch {}
+  }
+  return null;
+}
+
+function setCachedFeed(key: string, data: { municipality: string; incidents: MunicipalIncident[] }) {
+  const cacheObj: IncidentFeedCache = {
+    ...data,
+    timestamp: Date.now(),
+  };
+  memoryFeedCache[key] = cacheObj;
+  if (typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem(`${FEED_CACHE_KEY}_${key}`, JSON.stringify(cacheObj));
+    } catch {}
+  }
+}
+
 export function useMunicipalIncidentFeed({ includeHistory = false, autoRefresh = true }: MunicipalIncidentFeedOptions = {}) {
-  const [municipality, setMunicipality] = useState("");
-  const [incidents, setIncidents] = useState<MunicipalIncident[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = includeHistory ? "all" : "active";
+  const initialCache = useRef<IncidentFeedCache | null>(null);
+  if (initialCache.current === null) {
+    initialCache.current = getCachedFeed(cacheKey);
+  }
+
+  const [municipality, setMunicipality] = useState(initialCache.current?.municipality || "");
+  const [incidents, setIncidents] = useState<MunicipalIncident[]>(initialCache.current?.incidents || []);
+  const [loading, setLoading] = useState(!initialCache.current);
   const [checking, setChecking] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
+  const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(
+    initialCache.current ? new Date(initialCache.current.timestamp) : null
+  );
   const inFlight = useRef(false);
   const mounted = useRef(true);
 
@@ -63,10 +112,13 @@ export function useMunicipalIncidentFeed({ includeHistory = false, autoRefresh =
       }
 
       if (!mounted.current) return;
-      setMunicipality(payload.municipality || "");
-      setIncidents(payload.incidents || []);
+      const newMuni = payload.municipality || "";
+      const newIncs = payload.incidents || [];
+      setMunicipality(newMuni);
+      setIncidents(newIncs);
       setError("");
       setLastCheckedAt(new Date());
+      setCachedFeed(cacheKey, { municipality: newMuni, incidents: newIncs });
     } catch (caught) {
       if (mounted.current) {
         setError(caught instanceof Error ? caught.message : "Unable to refresh the incident queue.");
@@ -79,7 +131,7 @@ export function useMunicipalIncidentFeed({ includeHistory = false, autoRefresh =
       }
       inFlight.current = false;
     }
-  }, [includeHistory]);
+  }, [includeHistory, cacheKey]);
 
   useEffect(() => {
     mounted.current = true;

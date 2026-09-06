@@ -552,6 +552,43 @@ const activeIncidentsStyles = `
     margin-bottom: 8px;
   }
 
+  /* Skeleton Loading */
+  @keyframes mbfpIncShimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .mbfp-skel-line,
+  .mbfp-skel-val {
+    background: linear-gradient(
+      90deg,
+      #E2E8F0 0%,
+      #F8FAFC 50%,
+      #E2E8F0 100%
+    );
+    background-size: 200% 100%;
+    animation: mbfpIncShimmer 1.5s ease-in-out infinite;
+    display: inline-block;
+    border-radius: 4px;
+    vertical-align: middle;
+  }
+
+  .mbfp-skel-val {
+    width: 38px;
+    height: 28px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+  }
+
+  .mbfp-skel-tr {
+    pointer-events: none;
+    opacity: 0.85;
+  }
+
   /* Responsive Adjustments */
   @media (max-width: 1024px) {
     .mbfp-quick-stats {
@@ -682,7 +719,9 @@ export default function ActiveIncidentsPage() {
               <i className="fa-solid fa-fire-flame-curved" />
             </div>
             <div className="mbfp-qstat-body">
-              <span className="mbfp-qstat-val">{incidents.length}</span>
+              <span className="mbfp-qstat-val">
+                {loading ? <span className="mbfp-skel-val" /> : incidents.length}
+              </span>
               <span className="mbfp-qstat-lbl">Total Active In Queue</span>
             </div>
           </div>
@@ -692,7 +731,9 @@ export default function ActiveIncidentsPage() {
               <i className="fa-solid fa-truck-fast" />
             </div>
             <div className="mbfp-qstat-body">
-              <span className="mbfp-qstat-val">{respondingCount}</span>
+              <span className="mbfp-qstat-val">
+                {loading ? <span className="mbfp-skel-val" /> : respondingCount}
+              </span>
               <span className="mbfp-qstat-lbl">BFP Responding Now</span>
             </div>
           </div>
@@ -702,7 +743,9 @@ export default function ActiveIncidentsPage() {
               <i className="fa-solid fa-clipboard-check" />
             </div>
             <div className="mbfp-qstat-body">
-              <span className="mbfp-qstat-val">{verifiedCount}</span>
+              <span className="mbfp-qstat-val">
+                {loading ? <span className="mbfp-skel-val" /> : verifiedCount}
+              </span>
               <span className="mbfp-qstat-lbl">Verified &amp; Dispatched</span>
             </div>
           </div>
@@ -712,7 +755,9 @@ export default function ActiveIncidentsPage() {
               <i className="fa-solid fa-triangle-exclamation" />
             </div>
             <div className="mbfp-qstat-body">
-              <span className="mbfp-qstat-val">{pendingCount}</span>
+              <span className="mbfp-qstat-val">
+                {loading ? <span className="mbfp-skel-val" /> : pendingCount}
+              </span>
               <span className="mbfp-qstat-lbl">Pending Verification</span>
             </div>
           </div>
@@ -784,17 +829,47 @@ export default function ActiveIncidentsPage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={6} style={{ padding: "1.5rem 0.5rem" }}>
-                      <BfpDataLoader
-                        theme="municipal"
-                        size="sm"
-                        title="Connecting to Live Incident Telemetry…"
-                        subtitle="Synchronizing incoming emergency reports and suppression status."
-                        minHeight="220px"
-                      />
-                    </td>
-                  </tr>
+                  [1, 2, 3, 4, 5].map((idx) => (
+                    <tr key={`skel-active-${idx}`} className="mbfp-skel-tr">
+                      {/* Ref code */}
+                      <td>
+                        <div className="mbfp-skel-line" style={{ width: "120px", height: "20px", borderRadius: "5px", marginBottom: "5px" }} />
+                        <div className="mbfp-skel-line" style={{ width: "90px", height: "10px" }} />
+                      </td>
+
+                      {/* Resident */}
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                          <div className="mbfp-skel-line" style={{ width: "32px", height: "32px", borderRadius: "50%", flexShrink: 0 }} />
+                          <div className="mbfp-skel-line" style={{ width: "110px", height: "14px" }} />
+                        </div>
+                      </td>
+
+                      {/* Location */}
+                      <td>
+                        <div className="mbfp-skel-line" style={{ width: "130px", height: "14px", marginBottom: "5px" }} />
+                        <div className="mbfp-skel-line" style={{ width: "85px", height: "10px" }} />
+                      </td>
+
+                      {/* Fire Classification */}
+                      <td>
+                        <div style={{ display: "inline-flex", gap: "0.35rem", alignItems: "center" }}>
+                          <div className="mbfp-skel-line" style={{ width: "95px", height: "20px", borderRadius: "5px" }} />
+                          <div className="mbfp-skel-line" style={{ width: "48px", height: "18px", borderRadius: "4px" }} />
+                        </div>
+                      </td>
+
+                      {/* Live Status */}
+                      <td>
+                        <div className="mbfp-skel-line" style={{ width: "90px", height: "22px", borderRadius: "9999px" }} />
+                      </td>
+
+                      {/* Command Action */}
+                      <td style={{ textAlign: "right" }}>
+                        <div className="mbfp-skel-line" style={{ width: "110px", height: "30px", borderRadius: "8px", marginLeft: "auto" }} />
+                      </td>
+                    </tr>
+                  ))
                 ) : filteredIncidents.length === 0 ? (
                   <tr>
                     <td colSpan={6}>
