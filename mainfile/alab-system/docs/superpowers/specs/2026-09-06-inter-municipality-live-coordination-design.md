@@ -1,6 +1,7 @@
 # Inter-Municipality Live Incident Coordination Design
 
 **Date:** 2026-09-06
+**Revised:** 2026-09-07
 **Status:** Approved for implementation planning
 **Scope:** Municipal BFP and Provincial BFP web portals in Antique
 
@@ -14,15 +15,17 @@ The feature is decision support only. The originating Municipal BFP remains inci
 
 1. A newly submitted report remains visible only to its responsible municipality and Provincial BFP.
 2. Inter-municipality visibility begins only when the responsible municipality creates the active dispatch by assigning a BFP team or firetruck.
-3. The system selects exactly two other municipalities using the incident's exact GPS coordinates and active municipal-station coordinates.
+3. The system selects exactly two other eligible municipalities using the incident's exact GPS coordinates. Eligibility requires an active municipal station with valid coordinates and at least one active Municipal BFP account assigned to that municipality.
 4. The responsible municipality is always excluded from the nearby-municipality selection.
 5. For each candidate municipality, the system uses the distance to its nearest active station. It ranks municipalities by straight-line distance, then by municipality ID as a deterministic tie-breaker.
 6. The two selected municipalities receive a limited live incident view and an in-app notification. Provincial BFP receives an in-app notification and retains its province-wide view.
-7. The selected municipalities are observers only until the origin sends a backup request.
-8. The origin may request backup from either selected municipality or from both. A municipality that was not selected cannot receive a request through this workflow.
-9. Each recipient independently accepts, partially accepts, or rejects its request.
-10. Provincial BFP is notified when a request is created and whenever its response or completion state changes.
-11. Resolving the incident ends observer access and closes any open assistance requests.
+7. Each selected municipality acknowledges that it has seen the alert. Acknowledgment is informational and does not authorize dispatch or commit resources.
+8. The origin and Provincial BFP see a derived observer state of `Waiting`, `Seen`, or `Backup requested` during each five-second refresh.
+9. The selected municipalities remain observers until the origin sends a backup request.
+10. The origin may request backup from either selected municipality or from both. A municipality that was not selected cannot receive a request through this workflow.
+11. Each recipient independently accepts, partially accepts, or rejects its request.
+12. Provincial BFP is notified when a request is created and whenever its response or completion state changes.
+13. Resolving the incident ends observer access and closes any open assistance requests.
 
 Example: after Hamtic BFP assigns responders to a qualifying Hamtic incident, Tobias Fornier BFP and San Jose BFP may be selected as the two nearby observers. They see the response progress, but Hamtic remains in control and must explicitly request their assistance before they can commit resources.
 
@@ -30,7 +33,7 @@ Example: after Hamtic BFP assigns responders to a qualifying Hamtic incident, To
 
 ### Automatic geographic ranking with a persisted snapshot
 
-Selection runs inside the existing dispatch transaction. The service reads all active stations outside the origin municipality, groups them by municipality, calculates the Haversine distance from the incident coordinate to each station, and keeps the closest station for each municipality. It persists the first two ranked municipalities as observer rows.
+Selection runs inside the existing dispatch transaction. The service reads active stations outside the origin municipality only where the municipality also has at least one active Municipal BFP account, groups them by municipality, calculates the Haversine distance from the incident coordinate to each station, and keeps the closest station for each municipality. It persists the first two ranked municipalities as observer rows.
 
 Persisting the selection is important: changing a station's location or status later must not silently replace an observer during an active emergency. The snapshot records the chosen municipality, representative station, station coordinates, calculated distance, and selection timestamp.
 
@@ -58,17 +61,20 @@ Create one row for each selected nearby municipality:
 - `distance_meters numeric(12,2) not null`
 - `status text not null` constrained to `ACTIVE` or `ENDED`
 - `selected_at timestamptz not null`
+- `acknowledged_by_user_id uuid null` referencing `users(id)`
+- `acknowledged_at timestamptz null`
 - `ended_at timestamptz null`
 
 Constraints and indexes:
 
 - unique `(dispatch_id, observer_municipality_id)`
 - check `origin_municipality_id <> observer_municipality_id`
+- check that `acknowledged_by_user_id` and `acknowledged_at` are either both null or both non-null
 - index `(observer_municipality_id, status, selected_at desc)` for the municipal live queue
 - index `(fire_report_id, status)` for authorization and lifecycle changes
-- row-level security enabled, with no direct `anon` or `authenticated` Data API grants because access remains through signed-session server routes
+- row-level security enabled, with no direct `PUBLIC`, `anon`, or `authenticated` Data API grants because access remains through signed-session server routes
 
-An active dispatch should normally have exactly two observer rows. If Antique has fewer than two eligible external municipalities with active station coordinates, the transaction records every available observer, reports the degraded selection to Provincial BFP and the origin, and does not block the local emergency dispatch.
+An active dispatch should normally have exactly two observer rows. If Antique has fewer than two eligible external municipalities with active station coordinates and an active Municipal BFP account, the transaction records every available observer, reports the degraded selection to Provincial BFP and the origin, and does not block the local emergency dispatch.
 
 ### `intermunicipal_assistance_requests`
 
@@ -101,13 +107,14 @@ Validation rules:
 - `ACCEPTED` requires offered quantities equal to the requested quantities.
 - `PARTIALLY_ACCEPTED` requires a positive offered quantity below at least one requested quantity.
 - `REJECTED` requires both offered quantities to be zero.
+- Database constraints enforce the status shape: `REQUESTED` has no offer or response actor/time; `ACCEPTED` and `PARTIALLY_ACCEPTED` have valid offered quantities plus a response actor/time; `REJECTED` has zero offers plus a response actor/time; `CANCELLED` has no response actor/time; and `COMPLETED` preserves the last accepted or partially accepted offer and response metadata.
 - A partial unique index permits only one open request per dispatch and recipient municipality, where open means `REQUESTED`, `ACCEPTED`, or `PARTIALLY_ACCEPTED`.
 - The requester municipality must match the observer row's origin, and the recipient must match its observer municipality.
 - Row-level security and grants follow the same server-only policy as observer records.
 
 ### Audit records
 
-Observer selection, request creation, request response, cancellation, and completion must write immutable audit entries containing the actor, incident, origin municipality, recipient municipality, old state, new state, and timestamp. Automated selection uses the dispatching user as the initiating actor and identifies the selection action as system-calculated.
+Observer selection, observer acknowledgment, request creation, request response, cancellation, and completion must write immutable audit entries containing the actor, incident, origin municipality, recipient municipality, old state, new state, and timestamp. Automated selection uses the dispatching user as the initiating actor and identifies the selection action as system-calculated. A database trigger rejects `UPDATE` and `DELETE` operations on these audit rows so immutability is enforced below the application layer.
 
 ## Selection and Dispatch Transaction
 
@@ -116,8 +123,8 @@ Extend the existing `dispatchIncidentToStations` transaction in this order:
 1. Lock and validate the report and responsible municipality.
 2. Validate the selected local stations and personnel.
 3. Create the local dispatch, station snapshots, recipients, and current resident/provincial notifications.
-4. Rank eligible external municipalities from active station coordinates.
-5. Insert up to two immutable observer-selection rows.
+4. Rank eligible external municipalities from active station coordinates, excluding municipalities without an active Municipal BFP account.
+5. Insert up to two observer rows whose municipality, station, coordinate, and distance snapshot fields are never rewritten.
 6. Create one deduplicated notification for each active Municipal BFP account assigned to a selected municipality.
 7. Create a deduplicated Provincial BFP notification describing that nearby-municipality monitoring has started.
 8. Commit all dispatch, observer, audit, and notification records atomically.
@@ -151,6 +158,8 @@ Active personnel assigned to a selected observer municipality may see only:
 - public-safe assigned-unit summary and live response progress;
 - the assistance request addressed to their municipality and its own response.
 
+An eligible observer may acknowledge its own active alert. The server derives both the actor and municipality from the signed session; the observer cannot acknowledge on behalf of another municipality. This action changes only the alert's seen state and never changes dispatch authority.
+
 Observer responses must never expose resident name, phone number, address records beyond the incident's public-safe location label, identity images, IP address, device information, or internal reporter-verification evidence.
 
 An observer cannot modify the incident, assign its personnel to the origin's dispatch, view another observer's response details, or request assistance on behalf of the origin.
@@ -167,7 +176,7 @@ Every API derives the user and municipality from the signed session. No request 
 
 Create focused server-only modules:
 
-- an observer-selection service that ranks municipalities and creates selection snapshots;
+- an observer-selection service that ranks eligible municipalities, creates selection snapshots, and records idempotent alert acknowledgments;
 - an observer-access service that verifies origin, observer, or provincial scope and returns the correct data projection;
 - an assistance-request service that validates state transitions and writes notifications and audit records.
 
@@ -182,6 +191,7 @@ Extend the existing municipal incident feed and detail routes:
 
 Add request routes:
 
+- `POST /api/municipal-bfp/incidents/[id]/observer-acknowledgment` records the signed observer's acknowledgment. It is observer-only and idempotently returns the existing acknowledgment on retries.
 - `POST /api/municipal-bfp/incidents/[id]/assistance-requests` accepts one or two selected observer municipality IDs, requested firetruck/personnel counts, and an optional note. It is origin-only.
 - `PATCH /api/municipal-bfp/assistance-requests/[requestId]` accepts a valid action and response quantities. The recipient controls accept, partial accept, or reject; the origin controls cancellation; incident resolution completes remaining accepted requests.
 
@@ -222,11 +232,11 @@ Origin incidents and observed incidents appear in the same operational queue but
 - `Your incident` for origin-controlled records;
 - `Nearby incident` with the origin municipality name for observer records.
 
-Observer detail pages replace dispatch and resolution controls with a read-only live-status panel. Before a request, the panel states `Monitoring only—no assistance requested`. After a request, it shows requested resources and the recipient's allowed response actions.
+Observer detail pages replace dispatch and resolution controls with a read-only live-status panel. Before acknowledgment, the panel states `Monitoring only—no assistance requested` and offers **Acknowledge Alert**. After acknowledgment, the button is replaced by the acknowledgment time. After a request, the panel shows requested resources and the recipient's allowed response actions.
 
-The origin detail page receives a `Nearby municipalities` panel containing the two selected municipalities, their distance snapshots, monitoring status, and request state. The **Request Backup** action permits selecting either or both observers.
+The origin detail page receives a `Nearby municipalities` panel containing the two selected municipalities, their distance snapshots, and a derived state: `Waiting` before acknowledgment, `Seen` after acknowledgment, or `Backup requested` when an assistance request exists. The **Request Backup** action permits selecting either or both observers.
 
-Provincial incident detail shows the origin, two selected observers, current request states, offered resources, and timestamps in one coordination panel.
+Provincial incident detail shows the origin, two selected observers, acknowledgment actor/time and derived state, current request states, offered resources, and timestamps in one coordination panel.
 
 ## Assistance State Transitions
 
@@ -263,6 +273,7 @@ Ending observer access removes the incident from the neighboring municipality's 
 - Fewer than two eligible municipalities produces a visible degraded-selection warning but does not block local dispatch.
 - A notification failure inside an otherwise valid transaction rolls the transaction back and returns a retryable server error.
 - A five-second refresh failure retains the last successful feed and shows the existing compact retry state.
+- Repeated acknowledgment by the same eligible observer is idempotent and returns the original actor/time; an unselected or ended observer receives a controlled authorization or state-conflict response.
 - Concurrent assistance responses use row locks; only the first valid transition commits.
 - A request against an ended observer selection, resolved incident, unselected municipality, or mismatched session returns a controlled authorization or state-conflict error without revealing hidden records.
 
@@ -274,23 +285,32 @@ Municipal and Provincial reporting may count:
 - backup requests by origin and recipient municipality;
 - accepted, partial, rejected, cancelled, and completed requests;
 - requested versus offered firetrucks and personnel;
+- dispatch-to-alert-acknowledgment time;
 - request-to-response time.
 
 Reports use the persisted distance and state snapshots so later station edits do not rewrite historical results.
+
+## Migration and Database Safety
+
+Implement this feature in a new Supabase migration that sorts after the latest committed migration; the planned filename is `20260907090000_add_intermunicipality_coordination.sql`, after `20260906220000_allow_profile_updated_credential_event.sql`. Generate the migration through the Supabase CLI and keep any later timestamp it produces. New tables and indexes use replay-safe `IF NOT EXISTS` creation. Existing named constraints that must change are checked through `pg_constraint` or explicitly replaced; PostgreSQL does not support `ADD CONSTRAINT IF NOT EXISTS`.
+
+The three coordination tables enable row-level security and revoke all direct privileges from `PUBLIC`, `anon`, and `authenticated`. ALAB's signed-session server routes remain the only application access path. Before application implementation proceeds, a clean local `supabase db reset` and `supabase test db` must prove the migration order, constraints, grants, RLS, and immutable audit trigger.
 
 ## Verification
 
 Automated tests must cover:
 
-- schema constraints, indexes, RLS enablement, and revoked Data API grants;
+- migration ordering after the latest committed migration, replay-safe object creation, schema constraints, indexes, RLS enablement, and revoked `PUBLIC`, `anon`, and `authenticated` Data API grants;
+- PostgreSQL-level tests against a reset local Supabase database for invalid assistance status/quantity combinations, acknowledgment consistency, audit immutability, RLS/grant isolation, and concurrent response protection;
 - exact selection of two unique external municipalities using nearest active stations;
-- exclusion of the origin, inactive stations, and invalid station coordinates;
+- exclusion of the origin, inactive stations, invalid station coordinates, and municipalities without an active Municipal BFP account;
 - deterministic tie-breaking and persisted distance snapshots;
 - safe degraded behavior when fewer than two eligible municipalities exist;
 - observer creation only after a dispatch is assigned, including phone-call dispatches;
 - atomic dispatch, observer, audit, and notification writes;
 - origin, selected-observer, unselected-municipality, and provincial authorization;
 - strict omission of protected reporter data from observer responses;
+- observer acknowledgment authorization, idempotency, actor/time capture, and the `Waiting`/`Seen`/`Backup requested` projections;
 - origin-only request creation and cancellation;
 - recipient-only accept, partial accept, and reject transitions;
 - request quantity validation, idempotent retries, and concurrent transition protection;
@@ -309,5 +329,7 @@ Automated tests must cover:
 - cross-province assistance;
 - Provincial BFP accepting or rejecting on behalf of a municipality;
 - assigning named external personnel or specific external firetrucks;
+- road-network travel-time ranking or route-provider integration;
+- automatic escalation when an observer does not acknowledge or answer;
 - SMS, email, notification sound, or new push-notification channels;
 - replacing the current five-second visible-tab refresh with WebSockets or Supabase Realtime.

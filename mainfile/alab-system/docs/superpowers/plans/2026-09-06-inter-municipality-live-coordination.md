@@ -4,7 +4,7 @@
 
 **Goal:** After a municipal dispatch is assigned, expose a privacy-limited live incident to exactly two GPS-selected nearby municipalities, support explicit backup requests and responses, and notify Provincial BFP throughout the coordination lifecycle.
 
-**Architecture:** Extend the existing PostgreSQL dispatch transaction with immutable nearby-municipality observer snapshots selected from active station coordinates. Keep selection, access control, assistance transitions, audit writes, and notifications in focused server-only modules; reuse the existing five-second visible-tab polling for municipal and provincial views.
+**Architecture:** Extend the existing PostgreSQL dispatch transaction with nearby-municipality observer snapshots selected from eligible active stations, where each municipality also has an active Municipal BFP account. Keep selection, acknowledgment, access control, assistance transitions, immutable audit writes, and notifications in focused server-only modules; reuse the existing five-second visible-tab polling for municipal and provincial views.
 
 **Tech Stack:** Next.js 16.2.12 App Router, React 19.2.4, TypeScript 5, PostgreSQL through pg 8.16.3, Supabase migrations, Node 25 built-in test runner.
 
@@ -13,15 +13,18 @@
 ## Global Constraints
 
 - Inter-municipality visibility starts only after the responsible municipality creates an active dispatch.
-- Select exactly two other municipalities from the incident GPS coordinate and active municipal-station coordinates; exclude the origin municipality.
+- Select exactly two other municipalities from the incident GPS coordinate and active municipal-station coordinates; exclude the origin and any municipality without at least one active Municipal BFP account.
 - Persist the chosen municipality, representative station, station coordinates, distance, and selection time so an active incident never silently changes observers.
 - The originating municipality remains incident commander; observers cannot dispatch into the incident without an accepted backup request.
 - Observer responses must omit resident identity, phone, email, private address, photos, IP address, device data, and reporter-verification evidence.
 - Only the two selected observer municipalities may receive a backup request.
+- A selected observer can idempotently acknowledge its own alert; origin and Provincial BFP see `Waiting`, `Seen`, or `Backup requested`, and acknowledgment never authorizes dispatch.
 - Provincial BFP receives selection, request, response, cancellation, completion, and degraded-selection notifications.
 - Reuse the existing five-second visible-tab refresh and immediate visibility-return refresh; do not add WebSockets or Supabase Realtime.
 - A shortage of eligible external municipalities must not block local dispatch; persist all available observers and warn the origin and Provincial BFP.
-- Use signed-session server routes and PostgreSQL queries; do not grant the new tables to Supabase anon or authenticated roles.
+- Use signed-session server routes and PostgreSQL queries; revoke the new tables from `PUBLIC`, `anon`, and `authenticated`.
+- Use a migration version later than the current latest committed migration (`20260906220000_allow_profile_updated_credential_event.sql`), replay-safe `IF NOT EXISTS` object creation, database-enforced assistance state shapes, and a trigger that rejects audit-row updates or deletes.
+- Verify constraints, grants, audit immutability, and concurrent transitions against a reset local Supabase/PostgreSQL database with pgTAP and a database integration test; source-text contract tests are supplemental.
 - Do not add named external personnel or external firetruck assignment in this phase.
 - Run all commands below from `mainfile/alab-system`.
 
@@ -29,7 +32,8 @@
 
 ### Create
 
-- `supabase/migrations/20260906090000_add_intermunicipality_coordination.sql` â€” observer, assistance-request, and immutable coordination-audit schema plus notification event constraints.
+- `supabase/migrations/20260907090000_add_intermunicipality_coordination.sql` â€” observer, acknowledgment, assistance-request, immutable coordination-audit schema, and notification event constraints.
+- `supabase/tests/database/intermunicipality_coordination.test.sql` â€” pgTAP coverage for constraints, privileges, RLS, and immutable audit rows.
 - `lib/intermunicipality/types.ts` â€” shared server/client-safe coordination types and event/status constants.
 - `lib/intermunicipality/proximity.ts` â€” pure Haversine ranking and one-station-per-municipality reduction.
 - `lib/intermunicipality/audit.ts` â€” immutable coordination audit insertion.
@@ -40,6 +44,7 @@
 - `lib/intermunicipality/provincial.ts` â€” province-wide incident and assistance read models.
 - `lib/provincial-bfp/auth.ts` â€” reusable Provincial BFP signed-session authorization.
 - `app/api/municipal-bfp/incidents/[id]/assistance-requests/route.ts` â€” origin-only request creation.
+- `app/api/municipal-bfp/incidents/[id]/observer-acknowledgment/route.ts` â€” observer-only idempotent alert acknowledgment.
 - `app/api/municipal-bfp/assistance-requests/[requestId]/route.ts` â€” recipient response and origin cancellation.
 - `app/api/provincial-bfp/incidents/route.ts` â€” provincial live incident feed.
 - `app/api/provincial-bfp/incidents/[id]/route.ts` â€” provincial incident coordination detail.
@@ -55,6 +60,7 @@
 - `tests/intermunicipality-access.test.mjs`
 - `tests/intermunicipality-municipal-ui.test.mjs`
 - `tests/intermunicipality-provincial.test.mjs`
+- `tests/intermunicipality-database.integration.test.mjs`
 
 ### Modify
 
@@ -76,7 +82,8 @@
 ### Task 1: Add the coordination schema and notification domain
 
 **Files:**
-- Create: `supabase/migrations/20260906090000_add_intermunicipality_coordination.sql`
+- Create: `supabase/migrations/20260907090000_add_intermunicipality_coordination.sql`
+- Create: `supabase/tests/database/intermunicipality_coordination.test.sql`
 - Create: `tests/intermunicipality-coordination-schema.test.mjs`
 - Modify: `lib/notifications/types.ts`
 - Modify: `tests/account-notifications.test.mjs`
@@ -100,7 +107,7 @@ const migrationPath = join(
   root,
   "supabase",
   "migrations",
-  "20260906090000_add_intermunicipality_coordination.sql",
+  "20260907090000_add_intermunicipality_coordination.sql",
 );
 
 test("coordination migration creates secure observer, request, and audit tables", () => {
@@ -110,13 +117,18 @@ test("coordination migration creates secure observer, request, and audit tables"
     "intermunicipal_assistance_requests",
     "intermunicipal_coordination_events",
   ]) {
-    assert.match(migration, new RegExp("create table public\\\\." + table, "i"));
+    assert.match(migration, new RegExp("create table if not exists public\\\\." + table, "i"));
   }
   assert.match(migration, /unique \(dispatch_id, observer_municipality_id\)/i);
   assert.match(migration, /origin_municipality_id <> observer_municipality_id/i);
   assert.match(migration, /intermunicipal_assistance_one_open_recipient_idx/i);
   assert.match(migration, /where status in \('REQUESTED','ACCEPTED','PARTIALLY_ACCEPTED'\)/i);
+  assert.match(migration, /acknowledged_by_user_id/i);
+  assert.match(migration, /acknowledged_at/i);
+  assert.match(migration, /intermunicipal_assistance_status_shape_check/i);
+  assert.match(migration, /prevent_intermunicipal_coordination_event_mutation/i);
   assert.match(migration, /enable row level security/gi);
+  assert.match(migration, /revoke all on table[\s\S]*?from public, anon, authenticated/i);
   assert.doesNotMatch(
     migration,
     /grant .*?(incident_municipal_observers|intermunicipal_assistance_requests|intermunicipal_coordination_events).*?(anon|authenticated)/i,
@@ -149,14 +161,25 @@ Run:
 node --test tests/intermunicipality-coordination-schema.test.mjs
 ~~~
 
-Expected: FAIL with `ENOENT` for `20260906090000_add_intermunicipality_coordination.sql`.
+Expected: FAIL with `ENOENT` for `20260907090000_add_intermunicipality_coordination.sql`.
 
-- [ ] **Step 3: Create the migration with exact constraints and indexes**
+- [ ] **Step 3: Generate the correctly ordered migration**
+
+Confirm the latest committed migration and generate the new file through the Supabase CLI:
+
+~~~powershell
+Get-ChildItem supabase/migrations -File | Sort-Object Name | Select-Object -Last 3 -ExpandProperty Name
+npx supabase migration new add_intermunicipality_coordination
+~~~
+
+The generated version must sort after `20260906220000_allow_profile_updated_credential_event.sql`. For this plan, use `20260907090000_add_intermunicipality_coordination.sql`; if the CLI generates a later timestamp, keep the later generated name and update the schema test and file references before continuing. Never insert this migration before an already-committed migration.
+
+- [ ] **Step 4: Add exact replay-safe constraints and indexes**
 
 Create the migration with these definitions:
 
 ~~~sql
-create table public.incident_municipal_observers (
+create table if not exists public.incident_municipal_observers (
   id uuid primary key,
   fire_report_id uuid not null references public.fire_reports(id) on delete restrict,
   dispatch_id uuid not null references public.incident_dispatches(id) on delete restrict,
@@ -168,21 +191,27 @@ create table public.incident_municipal_observers (
   distance_meters numeric(12,2) not null check (distance_meters >= 0),
   status text not null check (status in ('ACTIVE','ENDED')),
   selected_at timestamptz not null,
+  acknowledged_by_user_id uuid references public.users(id) on delete restrict,
+  acknowledged_at timestamptz,
   ended_at timestamptz,
   unique (dispatch_id, observer_municipality_id),
   check (origin_municipality_id <> observer_municipality_id),
   check (
     (status = 'ACTIVE' and ended_at is null)
     or (status = 'ENDED' and ended_at is not null)
+  ),
+  check (
+    (acknowledged_by_user_id is null and acknowledged_at is null)
+    or (acknowledged_by_user_id is not null and acknowledged_at is not null)
   )
 );
 
-create index incident_municipal_observers_active_queue_idx
+create index if not exists incident_municipal_observers_active_queue_idx
   on public.incident_municipal_observers (observer_municipality_id, status, selected_at desc);
-create index incident_municipal_observers_report_status_idx
+create index if not exists incident_municipal_observers_report_status_idx
   on public.incident_municipal_observers (fire_report_id, status);
 
-create table public.intermunicipal_assistance_requests (
+create table if not exists public.intermunicipal_assistance_requests (
   id uuid primary key,
   fire_report_id uuid not null references public.fire_reports(id) on delete restrict,
   dispatch_id uuid not null references public.incident_dispatches(id) on delete restrict,
@@ -205,18 +234,50 @@ create table public.intermunicipal_assistance_requests (
   completed_at timestamptz,
   updated_at timestamptz not null,
   check (requested_firetrucks > 0 or requested_personnel > 0),
-  check (requester_municipality_id <> recipient_municipality_id)
+  check (requester_municipality_id <> recipient_municipality_id),
+  constraint intermunicipal_assistance_status_shape_check check (
+    (status = 'REQUESTED'
+      and offered_firetrucks is null and offered_personnel is null
+      and responded_by_user_id is null and responded_at is null
+      and completed_at is null)
+    or (status = 'ACCEPTED'
+      and offered_firetrucks = requested_firetrucks
+      and offered_personnel = requested_personnel
+      and responded_by_user_id is not null and responded_at is not null
+      and completed_at is null)
+    or (status = 'PARTIALLY_ACCEPTED'
+      and offered_firetrucks between 0 and requested_firetrucks
+      and offered_personnel between 0 and requested_personnel
+      and offered_firetrucks + offered_personnel > 0
+      and (offered_firetrucks < requested_firetrucks or offered_personnel < requested_personnel)
+      and responded_by_user_id is not null and responded_at is not null
+      and completed_at is null)
+    or (status = 'REJECTED'
+      and offered_firetrucks = 0 and offered_personnel = 0
+      and responded_by_user_id is not null and responded_at is not null
+      and completed_at is null)
+    or (status = 'CANCELLED'
+      and offered_firetrucks is null and offered_personnel is null
+      and responded_by_user_id is null and responded_at is null
+      and completed_at is null)
+    or (status = 'COMPLETED'
+      and offered_firetrucks between 0 and requested_firetrucks
+      and offered_personnel between 0 and requested_personnel
+      and offered_firetrucks + offered_personnel > 0
+      and responded_by_user_id is not null and responded_at is not null
+      and completed_at is not null)
+  )
 );
 
-create unique index intermunicipal_assistance_one_open_recipient_idx
+create unique index if not exists intermunicipal_assistance_one_open_recipient_idx
   on public.intermunicipal_assistance_requests (dispatch_id, recipient_municipality_id)
   where status in ('REQUESTED','ACCEPTED','PARTIALLY_ACCEPTED');
-create index intermunicipal_assistance_origin_idx
+create index if not exists intermunicipal_assistance_origin_idx
   on public.intermunicipal_assistance_requests (requester_municipality_id, requested_at desc);
-create index intermunicipal_assistance_recipient_idx
+create index if not exists intermunicipal_assistance_recipient_idx
   on public.intermunicipal_assistance_requests (recipient_municipality_id, requested_at desc);
 
-create table public.intermunicipal_coordination_events (
+create table if not exists public.intermunicipal_coordination_events (
   id uuid primary key,
   fire_report_id uuid not null references public.fire_reports(id) on delete restrict,
   dispatch_id uuid not null references public.incident_dispatches(id) on delete restrict,
@@ -226,7 +287,7 @@ create table public.intermunicipal_coordination_events (
   recipient_municipality_id uuid references public.municipalities(id) on delete restrict,
   event_type text not null check (
     event_type in (
-      'OBSERVERS_SELECTED','SELECTION_DEGRADED','ASSISTANCE_REQUESTED',
+      'OBSERVERS_SELECTED','OBSERVER_ALERT_ACKNOWLEDGED','SELECTION_DEGRADED','ASSISTANCE_REQUESTED',
       'ASSISTANCE_ACCEPTED','ASSISTANCE_PARTIALLY_ACCEPTED','ASSISTANCE_REJECTED',
       'ASSISTANCE_CANCELLED','ASSISTANCE_COMPLETED','OBSERVER_ACCESS_ENDED'
     )
@@ -237,18 +298,38 @@ create table public.intermunicipal_coordination_events (
   created_at timestamptz not null
 );
 
-create index intermunicipal_coordination_events_report_idx
+create index if not exists intermunicipal_coordination_events_report_idx
   on public.intermunicipal_coordination_events (fire_report_id, created_at desc);
-create index intermunicipal_coordination_events_created_idx
+create index if not exists intermunicipal_coordination_events_created_idx
   on public.intermunicipal_coordination_events (created_at desc);
 
 alter table public.incident_municipal_observers enable row level security;
 alter table public.intermunicipal_assistance_requests enable row level security;
 alter table public.intermunicipal_coordination_events enable row level security;
 
-revoke all on table public.incident_municipal_observers from anon, authenticated;
-revoke all on table public.intermunicipal_assistance_requests from anon, authenticated;
-revoke all on table public.intermunicipal_coordination_events from anon, authenticated;
+revoke all on table public.incident_municipal_observers from public, anon, authenticated;
+revoke all on table public.intermunicipal_assistance_requests from public, anon, authenticated;
+revoke all on table public.intermunicipal_coordination_events from public, anon, authenticated;
+
+create or replace function public.prevent_intermunicipal_coordination_event_mutation()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  raise exception 'intermunicipal coordination events are immutable';
+end;
+$$;
+
+revoke all on function public.prevent_intermunicipal_coordination_event_mutation()
+  from public, anon, authenticated;
+
+drop trigger if exists prevent_intermunicipal_coordination_event_mutation
+  on public.intermunicipal_coordination_events;
+create trigger prevent_intermunicipal_coordination_event_mutation
+before update or delete on public.intermunicipal_coordination_events
+for each row execute function public.prevent_intermunicipal_coordination_event_mutation();
 
 alter table public.account_notifications
   drop constraint if exists account_notifications_event_type_check;
@@ -266,7 +347,33 @@ alter table public.account_notifications
   );
 ~~~
 
-- [ ] **Step 4: Add the notification events to the TypeScript domain**
+For existing objects changed by a later implementation revision, do not use unsupported `ADD CONSTRAINT IF NOT EXISTS`. Use a `DO` block that checks `pg_constraint`, or explicitly drop and recreate the named constraint when its definition must change. Keep transactions short and acquire rows in a consistent order.
+
+- [ ] **Step 5: Add PostgreSQL-level pgTAP tests**
+
+Create `supabase/tests/database/intermunicipality_coordination.test.sql`. Use `begin`, `select plan(...)`, pgTAP assertions, `select * from finish()`, and `rollback`. The test must verify:
+
+- all three tables exist and have RLS enabled;
+- `PUBLIC`, `anon`, and `authenticated` have no direct table privileges;
+- acknowledgment actor/time must be both null or both populated;
+- invalid `ACCEPTED`, `PARTIALLY_ACCEPTED`, `REJECTED`, `CANCELLED`, and `COMPLETED` row shapes fail;
+- a valid row for each assistance status succeeds;
+- updating or deleting an audit event raises the immutable-audit exception;
+- the partial unique index rejects two open requests for the same dispatch and recipient.
+
+Create only transaction-local fixture rows and roll them back. Use UUIDs that cannot collide with seed data, and insert the minimum required municipality, user, station, report, and dispatch parents before testing the coordination rows.
+
+Run the actual database checks:
+
+~~~powershell
+npx supabase db reset
+npx supabase test db
+npx supabase migration list --local
+~~~
+
+Expected: reset applies `20260907090000_add_intermunicipality_coordination.sql` after `20260906220000_allow_profile_updated_credential_event.sql`, all pgTAP assertions pass, and the local migration list is in order. A missing Docker/local Supabase runtime is an environment failure to report and fix; do not silently replace this gate with source-text assertions.
+
+- [ ] **Step 6: Add the notification events to the TypeScript domain**
 
 Append the nine migration event values to `NOTIFICATION_EVENTS` in `lib/notifications/types.ts`. Add the same nine values to the event loop in `tests/account-notifications.test.mjs`.
 
@@ -282,7 +389,7 @@ Append the nine migration event values to `NOTIFICATION_EVENTS` in `lib/notifica
 "NEARBY_SELECTION_DEGRADED",
 ~~~
 
-- [ ] **Step 5: Run the focused tests**
+- [ ] **Step 7: Run the focused tests**
 
 Run:
 
@@ -290,12 +397,12 @@ Run:
 node --test tests/intermunicipality-coordination-schema.test.mjs tests/account-notifications.test.mjs
 ~~~
 
-Expected: both test files PASS.
+Expected: both source-contract test files PASS. These supplement, but do not replace, the pgTAP run above.
 
-- [ ] **Step 6: Commit the schema and notification domain**
+- [ ] **Step 8: Commit the schema and notification domain**
 
 ~~~powershell
-git add supabase/migrations/20260906090000_add_intermunicipality_coordination.sql tests/intermunicipality-coordination-schema.test.mjs lib/notifications/types.ts tests/account-notifications.test.mjs
+git add supabase/migrations/20260907090000_add_intermunicipality_coordination.sql supabase/tests/database/intermunicipality_coordination.test.sql tests/intermunicipality-coordination-schema.test.mjs lib/notifications/types.ts tests/account-notifications.test.mjs
 git commit -m "feat(coordination): add intermunicipality data model"
 ~~~
 
@@ -313,7 +420,7 @@ git commit -m "feat(coordination): add intermunicipality data model"
 
 **Interfaces:**
 - Consumes: `createAccountNotifications`, `listMunicipalNotificationRecipients`, `listProvincialNotificationRecipients`, a transaction client, incident GPS, origin municipality, dispatch ID, actor, reference, and barangay.
-- Produces: `rankNearbyMunicipalities(stations, incident, limit)`, `createNearbyIncidentObservers(client, input)`, `endIncidentObservers(client, input)`, and `recordCoordinationEvent(client, input)`.
+- Produces: `rankNearbyMunicipalities(stations, incident, limit)`, `createNearbyIncidentObservers(client, input)`, `acknowledgeNearbyIncident(input)`, `endIncidentObservers(client, input)`, and `recordCoordinationEvent(client, input)`.
 
 - [ ] **Step 1: Write the failing proximity behavior test**
 
@@ -417,6 +524,10 @@ export type NearbyObserver = {
   stationName: string;
   distanceMeters: number;
   status: "ACTIVE" | "ENDED";
+  acknowledgedByUserId: string | null;
+  acknowledgedByDisplayName: string | null;
+  acknowledgedAt: string | null;
+  monitoringState: "WAITING" | "SEEN" | "BACKUP_REQUESTED";
   assistanceStatus: AssistanceStatus | null;
 };
 
@@ -553,6 +664,8 @@ test("observer service persists ranked snapshots and emits scoped notifications"
   assert.match(service, /rankNearbyMunicipalities/);
   assert.match(service, /status = 'ACTIVE'/);
   assert.match(service, /municipality_id <> \$1/);
+  assert.match(service, /exists[\s\S]*?users/i);
+  assert.match(service, /account_status = 'ACTIVE'/i);
   assert.match(service, /insert into incident_municipal_observers/i);
   assert.match(service, /listMunicipalNotificationRecipients/);
   assert.match(service, /listProvincialNotificationRecipients/);
@@ -560,6 +673,14 @@ test("observer service persists ranked snapshots and emits scoped notifications"
   assert.match(service, /NEARBY_MONITORING_STARTED/);
   assert.match(service, /NEARBY_SELECTION_DEGRADED/);
   assert.match(service, /recordCoordinationEvent/);
+});
+
+test("observer acknowledgment is scoped, idempotent, and audited", () => {
+  const service = source("lib/intermunicipality/observers.ts");
+  assert.match(service, /export async function acknowledgeNearbyIncident/);
+  assert.match(service, /observer_municipality_id = \$2/i);
+  assert.match(service, /acknowledged_at = coalesce/i);
+  assert.match(service, /OBSERVER_ALERT_ACKNOWLEDGED/);
 });
 
 test("observer lifecycle ends access without deleting snapshots", () => {
@@ -602,6 +723,7 @@ export type CoordinationAuditInput = {
   recipientMunicipalityId?: string | null;
   eventType:
     | "OBSERVERS_SELECTED"
+    | "OBSERVER_ALERT_ACKNOWLEDGED"
     | "SELECTION_DEGRADED"
     | "ASSISTANCE_REQUESTED"
     | "ASSISTANCE_ACCEPTED"
@@ -670,6 +792,13 @@ export async function createNearbyIncidentObservers(
   input: CreateNearbyObserversInput,
 ): Promise<CreateNearbyObserversResult>;
 
+export async function acknowledgeNearbyIncident(input: {
+  fireReportId: string;
+  observerMunicipalityId: string;
+  actorUserId: string;
+  acknowledgedAt: Date;
+}): Promise<NearbyObserver>;
+
 export async function endIncidentObservers(
   client: Queryable,
   input: {
@@ -695,10 +824,23 @@ select station.id as "stationId",
   join municipalities municipality on municipality.id = station.municipality_id
  where station.status = 'ACTIVE'
    and station.municipality_id <> $1
+   and exists (
+     select 1
+       from users municipal_user
+       join bfp_personnel_profiles profile on profile.user_id = municipal_user.id
+       join bfp_municipality_assignments assignment
+         on assignment.personnel_profile_id = profile.id
+      where assignment.municipality_id = station.municipality_id
+        and assignment.status = 'ACTIVE'
+        and municipal_user.role = 'MUNICIPAL_BFP'
+        and municipal_user.account_status = 'ACTIVE'
+   )
  order by station.municipality_id, station.id
 ~~~
 
-For every selected observer, look up active accounts with `listMunicipalNotificationRecipients` and create `NEARBY_INCIDENT_ASSIGNED` using action `/municipal-bfp/active-incidents?incident=<fireReportId>`. Notify Provincial BFP once with `NEARBY_MONITORING_STARTED` and action `/provincial-bfp/incidents?incident=<fireReportId>`. If fewer than two are selected, notify origin and Provincial BFP with `NEARBY_SELECTION_DEGRADED`. Use dedupe keys:
+The eligibility `exists` clause intentionally mirrors `listMunicipalNotificationRecipients`. Add a behavior test where the geographically closest municipality has no active account or active assignment and confirm that it is skipped in favor of the next eligible municipality.
+
+For every selected observer, look up active accounts with `listMunicipalNotificationRecipients` and create `NEARBY_INCIDENT_ASSIGNED` using action `/municipal-bfp/active-incidents?incident=<fireReportId>`. Notify Provincial BFP once with `NEARBY_MONITORING_STARTED` and action `/provincial-bfp/incidents?incident=<fireReportId>`. If fewer than two eligible municipalities are selected, notify origin and Provincial BFP with `NEARBY_SELECTION_DEGRADED`. Use dedupe keys:
 
 ~~~text
 nearby-incident:<dispatchId>:<observerMunicipalityId>
@@ -707,6 +849,8 @@ nearby-selection:<dispatchId>:degraded
 ~~~
 
 `endIncidentObservers` must update active rows to `ENDED`, set `ended_at`, record `OBSERVER_ACCESS_ENDED` for each observer, and return the ended observer municipality IDs. It must never delete an observer snapshot.
+
+`acknowledgeNearbyIncident` runs in a short transaction, locks the active observer row for the signed municipality, and uses `coalesce` so the first `acknowledged_by_user_id` and `acknowledged_at` are preserved on retries. If this call populated the acknowledgment, write one `OBSERVER_ALERT_ACKNOWLEDGED` audit event; if it was already populated, return the existing row without another audit event. Never accept the observer municipality or actor from a request body.
 
 - [ ] **Step 9: Run observer, proximity, and TypeScript checks**
 
@@ -1220,6 +1364,15 @@ test("municipal APIs delegate scope decisions to the access service", () => {
   assert.match(detail, /getObserverIncidentDetail/);
   assert.match(detail, /getIncidentCoordinationContext/);
 });
+
+test("coordination context exposes acknowledgment without widening observer access", () => {
+  const service = source("lib/intermunicipality/incident-access.ts");
+  assert.match(service, /acknowledged_by_user_id/);
+  assert.match(service, /acknowledged_at/);
+  assert.match(service, /BACKUP_REQUESTED/);
+  assert.match(service, /SEEN/);
+  assert.match(service, /WAITING/);
+});
 ~~~
 
 - [ ] **Step 2: Run the access test and confirm the missing-service failure**
@@ -1385,7 +1538,7 @@ select fr.id,
  limit 1
 ~~~
 
-Load public-safe status history and assigned-unit counts separately. Do not load photos or previous resident reports for an observer. `getIncidentCoordinationContext` returns both observers to the origin, but filters assistance rows to the signed observer municipality when `accessScope === "OBSERVER"`.
+Load public-safe status history and assigned-unit counts separately. Do not load photos or previous resident reports for an observer. `COORDINATION_CONTEXT_QUERY` selects each observer's `acknowledged_by_user_id` and `acknowledged_at`, joins the acknowledging user's BFP profile for a display name, and derives `monitoringState` with this precedence: an assistance request means `BACKUP_REQUESTED`; otherwise a non-null acknowledgment means `SEEN`; otherwise `WAITING`. `getIncidentCoordinationContext` returns both observers to the origin, but returns only the signed municipality's observer row and assistance rows when `accessScope === "OBSERVER"`.
 
 - [ ] **Step 5: Refactor both municipal incident APIs**
 
@@ -1458,6 +1611,7 @@ git commit -m "feat(coordination): expose privacy-safe nearby incidents"
 ### Task 6: Expose backup APIs and municipal coordination UI
 
 **Files:**
+- Create: `app/api/municipal-bfp/incidents/[id]/observer-acknowledgment/route.ts`
 - Create: `app/api/municipal-bfp/incidents/[id]/assistance-requests/route.ts`
 - Create: `app/api/municipal-bfp/assistance-requests/[requestId]/route.ts`
 - Create: `app/_components/intermunicipality-coordination-panel.tsx`
@@ -1467,8 +1621,8 @@ git commit -m "feat(coordination): expose privacy-safe nearby incidents"
 - Modify: `app/_components/municipal-incident-detail.tsx`
 
 **Interfaces:**
-- Consumes: scoped incident DTOs, `createAssistanceRequests`, `transitionAssistanceRequest`, and `requireMunicipalAdmin`.
-- Produces: origin-only request creation, recipient-only response, origin cancellation, query-string incident opening, and role-correct coordination controls.
+- Consumes: scoped incident DTOs, `acknowledgeNearbyIncident`, `createAssistanceRequests`, `transitionAssistanceRequest`, and `requireMunicipalAdmin`.
+- Produces: observer-only acknowledgment, origin-only request creation, recipient-only response, origin cancellation, query-string incident opening, and role-correct coordination controls.
 
 - [ ] **Step 1: Write the failing route and UI contract test**
 
@@ -1484,12 +1638,15 @@ const root = process.cwd();
 const source = (path) => readFileSync(join(root, path), "utf8");
 
 test("municipal assistance routes require administrators and derive municipality from session", () => {
+  const acknowledgmentPath = "app/api/municipal-bfp/incidents/[id]/observer-acknowledgment/route.ts";
   const createPath = "app/api/municipal-bfp/incidents/[id]/assistance-requests/route.ts";
   const updatePath = "app/api/municipal-bfp/assistance-requests/[requestId]/route.ts";
+  assert.equal(existsSync(join(root, acknowledgmentPath)), true);
   assert.equal(existsSync(join(root, createPath)), true);
   assert.equal(existsSync(join(root, updatePath)), true);
-  const combined = source(createPath) + source(updatePath);
+  const combined = source(acknowledgmentPath) + source(createPath) + source(updatePath);
   assert.match(combined, /requireMunicipalAdmin/);
+  assert.match(combined, /acknowledgeNearbyIncident/);
   assert.match(combined, /createAssistanceRequests/);
   assert.match(combined, /transitionAssistanceRequest/);
   assert.doesNotMatch(combined, /body\.(actorUserId|requesterMunicipalityId|actorMunicipalityId)/);
@@ -1506,6 +1663,10 @@ test("municipal UI distinguishes owned and nearby incidents", () => {
   assert.match(detail, /IntermunicipalityCoordinationPanel/);
   assert.match(detail, /incident\.accessScope === "ORIGIN"/);
   assert.match(panel, /Request Backup/);
+  assert.match(panel, /Acknowledge Alert/);
+  assert.match(panel, /Waiting/);
+  assert.match(panel, /Seen/);
+  assert.match(panel, /Backup requested/);
   assert.match(panel, /Monitoring only/);
   assert.match(panel, /PARTIAL_ACCEPT/);
 });
@@ -1521,7 +1682,23 @@ node --test tests/intermunicipality-municipal-ui.test.mjs
 
 Expected: FAIL because the assistance routes and coordination panel do not exist.
 
-- [ ] **Step 3: Add origin-only request creation route**
+- [ ] **Step 3: Add observer-only acknowledgment route**
+
+Implement `POST /api/municipal-bfp/incidents/[id]/observer-acknowledgment` with `requireMunicipalAdmin`. Accept no actor or municipality fields. Call:
+
+~~~ts
+const observer = await acknowledgeNearbyIncident({
+  fireReportId: id,
+  observerMunicipalityId: identity.municipalityId,
+  actorUserId: identity.userId,
+  acknowledgedAt: new Date(),
+});
+return NextResponse.json({ observer });
+~~~
+
+Map malformed incident IDs to 400, hidden/unselected incidents to 404, ended observer access to 409, and unexpected errors to 500. Repeated calls return 200 with the original acknowledgment actor/time and create no duplicate audit event.
+
+- [ ] **Step 4: Add origin-only request creation route**
 
 Implement `POST /api/municipal-bfp/incidents/[id]/assistance-requests` with `requireMunicipalAdmin`. Parse only:
 
@@ -1557,7 +1734,7 @@ Map errors exactly:
 - `INCIDENT_NOT_ACTIVE` and `ASSISTANCE_ALREADY_OPEN` â†’ 409.
 - unexpected errors â†’ 500 with a server log containing the incident ID.
 
-- [ ] **Step 4: Add recipient-response and origin-cancellation route**
+- [ ] **Step 5: Add recipient-response and origin-cancellation route**
 
 Implement `PATCH /api/municipal-bfp/assistance-requests/[requestId]` with `requireMunicipalAdmin`. Accept:
 
@@ -1572,7 +1749,7 @@ type ResponseBody = {
 
 Call `transitionAssistanceRequest` with `identity.municipalityId` and `identity.userId`; never accept either value from the body. Map invalid input to 400, hidden/not-found records to 404, actor-scope violations to 403, state conflicts to 409, and unexpected failures to 500.
 
-- [ ] **Step 5: Extend the municipal incident feed**
+- [ ] **Step 6: Extend the municipal incident feed**
 
 Add these fields to `MunicipalIncident`:
 
@@ -1590,7 +1767,7 @@ Keep the five-second interval unchanged. Include `accessScope` and `originMunici
 - add `OWNED` and `NEARBY` filters mapped to `accessScope`;
 - preserve the existing loading, retry, and manual refresh behavior.
 
-- [ ] **Step 6: Build the focused coordination panel**
+- [ ] **Step 7: Build the focused coordination panel**
 
 Create `IntermunicipalityCoordinationPanel` with:
 
@@ -1608,7 +1785,7 @@ export function IntermunicipalityCoordinationPanel(props: Props): React.ReactEle
 
 For `ORIGIN`:
 
-- show exactly the persisted observers, station name, rounded kilometer distance, and assistance state;
+- show exactly the persisted observers, station name, rounded kilometer distance, acknowledgment actor/time, and the derived `Waiting`, `Seen`, or `Backup requested` state;
 - open a request form with checkboxes for either or both observers;
 - require requested firetrucks or personnel to be positive;
 - send one POST request and refresh detail after success;
@@ -1616,7 +1793,9 @@ For `ORIGIN`:
 
 For `OBSERVER`:
 
-- show `Monitoring onlyâ€”no assistance requested` when no request is addressed to the signed municipality;
+- show `Monitoring only—no assistance requested` when no request is addressed to the signed municipality;
+- show **Acknowledge Alert** only while the active observer row has no acknowledgment, POST the empty-body acknowledgment request, and refresh detail on success;
+- replace the button with `Seen <time>` after acknowledgment; do not treat acknowledgment as permission to dispatch;
 - show Accept, Partially Accept, and Reject only for `REQUESTED`;
 - require exact requested quantities for Accept;
 - require a positive quantity below at least one requested value for Partially Accept;
@@ -1625,7 +1804,7 @@ For `OBSERVER`:
 
 Use a live region for success/error messages, native labels for every quantity field, and disabled controls while a request is in flight.
 
-- [ ] **Step 7: Enforce origin/observer rendering in incident detail**
+- [ ] **Step 8: Enforce origin/observer rendering in incident detail**
 
 Extend the `Incident` type with `accessScope`, `nearbyObservers`, and `assistanceRequests`. Mount the new panel below the incident hero.
 
@@ -1633,7 +1812,7 @@ Define `const canControlIncident = incident.accessScope === "ORIGIN";` after loa
 
 For an observer, render the map, public-safe location, severity, status history, assigned-unit summary, and coordination panel. Never render the reporter, phone, email, private address, IP/device, photos, previous reports, dispatch, density-recalculation, or resolution controls.
 
-- [ ] **Step 8: Run municipal UI, access, and TypeScript checks**
+- [ ] **Step 9: Run municipal UI, access, and TypeScript checks**
 
 Run:
 
@@ -1644,10 +1823,10 @@ npx tsc --noEmit
 
 Expected: all listed tests PASS and TypeScript exits 0.
 
-- [ ] **Step 9: Commit municipal coordination**
+- [ ] **Step 10: Commit municipal coordination**
 
 ~~~powershell
-git add "app/api/municipal-bfp/incidents/[id]/assistance-requests/route.ts" "app/api/municipal-bfp/assistance-requests/[requestId]/route.ts" app/_components/intermunicipality-coordination-panel.tsx tests/intermunicipality-municipal-ui.test.mjs app/_components/use-municipal-incident-feed.ts app/municipal-bfp/active-incidents/page.tsx app/_components/municipal-incident-detail.tsx
+git add "app/api/municipal-bfp/incidents/[id]/observer-acknowledgment/route.ts" "app/api/municipal-bfp/incidents/[id]/assistance-requests/route.ts" "app/api/municipal-bfp/assistance-requests/[requestId]/route.ts" app/_components/intermunicipality-coordination-panel.tsx tests/intermunicipality-municipal-ui.test.mjs app/_components/use-municipal-incident-feed.ts app/municipal-bfp/active-incidents/page.tsx app/_components/municipal-incident-detail.tsx
 git commit -m "feat(coordination): add municipal backup controls"
 ~~~
 
@@ -1821,7 +2000,7 @@ export async function listProvincialAssistanceRequests(
 ): Promise<ProvincialAssistanceRequest[]>;
 ~~~
 
-The incident list must return real report reference, municipality, barangay, fire type, severity, status, report/dispatch times, assigned station count, selected observers, open-assistance count, and degraded-selection state. The detail adds observer distance snapshots, every assistance request and response, public-safe dispatch status, and coordination audit timestamps.
+The incident list must return real report reference, municipality, barangay, fire type, severity, status, report/dispatch times, assigned station count, selected observers, each observer's acknowledgment actor/time and derived monitoring state, open-assistance count, and degraded-selection state. The detail adds observer distance snapshots, every assistance request and response, public-safe dispatch status, and coordination audit timestamps.
 
 The assistance list joins requester and recipient municipality names and sorts open requests before terminal requests, then by `requested_at desc`. Neither service mutates data.
 
@@ -1966,6 +2145,7 @@ Place the hook-using incident page body inside React `Suspense` with the existin
 - live incident/dispatch status;
 - exactly the persisted observer selections or the degraded warning;
 - distance snapshots;
+- each observer's `Waiting`, `Seen`, or `Backup requested` state plus acknowledgment actor/time when seen;
 - assistance request status and offered resources;
 - request, response, and completion times.
 
@@ -2015,6 +2195,7 @@ git commit -m "feat(coordination): add live provincial monitoring"
 ### Task 9: Verify the complete workflow and update system documentation
 
 **Files:**
+- Create: `tests/intermunicipality-database.integration.test.mjs`
 - Modify: `../../BFP_Fire_Response_System_Overview.md`
 - Modify: `tests/intermunicipality-dispatch-integration.test.mjs`
 - Modify: `tests/intermunicipality-access.test.mjs`
@@ -2022,10 +2203,35 @@ git commit -m "feat(coordination): add live provincial monitoring"
 - Modify: `tests/intermunicipality-provincial.test.mjs`
 
 **Interfaces:**
-- Consumes: every schema, service, route, and UI contract introduced in Tasks 1â€“8.
-- Produces: one documented and regression-verified end-to-end flow.
+- Consumes: every schema, service, route, and UI contract introduced in Tasks 1–8 plus a reset local PostgreSQL database exposed through `DATABASE_URL`.
+- Produces: one documented and regression-verified end-to-end flow, including a real concurrent-transition check.
 
-- [ ] **Step 1: Add one cross-file end-to-end contract test**
+- [ ] **Step 1: Add a real PostgreSQL concurrency integration test**
+
+Create `tests/intermunicipality-database.integration.test.mjs`. Fail immediately when `DATABASE_URL` is absent; this dedicated database test must never silently skip. Using `pg`, insert uniquely named transaction-local test fixtures for the required municipalities, BFP users/profiles/active municipality assignments, station, phone-call fire report, active dispatch, observer, and one `REQUESTED` assistance row. Use values valid under the final migrated schema.
+
+Start two `transitionAssistanceRequest` calls at the same time against that request: one `ACCEPT`, one `REJECT`, with distinct active users from the recipient municipality. Assert that:
+
+- exactly one operation commits a transition and the other returns the controlled state-conflict result;
+- the final row has one valid terminal response shape, never a mixture of both responses;
+- exactly one response audit event and one set of response notifications exists for the request;
+- the request can still be read after the losing transaction completes, proving no deadlock remains.
+
+Set a 10-second test timeout. Insert fixtures in parent-before-child order and use unique UUIDs so a failed prior run cannot collide. Because audit rows are intentionally undeletable, run this only against the reset local Supabase database, never a shared or production database.
+
+Run:
+
+~~~powershell
+npx supabase db reset
+$coordDbLine = npx supabase status -o env | Select-String '^DB_URL='
+$env:DATABASE_URL = ($coordDbLine.Line -replace '^DB_URL="?', '' -replace '"$', '')
+node --test tests/intermunicipality-database.integration.test.mjs
+npx supabase test db
+~~~
+
+Expected: the Node database integration test and all pgTAP assertions PASS. Restore any pre-existing shell `DATABASE_URL` value after the command if one was set before this local test.
+
+- [ ] **Step 2: Add one cross-file end-to-end contract test**
 
 Append to `tests/intermunicipality-dispatch-integration.test.mjs`:
 
@@ -2040,6 +2246,8 @@ test("assigned incident connects selection, monitoring, backup, provincial overs
   };
   assert.match(files.dispatch, /createNearbyIncidentObservers/);
   assert.match(files.observers, /NEARBY_INCIDENT_ASSIGNED/);
+  assert.match(files.observers, /acknowledgeNearbyIncident/);
+  assert.match(files.observers, /OBSERVER_ALERT_ACKNOWLEDGED/);
   assert.match(files.access, /observer_municipality_id/);
   assert.match(files.assistance, /ASSISTANCE_REQUESTED/);
   assert.match(files.provincial, /intermunicipal_assistance_requests/);
@@ -2048,7 +2256,7 @@ test("assigned incident connects selection, monitoring, backup, provincial overs
 });
 ~~~
 
-- [ ] **Step 2: Run the end-to-end contract test**
+- [ ] **Step 3: Run the end-to-end contract test**
 
 Run:
 
@@ -2058,23 +2266,25 @@ node --test tests/intermunicipality-dispatch-integration.test.mjs
 
 Expected: PASS.
 
-- [ ] **Step 3: Update the system overview with the implemented rules**
+- [ ] **Step 4: Update the system overview with the implemented rules**
 
 In the Inter-Municipality Assistance and Notifications sections of `../../BFP_Fire_Response_System_Overview.md`, state:
 
 ~~~markdown
 After the responsible Municipal BFP assigns a response team or firetruck,
-ALAB automatically selects the two nearest external municipalities from the
-incident GPS point and active BFP-station coordinates. Those municipalities
-receive privacy-limited live monitoring access. They cannot dispatch resources
+ALAB automatically selects the two nearest eligible external municipalities
+from the incident GPS point and active BFP-station coordinates. Eligibility
+also requires an active Municipal BFP account. Those municipalities receive
+privacy-limited live monitoring access and may acknowledge that they saw the
+alert. Acknowledgment does not authorize dispatch. They cannot dispatch resources
 until the responsible municipality sends a backup request and they accept or
 partially accept it. Provincial BFP receives the selection, request, response,
 and completion events for province-wide oversight.
 ~~~
 
-Also document the five-second visible-tab refresh and that selected observers are persisted for the life of the dispatch.
+Also document the five-second visible-tab refresh, the `Waiting`/`Seen`/`Backup requested` states, degraded selection when fewer than two eligible municipalities exist, and that selected observers are persisted for the life of the dispatch.
 
-- [ ] **Step 4: Run every focused inter-municipality test**
+- [ ] **Step 5: Run every focused inter-municipality test**
 
 Run:
 
@@ -2082,9 +2292,9 @@ Run:
 node --test tests/intermunicipality-*.test.mjs
 ~~~
 
-Expected: all inter-municipality tests PASS.
+Expected: all source-level inter-municipality tests PASS. The database integration file is run separately with `DATABASE_URL` as shown in Step 1.
 
-- [ ] **Step 5: Run related regression suites**
+- [ ] **Step 6: Run related regression suites**
 
 Run:
 
@@ -2094,7 +2304,7 @@ node --test tests/account-notifications.test.mjs tests/notification-ui.test.mjs 
 
 Expected: all related regression tests PASS.
 
-- [ ] **Step 6: Run the complete test, type, lint, and production-build gates**
+- [ ] **Step 7: Run the complete test, type, lint, and production-build gates**
 
 Run:
 
@@ -2107,7 +2317,7 @@ npm run build
 
 Expected: all tests pass, TypeScript and ESLint exit 0, and Next.js reports a successful production build.
 
-- [ ] **Step 7: Review the final diff for privacy and scope**
+- [ ] **Step 8: Review the final diff for privacy and scope**
 
 Run:
 
@@ -2124,9 +2334,9 @@ Expected:
 - Any protected-field matches remain only inside the existing origin-owned incident query.
 - No observer account is added to responder FCM recipients.
 
-- [ ] **Step 8: Commit documentation and final test coverage**
+- [ ] **Step 9: Commit documentation and final test coverage**
 
 ~~~powershell
-git add ../../BFP_Fire_Response_System_Overview.md tests/intermunicipality-dispatch-integration.test.mjs tests/intermunicipality-access.test.mjs tests/intermunicipality-assistance.test.mjs tests/intermunicipality-provincial.test.mjs
+git add ../../BFP_Fire_Response_System_Overview.md tests/intermunicipality-database.integration.test.mjs tests/intermunicipality-dispatch-integration.test.mjs tests/intermunicipality-access.test.mjs tests/intermunicipality-assistance.test.mjs tests/intermunicipality-provincial.test.mjs
 git commit -m "docs(coordination): document nearby municipal response flow"
 ~~~
