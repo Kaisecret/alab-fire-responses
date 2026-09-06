@@ -616,13 +616,6 @@ export function MunicipalStationsManager() {
               </span>
               <span className="mbfp-hero-stat-lbl">On Duty / Dispatched</span>
             </div>
-            <div className="mbfp-hero-stat-card standby">
-              <span className="mbfp-hero-stat-val">
-                <span className="mbfp-stat-dot standby" />
-                {standbyCount}
-              </span>
-              <span className="mbfp-hero-stat-lbl">Standby</span>
-            </div>
           </div>
         </div>
 
