@@ -470,16 +470,23 @@ export function MunicipalStationsManager() {
     });
   }, [rosterResponders, rosterSearch, rosterStatusFilter]);
 
-  if (selectedRosterStation) {
-    const parsed = parseStationName(selectedRosterStation.stationName);
-    const onDutyCount = rosterResponders.filter(
-      (r) => r.dutyStatus === "ON_DUTY" || r.dutyStatus === "DISPATCHED"
-    ).length;
-    const standbyCount = rosterResponders.filter((r) => r.dutyStatus === "STANDBY").length;
+  const parsed = selectedRosterStation
+    ? parseStationName(selectedRosterStation.stationName)
+    : { name: "", head: "" };
+  const onDutyCount = rosterResponders.filter(
+    (r) => r.dutyStatus === "ON_DUTY" || r.dutyStatus === "DISPATCHED"
+  ).length;
+  const standbyCount = rosterResponders.filter((r) => r.dutyStatus === "STANDBY").length;
+  const activeCount = stations.filter((s) => s.status === "ACTIVE").length;
+  const inactiveCount = stations.filter((s) => s.status === "INACTIVE").length;
+  const totalCount = stations.length;
 
-    return (
-      <section className="mbfp-stations-page mbfp-roster-screen-view">
-        <style>{pageStyles}</style>
+  return (
+    <>
+      <style>{pageStyles}</style>
+
+      {selectedRosterStation ? (
+        <section className="mbfp-stations-page mbfp-roster-screen-view">
 
         {/* TOP NAVIGATION: BACK BUTTON & BREADCRUMBS */}
         <div className="mbfp-roster-nav-bar">
@@ -618,6 +625,15 @@ export function MunicipalStationsManager() {
             </button>
           </div>
 
+          <button
+            type="button"
+            className="mbfp-issue-account-btn"
+            onClick={() => openIssueAccount(selectedRosterStation?.id)}
+            title="Issue a BFP account for this station"
+          >
+            <i className="fa-solid fa-user-plus" />
+            <span>Issue Account</span>
+          </button>
         </div>
 
         {/* ROSTER SCREEN CONTENT: CARDS GRID */}
@@ -858,16 +874,8 @@ export function MunicipalStationsManager() {
           )}
         </div>
       </section>
-    );
-  }
-
-  const activeCount = stations.filter((s) => s.status === "ACTIVE").length;
-  const inactiveCount = stations.filter((s) => s.status === "INACTIVE").length;
-  const totalCount = stations.length;
-
-  return (
-    <section className="mbfp-stations-page">
-      <style>{pageStyles}</style>
+    ) : (
+      <section className="mbfp-stations-page">
 
       {/* HEADER SECTION */}
       <div className="mbfp-header-top">
@@ -1150,10 +1158,12 @@ export function MunicipalStationsManager() {
           </table>
         </div>
       </div>
+    </section>
+  )}
 
-      {/* =========================================================================
-          ADD STATION MODAL DIALOG (PORTAL TO DOCUMENT.BODY)
-          ========================================================================= */}
+  {/* =========================================================================
+      MODALS MOUNTED VIA PORTAL TO DOCUMENT.BODY (AVAILABLE ON BOTH SCREENS)
+      ========================================================================= */}
       {mounted && isAddModalOpen && createPortal(
         <div
           className="mbfp-modal-overlay"
@@ -1806,7 +1816,7 @@ export function MunicipalStationsManager() {
         </div>,
         document.body
       )}
-    </section>
+    </>
   );
 }
 
