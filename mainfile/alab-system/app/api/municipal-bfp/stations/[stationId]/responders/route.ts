@@ -33,7 +33,14 @@ export async function GET(request: NextRequest, context: { params: Promise<{ sta
         };
       }),
     );
-    return NextResponse.json({ responders });
+    return NextResponse.json(
+      { responders },
+      {
+        headers: {
+          "Cache-Control": "private, no-cache, stale-while-revalidate=60",
+        },
+      }
+    );
   } catch (error) {
     console.error("Municipal station responder list failed", error);
     return NextResponse.json({ error: "Unable to load station responders." }, { status: 500 });

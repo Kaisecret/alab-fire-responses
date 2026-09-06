@@ -54,23 +54,32 @@ async function verifiedPhoto(file: File) {
   return { bytes: input, contentType };
 }
 
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+
 export async function uploadBfpProfilePhoto(userId: string, file: File) {
   const photo = await verifiedPhoto(file);
   const storageKey = `${userId}/profile`;
   const { error } = await (await profilePhotoStorage()).storage.from(bucket).upload(storageKey, photo.bytes, {
     contentType: photo.contentType,
-    cacheControl: "private, max-age=60",
+    cacheControl: "private, max-age=3600",
     upsert: true,
   });
   if (error) throw new Error("PROFILE_PHOTO_UPLOAD_FAILED");
+  signedUrlCache.delete(userId);
   return storageKey;
 }
 
 export async function createBfpProfilePhotoUrl(userId: string) {
+  const cached = signedUrlCache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.url;
+  }
   try {
     const storageKey = `${userId}/profile`;
     const { data, error } = await storageClient().storage.from(bucket).createSignedUrl(storageKey, 60 * 60 * 24 * 7);
-    return error || !data ? null : `${data.signedUrl}&v=${Date.now()}`;
+    if (error || !data) return null;
+    signedUrlCache.set(userId, { url: data.signedUrl, expiresAt: Date.now() + 6 * 60 * 60 * 1000 });
+    return data.signedUrl;
   } catch {
     return null;
   }

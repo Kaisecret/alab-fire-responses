@@ -27,6 +27,19 @@ type StationResponder = {
   lastSeenAt?: string | null;
 };
 
+// In-memory client cache for station responders: stationId -> { responders: StationResponder[]; timestamp: number }
+const stationRespondersCache = new Map<string, { responders: StationResponder[]; timestamp: number }>();
+
+function preloadResponderPhotos(responders: StationResponder[]) {
+  if (typeof window === "undefined") return;
+  responders.forEach((r) => {
+    if (r.profilePhotoUrl) {
+      const img = new Image();
+      img.src = r.profilePhotoUrl;
+    }
+  });
+}
+
 export function MunicipalStationsManager() {
   const [mounted, setMounted] = useState(false);
   const [stations, setStations] = useState<Station[]>([]);
@@ -149,9 +162,26 @@ export function MunicipalStationsManager() {
 
       setEditingResponder(null);
 
-      // Refresh in background
+      // Update cache entry directly
       if (selectedRosterStation) {
-        void openStationRoster(selectedRosterStation);
+        const cached = stationRespondersCache.get(selectedRosterStation.id);
+        if (cached) {
+          const updated = cached.responders
+            .filter((r) => editStationId ? (r.id !== editingResponder.id || editStationId === selectedRosterStation.id) : true)
+            .map((r) => (r.id === editingResponder.id ? { ...r, displayName: editDisplayName.trim(), rankOrPosition: editRank.trim() } : r));
+          stationRespondersCache.set(selectedRosterStation.id, {
+            responders: updated,
+            timestamp: Date.now(),
+          });
+        }
+        if (editStationId && editStationId !== selectedRosterStation.id) {
+          stationRespondersCache.delete(editStationId);
+        }
+      }
+
+      // Refresh in background without jarring skeleton flash
+      if (selectedRosterStation) {
+        void openStationRoster(selectedRosterStation, true);
       }
       void load();
     } catch {
@@ -230,9 +260,10 @@ export function MunicipalStationsManager() {
       setIssuedPassword(result.temporaryPassword || issueTemporaryPassword.trim() || "Issued");
       setIsIssueModalOpen(false);
 
-      // Refresh roster immediately if current station matches
+      // Invalidate cache for assigned station and refresh roster immediately
+      stationRespondersCache.delete(issueStationId);
       if (selectedRosterStation && selectedRosterStation.id === issueStationId) {
-        void openStationRoster(selectedRosterStation);
+        void openStationRoster(selectedRosterStation, true);
       }
       void load();
     } catch {
@@ -265,12 +296,11 @@ export function MunicipalStationsManager() {
     }
   };
 
-  const openStationRoster = async (station: Station) => {
+  const openStationRoster = async (station: Station, silent = false) => {
     setSelectedRosterStation(station);
     setRosterSearch("");
     setRosterStatusFilter("ALL");
     setRosterError("");
-    setRosterLoading(true);
 
     if (typeof window !== "undefined") {
       const currentUrl = new URL(window.location.href);
@@ -278,20 +308,45 @@ export function MunicipalStationsManager() {
       window.history.pushState({ stationId: station.id }, "", currentUrl.toString());
     }
 
+    const cached = stationRespondersCache.get(station.id);
+    if (cached && cached.responders) {
+      // Instant hit: Show cached responders immediately with zero delay & no skeleton flash
+      setRosterResponders(cached.responders);
+      setRosterLoading(false);
+      preloadResponderPhotos(cached.responders);
+
+      // Skip network fetch if cache is fresh (< 30 seconds) and not a forced reload
+      const isFresh = Date.now() - cached.timestamp < 30_000;
+      if (isFresh && !silent) {
+        return;
+      }
+    } else {
+      // First time loading this station in current session: show 1 clean skeleton card
+      setRosterLoading(true);
+    }
+
     try {
-      const response = await fetch(`/api/municipal-bfp/stations/${station.id}/responders`, {
-        cache: "no-store",
-      });
+      const response = await fetch(`/api/municipal-bfp/stations/${station.id}/responders`);
       const result = (await response.json()) as { responders?: StationResponder[]; error?: string };
       if (!response.ok) {
-        setRosterError(result.error ?? "Unable to load assigned BFP responders.");
-        setRosterResponders([]);
+        if (!cached) {
+          setRosterError(result.error ?? "Unable to load assigned BFP responders.");
+          setRosterResponders([]);
+        }
       } else {
-        setRosterResponders(result.responders ?? []);
+        const fresh = result.responders ?? [];
+        stationRespondersCache.set(station.id, {
+          responders: fresh,
+          timestamp: Date.now(),
+        });
+        setRosterResponders(fresh);
+        preloadResponderPhotos(fresh);
       }
     } catch {
-      setRosterError("Network error: Failed to load station responders.");
-      setRosterResponders([]);
+      if (!cached) {
+        setRosterError("Network error: Failed to load station responders.");
+        setRosterResponders([]);
+      }
     } finally {
       setRosterLoading(false);
     }
@@ -638,10 +693,10 @@ export function MunicipalStationsManager() {
 
         {/* ROSTER SCREEN CONTENT: CARDS GRID */}
         <div className="mbfp-roster-screen-content">
-          {/* SKELETON LOADING STATE (EXACT COMPACT JOEYLENE RIVERA PROPORTIONS) */}
+          {/* SKELETON LOADING STATE: EXACT 1 SKELETON CARD AS REQUESTED */}
           {rosterLoading ? (
             <div className="mbfp-roster-grid">
-              {[1, 2, 3, 4].map((n) => (
+              {[1].map((n) => (
                 <div className="mbfp-roster-card mbfp-roster-skeleton" key={n}>
                   <div className="mbfp-roster-card-top skeleton-top">
                     <div className="mbfp-roster-top-bar">
@@ -724,6 +779,8 @@ export function MunicipalStationsManager() {
                               src={responder.profilePhotoUrl}
                               alt={responder.displayName}
                               className="mbfp-roster-avatar-img"
+                              loading="eager"
+                              decoding="async"
                               onError={(e) => {
                                 const target = e.currentTarget as HTMLImageElement;
                                 target.style.display = "none";
@@ -1679,7 +1736,7 @@ export function MunicipalStationsManager() {
                 <div className="mbfp-edit-account-preview">
                   <div className="mbfp-edit-avatar-thumb">
                     {editingResponder.profilePhotoUrl ? (
-                      <img src={editingResponder.profilePhotoUrl} alt="" className="mbfp-edit-thumb-img" />
+                      <img src={editingResponder.profilePhotoUrl} alt="" className="mbfp-edit-thumb-img" loading="eager" decoding="async" />
                     ) : (
                       <i className="fa-solid fa-user-shield" />
                     )}
