@@ -1438,49 +1438,52 @@ export function MunicipalStationsManager() {
                   </div>
                 </div>
 
-                {/* STATION ASSIGNMENT DROPDOWN */}
-                <div className="mbfp-form-group">
-                  <label htmlFor="issue-station-select">
-                    Station Assignment <span className="mbfp-required">*</span>
-                  </label>
-                  <div className="mbfp-input-icon-wrap">
-                    <i className="fa-solid fa-building-shield" />
-                    <select
-                      id="issue-station-select"
-                      required
-                      className="mbfp-form-input with-icon"
-                      value={issueStationId}
-                      onChange={(e) => setIssueStationId(e.target.value)}
-                      disabled={issueSaving}
-                    >
-                      {stations
-                        .filter((s) => s.status === "ACTIVE")
-                        .map((station) => (
-                          <option key={station.id} value={station.id}>
-                            {parseStationName(station.stationName).name}
-                          </option>
-                        ))}
-                    </select>
+                {/* 2-COLUMN ROW: STATION ASSIGNMENT & OFFICIAL EMAIL */}
+                <div className="mbfp-form-row">
+                  {/* STATION ASSIGNMENT DROPDOWN */}
+                  <div className="mbfp-form-group">
+                    <label htmlFor="issue-station-select">
+                      Station Assignment <span className="mbfp-required">*</span>
+                    </label>
+                    <div className="mbfp-input-icon-wrap">
+                      <i className="fa-solid fa-building-shield" />
+                      <select
+                        id="issue-station-select"
+                        required
+                        className="mbfp-form-input with-icon"
+                        value={issueStationId}
+                        onChange={(e) => setIssueStationId(e.target.value)}
+                        disabled={issueSaving}
+                      >
+                        {stations
+                          .filter((s) => s.status === "ACTIVE")
+                          .map((station) => (
+                            <option key={station.id} value={station.id}>
+                              {parseStationName(station.stationName).name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
 
-                {/* OFFICIAL EMAIL */}
-                <div className="mbfp-form-group">
-                  <label htmlFor="issue-email">
-                    Official Email <span className="mbfp-required">*</span>
-                  </label>
-                  <div className="mbfp-input-icon-wrap">
-                    <i className="fa-solid fa-envelope" />
-                    <input
-                      id="issue-email"
-                      required
-                      type="email"
-                      className="mbfp-form-input with-icon"
-                      placeholder="e.g. officer@bfp.gov.ph"
-                      value={issueEmail}
-                      onChange={(e) => setIssueEmail(e.target.value)}
-                      disabled={issueSaving}
-                    />
+                  {/* OFFICIAL EMAIL */}
+                  <div className="mbfp-form-group">
+                    <label htmlFor="issue-email">
+                      Official Email <span className="mbfp-required">*</span>
+                    </label>
+                    <div className="mbfp-input-icon-wrap">
+                      <i className="fa-solid fa-envelope" />
+                      <input
+                        id="issue-email"
+                        required
+                        type="email"
+                        className="mbfp-form-input with-icon"
+                        placeholder="e.g. officer@bfp.gov.ph"
+                        value={issueEmail}
+                        onChange={(e) => setIssueEmail(e.target.value)}
+                        disabled={issueSaving}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -3451,46 +3454,92 @@ const pageStyles = `
 
   /* EDIT OFFICER MODAL */
   .mbfp-edit-officer-modal {
-    max-width: 520px;
+    max-width: 500px;
     width: 100%;
-    border-radius: 20px;
+    border-radius: 16px;
     background: #FFFFFF;
     box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(15, 23, 42, 0.05);
     overflow: hidden;
-    animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: min(90vh, 600px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mbfp-edit-officer-modal form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
   }
 
   .mbfp-edit-header {
     background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 100%);
-    border-top: 4px solid #B91C1C;
-    padding: 1.4rem 1.6rem 1.15rem;
+    border-top: 3.5px solid #B91C1C;
+    padding: 0.9rem 1.4rem 0.75rem;
     border-bottom: 1px solid #F1F5F9;
+    flex-shrink: 0;
   }
 
   .mbfp-modal-badge-glow.edit {
     background: linear-gradient(135deg, #B91C1C 0%, #DC2626 100%);
   }
 
+  .mbfp-edit-officer-modal .mbfp-modal-badge-glow {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(185, 28, 28, 0.28);
+  }
+
+  .mbfp-edit-officer-modal .mbfp-modal-header-hero {
+    gap: 0.75rem;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-modal-header-text h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-modal-header-text p {
+    font-size: 0.78rem;
+    color: #64748B;
+    margin: 0.12rem 0 0;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-modal-close {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-modal-body {
+    padding: 0.95rem 1.4rem 0.85rem;
+    gap: 0.75rem;
+    overflow-y: auto;
+  }
+
   .mbfp-edit-account-preview {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
-    padding: 0.75rem 0.95rem;
+    gap: 0.75rem;
+    padding: 0.5rem 0.85rem;
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
-    border-radius: 12px;
+    border-radius: 10px;
   }
 
   .mbfp-edit-avatar-thumb {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     background: #B91C1C;
     color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
+    font-size: 0.9rem;
     overflow: hidden;
     flex-shrink: 0;
   }
@@ -3504,42 +3553,105 @@ const pageStyles = `
   .mbfp-edit-account-meta {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.1rem;
   }
 
   .mbfp-edit-account-email {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: #0F172A;
   }
 
   .mbfp-edit-account-status {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
     color: #059669;
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.3rem;
   }
 
   .mbfp-sync-notice {
     display: flex;
     align-items: flex-start;
-    gap: 0.65rem;
-    padding: 0.75rem 0.95rem;
+    gap: 0.55rem;
+    padding: 0.55rem 0.85rem;
     background: #EFF6FF;
     border: 1px solid #DBEAFE;
-    border-radius: 10px;
-    font-size: 0.76rem;
+    border-radius: 8px;
+    font-size: 0.73rem;
     color: #1E40AF;
-    line-height: 1.45;
+    line-height: 1.4;
   }
 
   .mbfp-sync-notice i {
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: #2563EB;
     margin-top: 0.1rem;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-form-group {
+    gap: 0.28rem;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-form-group label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #334155;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-form-input {
+    padding: 0.52rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    border: 1.2px solid #CBD5E1;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-form-input.with-icon {
+    padding-left: 2.3rem;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-input-icon-wrap i {
+    left: 0.75rem;
+    font-size: 0.88rem;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-quick-ranks {
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-rank-chip {
+    padding: 0.18rem 0.48rem;
+    font-size: 0.68rem;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-hint-pill {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.45rem;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-modal-footer {
+    padding: 0.75rem 1.4rem;
+    gap: 0.65rem;
     flex-shrink: 0;
+    background: #F8FAFC;
+    border-top: 1px solid #F1F5F9;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-cancel-btn {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.84rem;
+    border-radius: 8px;
+  }
+
+  .mbfp-edit-officer-modal .mbfp-submit-btn {
+    padding: 0.5rem 1.35rem;
+    font-size: 0.84rem;
+    border-radius: 8px;
+    gap: 0.45rem;
   }
 
   /* SKELETON SHIMMER (CIRCULAR AVATAR SKELETON) */
@@ -3673,40 +3785,120 @@ const pageStyles = `
 
   /* MODAL OVERLAY & CARD */
   .mbfp-issue-modal {
-    max-width: 520px;
+    max-width: 530px;
     width: 100%;
-    border-radius: 20px;
+    border-radius: 16px;
     background: #FFFFFF;
     box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(15, 23, 42, 0.05);
     overflow: hidden;
-    animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: min(90vh, 620px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mbfp-issue-modal form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
   }
 
   .mbfp-issue-header {
     background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 100%);
-    border-top: 4px solid #DC2626;
-    padding: 1.4rem 1.6rem 1.15rem;
+    border-top: 3.5px solid #DC2626;
+    padding: 0.9rem 1.4rem 0.75rem;
     border-bottom: 1px solid #F1F5F9;
+    flex-shrink: 0;
   }
 
-  .mbfp-modal-header-hero {
+  .mbfp-issue-modal .mbfp-modal-header-hero {
     display: flex;
     align-items: center;
-    gap: 0.95rem;
+    gap: 0.75rem;
   }
 
-  .mbfp-modal-badge-glow {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
+  .mbfp-issue-modal .mbfp-modal-badge-glow {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
     color: #FFFFFF;
-    font-size: 1.25rem;
+    font-size: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.32);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.28);
     flex-shrink: 0;
+  }
+
+  .mbfp-issue-modal .mbfp-modal-header-text h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .mbfp-issue-modal .mbfp-modal-header-text p {
+    font-size: 0.78rem;
+    color: #64748B;
+    margin: 0.12rem 0 0;
+  }
+
+  .mbfp-issue-modal .mbfp-modal-close {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+  }
+
+  .mbfp-issue-modal .mbfp-modal-body {
+    padding: 0.95rem 1.4rem 0.85rem;
+    gap: 0.7rem;
+    overflow-y: auto;
+  }
+
+  .mbfp-issue-modal .mbfp-form-group {
+    gap: 0.28rem;
+  }
+
+  .mbfp-issue-modal .mbfp-form-group label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #334155;
+  }
+
+  .mbfp-issue-modal .mbfp-form-input {
+    padding: 0.52rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    border: 1.2px solid #CBD5E1;
+  }
+
+  .mbfp-issue-modal .mbfp-form-input.with-icon {
+    padding-left: 2.3rem;
+  }
+
+  .mbfp-issue-modal .mbfp-input-icon-wrap i {
+    left: 0.75rem;
+    font-size: 0.88rem;
+  }
+
+  .mbfp-issue-modal .mbfp-form-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .mbfp-issue-modal .mbfp-form-row .mbfp-form-group {
+    flex: 1;
+    min-width: 0;
+  }
+
+  @media (max-width: 560px) {
+    .mbfp-issue-modal .mbfp-form-row {
+      flex-direction: column;
+      gap: 0.7rem;
+    }
   }
 
   .mbfp-label-with-hint {
@@ -3716,10 +3908,10 @@ const pageStyles = `
   }
 
   .mbfp-hint-pill {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: #64748B;
     background: #F1F5F9;
-    padding: 0.15rem 0.55rem;
+    padding: 0.1rem 0.48rem;
     border-radius: 9999px;
     font-weight: 600;
   }
@@ -3727,14 +3919,14 @@ const pageStyles = `
   .mbfp-quick-ranks {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
-    margin-top: 0.45rem;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
   }
 
   .mbfp-rank-chip {
-    padding: 0.3rem 0.65rem;
-    border-radius: 8px;
-    font-size: 0.74rem;
+    padding: 0.18rem 0.48rem;
+    border-radius: 6px;
+    font-size: 0.68rem;
     font-weight: 700;
     border: 1px solid #E2E8F0;
     background: #FFFFFF;
@@ -3754,20 +3946,20 @@ const pageStyles = `
     background: #B91C1C;
     border-color: #B91C1C;
     color: #FFFFFF;
-    box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25);
+    box-shadow: 0 2px 6px rgba(185, 28, 28, 0.22);
   }
 
   .mbfp-generate-pass-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    font-size: 0.72rem;
+    gap: 0.25rem;
+    font-size: 0.68rem;
     font-weight: 700;
     color: #2563EB;
     background: #EFF6FF;
     border: 1px solid #BFDBFE;
-    padding: 0.22rem 0.65rem;
-    border-radius: 6px;
+    padding: 0.15rem 0.5rem;
+    border-radius: 5px;
     cursor: pointer;
     transition: all 0.15s ease;
     font-family: inherit;
@@ -3781,20 +3973,41 @@ const pageStyles = `
   }
 
   .mbfp-form-hint {
-    font-size: 0.74rem;
+    font-size: 0.7rem;
     color: #64748B;
-    margin: 0.4rem 0 0;
+    margin: 0.2rem 0 0;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    line-height: 1.4;
+    gap: 0.35rem;
+    line-height: 1.35;
   }
 
   .mbfp-optional {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: #94A3B8;
     font-weight: 500;
-    margin-left: 0.25rem;
+    margin-left: 0.2rem;
+  }
+
+  .mbfp-issue-modal .mbfp-modal-footer {
+    padding: 0.75rem 1.4rem;
+    gap: 0.65rem;
+    flex-shrink: 0;
+    background: #F8FAFC;
+    border-top: 1px solid #F1F5F9;
+  }
+
+  .mbfp-issue-modal .mbfp-cancel-btn {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.84rem;
+    border-radius: 8px;
+  }
+
+  .mbfp-issue-modal .mbfp-submit-btn {
+    padding: 0.5rem 1.35rem;
+    font-size: 0.84rem;
+    border-radius: 8px;
+    gap: 0.45rem;
   }
 
   /* ================= ISSUED CREDENTIALS SUCCESS MODAL ================= */
