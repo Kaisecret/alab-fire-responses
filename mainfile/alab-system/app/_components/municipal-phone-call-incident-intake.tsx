@@ -21,6 +21,10 @@ const fireTypes = [
 
 const phonePattern = /^\+?[0-9]{10,15}$/;
 
+const OSM_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const SATELLITE_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const SATELLITE_REFERENCE_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
+
 function normalizePlace(value: string) {
   return value
     .toLowerCase()
@@ -82,6 +86,10 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
+  const streetLayerRef = useRef<any>(null);
+  const satelliteLayerRef = useRef<any>(null);
+  const referenceLayerRef = useRef<any>(null);
+  const [mapLayer, setMapLayer] = useState<"street" | "satellite">("street");
   const locationRef = useRef<Coordinates | null>(null);
   const barangaysRef = useRef<Barangay[]>([]);
   const municipalityRef = useRef<string>("");
@@ -200,6 +208,26 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
   const updatePin = useCallback((latlng: import("leaflet").LatLng) => {
     confirmCoordinates({ latitude: latlng.lat, longitude: latlng.lng });
   }, [confirmCoordinates]);
+
+  const switchMapLayer = useCallback((layer: "street" | "satellite") => {
+    setMapLayer(layer);
+    const map = mapRef.current;
+    if (!map) return;
+    const street = streetLayerRef.current;
+    const sat = satelliteLayerRef.current;
+    const ref = referenceLayerRef.current;
+    if (!street || !sat || !ref) return;
+
+    if (layer === "satellite") {
+      if (map.hasLayer(street)) map.removeLayer(street);
+      if (!map.hasLayer(sat)) sat.addTo(map);
+      if (!map.hasLayer(ref)) ref.addTo(map);
+    } else {
+      if (map.hasLayer(sat)) map.removeLayer(sat);
+      if (map.hasLayer(ref)) map.removeLayer(ref);
+      if (!map.hasLayer(street)) street.addTo(map);
+    }
+  }, []);
 
   const applyKeyboardPin = () => {
     const coordinates = { latitude: Number(latitude), longitude: Number(longitude) };
@@ -349,10 +377,31 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
 
       const map = L.map(mapContainerRef.current, { center: [mapStart.latitude, mapStart.longitude], zoom: 14, zoomControl: true });
       mapRef.current = map;
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+
+      const streetLayer = L.tileLayer(OSM_TILE_URL, {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(map);
+      });
+      const satelliteLayer = L.tileLayer(SATELLITE_TILE_URL, {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
+      });
+      const referenceLayer = L.tileLayer(SATELLITE_REFERENCE_TILE_URL, {
+        maxZoom: 19,
+        attribution: 'Esri Reference',
+      });
+
+      streetLayerRef.current = streetLayer;
+      satelliteLayerRef.current = satelliteLayer;
+      referenceLayerRef.current = referenceLayer;
+
+      if (mapLayer === "satellite") {
+        satelliteLayer.addTo(map);
+        referenceLayer.addTo(map);
+      } else {
+        streetLayer.addTo(map);
+      }
+
       const fireIcon = L.divIcon({
         className: "mbfp-phone-fire-icon-wrap",
         html: '<span class="mbfp-phone-fire-icon" aria-hidden="true"><i class="fa-solid fa-fire"></i></span>',
@@ -372,6 +421,9 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
     })();
     return () => {
       active = false;
+      streetLayerRef.current = null;
+      satelliteLayerRef.current = null;
+      referenceLayerRef.current = null;
       markerRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
@@ -814,11 +866,39 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
 
                     <div className="mbfp-phone-map-wrapper">
                       <div ref={mapContainerRef} className="mbfp-phone-map" aria-label="Incident location map" />
+
+                      {/* FLOATING MAP LAYER SWITCHER: STREET MAP vs HOUSES / SATELLITE */}
+                      <div className="mbfp-map-floating-switcher" role="group" aria-label="Map view style selector">
+                        <button
+                          type="button"
+                          className={`mbfp-floating-layer-btn ${mapLayer === "street" ? "active" : ""}`}
+                          onClick={() => switchMapLayer("street")}
+                          title="Switch to Street Map (Roads & Streets)"
+                        >
+                          <i className="fa-solid fa-map" aria-hidden="true" />
+                          <span>Street Map</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`mbfp-floating-layer-btn ${mapLayer === "satellite" ? "active" : ""}`}
+                          onClick={() => switchMapLayer("satellite")}
+                          title="Switch to Satellite View to see individual houses, buildings, and rooftops"
+                        >
+                          <i className="fa-solid fa-satellite" aria-hidden="true" />
+                          <span>Houses / Satellite</span>
+                        </button>
+                      </div>
+
                       <div className="mbfp-phone-map-overlay-hint">
                         {isGeocoding ? (
                           <>
                             <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" />
                             <span>Detecting location…</span>
+                          </>
+                        ) : mapLayer === "satellite" ? (
+                          <>
+                            <i className="fa-solid fa-house-chimney" aria-hidden="true" />
+                            <span>Satellite: Click house or drag pin</span>
                           </>
                         ) : (
                           <>
@@ -1421,10 +1501,70 @@ const phoneIntakeStyles = `
   }
 
   .mbfp-phone-map {
-    min-height: 250px;
-    height: 270px;
+    min-height: 270px;
+    height: 310px;
     width: 100%;
-    background: #e2e8f0;
+    background: #0f172a;
+  }
+
+  .mbfp-map-floating-switcher {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+    border-radius: 9999px;
+    padding: 3px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.08);
+    gap: 2px;
+  }
+
+  .mbfp-floating-layer-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.38rem 0.72rem;
+    border-radius: 9999px;
+    border: none;
+    font-size: 0.75rem;
+    font-weight: 750;
+    color: #475569;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.16s ease;
+    font-family: inherit;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+
+  .mbfp-floating-layer-btn:hover:not(.active) {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+
+  .mbfp-floating-layer-btn.active {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+  }
+
+  .mbfp-floating-layer-btn.active i {
+    color: #ffffff;
+  }
+
+  @media (max-width: 520px) {
+    .mbfp-map-floating-switcher {
+      bottom: 8px;
+      left: 8px;
+      padding: 2px;
+    }
+    .mbfp-floating-layer-btn {
+      padding: 0.32rem 0.55rem;
+      font-size: 0.68rem;
+    }
   }
 
   .mbfp-phone-map-overlay-hint {

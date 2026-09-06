@@ -145,9 +145,26 @@ export function MunicipalIncidentMap({ incident }: IncidentMapProps) {
         15
       );
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
+        maxZoom: 19,
       }).addTo(map);
+
+      const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar",
+        maxZoom: 19,
+      });
+
+      const referenceLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+        attribution: "Esri Reference",
+        maxZoom: 19,
+      });
+
+      L.control.layers(
+        { "Street Map": streetLayer, "Houses / Satellite": satelliteLayer },
+        { "Place Labels": referenceLayer },
+        { position: "topright" }
+      ).addTo(map);
 
       // Match the resident map marker so BFP personnel can identify the report point at a glance.
       const incidentMarker = L.marker([incident.latitude, incident.longitude], {
