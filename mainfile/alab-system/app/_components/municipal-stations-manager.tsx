@@ -564,7 +564,9 @@ export function MunicipalStationsManager() {
                     <div className="mbfp-skeleton-row" />
                     <div className="mbfp-skeleton-row" />
                   </div>
-                  <div className="mbfp-roster-card-bottom-accent" />
+                  <div className="mbfp-roster-card-bottom-accent" aria-hidden="true">
+                    <div className="mbfp-roster-card-cradle-inner" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -698,8 +700,10 @@ export function MunicipalStationsManager() {
                       </div>
                     </div>
 
-                    {/* SIGNATURE BOTTOM ACCENT (JOEYLENE RIVERA STYLE) */}
-                    <div className="mbfp-roster-card-bottom-accent" />
+                    {/* SIGNATURE BOTTOM CRADLE ACCENT (JOEYLENE RIVERA EXACT STYLE - PLAIN RED) */}
+                    <div className="mbfp-roster-card-bottom-accent" aria-hidden="true">
+                      <div className="mbfp-roster-card-cradle-inner" />
+                    </div>
                   </div>
                 );
               })}
@@ -2858,13 +2862,13 @@ const pageStyles = `
     border-color: #FECDD3;
   }
 
-  /* CARD TOP: RED/CRIMSON ACCENT (STRICTLY NOT GREEN) */
+  /* CARD TOP: RED/CRIMSON ACCENT (STRICTLY NOT GREEN - PLAIN RED) */
   .mbfp-roster-card-top {
     position: relative;
     width: 100%;
     padding: 16px 16px 8px;
-    background: linear-gradient(180deg, #B91C1C0D 0%, rgba(255, 255, 255, 0) 100%);
-    border-top: 3px solid #B91C1C;
+    background: #FFFFFF;
+    border-top: 3.5px solid #B91C1C;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2950,7 +2954,7 @@ const pageStyles = `
     border: 3.5px solid #FFFFFF;
     box-shadow: 0 8px 24px rgba(185, 28, 28, 0.16);
     overflow: hidden;
-    background: linear-gradient(135deg, #B91C1C 0%, #991B1B 60%, #7F1D1D 100%);
+    background: #B91C1C;
     position: relative;
     z-index: 1;
     display: flex;
@@ -2975,7 +2979,7 @@ const pageStyles = `
     align-items: center;
     justify-content: center;
     gap: 0.2rem;
-    background: linear-gradient(135deg, #B91C1C 0%, #991B1B 60%, #7F1D1D 100%);
+    background: #B91C1C;
     color: #FFFFFF;
   }
 
@@ -3171,13 +3175,24 @@ const pageStyles = `
     background: currentColor;
   }
 
-  /* SIGNATURE BOTTOM ACCENT (JOEYLENE RIVERA STYLE) */
+  /* SIGNATURE BOTTOM CRADLE ACCENT (JOEYLENE RIVERA EXACT STYLE - PLAIN RED) */
   .mbfp-roster-card-bottom-accent {
-    height: 10px;
+    position: relative;
     width: 100%;
-    background: linear-gradient(90deg, #B91C1C 0%, #0F172A 100%);
+    height: 34px;
+    background: #B91C1C;
     border-radius: 0 0 24px 24px;
+    padding: 0 8px 12px 8px;
     margin-top: auto;
+    display: flex;
+    box-sizing: border-box;
+  }
+
+  .mbfp-roster-card-cradle-inner {
+    width: 100%;
+    height: 100%;
+    background: #FFFFFF;
+    border-radius: 0 0 16px 16px;
   }
 
   /* SKELETON SHIMMER (CIRCULAR AVATAR SKELETON) */
