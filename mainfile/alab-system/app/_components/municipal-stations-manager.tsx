@@ -74,6 +74,92 @@ export function MunicipalStationsManager() {
   const [issuedOfficerStation, setIssuedOfficerStation] = useState("");
   const [issuedCopied, setIssuedCopied] = useState(false);
 
+  // Edit Officer Modal State
+  const [editingResponder, setEditingResponder] = useState<StationResponder | null>(null);
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [editRank, setEditRank] = useState("FO1");
+  const [editStationId, setEditStationId] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  const openEditOfficer = (responder: StationResponder) => {
+    setEditingResponder(responder);
+    setEditDisplayName(responder.displayName || "");
+    setEditRank(responder.rankOrPosition || "FO1");
+    setEditStationId(selectedRosterStation?.id || "");
+    setEditError("");
+  };
+
+  const closeEditOfficer = () => {
+    if (editSaving) return;
+    setEditingResponder(null);
+    setEditError("");
+  };
+
+  const submitEditOfficer = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!editingResponder) return;
+    setEditSaving(true);
+    setEditError("");
+
+    try {
+      const response = await fetch(`/api/municipal-bfp/personnel/${editingResponder.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update-details",
+          displayName: editDisplayName.trim(),
+          rankOrPosition: editRank.trim() || undefined,
+          stationId: editStationId || undefined,
+        }),
+      });
+
+      const result = (await response.json()) as { error?: string };
+      setEditSaving(false);
+
+      if (!response.ok) {
+        setEditError(result.error ?? "Unable to update officer profile.");
+        return;
+      }
+
+      // Optimistically update local roster cards
+      setRosterResponders((prev) =>
+        prev.map((r) =>
+          r.id === editingResponder.id
+            ? {
+                ...r,
+                displayName: editDisplayName.trim(),
+                rankOrPosition: editRank.trim(),
+              }
+            : r
+        )
+      );
+
+      // Also update personnel list
+      setPersonnelList((prev) =>
+        prev.map((p) =>
+          p.userId === editingResponder.id
+            ? {
+                ...p,
+                displayName: editDisplayName.trim(),
+              }
+            : p
+        )
+      );
+
+      setEditingResponder(null);
+
+      // Refresh in background
+      if (selectedRosterStation) {
+        void openStationRoster(selectedRosterStation);
+      }
+      void load();
+    } catch {
+      setEditSaving(false);
+      setEditError("Network error: Failed to update officer profile.");
+    }
+  };
+
   const generateTemporaryPassword = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
     let pass = "Bfp#";
@@ -582,22 +668,48 @@ export function MunicipalStationsManager() {
                   .toUpperCase() || "BFP";
 
                 return (
-                  <div className="mbfp-roster-card" key={responder.id}>
+                  <div
+                    className="mbfp-roster-card"
+                    key={responder.id}
+                    onClick={() => openEditOfficer(responder)}
+                    role="button"
+                    tabIndex={0}
+                    title={`Click to edit ${responder.displayName}'s name or position`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openEditOfficer(responder);
+                      }
+                    }}
+                  >
                     {/* TOP HEADER: BADGES & CENTERED CIRCULAR AVATAR (JOEYLENE RIVERA STYLE) */}
                     <div className="mbfp-roster-card-top">
                       <div className="mbfp-roster-top-bar">
                         <div className="mbfp-roster-top-emblem" title="BFP Fire Responder">
                           <i className="fa-solid fa-shield-halved" />
                         </div>
-                        <span className={`mbfp-roster-duty-pill ${responder.dutyStatus?.toLowerCase() || "standby"}`}>
-                          {responder.dutyStatus === "DISPATCHED" ? (
-                            <>🚨 Dispatched</>
-                          ) : responder.dutyStatus === "ON_DUTY" ? (
-                            <>Active Duty</>
-                          ) : (
-                            <>Standby</>
-                          )}
-                        </span>
+                        <div className="mbfp-roster-top-right-group">
+                          <span className={`mbfp-roster-duty-pill ${responder.dutyStatus?.toLowerCase() || "standby"}`}>
+                            {responder.dutyStatus === "DISPATCHED" ? (
+                              <>🚨 Dispatched</>
+                            ) : responder.dutyStatus === "ON_DUTY" ? (
+                              <>Active Duty</>
+                            ) : (
+                              <>Standby</>
+                            )}
+                          </span>
+                          <button
+                            type="button"
+                            className="mbfp-roster-card-edit-btn"
+                            title="Edit officer name & position"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditOfficer(responder);
+                            }}
+                          >
+                            <i className="fa-solid fa-pen" />
+                          </button>
+                        </div>
                       </div>
 
                       {/* CENTERED AVATAR WITH ORBIT RING */}
@@ -1509,6 +1621,189 @@ export function MunicipalStationsManager() {
                 <span>Done</span>
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* =========================================================================
+          EDIT OFFICER PROFILE MODAL (PORTAL TO DOCUMENT.BODY)
+          ========================================================================= */}
+      {mounted && editingResponder && createPortal(
+        <div
+          className="mbfp-modal-overlay"
+          onClick={closeEditOfficer}
+          role="presentation"
+        >
+          <div
+            className="mbfp-modal-content mbfp-edit-officer-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-officer-title"
+          >
+            {/* HERO HEADER */}
+            <div className="mbfp-modal-header mbfp-edit-header">
+              <div className="mbfp-modal-header-hero">
+                <div className="mbfp-modal-badge-glow edit">
+                  <i className="fa-solid fa-user-pen" />
+                </div>
+                <div className="mbfp-modal-header-text">
+                  <h2 id="edit-officer-title">Edit Officer Profile</h2>
+                  <p>Update personnel name, rank, and station assignment.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="mbfp-modal-close"
+                onClick={closeEditOfficer}
+                aria-label="Close edit dialog"
+                disabled={editSaving}
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+            </div>
+
+            <form onSubmit={submitEditOfficer}>
+              <div className="mbfp-modal-body">
+                {editError && (
+                  <div className="mbfp-modal-alert">
+                    <i className="fa-solid fa-triangle-exclamation" />
+                    <span>{editError}</span>
+                  </div>
+                )}
+
+                {/* READ-ONLY ACCOUNT SUMMARY CHIP */}
+                <div className="mbfp-edit-account-preview">
+                  <div className="mbfp-edit-avatar-thumb">
+                    {editingResponder.profilePhotoUrl ? (
+                      <img src={editingResponder.profilePhotoUrl} alt="" className="mbfp-edit-thumb-img" />
+                    ) : (
+                      <i className="fa-solid fa-user-shield" />
+                    )}
+                  </div>
+                  <div className="mbfp-edit-account-meta">
+                    <span className="mbfp-edit-account-email text-mono">{editingResponder.email || "Official BFP Account"}</span>
+                    <span className="mbfp-edit-account-status">
+                      <span className="mbfp-status-pulse" /> {editingResponder.dutyStatus === "DISPATCHED" ? "Dispatched" : editingResponder.dutyStatus === "ON_DUTY" ? "Active Duty" : "Standby"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* FULL NAME */}
+                <div className="mbfp-form-group">
+                  <label htmlFor="edit-display-name">
+                    Officer Full Name <span className="mbfp-required">*</span>
+                  </label>
+                  <div className="mbfp-input-icon-wrap">
+                    <i className="fa-solid fa-user" />
+                    <input
+                      id="edit-display-name"
+                      required
+                      type="text"
+                      className="mbfp-form-input with-icon"
+                      placeholder="e.g. Khing Jay Regala"
+                      value={editDisplayName}
+                      onChange={(e) => setEditDisplayName(e.target.value)}
+                      disabled={editSaving}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* RANK / POSITION WITH QUICK-SELECT CHIPS */}
+                <div className="mbfp-form-group">
+                  <div className="mbfp-label-with-hint">
+                    <label htmlFor="edit-rank">
+                      Rank / Position <span className="mbfp-required">*</span>
+                    </label>
+                    <span className="mbfp-hint-pill">Tap to select rank</span>
+                  </div>
+                  <div className="mbfp-input-icon-wrap">
+                    <i className="fa-solid fa-award" />
+                    <input
+                      id="edit-rank"
+                      required
+                      type="text"
+                      className="mbfp-form-input with-icon"
+                      placeholder="e.g. FO1, FO2, SFO1"
+                      value={editRank}
+                      onChange={(e) => setEditRank(e.target.value)}
+                      disabled={editSaving}
+                    />
+                  </div>
+                  <div className="mbfp-quick-ranks">
+                    {["FO1", "FO2", "FO3", "SFO1", "SFO2", "SFO3", "SFO4", "Insp"].map((rank) => (
+                      <button
+                        key={rank}
+                        type="button"
+                        className={`mbfp-rank-chip ${editRank === rank ? "active" : ""}`}
+                        onClick={() => setEditRank(rank)}
+                        disabled={editSaving}
+                      >
+                        {rank}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* STATION ASSIGNMENT DROPDOWN */}
+                <div className="mbfp-form-group">
+                  <label htmlFor="edit-station-select">
+                    Station Assignment <span className="mbfp-required">*</span>
+                  </label>
+                  <div className="mbfp-input-icon-wrap">
+                    <i className="fa-solid fa-building-shield" />
+                    <select
+                      id="edit-station-select"
+                      required
+                      className="mbfp-form-input with-icon"
+                      value={editStationId}
+                      onChange={(e) => setEditStationId(e.target.value)}
+                      disabled={editSaving}
+                    >
+                      {stations
+                        .filter((s) => s.status === "ACTIVE")
+                        .map((station) => (
+                          <option key={station.id} value={station.id}>
+                            {parseStationName(station.stationName).name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* MOBILE SYNC NOTICE */}
+                <div className="mbfp-sync-notice">
+                  <i className="fa-solid fa-mobile-screen-button" />
+                  <span>Updates to name and position will immediately sync and reflect on the officer&apos;s mobile app and municipal records.</span>
+                </div>
+              </div>
+
+              <div className="mbfp-modal-footer">
+                <button
+                  type="button"
+                  className="mbfp-cancel-btn"
+                  onClick={closeEditOfficer}
+                  disabled={editSaving}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="mbfp-submit-btn" disabled={editSaving}>
+                  {editSaving ? (
+                    <>
+                      <i className="fa-solid fa-circle-notch fa-spin" />
+                      <span>Saving Changes…</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-check" />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>,
         document.body
@@ -2837,28 +3132,29 @@ const pageStyles = `
     border-color: #FECDD3;
   }
 
-  /* ================= ROSTER PERSONNEL CARDS (JOEYLENE RIVERA REDESIGN) ================= */
+  /* ================= ROSTER PERSONNEL CARDS (JOEYLENE RIVERA REDESIGN - ENLARGED) ================= */
   .mbfp-roster-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 310px));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 360px));
+    gap: 18px;
   }
 
   .mbfp-roster-card {
     background: #FFFFFF;
-    border-radius: 24px;
+    border-radius: 28px;
     box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
     border: 1px solid #F1F5F9;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     position: relative;
+    cursor: pointer;
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s;
   }
 
   .mbfp-roster-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 36px rgba(185, 28, 28, 0.12), 0 4px 12px rgba(15, 23, 42, 0.06);
+    transform: translateY(-5px);
+    box-shadow: 0 20px 42px rgba(185, 28, 28, 0.16), 0 6px 16px rgba(15, 23, 42, 0.08);
     border-color: #FECDD3;
   }
 
@@ -2866,9 +3162,9 @@ const pageStyles = `
   .mbfp-roster-card-top {
     position: relative;
     width: 100%;
-    padding: 16px 16px 8px;
+    padding: 18px 20px 10px;
     background: #FFFFFF;
-    border-top: 3.5px solid #B91C1C;
+    border-top: 4px solid #B91C1C;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2924,20 +3220,20 @@ const pageStyles = `
     border: 1px solid #FDE68A;
   }
 
-  /* AVATAR ORBIT & CIRCLE (JOEYLENE RIVERA STYLE) */
+  /* AVATAR ORBIT & CIRCLE (JOEYLENE RIVERA STYLE - ENLARGED) */
   .mbfp-roster-avatar-orbit {
     position: relative;
-    width: 116px;
-    height: 116px;
+    width: 132px;
+    height: 132px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 4px auto 6px;
+    margin: 6px auto 8px;
   }
 
   .mbfp-roster-avatar-ring {
     position: absolute;
-    inset: -3px;
+    inset: -4px;
     border-radius: 50%;
     border: 2.5px solid transparent;
     border-top-color: #B91C1C;
@@ -2948,11 +3244,11 @@ const pageStyles = `
   }
 
   .mbfp-roster-avatar-circle {
-    width: 106px;
-    height: 106px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
-    border: 3.5px solid #FFFFFF;
-    box-shadow: 0 8px 24px rgba(185, 28, 28, 0.16);
+    border: 4px solid #FFFFFF;
+    box-shadow: 0 8px 26px rgba(185, 28, 28, 0.18);
     overflow: hidden;
     background: #B91C1C;
     position: relative;
@@ -2984,21 +3280,21 @@ const pageStyles = `
   }
 
   .mbfp-roster-fallback-shield {
-    font-size: 1.8rem;
+    font-size: 2.1rem;
     opacity: 0.9;
     color: rgba(255, 255, 255, 0.95);
   }
 
   .mbfp-roster-initials {
-    font-size: 1.25rem;
+    font-size: 1.4rem;
     font-weight: 800;
     letter-spacing: 0.05em;
     color: #FFFFFF;
   }
 
-  /* CARD BODY & CENTERED IDENTITY */
+  /* CARD BODY & CENTERED IDENTITY (ENLARGED) */
   .mbfp-roster-card-body {
-    padding: 0 16px 14px;
+    padding: 0 20px 8px;
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -3010,52 +3306,52 @@ const pageStyles = `
   }
 
   .mbfp-roster-profile-name {
-    font-size: 1.12rem;
+    font-size: 1.25rem;
     font-weight: 800;
     color: #0F172A;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
     margin: 0;
     line-height: 1.3;
   }
 
   .mbfp-roster-verified {
     color: #2563EB;
-    font-size: 0.95rem;
+    font-size: 1rem;
   }
 
   .mbfp-roster-profile-role {
-    font-size: 0.84rem;
+    font-size: 0.92rem;
     font-weight: 750;
     color: #B91C1C;
-    margin-top: 2px;
+    margin-top: 3px;
   }
 
   .mbfp-roster-profile-station {
-    font-size: 0.75rem;
+    font-size: 0.82rem;
     font-weight: 500;
     color: #64748B;
-    margin-top: 1px;
+    margin-top: 2px;
   }
 
-  /* CENTERED EMAIL PILL BUTTON (JOEYLENE RIVERA STYLE) */
+  /* CENTERED EMAIL PILL BUTTON */
   .mbfp-roster-email-pill-wrap {
     display: flex;
     justify-content: center;
-    margin: 8px 0 14px;
+    margin: 10px 0 16px;
   }
 
   .mbfp-roster-email-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.55rem;
     background: #0F172A;
     color: #FFFFFF;
-    padding: 0.44rem 1.05rem;
+    padding: 0.5rem 1.2rem;
     border-radius: 9999px;
-    font-size: 0.76rem;
+    font-size: 0.82rem;
     font-weight: 600;
     border: none;
     cursor: pointer;
@@ -3074,7 +3370,7 @@ const pageStyles = `
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 180px;
+    max-width: 200px;
   }
 
   /* DETAILS LIST */
@@ -3088,10 +3384,10 @@ const pageStyles = `
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.36rem 0;
+    padding: 0.44rem 0;
     border-bottom: 1px solid #F1F5F9;
-    font-size: 0.76rem;
-    gap: 0.5rem;
+    font-size: 0.82rem;
+    gap: 0.6rem;
   }
 
   .mbfp-roster-detail:last-child {
@@ -3101,12 +3397,14 @@ const pageStyles = `
   .mbfp-roster-detail-label {
     color: #64748B;
     font-weight: 600;
+    font-size: 0.8rem;
     flex-shrink: 0;
   }
 
   .mbfp-roster-detail-value {
     color: #0F172A;
     font-weight: 700;
+    font-size: 0.84rem;
     text-align: right;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3114,7 +3412,7 @@ const pageStyles = `
   }
 
   .mbfp-roster-detail-value.email-value {
-    max-width: 160px;
+    max-width: 180px;
   }
 
   .mbfp-roster-detail-value .email-text {
@@ -3127,9 +3425,9 @@ const pageStyles = `
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.18rem 0.5rem;
+    padding: 0.2rem 0.55rem;
     border-radius: 9999px;
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     font-weight: 700;
   }
 
@@ -3152,9 +3450,9 @@ const pageStyles = `
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.18rem 0.5rem;
+    padding: 0.2rem 0.55rem;
     border-radius: 1rem;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 700;
   }
 
@@ -3179,10 +3477,10 @@ const pageStyles = `
   .mbfp-roster-card-bottom-accent {
     position: relative;
     width: 100%;
-    height: 34px;
+    height: 38px;
     background: #B91C1C;
-    border-radius: 0 0 24px 24px;
-    padding: 0 8px 12px 8px;
+    border-radius: 0 0 28px 28px;
+    padding: 0 10px 14px 10px;
     margin-top: auto;
     display: flex;
     box-sizing: border-box;
@@ -3192,7 +3490,129 @@ const pageStyles = `
     width: 100%;
     height: 100%;
     background: #FFFFFF;
-    border-radius: 0 0 16px 16px;
+    border-radius: 0 0 18px 18px;
+  }
+
+  /* TOP RIGHT GROUP WITH EDIT BUTTON */
+  .mbfp-roster-top-right-group {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .mbfp-roster-card-edit-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #FFF1F2;
+    border: 1px solid #FECDD3;
+    color: #B91C1C;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mbfp-roster-card:hover .mbfp-roster-card-edit-btn {
+    background: #B91C1C;
+    color: #FFFFFF;
+    border-color: #B91C1C;
+    transform: scale(1.08);
+  }
+
+  /* EDIT OFFICER MODAL */
+  .mbfp-edit-officer-modal {
+    max-width: 520px;
+    width: 100%;
+    border-radius: 20px;
+    background: #FFFFFF;
+    box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+    animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mbfp-edit-header {
+    background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 100%);
+    border-top: 4px solid #B91C1C;
+    padding: 1.4rem 1.6rem 1.15rem;
+    border-bottom: 1px solid #F1F5F9;
+  }
+
+  .mbfp-modal-badge-glow.edit {
+    background: linear-gradient(135deg, #B91C1C 0%, #DC2626 100%);
+  }
+
+  .mbfp-edit-account-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.75rem 0.95rem;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+  }
+
+  .mbfp-edit-avatar-thumb {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #B91C1C;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .mbfp-edit-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .mbfp-edit-account-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .mbfp-edit-account-email {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #0F172A;
+  }
+
+  .mbfp-edit-account-status {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #059669;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .mbfp-sync-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.75rem 0.95rem;
+    background: #EFF6FF;
+    border: 1px solid #DBEAFE;
+    border-radius: 10px;
+    font-size: 0.76rem;
+    color: #1E40AF;
+    line-height: 1.45;
+  }
+
+  .mbfp-sync-notice i {
+    font-size: 1rem;
+    color: #2563EB;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
   }
 
   /* SKELETON SHIMMER (CIRCULAR AVATAR SKELETON) */

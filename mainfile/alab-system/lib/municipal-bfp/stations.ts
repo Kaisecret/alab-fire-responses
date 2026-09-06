@@ -275,3 +275,84 @@ export async function setMunicipalPersonnelStatus(actorUserId: string, municipal
     );
   });
 }
+
+export async function updateMunicipalPersonnelDetails(
+  actorUserId: string,
+  municipalityId: string,
+  personnelUserIdInput: unknown,
+  rawInput: { displayName?: unknown; rankOrPosition?: unknown; stationId?: unknown }
+) {
+  const personnelUserId = uuid(personnelUserIdInput);
+  const displayName = text(rawInput.displayName, 100);
+  const rankOrPosition = text(rawInput.rankOrPosition, 100) || null;
+  const targetStationId = rawInput.stationId ? uuid(rawInput.stationId) : null;
+  if (!personnelUserId || displayName.length < 2) throw new Error("INVALID_PERSONNEL_INPUT");
+
+  const now = new Date();
+  return withTransaction(async (client) => {
+    const personnel = await client.query<{ profileId: string; currentStationId: string | null }>(
+      `select p.id as "profileId", sa.station_id as "currentStationId"
+         from users u
+         join bfp_personnel_profiles p on p.user_id = u.id
+         join bfp_municipality_assignments ma on ma.personnel_profile_id = p.id and ma.status = 'ACTIVE'
+         left join bfp_station_assignments sa on sa.personnel_profile_id = p.id and sa.status = 'ACTIVE'
+        where u.id = $1 and ma.municipality_id = $2 and ma.assignment_role = 'MUNICIPAL_STAFF'
+        for update`,
+      [personnelUserId, municipalityId],
+    );
+    if (!personnel.rowCount) throw new Error("INVALID_PERSONNEL");
+
+    const profileId = personnel.rows[0].profileId;
+
+    // 1. Update Display Name and Rank/Position in personnel profile
+    await client.query(
+      `update bfp_personnel_profiles
+          set display_name = $1,
+              rank_or_position = $2,
+              updated_at = $3
+        where id = $4`,
+      [displayName, rankOrPosition, now, profileId],
+    );
+
+    // 2. Transfer station if a new valid station is chosen
+    if (targetStationId && targetStationId !== personnel.rows[0].currentStationId) {
+      const station = await client.query<{ stationName: string }>(
+        "select station_name as \"stationName\" from municipal_bfp_stations where id = $1 and municipality_id = $2 and status = 'ACTIVE'",
+        [targetStationId, municipalityId],
+      );
+      if (!station.rowCount) throw new Error("INVALID_STATION");
+
+      await client.query(
+        `update bfp_station_assignments
+            set status = 'REVOKED', revoked_by_user_id = $1, revoked_at = $2, updated_at = $2
+          where personnel_profile_id = $3 and status = 'ACTIVE'`,
+        [actorUserId, now, profileId],
+      );
+      await client.query(
+        `insert into bfp_station_assignments (personnel_profile_id, station_id, status, assigned_by_user_id, assigned_at, created_at, updated_at)
+         values ($1, $2, 'ACTIVE', $3, $4, $4, $4)`,
+        [profileId, targetStationId, actorUserId, now],
+      );
+    }
+
+    // 3. Log audit event
+    await client.query(
+      `insert into bfp_credential_events (target_user_id, actor_user_id, event_type, metadata, created_at)
+       values ($1, $2, 'PROFILE_UPDATED', $3::jsonb, $4)`,
+      [
+        personnelUserId,
+        actorUserId,
+        JSON.stringify({ municipalityId, displayName, rankOrPosition, targetStationId }),
+        now,
+      ],
+    );
+
+    return {
+      userId: personnelUserId,
+      displayName,
+      rankOrPosition,
+      stationId: targetStationId || personnel.rows[0].currentStationId,
+    };
+  });
+}
+
