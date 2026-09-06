@@ -30,6 +30,10 @@ test("municipal stations manager opens assigned responder cards on station click
   assert.match(manager, /openStationRoster\(station\)/);
   assert.match(manager, /View Personnel/);
   assert.match(manager, /params\.get\("stationId"\)/);
+  assert.match(manager, /mbfp-roster-screen-view/);
+  assert.match(manager, /Back to Stations/);
+  assert.match(manager, /closeStationRoster/);
+  assert.match(manager, /mbfp-station-hero-card/);
   assert.match(manager, /mbfp-roster-grid/);
   assert.match(manager, /mbfp-roster-card/);
   assert.match(manager, /mbfp-roster-card-top/);
@@ -48,4 +52,6 @@ test("municipal stations manager opens assigned responder cards on station click
   assert.doesNotMatch(manager, /\.mbfp-roster-card-top\s*\{[^}]*#16A34A/);
   assert.match(manager, /mbfp-roster-skeleton/);
   assert.match(manager, /mbfpShimmer/);
+  // Ensure roster is NOT rendered inside a modal overlay popup
+  assert.doesNotMatch(manager, /className="mbfp-modal-overlay"[^>]*setSelectedRosterStation/);
 });

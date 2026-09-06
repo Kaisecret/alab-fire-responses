@@ -85,6 +85,12 @@ export function MunicipalStationsManager() {
     setRosterError("");
     setRosterLoading(true);
 
+    if (typeof window !== "undefined") {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set("stationId", station.id);
+      window.history.pushState({ stationId: station.id }, "", currentUrl.toString());
+    }
+
     try {
       const response = await fetch(`/api/municipal-bfp/stations/${station.id}/responders`, {
         cache: "no-store",
@@ -101,6 +107,15 @@ export function MunicipalStationsManager() {
       setRosterResponders([]);
     } finally {
       setRosterLoading(false);
+    }
+  };
+
+  const closeStationRoster = () => {
+    setSelectedRosterStation(null);
+    if (typeof window !== "undefined") {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.delete("stationId");
+      window.history.pushState({}, "", currentUrl.pathname);
     }
   };
 
@@ -212,13 +227,29 @@ export function MunicipalStationsManager() {
     if (typeof window !== "undefined" && stations.length > 0) {
       const params = new URLSearchParams(window.location.search);
       const targetStationId = params.get("stationId");
-      if (targetStationId && !selectedRosterStation) {
+      if (targetStationId && (!selectedRosterStation || selectedRosterStation.id !== targetStationId)) {
         const target = stations.find((s) => s.id === targetStationId);
         if (target) {
           void openStationRoster(target);
         }
       }
     }
+
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const targetStationId = params.get("stationId");
+      if (targetStationId && stations.length > 0) {
+        const found = stations.find((s) => s.id === targetStationId);
+        if (found) {
+          void openStationRoster(found);
+          return;
+        }
+      }
+      setSelectedRosterStation(null);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, [stations, selectedRosterStation]);
 
   // Filtered assigned responders inside the Roster modal
@@ -239,6 +270,356 @@ export function MunicipalStationsManager() {
       return matchesSearch && matchesStatus;
     });
   }, [rosterResponders, rosterSearch, rosterStatusFilter]);
+
+  if (selectedRosterStation) {
+    const parsed = parseStationName(selectedRosterStation.stationName);
+    const onDutyCount = rosterResponders.filter(
+      (r) => r.dutyStatus === "ON_DUTY" || r.dutyStatus === "DISPATCHED"
+    ).length;
+    const standbyCount = rosterResponders.filter((r) => r.dutyStatus === "STANDBY").length;
+
+    return (
+      <section className="mbfp-stations-page mbfp-roster-screen-view">
+        <style>{pageStyles}</style>
+
+        {/* TOP NAVIGATION: BACK BUTTON & BREADCRUMBS */}
+        <div className="mbfp-roster-nav-bar">
+          <button
+            type="button"
+            className="mbfp-back-button"
+            onClick={closeStationRoster}
+            aria-label="Back to Stations"
+          >
+            <i className="fa-solid fa-arrow-left" />
+            <span>Back to Stations</span>
+          </button>
+
+          <nav className="mbfp-roster-breadcrumbs" aria-label="Breadcrumb navigation">
+            <button
+              type="button"
+              className="mbfp-breadcrumb-link"
+              onClick={closeStationRoster}
+            >
+              Stations
+            </button>
+            <i className="fa-solid fa-chevron-right mbfp-breadcrumb-sep" />
+            <span className="mbfp-breadcrumb-current">{parsed.name}</span>
+            <i className="fa-solid fa-chevron-right mbfp-breadcrumb-sep" />
+            <span className="mbfp-breadcrumb-tag">Assigned Responders</span>
+          </nav>
+        </div>
+
+        {/* STATION COMMAND HERO CARD */}
+        <div className="mbfp-station-hero-card">
+          <div className="mbfp-station-hero-main">
+            <div className="mbfp-station-hero-icon">
+              <i className="fa-solid fa-building-shield" />
+            </div>
+            <div className="mbfp-station-hero-details">
+              <div className="mbfp-roster-station-kicker">
+                <span className="mbfp-roster-pulse-dot" />
+                <span>Station Personnel Roster</span>
+              </div>
+              <h1 className="mbfp-roster-station-title">
+                {parsed.name}
+              </h1>
+              <div className="mbfp-roster-station-meta">
+                {parsed.head ? (
+                  <span className="mbfp-roster-station-head">
+                    <i className="fa-solid fa-user-tie" /> Station Head: <strong>{parsed.head}</strong>
+                  </span>
+                ) : (
+                  <span className="mbfp-roster-station-head">Municipal BFP Command Unit</span>
+                )}
+                <span className="mbfp-meta-sep">·</span>
+                <span className={`mbfp-status-pill small ${selectedRosterStation.status.toLowerCase()}`}>
+                  {selectedRosterStation.status === "ACTIVE" ? "Active Station" : "Inactive"}
+                </span>
+                <span className="mbfp-meta-sep">·</span>
+                <span className="mbfp-roster-count-pill">
+                  <i className="fa-solid fa-users" /> {rosterResponders.length} Assigned {rosterResponders.length === 1 ? "Responder" : "Responders"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mbfp-station-hero-stats">
+            <div className="mbfp-hero-stat-card">
+              <span className="mbfp-hero-stat-val">{rosterResponders.length}</span>
+              <span className="mbfp-hero-stat-lbl">Total Personnel</span>
+            </div>
+            <div className="mbfp-hero-stat-card on-duty">
+              <span className="mbfp-hero-stat-val">
+                <span className="mbfp-stat-dot on-duty" />
+                {onDutyCount}
+              </span>
+              <span className="mbfp-hero-stat-lbl">On Duty / Dispatched</span>
+            </div>
+            <div className="mbfp-hero-stat-card standby">
+              <span className="mbfp-hero-stat-val">
+                <span className="mbfp-stat-dot standby" />
+                {standbyCount}
+              </span>
+              <span className="mbfp-hero-stat-lbl">Standby</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ERROR ALERT */}
+        {rosterError && (
+          <div className="mbfp-roster-alert">
+            <i className="fa-solid fa-triangle-exclamation" />
+            <span>{rosterError}</span>
+          </div>
+        )}
+
+        {/* ROSTER TOOLBAR: SEARCH, STATUS FILTERS, AND DIRECTORY LINK */}
+        <div className="mbfp-roster-toolbar">
+          <div className="mbfp-roster-search">
+            <i className="fa-solid fa-magnifying-glass" />
+            <input
+              type="text"
+              placeholder="Search assigned personnel by name, rank, or email…"
+              value={rosterSearch}
+              onChange={(e) => setRosterSearch(e.target.value)}
+            />
+            {rosterSearch && (
+              <button
+                type="button"
+                className="mbfp-search-clear"
+                onClick={() => setRosterSearch("")}
+                aria-label="Clear search"
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+            )}
+          </div>
+
+          <div className="mbfp-roster-filter-pills">
+            <button
+              type="button"
+              className={`mbfp-pill-btn ${rosterStatusFilter === "ALL" ? "active" : ""}`}
+              onClick={() => setRosterStatusFilter("ALL")}
+            >
+              All ({rosterResponders.length})
+            </button>
+            <button
+              type="button"
+              className={`mbfp-pill-btn ${rosterStatusFilter === "ON_DUTY" ? "active" : ""}`}
+              onClick={() => setRosterStatusFilter("ON_DUTY")}
+            >
+              On Duty ({onDutyCount})
+            </button>
+            <button
+              type="button"
+              className={`mbfp-pill-btn ${rosterStatusFilter === "STANDBY" ? "active" : ""}`}
+              onClick={() => setRosterStatusFilter("STANDBY")}
+            >
+              Standby ({standbyCount})
+            </button>
+          </div>
+
+          <a href="/municipal-bfp/responders" className="mbfp-roster-manage-btn">
+            <i className="fa-solid fa-user-gear" />
+            <span>Manage Personnel</span>
+          </a>
+        </div>
+
+        {/* ROSTER SCREEN CONTENT: CARDS GRID */}
+        <div className="mbfp-roster-screen-content">
+          {/* SKELETON LOADING STATE */}
+          {rosterLoading ? (
+            <div className="mbfp-roster-grid">
+              {[1, 2, 3, 4].map((n) => (
+                <div className="mbfp-roster-card mbfp-roster-skeleton" key={n}>
+                  <div className="mbfp-roster-card-top skeleton-top">
+                    <div className="mbfp-skeleton-avatar" />
+                    <div className="mbfp-skeleton-meta">
+                      <div className="mbfp-skeleton-line short" />
+                      <div className="mbfp-skeleton-line tiny" />
+                    </div>
+                  </div>
+                  <div className="mbfp-roster-card-body">
+                    <div className="mbfp-skeleton-row" />
+                    <div className="mbfp-skeleton-row" />
+                    <div className="mbfp-skeleton-row" />
+                    <div className="mbfp-skeleton-row" />
+                    <div className="mbfp-skeleton-row" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredRosterResponders.length > 0 ? (
+            <div className="mbfp-roster-grid">
+              {filteredRosterResponders.map((responder) => {
+                const initials = responder.displayName
+                  .split(" ")
+                  .map((p) => p[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase() || "BFP";
+
+                return (
+                  <div className="mbfp-roster-card" key={responder.id}>
+                    {/* TOP HEADER - BFP CRIMSON GRADIENT (STRICTLY NOT GREEN) */}
+                    <div className="mbfp-roster-card-top">
+                      <div className="mbfp-roster-avatar-wrap">
+                        {responder.profilePhotoUrl ? (
+                          <img
+                            src={responder.profilePhotoUrl}
+                            alt={responder.displayName}
+                            className="mbfp-roster-avatar-img"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                              const fallback = e.currentTarget.parentElement?.querySelector(".mbfp-roster-avatar-fallback");
+                              if (fallback) (fallback as HTMLElement).style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className="mbfp-roster-avatar-fallback"
+                          style={{ display: responder.profilePhotoUrl ? "none" : "flex" }}
+                        >
+                          <span className="mbfp-roster-initials">{initials}</span>
+                        </div>
+                        {responder.mobilePlatform && (
+                          <span
+                            className="mbfp-roster-online-dot"
+                            title={`Active on ${responder.mobilePlatform} App`}
+                          />
+                        )}
+                      </div>
+                      <div className="mbfp-roster-top-meta">
+                        <div className="mbfp-roster-card-name" title={responder.displayName}>
+                          {responder.displayName}
+                        </div>
+                        <div className="mbfp-roster-card-type">
+                          {responder.rankOrPosition || "BFP Fire Responder"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* BODY DETAILS - EXACT WATER SOURCES CARD KEY-VALUE STRUCTURE */}
+                    <div className="mbfp-roster-card-body">
+                      <div className="mbfp-roster-detail">
+                        <span className="mbfp-roster-detail-label">Rank / Position</span>
+                        <span className="mbfp-roster-detail-value">{responder.rankOrPosition || "Fire Officer"}</span>
+                      </div>
+                      <div className="mbfp-roster-detail">
+                        <span className="mbfp-roster-detail-label">Official Email</span>
+                        <span className="mbfp-roster-detail-value email-value" title={responder.email}>
+                          <span className="email-text">{responder.email || "—"}</span>
+                          {responder.email && (
+                            <button
+                              type="button"
+                              className="mbfp-roster-copy-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyEmail(responder.email!, responder.id);
+                              }}
+                              title="Copy email address"
+                            >
+                              <i className={`fa-solid ${copiedEmailId === responder.id ? "fa-check text-green-500" : "fa-copy"}`} />
+                            </button>
+                          )}
+                        </span>
+                      </div>
+                      <div className="mbfp-roster-detail">
+                        <span className="mbfp-roster-detail-label">Station Assignment</span>
+                        <span className="mbfp-roster-detail-value">{parsed.name}</span>
+                      </div>
+                      <div className="mbfp-roster-detail">
+                        <span className="mbfp-roster-detail-label">Duty Status</span>
+                        <span className={`mbfp-roster-duty-badge ${responder.dutyStatus?.toLowerCase() || "standby"}`}>
+                          {responder.dutyStatus === "DISPATCHED" ? (
+                            <>🚨 Dispatched</>
+                          ) : responder.dutyStatus === "ON_DUTY" ? (
+                            <>Active Duty</>
+                          ) : (
+                            <>Standby</>
+                          )}
+                        </span>
+                      </div>
+                      <div className="mbfp-roster-detail">
+                        <span className="mbfp-roster-detail-label">Mobile App</span>
+                        <span className="mbfp-roster-detail-value">
+                          {responder.mobilePlatform ? (
+                            <span className="mbfp-roster-app-tag">
+                              <i className={responder.mobilePlatform === "IOS" ? "fa-brands fa-apple" : "fa-brands fa-android"} />
+                              <span>{responder.mobilePlatform === "IOS" ? "iOS App" : "Android App"}</span>
+                            </span>
+                          ) : (
+                            <span className="mbfp-roster-unregistered">Registered</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="mbfp-roster-detail">
+                        <span className="mbfp-roster-detail-label">Account Status</span>
+                        <span className={`mbfp-roster-status ${responder.accountStatus === "ACTIVE" ? "active" : "inactive"}`}>
+                          <span className="mbfp-roster-status-dot" />
+                          {responder.accountStatus === "ACTIVE" ? "Active" : "Suspended"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mbfp-roster-empty">
+              <div className="mbfp-roster-empty-icon">
+                <i className="fa-solid fa-user-shield" />
+              </div>
+              <h3>
+                {rosterSearch || rosterStatusFilter !== "ALL"
+                  ? "No personnel match your search filter"
+                  : "No responders assigned to this station yet"}
+              </h3>
+              <p>
+                {rosterSearch || rosterStatusFilter !== "ALL"
+                  ? "Try adjusting your search keywords or clear your status filters."
+                  : "Assign official BFP personnel to this station from the Personnel directory."}
+              </p>
+              {rosterSearch || rosterStatusFilter !== "ALL" ? (
+                <button
+                  type="button"
+                  className="mbfp-empty-btn"
+                  onClick={() => {
+                    setRosterSearch("");
+                    setRosterStatusFilter("ALL");
+                  }}
+                >
+                  Clear Filters
+                </button>
+              ) : (
+                <a href="/municipal-bfp/responders" className="mbfp-add-btn">
+                  <i className="fa-solid fa-user-plus" />
+                  <span>Manage Personnel Roster</span>
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* SCREEN FOOTER */}
+        <div className="mbfp-roster-screen-footer">
+          <div className="mbfp-roster-footer-tip">
+            <i className="fa-solid fa-circle-info" />
+            <span>Profiles and photos are synchronized from the ALAB Mobile Responder App.</span>
+          </div>
+          <button
+            type="button"
+            className="mbfp-back-button secondary"
+            onClick={closeStationRoster}
+          >
+            <i className="fa-solid fa-arrow-left" />
+            <span>Back to Stations List</span>
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   const activeCount = stations.filter((s) => s.status === "ACTIVE").length;
   const inactiveCount = stations.filter((s) => s.status === "INACTIVE").length;
@@ -649,314 +1030,6 @@ export function MunicipalStationsManager() {
                     <span>Deactivate Station</span>
                   </>
                 )}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* STATION ROSTER MODAL - ASSIGNED BFP RESPONDERS */}
-      {mounted && selectedRosterStation && createPortal(
-        <div
-          className="mbfp-modal-overlay"
-          onClick={() => setSelectedRosterStation(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="roster-modal-title"
-        >
-          <div
-            className="mbfp-modal-container mbfp-roster-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* MODAL HEADER */}
-            <div className="mbfp-modal-header mbfp-roster-modal-header">
-              <div className="mbfp-modal-title-group">
-                <div className="mbfp-modal-icon mbfp-roster-header-icon">
-                  <i className="fa-solid fa-building-shield" />
-                </div>
-                <div>
-                  <div className="mbfp-roster-station-kicker">
-                    <span className="mbfp-roster-pulse-dot" />
-                    <span>Station Personnel Roster</span>
-                  </div>
-                  <h2 id="roster-modal-title" className="mbfp-roster-station-title">
-                    {parseStationName(selectedRosterStation.stationName).name}
-                  </h2>
-                  <div className="mbfp-roster-station-meta">
-                    {parseStationName(selectedRosterStation.stationName).head ? (
-                      <span className="mbfp-roster-station-head">
-                        <i className="fa-solid fa-user-tie" /> Station Head: <strong>{parseStationName(selectedRosterStation.stationName).head}</strong>
-                      </span>
-                    ) : (
-                      <span className="mbfp-roster-station-head">Municipal BFP Command Unit</span>
-                    )}
-                    <span className="mbfp-meta-sep">·</span>
-                    <span className={`mbfp-status-pill small ${selectedRosterStation.status.toLowerCase()}`}>
-                      {selectedRosterStation.status === "ACTIVE" ? "Active Station" : "Inactive"}
-                    </span>
-                    <span className="mbfp-meta-sep">·</span>
-                    <span className="mbfp-roster-count-pill">
-                      <i className="fa-solid fa-users" /> {rosterResponders.length} Assigned {rosterResponders.length === 1 ? "Responder" : "Responders"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="mbfp-modal-close"
-                onClick={() => setSelectedRosterStation(null)}
-                aria-label="Close roster modal"
-              >
-                <i className="fa-solid fa-xmark" />
-              </button>
-            </div>
-
-            {/* ERROR ALERT */}
-            {rosterError && (
-              <div className="mbfp-roster-alert">
-                <i className="fa-solid fa-triangle-exclamation" />
-                <span>{rosterError}</span>
-              </div>
-            )}
-
-            {/* ROSTER TOOLBAR: SEARCH & STATUS FILTER */}
-            <div className="mbfp-roster-toolbar">
-              <div className="mbfp-roster-search">
-                <i className="fa-solid fa-magnifying-glass" />
-                <input
-                  type="text"
-                  placeholder="Search assigned personnel by name, rank, or email…"
-                  value={rosterSearch}
-                  onChange={(e) => setRosterSearch(e.target.value)}
-                />
-                {rosterSearch && (
-                  <button
-                    type="button"
-                    className="mbfp-search-clear"
-                    onClick={() => setRosterSearch("")}
-                    aria-label="Clear search"
-                  >
-                    <i className="fa-solid fa-xmark" />
-                  </button>
-                )}
-              </div>
-
-              <div className="mbfp-roster-filter-pills">
-                <button
-                  type="button"
-                  className={`mbfp-pill-btn ${rosterStatusFilter === "ALL" ? "active" : ""}`}
-                  onClick={() => setRosterStatusFilter("ALL")}
-                >
-                  All ({rosterResponders.length})
-                </button>
-                <button
-                  type="button"
-                  className={`mbfp-pill-btn ${rosterStatusFilter === "ON_DUTY" ? "active" : ""}`}
-                  onClick={() => setRosterStatusFilter("ON_DUTY")}
-                >
-                  On Duty ({rosterResponders.filter((r) => r.dutyStatus === "ON_DUTY" || r.dutyStatus === "DISPATCHED").length})
-                </button>
-                <button
-                  type="button"
-                  className={`mbfp-pill-btn ${rosterStatusFilter === "STANDBY" ? "active" : ""}`}
-                  onClick={() => setRosterStatusFilter("STANDBY")}
-                >
-                  Standby ({rosterResponders.filter((r) => r.dutyStatus === "STANDBY").length})
-                </button>
-              </div>
-            </div>
-
-            {/* MODAL CONTENT: CARDS GRID */}
-            <div className="mbfp-roster-modal-content">
-              {/* SKELETON LOADING STATE */}
-              {rosterLoading ? (
-                <div className="mbfp-roster-grid">
-                  {[1, 2, 3].map((n) => (
-                    <div className="mbfp-roster-card mbfp-roster-skeleton" key={n}>
-                      <div className="mbfp-roster-card-top skeleton-top">
-                        <div className="mbfp-skeleton-avatar" />
-                        <div className="mbfp-skeleton-meta">
-                          <div className="mbfp-skeleton-line short" />
-                          <div className="mbfp-skeleton-line tiny" />
-                        </div>
-                      </div>
-                      <div className="mbfp-roster-card-body">
-                        <div className="mbfp-skeleton-row" />
-                        <div className="mbfp-skeleton-row" />
-                        <div className="mbfp-skeleton-row" />
-                        <div className="mbfp-skeleton-row" />
-                        <div className="mbfp-skeleton-row" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : filteredRosterResponders.length > 0 ? (
-                <div className="mbfp-roster-grid">
-                  {filteredRosterResponders.map((responder) => {
-                    const parsed = parseStationName(selectedRosterStation.stationName);
-                    const initials = responder.displayName
-                      .split(" ")
-                      .map((p) => p[0])
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase() || "BFP";
-
-                    return (
-                      <div className="mbfp-roster-card" key={responder.id}>
-                        {/* TOP HEADER - BFP CRIMSON GRADIENT (STRICTLY NOT GREEN) */}
-                        <div className="mbfp-roster-card-top">
-                          <div className="mbfp-roster-avatar-wrap">
-                            {responder.profilePhotoUrl ? (
-                              <img
-                                src={responder.profilePhotoUrl}
-                                alt={responder.displayName}
-                                className="mbfp-roster-avatar-img"
-                                onError={(e) => {
-                                  (e.currentTarget as HTMLImageElement).style.display = "none";
-                                  const fallback = e.currentTarget.parentElement?.querySelector(".mbfp-roster-avatar-fallback");
-                                  if (fallback) (fallback as HTMLElement).style.display = "flex";
-                                }}
-                              />
-                            ) : null}
-                            <div
-                              className="mbfp-roster-avatar-fallback"
-                              style={{ display: responder.profilePhotoUrl ? "none" : "flex" }}
-                            >
-                              <span className="mbfp-roster-initials">{initials}</span>
-                            </div>
-                            {responder.mobilePlatform && (
-                              <span
-                                className="mbfp-roster-online-dot"
-                                title={`Active on ${responder.mobilePlatform} App`}
-                              />
-                            )}
-                          </div>
-                          <div className="mbfp-roster-top-meta">
-                            <div className="mbfp-roster-card-name" title={responder.displayName}>
-                              {responder.displayName}
-                            </div>
-                            <div className="mbfp-roster-card-type">
-                              {responder.rankOrPosition || "BFP Fire Responder"}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* BODY DETAILS - EXACT WATER SOURCES CARD KEY-VALUE STRUCTURE */}
-                        <div className="mbfp-roster-card-body">
-                          <div className="mbfp-roster-detail">
-                            <span className="mbfp-roster-detail-label">Rank / Position</span>
-                            <span className="mbfp-roster-detail-value">{responder.rankOrPosition || "Fire Officer"}</span>
-                          </div>
-                          <div className="mbfp-roster-detail">
-                            <span className="mbfp-roster-detail-label">Official Email</span>
-                            <span className="mbfp-roster-detail-value email-value" title={responder.email}>
-                              <span className="email-text">{responder.email || "—"}</span>
-                              {responder.email && (
-                                <button
-                                  type="button"
-                                  className="mbfp-roster-copy-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    copyEmail(responder.email!, responder.id);
-                                  }}
-                                  title="Copy email address"
-                                >
-                                  <i className={`fa-solid ${copiedEmailId === responder.id ? "fa-check text-green-500" : "fa-copy"}`} />
-                                </button>
-                              )}
-                            </span>
-                          </div>
-                          <div className="mbfp-roster-detail">
-                            <span className="mbfp-roster-detail-label">Station Assignment</span>
-                            <span className="mbfp-roster-detail-value">{parsed.name}</span>
-                          </div>
-                          <div className="mbfp-roster-detail">
-                            <span className="mbfp-roster-detail-label">Duty Status</span>
-                            <span className={`mbfp-roster-duty-badge ${responder.dutyStatus?.toLowerCase() || "standby"}`}>
-                              {responder.dutyStatus === "DISPATCHED" ? (
-                                <>🚨 Dispatched</>
-                              ) : responder.dutyStatus === "ON_DUTY" ? (
-                                <>Active Duty</>
-                              ) : (
-                                <>Standby</>
-                              )}
-                            </span>
-                          </div>
-                          <div className="mbfp-roster-detail">
-                            <span className="mbfp-roster-detail-label">Mobile App</span>
-                            <span className="mbfp-roster-detail-value">
-                              {responder.mobilePlatform ? (
-                                <span className="mbfp-roster-app-tag">
-                                  <i className={responder.mobilePlatform === "IOS" ? "fa-brands fa-apple" : "fa-brands fa-android"} />
-                                  <span>{responder.mobilePlatform === "IOS" ? "iOS App" : "Android App"}</span>
-                                </span>
-                              ) : (
-                                <span className="mbfp-roster-unregistered">Registered</span>
-                              )}
-                            </span>
-                          </div>
-                          <div className="mbfp-roster-detail">
-                            <span className="mbfp-roster-detail-label">Account Status</span>
-                            <span className={`mbfp-roster-status ${responder.accountStatus === "ACTIVE" ? "active" : "inactive"}`}>
-                              <span className="mbfp-roster-status-dot" />
-                              {responder.accountStatus === "ACTIVE" ? "Active" : "Suspended"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="mbfp-roster-empty">
-                  <div className="mbfp-roster-empty-icon">
-                    <i className="fa-solid fa-user-shield" />
-                  </div>
-                  <h3>
-                    {rosterSearch || rosterStatusFilter !== "ALL"
-                      ? "No personnel match your search filter"
-                      : "No responders assigned to this station yet"}
-                  </h3>
-                  <p>
-                    {rosterSearch || rosterStatusFilter !== "ALL"
-                      ? "Try adjusting your search keywords or clear your status filters."
-                      : "Assign official BFP personnel to this station from the Personnel directory."}
-                  </p>
-                  {rosterSearch || rosterStatusFilter !== "ALL" ? (
-                    <button
-                      type="button"
-                      className="mbfp-empty-btn"
-                      onClick={() => {
-                        setRosterSearch("");
-                        setRosterStatusFilter("ALL");
-                      }}
-                    >
-                      Clear Filters
-                    </button>
-                  ) : (
-                    <a href="/municipal-bfp/responders" className="mbfp-add-btn">
-                      <i className="fa-solid fa-user-plus" />
-                      <span>Manage Personnel Roster</span>
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* MODAL FOOTER */}
-            <div className="mbfp-modal-footer mbfp-roster-modal-footer">
-              <div className="mbfp-roster-footer-tip">
-                <i className="fa-solid fa-circle-info" />
-                <span>Profiles and photos are synchronized from the ALAB Mobile Responder App.</span>
-              </div>
-              <button
-                type="button"
-                className="mbfp-modal-cancel-btn"
-                onClick={() => setSelectedRosterStation(null)}
-              >
-                Close Roster
               </button>
             </div>
           </div>
@@ -1894,20 +1967,219 @@ const pageStyles = `
     box-shadow: 0 2px 4px rgba(190, 18, 60, 0.1);
   }
 
-  .mbfp-roster-modal {
-    max-width: 980px;
-    width: 95%;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    overflow: hidden;
+  /* ================= STATION ROSTER FULL SCREEN VIEW ================= */
+  .mbfp-roster-screen-view {
+    animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .mbfp-roster-modal-header {
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid #E2E8F0;
+  .mbfp-roster-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 0.25rem;
+  }
+
+  .mbfp-back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     background: #FFFFFF;
+    color: #0F172A;
+    border: 1px solid #CBD5E1;
+    padding: 0.6rem 1.15rem;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mbfp-back-button:hover {
+    background: #FFF1F2;
+    border-color: #FECDD3;
+    color: #B91C1C;
+    transform: translateX(-3px);
+    box-shadow: 0 3px 8px rgba(185, 28, 28, 0.12);
+  }
+
+  .mbfp-back-button.secondary {
+    background: #F8FAFC;
+  }
+
+  .mbfp-back-button.secondary:hover {
+    background: #FFF1F2;
+    border-color: #FECDD3;
+    color: #B91C1C;
+  }
+
+  .mbfp-roster-breadcrumbs {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: #64748B;
+  }
+
+  .mbfp-breadcrumb-link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #64748B;
+    font-size: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .mbfp-breadcrumb-link:hover {
+    color: #B91C1C;
+    text-decoration: underline;
+  }
+
+  .mbfp-breadcrumb-sep {
+    font-size: 0.65rem;
+    color: #94A3B8;
+  }
+
+  .mbfp-breadcrumb-current {
+    font-weight: 700;
+    color: #0F172A;
+  }
+
+  .mbfp-breadcrumb-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #B91C1C;
+    background: #FFF1F2;
+    border: 1px solid #FFE4E6;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+  }
+
+  /* STATION COMMAND HERO CARD */
+  .mbfp-station-hero-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 1.4rem 1.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
+  }
+
+  .mbfp-station-hero-main {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .mbfp-station-hero-icon {
+    width: 3.6rem;
+    height: 3.6rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%);
+    border: 1px solid #FECDD3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #B91C1C;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+  }
+
+  .mbfp-station-hero-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .mbfp-station-hero-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .mbfp-hero-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 1.1rem;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    min-width: 100px;
+    text-align: center;
+  }
+
+  .mbfp-hero-stat-card.on-duty {
+    background: #ECFDF5;
+    border-color: #A7F3D0;
+  }
+
+  .mbfp-hero-stat-card.standby {
+    background: #FFFBEB;
+    border-color: #FDE68A;
+  }
+
+  .mbfp-hero-stat-val {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #0F172A;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1.1;
+  }
+
+  .mbfp-hero-stat-card.on-duty .mbfp-hero-stat-val {
+    color: #065F46;
+  }
+
+  .mbfp-hero-stat-card.standby .mbfp-hero-stat-val {
+    color: #92400E;
+  }
+
+  .mbfp-hero-stat-lbl {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 0.25rem;
+  }
+
+  .mbfp-hero-stat-card.on-duty .mbfp-hero-stat-lbl {
+    color: #047857;
+  }
+
+  .mbfp-hero-stat-card.standby .mbfp-hero-stat-lbl {
+    color: #B45309;
+  }
+
+  .mbfp-stat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .mbfp-stat-dot.on-duty {
+    background: #10B981;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+  }
+
+  .mbfp-stat-dot.standby {
+    background: #F59E0B;
   }
 
   .mbfp-roster-header-icon {
@@ -2030,11 +2302,30 @@ const pageStyles = `
     font-weight: 600;
   }
 
-  .mbfp-roster-modal-content {
-    padding: 1.5rem;
-    overflow-y: auto;
-    max-height: calc(90vh - 220px);
+  .mbfp-roster-manage-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    color: #0F172A;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mbfp-roster-manage-btn:hover {
     background: #F8FAFC;
+    border-color: #94A3B8;
+    color: #B91C1C;
+  }
+
+  .mbfp-roster-screen-content {
+    background: transparent;
   }
 
   .mbfp-roster-grid {
@@ -2273,14 +2564,17 @@ const pageStyles = `
     background: currentColor;
   }
 
-  .mbfp-roster-modal-footer {
-    padding: 1rem 1.5rem;
-    background: #FFFFFF;
-    border-top: 1px solid #E2E8F0;
+  .mbfp-roster-screen-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
+    flex-wrap: wrap;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 1.1rem 1.5rem;
+    margin-top: 0.5rem;
   }
 
   .mbfp-roster-footer-tip {
