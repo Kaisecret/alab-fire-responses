@@ -888,15 +888,6 @@ export function MunicipalStationsManager() {
         <div className="mbfp-header-actions">
           <button
             type="button"
-            className="mbfp-issue-account-btn"
-            onClick={() => openIssueAccount()}
-            title="Issue a BFP officer account"
-          >
-            <i className="fa-solid fa-user-plus" />
-            <span>Issue Account</span>
-          </button>
-          <button
-            type="button"
             className="mbfp-add-btn"
             onClick={() => {
               setModalError("");
@@ -3454,14 +3445,14 @@ const pageStyles = `
 
   /* EDIT OFFICER MODAL */
   .mbfp-edit-officer-modal {
-    max-width: 500px;
+    max-width: 600px;
     width: 100%;
-    border-radius: 16px;
+    border-radius: 20px;
     background: #FFFFFF;
-    box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 32px 80px -15px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(15, 23, 42, 0.06);
     overflow: hidden;
     animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    max-height: min(90vh, 600px);
+    max-height: min(90vh, 720px);
     display: flex;
     flex-direction: column;
   }
@@ -3475,8 +3466,8 @@ const pageStyles = `
 
   .mbfp-edit-header {
     background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 100%);
-    border-top: 3.5px solid #B91C1C;
-    padding: 0.9rem 1.4rem 0.75rem;
+    border-top: 4px solid #B91C1C;
+    padding: 1.35rem 1.85rem 1.15rem;
     border-bottom: 1px solid #F1F5F9;
     flex-shrink: 0;
   }
@@ -3486,60 +3477,65 @@ const pageStyles = `
   }
 
   .mbfp-edit-officer-modal .mbfp-modal-badge-glow {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    font-size: 1rem;
-    box-shadow: 0 4px 12px rgba(185, 28, 28, 0.28);
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 1.15rem;
+    box-shadow: 0 6px 16px rgba(185, 28, 28, 0.32);
+    flex-shrink: 0;
   }
 
   .mbfp-edit-officer-modal .mbfp-modal-header-hero {
-    gap: 0.75rem;
+    gap: 0.95rem;
   }
 
   .mbfp-edit-officer-modal .mbfp-modal-header-text h2 {
-    font-size: 1.15rem;
+    font-size: 1.3rem;
     font-weight: 800;
+    letter-spacing: -0.015em;
+    color: #0F172A;
   }
 
   .mbfp-edit-officer-modal .mbfp-modal-header-text p {
-    font-size: 0.78rem;
+    font-size: 0.88rem;
     color: #64748B;
-    margin: 0.12rem 0 0;
+    margin: 0.25rem 0 0;
+    line-height: 1.4;
   }
 
   .mbfp-edit-officer-modal .mbfp-modal-close {
-    width: 30px;
-    height: 30px;
-    font-size: 0.9rem;
+    width: 36px;
+    height: 36px;
+    font-size: 1.05rem;
+    border-radius: 50%;
   }
 
   .mbfp-edit-officer-modal .mbfp-modal-body {
-    padding: 0.95rem 1.4rem 0.85rem;
-    gap: 0.75rem;
+    padding: 1.5rem 1.85rem 1.35rem;
+    gap: 1.15rem;
     overflow-y: auto;
   }
 
   .mbfp-edit-account-preview {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0.85rem;
+    gap: 0.85rem;
+    padding: 0.7rem 1.05rem;
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
-    border-radius: 10px;
+    border-radius: 12px;
   }
 
   .mbfp-edit-avatar-thumb {
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: #B91C1C;
     color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
+    font-size: 1rem;
     overflow: hidden;
     flex-shrink: 0;
   }
@@ -3553,105 +3549,107 @@ const pageStyles = `
   .mbfp-edit-account-meta {
     display: flex;
     flex-direction: column;
-    gap: 0.1rem;
+    gap: 0.15rem;
   }
 
   .mbfp-edit-account-email {
-    font-size: 0.8rem;
+    font-size: 0.88rem;
     font-weight: 700;
     color: #0F172A;
   }
 
   .mbfp-edit-account-status {
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: #059669;
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.35rem;
   }
 
   .mbfp-sync-notice {
     display: flex;
     align-items: flex-start;
-    gap: 0.55rem;
-    padding: 0.55rem 0.85rem;
+    gap: 0.65rem;
+    padding: 0.7rem 1rem;
     background: #EFF6FF;
     border: 1px solid #DBEAFE;
-    border-radius: 8px;
-    font-size: 0.73rem;
+    border-radius: 10px;
+    font-size: 0.78rem;
     color: #1E40AF;
-    line-height: 1.4;
+    line-height: 1.45;
   }
 
   .mbfp-sync-notice i {
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: #2563EB;
     margin-top: 0.1rem;
   }
 
   .mbfp-edit-officer-modal .mbfp-form-group {
-    gap: 0.28rem;
+    gap: 0.45rem;
   }
 
   .mbfp-edit-officer-modal .mbfp-form-group label {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #334155;
+    font-size: 0.88rem;
+    font-weight: 750;
+    color: #1E293B;
   }
 
   .mbfp-edit-officer-modal .mbfp-form-input {
-    padding: 0.52rem 0.85rem;
-    border-radius: 8px;
-    font-size: 0.84rem;
-    border: 1.2px solid #CBD5E1;
+    padding: 0.78rem 1.1rem;
+    border-radius: 10px;
+    font-size: 0.94rem;
+    border: 1.5px solid #CBD5E1;
   }
 
   .mbfp-edit-officer-modal .mbfp-form-input.with-icon {
-    padding-left: 2.3rem;
+    padding-left: 2.75rem;
   }
 
   .mbfp-edit-officer-modal .mbfp-input-icon-wrap i {
-    left: 0.75rem;
-    font-size: 0.88rem;
+    left: 0.95rem;
+    font-size: 1.05rem;
   }
 
   .mbfp-edit-officer-modal .mbfp-quick-ranks {
-    gap: 0.25rem;
-    margin-top: 0.25rem;
+    gap: 0.4rem;
+    margin-top: 0.45rem;
   }
 
   .mbfp-edit-officer-modal .mbfp-rank-chip {
-    padding: 0.18rem 0.48rem;
-    font-size: 0.68rem;
-    border-radius: 6px;
-    font-weight: 700;
+    padding: 0.32rem 0.72rem;
+    font-size: 0.78rem;
+    border-radius: 7px;
+    font-weight: 750;
   }
 
   .mbfp-edit-officer-modal .mbfp-hint-pill {
-    font-size: 0.65rem;
-    padding: 0.1rem 0.45rem;
+    font-size: 0.72rem;
+    padding: 0.18rem 0.55rem;
   }
 
   .mbfp-edit-officer-modal .mbfp-modal-footer {
-    padding: 0.75rem 1.4rem;
-    gap: 0.65rem;
+    padding: 1.15rem 1.85rem;
+    gap: 0.85rem;
     flex-shrink: 0;
     background: #F8FAFC;
     border-top: 1px solid #F1F5F9;
   }
 
   .mbfp-edit-officer-modal .mbfp-cancel-btn {
-    padding: 0.5rem 1.25rem;
-    font-size: 0.84rem;
-    border-radius: 8px;
+    padding: 0.72rem 1.5rem;
+    font-size: 0.92rem;
+    border-radius: 10px;
+    font-weight: 700;
   }
 
   .mbfp-edit-officer-modal .mbfp-submit-btn {
-    padding: 0.5rem 1.35rem;
-    font-size: 0.84rem;
-    border-radius: 8px;
-    gap: 0.45rem;
+    padding: 0.72rem 1.75rem;
+    font-size: 0.92rem;
+    border-radius: 10px;
+    font-weight: 750;
+    gap: 0.55rem;
   }
 
   /* SKELETON SHIMMER (CIRCULAR AVATAR SKELETON) */
@@ -3785,14 +3783,14 @@ const pageStyles = `
 
   /* MODAL OVERLAY & CARD */
   .mbfp-issue-modal {
-    max-width: 530px;
+    max-width: 620px;
     width: 100%;
-    border-radius: 16px;
+    border-radius: 20px;
     background: #FFFFFF;
-    box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 32px 80px -15px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(15, 23, 42, 0.06);
     overflow: hidden;
     animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    max-height: min(90vh, 620px);
+    max-height: min(90vh, 740px);
     display: flex;
     flex-direction: column;
   }
@@ -3806,8 +3804,8 @@ const pageStyles = `
 
   .mbfp-issue-header {
     background: linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 100%);
-    border-top: 3.5px solid #DC2626;
-    padding: 0.9rem 1.4rem 0.75rem;
+    border-top: 4px solid #DC2626;
+    padding: 1.35rem 1.85rem 1.15rem;
     border-bottom: 1px solid #F1F5F9;
     flex-shrink: 0;
   }
@@ -3815,78 +3813,80 @@ const pageStyles = `
   .mbfp-issue-modal .mbfp-modal-header-hero {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.95rem;
   }
 
   .mbfp-issue-modal .mbfp-modal-badge-glow {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
     color: #FFFFFF;
-    font-size: 1rem;
+    font-size: 1.15rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.28);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.32);
     flex-shrink: 0;
   }
 
   .mbfp-issue-modal .mbfp-modal-header-text h2 {
-    font-size: 1.15rem;
+    font-size: 1.3rem;
     font-weight: 800;
     color: #0F172A;
     margin: 0;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 
   .mbfp-issue-modal .mbfp-modal-header-text p {
-    font-size: 0.78rem;
+    font-size: 0.88rem;
     color: #64748B;
-    margin: 0.12rem 0 0;
+    margin: 0.25rem 0 0;
+    line-height: 1.4;
   }
 
   .mbfp-issue-modal .mbfp-modal-close {
-    width: 30px;
-    height: 30px;
-    font-size: 0.9rem;
+    width: 36px;
+    height: 36px;
+    font-size: 1.05rem;
+    border-radius: 50%;
   }
 
   .mbfp-issue-modal .mbfp-modal-body {
-    padding: 0.95rem 1.4rem 0.85rem;
-    gap: 0.7rem;
+    padding: 1.5rem 1.85rem 1.35rem;
+    gap: 1.15rem;
     overflow-y: auto;
   }
 
   .mbfp-issue-modal .mbfp-form-group {
-    gap: 0.28rem;
+    gap: 0.45rem;
   }
 
   .mbfp-issue-modal .mbfp-form-group label {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #334155;
+    font-size: 0.88rem;
+    font-weight: 750;
+    color: #1E293B;
   }
 
   .mbfp-issue-modal .mbfp-form-input {
-    padding: 0.52rem 0.85rem;
-    border-radius: 8px;
-    font-size: 0.84rem;
-    border: 1.2px solid #CBD5E1;
+    padding: 0.78rem 1.1rem;
+    border-radius: 10px;
+    font-size: 0.94rem;
+    border: 1.5px solid #CBD5E1;
   }
 
   .mbfp-issue-modal .mbfp-form-input.with-icon {
-    padding-left: 2.3rem;
+    padding-left: 2.75rem;
   }
 
   .mbfp-issue-modal .mbfp-input-icon-wrap i {
-    left: 0.75rem;
-    font-size: 0.88rem;
+    left: 0.95rem;
+    font-size: 1.05rem;
   }
 
   .mbfp-issue-modal .mbfp-form-row {
     display: flex;
-    gap: 0.75rem;
+    gap: 1rem;
   }
 
   .mbfp-issue-modal .mbfp-form-row .mbfp-form-group {
@@ -3894,10 +3894,10 @@ const pageStyles = `
     min-width: 0;
   }
 
-  @media (max-width: 560px) {
+  @media (max-width: 580px) {
     .mbfp-issue-modal .mbfp-form-row {
       flex-direction: column;
-      gap: 0.7rem;
+      gap: 0.85rem;
     }
   }
 
@@ -3908,10 +3908,10 @@ const pageStyles = `
   }
 
   .mbfp-hint-pill {
-    font-size: 0.65rem;
+    font-size: 0.72rem;
     color: #64748B;
     background: #F1F5F9;
-    padding: 0.1rem 0.48rem;
+    padding: 0.18rem 0.55rem;
     border-radius: 9999px;
     font-weight: 600;
   }
@@ -3919,15 +3919,15 @@ const pageStyles = `
   .mbfp-quick-ranks {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem;
-    margin-top: 0.25rem;
+    gap: 0.4rem;
+    margin-top: 0.45rem;
   }
 
   .mbfp-rank-chip {
-    padding: 0.18rem 0.48rem;
-    border-radius: 6px;
-    font-size: 0.68rem;
-    font-weight: 700;
+    padding: 0.32rem 0.72rem;
+    border-radius: 7px;
+    font-size: 0.78rem;
+    font-weight: 750;
     border: 1px solid #E2E8F0;
     background: #FFFFFF;
     color: #475569;
@@ -3946,20 +3946,20 @@ const pageStyles = `
     background: #B91C1C;
     border-color: #B91C1C;
     color: #FFFFFF;
-    box-shadow: 0 2px 6px rgba(185, 28, 28, 0.22);
+    box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25);
   }
 
   .mbfp-generate-pass-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    font-size: 0.68rem;
+    gap: 0.35rem;
+    font-size: 0.76rem;
     font-weight: 700;
     color: #2563EB;
     background: #EFF6FF;
     border: 1px solid #BFDBFE;
-    padding: 0.15rem 0.5rem;
-    border-radius: 5px;
+    padding: 0.25rem 0.7rem;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.15s ease;
     font-family: inherit;
@@ -3973,41 +3973,43 @@ const pageStyles = `
   }
 
   .mbfp-form-hint {
-    font-size: 0.7rem;
+    font-size: 0.78rem;
     color: #64748B;
-    margin: 0.2rem 0 0;
+    margin: 0.35rem 0 0;
     display: flex;
     align-items: center;
-    gap: 0.35rem;
-    line-height: 1.35;
+    gap: 0.4rem;
+    line-height: 1.4;
   }
 
   .mbfp-optional {
-    font-size: 0.72rem;
+    font-size: 0.76rem;
     color: #94A3B8;
     font-weight: 500;
-    margin-left: 0.2rem;
+    margin-left: 0.25rem;
   }
 
   .mbfp-issue-modal .mbfp-modal-footer {
-    padding: 0.75rem 1.4rem;
-    gap: 0.65rem;
+    padding: 1.15rem 1.85rem;
+    gap: 0.85rem;
     flex-shrink: 0;
     background: #F8FAFC;
     border-top: 1px solid #F1F5F9;
   }
 
   .mbfp-issue-modal .mbfp-cancel-btn {
-    padding: 0.5rem 1.25rem;
-    font-size: 0.84rem;
-    border-radius: 8px;
+    padding: 0.72rem 1.5rem;
+    font-size: 0.92rem;
+    border-radius: 10px;
+    font-weight: 700;
   }
 
   .mbfp-issue-modal .mbfp-submit-btn {
-    padding: 0.5rem 1.35rem;
-    font-size: 0.84rem;
-    border-radius: 8px;
-    gap: 0.45rem;
+    padding: 0.72rem 1.75rem;
+    font-size: 0.92rem;
+    border-radius: 10px;
+    font-weight: 750;
+    gap: 0.55rem;
   }
 
   /* ================= ISSUED CREDENTIALS SUCCESS MODAL ================= */
