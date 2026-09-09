@@ -125,7 +125,9 @@ test("municipal reviewer sees saved correction and per-channel delivery feedback
   assert.match(page, /Correction request saved/);
   assert.match(page, /SMS sent/);
   assert.match(page, /Email sent/);
-  assert.match(page, /SMS queued for retry/);
+  assert.match(page, /SMS queued for a scheduled retry/);
+  assert.match(page, /SMS could not be sent/);
+  assert.match(page, /SMS delivery could not be confirmed/);
   assert.match(page, /Email is not configured/);
 });
 

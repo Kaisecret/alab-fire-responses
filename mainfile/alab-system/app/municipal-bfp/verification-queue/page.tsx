@@ -36,7 +36,8 @@ type Detail = Summary & {
 
 type DeliveryResult = {
   channel: "SMS" | "EMAIL";
-  status: "SENT" | "FAILED" | "NOT_CONFIGURED";
+  status: "SENT" | "FAILED" | "NOT_CONFIGURED" | "QUEUED" | "UNCONFIRMED";
+  tracking?: "UNAVAILABLE";
 };
 
 export default function VerificationQueuePage() {
@@ -156,13 +157,19 @@ export default function VerificationQueuePage() {
           ? "SMS sent."
           : smsStatus === "NOT_CONFIGURED"
             ? "SMS is not configured."
-            : "SMS queued for retry.";
+            : smsStatus === "QUEUED" ? "SMS queued for a scheduled retry."
+              : smsStatus === "FAILED" ? "SMS could not be sent."
+                : "SMS delivery could not be confirmed.";
         const emailMessage = emailStatus === "SENT"
           ? "Email sent."
           : emailStatus === "NOT_CONFIGURED"
             ? "Email is not configured."
-            : "Email queued for retry.";
-        setNotice(`Correction request saved. ${smsMessage} ${emailMessage}`);
+            : emailStatus === "QUEUED" ? "Email queued for a scheduled retry."
+              : emailStatus === "FAILED" ? "Email could not be sent."
+                : "Email delivery could not be confirmed.";
+        const trackingMessage = result.delivery?.some(item => item.tracking === "UNAVAILABLE")
+          ? " Delivery tracking is temporarily unavailable." : "";
+        setNotice(`Correction request saved. ${smsMessage} ${emailMessage}${trackingMessage}`);
       } else {
         setNotice("Resident application approved.");
       }

@@ -38,8 +38,13 @@ Resident correction notices use the existing PhilSMS account and Resend. Configu
 - `RESEND_API_KEY` — Resend server API key.
 - `RESEND_FROM_EMAIL` — verified sender, such as `ALAB <updates@your-domain.gov.ph>`.
 - `NEXT_PUBLIC_APP_URL` — public ALAB origin used for the resident application link.
+- `CRON_SECRET` — random server-only secret for the scheduled correction delivery worker. Vercel sends it in the Authorization header.
 
 Apply `supabase/migrations/20260910090000_add_resident_notification_deliveries.sql` before enabling correction delivery in production. Never commit any provider key to the repository.
+
+Correction retries run daily via `vercel.json` at `/api/cron/resident-correction-deliveries` (00:00 UTC / 08:00 Manila, within Vercel's scheduling window). Each invocation claims at most five due jobs with row locks and a three-attempt default limit. Unconfigured channels are skipped without spending attempts. A more frequent schedule requires an appropriate Vercel plan. Without `CRON_SECRET`, the worker rejects requests and the UI does not promise scheduled retries.
+
+Provider acceptance and delivery tracking are separate: failure to record a sent message never marks it failed. Ambiguous network/provider outcomes remain `PROCESSING` and are excluded from retries to avoid duplicate SMS. Check the provider dashboard before manually reconciling these records; never blindly reset them. `SENT` means the provider accepted the send request, not confirmed receipt on the resident's device. The correction remains saved even if notification delivery or tracking is unavailable.
 
 Build the production Android app with the public API address only:
 

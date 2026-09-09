@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getMunicipalReviewer, requestResidentApplicationCorrections } from "../../../../../../lib/resident-applications/service";
 import { deliverResidentCorrectionNotifications } from "../../../../../../lib/resident-applications/delivery-service";
+import { unconfirmedDeliveries } from "../../../../../../lib/resident-applications/delivery-engine";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest, context: { params: Promise<{ applicationId: string }> }) {
   let body: { reason?: string };
@@ -13,7 +15,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ap
     if (!reviewer?.municipalityId) return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
     const { applicationId } = await context.params;
     const result = await requestResidentApplicationCorrections(reviewer.municipalityId, applicationId, reviewer.userId, body.reason ?? "");
-    const deliveryResults = await deliverResidentCorrectionNotifications(result.deliveryIds, result.directDelivery);
+    // Review transaction already committed: delivery must not turn it into 500.
+    const deliveryResults = await deliverResidentCorrectionNotifications(result.deliveryIds, result.directDelivery)
+      .catch(() => unconfirmedDeliveries());
     return NextResponse.json({
       application: { status: result.status },
       delivery: deliveryResults,

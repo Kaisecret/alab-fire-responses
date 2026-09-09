@@ -2,7 +2,8 @@ import "server-only";
 
 import type { PoolClient } from "pg";
 
-import { withTransaction } from "../db";
+import { withDeliveryTransaction as withTransaction } from "./delivery-db";
+import type { DeliveryRecord } from "./delivery-engine";
 
 type Queryable = Pick<PoolClient, "query">;
 
@@ -19,6 +20,7 @@ export type DeliveryJob = {
   destination: string;
   payload: CorrectionDeliveryPayload;
   attemptCount: number;
+  maxAttempts?: number;
 };
 
 export type DirectCorrectionDelivery = {
@@ -64,17 +66,24 @@ export async function enqueueResidentCorrectionDeliveries(client: Queryable, inp
   return { ids, queueAvailable: true };
 }
 
-export async function claimResidentCorrectionDeliveries(ids: string[]) {
-  if (!ids.length) return [];
+export async function claimResidentCorrectionDeliveries(ids: string[] | null, channels: ("SMS" | "EMAIL")[] = ["SMS", "EMAIL"]) {
+  if (ids?.length === 0 || !channels.length) return [];
   return withTransaction(async (client) => {
+    const table = await client.query<{ relation: string | null }>("select to_regclass('public.resident_notification_deliveries')::text as relation");
+    if (!table.rows[0]?.relation) return [];
     const result = await client.query<DeliveryJob>(
       `with claimable as (
          select id from resident_notification_deliveries
-          where id = any($1::uuid[])
-            and status in ('PENDING', 'FAILED')
+          where ($1::uuid[] is null or id = any($1::uuid[]))
+            and channel = any($2::text[])
+            and (status = 'PENDING' or (status = 'FAILED' and (
+              last_error like 'PHILSMS_DELIVERY_FAILED%' or last_error like 'RESEND_DELIVERY_FAILED%'
+              or last_error in ('PHILSMS_NOT_CONFIGURED', 'RESEND_NOT_CONFIGURED')
+            )))
             and attempt_count < max_attempts
             and next_attempt_at <= now()
           order by created_at
+          limit 5
           for update skip locked
        )
        update resident_notification_deliveries delivery
@@ -82,8 +91,8 @@ export async function claimResidentCorrectionDeliveries(ids: string[]) {
          from claimable
         where delivery.id = claimable.id
        returning delivery.id, delivery.channel, delivery.destination, delivery.payload,
-                 delivery.attempt_count as "attemptCount"`,
-      [ids],
+                 delivery.attempt_count as "attemptCount", delivery.max_attempts as "maxAttempts"`,
+      [ids, channels],
     );
     return result.rows;
   });
@@ -91,25 +100,27 @@ export async function claimResidentCorrectionDeliveries(ids: string[]) {
 
 export async function completeResidentCorrectionDelivery(
   id: string,
-  result: { status: "SENT"; providerMessageId: string | null } | { status: "FAILED"; error: string },
+  result: DeliveryRecord,
 ) {
   return withTransaction(async (client) => {
     if (result.status === "SENT") {
-      await client.query(
+      const update = await client.query(
         `update resident_notification_deliveries
             set status = 'SENT', provider_message_id = $2, last_error = null,
                 sent_at = now(), updated_at = now()
-          where id = $1`,
+          where id = $1 and status = 'PROCESSING'`,
         [id, result.providerMessageId],
       );
+      if (update.rowCount !== 1) throw new Error("DELIVERY_RECORD_NOT_UPDATED");
       return;
     }
-    await client.query(
+    const update = await client.query(
       `update resident_notification_deliveries
-          set status = 'FAILED', last_error = $2,
+          set status = $3, last_error = $2,
               next_attempt_at = now() + interval '5 minutes', updated_at = now()
-        where id = $1`,
-      [id, result.error.replace(/\s+/g, " ").slice(0, 300)],
+        where id = $1 and status = 'PROCESSING'`,
+      [id, result.error.replace(/\s+/g, " ").slice(0, 300), result.status],
     );
+    if (update.rowCount !== 1) throw new Error("DELIVERY_RECORD_NOT_UPDATED");
   });
 }

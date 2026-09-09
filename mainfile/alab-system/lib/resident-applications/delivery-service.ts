@@ -1,83 +1,38 @@
 import "server-only";
-
 import { sendResendEmail } from "../email/resend";
 import { sendPhilSmsMessage } from "../sms/philsms";
 import { createCorrectionMessages } from "./correction-messages";
-import {
-  claimResidentCorrectionDeliveries,
-  completeResidentCorrectionDelivery,
-  type DirectCorrectionDelivery,
-  type DeliveryJob,
-} from "./delivery-queue";
-
-export type ChannelDeliveryResult = {
-  channel: "SMS" | "EMAIL";
-  status: "SENT" | "FAILED" | "NOT_CONFIGURED";
-};
+import { claimResidentCorrectionDeliveries, completeResidentCorrectionDelivery, type DirectCorrectionDelivery, type DeliveryJob } from "./delivery-queue";
+import { processCorrectionDeliveries, processDeliveryJob } from "./delivery-engine";
+export type { ChannelDeliveryResult } from "./delivery-engine";
 
 function applicationUrl() {
-  const configured = process.env.NEXT_PUBLIC_APP_URL;
-  try {
-    return new URL("/resident/application", configured || "https://alab-fire-responses-bynr.vercel.app").toString();
-  } catch {
-    return "https://alab-fire-responses-bynr.vercel.app/resident/application";
-  }
+  try { return new URL("/resident/application", process.env.NEXT_PUBLIC_APP_URL || "https://alab-fire-responses-bynr.vercel.app").toString(); }
+  catch { return "https://alab-fire-responses-bynr.vercel.app/resident/application"; }
 }
-
-function safeFailureStatus(error: unknown): ChannelDeliveryResult["status"] {
-  const message = error instanceof Error ? error.message : "DELIVERY_FAILED";
-  return message === "PHILSMS_NOT_CONFIGURED" || message === "RESEND_NOT_CONFIGURED"
-    ? "NOT_CONFIGURED"
-    : "FAILED";
+function dependencies() {
+  return {
+    claim: (ids: string[]) => claimResidentCorrectionDeliveries(ids),
+    record: completeResidentCorrectionDelivery,
+    retryScheduled: Boolean(process.env.CRON_SECRET),
+    send: async (job: DeliveryJob) => {
+      const messages = createCorrectionMessages({ ...job.payload, applicationUrl: applicationUrl() });
+      return job.channel === "SMS"
+        ? sendPhilSmsMessage({ phone: job.destination, message: messages.sms })
+        : sendResendEmail({ to: job.destination, subject: messages.emailSubject, html: messages.emailHtml,
+            text: messages.emailText, idempotencyKey: `resident-correction-delivery:${job.id}` });
+    },
+  };
 }
-
-async function deliverJob(job: DeliveryJob, persistResult = true): Promise<ChannelDeliveryResult> {
-  const messages = createCorrectionMessages({ ...job.payload, applicationUrl: applicationUrl() });
-  try {
-    const result = job.channel === "SMS"
-      ? await sendPhilSmsMessage({ phone: job.destination, message: messages.sms })
-      : await sendResendEmail({
-          to: job.destination,
-          subject: messages.emailSubject,
-          html: messages.emailHtml,
-          text: messages.emailText,
-          idempotencyKey: `resident-correction-delivery:${job.id}`,
-        });
-    if (persistResult) {
-      await completeResidentCorrectionDelivery(job.id, { status: "SENT", providerMessageId: result.providerId });
-    }
-    return { channel: job.channel, status: "SENT" };
-  } catch (error) {
-    const safeError = error instanceof Error ? error.message : "DELIVERY_FAILED";
-    if (persistResult) {
-      await completeResidentCorrectionDelivery(job.id, { status: "FAILED", error: safeError });
-    }
-    return { channel: job.channel, status: safeFailureStatus(error) };
-  }
-}
-
 export async function deliverResidentCorrectionNotifications(ids: string[], directDelivery: DirectCorrectionDelivery | null) {
-  const queuedJobs = await claimResidentCorrectionDeliveries(ids);
-  const directJobs = (directDelivery ? [
-    {
-      id: `${directDelivery.verificationId}:${directDelivery.submissionNumber}:sms`,
-      channel: "SMS",
-      destination: directDelivery.phone,
-      payload: directDelivery.payload,
-      attemptCount: 1,
-    },
-    {
-      id: `${directDelivery.verificationId}:${directDelivery.submissionNumber}:email`,
-      channel: "EMAIL",
-      destination: directDelivery.email,
-      payload: directDelivery.payload,
-      attemptCount: 1,
-    },
-  ] satisfies DeliveryJob[] : []).filter((job) => job.destination.trim());
-  const jobs = [...queuedJobs, ...directJobs];
-  const deliveries = await Promise.allSettled(jobs.map((job, index) => deliverJob(job, index < queuedJobs.length)));
-  return deliveries.flatMap((delivery, index) => {
-    if (delivery.status === "fulfilled") return [delivery.value];
-    return [{ channel: jobs[index].channel, status: "FAILED" } satisfies ChannelDeliveryResult];
-  });
+  return processCorrectionDeliveries(ids, directDelivery, dependencies());
+}
+export async function retryResidentCorrectionNotifications() {
+  const channels: ("SMS" | "EMAIL")[] = [];
+  if (process.env.PHILSMS_API_TOKEN && process.env.PHILSMS_SENDER_ID) channels.push("SMS");
+  if (process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL) channels.push("EMAIL");
+  if (!channels.length) return { processed: 0, message: "No delivery providers are configured." };
+  const jobs = await claimResidentCorrectionDeliveries(null, channels);
+  const results = await Promise.allSettled(jobs.map(job => processDeliveryJob(job, dependencies())));
+  return { processed: results.length, sent: results.filter(item => item.status === "fulfilled" && item.value.status === "SENT").length };
 }

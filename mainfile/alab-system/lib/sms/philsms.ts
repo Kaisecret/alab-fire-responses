@@ -18,6 +18,9 @@ export async function sendPhilSmsMessage({ phone, message }: { phone: string; me
     message?: string;
     data?: { message_id?: string | number };
   } | null;
+  if (response.status >= 500 || response.status === 408 || (response.ok && !result?.status)) {
+    throw new Error("PHILSMS_DELIVERY_UNCONFIRMED");
+  }
   if (!response.ok || result?.status !== "success") {
     const detail = typeof result?.message === "string" ? result.message.slice(0, 300) : "unknown provider error";
     throw new Error(`PHILSMS_DELIVERY_FAILED: ${detail}`);

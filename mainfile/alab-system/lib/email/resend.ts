@@ -20,6 +20,9 @@ export async function sendResendEmail(input: {
     signal: AbortSignal.timeout(10_000),
   });
   const result = await response.json().catch(() => null) as { id?: string; message?: string } | null;
+  if (response.status >= 500 || response.status === 408 || (response.ok && !result?.id)) {
+    throw new Error("RESEND_DELIVERY_UNCONFIRMED");
+  }
   if (!response.ok || !result?.id) {
     const detail = typeof result?.message === "string" ? result.message.replace(/\s+/g, " ").slice(0, 300) : "unknown provider error";
     throw new Error(`RESEND_DELIVERY_FAILED: ${detail}`);
