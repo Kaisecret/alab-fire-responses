@@ -30,7 +30,20 @@ export async function deleteFireReportPhoto(storageKey: string) {
 }
 
 export async function getFireReportPhotoUrl(storageKey: string) {
-  const { data, error } = await storageClient().storage.from(bucket).createSignedUrl(storageKey, 60 * 10);
-  if (error) return null;
-  return data.signedUrl;
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return null;
+    const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
+      setTimeout(() => resolve({ data: null, error: new Error("Storage timeout") }), 3000)
+    );
+    const signPromise = storageClient().storage.from(bucket).createSignedUrl(storageKey, 60 * 10);
+    const { data, error } = await Promise.race([signPromise, timeoutPromise]);
+    if (error) return null;
+    return data?.signedUrl ?? null;
+  } catch (err) {
+    console.warn("Unable to create fire report photo signed URL:", err);
+    return null;
+  }
 }
+

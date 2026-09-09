@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getBfpIdentity } from "../../../../lib/auth/bfp-accounts";
+import { isLocalUiPreviewEnabled } from "../../../../lib/auth/local-ui-preview";
 import { bfpSessionCookieName, verifyBfpSession } from "../../../../lib/auth/session";
 import { getDatabase } from "../../../../lib/db";
 import {
@@ -12,16 +13,37 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
-  if (!session || session.role !== "MUNICIPAL_BFP") return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
-  try {
+  let municipalityId: string | null = null;
+  let municipalityName = "San Jose de Buenavista";
+
+  if (isLocalUiPreviewEnabled()) {
+    if (session && session.role === "MUNICIPAL_BFP") {
+      try {
+        const identity = await getBfpIdentity(session.userId);
+        if (identity?.municipalityId) {
+          municipalityId = identity.municipalityId;
+          municipalityName = identity.municipalityName ?? municipalityName;
+        }
+      } catch {}
+    }
+    if (!municipalityId) {
+      municipalityId = "a4ba607b-8863-4f0f-bcaf-a86beb0acb29";
+    }
+  } else {
+    if (!session || session.role !== "MUNICIPAL_BFP") return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
     const identity = await getBfpIdentity(session.userId);
     if (!identity?.municipalityId) return NextResponse.json({ error: "Your Municipal BFP assignment is not active." }, { status: 403 });
+    municipalityId = identity.municipalityId;
+    municipalityName = identity.municipalityName ?? municipalityName;
+  }
+
+  try {
     const includeHistory = request.nextUrl.searchParams.get("scope") === "all";
 
     let incidents: ScopedMunicipalIncident[] = [];
     try {
       incidents = await listScopedMunicipalIncidents(
-        identity.municipalityId,
+        municipalityId,
         includeHistory,
       );
     } catch (scopedErr) {
@@ -52,7 +74,7 @@ export async function GET(request: NextRequest) {
             where fr.municipality_id = $1
               ${includeHistory ? "" : "and fr.status not in ('RESOLVED','REJECTED','FALSE_REPORT','DUPLICATE','CLOSED')"}
             order by fr.submitted_at desc`,
-          [identity.municipalityId],
+          [municipalityId],
         );
         incidents = fallbackResult.rows;
       } catch (originErr: any) {
@@ -86,7 +108,7 @@ export async function GET(request: NextRequest) {
               where fr.municipality_id = $1
                 ${includeHistory ? "" : "and fr.status not in ('RESOLVED','REJECTED','FALSE_REPORT','DUPLICATE','CLOSED')"}
               order by fr.submitted_at desc`,
-            [identity.municipalityId],
+            [municipalityId],
           );
           incidents = legacyResult.rows;
         } else {
@@ -96,7 +118,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      municipality: identity.municipalityName,
+      municipality: municipalityName,
       incidents,
     });
   } catch (error) {

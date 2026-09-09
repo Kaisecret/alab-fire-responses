@@ -270,7 +270,7 @@ export async function acknowledgeNearbyIncident(input: {
     }
 
     const userProfile = await client.query<{ display_name: string }>(
-      `select coalesce(p.full_name, u.full_name, 'Municipal Officer') as display_name
+      `select coalesce(p.display_name, u.email, 'Municipal Officer') as display_name
          from users u
          left join bfp_personnel_profiles p on p.user_id = u.id
         where u.id = $1`,

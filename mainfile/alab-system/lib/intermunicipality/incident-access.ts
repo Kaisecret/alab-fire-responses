@@ -273,7 +273,7 @@ select o.id as "observerId",
        o.distance_meters::float as "distanceMeters",
        o.status,
        o.acknowledged_by_user_id as "acknowledgedByUserId",
-       coalesce(p.full_name, u.full_name) as "acknowledgedByDisplayName",
+       coalesce(p.display_name, u.email) as "acknowledgedByDisplayName",
        o.acknowledged_at as "acknowledgedAt"
   from incident_municipal_observers o
   join municipalities m on m.id = o.observer_municipality_id
@@ -433,16 +433,10 @@ export async function getIncidentCoordinationContext(
       assistanceRequests: allAssistance,
     };
   } catch (err: any) {
-    if (
-      err?.code === "42P01" ||
-      err?.message?.includes("incident_municipal_observers") ||
-      err?.message?.includes("intermunicipal_assistance_requests")
-    ) {
-      return {
-        observers: [],
-        assistanceRequests: [],
-      };
-    }
-    throw err;
+    console.warn("Unable to load incident coordination context:", err);
+    return {
+      observers: [],
+      assistanceRequests: [],
+    };
   }
 }
