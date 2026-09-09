@@ -65,6 +65,9 @@ test("domain transactions emit connected notification events", () => {
     "lib/auth/bfp-accounts.ts",
     "app/api/auth/register/route.ts",
     "app/api/resident/application-status/resubmit/route.ts",
+    "lib/intermunicipality/observers.ts",
+    "lib/intermunicipality/assistance.ts",
+    "lib/notifications/types.ts",
   ].filter((path) => existsSync(join(root, path))).map(source).join("\n");
 
   for (const event of [
@@ -76,6 +79,15 @@ test("domain transactions emit connected notification events", () => {
     "RESIDENT_APPLICATION_APPROVED",
     "RESIDENT_APPLICATION_CHANGES_REQUESTED",
     "MUNICIPAL_ACCOUNT_CREATED",
+    "NEARBY_INCIDENT_ASSIGNED",
+    "NEARBY_MONITORING_STARTED",
+    "ASSISTANCE_REQUESTED",
+    "ASSISTANCE_ACCEPTED",
+    "ASSISTANCE_PARTIALLY_ACCEPTED",
+    "ASSISTANCE_REJECTED",
+    "ASSISTANCE_CANCELLED",
+    "ASSISTANCE_COMPLETED",
+    "NEARBY_SELECTION_DEGRADED",
   ]) assert.match(combined, new RegExp(event));
   assert.match(combined, /createAccountNotifications/);
 });
