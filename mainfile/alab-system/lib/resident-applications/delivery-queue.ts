@@ -77,8 +77,8 @@ export async function claimResidentCorrectionDeliveries(ids: string[] | null, ch
           where ($1::uuid[] is null or id = any($1::uuid[]))
             and channel = any($2::text[])
             and (status = 'PENDING' or (status = 'FAILED' and (
-              last_error like 'PHILSMS_DELIVERY_FAILED%' or last_error like 'RESEND_DELIVERY_FAILED%'
-              or last_error in ('PHILSMS_NOT_CONFIGURED', 'RESEND_NOT_CONFIGURED')
+              last_error in ('PHILSMS_DELIVERY_FAILED', 'RESEND_DELIVERY_FAILED',
+                             'PHILSMS_NOT_CONFIGURED', 'RESEND_NOT_CONFIGURED')
             )))
             and attempt_count < max_attempts
             and next_attempt_at <= now()

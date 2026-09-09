@@ -58,6 +58,16 @@ test('cron authorization rejects absent secrets and invalid credentials', () => 
   assert.equal(isCronAuthorized('Bearer secret', 'secret'), true);
 });
 
+test('retry selection excludes legacy ambiguous provider errors and processing jobs', () => {
+  const queue = readFileSync('lib/resident-applications/delivery-queue.ts','utf8');
+  const claim = queue.slice(queue.indexOf('with claimable as'),queue.indexOf('update resident_notification_deliveries delivery'));
+  assert.doesNotMatch(claim,/last_error like/);
+  assert.match(claim,/last_error in \('PHILSMS_DELIVERY_FAILED', 'RESEND_DELIVERY_FAILED'/);
+  assert.doesNotMatch(claim,/'PROCESSING'/);
+  assert.match(claim,/attempt_count < max_attempts/);
+  assert.match(claim,/for update skip locked/);
+});
+
 test('HTTP correction handler returns saved status even if delivery service throws', async () => {
   const source = readFileSync('app/api/municipal-bfp/resident-applications/[applicationId]/request-corrections/route.ts', 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
