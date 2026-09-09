@@ -55,8 +55,17 @@ function getCachedFeed(key: string): IncidentFeedCache | null {
       if (stored) {
         const parsed = JSON.parse(stored) as IncidentFeedCache;
         if (Date.now() - parsed.timestamp < 30 * 60 * 1000) {
-          memoryFeedCache[key] = parsed;
-          return parsed;
+          const normalizedIncidents: MunicipalIncident[] = (parsed.incidents || []).map((inc) => ({
+            ...inc,
+            accessScope: inc.accessScope === "OBSERVER" ? "OBSERVER" : "ORIGIN",
+            originMunicipality: inc.originMunicipality || parsed.municipality || "",
+          }));
+          const normalizedCache: IncidentFeedCache = {
+            ...parsed,
+            incidents: normalizedIncidents,
+          };
+          memoryFeedCache[key] = normalizedCache;
+          return normalizedCache;
         }
       }
     } catch {}
@@ -115,7 +124,12 @@ export function useMunicipalIncidentFeed({ includeHistory = false, autoRefresh =
 
       if (!mounted.current) return;
       const newMuni = payload.municipality || "";
-      const newIncs = payload.incidents || [];
+      const rawIncs = payload.incidents || [];
+      const newIncs: MunicipalIncident[] = rawIncs.map((inc) => ({
+        ...inc,
+        accessScope: inc.accessScope === "OBSERVER" ? "OBSERVER" : "ORIGIN",
+        originMunicipality: inc.originMunicipality || newMuni,
+      }));
       setMunicipality(newMuni);
       setIncidents(newIncs);
       setError("");

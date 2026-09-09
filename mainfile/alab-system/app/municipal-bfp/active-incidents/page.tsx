@@ -669,7 +669,7 @@ function ActiveIncidentsContent() {
     }
   }, [searchParams]);
 
-  const ownedCount = useMemo(() => incidents.filter((i) => i.accessScope === "ORIGIN").length, [incidents]);
+  const ownedCount = useMemo(() => incidents.filter((i) => i.accessScope !== "OBSERVER").length, [incidents]);
   const nearbyCount = useMemo(() => incidents.filter((i) => i.accessScope === "OBSERVER").length, [incidents]);
   const respondingCount = incidents.filter((i) => i.status === "RESPONDING").length;
   const verifiedCount = incidents.filter((i) => i.status === "VERIFIED" || i.status === "DISPATCHED").length;
@@ -694,7 +694,7 @@ function ActiveIncidentsContent() {
       if (!matchesSearch) return false;
 
       if (activeFilter === "ALL") return true;
-      if (activeFilter === "OWNED") return item.accessScope === "ORIGIN";
+      if (activeFilter === "OWNED") return item.accessScope !== "OBSERVER";
       if (activeFilter === "NEARBY") return item.accessScope === "OBSERVER";
       if (activeFilter === "RESPONDING") return item.status === "RESPONDING";
       if (activeFilter === "DISPATCHED") return item.status === "DISPATCHED" || item.status === "ASSIGNED";
