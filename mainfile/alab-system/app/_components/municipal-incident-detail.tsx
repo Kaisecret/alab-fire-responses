@@ -149,7 +149,7 @@ const detailStyles = `
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: 1.25rem;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
     flex-wrap: wrap;
   }
@@ -254,6 +254,42 @@ const detailStyles = `
 
   .mbfp-respond-btn:disabled {
     opacity: 0.85;
+  }
+
+  /* Request Backup Hero Button */
+  .mbfp-backup-hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.75rem 1.35rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(234, 88, 12, 0.25);
+    color: #FFFFFF;
+    background: linear-gradient(135deg, #EA580C 0%, #F97316 100%);
+    font-family: inherit;
+    white-space: nowrap;
+  }
+
+  .mbfp-backup-hero-btn:hover:not(:disabled) {
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 18px rgba(234, 88, 12, 0.35);
+    background: linear-gradient(135deg, #C2410C 0%, #EA580C 100%);
+  }
+
+  .mbfp-backup-hero-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .mbfp-backup-hero-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
   }
 
   .mbfp-hero-actions {
@@ -1463,6 +1499,10 @@ const detailStyles = `
       width: 100%;
       justify-content: center;
     }
+    .mbfp-backup-hero-btn {
+      width: 100%;
+      justify-content: center;
+    }
     .mbfp-hero-actions { width: 100%; }
     .mbfp-resolve-btn { flex: 1; justify-content: center; }
   }
@@ -1489,6 +1529,7 @@ export function MunicipalIncidentDetail({
   const [selectedStationIds, setSelectedStationIds] = useState<string[]>([]);
   const [stationsLoading, setStationsLoading] = useState(false);
   const [dispatchError, setDispatchError] = useState("");
+  const [showBackupModal, setShowBackupModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -1727,6 +1768,17 @@ export function MunicipalIncidentDetail({
                 </>
               )}
             </button>
+            <button
+              type="button"
+              className="mbfp-backup-hero-btn"
+              disabled={sending}
+              onClick={() => setShowBackupModal(true)}
+              title="Request mutual-aid backup from neighboring municipal BFP stations"
+              aria-label="Request backup assistance from neighboring municipal BFP stations"
+            >
+              <i className="fa-solid fa-plus" />
+              <span>REQUEST BACKUP</span>
+            </button>
             {canResolve && (
               <button
                 className="mbfp-resolve-btn"
@@ -1748,6 +1800,8 @@ export function MunicipalIncidentDetail({
           observers={incident.nearbyObservers || []}
           assistanceRequests={incident.assistanceRequests || []}
           onChanged={load}
+          showRequestModal={showBackupModal}
+          onCloseRequestModal={() => setShowBackupModal(false)}
         />
 
         {/* Tactical 2-Column Grid */}

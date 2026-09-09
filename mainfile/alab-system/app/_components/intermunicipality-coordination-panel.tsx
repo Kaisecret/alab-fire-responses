@@ -11,6 +11,8 @@ interface Props {
   observers: NearbyObserver[];
   assistanceRequests: AssistanceRequestSummary[];
   onChanged: () => Promise<void> | void;
+  showRequestModal?: boolean;
+  onCloseRequestModal?: () => void;
 }
 
 export function IntermunicipalityCoordinationPanel({
@@ -19,17 +21,36 @@ export function IntermunicipalityCoordinationPanel({
   observers = [],
   assistanceRequests = [],
   onChanged,
-}: Props): React.ReactElement {
+  showRequestModal: externalShowRequestModal,
+  onCloseRequestModal,
+}: Props): React.ReactElement | null {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Request Backup Form State (ORIGIN)
-  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [internalShowRequestModal, setInternalShowRequestModal] = useState(false);
+  const isRequestModalOpen =
+    externalShowRequestModal !== undefined
+      ? externalShowRequestModal
+      : internalShowRequestModal;
+
+  const closeRequestModal = () => {
+    if (onCloseRequestModal) {
+      onCloseRequestModal();
+    }
+    setInternalShowRequestModal(false);
+  };
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [requestedFiretrucks, setRequestedFiretrucks] = useState(1);
   const [requestedPersonnel, setRequestedPersonnel] = useState(4);
   const [requestNote, setRequestNote] = useState("");
+
+  React.useEffect(() => {
+    if (observers.length > 0 && selectedRecipientIds.length === 0) {
+      setSelectedRecipientIds(observers.map((o) => o.municipalityId));
+    }
+  }, [observers, selectedRecipientIds.length]);
 
   // Response Form State (OBSERVER)
   const [respondingToRequestId, setRespondingToRequestId] = useState<string | null>(null);
@@ -107,7 +128,7 @@ export function IntermunicipalityCoordinationPanel({
       }
 
       setSuccessMessage("Backup request sent successfully to selected observers.");
-      setShowRequestModal(false);
+      closeRequestModal();
       setRequestNote("");
       await onChanged();
     } catch (err: unknown) {
@@ -203,6 +224,13 @@ export function IntermunicipalityCoordinationPanel({
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // When origin has no observers linked yet and no active assistance requests:
+  // Remove the big standby coordination card from the page as requested by the user.
+  // If the request modal is opened via the header action button, render the modal.
+  if (isOrigin && observers.length === 0 && assistanceRequests.length === 0 && !isRequestModalOpen) {
+    return null;
   }
 
   return (
@@ -564,7 +592,7 @@ export function IntermunicipalityCoordinationPanel({
               type="button"
               onClick={() => {
                 setSelectedRecipientIds(observers.map((o) => o.municipalityId));
-                setShowRequestModal(true);
+                setInternalShowRequestModal(true);
               }}
               disabled={observers.length === 0 || submitting}
               className="mbfp-coord-btn primary"
@@ -969,14 +997,14 @@ export function IntermunicipalityCoordinationPanel({
       )}
 
       {/* Request Backup Modal (ORIGIN) */}
-      {showRequestModal && (
+      {isRequestModalOpen && (
         <div className="mbfp-coord-modal-backdrop">
           <div className="mbfp-coord-modal-card">
             <div className="mbfp-coord-modal-header">
               <h3>Request Inter-Municipality Backup</h3>
               <button
                 type="button"
-                onClick={() => setShowRequestModal(false)}
+                onClick={closeRequestModal}
                 className="mbfp-coord-modal-close"
                 aria-label="Close"
               >
@@ -990,39 +1018,49 @@ export function IntermunicipalityCoordinationPanel({
                   Select Observer Municipalities
                 </label>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {observers.map((obs) => (
-                    <label
-                      key={obs.municipalityId}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "0.65rem 0.85rem",
-                        borderRadius: 10,
-                        border: "1px solid #E2E8F0",
-                        background: selectedRecipientIds.includes(obs.municipalityId) ? "#FFF7ED" : "#FFFFFF",
-                        cursor: "pointer",
-                        fontSize: "0.82rem",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedRecipientIds.includes(obs.municipalityId)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedRecipientIds([...selectedRecipientIds, obs.municipalityId]);
-                          } else {
-                            setSelectedRecipientIds(selectedRecipientIds.filter((id) => id !== obs.municipalityId));
-                          }
-                        }}
-                        style={{ width: 16, height: 16, accentColor: "#EA580C" }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <strong>{obs.municipalityName}</strong>
-                        <span style={{ color: "#64748B", marginLeft: 6 }}>({(obs.distanceMeters / 1000).toFixed(1)} km away)</span>
+                  {observers.length === 0 ? (
+                    <div style={{ padding: "0.9rem 1.1rem", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, fontSize: "0.82rem", color: "#92400E" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700, marginBottom: "0.3rem" }}>
+                        <i className="fa-solid fa-satellite-dish" />
+                        <span>Nearby Proximity Stations Standby</span>
                       </div>
-                    </label>
-                  ))}
+                      <span>Automated proximity linkage is established as soon as responding units are dispatched. Dispatch responders first to link neighboring municipal stations for mutual aid.</span>
+                    </div>
+                  ) : (
+                    observers.map((obs) => (
+                      <label
+                        key={obs.municipalityId}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "0.65rem 0.85rem",
+                          borderRadius: 10,
+                          border: "1px solid #E2E8F0",
+                          background: selectedRecipientIds.includes(obs.municipalityId) ? "#FFF7ED" : "#FFFFFF",
+                          cursor: "pointer",
+                          fontSize: "0.82rem",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedRecipientIds.includes(obs.municipalityId)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedRecipientIds([...selectedRecipientIds, obs.municipalityId]);
+                            } else {
+                              setSelectedRecipientIds(selectedRecipientIds.filter((id) => id !== obs.municipalityId));
+                            }
+                          }}
+                          style={{ width: 16, height: 16, accentColor: "#EA580C" }}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <strong>{obs.municipalityName}</strong>
+                          <span style={{ color: "#64748B", marginLeft: 6 }}>({(obs.distanceMeters / 1000).toFixed(1)} km away)</span>
+                        </div>
+                      </label>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -1076,7 +1114,7 @@ export function IntermunicipalityCoordinationPanel({
               <div className="mbfp-coord-modal-actions">
                 <button
                   type="button"
-                  onClick={() => setShowRequestModal(false)}
+                  onClick={closeRequestModal}
                   disabled={submitting}
                   style={{
                     background: "#F1F5F9",
