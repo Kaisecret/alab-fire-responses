@@ -230,9 +230,18 @@ export async function createIdentityEvidenceSignedUrl(key: string | null) {
   if (key.startsWith("simulated/")) {
     return generateFallbackEvidenceDataUrl(key);
   }
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const secretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !secretKey) {
+    return generateFallbackEvidenceDataUrl(key);
+  }
   try {
     const client = storageClient();
-    const { data, error } = await client.storage.from(EVIDENCE_BUCKET).createSignedUrl(key, 60 * 10);
+    const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
+      setTimeout(() => resolve({ data: null, error: new Error("Storage timeout") }), 3000)
+    );
+    const signPromise = client.storage.from(EVIDENCE_BUCKET).createSignedUrl(key, 60 * 10);
+    const { data, error } = await Promise.race([signPromise, timeoutPromise]);
     if (error || !data?.signedUrl) {
       return generateFallbackEvidenceDataUrl(key);
     }
