@@ -134,6 +134,13 @@ export async function removeIdentityEvidence(keys: string[]) {
 
 export async function createIdentityEvidenceSignedUrl(key: string | null) {
   if (!key) return null;
-  const { data, error } = await storageClient().storage.from(EVIDENCE_BUCKET).createSignedUrl(key, 60 * 10);
-  return error ? null : data.signedUrl;
+  try {
+    const client = storageClient();
+    const { data, error } = await client.storage.from(EVIDENCE_BUCKET).createSignedUrl(key, 60 * 10);
+    if (error || !data?.signedUrl) return null;
+    return data.signedUrl;
+  } catch (err) {
+    console.warn("Unable to create identity evidence signed URL for key:", key, err);
+    return null;
+  }
 }

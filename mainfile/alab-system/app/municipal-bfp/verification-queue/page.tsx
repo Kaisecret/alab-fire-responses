@@ -587,9 +587,9 @@ export default function VerificationQueuePage() {
                 <div className="vq-evidence-grid">
                   <EvidenceCard
                     label="Government ID — Front"
-                    url={selected.evidence.frontUrl}
+                    url={selected.evidence?.frontUrl ?? null}
                     onZoom={() =>
-                      selected.evidence.frontUrl &&
+                      selected.evidence?.frontUrl &&
                       setZoomImage({
                         url: selected.evidence.frontUrl,
                         label: "Government ID — Front",
@@ -598,9 +598,9 @@ export default function VerificationQueuePage() {
                   />
                   <EvidenceCard
                     label="Government ID — Back"
-                    url={selected.evidence.backUrl}
+                    url={selected.evidence?.backUrl ?? null}
                     onZoom={() =>
-                      selected.evidence.backUrl &&
+                      selected.evidence?.backUrl &&
                       setZoomImage({
                         url: selected.evidence.backUrl,
                         label: "Government ID — Back",
@@ -609,9 +609,9 @@ export default function VerificationQueuePage() {
                   />
                   <EvidenceCard
                     label="Applicant Live Selfie"
-                    url={selected.evidence.selfieUrl}
+                    url={selected.evidence?.selfieUrl ?? null}
                     onZoom={() =>
-                      selected.evidence.selfieUrl &&
+                      selected.evidence?.selfieUrl &&
                       setZoomImage({
                         url: selected.evidence.selfieUrl,
                         label: "Applicant Live Selfie",

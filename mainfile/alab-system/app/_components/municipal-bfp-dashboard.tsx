@@ -4,17 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMunicipalIncidentFeed } from './use-municipal-incident-feed';
 
-/* =====================================================================
-   Municipal BFP Dashboard — Mission Command Center
-   Engineered with UI/UX Pro Max & Dev-Engineering Design Principles
-   - 100% Real PostgreSQL Database Data (Zero fake mock cards or numbers)
-   - Live authenticated incident feed via useMunicipalIncidentFeed
-   - High-contrast tactical command layout with glowing status radar
-   - Live 5s auto-polling with seamless manual refresh
-   - 5 Pastel KPI metric cards with live counts and sub-breakdowns
-   - Citizen incident verification & resident KYC application streams
-   - Real active stations fleet readiness & Antique mutual aid support
-   ===================================================================== */
+// Municipal operations overview backed by the existing dashboard and incident feeds.
 
 interface DashboardStats {
   activeIncidents: number;
@@ -94,11 +84,11 @@ const dashboardStyles = `
   @keyframes mbfpEmeraldPulse {
     0%, 100% {
       transform: scale(1);
-      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45);
+      box-shadow: none;
     }
     50% {
       transform: scale(1.08);
-      box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
+      box-shadow: none;
     }
   }
 
@@ -188,11 +178,11 @@ const dashboardStyles = `
 
   /* ========== DASHBOARD BASE ========== */
   .mbfp-dash {
-    padding: 0.85rem 1.4rem 2.5rem;
+    padding: 1.5rem 1.75rem 3rem;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
-    background: #EEF5FD;
+    gap: 1.25rem;
+    background: #F6F7F9;
     min-height: 100%;
     max-width: 1600px;
     margin: 0 auto;
@@ -221,7 +211,7 @@ const dashboardStyles = `
     width: 32px;
     height: 32px;
     border-radius: 9px;
-    background: linear-gradient(135deg, #B91C1C 0%, #E23632 50%, #FF6B35 100%);
+    background: #B83229;
     color: #FFFFFF;
     display: inline-flex;
     align-items: center;
@@ -232,7 +222,7 @@ const dashboardStyles = `
   }
 
   .mbfp-dash-heading {
-    font-size: 1.25rem;
+    font-size: 1.8rem;
     font-weight: 800;
     color: #0F172A;
     margin: 0;
@@ -265,7 +255,7 @@ const dashboardStyles = `
     height: 8px;
     border-radius: 50%;
     background: #10B981;
-    animation: mbfpEmeraldPulse 2s ease-in-out infinite;
+    animation: none;
   }
 
   .mbfp-refresh-btn {
@@ -304,7 +294,7 @@ const dashboardStyles = `
   .mbfp-stat-card {
     position: relative;
     border-radius: 12px;
-    padding: 0.8rem 0.95rem;
+    padding: 1.15rem;
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
@@ -321,56 +311,10 @@ const dashboardStyles = `
   .mbfp-stat-card:nth-child(4) { animation-delay: 0.2s; }
   .mbfp-stat-card:nth-child(5) { animation-delay: 0.25s; }
 
-  /* Distinct Pastel Gradient Themes */
-  .mbfp-stat-card.red {
-    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
-    border: 1.5px solid #FFBEBE;
-    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
-  }
-  .mbfp-stat-card.amber {
-    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
-    border: 1.5px solid #FFDC99;
-    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
-  }
-  .mbfp-stat-card.blue {
-    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
-    border: 1.5px solid #B8D3FD;
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
-  }
-  .mbfp-stat-card.emerald {
-    background: linear-gradient(145deg, #E3F8ED 0%, #CEF2DE 100%);
-    border: 1.5px solid #B1ECC8;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
-  }
-  .mbfp-stat-card.purple {
-    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
-    border: 1.5px solid #D0BCFD;
-    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
-  }
-
-  .mbfp-stat-card:hover {
-    transform: translateY(-3px);
-  }
-  .mbfp-stat-card.red:hover {
-    border-color: #FFA3A3;
-    box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2);
-  }
-  .mbfp-stat-card.amber:hover {
-    border-color: #FFCF70;
-    box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2);
-  }
-  .mbfp-stat-card.blue:hover {
-    border-color: #91B8FA;
-    box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2);
-  }
-  .mbfp-stat-card.emerald:hover {
-    border-color: #88E4AA;
-    box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2);
-  }
-  .mbfp-stat-card.purple:hover {
-    border-color: #B79BFB;
-    box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2);
-  }
+  .mbfp-stat-card { background: #fff; border: 1px solid #e2e5e9; box-shadow: none; }
+  .mbfp-stat-card.red { background: #fff5f4; border-color: #f2ceca; }
+  .mbfp-stat-card:hover { border-color: #a7afb9; transform: translateY(-2px); }
+  .mbfp-stat-card.red:hover { border-color: #c94338; }
 
   .mbfp-stat-header {
     display: flex;
@@ -424,7 +368,7 @@ const dashboardStyles = `
   }
 
   .mbfp-stat-label {
-    font-size: 0.69rem;
+    font-size: 0.75rem;
     font-weight: 750;
     color: #475569;
     text-transform: uppercase;
@@ -432,8 +376,8 @@ const dashboardStyles = `
   }
 
   .mbfp-stat-value {
-    font-size: 1.85rem;
-    font-weight: 900;
+    font-size: 2.25rem;
+    font-weight: 750;
     color: #0F172A;
     line-height: 1.05;
     font-feature-settings: "tnum";
@@ -443,8 +387,8 @@ const dashboardStyles = `
   /* ========== UNIFIED 2-COLUMN WORKSPACE ========== */
   .mbfp-columns {
     display: grid;
-    grid-template-columns: 1.55fr 1fr;
-    gap: 0.85rem;
+    grid-template-columns: minmax(0, 1.8fr) minmax(300px, 1fr);
+    gap: 1.25rem;
     align-items: start;
   }
 
@@ -452,7 +396,7 @@ const dashboardStyles = `
   .mbfp-col-side {
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 1.25rem;
   }
 
   @media (max-width: 1100px) {
@@ -720,12 +664,12 @@ const dashboardStyles = `
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
-    background: linear-gradient(145deg, #FFF1F2 0%, #FFE4E6 100%);
+    background: #FFF7F6;
     border: 1px solid #FECDD3;
   }
 
   .mbfp-qa-box.full-width:hover {
-    background: linear-gradient(145deg, #FFE4E6 0%, #FECDD3 100%);
+    background: #FFEAE7;
     border-color: #FDA4AF;
   }
 
@@ -743,7 +687,7 @@ const dashboardStyles = `
     border-radius: 12px;
     padding: 0.85rem;
     display: flex;
-    gap: 0.85rem;
+    gap: 1.25rem;
     align-items: flex-start;
     transition: all 0.2s ease;
     box-shadow: 0 1px 3px rgba(0,0,0,0.02);
@@ -853,14 +797,14 @@ const dashboardStyles = `
   }
 
   .mbfp-btn-action.verify-now {
-    background: linear-gradient(135deg, #10B981, #059669);
+    background: #B83229;
     color: #FFFFFF;
-    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+    box-shadow: none;
   }
   .mbfp-btn-action.verify-now:hover {
-    background: linear-gradient(135deg, #059669, #047857);
+    background: #96271F;
     transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+    box-shadow: none;
   }
 
   .mbfp-btn-action.open-map {
@@ -979,7 +923,7 @@ const dashboardStyles = `
     height: 6px;
     border-radius: 50%;
     background: #10B981;
-    animation: mbfpEmeraldPulse 2s infinite;
+    animation: none;
   }
 
   /* ========== MUTUAL AID SECTION ========== */
@@ -1130,6 +1074,80 @@ const dashboardStyles = `
       grid-template-columns: 1fr;
     }
   }
+
+  /* Operational hierarchy and responsive finishing. */
+  .mbfp-dash { --command-red: #b83229; }
+  .mbfp-dash a:focus-visible, .mbfp-dash button:focus-visible {
+    outline: 3px solid #2563eb; outline-offset: 4px;
+  }
+  .mbfp-dash button:disabled { cursor: wait; opacity: .65; }
+  .mbfp-dash-title-wrap { align-items: flex-start; }
+  .mbfp-dash-fire-icon { width: 42px; height: 42px; margin-top: 5px; box-shadow: none; }
+  .mbfp-eyebrow { font-size: .65rem; font-weight: 750; letter-spacing: .14em; color: #7a6260; text-transform: uppercase; margin-bottom: .4rem; }
+  .mbfp-dash-subtitle { margin-top: .5rem; color: #667085; font-size: .82rem; line-height: 1.6; }
+  .mbfp-top-ctrls { flex-wrap: wrap; }
+  .mbfp-refresh-btn { min-height: 40px; padding: .6rem .85rem; }
+  .mbfp-status-badge { border: none; background: transparent; padding-left: 0; box-shadow: none; }
+  .mbfp-status-badge[data-error="true"] { color: #9a3412; }
+  .mbfp-status-badge[data-error="true"] .mbfp-status-dot-radar { background: #c2410c; }
+  .mbfp-briefing { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; padding: 1.3rem 1.5rem; border: 1px solid #e2e5e9; border-left: 4px solid var(--command-red); border-radius: 10px; background: #fff; }
+  .mbfp-briefing h2 { font-size: 1rem; font-weight: 750; margin: 0 0 .4rem; }
+  .mbfp-briefing p { font-size: .8rem; line-height: 1.6; color: #667085; max-width: 65ch; }
+  .mbfp-briefing-actions { display: flex; gap: .65rem; flex-shrink: 0; }
+  .mbfp-primary-action, .mbfp-secondary-action { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: .55rem; border-radius: 7px; padding: .7rem 1rem; text-decoration: none; font-size: .78rem; font-weight: 700; transition: background .2s; }
+  .mbfp-primary-action { background: var(--command-red); color: white; }
+  .mbfp-primary-action:hover { background: #92281f; }
+  .mbfp-secondary-action { border: 1px solid #d6dbe1; background: #fff; color: #344054; }
+  .mbfp-secondary-action:hover { background: #f2f4f7; }
+  .mbfp-error { border: 1px solid #fed7aa; background: #fff7ed; color: #9a3412; padding: 1rem; border-radius: 8px; font-size: .8rem; line-height: 1.6; }
+  .mbfp-stat-icon { background: #f5f6f8; border: none; box-shadow: none; width: 32px; height: 32px; }
+  .mbfp-stat-label { text-transform: none; letter-spacing: 0; font-weight: 600; margin-top: .4rem; }
+  .mbfp-stat-trend-tag { font-size: .6rem; font-weight: 650; }
+  .mbfp-stat-note { font-size: .68rem; color: #667085; margin-top: .65rem; line-height: 1.5; }
+  .mbfp-col-main, .mbfp-col-side { min-width: 0; }
+  .mbfp-card { border-radius: 12px; box-shadow: none; }
+  .mbfp-card-header { padding: 1.1rem 1.2rem; background: #fff; gap: .75rem; flex-wrap: wrap; }
+  .mbfp-card-title { font-size: .9rem; font-weight: 750; }
+  .mbfp-card-badge { font-weight: 550; font-size: .65rem; }
+  .mbfp-incident-table { min-width: 650px; }
+  .mbfp-incident-table th { font-size: .62rem; background: #fafbfc; padding: .85rem 1rem; }
+  .mbfp-incident-row td { padding: 1rem; }
+  .mbfp-ref-code { background: transparent; border: none; padding: 0; color: #a3332b; font-size: .72rem; text-decoration: none; }
+  a.mbfp-ref-code:hover { text-decoration: underline; }
+  .mbfp-view-all-footer { background: #fff; color: #a3332b; font-size: .74rem; padding: .95rem 1.2rem; }
+  .mbfp-view-all-footer:hover { background: #fafafa; color: #862b24; }
+  .mbfp-qa-box { flex-direction: row; align-items: center; background: #fff; border-color: #eceef1; padding: .8rem; gap: .7rem; }
+  .mbfp-qa-icon-wrap { flex-shrink: 0; }
+  .mbfp-qa-text { font-size: .75rem; }
+  .mbfp-qa-sub { font-size: .65rem; margin-top: .25rem; line-height: 1.5; }
+  .mbfp-verif-card { border: none; border-radius: 0; border-bottom: 1px solid #eceef1; box-shadow: none; padding: .8rem .2rem 1rem; }
+  .mbfp-verif-card:last-child { border-bottom: none; }
+  .mbfp-verif-card:hover { box-shadow: none; }
+  .mbfp-btn-action { min-height: 36px; }
+  .mbfp-station-row, .mbfp-aid-item { background: #fafbfc; border-color: #eceef1; padding: .85rem; }
+  .mbfp-station-status-pill { color: #475467; background: #f2f4f7; border-color: #e4e7ec; text-transform: capitalize; }
+  .mbfp-station-dot { background: currentColor; }
+  .mbfp-aid-btn.support { background: #fff; color: #475467; border-color: #d0d5dd; min-height: 36px; }
+  .mbfp-aid-btn.support:hover { background: #f2f4f7; color: #1d2939; }
+  .mbfp-section-note { color: #667085; font-size: .75rem; line-height: 1.6; padding: .8rem 1.2rem 0; }
+  @media (min-width: 1101px) and (max-width: 1400px) { .mbfp-qa-grid-top { grid-template-columns: 1fr; } }
+  @media (max-width: 1100px) { .mbfp-briefing { align-items: flex-start; flex-direction: column; } }
+  @media (max-width: 768px) {
+    .mbfp-dash { padding: 1rem .85rem 2rem; gap: 1rem; }
+    .mbfp-dash-heading { font-size: 1.5rem; }
+    .mbfp-briefing { padding: 1.1rem; }
+    .mbfp-briefing-actions { flex-wrap: wrap; width: 100%; }
+    .mbfp-primary-action, .mbfp-secondary-action { flex: 1; }
+    .mbfp-card-header { padding: 1rem; }
+    .mbfp-stats-row { gap: .65rem; }
+    .mbfp-stat-card { padding: 1rem; }
+    .mbfp-stats-row .mbfp-stat-card:last-child { grid-column: 1 / -1; }
+    .mbfp-stat-value { font-size: 2rem; }
+    .mbfp-verif-top-row { gap: .5rem; flex-wrap: wrap; }
+    .mbfp-verif-id-pill { overflow-wrap: anywhere; }
+  }
+  @media (max-width: 500px) { .mbfp-stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } .mbfp-stat-trend-tag { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .mbfp-dash *, .mbfp-dash *::before, .mbfp-dash *::after { animation: none !important; transition: none !important; } }
 `;
 
 interface DashboardCacheRecord {
@@ -1172,6 +1190,7 @@ function setCachedDashboard(data: DashboardPayload) {
 export function MunicipalBfpDashboard() {
   const {
     incidents,
+    error: incidentsError,
     loading: incidentsLoading,
     checking: incidentsChecking,
     lastCheckedAt,
@@ -1186,6 +1205,7 @@ export function MunicipalBfpDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardPayload | null>(initialCache.current);
   const [dashLoading, setDashLoading] = useState(!initialCache.current);
   const [dashChecking, setDashChecking] = useState(false);
+  const [dashboardError, setDashboardError] = useState('');
   const inFlight = useRef(false);
   const mounted = useRef(true);
 
@@ -1200,11 +1220,12 @@ export function MunicipalBfpDashboard() {
       if (!res.ok) throw new Error(payload.error || 'Failed to fetch dashboard data');
 
       if (mounted.current) {
+        setDashboardError('');
         setDashboardData(payload);
         setCachedDashboard(payload);
       }
     } catch (err) {
-      console.error('Municipal dashboard fetch error:', err);
+      if (mounted.current) setDashboardError(err instanceof Error ? err.message : 'Unable to refresh dashboard.');
     } finally {
       if (mounted.current) {
         setDashLoading(false);
@@ -1236,11 +1257,12 @@ export function MunicipalBfpDashboard() {
   };
 
   const isChecking = incidentsChecking || dashChecking;
-  const liveStatus = isChecking
-    ? 'Live · checking...'
-    : lastCheckedAt
-      ? 'Live · checked just now'
-      : 'Live · connecting...';
+  const hasError = Boolean(dashboardError || incidentsError);
+  const liveStatus = hasError
+    ? 'Refresh unavailable'
+    : isChecking ? 'Updating live data'
+    : lastCheckedAt ? `Live · checked ${lastCheckedAt.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}`
+    : 'Connecting to live data';
 
   const getStatusClass = (status: string) => {
     if (status === 'RESPONDING') return 'responding';
@@ -1267,13 +1289,13 @@ export function MunicipalBfpDashboard() {
   // Derive live figures from real incident feed and backend database
   const pendingIncidents = incidents.filter((i) => ['PENDING', 'UNVERIFIED'].includes(i.status));
   const pendingResidentApps = dashboardData?.pendingVerifications?.residentApplications ?? [];
-  const totalPending = pendingIncidents.length + pendingResidentApps.length;
+  const totalPending = pendingIncidents.length + (dashboardData?.stats?.pendingApplicationsCount ?? pendingResidentApps.length);
 
   const stats = dashboardData?.stats;
   const stations = dashboardData?.stations ?? [];
   const mutualAid = dashboardData?.mutualAid ?? [];
   const municipality = dashboardData?.municipality || 'Municipal';
-  const recentIncidents = incidents;
+  const recentIncidents = incidents.slice(0, 5);
 
   return (
     <>
@@ -1285,11 +1307,15 @@ export function MunicipalBfpDashboard() {
             <span className="mbfp-dash-fire-icon" aria-hidden="true">
               <i className="fa-solid fa-fire-flame-curved" />
             </span>
-            <h1 className="mbfp-dash-heading">{municipality} Fire Command</h1>
+            <div>
+              <p className="mbfp-eyebrow">ALAB / Municipal operations</p>
+              <h1 className="mbfp-dash-heading">{municipality} Fire Command</h1>
+              <p className="mbfp-dash-subtitle">Your municipality at a glance. Verify reports, coordinate response, and manage resources.</p>
+            </div>
           </div>
 
           <div className="mbfp-top-ctrls">
-            <div className="mbfp-status-badge">
+            <div className="mbfp-status-badge" data-error={hasError}>
               <span className="mbfp-status-dot-radar" />
               <span>{liveStatus}</span>
             </div>
@@ -1306,7 +1332,24 @@ export function MunicipalBfpDashboard() {
           </div>
         </div>
 
-        {/* 5 Clean KPI Metric Cards Row */}
+        {hasError && (
+          <div className="mbfp-error" role="alert">
+            <strong>Some operational data could not refresh.</strong> {dashboardError || incidentsError} Previously loaded information may be out of date. Use Refresh to try again.
+          </div>
+        )}
+        <section className="mbfp-briefing" aria-labelledby="operations-briefing">
+          <div>
+            <p className="mbfp-eyebrow">Response overview</p>
+            <h2 id="operations-briefing">{incidentsLoading ? 'Loading incident activity' : incidentsError ? 'Check incident feed connection' : pendingIncidents.length > 0 ? `${pendingIncidents.length} fire report${pendingIncidents.length === 1 ? '' : 's'} awaiting verification` : incidents.length > 0 ? 'Response operations in progress' : 'No active incidents reported'}</h2>
+            <p>Review incoming reports before dispatch. Use the GIS map to locate incidents, water sources, and response routes.</p>
+          </div>
+          <div className="mbfp-briefing-actions">
+            <Link href="/municipal-bfp/gis-map" className="mbfp-secondary-action"><i className="fa-solid fa-map-location-dot" aria-hidden="true" />Open GIS map</Link>
+            <Link href="/municipal-bfp/dispatch-routing" className="mbfp-primary-action"><i className="fa-solid fa-truck-moving" aria-hidden="true" />Dispatch &amp; routing</Link>
+          </div>
+        </section>
+
+        {/* Operational metrics */}
         <div className="mbfp-stats-row">
           {/* Card 1: Active Incidents */}
           <Link href="/municipal-bfp/active-incidents" className="mbfp-stat-card red">
@@ -1316,14 +1359,14 @@ export function MunicipalBfpDashboard() {
               </div>
               <span className="mbfp-stat-trend-tag red">
                 <i className="fa-solid fa-triangle-exclamation" />
-                {incidents.length > 0 ? 'Priority' : 'Normal'}
+                {incidentsError ? 'Check feed' : incidentsLoading ? 'Loading' : incidents.length > 0 ? 'Priority' : 'Monitoring'}
               </span>
             </div>
             <div className="mbfp-stat-body">
               <span className="mbfp-stat-value">
-                {incidentsLoading ? <span className="mbfp-skeleton-val" /> : incidents.length}
+                {incidentsLoading ? <span className="mbfp-skeleton-val" /> : incidentsError && !lastCheckedAt ? '?' : incidents.length}
               </span>
-              <span className="mbfp-stat-label">Active Incidents</span>
+              <span className="mbfp-stat-label">Active incidents</span><span className="mbfp-stat-note">Current incident feed</span>
             </div>
           </Link>
 
@@ -1335,14 +1378,14 @@ export function MunicipalBfpDashboard() {
               </div>
               <span className="mbfp-stat-trend-tag amber">
                 <i className="fa-solid fa-hourglass-half" />
-                {totalPending > 0 ? 'Pending' : 'Cleared'}
+                {hasError ? 'Check feed' : incidentsLoading || dashLoading ? 'Loading' : totalPending > 0 ? 'Pending' : 'Cleared'}
               </span>
             </div>
             <div className="mbfp-stat-body">
               <span className="mbfp-stat-value">
-                {incidentsLoading || dashLoading ? <span className="mbfp-skeleton-val" /> : totalPending}
+                {incidentsLoading || dashLoading ? <span className="mbfp-skeleton-val" /> : hasError && !dashboardData ? '?' : totalPending}
               </span>
-              <span className="mbfp-stat-label">Pending Verifications</span>
+              <span className="mbfp-stat-label">Awaiting review</span><span className="mbfp-stat-note">Fire reports &amp; resident IDs</span>
             </div>
           </Link>
 
@@ -1358,9 +1401,9 @@ export function MunicipalBfpDashboard() {
             </div>
             <div className="mbfp-stat-body">
               <span className="mbfp-stat-value">
-                {dashLoading ? <span className="mbfp-skeleton-val" /> : (stations.length || stats?.availableFiretrucks || 0)}
+                {dashLoading ? <span className="mbfp-skeleton-val" /> : (dashboardData ? stations.length : '?')}
               </span>
-              <span className="mbfp-stat-label">Stations &amp; Fleet</span>
+              <span className="mbfp-stat-label">Active stations</span><span className="mbfp-stat-note">Registered in your municipality</span>
             </div>
           </Link>
 
@@ -1376,9 +1419,9 @@ export function MunicipalBfpDashboard() {
             </div>
             <div className="mbfp-stat-body">
               <span className="mbfp-stat-value">
-                {dashLoading ? <span className="mbfp-skeleton-val" /> : (stats?.respondersOnDuty ?? 0)}
+                {dashLoading ? <span className="mbfp-skeleton-val" /> : (stats?.respondersOnDuty ?? '?')}
               </span>
-              <span className="mbfp-stat-label">Responders on Duty</span>
+              <span className="mbfp-stat-label">Assigned responders</span><span className="mbfp-stat-note">Active municipality assignments</span>
             </div>
           </Link>
 
@@ -1394,9 +1437,9 @@ export function MunicipalBfpDashboard() {
             </div>
             <div className="mbfp-stat-body">
               <span className="mbfp-stat-value">
-                {dashLoading ? <span className="mbfp-skeleton-val" /> : (stats?.assistanceRequests ?? 0)}
+                {dashLoading ? <span className="mbfp-skeleton-val" /> : (stats?.assistanceRequests ?? '?')}
               </span>
-              <span className="mbfp-stat-label">Active Dispatches</span>
+              <span className="mbfp-stat-label">Active dispatches</span><span className="mbfp-stat-note">Ongoing unit deployments</span>
             </div>
           </Link>
         </div>
@@ -1412,7 +1455,7 @@ export function MunicipalBfpDashboard() {
                   <div className="mbfp-card-title-icon">
                     <i className="fa-solid fa-fire" />
                   </div>
-                  <span className="mbfp-card-title">Recent / Active Incident Queue</span>
+                  <span className="mbfp-card-title">Active incident queue</span>
                 </div>
                 <span className="mbfp-card-badge">{recentIncidents.length} Active in {municipality}</span>
               </div>
@@ -1458,16 +1501,16 @@ export function MunicipalBfpDashboard() {
                         <td colSpan={5} style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#64748B' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
                             <i className="fa-solid fa-shield-check" style={{ fontSize: '1.8rem', color: '#10B981' }} />
-                            <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>All Clear in {municipality}</strong>
+                            <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{incidentsError ? 'Incident feed unavailable' : `No active incidents in ${municipality}`}</strong>
                             <span style={{ fontSize: '0.78rem' }}>No active fire emergencies reported. Monitoring 24/7.</span>
                           </div>
                         </td>
                       </tr>
                     ) : (
-                      incidents.slice(0, 5).map((inc) => (
+                      recentIncidents.slice(0, 5).map((inc) => (
                         <tr key={inc.id} className="mbfp-incident-row">
                           <td style={{ whiteSpace: 'nowrap', width: '1%' }}>
-                            <span className="mbfp-ref-code">{inc.referenceNumber}</span>
+                            <Link href="/municipal-bfp/active-incidents" className="mbfp-ref-code">{inc.referenceNumber}</Link>
                           </td>
                           <td>
                             <div style={{ fontWeight: 800, color: '#0F172A' }}>{inc.barangay || 'Barangay not identified'}</div>
@@ -1516,7 +1559,7 @@ export function MunicipalBfpDashboard() {
                   </span>
                 </div>
                 <span className="mbfp-card-badge" style={{ color: '#D97706', background: '#FFFBEB', borderColor: '#FDE68A' }}>
-                  Citizen Reports &amp; Resident KYC
+                  Fire reports & resident IDs
                 </span>
               </div>
 
@@ -1624,18 +1667,18 @@ export function MunicipalBfpDashboard() {
             </div>
           </div>
 
-          {/* Side Column: Tactical Quick Actions, Station Readiness & Mutual Aid */}
+          {/* Side Column: Quick actions, Station Readiness & Mutual Aid */}
           <div className="mbfp-col-side">
-            {/* Tactical Quick Actions */}
+            {/* Quick actions */}
             <div className="mbfp-card">
               <div className="mbfp-card-header">
                 <div className="mbfp-card-title-wrap">
                   <div className="mbfp-card-title-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
                     <i className="fa-solid fa-bolt" />
                   </div>
-                  <span className="mbfp-card-title">Tactical Quick Actions</span>
+                  <span className="mbfp-card-title">Quick actions</span>
                 </div>
-                <span className="mbfp-card-badge">Instant Access</span>
+                <span className="mbfp-card-badge">Workspace</span>
               </div>
 
               <div className="mbfp-quick-actions-wrap">
@@ -1646,7 +1689,7 @@ export function MunicipalBfpDashboard() {
                     </div>
                     <div>
                       <div className="mbfp-qa-text">Verify Reports</div>
-                      <div className="mbfp-qa-sub">{totalPending} Pending</div>
+                      <div className="mbfp-qa-sub">Reports &amp; resident IDs</div>
                     </div>
                   </Link>
 
@@ -1701,7 +1744,7 @@ export function MunicipalBfpDashboard() {
                   <div className="mbfp-card-title-icon" style={{ background: '#ECFDF5', color: '#059669' }}>
                     <i className="fa-solid fa-building-shield" />
                   </div>
-                  <span className="mbfp-card-title">Municipal Stations &amp; Readiness</span>
+                  <span className="mbfp-card-title">Station overview</span>
                 </div>
                 <Link href="/municipal-bfp/stations" style={{ fontSize: '0.72rem', fontWeight: 750, color: '#2563EB', textDecoration: 'none' }}>
                   Manage
@@ -1742,7 +1785,7 @@ export function MunicipalBfpDashboard() {
                       </div>
                       <div className="mbfp-station-status-pill">
                         <span className="mbfp-station-dot" />
-                        <span>Ready</span>
+                        <span>{st.status.replaceAll('_', ' ').toLowerCase()}</span>
                       </div>
                     </div>
                   ))
@@ -1757,9 +1800,9 @@ export function MunicipalBfpDashboard() {
                   <div className="mbfp-card-title-icon" style={{ background: '#F5F3FF', color: '#7C3AED' }}>
                     <i className="fa-solid fa-tower-broadcast" />
                   </div>
-                  <span className="mbfp-card-title">Antique Mutual Aid Grid</span>
+                  <span className="mbfp-card-title">Mutual aid coordination</span>
                 </div>
-                <span className="mbfp-card-badge">Neighbor Support</span>
+                <span className="mbfp-card-badge">Antique</span>
               </div>
 
               <div className="mbfp-mutual-aid-wrap">
@@ -1780,10 +1823,7 @@ export function MunicipalBfpDashboard() {
                       <div className="mbfp-aid-meta">
                         <span className="mbfp-aid-title">{aid.stationName}</span>
                         <span className="mbfp-aid-sub">{aid.municipalityName} · Regional Support</span>
-                        <a href={`tel:${aid.phone}`} className="mbfp-aid-phone">
-                          <i className="fa-solid fa-phone-volume" />
-                          <span>{aid.phone}</span>
-                        </a>
+
                       </div>
                       <Link href="/municipal-bfp/dispatch-routing" className="mbfp-aid-btn support">
                         <i className="fa-solid fa-handshake" /> Request Backup
@@ -1792,20 +1832,12 @@ export function MunicipalBfpDashboard() {
                   ))
                 )}
 
-                {/* Provincial Command Center Hotline */}
-                <div className="mbfp-aid-item" style={{ background: '#FFF1F2', borderColor: '#FFE4E6' }}>
-                  <div className="mbfp-aid-meta">
-                    <span className="mbfp-aid-title" style={{ color: '#991B1B' }}>Provincial BFP Headquarters</span>
-                    <span className="mbfp-aid-sub">San Jose Command · 24/7 Operations</span>
-                    <a href="tel:(036) 540-9999" className="mbfp-aid-phone" style={{ color: '#B91C1C' }}>
-                      <i className="fa-solid fa-phone-volume" />
-                      <span>(036) 540-9999</span>
-                    </a>
-                  </div>
-                  <a href="tel:(036) 540-9999" className="mbfp-aid-btn provincial">
-                    <i className="fa-solid fa-phone" /> Call HQ
-                  </a>
-                </div>
+                {!dashLoading && mutualAid.length === 0 && (
+                  <p className="mbfp-section-note">No neighboring stations are available in this overview. Open dispatch and routing to coordinate assistance.</p>
+                )}
+                <Link href="/municipal-bfp/dispatch-routing" className="mbfp-view-all-footer">
+                  <span>Coordinate response &amp; backup</span><i className="fa-solid fa-arrow-right" aria-hidden="true" />
+                </Link>
               </div>
             </div>
           </div>

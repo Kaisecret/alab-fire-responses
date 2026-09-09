@@ -38,42 +38,77 @@ export async function getResidentApplication(municipalityId: string, application
     id: string; reference: string; status: string; submittedAt: Date; correctionReason: string | null;
     firstName: string; lastName: string; email: string; phone: string; username: string;
     municipality: string; barangay: string; address: string; frontReviewKey: string | null;
-    backReviewKey: string | null; selfieReviewKey: string | null;
+    legacyFrontKey: string | null; backReviewKey: string | null; legacyBackKey: string | null;
+    selfieReviewKey: string | null; legacySelfieKey: string | null;
   }>(
     `select rv.id, rv.application_reference as reference, rv.status, rv.submitted_at as "submittedAt",
             rv.rejection_reason as "correctionReason", rp.first_name as "firstName", rp.last_name as "lastName",
             u.email, u.phone, u.username, m.name as municipality, b.name as barangay, ra.complete_address as address,
-            rv.front_review_document_key as "frontReviewKey", rv.back_review_document_key as "backReviewKey",
-            rv.selfie_review_document_key as "selfieReviewKey"
+            rv.front_review_document_key as "frontReviewKey",
+            rv.front_document_key as "legacyFrontKey",
+            rv.back_review_document_key as "backReviewKey",
+            rv.back_document_key as "legacyBackKey",
+            rv.selfie_review_document_key as "selfieReviewKey",
+            rv.selfie_key as "legacySelfieKey"
        from resident_verifications rv
        join resident_profiles rp on rp.id = rv.resident_profile_id
        join users u on u.id = rp.user_id
        join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
        join municipalities m on m.id = ra.municipality_id
        join barangays b on b.id = ra.barangay_id
-      where rv.id = $1 and ra.municipality_id = $2 and u.role = 'RESIDENT'
+      where (rv.id::text = $1 or rv.application_reference = $1) and ra.municipality_id = $2 and u.role = 'RESIDENT'
       limit 1`,
     [applicationId, municipalityId],
   );
   const application = result.rows[0];
   if (!application) return null;
 
-  const events = await getDatabase().query(
-    `select event_type as type, notes, created_at as "createdAt"
-       from resident_verification_events where resident_profile_id = (
-         select resident_profile_id from resident_verifications where id = $1
-       ) order by created_at asc`,
-    [applicationId],
-  );
+  let eventsRows: Array<{ type: string; notes: string | null; createdAt: Date }> = [];
+  try {
+    const events = await getDatabase().query<{ type: string; notes: string | null; createdAt: Date }>(
+      `select event_type as type, notes, created_at as "createdAt"
+         from resident_verification_events where resident_profile_id = (
+           select resident_profile_id from resident_verifications where (id::text = $1 or application_reference = $1) limit 1
+         ) order by created_at asc`,
+      [applicationId],
+    );
+    eventsRows = events.rows;
+  } catch (err) {
+    console.warn("Unable to load resident verification events:", err);
+  }
+
+  // Fallback to legacy document keys if review derivative keys are missing
+  application.frontReviewKey = application.frontReviewKey || application.legacyFrontKey || null;
+  application.backReviewKey = application.backReviewKey || application.legacyBackKey || null;
+  application.selfieReviewKey = application.selfieReviewKey || application.legacySelfieKey || null;
+
   const { createIdentityEvidenceSignedUrl } = await import("./evidence");
-  const [frontUrl, backUrl, selfieUrl] = await Promise.all([
-    createIdentityEvidenceSignedUrl(application.frontReviewKey),
-    createIdentityEvidenceSignedUrl(application.backReviewKey),
-    createIdentityEvidenceSignedUrl(application.selfieReviewKey),
-  ]);
-  const { frontReviewKey: _front, backReviewKey: _back, selfieReviewKey: _selfie, ...safe } = application;
-  void _front; void _back; void _selfie;
-  return { ...safe, evidence: { frontUrl, backUrl, selfieUrl }, events: events.rows };
+  let frontUrl: string | null = null;
+  let backUrl: string | null = null;
+  let selfieUrl: string | null = null;
+
+  try {
+    [frontUrl, backUrl, selfieUrl] = await Promise.all([
+      createIdentityEvidenceSignedUrl(application.frontReviewKey),
+      createIdentityEvidenceSignedUrl(application.backReviewKey),
+      createIdentityEvidenceSignedUrl(application.selfieReviewKey),
+    ]);
+  } catch (evidenceError) {
+    console.warn("Unable to load identity evidence signed URLs:", evidenceError);
+  }
+
+  const {
+    frontReviewKey: _front,
+    legacyFrontKey: _legacyFront,
+    backReviewKey: _back,
+    legacyBackKey: _legacyBack,
+    selfieReviewKey: _selfie,
+    legacySelfieKey: _legacySelfie,
+    ...safe
+  } = application;
+  void _front; void _legacyFront; void _back; void _legacyBack; void _selfie; void _legacySelfie;
+
+  return { ...safe, evidence: { frontUrl, backUrl, selfieUrl }, events: eventsRows };
 }
 
 async function lockedApplication(client: Parameters<Parameters<typeof withTransaction>[0]>[0], municipalityId: string, applicationId: string) {
@@ -82,7 +117,7 @@ async function lockedApplication(client: Parameters<Parameters<typeof withTransa
        from resident_verifications rv
        join resident_profiles rp on rp.id = rv.resident_profile_id
        join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
-      where rv.id = $1 and ra.municipality_id = $2
+      where (rv.id::text = $1 or rv.application_reference = $1) and ra.municipality_id = $2
       for update of rv`,
     [applicationId, municipalityId],
   );
@@ -98,20 +133,20 @@ export async function approveResidentApplication(municipalityId: string, applica
     await client.query(
       `update resident_verifications set status = 'VERIFIED', reviewed_by_user_id = $1,
               reviewed_at = $2, rejection_reason = null, updated_at = $2 where id = $3`,
-      [actorUserId, now, applicationId],
+      [actorUserId, now, application.id],
     );
     await client.query("update users set account_status = 'ACTIVE', updated_at = $1 where id = $2", [now, application.user_id]);
     await client.query(
       `insert into resident_verification_events (verification_id, resident_profile_id, actor_user_id, event_type, metadata, created_at)
        values ($1,$2,$3,'APPROVED',$4::jsonb,$5)`,
-      [applicationId, application.resident_profile_id, actorUserId, JSON.stringify({ municipalityId }), now],
+      [application.id, application.resident_profile_id, actorUserId, JSON.stringify({ municipalityId }), now],
     );
     await createAccountNotifications(client, {
       recipientUserIds: [application.user_id], actorUserId,
       eventType: "RESIDENT_APPLICATION_APPROVED", category: "APPLICATION",
       title: "Application approved", summary: "Your resident account is ready.",
-      actionHref: "/resident/login", entityType: "resident_verification", entityId: applicationId,
-      dedupeKey: `resident-application:${applicationId}:approved`, createdAt: now,
+      actionHref: "/resident/login", entityType: "resident_verification", entityId: application.id,
+      dedupeKey: `resident-application:${application.id}:approved`, createdAt: now,
     });
     return { status: "VERIFIED" };
   });
@@ -133,20 +168,20 @@ export async function requestResidentApplicationCorrections(
     await client.query(
       `update resident_verifications set status = 'CHANGES_REQUESTED', reviewed_by_user_id = $1,
               reviewed_at = $2, rejection_reason = $3, updated_at = $2 where id = $4`,
-      [actorUserId, now, notes, applicationId],
+      [actorUserId, now, notes, application.id],
     );
     await client.query("update users set account_status = 'PENDING_REVIEW', updated_at = $1 where id = $2", [now, application.user_id]);
     await client.query(
       `insert into resident_verification_events (verification_id, resident_profile_id, actor_user_id, event_type, notes, metadata, created_at)
        values ($1,$2,$3,'CHANGES_REQUESTED',$4,$5::jsonb,$6)`,
-      [applicationId, application.resident_profile_id, actorUserId, notes, JSON.stringify({ municipalityId }), now],
+      [application.id, application.resident_profile_id, actorUserId, notes, JSON.stringify({ municipalityId }), now],
     );
     await createAccountNotifications(client, {
       recipientUserIds: [application.user_id], actorUserId,
       eventType: "RESIDENT_APPLICATION_CHANGES_REQUESTED", category: "APPLICATION",
       title: "Changes requested", summary: "Update your resident application.",
-      actionHref: "/resident/application", entityType: "resident_verification", entityId: applicationId,
-      context: { reason: notes }, dedupeKey: `resident-application:${applicationId}:changes`, createdAt: now,
+      actionHref: "/resident/application", entityType: "resident_verification", entityId: application.id,
+      context: { reason: notes }, dedupeKey: `resident-application:${application.id}:changes`, createdAt: now,
     });
     return { status: "CHANGES_REQUESTED" };
   });
