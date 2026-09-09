@@ -204,39 +204,351 @@ export function IntermunicipalityCoordinationPanel({
   }
 
   return (
-    <section
-      aria-label="Inter-Municipality Live Incident Coordination"
-      className="mt-6 rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-sm backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95 sm:p-6"
-    >
+    <section aria-label="Inter-Municipality Live Incident Coordination" className="mbfp-coord-panel">
+      <style>{`
+        .mbfp-coord-panel {
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          border-radius: 16px;
+          padding: 1.15rem 1.4rem;
+          margin-bottom: 12px;
+          box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+          font-family: inherit;
+          box-sizing: border-box;
+          color: #0F172A;
+        }
+        .mbfp-coord-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          padding-bottom: 0.85rem;
+          border-bottom: 1px solid #F1F5F9;
+          flex-wrap: wrap;
+        }
+        .mbfp-coord-title-wrap {
+          display: flex;
+          align-items: center;
+          gap: 0.85rem;
+        }
+        .mbfp-coord-icon-pill {
+          width: 40px;
+          height: 40px;
+          min-width: 40px;
+          max-width: 40px;
+          min-height: 40px;
+          max-height: 40px;
+          border-radius: 11px;
+          background: #FFF7ED;
+          border: 1px solid #FFEDD5;
+          color: #EA580C;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.15rem;
+          flex-shrink: 0;
+        }
+        .mbfp-coord-title-text h3 {
+          margin: 0;
+          font-size: 1.02rem;
+          font-weight: 850;
+          color: #0F172A;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .mbfp-coord-scope-tag {
+          font-size: 0.7rem;
+          font-weight: 800;
+          padding: 0.2rem 0.55rem;
+          border-radius: 999px;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+        .mbfp-coord-scope-tag.origin {
+          background: #ECFDF5;
+          color: #047857;
+          border: 1px solid #A7F3D0;
+        }
+        .mbfp-coord-scope-tag.observer {
+          background: #F0F9FF;
+          color: #0369A1;
+          border: 1px solid #BAE6FD;
+        }
+        .mbfp-coord-title-text p {
+          margin: 0.2rem 0 0 0;
+          font-size: 0.78rem;
+          color: #64748B;
+          font-weight: 500;
+        }
+        .mbfp-coord-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          padding: 0.55rem 1.15rem;
+          border-radius: 9px;
+          font-size: 0.82rem;
+          font-weight: 750;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          font-family: inherit;
+          border: none;
+          white-space: nowrap;
+        }
+        .mbfp-coord-btn.primary {
+          background: linear-gradient(135deg, #EA580C 0%, #F97316 100%);
+          color: #FFFFFF;
+          box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+        }
+        .mbfp-coord-btn.primary:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+        }
+        .mbfp-coord-btn.primary:disabled {
+          background: #F1F5F9;
+          color: #94A3B8;
+          border: 1px solid #E2E8F0;
+          box-shadow: none;
+          cursor: not-allowed;
+        }
+        .mbfp-coord-feedback {
+          margin-top: 0.75rem;
+          padding: 0.65rem 1rem;
+          border-radius: 9px;
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+        .mbfp-coord-feedback.error {
+          background: #FEF2F2;
+          border: 1px solid #FECACA;
+          color: #991B1B;
+        }
+        .mbfp-coord-feedback.success {
+          background: #ECFDF5;
+          border: 1px solid #A7F3D0;
+          color: #047857;
+        }
+        .mbfp-coord-standby-banner {
+          margin-top: 0.85rem;
+          background: #F8FAFC;
+          border: 1.5px dashed #CBD5E1;
+          border-radius: 12px;
+          padding: 0.95rem 1.25rem;
+          display: flex;
+          align-items: center;
+          gap: 0.85rem;
+        }
+        .mbfp-coord-standby-icon {
+          width: 36px;
+          height: 36px;
+          min-width: 36px;
+          border-radius: 9px;
+          background: #E2E8F0;
+          color: #475569;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1rem;
+          flex-shrink: 0;
+        }
+        .mbfp-coord-standby-title {
+          font-size: 0.84rem;
+          font-weight: 750;
+          color: #1E293B;
+        }
+        .mbfp-coord-standby-desc {
+          font-size: 0.77rem;
+          color: #64748B;
+          margin-top: 0.15rem;
+          line-height: 1.4;
+        }
+        .mbfp-coord-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 12px;
+          margin-top: 0.85rem;
+        }
+        .mbfp-coord-card {
+          background: #F8FAFC;
+          border: 1px solid #E2E8F0;
+          border-radius: 12px;
+          padding: 0.95rem 1.1rem;
+          transition: all 0.2s ease;
+        }
+        .mbfp-coord-card:hover {
+          background: #FFFFFF;
+          border-color: #CBD5E1;
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+        }
+        .mbfp-coord-card-top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 0.75rem;
+        }
+        .mbfp-coord-muni-name {
+          font-size: 0.9rem;
+          font-weight: 800;
+          color: #0F172A;
+          margin: 0;
+        }
+        .mbfp-coord-muni-sub {
+          font-size: 0.76rem;
+          color: #64748B;
+          margin: 0.2rem 0 0 0;
+          font-weight: 500;
+        }
+        .mbfp-coord-status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.24rem 0.65rem;
+          border-radius: 999px;
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 0.02em;
+          white-space: nowrap;
+        }
+        .mbfp-coord-status-badge.waiting {
+          background: #FFFBEB;
+          color: #B45309;
+          border: 1px solid #FDE68A;
+        }
+        .mbfp-coord-status-badge.seen {
+          background: #EFF6FF;
+          color: #1D4ED8;
+          border: 1px solid #BFDBFE;
+        }
+        .mbfp-coord-status-badge.backup-requested {
+          background: #EEF2FF;
+          color: #4338CA;
+          border: 1px solid #C7D2FE;
+        }
+        .mbfp-coord-pulse-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: currentColor;
+          animation: mbfpCoordPulse 1.8s infinite;
+        }
+        @keyframes mbfpCoordPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(1.3); }
+        }
+        .mbfp-coord-ack-meta {
+          margin-top: 0.75rem;
+          padding-top: 0.5rem;
+          border-top: 1px solid #E2E8F0;
+          font-size: 0.72rem;
+          color: #64748B;
+        }
+        .mbfp-coord-table-wrap {
+          margin-top: 1rem;
+          background: #F8FAFC;
+          border: 1px solid #E2E8F0;
+          border-radius: 12px;
+          padding: 0.85rem 1.1rem;
+        }
+        .mbfp-coord-table-title {
+          font-size: 0.72rem;
+          font-weight: 850;
+          color: #475569;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 0.65rem;
+        }
+        .mbfp-coord-req-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.65rem 0;
+          border-bottom: 1px solid #EEF2F6;
+          gap: 0.85rem;
+          flex-wrap: wrap;
+        }
+        .mbfp-coord-req-row:last-child {
+          border-bottom: none;
+        }
+        .mbfp-coord-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          background: rgba(15, 23, 42, 0.65);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+        }
+        .mbfp-coord-modal-card {
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          border-radius: 16px;
+          padding: 1.5rem;
+          width: 100%;
+          max-width: 480px;
+          box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+          box-sizing: border-box;
+        }
+        .mbfp-coord-modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-bottom: 0.85rem;
+          border-bottom: 1px solid #F1F5F9;
+        }
+        .mbfp-coord-modal-header h3 {
+          margin: 0;
+          font-size: 1.05rem;
+          font-weight: 850;
+          color: #0F172A;
+        }
+        .mbfp-coord-modal-close {
+          background: transparent;
+          border: none;
+          color: #64748B;
+          cursor: pointer;
+          font-size: 1.15rem;
+          padding: 0.35rem;
+        }
+        .mbfp-coord-modal-body {
+          margin-top: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        .mbfp-coord-modal-input {
+          width: 100%;
+          padding: 0.6rem 0.85rem;
+          border-radius: 8px;
+          border: 1px solid #CBD5E1;
+          font-size: 0.85rem;
+          box-sizing: border-box;
+          font-family: inherit;
+        }
+        .mbfp-coord-modal-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.65rem;
+          margin-top: 1.25rem;
+        }
+      `}</style>
+
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"
-              />
-            </svg>
+      <div className="mbfp-coord-header">
+        <div className="mbfp-coord-title-wrap">
+          <div className="mbfp-coord-icon-pill">
+            <i className="fa-solid fa-tower-broadcast" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-                Inter-Municipality Live Coordination
-              </h3>
-              <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  isOrigin
-                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40"
-                    : "bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400 border border-sky-200/60 dark:border-sky-800/40"
-                }`}
-              >
+          <div className="mbfp-coord-title-text">
+            <h3>
+              <span>Inter-Municipality Live Coordination</span>
+              <span className={`mbfp-coord-scope-tag ${isOrigin ? "origin" : "observer"}`}>
                 {isOrigin ? "Origin Commander" : "Nearby Observer"}
               </span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            </h3>
+            <p>
               {isOrigin
                 ? "Automatic GPS proximity monitoring with neighboring BFP stations"
                 : "Live situational awareness. Observers cannot dispatch without accepted backup request."}
@@ -252,136 +564,152 @@ export function IntermunicipalityCoordinationPanel({
                 setSelectedRecipientIds(observers.map((o) => o.municipalityId));
                 setShowRequestModal(true);
               }}
-              disabled={observers.length === 0}
-              className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-orange-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 disabled:opacity-50 transition-colors"
+              disabled={observers.length === 0 || submitting}
+              className="mbfp-coord-btn primary"
+              title={observers.length === 0 ? "Dispatch active response first to request mutual aid" : "Request mutual aid assistance"}
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Request Backup
+              <i className="fa-solid fa-plus" />
+              <span>Request Backup</span>
             </button>
           </div>
         )}
       </div>
 
-      {/* Live Feedback Region */}
-      <div aria-live="polite" className="mt-3">
-        {errorMessage && (
-          <div className="rounded-xl border border-red-200 bg-red-50/90 p-3 text-xs text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400">
-            {errorMessage}
-          </div>
-        )}
-        {successMessage && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/90 p-3 text-xs text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-400">
-            {successMessage}
-          </div>
-        )}
-      </div>
+      {/* Live Feedback Message */}
+      {errorMessage && (
+        <div className="mbfp-coord-feedback error">
+          <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: 6 }} />
+          {errorMessage}
+        </div>
+      )}
+      {successMessage && (
+        <div className="mbfp-coord-feedback success">
+          <i className="fa-solid fa-circle-check" style={{ marginRight: 6 }} />
+          {successMessage}
+        </div>
+      )}
 
       {/* Origin View: List Observers and Ongoing Requests */}
       {isOrigin && (
-        <div className="mt-4 space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {observers.map((observer) => {
-              const km = (observer.distanceMeters / 1000).toFixed(1);
-              return (
-                <div
-                  key={observer.observerId}
-                  className="relative rounded-xl border border-slate-100 bg-slate-50/70 p-4 transition-all hover:border-slate-200 dark:border-slate-800 dark:bg-slate-800/40"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
-                        {observer.municipalityName}
-                      </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {observer.stationName} · {km} km away
-                      </p>
-                    </div>
-                    <div>
-                      {observer.monitoringState === "BACKUP_REQUESTED" ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/50">
-                          <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                          Backup requested
-                        </span>
-                      ) : observer.monitoringState === "SEEN" ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/50">
-                          <svg className="h-3 w-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Seen
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/50">
-                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                          Waiting
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {observer.acknowledgedAt && (
-                    <div className="mt-3 border-t border-slate-200/60 pt-2 text-2xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                      Acknowledged by{" "}
-                      <span className="font-medium text-slate-700 dark:text-slate-300">
-                        {observer.acknowledgedByDisplayName || "Municipal Officer"}
-                      </span>{" "}
-                      at {new Date(observer.acknowledgedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </div>
-                  )}
+        <>
+          {observers.length === 0 ? (
+            <div className="mbfp-coord-standby-banner">
+              <div className="mbfp-coord-standby-icon">
+                <i className="fa-solid fa-satellite-dish" />
+              </div>
+              <div>
+                <div className="mbfp-coord-standby-title">
+                  Proximity Monitoring On Standby
                 </div>
-              );
-            })}
-          </div>
+                <div className="mbfp-coord-standby-desc">
+                  When responder units are dispatched to this incident, ALAB will automatically calculate Haversine distance and link the 2 closest neighboring municipal BFP stations for live mutual-aid monitoring.
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mbfp-coord-grid">
+              {observers.map((observer) => {
+                const km = (observer.distanceMeters / 1000).toFixed(1);
+                return (
+                  <div key={observer.observerId} className="mbfp-coord-card">
+                    <div className="mbfp-coord-card-top">
+                      <div>
+                        <h4 className="mbfp-coord-muni-name">{observer.municipalityName}</h4>
+                        <p className="mbfp-coord-muni-sub">
+                          {observer.stationName} · {km} km away
+                        </p>
+                      </div>
+                      <div>
+                        {observer.monitoringState === "BACKUP_REQUESTED" ? (
+                          <span className="mbfp-coord-status-badge backup-requested">
+                            <span className="mbfp-coord-pulse-dot" />
+                            <span>Backup requested</span>
+                          </span>
+                        ) : observer.monitoringState === "SEEN" ? (
+                          <span className="mbfp-coord-status-badge seen">
+                            <i className="fa-solid fa-check" />
+                            <span>Seen</span>
+                          </span>
+                        ) : (
+                          <span className="mbfp-coord-status-badge waiting">
+                            <span className="mbfp-coord-pulse-dot" />
+                            <span>Waiting</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {observer.acknowledgedAt && (
+                      <div className="mbfp-coord-ack-meta">
+                        <i className="fa-regular fa-clock" style={{ marginRight: 4 }} />
+                        Acknowledged by <strong>{observer.acknowledgedByDisplayName || "Municipal Officer"}</strong> at {new Date(observer.acknowledgedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Assistance Requests Activity Table */}
           {assistanceRequests.length > 0 && (
-            <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-850/50">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-                Assistance Requests & Status
-              </h4>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            <div className="mbfp-coord-table-wrap">
+              <div className="mbfp-coord-table-title">
+                <i className="fa-solid fa-handshake-angle" style={{ marginRight: 5 }} />
+                Assistance Requests &amp; Status
+              </div>
+              <div>
                 {assistanceRequests.map((req) => (
-                  <div key={req.id} className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div key={req.id} className="mbfp-coord-req-row">
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-slate-900 dark:text-white">
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: "0.85rem", fontWeight: 750 }}>
                           To: {req.recipientMunicipalityName}
                         </span>
                         <span
-                          className={`text-2xs font-semibold px-2 py-0.5 rounded-md ${
-                            req.status === "ACCEPTED"
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                              : req.status === "PARTIALLY_ACCEPTED"
-                              ? "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300"
-                              : req.status === "REJECTED"
-                              ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
-                              : req.status === "CANCELLED"
-                              ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                              : req.status === "COMPLETED"
-                              ? "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300"
-                              : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                          }`}
+                          style={{
+                            fontSize: "0.72rem",
+                            fontWeight: 800,
+                            padding: "0.15rem 0.5rem",
+                            borderRadius: 6,
+                            background:
+                              req.status === "ACCEPTED"
+                                ? "#ECFDF5"
+                                : req.status === "PARTIALLY_ACCEPTED"
+                                ? "#F0F9FF"
+                                : req.status === "REJECTED"
+                                ? "#FEF2F2"
+                                : req.status === "CANCELLED"
+                                ? "#F1F5F9"
+                                : "#FFFBEB",
+                            color:
+                              req.status === "ACCEPTED"
+                                ? "#047857"
+                                : req.status === "PARTIALLY_ACCEPTED"
+                                ? "#0369A1"
+                                : req.status === "REJECTED"
+                                ? "#991B1B"
+                                : req.status === "CANCELLED"
+                                ? "#64748B"
+                                : "#B45309",
+                            border: "1px solid rgba(0,0,0,0.06)",
+                          }}
                         >
                           {req.status}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      <div style={{ fontSize: "0.76rem", color: "#64748B", marginTop: 2 }}>
                         Requested: {req.requestedFiretrucks} firetruck(s), {req.requestedPersonnel} personnel
                         {(req.offeredFiretrucks !== null || req.offeredPersonnel !== null) && (
-                          <span className="ml-2 font-medium text-slate-700 dark:text-slate-300">
+                          <strong style={{ color: "#0F172A", marginLeft: 6 }}>
                             · Offered: {req.offeredFiretrucks ?? 0} firetruck(s), {req.offeredPersonnel ?? 0} personnel
-                          </span>
+                          </strong>
                         )}
-                      </p>
+                      </div>
                       {req.responseNote && (
-                        <p className="text-xs italic text-slate-600 dark:text-slate-300 mt-1">
+                        <div style={{ fontSize: "0.74rem", fontStyle: "italic", color: "#475569", marginTop: 3 }}>
                           &ldquo;{req.responseNote}&rdquo;
-                        </p>
+                        </div>
                       )}
                     </div>
                     {req.status === "REQUESTED" && (
@@ -389,7 +717,16 @@ export function IntermunicipalityCoordinationPanel({
                         type="button"
                         onClick={() => handleCancelRequest(req.id)}
                         disabled={submitting}
-                        className="self-start sm:self-center text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 disabled:opacity-50"
+                        style={{
+                          background: "#FEF2F2",
+                          border: "1px solid #FECACA",
+                          color: "#BE123C",
+                          borderRadius: 6,
+                          padding: "0.3rem 0.75rem",
+                          fontSize: "0.76rem",
+                          fontWeight: 750,
+                          cursor: "pointer",
+                        }}
                       >
                         Cancel
                       </button>
@@ -399,37 +736,29 @@ export function IntermunicipalityCoordinationPanel({
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Observer View: Acknowledgment and Backup Response */}
       {!isOrigin && (
-        <div className="mt-4 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
+        <div style={{ marginTop: "0.85rem", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="mbfp-coord-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                  Monitoring Alert Status
-                </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: "0.9rem", fontWeight: 800 }}>Monitoring Alert Status</span>
                 {myObserver?.acknowledgedAt ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/50">
-                    <svg className="h-3 w-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Seen {new Date(myObserver.acknowledgedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  <span className="mbfp-coord-status-badge seen">
+                    <i className="fa-solid fa-check" />
+                    <span>Seen {new Date(myObserver.acknowledgedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/50">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    Waiting
+                  <span className="mbfp-coord-status-badge waiting">
+                    <span className="mbfp-coord-pulse-dot" />
+                    <span>Waiting</span>
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <p style={{ margin: "0.3rem 0 0 0", fontSize: "0.78rem", color: "#64748B" }}>
                 {myObserver?.acknowledgedAt
                   ? `Alert acknowledged by ${myObserver.acknowledgedByDisplayName || "Officer"}. Situational awareness active.`
                   : "Acknowledge this incident to confirm your station has seen the active dispatch."}
@@ -441,197 +770,197 @@ export function IntermunicipalityCoordinationPanel({
                 type="button"
                 onClick={handleAcknowledgeAlert}
                 disabled={submitting}
-                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 disabled:opacity-50 transition-colors"
+                className="mbfp-coord-btn primary"
               >
-                Acknowledge Alert
+                <i className="fa-solid fa-check-double" />
+                <span>Acknowledge Alert</span>
               </button>
             )}
           </div>
 
           {/* Observer Backup Request Section */}
           {observerPendingRequest ? (
-            <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-4 dark:border-orange-900/60 dark:bg-orange-950/30">
-              <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-white">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
+            <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 12, padding: "1.1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <i className="fa-solid fa-triangle-exclamation" style={{ color: "#EA580C", fontSize: "1.1rem" }} />
+                  <h4 style={{ margin: 0, fontSize: "0.92rem", fontWeight: 850, color: "#9A3412" }}>
+                    Backup Requested by Incident Commander
+                  </h4>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
-                      Backup Requested by Incident Commander
-                    </h4>
-                    <span className="text-2xs font-semibold text-orange-600 dark:text-orange-400">
-                      ACTION REQUIRED
+                <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#EA580C", letterSpacing: "0.04em" }}>
+                  ACTION REQUIRED
+                </span>
+              </div>
+
+              <p style={{ fontSize: "0.8rem", color: "#475569", margin: "0.5rem 0" }}>
+                The originating municipality requests:{" "}
+                <strong style={{ color: "#0F172A" }}>{observerPendingRequest.requestedFiretrucks} Firetruck(s)</strong> and{" "}
+                <strong style={{ color: "#0F172A" }}>{observerPendingRequest.requestedPersonnel} Personnel</strong>.
+              </p>
+              {observerPendingRequest.requestNote && (
+                <p style={{ fontSize: "0.76rem", fontStyle: "italic", color: "#64748B", margin: "0.25rem 0" }}>
+                  Note: &ldquo;{observerPendingRequest.requestNote}&rdquo;
+                </p>
+              )}
+
+              {respondingToRequestId !== observerPendingRequest.id ? (
+                <div style={{ display: "flex", gap: 8, marginTop: "0.85rem", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRespondingToRequestId(observerPendingRequest.id);
+                      setResponseAction("ACCEPT");
+                      setOfferedFiretrucks(observerPendingRequest.requestedFiretrucks);
+                      setOfferedPersonnel(observerPendingRequest.requestedPersonnel);
+                    }}
+                    disabled={submitting}
+                    style={{
+                      background: "#059669",
+                      color: "#FFFFFF",
+                      border: "none",
+                      padding: "0.45rem 1rem",
+                      borderRadius: 8,
+                      fontSize: "0.78rem",
+                      fontWeight: 750,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Accept
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRespondingToRequestId(observerPendingRequest.id);
+                      setResponseAction("PARTIAL_ACCEPT");
+                      setOfferedFiretrucks(Math.max(0, observerPendingRequest.requestedFiretrucks - 1));
+                      setOfferedPersonnel(Math.max(1, observerPendingRequest.requestedPersonnel - 1));
+                    }}
+                    disabled={submitting}
+                    style={{
+                      background: "#0284C7",
+                      color: "#FFFFFF",
+                      border: "none",
+                      padding: "0.45rem 1rem",
+                      borderRadius: 8,
+                      fontSize: "0.78rem",
+                      fontWeight: 750,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Partially Accept
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRespondingToRequestId(observerPendingRequest.id);
+                      setResponseAction("REJECT");
+                      setOfferedFiretrucks(0);
+                      setOfferedPersonnel(0);
+                    }}
+                    disabled={submitting}
+                    style={{
+                      background: "#F1F5F9",
+                      color: "#475569",
+                      border: "1px solid #CBD5E1",
+                      padding: "0.45rem 1rem",
+                      borderRadius: 8,
+                      fontSize: "0.78rem",
+                      fontWeight: 750,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Decline
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleRespondToRequest} style={{ marginTop: "0.85rem", borderTop: "1px solid #FED7AA", paddingTop: "0.85rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: "0.75rem" }}>
+                    <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>Action:</span>
+                    <span style={{ background: "#E2E8F0", padding: "0.2rem 0.5rem", borderRadius: 6, fontSize: "0.75rem", fontWeight: 800 }}>
+                      {responseAction}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-                    The originating municipality requests:{" "}
-                    <span className="font-semibold text-slate-900 dark:text-white">
-                      {observerPendingRequest.requestedFiretrucks} Firetruck(s)
-                    </span>{" "}
-                    and{" "}
-                    <span className="font-semibold text-slate-900 dark:text-white">
-                      {observerPendingRequest.requestedPersonnel} Personnel
-                    </span>
-                    .
-                  </p>
-                  {observerPendingRequest.requestNote && (
-                    <p className="text-xs italic text-slate-600 dark:text-slate-400 mt-1">
-                      Note: &ldquo;{observerPendingRequest.requestNote}&rdquo;
-                    </p>
-                  )}
 
-                  {respondingToRequestId !== observerPendingRequest.id ? (
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRespondingToRequestId(observerPendingRequest.id);
-                          setResponseAction("ACCEPT");
-                          setOfferedFiretrucks(observerPendingRequest.requestedFiretrucks);
-                          setOfferedPersonnel(observerPendingRequest.requestedPersonnel);
-                        }}
-                        disabled={submitting}
-                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 shadow-sm"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRespondingToRequestId(observerPendingRequest.id);
-                          setResponseAction("PARTIAL_ACCEPT");
-                          setOfferedFiretrucks(Math.max(0, observerPendingRequest.requestedFiretrucks - 1));
-                          setOfferedPersonnel(Math.max(1, observerPendingRequest.requestedPersonnel - 1));
-                        }}
-                        disabled={submitting}
-                        className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500 shadow-sm"
-                      >
-                        Partially Accept
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRespondingToRequestId(observerPendingRequest.id);
-                          setResponseAction("REJECT");
-                          setOfferedFiretrucks(0);
-                          setOfferedPersonnel(0);
-                        }}
-                        disabled={submitting}
-                        className="rounded-lg bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleRespondToRequest} className="mt-4 border-t border-orange-200 pt-3 dark:border-orange-900">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Action:</span>
-                        <span className="rounded bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-800 dark:bg-slate-700 dark:text-white">
-                          {responseAction}
-                        </span>
-                      </div>
-
-                      {responseAction === "PARTIAL_ACCEPT" && (
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                          <div>
-                            <label className="block text-2xs font-medium text-slate-600 dark:text-slate-400">
-                              Offered Firetrucks (Max {observerPendingRequest.requestedFiretrucks})
-                            </label>
-                            <input
-                              type="number"
-                              min={0}
-                              max={observerPendingRequest.requestedFiretrucks}
-                              value={offeredFiretrucks}
-                              onChange={(e) => setOfferedFiretrucks(parseInt(e.target.value, 10) || 0)}
-                              className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1 text-xs dark:border-slate-700 dark:bg-slate-900 text-slate-900 dark:text-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-2xs font-medium text-slate-600 dark:text-slate-400">
-                              Offered Personnel (Max {observerPendingRequest.requestedPersonnel})
-                            </label>
-                            <input
-                              type="number"
-                              min={0}
-                              max={observerPendingRequest.requestedPersonnel}
-                              value={offeredPersonnel}
-                              onChange={(e) => setOfferedPersonnel(parseInt(e.target.value, 10) || 0)}
-                              className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1 text-xs dark:border-slate-700 dark:bg-slate-900 text-slate-900 dark:text-white"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="mb-3">
-                        <label className="block text-2xs font-medium text-slate-600 dark:text-slate-400">
-                          Response Note (Optional)
+                  {responseAction === "PARTIAL_ACCEPT" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#475569", marginBottom: 3 }}>
+                          Offered Firetrucks (Max {observerPendingRequest.requestedFiretrucks})
                         </label>
                         <input
-                          type="text"
-                          maxLength={500}
-                          placeholder="e.g., En route with 1 pumper engine"
-                          value={responseNote}
-                          onChange={(e) => setResponseNote(e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1 text-xs dark:border-slate-700 dark:bg-slate-900 text-slate-900 dark:text-white"
+                          type="number"
+                          min={0}
+                          max={observerPendingRequest.requestedFiretrucks}
+                          value={offeredFiretrucks}
+                          onChange={(e) => setOfferedFiretrucks(parseInt(e.target.value, 10) || 0)}
+                          className="mbfp-coord-modal-input"
                         />
                       </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="submit"
-                          disabled={submitting}
-                          className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-500 shadow-sm disabled:opacity-50"
-                        >
-                          Submit Response
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setRespondingToRequestId(null)}
-                          disabled={submitting}
-                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300"
-                        >
-                          Cancel
-                        </button>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#475569", marginBottom: 3 }}>
+                          Offered Personnel (Max {observerPendingRequest.requestedPersonnel})
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={observerPendingRequest.requestedPersonnel}
+                          value={offeredPersonnel}
+                          onChange={(e) => setOfferedPersonnel(parseInt(e.target.value, 10) || 0)}
+                          className="mbfp-coord-modal-input"
+                        />
                       </div>
-                    </form>
+                    </div>
                   )}
-                </div>
-              </div>
+
+                  <div style={{ marginBottom: "0.75rem" }}>
+                    <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#475569", marginBottom: 3 }}>
+                      Response Note (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={500}
+                      placeholder="e.g., En route with 1 pumper engine"
+                      value={responseNote}
+                      onChange={(e) => setResponseNote(e.target.value)}
+                      className="mbfp-coord-modal-input"
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="mbfp-coord-btn primary"
+                    >
+                      <span>Submit Response</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRespondingToRequestId(null)}
+                      disabled={submitting}
+                      style={{
+                        background: "#FFFFFF",
+                        border: "1px solid #CBD5E1",
+                        color: "#475569",
+                        borderRadius: 8,
+                        padding: "0.45rem 1rem",
+                        fontSize: "0.78rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           ) : (
-            <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 text-center dark:border-slate-800 dark:bg-slate-850/50">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+            <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "1rem", textAlign: "center" }}>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748B" }}>
                 Monitoring only—no assistance requested.
               </p>
-            </div>
-          )}
-
-          {/* Past/Accepted Requests for Observer */}
-          {assistanceRequests.length > 0 && (
-            <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/40 p-3 dark:border-slate-800">
-              <h4 className="text-2xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                Assistance History
-              </h4>
-              <div className="space-y-2">
-                {assistanceRequests.map((req) => (
-                  <div key={req.id} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
-                    <span>
-                      Status: <strong className="font-semibold">{req.status}</strong>
-                    </span>
-                    <span>
-                      {req.offeredFiretrucks ?? req.requestedFiretrucks} FT / {req.offeredPersonnel ?? req.requestedPersonnel} Pers
-                    </span>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </div>
@@ -639,33 +968,40 @@ export function IntermunicipalityCoordinationPanel({
 
       {/* Request Backup Modal (ORIGIN) */}
       {showRequestModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-                Request Inter-Municipality Backup
-              </h3>
+        <div className="mbfp-coord-modal-backdrop">
+          <div className="mbfp-coord-modal-card">
+            <div className="mbfp-coord-modal-header">
+              <h3>Request Inter-Municipality Backup</h3>
               <button
                 type="button"
                 onClick={() => setShowRequestModal(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-500 dark:hover:bg-slate-800"
+                className="mbfp-coord-modal-close"
+                aria-label="Close"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <i className="fa-solid fa-xmark" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateBackupRequest} className="mt-4 space-y-4">
+            <form onSubmit={handleCreateBackupRequest} className="mbfp-coord-modal-body">
               <div>
-                <label className="block text-xs font-semibold text-slate-900 dark:text-white mb-1.5">
+                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#1E293B", marginBottom: 6 }}>
                   Select Observer Municipalities
                 </label>
-                <div className="space-y-2">
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {observers.map((obs) => (
                     <label
                       key={obs.municipalityId}
-                      className="flex items-center gap-2.5 rounded-xl border border-slate-200 p-3 text-xs text-slate-800 dark:border-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "0.65rem 0.85rem",
+                        borderRadius: 10,
+                        border: "1px solid #E2E8F0",
+                        background: selectedRecipientIds.includes(obs.municipalityId) ? "#FFF7ED" : "#FFFFFF",
+                        cursor: "pointer",
+                        fontSize: "0.82rem",
+                      }}
                     >
                       <input
                         type="checkbox"
@@ -677,22 +1013,20 @@ export function IntermunicipalityCoordinationPanel({
                             setSelectedRecipientIds(selectedRecipientIds.filter((id) => id !== obs.municipalityId));
                           }
                         }}
-                        className="rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+                        style={{ width: 16, height: 16, accentColor: "#EA580C" }}
                       />
-                      <div className="flex-1">
-                        <span className="font-semibold">{obs.municipalityName}</span>
-                        <span className="ml-1 text-slate-500 dark:text-slate-400">
-                          ({(obs.distanceMeters / 1000).toFixed(1)} km)
-                        </span>
+                      <div style={{ flex: 1 }}>
+                        <strong>{obs.municipalityName}</strong>
+                        <span style={{ color: "#64748B", marginLeft: 6 }}>({(obs.distanceMeters / 1000).toFixed(1)} km away)</span>
                       </div>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <label htmlFor="req-firetrucks" className="block text-xs font-semibold text-slate-900 dark:text-white">
+                  <label htmlFor="req-firetrucks" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#334155", marginBottom: 4 }}>
                     Firetrucks Needed
                   </label>
                   <input
@@ -702,11 +1036,11 @@ export function IntermunicipalityCoordinationPanel({
                     max={20}
                     value={requestedFiretrucks}
                     onChange={(e) => setRequestedFiretrucks(parseInt(e.target.value, 10) || 0)}
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:border-orange-500 focus:ring-orange-500"
+                    className="mbfp-coord-modal-input"
                   />
                 </div>
                 <div>
-                  <label htmlFor="req-personnel" className="block text-xs font-semibold text-slate-900 dark:text-white">
+                  <label htmlFor="req-personnel" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#334155", marginBottom: 4 }}>
                     Personnel Needed
                   </label>
                   <input
@@ -716,41 +1050,51 @@ export function IntermunicipalityCoordinationPanel({
                     max={100}
                     value={requestedPersonnel}
                     onChange={(e) => setRequestedPersonnel(parseInt(e.target.value, 10) || 0)}
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:border-orange-500 focus:ring-orange-500"
+                    className="mbfp-coord-modal-input"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="req-note" className="block text-xs font-semibold text-slate-900 dark:text-white">
+                <label htmlFor="req-note" style={{ display: "block", fontSize: "0.78rem", fontWeight: 750, color: "#334155", marginBottom: 4 }}>
                   Operational Note (Optional)
                 </label>
                 <textarea
                   id="req-note"
                   rows={2}
                   maxLength={500}
-                  placeholder="e.g., Structure fire near commercial district, high wind velocity, additional tankers needed."
+                  placeholder="e.g., Structural conflagration, high wind velocity, additional tankers needed."
                   value={requestNote}
                   onChange={(e) => setRequestNote(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:border-orange-500 focus:ring-orange-500"
+                  className="mbfp-coord-modal-input"
+                  style={{ resize: "vertical" }}
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="mbfp-coord-modal-actions">
                 <button
                   type="button"
                   onClick={() => setShowRequestModal(false)}
                   disabled={submitting}
-                  className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                  style={{
+                    background: "#F1F5F9",
+                    border: "1px solid #CBD5E1",
+                    color: "#475569",
+                    borderRadius: 8,
+                    padding: "0.55rem 1.15rem",
+                    fontSize: "0.82rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-xl bg-orange-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50"
+                  className="mbfp-coord-btn primary"
                 >
-                  {submitting ? "Sending..." : "Send Request"}
+                  <span>{submitting ? "Sending..." : "Send Request"}</span>
                 </button>
               </div>
             </form>
