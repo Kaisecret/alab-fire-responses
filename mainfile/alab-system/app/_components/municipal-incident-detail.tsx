@@ -6,12 +6,18 @@ import { MunicipalIncidentMap } from "./municipal-incident-map";
 import { BfpDataLoader } from "./bfp-data-loader";
 import { canMunicipalResolveReport } from "../../lib/fire-reports/validation";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
+import { IntermunicipalityCoordinationPanel } from "./intermunicipality-coordination-panel";
+import type { NearbyObserver, AssistanceRequestSummary } from "../../lib/intermunicipality/types";
 
 type Incident = {
   id: string;
   referenceNumber: string;
   reportSource: "ALAB_APP" | "PHONE_CALL";
   status: FireReportStatus;
+  accessScope?: "ORIGIN" | "OBSERVER";
+  originMunicipality?: string;
+  nearbyObservers?: NearbyObserver[];
+  assistanceRequests?: AssistanceRequestSummary[];
   fireType: string;
   description: string;
   landmark: string | null;
@@ -1641,7 +1647,7 @@ export function MunicipalIncidentDetail({
 
   const isPhoneReport = incident.reportSource === "PHONE_CALL";
   const isResponding = incident.status === "RESPONDING";
-  const canResolve = canMunicipalResolveReport(incident.status);
+  const canResolve = incident.accessScope === "ORIGIN" && canMunicipalResolveReport(incident.status);
   const isTerminal = ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(incident.status);
   const validPhotos = (incident.photos ?? []).filter((p): p is { url: string } => Boolean(p && p.url));
   const evidencePhoto = validPhotos[activePhotoIdx]?.url || validPhotos[0]?.url || null;
@@ -1694,7 +1700,7 @@ export function MunicipalIncidentDetail({
             </div>
           </div>
 
-          {!isTerminal && <div className="mbfp-hero-actions">
+          {!isTerminal && incident.accessScope === "ORIGIN" && <div className="mbfp-hero-actions">
             <button
               className={`mbfp-respond-btn ${isResponding ? "active-responding" : ""}`}
               disabled={sending}
@@ -1731,6 +1737,15 @@ export function MunicipalIncidentDetail({
             )}
           </div>}
         </header>
+
+        {/* Inter-municipality Live Coordination */}
+        <IntermunicipalityCoordinationPanel
+          incidentId={incident.id}
+          accessScope={incident.accessScope || "ORIGIN"}
+          observers={incident.nearbyObservers || []}
+          assistanceRequests={incident.assistanceRequests || []}
+          onChanged={load}
+        />
 
         {/* Tactical 2-Column Grid */}
         <div className="mbfp-tactical-grid">
@@ -1836,81 +1851,127 @@ export function MunicipalIncidentDetail({
               <div className="mbfp-card-header">
                 <h2 id="mbfp-resident-heading" className="mbfp-card-title">
                   <i className="fa-solid fa-id-card" />
-                  <span>{isPhoneReport ? "Phone caller details" : "Resident emergency profile"}</span>
+                  <span>{incident.accessScope === "ORIGIN" ? (isPhoneReport ? "Phone caller details" : "Resident emergency profile") : "Incident Caller Privacy Profile"}</span>
                 </h2>
+                {incident.accessScope !== "ORIGIN" && (
+                  <span className="mbfp-telemetry-badge" style={{ background: "#EEF2FF", color: "#4F46E5", borderColor: "#C7D2FE" }}>
+                    <i className="fa-solid fa-shield-halved" /> Observer Privacy Protection
+                  </span>
+                )}
               </div>
 
-              <div className="mbfp-profile-grid">
-                <div className="mbfp-data-cell">
-                  <span className="mbfp-data-label">
-                    <i className="fa-regular fa-user" /> {isPhoneReport ? "Caller name" : "Resident Name"}
-                  </span>
-                  <span className="mbfp-data-value">{incident.residentName || (isPhoneReport ? "Anonymous caller" : "Anonymous Resident")}</span>
-                </div>
-
-                <div className="mbfp-data-cell">
-                  <span className="mbfp-data-label">
-                    <i className="fa-solid fa-phone" /> {isPhoneReport ? "Caller contact" : "Direct Contact"}
-                  </span>
-                  <span className="mbfp-data-value">
-                    <a href={`tel:${incident.phone}`} className="mbfp-phone-link">
-                      <i className="fa-solid fa-phone-volume" />
-                      <span>{incident.phone || "No phone provided"}</span>
-                    </a>
-                  </span>
-                </div>
-
-                <div className="mbfp-data-cell">
-                  <span className="mbfp-data-label">
-                    <i className="fa-regular fa-map" /> {isPhoneReport ? "Reported address" : "Registered Address"}
-                  </span>
-                  <span className="mbfp-data-value">{incident.address || "Not specified"}</span>
-                </div>
-
-                <div className="mbfp-data-cell">
-                  <span className="mbfp-data-label">
-                    <i className="fa-solid fa-location-dot" /> Reported Location
-                  </span>
-                  <span className="mbfp-data-value">{incident.barangay}, {incident.municipality}</span>
-                </div>
-
-                <div className="mbfp-data-cell">
-                  <span className="mbfp-data-label">
-                    <i className="fa-solid fa-signs-post" /> Nearest Landmark
-                  </span>
-                  <span className="mbfp-data-value">{incident.landmark || "None provided by caller"}</span>
-                </div>
-
-                <div className="mbfp-data-cell">
-                  <span className="mbfp-data-label">
-                    <i className="fa-regular fa-clock" /> Verified Timestamp
-                  </span>
-                  <span className="mbfp-data-value">{new Date(incident.submittedAt).toLocaleString()}</span>
-                </div>
-
-                <div className="mbfp-data-cell">
-                  <span className="mbfp-data-label">
-                    <i className="fa-solid fa-crosshairs" /> GPS coordinates
-                  </span>
-                  <span className="mbfp-data-value">{incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}</span>
-                </div>
-
-                {!isPhoneReport && <>
+              {incident.accessScope === "ORIGIN" ? (
+                <div className="mbfp-profile-grid">
                   <div className="mbfp-data-cell">
                     <span className="mbfp-data-label">
-                      <i className="fa-solid fa-network-wired" /> Public IP address
+                      <i className="fa-regular fa-user" /> {isPhoneReport ? "Caller name" : "Resident Name"}
                     </span>
-                    <span className="mbfp-data-value">{incident.reporterIpAddress || "Unavailable"}</span>
+                    <span className="mbfp-data-value">{incident.residentName || (isPhoneReport ? "Anonymous caller" : "Anonymous Resident")}</span>
                   </div>
 
-                  <div className="mbfp-data-cell mbfp-data-cell--full">
+                  <div className="mbfp-data-cell">
                     <span className="mbfp-data-label">
-                      <i className="fa-solid fa-mobile-screen-button" /> Device / browser
+                      <i className="fa-solid fa-phone" /> {isPhoneReport ? "Caller contact" : "Direct Contact"}
                     </span>
-                    <span className="mbfp-data-value">{incident.reporterDeviceSummary || "Unavailable"}</span>
+                    <span className="mbfp-data-value">
+                      <a href={`tel:${incident.phone}`} className="mbfp-phone-link">
+                        <i className="fa-solid fa-phone-volume" />
+                        <span>{incident.phone || "No phone provided"}</span>
+                      </a>
+                    </span>
                   </div>
-                </>}
-              </div>
+
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-regular fa-map" /> {isPhoneReport ? "Reported address" : "Registered Address"}
+                    </span>
+                    <span className="mbfp-data-value">{incident.address || "Not specified"}</span>
+                  </div>
+
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-solid fa-location-dot" /> Reported Location
+                    </span>
+                    <span className="mbfp-data-value">{incident.barangay}, {incident.municipality}</span>
+                  </div>
+
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-solid fa-signs-post" /> Nearest Landmark
+                    </span>
+                    <span className="mbfp-data-value">{incident.landmark || "None provided by caller"}</span>
+                  </div>
+
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-regular fa-clock" /> Verified Timestamp
+                    </span>
+                    <span className="mbfp-data-value">{new Date(incident.submittedAt).toLocaleString()}</span>
+                  </div>
+
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-solid fa-crosshairs" /> GPS coordinates
+                    </span>
+                    <span className="mbfp-data-value">{incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}</span>
+                  </div>
+
+                  {!isPhoneReport && <>
+                    <div className="mbfp-data-cell">
+                      <span className="mbfp-data-label">
+                        <i className="fa-solid fa-network-wired" /> Public IP address
+                      </span>
+                      <span className="mbfp-data-value">{incident.reporterIpAddress || "Unavailable"}</span>
+                    </div>
+
+                    <div className="mbfp-data-cell mbfp-data-cell--full">
+                      <span className="mbfp-data-label">
+                        <i className="fa-solid fa-mobile-screen-button" /> Device / browser
+                      </span>
+                      <span className="mbfp-data-value">{incident.reporterDeviceSummary || "Unavailable"}</span>
+                    </div>
+                  </>}
+                </div>
+              ) : (
+                <div className="mbfp-profile-grid">
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-regular fa-user" /> Resident Identity &amp; Contact
+                    </span>
+                    <span className="mbfp-data-value" style={{ color: "#64748B", fontStyle: "italic" }}>
+                      Restricted (Situational awareness view only)
+                    </span>
+                  </div>
+
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-solid fa-location-dot" /> Incident Jurisdiction
+                    </span>
+                    <span className="mbfp-data-value">{incident.barangay}, {incident.municipality} ({incident.originMunicipality || "Origin Municipality"})</span>
+                  </div>
+
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-solid fa-signs-post" /> Nearest Landmark
+                    </span>
+                    <span className="mbfp-data-value">{incident.landmark || "None provided"}</span>
+                  </div>
+
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-regular fa-clock" /> Report Timestamp
+                    </span>
+                    <span className="mbfp-data-value">{new Date(incident.submittedAt).toLocaleString()}</span>
+                  </div>
+
+                  <div className="mbfp-data-cell">
+                    <span className="mbfp-data-label">
+                      <i className="fa-solid fa-crosshairs" /> Operational Coordinates
+                    </span>
+                    <span className="mbfp-data-value">{incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}</span>
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* Incident Details / Situation Report */}
@@ -1942,59 +2003,79 @@ export function MunicipalIncidentDetail({
             </section>
 
             {/* 2. Photo Evidence Section with Multi-Photo Switcher */}
-            {validPhotos.length > 0 && evidencePhoto ? (
-              <section className="mbfp-card" aria-labelledby="mbfp-photo-heading">
-                <div className="mbfp-card-header">
-                  <h2 id="mbfp-photo-heading" className="mbfp-card-title">
-                    <i className="fa-solid fa-camera" />
-                    <span>Attached Evidence Photo</span>
-                  </h2>
-                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748B" }}>
-                    {validPhotos.length} {validPhotos.length === 1 ? "Photo Attached" : "Photos Attached"}
-                  </span>
-                </div>
-
-                <div
-                  className="mbfp-photo-showcase"
-                  onClick={() => setSelectedPhoto(evidencePhoto)}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Click to enlarge photo evidence"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") setSelectedPhoto(evidencePhoto);
-                  }}
-                >
-                  <span className="mbfp-photo-click-hint">
-                    <i className="fa-solid fa-magnifying-glass-plus" /> Click To Enlarge
-                  </span>
-                  <img
-                    src={evidencePhoto}
-                    alt={`Resident fire evidence submission ${activePhotoIdx + 1}`}
-                    className="mbfp-photo-img"
-                  />
-                  <div className="mbfp-photo-overlay-badge">
-                    <i className="fa-solid fa-expand" />
-                    <span>Inspect High-Res Photo Evidence {validPhotos.length > 1 ? `(${activePhotoIdx + 1}/${validPhotos.length})` : ""}</span>
+            {incident.accessScope === "ORIGIN" ? (
+              validPhotos.length > 0 && evidencePhoto ? (
+                <section className="mbfp-card" aria-labelledby="mbfp-photo-heading">
+                  <div className="mbfp-card-header">
+                    <h2 id="mbfp-photo-heading" className="mbfp-card-title">
+                      <i className="fa-solid fa-camera" />
+                      <span>Attached Evidence Photo</span>
+                    </h2>
+                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748B" }}>
+                      {validPhotos.length} {validPhotos.length === 1 ? "Photo Attached" : "Photos Attached"}
+                    </span>
                   </div>
-                </div>
 
-                {validPhotos.length > 1 && (
-                  <div className="mbfp-photo-thumbs-strip">
-                    {validPhotos.map((p, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        className={`mbfp-photo-thumb-btn ${idx === activePhotoIdx ? "is-active" : ""}`}
-                        onClick={() => setActivePhotoIdx(idx)}
-                        aria-label={`Select photo ${idx + 1}`}
-                      >
-                        <img src={p.url} alt={`Evidence thumb ${idx + 1}`} />
-                        <span>Photo {idx + 1}</span>
-                      </button>
-                    ))}
+                  <div
+                    className="mbfp-photo-showcase"
+                    onClick={() => setSelectedPhoto(evidencePhoto)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Click to enlarge photo evidence"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") setSelectedPhoto(evidencePhoto);
+                    }}
+                  >
+                    <span className="mbfp-photo-click-hint">
+                      <i className="fa-solid fa-magnifying-glass-plus" /> Click To Enlarge
+                    </span>
+                    <img
+                      src={evidencePhoto}
+                      alt={`Resident fire evidence submission ${activePhotoIdx + 1}`}
+                      className="mbfp-photo-img"
+                    />
+                    <div className="mbfp-photo-overlay-badge">
+                      <i className="fa-solid fa-expand" />
+                      <span>Inspect High-Res Photo Evidence {validPhotos.length > 1 ? `(${activePhotoIdx + 1}/${validPhotos.length})` : ""}</span>
+                    </div>
                   </div>
-                )}
-              </section>
+
+                  {validPhotos.length > 1 && (
+                    <div className="mbfp-photo-thumbs-strip">
+                      {validPhotos.map((p, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className={`mbfp-photo-thumb-btn ${idx === activePhotoIdx ? "is-active" : ""}`}
+                          onClick={() => setActivePhotoIdx(idx)}
+                          aria-label={`Select photo ${idx + 1}`}
+                        >
+                          <img src={p.url} alt={`Evidence thumb ${idx + 1}`} />
+                          <span>Photo {idx + 1}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              ) : (
+                <section className="mbfp-card mbfp-no-photo-card" aria-labelledby="mbfp-photo-heading">
+                  <div className="mbfp-card-header">
+                    <h2 id="mbfp-photo-heading" className="mbfp-card-title">
+                      <i className="fa-solid fa-camera" />
+                      <span>Attached Evidence Photo</span>
+                    </h2>
+                    <span className="mbfp-no-photo-badge">No Camera Attachment</span>
+                  </div>
+                  <div className="mbfp-no-photo-body">
+                    <i className="fa-regular fa-image" />
+                    <p>
+                      {isPhoneReport
+                        ? "Phone caller emergency report logged without photo evidence. Dispatch guided by verified location coordinates."
+                        : "Resident submitted alert without attached photos. Responder units proceed with visual confirmation on-site."}
+                    </p>
+                  </div>
+                </section>
+              )
             ) : (
               <section className="mbfp-card mbfp-no-photo-card" aria-labelledby="mbfp-photo-heading">
                 <div className="mbfp-card-header">
@@ -2002,14 +2083,14 @@ export function MunicipalIncidentDetail({
                     <i className="fa-solid fa-camera" />
                     <span>Attached Evidence Photo</span>
                   </h2>
-                  <span className="mbfp-no-photo-badge">No Camera Attachment</span>
+                  <span className="mbfp-no-photo-badge" style={{ background: "#EEF2FF", color: "#4F46E5", borderColor: "#C7D2FE" }}>
+                    <i className="fa-solid fa-eye-slash" /> Observer Privacy
+                  </span>
                 </div>
                 <div className="mbfp-no-photo-body">
-                  <i className="fa-regular fa-image" />
+                  <i className="fa-solid fa-shield-halved" />
                   <p>
-                    {isPhoneReport
-                      ? "Phone caller emergency report logged without photo evidence. Dispatch guided by verified location coordinates."
-                      : "Resident submitted alert without attached photos. Responder units proceed with visual confirmation on-site."}
+                    Attached photo evidence is restricted to the originating municipality to protect resident privacy.
                   </p>
                 </div>
               </section>

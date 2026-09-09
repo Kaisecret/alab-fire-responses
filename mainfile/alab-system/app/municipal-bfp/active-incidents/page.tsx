@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { MunicipalIncidentDetail } from "../../_components/municipal-incident-detail";
 import { BfpDataLoader } from "../../_components/bfp-data-loader";
 import { MunicipalPhoneCallIncidentIntake } from "../../_components/municipal-phone-call-incident-intake";
@@ -365,6 +366,27 @@ const activeIncidentsStyles = `
     flex-shrink: 0;
   }
 
+  .mbfp-caller-avatar.is-observer {
+    background: #EEF2FF;
+    color: #4F46E5;
+    border: 1.5px solid #C7D2FE;
+  }
+
+  .mbfp-nearby-row-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #4F46E5;
+    background: #EEF2FF;
+    border: 1px solid #C7D2FE;
+    padding: 0.18rem 0.55rem;
+    border-radius: 6px;
+    margin-top: 0.25rem;
+    white-space: nowrap;
+  }
+
   .mbfp-caller-name {
     font-weight: 700;
     color: #0F172A;
@@ -631,12 +653,28 @@ const activeIncidentsStyles = `
   }
 `;
 
-export default function ActiveIncidentsPage() {
-  const [selected, setSelected] = useState<string | null>(null);
+function ActiveIncidentsContent() {
+  const searchParams = useSearchParams();
+  const deepLinkedIncident = searchParams.get("incident");
+  const [selected, setSelected] = useState<string | null>(() => deepLinkedIncident);
   const [phoneIntakeOpen, setPhoneIntakeOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("ALL");
   const { incidents, loading, checking, refreshing, error, lastCheckedAt, refresh } = useMunicipalIncidentFeed();
+
+  useEffect(() => {
+    const inc = searchParams.get("incident");
+    if (inc) {
+      setSelected(inc);
+    }
+  }, [searchParams]);
+
+  const ownedCount = useMemo(() => incidents.filter((i) => i.accessScope === "ORIGIN").length, [incidents]);
+  const nearbyCount = useMemo(() => incidents.filter((i) => i.accessScope === "OBSERVER").length, [incidents]);
+  const respondingCount = incidents.filter((i) => i.status === "RESPONDING").length;
+  const verifiedCount = incidents.filter((i) => i.status === "VERIFIED" || i.status === "DISPATCHED").length;
+  const pendingCount = incidents.filter((i) => i.status === "PENDING" || i.status === "UNVERIFIED").length;
+
   const liveRefreshLabel = checking
     ? "Live · checking..."
     : lastCheckedAt
@@ -648,13 +686,16 @@ export default function ActiveIncidentsPage() {
       const matchesSearch =
         searchQuery === "" ||
         item.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.residentName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.barangay || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.landmark && item.landmark.toLowerCase().includes(searchQuery.toLowerCase()));
+        Boolean(item.residentName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        Boolean(item.barangay?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        Boolean(item.originMunicipality?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        Boolean(item.landmark?.toLowerCase().includes(searchQuery.toLowerCase()));
 
       if (!matchesSearch) return false;
 
       if (activeFilter === "ALL") return true;
+      if (activeFilter === "OWNED") return item.accessScope === "ORIGIN";
+      if (activeFilter === "NEARBY") return item.accessScope === "OBSERVER";
       if (activeFilter === "RESPONDING") return item.status === "RESPONDING";
       if (activeFilter === "DISPATCHED") return item.status === "DISPATCHED" || item.status === "ASSIGNED";
       if (activeFilter === "VERIFIED") return item.status === "VERIFIED";
@@ -663,10 +704,6 @@ export default function ActiveIncidentsPage() {
       return true;
     });
   }, [incidents, searchQuery, activeFilter]);
-
-  const respondingCount = incidents.filter((i) => i.status === "RESPONDING").length;
-  const verifiedCount = incidents.filter((i) => i.status === "VERIFIED" || i.status === "DISPATCHED").length;
-  const pendingCount = incidents.filter((i) => i.status === "PENDING" || i.status === "UNVERIFIED").length;
 
   if (selected) {
     return (
@@ -769,7 +806,7 @@ export default function ActiveIncidentsPage() {
             <i className="fa-solid fa-magnifying-glass" />
             <input
               type="text"
-              placeholder="Search reference #, resident, barangay..."
+              placeholder="Search reference #, resident, barangay, municipality..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="mbfp-search-input"
@@ -783,6 +820,18 @@ export default function ActiveIncidentsPage() {
               onClick={() => setActiveFilter("ALL")}
             >
               All ({incidents.length})
+            </button>
+            <button
+              className={`mbfp-tab-pill ${activeFilter === "OWNED" ? "active" : ""}`}
+              onClick={() => setActiveFilter("OWNED")}
+            >
+              My Municipality ({ownedCount})
+            </button>
+            <button
+              className={`mbfp-tab-pill ${activeFilter === "NEARBY" ? "active" : ""}`}
+              onClick={() => setActiveFilter("NEARBY")}
+            >
+              Nearby Incidents ({nearbyCount})
             </button>
             <button
               className={`mbfp-tab-pill ${activeFilter === "RESPONDING" ? "active" : ""}`}
@@ -881,7 +930,7 @@ export default function ActiveIncidentsPage() {
                         <p className="mbfp-empty-desc">
                           {searchQuery
                             ? "No incident matching your search terms was found."
-                            : "All clear! There are currently no active fire reports in your assigned municipality."}
+                            : "All clear! There are currently no active fire reports in your assigned scope."}
                         </p>
                       </div>
                     </td>
@@ -906,6 +955,12 @@ export default function ActiveIncidentsPage() {
                             <span>{inc.referenceNumber}</span>
                           </div>
                           {inc.reportSource === "PHONE_CALL" && <div className="mbfp-ref-time">From Phone Caller</div>}
+                          {inc.accessScope === "OBSERVER" && (
+                            <div className="mbfp-nearby-row-badge">
+                              <i className="fa-solid fa-satellite-dish" />
+                              <span>Nearby incident · {inc.originMunicipality || "Adjacent Municipality"}</span>
+                            </div>
+                          )}
                           <div className="mbfp-ref-time">
                             {new Date(inc.submittedAt).toLocaleTimeString([], {
                               hour: "2-digit",
@@ -917,12 +972,24 @@ export default function ActiveIncidentsPage() {
 
                         {/* Resident */}
                         <td>
-                          <div className="mbfp-caller-cell">
-                            <div className="mbfp-caller-avatar">
-                              {inc.residentName ? inc.residentName.charAt(0).toUpperCase() : inc.reportSource === "PHONE_CALL" ? "C" : "R"}
+                          {inc.accessScope === "OBSERVER" ? (
+                            <div className="mbfp-caller-cell">
+                              <div className="mbfp-caller-avatar is-observer">
+                                <i className="fa-solid fa-eye" />
+                              </div>
+                              <div>
+                                <span className="mbfp-caller-name">Privacy Protected</span>
+                                <div className="mbfp-ref-time">Nearby incident · {inc.originMunicipality || "Adjacent"}</div>
+                              </div>
                             </div>
-                            <span className="mbfp-caller-name">{inc.residentName || (inc.reportSource === "PHONE_CALL" ? "Anonymous caller" : "Anonymous Resident")}</span>
-                          </div>
+                          ) : (
+                            <div className="mbfp-caller-cell">
+                              <div className="mbfp-caller-avatar">
+                                {inc.residentName ? inc.residentName.charAt(0).toUpperCase() : inc.reportSource === "PHONE_CALL" ? "C" : "R"}
+                              </div>
+                              <span className="mbfp-caller-name">{inc.residentName || (inc.reportSource === "PHONE_CALL" ? "Anonymous caller" : "Anonymous Resident")}</span>
+                            </div>
+                          )}
                         </td>
 
                         {/* Location */}
@@ -979,5 +1046,13 @@ export default function ActiveIncidentsPage() {
         onCreated={() => { setPhoneIntakeOpen(false); void refresh(true); }}
       />}
     </>
+  );
+}
+
+export default function ActiveIncidentsPage() {
+  return (
+    <Suspense fallback={<BfpDataLoader title="Loading active incidents..." />}>
+      <ActiveIncidentsContent />
+    </Suspense>
   );
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getBfpIdentity } from "../../../../lib/auth/bfp-accounts";
 import { bfpSessionCookieName, verifyBfpSession } from "../../../../lib/auth/session";
 import { listScopedMunicipalIncidents } from "../../../../lib/intermunicipality/incident-access";
+// Delegates incident retrieval including fr.report_source as "reportSource" to listScopedMunicipalIncidents
 
 export const runtime = "nodejs";
 

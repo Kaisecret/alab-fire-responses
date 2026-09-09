@@ -17,10 +17,12 @@ export interface MunicipalIncident {
   latitude: number;
   longitude: number;
   calculatedSeverity: string | null;
-  detectedBuildingDensity: string | null;
-  buildingDensityConfidence: string | null;
-  buildingDensityBuildingCount: number | null;
-  buildingDensityMinimumGapMeters: number | null;
+  detectedBuildingDensity?: string | null;
+  buildingDensityConfidence?: string | null;
+  buildingDensityBuildingCount?: number | null;
+  buildingDensityMinimumGapMeters?: number | null;
+  accessScope: "ORIGIN" | "OBSERVER";
+  originMunicipality: string;
 }
 
 interface MunicipalIncidentResponse {
