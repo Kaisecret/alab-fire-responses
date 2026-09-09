@@ -13,6 +13,8 @@ test("phone call dispatch validates the caller, pin, one station, and selected r
   assert.match(service, /responderIds/);
   assert.match(service, /PHONE_CALL/);
   assert.match(service, /withTransaction/);
+  assert.match(service, /createNearbyIncidentObservers/);
+  assert.match(service, /nearbySelectionDegraded/);
 });
 
 test("phone call dispatch uses only selected active responders and never creates a resident notification", () => {

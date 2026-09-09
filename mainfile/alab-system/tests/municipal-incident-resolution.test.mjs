@@ -17,6 +17,8 @@ test("only a municipal administrator can resolve a responding incident", () => {
   assert.match(service, /export async function resolveMunicipalIncident/);
   assert.match(service, /municipality_id = \$2/);
   assert.match(service, /canMunicipalResolveReport/);
+  assert.match(service, /closeIncidentAssistance/);
+  assert.match(service, /endIncidentObservers/);
   assert.doesNotMatch(service, /row\.status !== "RESPONDING"/);
   assert.match(detail, /RESOLVE INCIDENT/);
   assert.match(detail, /canMunicipalResolveReport/);

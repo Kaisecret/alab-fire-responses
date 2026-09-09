@@ -22,7 +22,8 @@ test("dispatch service selects only active station personnel and keeps assignmen
   assert.match(service, /createAccountNotifications/);
   assert.match(service, /INCIDENT_DISPATCH_ASSIGNED/);
   assert.match(service, /withTransaction/);
-  assert.match(service, /for update of fr/i);
+  assert.match(service, /createNearbyIncidentObservers/);
+  assert.match(service, /nearbySelectionDegraded/);
   assert.doesNotMatch(service, /body\.municipalityId/);
 });
 

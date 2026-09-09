@@ -7,6 +7,7 @@ import { withTransaction } from "../db";
 import type { FireType } from "../fire-reports/types";
 import { sendDispatchPush } from "../notifications/fcm";
 import { createAccountNotifications, listProvincialNotificationRecipients } from "../notifications/service";
+import { createNearbyIncidentObservers } from "../intermunicipality/observers";
 
 type Queryable = Pick<PoolClient, "query">;
 
@@ -23,6 +24,8 @@ export type PhoneCallIncidentInput = {
 export type PhoneCallIncidentDispatch = {
   fireReportId: string; referenceNumber: string; dispatchId: string;
   stationName: string; responderCount: number; dispatchedAt: Date;
+  nearbyObservers?: unknown[];
+  nearbySelectionDegraded?: boolean;
 };
 
 export type PhoneCallIncidentScope = {
@@ -209,9 +212,25 @@ export async function createPhoneCallIncidentAndDispatch(raw: unknown, scope: Ph
       dedupeKey: `incident-dispatch:${dispatchId}:provincial`, createdAt: now,
     });
     const pushRecipientUserIds = [...new Set([...recipientUserIds, ...provincialRecipientUserIds])];
+
+    const nearbySelection = await createNearbyIncidentObservers(client, {
+      fireReportId,
+      dispatchId,
+      originMunicipalityId: scope.municipalityId,
+      originMunicipalityName: scope.municipalityName,
+      actorUserId: scope.actorUserId,
+      referenceNumber: reference,
+      barangay: barangay.name,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      createdAt: now,
+    });
+
     return {
       fireReportId, referenceNumber: reference, dispatchId, stationName, responderCount: recipientUserIds.length, dispatchedAt: now,
       recipientUserIds: pushRecipientUserIds, barangay: barangay.name, municipalityName: scope.municipalityName,
+      nearbyObservers: nearbySelection.observers,
+      nearbySelectionDegraded: nearbySelection.degraded,
     };
   });
 
@@ -223,5 +242,7 @@ export async function createPhoneCallIncidentAndDispatch(raw: unknown, scope: Ph
   return {
     fireReportId: dispatched.fireReportId, referenceNumber: dispatched.referenceNumber, dispatchId: dispatched.dispatchId,
     stationName: dispatched.stationName, responderCount: dispatched.responderCount, dispatchedAt: dispatched.dispatchedAt,
+    nearbyObservers: dispatched.nearbyObservers,
+    nearbySelectionDegraded: dispatched.nearbySelectionDegraded,
   };
 }

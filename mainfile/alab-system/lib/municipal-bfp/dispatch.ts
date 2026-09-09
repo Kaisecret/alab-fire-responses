@@ -8,6 +8,8 @@ import { canMunicipalResolveReport, canTransitionReportStatus } from "../fire-re
 import type { FireReportStatus } from "../fire-reports/types";
 import { createAccountNotifications, listProvincialNotificationRecipients } from "../notifications/service";
 import { sendDispatchPush } from "../notifications/fcm";
+import { closeIncidentAssistance } from "../intermunicipality/assistance";
+import { createNearbyIncidentObservers, endIncidentObservers } from "../intermunicipality/observers";
 
 type Queryable = Pick<PoolClient, "query">;
 
@@ -176,9 +178,13 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
       reference_number: string;
       resident_user_id: string | null;
       barangay: string | null;
+      latitude: number;
+      longitude: number;
     }>(
       `select fr.status, fr.reference_number, resident.user_id as resident_user_id,
-              coalesce(report_barangay.name, resident_barangay.name, nullif(trim(split_part(fr.address_label, ',', 1)), '')) as barangay
+              coalesce(report_barangay.name, resident_barangay.name, nullif(trim(split_part(fr.address_label, ',', 1)), '')) as barangay,
+              fr.latitude::float as latitude,
+              fr.longitude::float as longitude
          from fire_reports fr
          left join resident_profiles resident on resident.id = fr.resident_profile_id
          left join barangays report_barangay on report_barangay.id = fr.barangay_id
@@ -260,6 +266,20 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
 
     const recipientUserIds = recipientResult.rows.map((recipient) => recipient.user_id);
     const report = current.rows[0];
+
+    const nearbySelection = await createNearbyIncidentObservers(client, {
+      fireReportId: input.fireReportId,
+      dispatchId,
+      originMunicipalityId: input.municipalityId,
+      originMunicipalityName: input.municipalityName,
+      actorUserId: input.actorUserId,
+      referenceNumber: report.reference_number,
+      barangay: report.barangay,
+      latitude: report.latitude,
+      longitude: report.longitude,
+      createdAt: now,
+    });
+
     await createAccountNotifications(client, {
       recipientUserIds,
       actorUserId: input.actorUserId,
@@ -317,6 +337,8 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
       referenceNumber: report.reference_number,
       barangay: report.barangay,
       municipalityName: input.municipalityName,
+      nearbyObservers: nearbySelection.observers,
+      nearbySelectionDegraded: nearbySelection.degraded,
     };
   });
   try {
@@ -528,10 +550,13 @@ export async function resolveMunicipalIncident(input: {
       status: FireReportStatus;
       reference_number: string;
       resident_user_id: string | null;
+      dispatch_id: string | null;
     }>(
-      `select fr.id, fr.status, fr.reference_number, resident.user_id as resident_user_id
+      `select fr.id, fr.status, fr.reference_number, resident.user_id as resident_user_id,
+              d.id as dispatch_id
          from fire_reports fr
          left join resident_profiles resident on resident.id = fr.resident_profile_id
+         left join incident_dispatches d on d.fire_report_id = fr.id and d.status = 'ACTIVE' and d.municipality_id = fr.municipality_id
         where fr.id = $1 and fr.municipality_id = $2
         for update of fr`,
       [input.fireReportId, input.municipalityId],
@@ -542,6 +567,23 @@ export async function resolveMunicipalIncident(input: {
       throw new Error("INVALID_STATUS");
     }
     const now = new Date();
+
+    if (row.dispatch_id) {
+      await closeIncidentAssistance(client, {
+        fireReportId: input.fireReportId,
+        dispatchId: row.dispatch_id,
+        originMunicipalityId: input.municipalityId,
+        actorUserId: input.actorUserId,
+        closedAt: now,
+      });
+      await endIncidentObservers(client, {
+        fireReportId: input.fireReportId,
+        dispatchId: row.dispatch_id,
+        originMunicipalityId: input.municipalityId,
+        actorUserId: input.actorUserId,
+        endedAt: now,
+      });
+    }
 
     await client.query(
       `update incident_dispatch_recipients
