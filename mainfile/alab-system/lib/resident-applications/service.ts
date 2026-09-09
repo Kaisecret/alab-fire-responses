@@ -51,22 +51,19 @@ export async function listResidentApplications(municipalityId: string) {
 }
 
 export async function getResidentApplication(municipalityId: string, applicationId: string) {
-  const result = await getDatabase().query<{
+  type ResidentApplicationRow = {
     id: string; reference: string; status: string; submittedAt: Date; correctionReason: string | null;
     firstName: string; lastName: string; email: string; phone: string; username: string;
     municipality: string; barangay: string; address: string; frontReviewKey: string | null;
     legacyFrontKey: string | null; backReviewKey: string | null; legacyBackKey: string | null;
     selfieReviewKey: string | null; legacySelfieKey: string | null;
-  }>(
+  };
+
+  const queryApplication = (evidenceColumns: string) => getDatabase().query<ResidentApplicationRow>(
     `select rv.id, rv.application_reference as reference, rv.status, rv.submitted_at as "submittedAt",
             rv.rejection_reason as "correctionReason", rp.first_name as "firstName", rp.last_name as "lastName",
             u.email, u.phone, u.username, m.name as municipality, b.name as barangay, ra.complete_address as address,
-            rv.front_review_document_key as "frontReviewKey",
-            rv.front_document_key as "legacyFrontKey",
-            rv.back_review_document_key as "backReviewKey",
-            rv.back_document_key as "legacyBackKey",
-            rv.selfie_review_document_key as "selfieReviewKey",
-            rv.selfie_key as "legacySelfieKey"
+            ${evidenceColumns}
        from resident_verifications rv
        join resident_profiles rp on rp.id = rv.resident_profile_id
        join users u on u.id = rp.user_id
@@ -77,6 +74,31 @@ export async function getResidentApplication(municipalityId: string, application
       limit 1`,
     [applicationId, municipalityId],
   );
+
+  let result;
+  try {
+    result = await queryApplication(`
+      rv.front_review_document_key as "frontReviewKey",
+      rv.front_document_key as "legacyFrontKey",
+      rv.back_review_document_key as "backReviewKey",
+      rv.back_document_key as "legacyBackKey",
+      rv.selfie_review_document_key as "selfieReviewKey",
+      rv.selfie_key as "legacySelfieKey"`);
+  } catch (error) {
+    const databaseError = error as { code?: string };
+    if (databaseError.code !== "42703") throw error;
+
+    // Older deployments can list applications before the review-derivative
+    // columns have been migrated. Use the protected legacy evidence keys so
+    // the reviewer can still open the dossier.
+    result = await queryApplication(`
+      rv.front_document_key as "frontReviewKey",
+      rv.front_document_key as "legacyFrontKey",
+      rv.back_document_key as "backReviewKey",
+      rv.back_document_key as "legacyBackKey",
+      rv.selfie_key as "selfieReviewKey",
+      rv.selfie_key as "legacySelfieKey"`);
+  }
   const application = result.rows[0];
   if (!application) return null;
 
@@ -99,12 +121,12 @@ export async function getResidentApplication(municipalityId: string, application
   application.backReviewKey = application.backReviewKey || application.legacyBackKey || null;
   application.selfieReviewKey = application.selfieReviewKey || application.legacySelfieKey || null;
 
-  const { createIdentityEvidenceSignedUrl } = await import("./evidence");
   let frontUrl: string | null = null;
   let backUrl: string | null = null;
   let selfieUrl: string | null = null;
 
   try {
+    const { createIdentityEvidenceSignedUrl } = await import("./evidence");
     [frontUrl, backUrl, selfieUrl] = await Promise.all([
       createIdentityEvidenceSignedUrl(application.frontReviewKey),
       createIdentityEvidenceSignedUrl(application.backReviewKey),

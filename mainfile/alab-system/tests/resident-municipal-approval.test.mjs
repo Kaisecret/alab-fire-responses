@@ -57,6 +57,21 @@ test("queue listing does not eagerly load image processing", () => {
   assert.match(service, /await import\("\.\/evidence"\)/);
 });
 
+test("resident application detail falls back when review evidence columns are not migrated", () => {
+  const service = source("lib/resident-applications/service.ts");
+
+  assert.match(service, /42703/);
+  assert.match(service, /front_document_key as "frontReviewKey"/i);
+  assert.match(service, /back_document_key as "backReviewKey"/i);
+  assert.match(service, /selfie_key as "selfieReviewKey"/i);
+});
+
+test("resident application detail still loads when the evidence module is unavailable", () => {
+  const service = source("lib/resident-applications/service.ts");
+
+  assert.match(service, /try\s*\{\s*const \{ createIdentityEvidenceSignedUrl \} = await import\("\.\/evidence"\)/);
+});
+
 test("registration creates a pending applicant and never creates a resident session", () => {
   const registration = source("app/api/auth/register/route.ts");
   assert.match(registration, /request\.formData\(\)/);

@@ -43,28 +43,36 @@ if (!databaseUrl) {
 
       // 1. Municipalities
       await client.query(
-        `insert into public.municipalities (id, name, district, created_at)
-         values ($1, $2, 'District 1', now()), ($3, $4, 'District 2', now())`,
+        `insert into public.municipalities (id, name, province, created_at)
+         values ($1, $2, 'Antique', now()), ($3, $4, 'Antique', now())`,
         [originMuniId, `Origin_${runId}`, recipMuniId, `Recipient_${runId}`]
       );
 
       // 2. Users & Profiles
-      for (const [uid, email, muniId] of [
-        [originUserId, `origin_${runId}@bfp.test`, originMuniId],
-        [recipUser1Id, `recip1_${runId}@bfp.test`, recipMuniId],
-        [recipUser2Id, `recip2_${runId}@bfp.test`, recipMuniId],
+      for (const [uid, email, muniId, role] of [
+        [originUserId, `origin_${runId}@bfp.test`, originMuniId, "MUNICIPAL_ADMIN"],
+        [recipUser1Id, `recip1_${runId}@bfp.test`, recipMuniId, "MUNICIPAL_ADMIN"],
+        [recipUser2Id, `recip2_${runId}@bfp.test`, recipMuniId, "MUNICIPAL_STAFF"],
       ]) {
         await client.query(
-          `insert into public.users (id, email, role, account_status, created_at)
-           values ($1, $2, 'MUNICIPAL_BFP', 'ACTIVE', now())
+          `insert into public.users (id, email, password_hash, role, account_status, created_at)
+           values ($1, $2, 'scrypt$dummy$integration', 'MUNICIPAL_BFP', 'ACTIVE', now())
            on conflict (id) do nothing`,
           [uid, email]
         );
+        const profileRes = await client.query(
+          `insert into public.bfp_personnel_profiles (user_id, display_name, rank_or_position)
+           values ($1, $2, 'Officer')
+           on conflict (user_id) do update set display_name = excluded.display_name
+           returning id`,
+          [uid, `Officer_${runId}`]
+        );
+        const profileId = profileRes.rows[0].id;
         await client.query(
-          `insert into public.bfp_users (user_id, municipality_id, station_id, role, status, created_at)
-           values ($1, $2, null, 'MUNICIPAL_BFP', 'ACTIVE', now())
-           on conflict (user_id) do nothing`,
-          [uid, muniId]
+          `insert into public.bfp_municipality_assignments (personnel_profile_id, municipality_id, assignment_role, status)
+           values ($1, $2, $3, 'ACTIVE')
+           on conflict (personnel_profile_id) do update set status = 'ACTIVE'`,
+          [profileId, muniId, role]
         );
       }
 
@@ -77,25 +85,33 @@ if (!databaseUrl) {
 
       // 4. Fire Report
       await client.query(
-        `insert into public.fire_reports (id, reference_number, municipality_id, status, fire_type, report_source, latitude, longitude, description, submitted_at)
-         values ($1, $2, $3, 'RESPONDING', 'STRUCTURAL', 'PHONE_CALL', 10.75, 121.93, 'Integration test incident', now())`,
-        [reportId, `TEST-${runId}`, originMuniId]
+        `insert into public.fire_reports (
+           id, reference_number, municipality_id, status, fire_type, report_source,
+           latitude, longitude, description, location_method, is_within_antique,
+           caller_name, caller_phone, created_by_user_id, submitted_at
+         ) values (
+           $1, $2, $3, 'RESPONDING', 'HOUSE_BUILDING', 'PHONE_CALL',
+           10.75, 121.93, 'Integration test incident', 'GPS', true,
+           'Caller Test', '+639111111111', $4, now()
+         )`,
+        [reportId, `TEST-${runId}`, originMuniId, originUserId]
       );
 
       // 5. Active Dispatch
       await client.query(
-        `insert into public.incident_dispatches (id, fire_report_id, status, dispatched_at, created_at)
-         values ($1, $2, 'ACTIVE', now(), now())`,
-        [dispatchId, reportId]
+        `insert into public.incident_dispatches (
+           id, fire_report_id, municipality_id, dispatched_by_user_id, status, dispatched_at, created_at, updated_at
+         ) values ($1, $2, $3, $4, 'ACTIVE', now(), now(), now())`,
+        [dispatchId, reportId, originMuniId, originUserId]
       );
 
       // 6. Selected Observer
       await client.query(
         `insert into public.incident_municipal_observers (
            id, fire_report_id, dispatch_id, origin_municipality_id, observer_municipality_id,
-           representative_station_id, station_latitude, station_longitude, distance_meters,
-           status, monitoring_state, created_at
-         ) values ($1, $2, $3, $4, $5, $6, 10.74, 121.94, 1500, 'ACTIVE', 'WAITING', now())`,
+           nearest_station_id, station_latitude_snapshot, station_longitude_snapshot,
+           distance_meters, status, selected_at
+         ) values ($1, $2, $3, $4, $5, $6, 10.74, 121.94, 1500, 'ACTIVE', now())`,
         [observerId, reportId, dispatchId, originMuniId, recipMuniId, stationId]
       );
 
@@ -104,8 +120,8 @@ if (!databaseUrl) {
         `insert into public.intermunicipal_assistance_requests (
            id, fire_report_id, dispatch_id, observer_id, requester_municipality_id,
            recipient_municipality_id, requested_by_user_id, requested_firetrucks,
-           requested_personnel, request_note, status, requested_at
-         ) values ($1, $2, $3, $4, $5, $6, $7, 2, 8, 'Urgent mutual aid needed', 'REQUESTED', now())`,
+           requested_personnel, request_note, status, requested_at, updated_at
+         ) values ($1, $2, $3, $4, $5, $6, $7, 2, 8, 'Urgent mutual aid needed', 'REQUESTED', now(), now())`,
         [requestId, reportId, dispatchId, observerId, originMuniId, recipMuniId, originUserId]
       );
 

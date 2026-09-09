@@ -22,42 +22,68 @@ do $$
 declare
   v_origin_muni_id uuid := '11111111-aaaa-4111-8111-111111111111';
   v_observer_muni_id uuid := '22222222-bbbb-4222-8222-222222222222';
+  v_observer2_muni_id uuid := '22222222-cccc-4222-8222-222222222222';
   v_user_origin uuid := '33333333-cccc-4333-8333-333333333333';
   v_user_observer uuid := '44444444-dddd-4444-8444-444444444444';
   v_station_id uuid := '55555555-eeee-4555-8555-555555555555';
+  v_station2_id uuid := '55555555-ffff-4555-8555-555555555555';
   v_report_id uuid := '66666666-ffff-4666-8666-666666666666';
   v_dispatch_id uuid := '77777777-aaaa-4777-8777-777777777777';
   v_observer_id uuid := '88888888-bbbb-4888-8888-888888888888';
 begin
-  insert into public.municipalities (id, name, province, is_active)
+  insert into public.municipalities (id, name, province)
   values
-    (v_origin_muni_id, 'Test Origin Municipality', 'Antique', true),
-    (v_observer_muni_id, 'Test Observer Municipality', 'Antique', true)
+    (v_origin_muni_id, 'Test Origin Municipality', 'Antique'),
+    (v_observer_muni_id, 'Test Observer Municipality', 'Antique'),
+    (v_observer2_muni_id, 'Test Observer Municipality 2', 'Antique')
   on conflict (id) do nothing;
 
-  insert into public.users (id, phone, role, account_status, full_name)
+  insert into public.users (id, email, password_hash, role, account_status)
   values
-    (v_user_origin, '+639111111111', 'MUNICIPAL_BFP', 'ACTIVE', 'Origin Admin'),
-    (v_user_observer, '+639222222222', 'MUNICIPAL_BFP', 'ACTIVE', 'Observer Admin')
+    (v_user_origin, 'origin_admin_coord@test.gov.ph', 'scrypt$dummy$origin', 'MUNICIPAL_BFP', 'ACTIVE'),
+    (v_user_observer, 'observer_admin_coord@test.gov.ph', 'scrypt$dummy$observer', 'MUNICIPAL_BFP', 'ACTIVE')
   on conflict (id) do nothing;
+
+  insert into public.bfp_personnel_profiles (id, user_id, display_name, rank_or_position)
+  values
+    (gen_random_uuid(), v_user_origin, 'Origin Admin', 'Senior Fire Officer'),
+    (gen_random_uuid(), v_user_observer, 'Observer Admin', 'Senior Fire Officer')
+  on conflict (user_id) do nothing;
+
+  insert into public.bfp_municipality_assignments (municipality_id, personnel_profile_id, assignment_role, status)
+  select v_origin_muni_id, id, 'MUNICIPAL_ADMIN', 'ACTIVE'
+  from public.bfp_personnel_profiles where user_id = v_user_origin
+  on conflict (personnel_profile_id) do nothing;
+
+  insert into public.bfp_municipality_assignments (municipality_id, personnel_profile_id, assignment_role, status)
+  select v_observer_muni_id, id, 'MUNICIPAL_ADMIN', 'ACTIVE'
+  from public.bfp_personnel_profiles where user_id = v_user_observer
+  on conflict (personnel_profile_id) do nothing;
 
   insert into public.municipal_bfp_stations (id, municipality_id, station_name, latitude, longitude, status)
-  values (v_station_id, v_observer_muni_id, 'Observer Station', 10.700000, 122.000000, 'ACTIVE')
+  values
+    (v_station_id, v_observer_muni_id, 'Observer Station', 10.700000, 122.000000, 'ACTIVE'),
+    (v_station2_id, v_observer2_muni_id, 'Observer Station 2', 10.720000, 122.020000, 'ACTIVE')
   on conflict (id) do nothing;
 
   insert into public.fire_reports (
-    id, municipality_id, report_source, status, latitude, longitude, submitted_at, reference_number
+    id, municipality_id, report_source, fire_type, description, status,
+    latitude, longitude, location_method, is_within_antique, submitted_at,
+    reference_number, caller_name, caller_phone, created_by_user_id
   )
   values (
-    v_report_id, v_origin_muni_id, 'PHONE_CALL', 'DISPATCHED', 10.710000, 122.010000, now(), 'TEST-COORD-001'
+    v_report_id, v_origin_muni_id, 'PHONE_CALL', 'HOUSE_BUILDING',
+    'Test coordination fire report', 'RESPONDING',
+    10.710000, 122.010000, 'GPS', true, now(),
+    'TEST-COORD-001', 'Juan Caller', '+639111111111', v_user_origin
   )
   on conflict (id) do nothing;
 
   insert into public.incident_dispatches (
-    id, fire_report_id, dispatched_by_user_id, status, dispatched_at, created_at, updated_at
+    id, fire_report_id, municipality_id, dispatched_by_user_id, status, dispatched_at, created_at, updated_at
   )
   values (
-    v_dispatch_id, v_report_id, v_user_origin, 'ACTIVE', now(), now(), now()
+    v_dispatch_id, v_report_id, v_origin_muni_id, v_user_origin, 'ACTIVE', now(), now(), now()
   )
   on conflict (id) do nothing;
 
@@ -84,8 +110,8 @@ select throws_ok(
   )
   values (
     gen_random_uuid(), '66666666-ffff-4666-8666-666666666666', '77777777-aaaa-4777-8777-777777777777',
-    '11111111-aaaa-4111-8111-111111111111', '22222222-bbbb-4222-8222-222222222222',
-    '55555555-eeee-4555-8555-555555555555', 10.7, 122.0, 1500.0, 'ACTIVE', now(),
+    '11111111-aaaa-4111-8111-111111111111', '22222222-cccc-4222-8222-222222222222',
+    '55555555-ffff-4555-8555-555555555555', 10.72, 122.02, 1600.0, 'ACTIVE', now(),
     '44444444-dddd-4444-8444-444444444444', null
   );
   $$,
