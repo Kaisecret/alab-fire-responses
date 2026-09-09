@@ -36,3 +36,22 @@ test("provincial coordination APIs are read-only", () => {
   assert.match(combined, /export async function GET/);
   assert.doesNotMatch(combined, /export async function (POST|PATCH|DELETE)/);
 });
+
+test("provincial pages use live five-second feeds and no sample incidents", () => {
+  const incidentHook = source("app/_components/use-provincial-incident-feed.ts");
+  const assistanceHook = source("app/_components/use-provincial-assistance-feed.ts");
+  const incidentsPage = source("app/provincial-bfp/incidents/page.tsx");
+  const assistancePage = source("app/provincial-bfp/assistance-requests/page.tsx");
+  const dashboard = source("app/_components/provincial-bfp-dashboard.tsx");
+  assert.match(incidentHook, /REFRESH_INTERVAL_MS = 5_000/);
+  assert.match(assistanceHook, /REFRESH_INTERVAL_MS = 5_000/);
+  assert.match(incidentHook, /visibilitychange/);
+  assert.match(assistanceHook, /visibilitychange/);
+  assert.match(incidentsPage, /useProvincialIncidentFeed/);
+  assert.match(incidentsPage, /searchParams\.get\("incident"\)/);
+  assert.match(assistancePage, /useProvincialAssistanceFeed/);
+  assert.match(dashboard, /useProvincialIncidentFeed/);
+  assert.match(dashboard, /useProvincialAssistanceFeed/);
+  assert.doesNotMatch(incidentsPage, /const initialIncidents/);
+  assert.doesNotMatch(assistancePage, /AID-2026-003/);
+});

@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { useProvincialIncidentFeed } from './use-provincial-incident-feed';
+import { useProvincialAssistanceFeed } from './use-provincial-assistance-feed';
 
 type MunicipalStationStatus = {
   name: string;
@@ -695,10 +697,27 @@ function FastNumber({ value, duration = 650 }: { value: string | number; duratio
   return <span>{String(value).match(/\d+/g) ? display : String(value)}</span>;
 }
 
+function formatTimeAgo(isoString: string): string {
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const mins = Math.max(1, Math.floor(diffMs / 60000));
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ${mins % 60}m ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
 export function ProvincialBfpDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
+
+  const { incidents, loading: incidentFeedLoading } = useProvincialIncidentFeed();
+  const { requests: assistanceRequests } = useProvincialAssistanceFeed({ includeClosed: false });
+
+  const activeIncidentCount = incidents.length;
+  const openAssistanceCount = assistanceRequests.filter((request) =>
+    ['REQUESTED', 'ACCEPTED', 'PARTIALLY_ACCEPTED'].includes(request.status)
+  ).length;
 
   const filteredStations = municipalReadinessData.filter((s) =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -732,7 +751,7 @@ export function ProvincialBfpDashboard() {
             </div>
             <div className="pbfp-kpi-body">
               <span className="pbfp-kpi-label">Active Province Incidents</span>
-              <span className="pbfp-kpi-number"><FastNumber value={3} /></span>
+              <span className="pbfp-kpi-number"><FastNumber value={activeIncidentCount} /></span>
             </div>
             <div className="pbfp-kpi-footer">
               <span className="pbfp-kpi-footer-subtext">Live Operations</span>
@@ -792,7 +811,7 @@ export function ProvincialBfpDashboard() {
             </div>
             <div className="pbfp-kpi-body">
               <span className="pbfp-kpi-label">Assistance Requests</span>
-              <span className="pbfp-kpi-number"><FastNumber value={1} /></span>
+              <span className="pbfp-kpi-number"><FastNumber value={openAssistanceCount} /></span>
             </div>
             <div className="pbfp-kpi-footer">
               <span className="pbfp-kpi-footer-subtext">Inter-Station Link</span>
@@ -940,62 +959,71 @@ export function ProvincialBfpDashboard() {
             </div>
 
             <div className="pbfp-incidents-list">
-              {/* Incident 1: San Jose */}
-              <div className="pbfp-incident-box">
-                <div className="pbfp-incident-header">
-                  <span className="pbfp-incident-name">Brgy. Funda-Dalipe, San Jose</span>
-                  <span className="pbfp-alarm-pill red">2nd Alarm</span>
+              {incidentFeedLoading && incidents.length === 0 ? (
+                <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748B', fontSize: '0.82rem' }}>
+                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '0.4rem', color: '#DC2626' }} />
+                  Loading active incidents...
                 </div>
-                <p className="pbfp-incident-desc">
-                  Commercial structure fire near trade center. 3 engines deployed, mutual aid requested.
-                </p>
-                <div className="pbfp-incident-bottom-meta">
-                  <span className="pbfp-meta-item">
-                    <i className="fa-solid fa-location-dot" /> Assigned: San Jose BFP Station
-                  </span>
-                  <span className="pbfp-meta-item">
-                    <i className="fa-regular fa-clock" /> Reported: 24m ago
-                  </span>
+              ) : incidents.length === 0 ? (
+                <div
+                  style={{
+                    padding: '2.5rem 1.25rem',
+                    textAlign: 'center',
+                    color: '#64748B',
+                    background: '#FFFFFF',
+                    borderRadius: '14px',
+                    border: '1px dashed #CBD5E1',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    flex: 1,
+                  }}
+                >
+                  <i className="fa-solid fa-shield-halved" style={{ fontSize: '1.8rem', color: '#10B981', marginBottom: '0.25rem' }} />
+                  <div style={{ fontWeight: 800, color: '#1E293B', fontSize: '0.92rem' }}>No Active Incidents</div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748B' }}>
+                    All municipal jurisdictions in Antique are currently all-clear.
+                  </div>
                 </div>
-              </div>
-
-              {/* Incident 2: Sibalom */}
-              <div className="pbfp-incident-box">
-                <div className="pbfp-incident-header">
-                  <span className="pbfp-incident-name">Brgy. Bari, Sibalom</span>
-                  <span className="pbfp-alarm-pill red">1st Alarm</span>
-                </div>
-                <p className="pbfp-incident-desc">
-                  Residential fire response underway. Tanker reinforcement en route.
-                </p>
-                <div className="pbfp-incident-bottom-meta">
-                  <span className="pbfp-meta-item">
-                    <i className="fa-solid fa-location-dot" /> Assigned: Sibalom BFP Station
-                  </span>
-                  <span className="pbfp-meta-item">
-                    <i className="fa-regular fa-clock" /> Reported: 48m ago
-                  </span>
-                </div>
-              </div>
-
-              {/* Incident 3: Tibiao */}
-              <div className="pbfp-incident-box">
-                <div className="pbfp-incident-header">
-                  <span className="pbfp-incident-name">Brgy. Alegre, Tibiao</span>
-                  <span className="pbfp-alarm-pill orange">Under Control</span>
-                </div>
-                <p className="pbfp-incident-desc">
-                  Grass fire near highway. Overhauling operations in progress.
-                </p>
-                <div className="pbfp-incident-bottom-meta">
-                  <span className="pbfp-meta-item">
-                    <i className="fa-solid fa-location-dot" /> Assigned: Tibiao BFP Station
-                  </span>
-                  <span className="pbfp-meta-item">
-                    <i className="fa-regular fa-clock" /> Reported: 1h 15m ago
-                  </span>
-                </div>
-              </div>
+              ) : (
+                incidents.slice(0, 3).map((inc) => (
+                  <Link
+                    key={inc.id}
+                    href={`/provincial-bfp/incidents?incident=${encodeURIComponent(inc.id)}`}
+                    className="pbfp-incident-box"
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <div className="pbfp-incident-header">
+                      <span className="pbfp-incident-name">
+                        {inc.barangay ? `Brgy. ${inc.barangay}, ` : ''}{inc.originMunicipality}
+                      </span>
+                      <span
+                        className={`pbfp-alarm-pill ${
+                          inc.calculatedSeverity === 'ALARM_3' || inc.calculatedSeverity === 'ALARM_2' ? 'red' : 'orange'
+                        }`}
+                      >
+                        {inc.calculatedSeverity ? inc.calculatedSeverity.replace(/_/g, ' ') : inc.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <p className="pbfp-incident-desc">
+                      Ref #{inc.referenceNumber} • {inc.fireType}
+                      {inc.assignedStationCount > 0 && ` • ${inc.assignedStationCount} responding station${inc.assignedStationCount === 1 ? '' : 's'}`}
+                      {inc.observers.length > 0 && ` • ${inc.observers.length} observer${inc.observers.length === 1 ? '' : 's'}`}
+                      {inc.openAssistanceCount > 0 && ` • ${inc.openAssistanceCount} mutual aid`}
+                    </p>
+                    <div className="pbfp-incident-bottom-meta">
+                      <span className="pbfp-meta-item">
+                        <i className="fa-solid fa-location-dot" /> Origin: {inc.originMunicipality} BFP
+                      </span>
+                      <span className="pbfp-meta-item">
+                        <i className="fa-regular fa-clock" /> {formatTimeAgo(inc.submittedAt)}
+                      </span>
+                    </div>
+                  </Link>
+                ))
+              )}
             </div>
           </section>
         </div>
