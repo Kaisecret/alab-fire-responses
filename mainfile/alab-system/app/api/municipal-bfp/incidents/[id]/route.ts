@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getBfpIdentity } from "../../../../../lib/auth/bfp-accounts";
 import { bfpSessionCookieName, verifyBfpSession } from "../../../../../lib/auth/session";
 import { getDatabase } from "../../../../../lib/db";
+import {
+  getIncidentCoordinationContext,
+  getObserverIncidentDetail,
+  resolveMunicipalIncidentAccess,
+} from "../../../../../lib/intermunicipality/incident-access";
 import { getFireReportPhotoUrl } from "../../../../../lib/supabase/server-storage";
 
 export const runtime = "nodejs";
@@ -15,7 +20,49 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   try {
     const identity = await getBfpIdentity(session.userId);
     if (!identity?.municipalityId) return NextResponse.json({ error: "Your Municipal BFP assignment is not active." }, { status: 403 });
+
+    const accessScope = await resolveMunicipalIncidentAccess(id, identity.municipalityId);
+    if (!accessScope) {
+      return NextResponse.json({ error: "Incident not found in your municipality." }, { status: 404 });
+    }
+
     const database = getDatabase();
+
+    if (accessScope === "OBSERVER") {
+      const [observerIncident, historyResult, coordination] = await Promise.all([
+        getObserverIncidentDetail(id, identity.municipalityId),
+        database.query(
+          "select next_status as status, resident_message as message, created_at as \"createdAt\" from fire_report_status_history where fire_report_id = $1 order by created_at asc",
+          [id],
+        ),
+        getIncidentCoordinationContext(id, identity.municipalityId, "OBSERVER"),
+      ]);
+
+      if (!observerIncident) {
+        return NextResponse.json({ error: "Incident not found in your municipality." }, { status: 404 });
+      }
+
+      return NextResponse.json(
+        {
+          incident: {
+            ...observerIncident,
+            accessScope: "OBSERVER",
+            nearbyObservers: coordination.observers,
+            assistanceRequests: coordination.assistanceRequests,
+            history: historyResult.rows,
+            photos: [],
+            previousReports: [],
+          },
+        },
+        {
+          headers: {
+            "Cache-Control": "private, no-store",
+          },
+        },
+      );
+    }
+
+    // ORIGIN Access Scope
     let incident: any = null;
     try {
       const incidentResult = await database.query(
@@ -87,18 +134,40 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       }
     }
     if (!incident) return NextResponse.json({ error: "Incident not found in your municipality." }, { status: 404 });
+
     const previousReports = incident.residentProfileId
       ? database.query("select id, reference_number as \"referenceNumber\", status, submitted_at as \"submittedAt\" from fire_reports where resident_profile_id = $1 order by submitted_at desc limit 10", [incident.residentProfileId])
       : Promise.resolve({ rows: [] });
-    const [photoResult, historyResult, previousResult] = await Promise.all([
+
+    const [photoResult, historyResult, previousResult, coordination] = await Promise.all([
       database.query<{ storage_key: string }>("select storage_key from fire_report_photos where fire_report_id = $1 order by uploaded_at asc", [id]),
       database.query("select next_status as status, resident_message as message, created_at as \"createdAt\" from fire_report_status_history where fire_report_id = $1 order by created_at asc", [id]),
       previousReports,
+      getIncidentCoordinationContext(id, identity.municipalityId, "ORIGIN"),
     ]);
+
     const photos = await Promise.all(photoResult.rows.map(async (photo) => ({ url: await getFireReportPhotoUrl(photo.storage_key) })));
-    return NextResponse.json({ incident: { ...incident, photos, history: historyResult.rows, previousReports: previousResult.rows } });
+
+    return NextResponse.json(
+      {
+        incident: {
+          ...incident,
+          accessScope: "ORIGIN",
+          nearbyObservers: coordination.observers,
+          assistanceRequests: coordination.assistanceRequests,
+          photos,
+          history: historyResult.rows,
+          previousReports: previousResult.rows,
+        },
+      },
+      {
+        headers: {
+          "Cache-Control": "private, no-store",
+        },
+      },
+    );
   } catch (error) {
     console.error("Municipal incident detail failed", error);
-    return NextResponse.json({ error: "Unable to load incident details." }, { status: 500 });
+    return NextResponse.json({ error: "Unable to load incident detail." }, { status: 500 });
   }
 }

@@ -10,11 +10,15 @@ test("Municipal incident APIs require the assigned BFP identity and dispatch sta
   const respond = readFileSync(join(root, "app", "api", "municipal-bfp", "incidents", "[id]", "respond", "route.ts"), "utf8");
   assert.match(queue, /bfpSessionCookieName\("MUNICIPAL_BFP"\)/);
   assert.match(queue, /session\.role !== "MUNICIPAL_BFP"/);
+  assert.match(queue, /listScopedMunicipalIncidents/);
   assert.match(detail, /resident_profiles/);
   assert.match(detail, /resident_addresses/);
   assert.match(detail, /reporter_ip_address::text as "reporterIpAddress"/);
   assert.match(detail, /reporter_device_summary as "reporterDeviceSummary"/);
   assert.match(detail, /where fr\.id = \$1 and fr\.municipality_id = \$2/);
+  assert.match(detail, /resolveMunicipalIncidentAccess/);
+  assert.match(detail, /getObserverIncidentDetail/);
+  assert.match(detail, /Cache-Control/);
   assert.match(respond, /requireMunicipalAdmin/);
   assert.match(respond, /listDispatchableStations/);
   assert.match(respond, /dispatchIncidentToStations/);
