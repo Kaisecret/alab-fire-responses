@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { BfpDataLoader } from "./bfp-data-loader";
+import { MunicipalIncidentMap } from "./municipal-incident-map";
 import { canMunicipalResolveReport } from "../../lib/fire-reports/validation";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 import { IntermunicipalityCoordinationPanel } from "./intermunicipality-coordination-panel";
@@ -2046,9 +2047,25 @@ export function MunicipalIncidentDetail({
             </section>
           </div>
 
-          {/* Right Column: Evidence Photos, Response Timeline, and Audit Logs */}
+          {/* Right Column: Incident Location Map, Evidence Photos, and Status Logs */}
           <div className="mbfp-map-card-wrapper">
-            {/* 1. Photo Evidence Section with Multi-Photo Switcher */}
+            {/* 1. Incident Report Location Map */}
+            <section className="mbfp-card" aria-labelledby="mbfp-map-heading">
+              <div className="mbfp-card-header">
+                <h2 id="mbfp-map-heading" className="mbfp-card-title">
+                  <i className="fa-solid fa-map-location-dot" />
+                  <span>Report Location GIS Map</span>
+                </h2>
+                <span style={{ fontSize: "0.74rem", fontWeight: 700, color: "#DC2626", background: "#FEF2F2", border: "1px solid #FECACA", padding: "0.2rem 0.6rem", borderRadius: "999px", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#DC2626" }} />
+                  Report Location
+                </span>
+              </div>
+
+              <MunicipalIncidentMap incident={incident} />
+            </section>
+
+            {/* 2. Photo Evidence Section with Multi-Photo Switcher */}
             {incident.accessScope === "ORIGIN" ? (
               validPhotos.length > 0 && evidencePhoto ? (
                 <section className="mbfp-card" aria-labelledby="mbfp-photo-heading">
