@@ -538,32 +538,6 @@ const detailStyles = `
     text-decoration: underline;
   }
 
-  .mbfp-map-shortcut-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.65rem 1rem;
-    border-radius: 9px;
-    background: #F0FDF4;
-    border: 1px solid #BBF7D0;
-    color: #15803D;
-    font-size: 0.8rem;
-    font-weight: 750;
-    text-decoration: none;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    margin-top: 0.35rem;
-    width: 100%;
-    box-sizing: border-box;
-    justify-content: space-between;
-  }
-
-  .mbfp-map-shortcut-btn:hover {
-    background: #DCFCE7;
-    border-color: #86EFAC;
-    color: #166534;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 10px rgba(22, 101, 52, 0.12);
-  }
 
   /* Incident Details Description Block */
   .mbfp-desc-box {
@@ -1943,21 +1917,6 @@ export function MunicipalIncidentDetail({
                     <span className="mbfp-data-value">{incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}</span>
                   </div>
 
-                  <div className="mbfp-data-cell mbfp-data-cell--full">
-                    <a
-                      href={`/municipal-bfp/map?incident=${encodeURIComponent(incident.id)}`}
-                      className="mbfp-map-shortcut-btn"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Open full interactive map in Municipal GIS Operations Map"
-                    >
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
-                        <i className="fa-solid fa-map-location-dot" style={{ color: "#16A34A" }} />
-                        <span>Open Location in Municipal GIS Operations Map</span>
-                      </span>
-                      <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: "0.72rem", opacity: 0.8 }} />
-                    </a>
-                  </div>
 
                   {!isPhoneReport && <>
                     <div className="mbfp-data-cell">
@@ -2014,21 +1973,6 @@ export function MunicipalIncidentDetail({
                     <span className="mbfp-data-value">{incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}</span>
                   </div>
 
-                  <div className="mbfp-data-cell mbfp-data-cell--full">
-                    <a
-                      href={`/municipal-bfp/map?incident=${encodeURIComponent(incident.id)}`}
-                      className="mbfp-map-shortcut-btn"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Open full interactive map in Municipal GIS Operations Map"
-                    >
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
-                        <i className="fa-solid fa-map-location-dot" style={{ color: "#16A34A" }} />
-                        <span>Open Location in Municipal GIS Operations Map</span>
-                      </span>
-                      <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: "0.72rem", opacity: 0.8 }} />
-                    </a>
-                  </div>
                 </div>
               )}
             </section>
