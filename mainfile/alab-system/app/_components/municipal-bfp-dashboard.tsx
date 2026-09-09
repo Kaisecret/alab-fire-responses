@@ -1,5 +1,7 @@
 'use client';
 
+import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
+
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMunicipalIncidentFeed } from './use-municipal-incident-feed';

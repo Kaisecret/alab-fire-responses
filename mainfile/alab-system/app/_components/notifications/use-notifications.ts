@@ -1,5 +1,7 @@
 "use client";
 
+import { municipalTabFetch as fetch } from "../../../lib/auth/municipal-tab-fetch";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { AccountNotification, NotificationFeed } from "@/lib/notifications/types";
@@ -7,11 +9,12 @@ import type { AccountNotification, NotificationFeed } from "@/lib/notifications/
 const POLL_INTERVAL_MS = 5_000;
 
 export function useNotifications(apiPath: string, limit = 25) {
+  const cacheStorage = typeof window === "undefined" ? null : apiPath.startsWith("/api/municipal-bfp/") ? sessionStorage : localStorage;
   const cacheKey = `alab_cache_notifications_${apiPath}`;
   const [notifications, setNotifications] = useState<AccountNotification[]>(() => {
     if (typeof window !== "undefined") {
       try {
-        const cached = localStorage.getItem(cacheKey);
+        const cached = cacheStorage?.getItem(cacheKey);
         if (cached) {
           const feed = JSON.parse(cached) as NotificationFeed;
           return feed.notifications || [];
@@ -23,7 +26,7 @@ export function useNotifications(apiPath: string, limit = 25) {
   const [unreadCount, setUnreadCount] = useState<number>(() => {
     if (typeof window !== "undefined") {
       try {
-        const cached = localStorage.getItem(cacheKey);
+        const cached = cacheStorage?.getItem(cacheKey);
         if (cached) {
           const feed = JSON.parse(cached) as NotificationFeed;
           return feed.unreadCount || 0;
@@ -35,7 +38,7 @@ export function useNotifications(apiPath: string, limit = 25) {
   const [isLoading, setIsLoading] = useState(() => {
     if (typeof window !== "undefined") {
       try {
-        return !localStorage.getItem(cacheKey);
+        return !cacheStorage?.getItem(cacheKey);
       } catch {}
     }
     return true;
@@ -54,10 +57,10 @@ export function useNotifications(apiPath: string, limit = 25) {
       setUnreadCount(feed.unreadCount);
       setError(null);
       try {
-        localStorage.setItem(cacheKey, JSON.stringify(feed));
+        cacheStorage?.setItem(cacheKey, JSON.stringify(feed));
       } catch {}
     } catch {
-      const hasCached = notifications.length > 0 || (typeof window !== "undefined" && Boolean(localStorage.getItem(cacheKey)));
+      const hasCached = notifications.length > 0 || (typeof window !== "undefined" && Boolean(cacheStorage?.getItem(cacheKey)));
       if (!hasCached) {
         setError("Notifications are temporarily unavailable.");
       } else {
@@ -67,7 +70,7 @@ export function useNotifications(apiPath: string, limit = 25) {
       requestInFlight.current = false;
       setIsLoading(false);
     }
-  }, [apiPath, limit, cacheKey, notifications.length]);
+  }, [apiPath, limit, cacheKey, cacheStorage, notifications.length]);
 
   useEffect(() => {
     const initialRefresh = window.setTimeout(() => void refresh(), 0);

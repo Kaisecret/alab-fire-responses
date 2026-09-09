@@ -21,7 +21,7 @@ export function residentNotificationUser(request: NextRequest) {
 }
 
 export async function bfpNotificationUser(request: NextRequest, role: BfpRole) {
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName(role))?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName(role, request.headers))?.value);
   if (!session || session.role !== role) return null;
   const identity = await getBfpIdentity(session.userId);
   if (!identity || identity.role !== role) return null;

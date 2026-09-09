@@ -1,5 +1,7 @@
 "use client";
 
+import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
+
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { BfpDataLoader } from "./bfp-data-loader";

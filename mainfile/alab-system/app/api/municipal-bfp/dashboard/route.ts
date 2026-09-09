@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
   if (!session || session.role !== "MUNICIPAL_BFP") {
     return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
   }

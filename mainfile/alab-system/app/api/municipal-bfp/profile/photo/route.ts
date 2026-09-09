@@ -6,7 +6,7 @@ import { bfpSessionCookieName, verifyBfpSession } from "../../../../../lib/auth/
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
   if (!session || session.role !== "MUNICIPAL_BFP") {
     return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
   }
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
   if (!session || session.role !== "MUNICIPAL_BFP") {
     return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
   }

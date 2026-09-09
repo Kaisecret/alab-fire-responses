@@ -49,11 +49,11 @@ test("Provincial and Municipal BFP sessions use independent cookies", () => {
   assert.match(session, /PROVINCIAL_BFP_SESSION_COOKIE\s*=\s*"alab_provincial_bfp_session"/);
   assert.match(session, /MUNICIPAL_BFP_SESSION_COOKIE\s*=\s*"alab_municipal_bfp_session"/);
   assert.match(session, /bfpSessionCookieName/);
-  assert.match(login, /bfpSessionCookieName\(identity\.role\)/);
+  assert.match(login, /bfpSessionCookieName\(identity\.role, request\.headers\)/);
   assert.match(changePassword, /portal/);
-  assert.match(changePassword, /bfpSessionCookieName\(session\.role\)/);
+  assert.match(changePassword, /bfpSessionCookieName\(session\.role, request\.headers\)/);
   assert.match(logout, /bfpSessionCookieName/);
-  assert.match(municipalMe, /bfpSessionCookieName\("MUNICIPAL_BFP"\)/);
+  assert.match(municipalMe, /bfpSessionCookieName\("MUNICIPAL_BFP", request\.headers\)/);
   assert.match(provincialMe, /bfpSessionCookieName\("PROVINCIAL_BFP"\)/);
   assert.match(proxy, /bfpSessionCookieName\(requiredRole\)/);
 });
@@ -291,4 +291,3 @@ test("Municipal web portal restricts login to MUNICIPAL_ADMIN and rejects mobile
   assert.match(login, /Incorrect BFP email or password/);
   assert.match(proxy, /session\.assignmentRole !== "MUNICIPAL_ADMIN"/);
 });
-

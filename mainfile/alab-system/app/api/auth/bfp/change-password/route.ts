@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid password data." }, { status: 400 });
   }
   const expectedRole: BfpRole = body.portal === "PROVINCIAL" ? "PROVINCIAL_BFP" : "MUNICIPAL_BFP";
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName(expectedRole))?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName(expectedRole, request.headers))?.value);
   if (!session || session.role !== expectedRole) return NextResponse.json({ error: "Sign in again to change your password." }, { status: 401 });
   const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
   const nextPassword = typeof body.nextPassword === "string" ? body.nextPassword : "";
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const identity = await getBfpIdentity(session.userId);
     if (!identity) return NextResponse.json({ error: "Your account is no longer active." }, { status: 403 });
     const response = NextResponse.json({ redirectTo: identity.role === "PROVINCIAL_BFP" ? "/provincial-bfp" : "/municipal-bfp" });
-    response.cookies.set(bfpSessionCookieName(session.role), createBfpSession({
+    response.cookies.set(bfpSessionCookieName(session.role, request.headers), createBfpSession({
       userId: identity.userId,
       displayName: identity.displayName,
       role: identity.role,

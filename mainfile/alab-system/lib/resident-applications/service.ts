@@ -26,7 +26,7 @@ export async function getMunicipalReviewer(request: NextRequest) {
       assignmentRole: "MUNICIPAL_ADMIN" as const,
     };
   }
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
   if (!session || session.role !== "MUNICIPAL_BFP") return null;
   const identity = await getBfpIdentity(session.userId);
   return identity?.role === "MUNICIPAL_BFP" && identity.municipalityId ? identity : null;

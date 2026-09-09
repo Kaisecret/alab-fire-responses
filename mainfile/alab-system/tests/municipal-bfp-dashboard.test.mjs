@@ -7,7 +7,7 @@ const root = process.cwd();
 
 test("Municipal BFP dashboard API aggregates live incidents, verifications, stations, responders, and mutual aid", () => {
   const route = readFileSync(join(root, "app", "api", "municipal-bfp", "dashboard", "route.ts"), "utf8");
-  assert.match(route, /bfpSessionCookieName\("MUNICIPAL_BFP"\)/);
+  assert.match(route, /bfpSessionCookieName\("MUNICIPAL_BFP", request\.headers\)/);
   assert.match(route, /session\.role !== "MUNICIPAL_BFP"/);
   assert.match(route, /fire_reports/);
   assert.match(route, /resident_verifications/);

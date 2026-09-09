@@ -1,5 +1,7 @@
 'use client';
 
+import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
+
 import 'leaflet/dist/leaflet.css';
 
 import { useEffect, useRef } from 'react';

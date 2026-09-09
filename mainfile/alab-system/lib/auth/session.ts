@@ -24,7 +24,12 @@ export type BfpRole = "PROVINCIAL_BFP" | "MUNICIPAL_BFP";
 export const PROVINCIAL_BFP_SESSION_COOKIE = "alab_provincial_bfp_session";
 export const MUNICIPAL_BFP_SESSION_COOKIE = "alab_municipal_bfp_session";
 
-export function bfpSessionCookieName(role: BfpRole) {
+export function bfpSessionCookieName(role: BfpRole, headers?: Headers) {
+  if (role === "MUNICIPAL_BFP" && headers) {
+    const tab = headers.get("x-alab-municipal-tab") ?? "";
+    // A missing/invalid selector must never select a browser-wide account.
+    return `${MUNICIPAL_BFP_SESSION_COOKIE}_${/^[a-f0-9-]{36}$/.test(tab) ? tab : "unselected"}`;
+  }
   return role === "PROVINCIAL_BFP"
     ? PROVINCIAL_BFP_SESSION_COOKIE
     : MUNICIPAL_BFP_SESSION_COOKIE;

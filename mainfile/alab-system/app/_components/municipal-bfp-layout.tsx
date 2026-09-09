@@ -1,5 +1,7 @@
 'use client';
 
+import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -1039,6 +1041,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
   };
 
   const handleLogout = async () => {
+    setIdentity(null);
     try {
       await fetch('/api/auth/bfp/logout', {
         method: 'POST',
@@ -1052,6 +1055,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
   };
 
   if (isAuthenticationPage) return <>{children}</>;
+  if (!identity) return <main role="status" aria-live="polite" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#EEF5FD' }}>Checking your municipal account…</main>;
 
   return (
     <>

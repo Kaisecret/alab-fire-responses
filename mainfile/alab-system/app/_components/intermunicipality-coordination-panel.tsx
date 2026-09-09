@@ -1,5 +1,7 @@
 "use client";
 
+import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
+
 import React, { useState } from "react";
 import type { AssistanceRequestSummary, NearbyObserver } from "../../lib/intermunicipality/types";
 

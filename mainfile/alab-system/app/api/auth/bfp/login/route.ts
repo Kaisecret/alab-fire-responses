@@ -30,6 +30,9 @@ export async function POST(request: Request) {
   const email = typeof body.email === "string" ? body.email.trim().slice(0, 100) : "";
   const password = typeof body.password === "string" ? body.password : "";
   const expectedRole: BfpRole = body.portal === "PROVINCIAL" ? "PROVINCIAL_BFP" : "MUNICIPAL_BFP";
+  if (expectedRole === "MUNICIPAL_BFP" && bfpSessionCookieName(expectedRole, request.headers).endsWith("_unselected")) {
+    return NextResponse.json({ error: "Refresh this tab before signing in." }, { status: 400 });
+  }
   if (!email || !password) return NextResponse.json({ error: "Enter your official BFP email and password." }, { status: 400 });
 
   const clientIp = getClientIp(request);
@@ -86,7 +89,7 @@ export async function POST(request: Request) {
         ? `/${body.portal === "PROVINCIAL" ? "provincial-bfp" : "municipal-bfp"}/change-password`
         : `/${body.portal === "PROVINCIAL" ? "provincial-bfp" : "municipal-bfp"}`,
     });
-    response.cookies.set(bfpSessionCookieName(identity.role), session, bfpSessionCookie);
+    response.cookies.set(bfpSessionCookieName(identity.role, request.headers), session, bfpSessionCookie);
     return response;
   } catch (error) {
     console.error("BFP login failed", error);

@@ -1,5 +1,7 @@
 'use client';
 
+import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
+
 import { FormEvent, useState } from "react";
 
 export function BfpChangePassword({ portal }: { portal: "MUNICIPAL" | "PROVINCIAL" }) {

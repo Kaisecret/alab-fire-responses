@@ -30,7 +30,7 @@ function unavailable(latitude: number, longitude: number) {
 }
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
   if (!session || session.role !== "MUNICIPAL_BFP") {
     return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
   }

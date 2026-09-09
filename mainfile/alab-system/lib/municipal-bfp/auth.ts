@@ -11,7 +11,7 @@ export type MunicipalAdminIdentity = BfpIdentity & {
 
 export async function requireMunicipalAdmin(request: NextRequest): Promise<MunicipalAdminIdentity | NextResponse> {
   if (isLocalUiPreviewEnabled()) {
-    const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
+    const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
     if (session && session.role === "MUNICIPAL_BFP") {
       const identity = await getBfpIdentity(session.userId);
       if (identity?.municipalityId && identity.assignmentRole === "MUNICIPAL_ADMIN") {
@@ -32,7 +32,7 @@ export async function requireMunicipalAdmin(request: NextRequest): Promise<Munic
       assignmentRole: "MUNICIPAL_ADMIN" as const,
     } as MunicipalAdminIdentity;
   }
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
   if (!session || session.role !== "MUNICIPAL_BFP") {
     return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
   }

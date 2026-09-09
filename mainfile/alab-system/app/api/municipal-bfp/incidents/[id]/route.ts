@@ -14,7 +14,7 @@ import { getFireReportPhotoUrl } from "../../../../../lib/supabase/server-storag
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
   let municipalityId: string | null = null;
   const isPreview = isLocalUiPreviewEnabled();
 

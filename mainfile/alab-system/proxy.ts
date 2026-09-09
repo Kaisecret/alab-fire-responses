@@ -103,6 +103,11 @@ export async function proxy(request: NextRequest) {
   }
 
   const isMunicipal = path.startsWith("/municipal-bfp/") || path === "/municipal-bfp";
+  // Municipal pages contain only a public shell. The client layout verifies
+  // its tab through /api/municipal-bfp/me before mounting private content.
+  // Every municipal API continues to validate the selected signed cookie.
+  // Top-level navigation cannot carry a sessionStorage tab identifier.
+  if (isMunicipal) return supabaseResponse;
   const publicBfpPage = path.endsWith("/login") || path.endsWith("/change-password");
   if (publicBfpPage) return supabaseResponse;
   if (isLocalUiPreviewEnabled()) return supabaseResponse;

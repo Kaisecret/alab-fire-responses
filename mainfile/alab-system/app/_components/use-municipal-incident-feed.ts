@@ -1,5 +1,7 @@
 "use client";
 
+import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export const REFRESH_INTERVAL_MS = 5_000;

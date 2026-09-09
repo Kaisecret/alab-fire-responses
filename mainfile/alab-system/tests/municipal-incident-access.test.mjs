@@ -8,7 +8,7 @@ test("Municipal incident APIs require the assigned BFP identity and dispatch sta
   const queue = readFileSync(join(root, "app", "api", "municipal-bfp", "incidents", "route.ts"), "utf8");
   const detail = readFileSync(join(root, "app", "api", "municipal-bfp", "incidents", "[id]", "route.ts"), "utf8");
   const respond = readFileSync(join(root, "app", "api", "municipal-bfp", "incidents", "[id]", "respond", "route.ts"), "utf8");
-  assert.match(queue, /bfpSessionCookieName\("MUNICIPAL_BFP"\)/);
+  assert.match(queue, /bfpSessionCookieName\("MUNICIPAL_BFP", request\.headers\)/);
   assert.match(queue, /session\.role !== "MUNICIPAL_BFP"/);
   assert.match(queue, /listScopedMunicipalIncidents/);
   assert.match(detail, /resident_profiles/);

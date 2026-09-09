@@ -22,6 +22,6 @@ export async function POST(request: Request) {
   const role: BfpRole = portal === "PROVINCIAL" ? "PROVINCIAL_BFP" : "MUNICIPAL_BFP";
   const loginPath = portal === "PROVINCIAL" ? "/provincial-bfp/login" : "/municipal-bfp/login";
   const response = NextResponse.redirect(new URL(loginPath, request.url), 303);
-  response.cookies.set(bfpSessionCookieName(role), "", { ...bfpSessionCookie, expires: new Date(0), maxAge: 0 });
+  response.cookies.set(bfpSessionCookieName(role, request.headers), "", { ...bfpSessionCookie, expires: new Date(0), maxAge: 0 });
   return response;
 }

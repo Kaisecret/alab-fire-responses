@@ -12,7 +12,7 @@ import {
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP"))?.value);
+  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
   let municipalityId: string | null = null;
   let municipalityName = "San Jose de Buenavista";
 
