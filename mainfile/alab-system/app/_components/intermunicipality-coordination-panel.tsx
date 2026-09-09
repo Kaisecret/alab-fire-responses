@@ -62,8 +62,8 @@ export function IntermunicipalityCoordinationPanel({
       }
       setSuccessMessage("Alert acknowledged. Seen status updated.");
       await onChanged();
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to acknowledge alert");
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Failed to acknowledge alert");
     } finally {
       setSubmitting(false);
     }
@@ -108,8 +108,8 @@ export function IntermunicipalityCoordinationPanel({
       setShowRequestModal(false);
       setRequestNote("");
       await onChanged();
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to send backup request");
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Failed to send backup request");
     } finally {
       setSubmitting(false);
     }
@@ -136,8 +136,8 @@ export function IntermunicipalityCoordinationPanel({
       }
       setSuccessMessage("Assistance request cancelled.");
       await onChanged();
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to cancel request");
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Failed to cancel request");
     } finally {
       setSubmitting(false);
     }
@@ -196,8 +196,8 @@ export function IntermunicipalityCoordinationPanel({
       setRespondingToRequestId(null);
       setResponseNote("");
       await onChanged();
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to submit response");
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Failed to submit response");
     } finally {
       setSubmitting(false);
     }
@@ -380,7 +380,7 @@ export function IntermunicipalityCoordinationPanel({
                       </p>
                       {req.responseNote && (
                         <p className="text-xs italic text-slate-600 dark:text-slate-300 mt-1">
-                          "{req.responseNote}"
+                          &ldquo;{req.responseNote}&rdquo;
                         </p>
                       )}
                     </div>
@@ -484,7 +484,7 @@ export function IntermunicipalityCoordinationPanel({
                   </p>
                   {observerPendingRequest.requestNote && (
                     <p className="text-xs italic text-slate-600 dark:text-slate-400 mt-1">
-                      Note: "{observerPendingRequest.requestNote}"
+                      Note: &ldquo;{observerPendingRequest.requestNote}&rdquo;
                     </p>
                   )}
 

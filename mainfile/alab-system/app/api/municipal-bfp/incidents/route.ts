@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getBfpIdentity } from "../../../../lib/auth/bfp-accounts";
 import { bfpSessionCookieName, verifyBfpSession } from "../../../../lib/auth/session";
 import { listScopedMunicipalIncidents } from "../../../../lib/intermunicipality/incident-access";
-// Delegates incident retrieval including fr.report_source as "reportSource" to listScopedMunicipalIncidents
+// Delegates incident retrieval including fr.report_source as "reportSource" to listScopedMunicipalIncidents.
+// Underlying scoped query filters by fr.municipality_id = $1 or observer_municipality_id,
+// excludes terminal records via fr.status not in ('RESOLVED', 'CLOSED', 'REJECTED', 'FALSE_REPORT', 'DUPLICATE'),
+// and returns detectedBuildingDensity, buildingDensityConfidence, buildingDensityBuildingCount.
 
 export const runtime = "nodejs";
 

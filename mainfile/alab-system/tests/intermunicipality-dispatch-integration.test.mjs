@@ -25,3 +25,23 @@ test("municipal resolution closes assistance before ending observer access", () 
   assert.ok(closeIndex >= 0);
   assert.ok(endIndex > closeIndex);
 });
+
+test("assigned incident connects selection, monitoring, backup, provincial oversight, and closure", () => {
+  const files = {
+    dispatch: source("lib/municipal-bfp/dispatch.ts"),
+    observers: source("lib/intermunicipality/observers.ts"),
+    assistance: source("lib/intermunicipality/assistance.ts"),
+    access: source("lib/intermunicipality/incident-access.ts"),
+    provincial: source("lib/intermunicipality/provincial.ts"),
+  };
+  assert.match(files.dispatch, /createNearbyIncidentObservers/);
+  assert.match(files.observers, /NEARBY_INCIDENT_ASSIGNED/);
+  assert.match(files.observers, /acknowledgeNearbyIncident/);
+  assert.match(files.observers, /OBSERVER_ALERT_ACKNOWLEDGED/);
+  assert.match(files.access, /observer_municipality_id/);
+  assert.match(files.assistance, /ASSISTANCE_REQUESTED/);
+  assert.match(files.provincial, /intermunicipal_assistance_requests/);
+  assert.match(files.dispatch, /closeIncidentAssistance/);
+  assert.match(files.dispatch, /endIncidentObservers/);
+});
+

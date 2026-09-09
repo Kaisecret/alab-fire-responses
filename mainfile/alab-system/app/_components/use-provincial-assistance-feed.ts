@@ -58,18 +58,19 @@ export function useProvincialAssistanceFeed(options: {
 } = {}): ProvincialAssistanceFeedState {
   const includeClosed = options.includeClosed ?? false;
   const cacheKey = includeClosed ? "all" : "active";
-  const initialCache = useRef<FeedCache | null>(null);
-  if (initialCache.current === null) {
-    initialCache.current = getCachedFeed(cacheKey);
-  }
 
-  const [rows, setRows] = useState<ProvincialAssistanceRequest[]>(initialCache.current?.assistanceRequests || []);
-  const [loading, setLoading] = useState(!initialCache.current);
+  const [rows, setRows] = useState<ProvincialAssistanceRequest[]>(() => {
+    return getCachedFeed(cacheKey)?.assistanceRequests || [];
+  });
+  const [loading, setLoading] = useState(() => {
+    return !getCachedFeed(cacheKey);
+  });
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
-  const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(
-    initialCache.current ? new Date(initialCache.current.timestamp) : null,
-  );
+  const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(() => {
+    const cached = getCachedFeed(cacheKey);
+    return cached ? new Date(cached.timestamp) : null;
+  });
   const inFlight = useRef(false);
   const mounted = useRef(true);
 
@@ -115,7 +116,9 @@ export function useProvincialAssistanceFeed(options: {
 
   useEffect(() => {
     mounted.current = true;
-    void refresh();
+    const initialTimer = setTimeout(() => {
+      void refresh();
+    }, 0);
 
     let intervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -153,6 +156,7 @@ export function useProvincialAssistanceFeed(options: {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      clearTimeout(initialTimer);
       mounted.current = false;
       stopPolling();
       document.removeEventListener("visibilitychange", handleVisibilityChange);

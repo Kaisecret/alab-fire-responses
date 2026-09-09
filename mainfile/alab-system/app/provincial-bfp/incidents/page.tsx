@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useProvincialIncidentFeed } from '../../_components/use-provincial-incident-feed';
 import { BfpDataLoader } from '../../_components/bfp-data-loader';
-import type { ProvincialIncidentSummary, ProvincialIncidentDetail } from '../../../lib/intermunicipality/provincial';
+import type { ProvincialIncidentDetail } from '../../../lib/intermunicipality/provincial';
 
 const pageStyles = `
   .pbfp-incidents-page {
@@ -592,6 +592,13 @@ function ProvincialIncidentsContent() {
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'RESOLVED'>('ACTIVE');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(() => deepLinkedIncidentId);
+  const [prevDeepLinkId, setPrevDeepLinkId] = useState<string | null>(deepLinkedIncidentId);
+
+  if (deepLinkedIncidentId !== prevDeepLinkId) {
+    setPrevDeepLinkId(deepLinkedIncidentId);
+    setSelectedIncidentId(deepLinkedIncidentId);
+  }
+
   const [incidentDetail, setIncidentDetail] = useState<ProvincialIncidentDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
@@ -600,16 +607,13 @@ function ProvincialIncidentsContent() {
     includeHistory: filter === 'ALL' || filter === 'RESOLVED',
   });
 
-  useEffect(() => {
-    const incId = searchParams.get("incident");
-    if (incId) {
-      setSelectedIncidentId(incId);
-    }
-  }, [searchParams]);
+  const handleCloseModal = () => {
+    setSelectedIncidentId(null);
+    setIncidentDetail(null);
+  };
 
   useEffect(() => {
     if (!selectedIncidentId) {
-      setIncidentDetail(null);
       return;
     }
     let cancelled = false;
@@ -928,7 +932,7 @@ function ProvincialIncidentsContent() {
 
       {/* Incident Detail Modal */}
       {selectedIncidentId && (
-        <div className="pbfp-modal-overlay" onClick={() => setSelectedIncidentId(null)}>
+        <div className="pbfp-modal-overlay" onClick={handleCloseModal}>
           <div className="pbfp-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="pbfp-modal-header">
               <div className="pbfp-modal-title">
@@ -938,7 +942,7 @@ function ProvincialIncidentsContent() {
               <button
                 type="button"
                 className="pbfp-modal-close"
-                onClick={() => setSelectedIncidentId(null)}
+                onClick={handleCloseModal}
                 aria-label="Close modal"
               >
                 <i className="fa-solid fa-xmark" />
@@ -1087,7 +1091,7 @@ function ProvincialIncidentsContent() {
                 type="button"
                 className="pbfp-modal-close"
                 style={{ width: 'auto', padding: '0.45rem 1rem', height: 'auto', fontWeight: 700, fontSize: '0.8rem' }}
-                onClick={() => setSelectedIncidentId(null)}
+                onClick={handleCloseModal}
               >
                 Close
               </button>

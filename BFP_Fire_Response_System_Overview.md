@@ -373,6 +373,20 @@ Firefighters use the mobile application during field response.
 
 ### 4.11 Inter-Municipality Assistance
 
+After the responsible Municipal BFP assigns a response team or firetruck, ALAB automatically selects the two nearest eligible external municipalities from the incident GPS point and active BFP-station coordinates. Eligibility also requires an active Municipal BFP account. Those municipalities receive privacy-limited live monitoring access and may acknowledge that they saw the alert. Acknowledgment does not authorize dispatch. They cannot dispatch resources until the responsible municipality sends a backup request and they accept or partially accept it. Provincial BFP receives the selection, request, response, and completion events for province-wide oversight.
+
+#### Selection, Monitoring, and Mutual Aid Rules
+
+- **Automatic Deterministic Selection:** Nearest active stations in distinct external municipalities are ranked via pure Haversine distance. Exactly two observer municipalities are snapshot and persisted (`incident_municipal_observers`) so active incidents never silently fluctuate observers.
+- **Degraded Selection Warning:** If fewer than two eligible external municipalities exist with active Municipal BFP accounts, all available candidates are persisted, and a degraded selection warning is flagged to the origin and Provincial BFP.
+- **Privacy-Limited Monitoring:** Observers see incident reference, fire type, coordinates, landmarks, severity, and responder units. Observer projections strictly exclude resident name, phone number, private address, photos, reporter IP address, and device metadata.
+- **Observer Monitoring States:**
+  - `Waiting`: Alert delivered; pending station acknowledgment.
+  - `Seen`: Acknowledged by an authorized station user with recorded timestamp (acknowledgment does not authorize dispatch).
+  - `Backup requested`: Active mutual aid assistance request dispatched from the incident origin.
+- **Mutual Aid Lifecycle:** Origin requests backup (`REQUESTED`). Recipient responds (`ACCEPTED`, `PARTIALLY_ACCEPTED`, `REJECTED`). Origin may cancel (`CANCELLED`). When the incident is contained/cleared, assistance is concluded (`COMPLETED`) and observer access ends (`ENDED`).
+- **Live Telemetry:** Municipal and provincial dashboards utilize a 5-second visible-tab polling cycle with immediate refresh upon tab reactivation, operating without WebSocket or external realtime dependencies.
+
 #### Functions
 
 - Select an active incident.
@@ -386,19 +400,15 @@ Firefighters use the mobile application during field response.
 - Record dispatch, arrival, completion, and return times.
 - Restrict shared information to what is necessary for coordination.
 
-#### Suggested Request Statuses
+#### Assistance Request Statuses
 
-- Draft
-- Submitted
-- Under Review
-- Accepted
-- Partially Accepted
-- Rejected
-- Resources Assigned
-- En Route
-- Arrived
-- Completed
-- Closed
+- REQUESTED
+- ACCEPTED
+- PARTIALLY_ACCEPTED
+- REJECTED
+- CANCELLED
+- COMPLETED
+
 
 ---
 
@@ -582,11 +592,15 @@ Firefighters use the mobile application during field response.
 - Notify the responsible municipal BFP station about a new report.
 - Notify personnel when a report is confirmed.
 - Notify assigned responders.
-- Notify municipalities about assistance requests.
-- Notify users when a request is accepted or rejected.
+- Notify the two selected nearby municipalities when an incident dispatch starts (`NEARBY_INCIDENT_ASSIGNED`).
+- Notify origin municipality and Provincial BFP when an observer acknowledges seeing an alert (`NEARBY_MONITORING_STARTED`).
+- Notify observer municipalities about backup assistance requests (`ASSISTANCE_REQUESTED`).
+- Notify origin municipality and Provincial BFP when backup requests are accepted, partially accepted, or rejected (`ASSISTANCE_ACCEPTED`, `ASSISTANCE_PARTIALLY_ACCEPTED`, `ASSISTANCE_REJECTED`).
+- Notify involved municipalities when a request is cancelled or concluded (`ASSISTANCE_CANCELLED`, `ASSISTANCE_COMPLETED`).
+- Notify Provincial BFP if fewer than two eligible external municipalities are found (`NEARBY_SELECTION_DEGRADED`).
 - Notify authorized Provincial BFP personnel about failed synchronization or system issues.
 
-Possible notification channels may include in-app notifications, push notifications, SMS integration, or email, depending on approved project scope and available services.
+Possible notification channels include in-app account notifications (with deduplicated keys and action links), visible-tab live polling, push notifications, and SMS integration depending on project scope.
 
 ---
 

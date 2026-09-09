@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useProvincialAssistanceFeed } from '../../_components/use-provincial-assistance-feed';
 import { BfpDataLoader } from '../../_components/bfp-data-loader';
-import type { ProvincialAssistanceRequest } from '../../../lib/intermunicipality/provincial';
 
 const pageStyles = `
   .pbfp-aid-page {
