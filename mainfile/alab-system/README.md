@@ -31,6 +31,16 @@ To learn more about Next.js, take a look at the following resources:
 
 The Flutter BFP responder app uses the deployed ALAB API, not a direct Supabase database connection. Keep `DATABASE_URL` and a 32+-character `AUTH_SECRET` configured only in the Vercel project environment. Never place either value, a Supabase secret key, or a service-role key in the Flutter app.
 
+Resident correction notices use the existing PhilSMS account and Resend. Configure these values only in the Vercel project environment:
+
+- `PHILSMS_API_TOKEN` — PhilSMS bearer token.
+- `PHILSMS_SENDER_ID` — approved PhilSMS sender ID.
+- `RESEND_API_KEY` — Resend server API key.
+- `RESEND_FROM_EMAIL` — verified sender, such as `ALAB <updates@your-domain.gov.ph>`.
+- `NEXT_PUBLIC_APP_URL` — public ALAB origin used for the resident application link.
+
+Apply `supabase/migrations/20260910090000_add_resident_notification_deliveries.sql` before enabling correction delivery in production. Never commit any provider key to the repository.
+
 Build the production Android app with the public API address only:
 
 ```powershell

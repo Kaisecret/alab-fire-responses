@@ -32,6 +32,11 @@ type Detail = Summary & {
   }[];
 };
 
+type DeliveryResult = {
+  channel: "SMS" | "EMAIL";
+  status: "SENT" | "FAILED" | "NOT_CONFIGURED";
+};
+
 export default function VerificationQueuePage() {
   const [mounted, setMounted] = useState(false);
   const [applications, setApplications] = useState<Summary[]>([]);
@@ -42,12 +47,14 @@ export default function VerificationQueuePage() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [correctionMode, setCorrectionMode] = useState(false);
   const [reason, setReason] = useState("");
   const [zoomImage, setZoomImage] = useState<{ url: string; label: string } | null>(null);
 
   useEffect(() => {
-    setMounted(true);
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const load = useCallback(async () => {
@@ -102,6 +109,7 @@ export default function VerificationQueuePage() {
   async function openApplication(id: string) {
     setWorking(true);
     setError("");
+    setNotice("");
     try {
       const response = await fetch(`/api/municipal-bfp/resident-applications/${id}`, { cache: "no-store" });
       const result = (await response.json()) as { application?: Detail; error?: string };
@@ -129,7 +137,7 @@ export default function VerificationQueuePage() {
         headers: { "Content-Type": "application/json" },
         body: action === "request-corrections" ? JSON.stringify({ reason }) : undefined,
       });
-      const result = (await response.json()) as { error?: string };
+      const result = (await response.json()) as { error?: string; delivery?: DeliveryResult[] };
       setWorking(false);
       if (!response.ok) {
         setError(result.error ?? "Unable to save this review.");
@@ -137,6 +145,25 @@ export default function VerificationQueuePage() {
       }
       setSelected(null);
       setCorrectionMode(false);
+      if (action === "request-corrections") {
+        const deliveryStatus = (channel: DeliveryResult["channel"]) =>
+          result.delivery?.find((item) => item.channel === channel)?.status;
+        const smsStatus = deliveryStatus("SMS");
+        const emailStatus = deliveryStatus("EMAIL");
+        const smsMessage = smsStatus === "SENT"
+          ? "SMS sent."
+          : smsStatus === "NOT_CONFIGURED"
+            ? "SMS is not configured."
+            : "SMS queued for retry.";
+        const emailMessage = emailStatus === "SENT"
+          ? "Email sent."
+          : emailStatus === "NOT_CONFIGURED"
+            ? "Email is not configured."
+            : "Email queued for retry.";
+        setNotice(`Correction request saved. ${smsMessage} ${emailMessage}`);
+      } else {
+        setNotice("Resident application approved.");
+      }
       await load();
     } catch {
       setWorking(false);
@@ -192,6 +219,25 @@ export default function VerificationQueuePage() {
             className="vq-alert-close"
             onClick={() => setError("")}
             aria-label="Dismiss alert"
+          >
+            <i className="fa-solid fa-xmark" />
+          </button>
+        </div>
+      )}
+
+      {notice && (
+        <div className="vq-alert-banner success" role="status">
+          <div className="vq-alert-icon">
+            <i className="fa-solid fa-circle-check" />
+          </div>
+          <div className="vq-alert-text">
+            <strong>Review saved:</strong> {notice}
+          </div>
+          <button
+            type="button"
+            className="vq-alert-close"
+            onClick={() => setNotice("")}
+            aria-label="Dismiss confirmation"
           >
             <i className="fa-solid fa-xmark" />
           </button>
@@ -937,6 +983,17 @@ const styles = `
   .vq-alert-icon {
     font-size: 1.1rem;
     color: #DC2626;
+  }
+
+  .vq-alert-banner.success {
+    background: #ECFDF3;
+    border-color: #ABEFC6;
+    color: #067647;
+  }
+
+  .vq-alert-banner.success .vq-alert-icon,
+  .vq-alert-banner.success .vq-alert-close {
+    color: #079455;
   }
 
   .vq-alert-text {

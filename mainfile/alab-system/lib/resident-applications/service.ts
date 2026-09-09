@@ -6,6 +6,7 @@ import { getBfpIdentity } from "../auth/bfp-accounts";
 import { bfpSessionCookieName, verifyBfpSession } from "../auth/session";
 import { getDatabase, withTransaction } from "../db";
 import { createAccountNotifications } from "../notifications/service";
+import { enqueueResidentCorrectionDeliveries } from "./delivery-queue";
 
 import { isLocalUiPreviewEnabled } from "../auth/local-ui-preview";
 
@@ -151,11 +152,25 @@ export async function getResidentApplication(municipalityId: string, application
 }
 
 async function lockedApplication(client: Parameters<Parameters<typeof withTransaction>[0]>[0], municipalityId: string, applicationId: string) {
-  const result = await client.query<{ id: string; resident_profile_id: string; user_id: string; status: string }>(
-    `select rv.id, rv.resident_profile_id, rp.user_id, rv.status
+  const result = await client.query<{
+    id: string;
+    resident_profile_id: string;
+    user_id: string;
+    status: string;
+    submission_number: number;
+    application_reference: string;
+    first_name: string;
+    email: string;
+    phone: string;
+    municipality_name: string;
+  }>(
+    `select rv.id, rv.resident_profile_id, rp.user_id, rv.status, rv.submission_number,
+            rv.application_reference, rp.first_name, u.email, u.phone, m.name as municipality_name
        from resident_verifications rv
        join resident_profiles rp on rp.id = rv.resident_profile_id
+       join users u on u.id = rp.user_id
        join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
+       join municipalities m on m.id = ra.municipality_id
       where (rv.id::text = $1 or rv.application_reference = $1) and ra.municipality_id = $2
       for update of rv`,
     [applicationId, municipalityId],
@@ -222,6 +237,24 @@ export async function requestResidentApplicationCorrections(
       actionHref: "/resident/application", entityType: "resident_verification", entityId: application.id,
       context: { reason: notes }, dedupeKey: `resident-application:${application.id}:changes`, createdAt: now,
     });
-    return { status: "CHANGES_REQUESTED" };
+    const deliveryInput = {
+      verificationId: application.id,
+      recipientUserId: application.user_id,
+      submissionNumber: application.submission_number,
+      phone: application.phone,
+      email: application.email,
+      payload: {
+        firstName: application.first_name,
+        reference: application.application_reference,
+        municipality: application.municipality_name,
+        reason: notes,
+      },
+    };
+    const deliveryQueue = await enqueueResidentCorrectionDeliveries(client, deliveryInput);
+    return {
+      status: "CHANGES_REQUESTED",
+      deliveryIds: deliveryQueue.ids,
+      directDelivery: deliveryQueue.queueAvailable ? null : deliveryInput,
+    };
   });
 }

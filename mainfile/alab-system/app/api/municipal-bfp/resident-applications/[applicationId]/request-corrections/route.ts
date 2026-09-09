@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getMunicipalReviewer, requestResidentApplicationCorrections } from "../../../../../../lib/resident-applications/service";
+import { deliverResidentCorrectionNotifications } from "../../../../../../lib/resident-applications/delivery-service";
 
 export const runtime = "nodejs";
 
@@ -12,7 +13,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ap
     if (!reviewer?.municipalityId) return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
     const { applicationId } = await context.params;
     const result = await requestResidentApplicationCorrections(reviewer.municipalityId, applicationId, reviewer.userId, body.reason ?? "");
-    return NextResponse.json({ application: result, message: "Correction request sent to the resident." });
+    const deliveryResults = await deliverResidentCorrectionNotifications(result.deliveryIds, result.directDelivery);
+    return NextResponse.json({
+      application: { status: result.status },
+      delivery: deliveryResults,
+      message: "Correction request saved and resident notifications processed.",
+    });
   } catch (error) {
     const code = error instanceof Error ? error.message : "";
     if (code === "CORRECTION_REASON_REQUIRED") return NextResponse.json({ error: "Explain what the resident must correct (at least 10 characters)." }, { status: 400 });
