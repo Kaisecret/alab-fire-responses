@@ -81,10 +81,12 @@ export async function createAssistanceRequests(
       reference_number: string;
       barangay_name: string | null;
       municipality_name: string;
+      report_status: string;
     }>(
       `select fr.id as fire_report_id,
               d.id as dispatch_id,
               fr.municipality_id,
+              fr.status as report_status,
               fr.reference_number,
               b.name as barangay_name,
               m.name as municipality_name
@@ -103,6 +105,9 @@ export async function createAssistanceRequests(
     }
     if (report.municipality_id !== input.requesterMunicipalityId) {
       throw new Error("FORBIDDEN_ORIGIN_MISMATCH");
+    }
+    if (["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(report.report_status)) {
+      throw new Error("INCIDENT_NOT_ACTIVE");
     }
 
     const observerCheck = await client.query<{
@@ -198,6 +203,11 @@ export async function createAssistanceRequests(
         );
 
         const openRow = existingResult.rows[0];
+        if (!openRow || openRow.requested_firetrucks !== requestedFiretrucks
+          || openRow.requested_personnel !== requestedPersonnel
+          || openRow.request_note !== note) {
+          throw new Error("ASSISTANCE_ALREADY_OPEN");
+        }
         if (openRow) {
           summaries.push({
             id: openRow.id,
@@ -301,6 +311,14 @@ export async function transitionAssistanceRequest(
   const note = cleanNote(input.responseNote);
 
   return withTransaction(async (client) => {
+    // Serialize with resolution/request creation, which also lock the report first.
+    await client.query(
+      `select fr.id from fire_reports fr
+        where fr.id = (select fire_report_id from intermunicipal_assistance_requests
+          where id = $1 and (requester_municipality_id = $2 or recipient_municipality_id = $2))
+        for update of fr`,
+      [input.requestId, input.actorMunicipalityId],
+    );
     const existingResult = await client.query<{
       id: string;
       fire_report_id: string;
@@ -323,15 +341,23 @@ export async function transitionAssistanceRequest(
       responded_at: string | null;
       completed_at: string | null;
       reference_number: string;
+      report_status: string;
+      dispatch_status: string;
+      observer_status: string;
     }>(
       `select r.*,
               req_m.name as requester_municipality_name,
               rec_m.name as recipient_municipality_name,
-              fr.reference_number
+              fr.reference_number,
+              fr.status as report_status,
+              d.status as dispatch_status,
+              o.status as observer_status
          from intermunicipal_assistance_requests r
          join municipalities req_m on req_m.id = r.requester_municipality_id
          join municipalities rec_m on rec_m.id = r.recipient_municipality_id
          join fire_reports fr on fr.id = r.fire_report_id
+         join incident_dispatches d on d.id = r.dispatch_id
+         join incident_municipal_observers o on o.id = r.observer_id
         where r.id = $1
         for update of r`,
       [input.requestId],
@@ -376,7 +402,9 @@ export async function transitionAssistanceRequest(
         isRetryMatch = true;
       }
 
-      if (isRetryMatch) {
+      if (isRetryMatch && row.response_note === note
+        && (input.action !== "REJECT" && input.action !== "CANCEL"
+          || input.offeredFiretrucks === 0 && input.offeredPersonnel === 0)) {
         return {
           id: row.id,
           recipientMunicipalityId: row.recipient_municipality_id,
@@ -394,6 +422,11 @@ export async function transitionAssistanceRequest(
         };
       }
 
+      throw new Error("ASSISTANCE_STATE_CONFLICT");
+    }
+
+    if (row.observer_status !== "ACTIVE" || row.dispatch_status !== "ACTIVE"
+      || ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(row.report_status)) {
       throw new Error("ASSISTANCE_STATE_CONFLICT");
     }
 
@@ -493,10 +526,13 @@ export async function transitionAssistanceRequest(
       client,
       row.requester_municipality_id,
     );
+    const cancellationRecipients = input.action === "CANCEL"
+      ? await listMunicipalNotificationRecipients(client, row.recipient_municipality_id)
+      : [];
     const provincialRecipients = await listProvincialNotificationRecipients(client);
 
     await createAccountNotifications(client, {
-      recipientUserIds: originRecipients,
+      recipientUserIds: [...new Set([...originRecipients, ...cancellationRecipients])],
       eventType,
       category: "INCIDENT",
       title,

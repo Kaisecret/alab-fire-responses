@@ -66,15 +66,17 @@ export async function resolveMunicipalIncidentAccess(
   }
 
   try {
-    const observerCheck = await db.query<{ id: string }>(
-      `select observer.id
+    const observerCheck = await db.query<{ id: string; status: "ACTIVE" | "ENDED" }>(
+      `select observer.id, observer.status
          from incident_municipal_observers observer
         where observer.fire_report_id = $1
           and observer.observer_municipality_id = $2
-          and observer.status = 'ACTIVE'`,
+        order by (observer.status = 'ACTIVE') desc, observer.selected_at desc
+        limit 1`,
       [fireReportId, municipalityId],
     );
     if (observerCheck.rows.length > 0) {
+      if (observerCheck.rows[0].status === "ENDED") throw new Error("OBSERVER_ACCESS_ENDED");
       return "OBSERVER";
     }
   } catch (err: any) {
@@ -235,7 +237,7 @@ select fr.id,
        fr.reference_number as "referenceNumber",
        fr.status,
        fr.fire_type as "fireType",
-       fr.description,
+       null::text as description,
        fr.nearest_landmark as landmark,
        fr.latitude::float as latitude,
        fr.longitude::float as longitude,

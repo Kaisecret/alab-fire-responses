@@ -46,7 +46,7 @@ export function validateAssistanceTransition(
     if (offered.offeredFiretrucks !== 0 || offered.offeredPersonnel !== 0) {
       throw new Error("CANCELLED_ASSISTANCE_MUST_OFFER_ZERO");
     }
-    return { nextStatus: "CANCELLED" as const, ...offered };
+    return { nextStatus: "CANCELLED" as const, offeredFiretrucks: null, offeredPersonnel: null };
   }
   if (action === "REJECT") {
     if (offered.offeredFiretrucks !== 0 || offered.offeredPersonnel !== 0) {
@@ -63,6 +63,7 @@ export function validateAssistanceTransition(
     }
     return { nextStatus: "ACCEPTED" as const, ...offered };
   }
+  if (action !== "PARTIAL_ACCEPT") throw new Error("INVALID_ASSISTANCE_INPUT");
   const positive = offered.offeredFiretrucks > 0 || offered.offeredPersonnel > 0;
   const withinRequest = offered.offeredFiretrucks <= requestedFiretrucks
     && offered.offeredPersonnel <= requestedPersonnel;

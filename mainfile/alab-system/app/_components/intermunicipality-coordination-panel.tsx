@@ -30,10 +30,7 @@ export function IntermunicipalityCoordinationPanel({
 
   // Request Backup Form State (ORIGIN)
   const [internalShowRequestModal, setInternalShowRequestModal] = useState(false);
-  const isRequestModalOpen =
-    externalShowRequestModal !== undefined
-      ? externalShowRequestModal
-      : internalShowRequestModal;
+  const isRequestModalOpen = Boolean(externalShowRequestModal || internalShowRequestModal);
 
   const closeRequestModal = () => {
     if (onCloseRequestModal) {
@@ -41,16 +38,12 @@ export function IntermunicipalityCoordinationPanel({
     }
     setInternalShowRequestModal(false);
   };
-  const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
+  const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>(() => observers
+    .filter((observer) => observer.status === "ACTIVE")
+    .map((observer) => observer.municipalityId));
   const [requestedFiretrucks, setRequestedFiretrucks] = useState(1);
   const [requestedPersonnel, setRequestedPersonnel] = useState(4);
   const [requestNote, setRequestNote] = useState("");
-
-  React.useEffect(() => {
-    if (observers.length > 0 && selectedRecipientIds.length === 0) {
-      setSelectedRecipientIds(observers.map((o) => o.municipalityId));
-    }
-  }, [observers, selectedRecipientIds.length]);
 
   // Response Form State (OBSERVER)
   const [respondingToRequestId, setRespondingToRequestId] = useState<string | null>(null);

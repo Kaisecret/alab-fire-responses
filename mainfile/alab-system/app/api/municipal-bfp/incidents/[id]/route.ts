@@ -56,7 +56,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       const [observerIncident, historyResult, coordination] = await Promise.all([
         getObserverIncidentDetail(id, municipalityId).catch(() => null),
         database.query(
-          "select next_status as status, resident_message as message, created_at as \"createdAt\" from fire_report_status_history where fire_report_id = $1 order by created_at asc",
+          "select next_status as status, null::text as message, created_at as \"createdAt\" from fire_report_status_history where fire_report_id = $1 order by created_at asc",
           [id],
         ).catch(() => ({ rows: [] })),
         getIncidentCoordinationContext(id, municipalityId, "OBSERVER").catch(() => ({ observers: [], assistanceRequests: [] })),
@@ -229,6 +229,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       },
     );
   } catch (error) {
+    if (error instanceof Error && error.message === "OBSERVER_ACCESS_ENDED") {
+      return NextResponse.json({ error: "This nearby incident is no longer active." }, { status: 410 });
+    }
     console.error("Municipal incident detail failed", error);
     return NextResponse.json({ error: "Unable to load incident detail." }, { status: 500 });
   }

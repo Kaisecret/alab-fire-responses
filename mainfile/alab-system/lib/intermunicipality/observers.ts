@@ -188,19 +188,23 @@ export async function createNearbyIncidentObservers(
       input.originMunicipalityId,
     );
 
-    const degradedRecipients = [...new Set([...originRecipients, ...provincialRecipients])];
-    await createAccountNotifications(client, {
-      recipientUserIds: degradedRecipients,
-      eventType: "NEARBY_SELECTION_DEGRADED",
-      category: "SYSTEM",
-      title: "Degraded Observer Selection",
-      summary: `Only ${observers.length} eligible nearby municipality found for incident ${input.referenceNumber} in ${locationDesc}.`,
-      actionHref: `/municipal-bfp/active-incidents?incident=${input.fireReportId}`,
-      entityType: "fire_report",
-      entityId: input.fireReportId,
-      dedupeKey: `nearby-selection:${input.dispatchId}:degraded`,
-      createdAt: input.createdAt,
-    });
+    for (const [recipientUserIds, portal] of [
+      [originRecipients, "municipal-bfp/active-incidents"],
+      [provincialRecipients, "provincial-bfp/incidents"],
+    ] as const) {
+      await createAccountNotifications(client, {
+        recipientUserIds: [...recipientUserIds],
+        eventType: "NEARBY_SELECTION_DEGRADED",
+        category: "SYSTEM",
+        title: "Degraded Observer Selection",
+        summary: `Only ${observers.length} eligible nearby municipality found for incident ${input.referenceNumber} in ${locationDesc}.`,
+        actionHref: `/${portal}?incident=${input.fireReportId}`,
+        entityType: "fire_report",
+        entityId: input.fireReportId,
+        dedupeKey: `nearby-selection:${input.dispatchId}:degraded`,
+        createdAt: input.createdAt,
+      });
+    }
   }
 
   return { observers, degraded };
@@ -341,6 +345,29 @@ export async function endIncidentObservers(
       newStatus: "ENDED",
       createdAt: input.endedAt,
     });
+  }
+
+  if (result.rows.length > 0) {
+    const municipalRecipients = (await Promise.all(result.rows.map(row =>
+      listMunicipalNotificationRecipients(client, row.observer_municipality_id)))).flat();
+    const provincialRecipients = await listProvincialNotificationRecipients(client);
+    for (const [recipientUserIds, portal] of [
+      [municipalRecipients, "municipal-bfp/active-incidents"],
+      [provincialRecipients, "provincial-bfp/incidents"],
+    ] as const) {
+      await createAccountNotifications(client, {
+        recipientUserIds: [...new Set(recipientUserIds)],
+        eventType: "INCIDENT_DISPATCH_STATUS_CHANGED",
+        category: "INCIDENT",
+        title: "Nearby incident resolved",
+        summary: "The origin municipality has resolved the nearby incident. Monitoring has ended.",
+        actionHref: `/${portal}?incident=${input.fireReportId}`,
+        entityType: "fire_report",
+        entityId: input.fireReportId,
+        dedupeKey: `nearby-ended:${input.dispatchId}`,
+        createdAt: input.endedAt,
+      });
+    }
   }
 
   return result.rows.map((r) => r.observer_municipality_id);

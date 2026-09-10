@@ -2,7 +2,7 @@
 
 import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BfpDataLoader } from "./bfp-data-loader";
 import { MunicipalIncidentMap } from "./municipal-incident-map";
@@ -1530,6 +1530,7 @@ export function MunicipalIncidentDetail({
   const [stationsLoading, setStationsLoading] = useState(false);
   const [dispatchError, setDispatchError] = useState("");
   const [showBackupModal, setShowBackupModal] = useState(false);
+  const pendingLoad = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -1553,19 +1554,45 @@ export function MunicipalIncidentDetail({
   }, [dispatchOpen, resolveOpen, sending]);
 
   const load = useCallback(async () => {
+    if (pendingLoad.current) return;
+    const controller = new AbortController();
+    pendingLoad.current = controller;
     try {
-      const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}`, { cache: "no-store" });
+      const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}`, { cache: "no-store", signal: controller.signal });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load incident");
+      if (controller.signal.aborted) return;
+      if (!res.ok) {
+        if ([401, 403, 404, 410].includes(res.status)) setIncident(null);
+        throw new Error(data.error || "Failed to load incident");
+      }
       setIncident(data.incident);
+      setError("");
     } catch (err) {
+      if (controller.signal.aborted) return;
       setError(err instanceof Error ? err.message : "Unable to load incident.");
+    } finally {
+      if (pendingLoad.current === controller) pendingLoad.current = null;
     }
   }, [incidentId]);
 
   useEffect(() => {
-    const initialLoad = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(initialLoad);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    const initialLoad = window.setTimeout(() => {
+      setIncident(null);
+      setError("");
+      refreshWhenVisible();
+    }, 0);
+    const timer = window.setInterval(refreshWhenVisible, 5_000);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearTimeout(initialLoad);
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      pendingLoad.current?.abort();
+      pendingLoad.current = null;
+    };
   }, [load]);
 
   const openDispatch = async () => {
@@ -1645,7 +1672,7 @@ export function MunicipalIncidentDetail({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  if (error) {
+  if (error && !incident) {
     return (
       <>
         <style>{detailStyles}</style>
@@ -1700,6 +1727,9 @@ export function MunicipalIncidentDetail({
     <>
       <style>{detailStyles}</style>
       <main className="mbfp-detail-shell">
+        {error && <div role="status" className="mbfp-card" style={{ color: "#92400E", background: "#FFFBEB" }}>
+          {error} Showing the last update; retrying automatically.
+        </div>}
         {/* Top Navigation Row */}
         <div className="mbfp-detail-top-nav">
           {onBack ? (

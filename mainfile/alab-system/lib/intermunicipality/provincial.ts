@@ -70,12 +70,11 @@ type DbObserverRow = {
   observer_station_id: string;
   observer_station_name: string;
   distance_meters: number | string;
-  rank: number;
   status: "ACTIVE" | "ENDED";
   acknowledged_at: Date | string | null;
   acknowledged_by_user_id: string | null;
   acknowledged_by_name: string | null;
-  has_open_assistance: boolean;
+  assistance_status: AssistanceRequestSummary["status"] | null;
 };
 
 type DbAssistanceRow = {
@@ -94,6 +93,7 @@ type DbAssistanceRow = {
   offered_firetrucks: number | null;
   offered_personnel: number | null;
   responded_at: Date | string | null;
+  completed_at: Date | string | null;
   response_note: string | null;
   responder_user_id: string | null;
   responder_name: string | null;
@@ -109,7 +109,7 @@ type DbCoordinationEventRow = {
 
 function mapObserverRow(row: DbObserverRow): NearbyObserver {
   let monitoringState: "WAITING" | "SEEN" | "BACKUP_REQUESTED" = "WAITING";
-  if (row.has_open_assistance) {
+  if (row.assistance_status) {
     monitoringState = "BACKUP_REQUESTED";
   } else if (row.acknowledged_at) {
     monitoringState = "SEEN";
@@ -127,7 +127,7 @@ function mapObserverRow(row: DbObserverRow): NearbyObserver {
     acknowledgedByUserId: row.acknowledged_by_user_id,
     acknowledgedByDisplayName: row.acknowledged_by_name,
     monitoringState,
-    assistanceStatus: row.has_open_assistance ? "REQUESTED" : null,
+    assistanceStatus: row.assistance_status,
   };
 }
 
@@ -149,7 +149,7 @@ function mapAssistanceRow(row: DbAssistanceRow): ProvincialAssistanceRequest {
     offeredPersonnel: row.offered_personnel,
     respondedAt: row.responded_at ? new Date(row.responded_at).toISOString() : null,
     responseNote: row.response_note,
-    completedAt: row.status === "COMPLETED" || row.status === "CANCELLED" ? new Date(row.responded_at ?? row.requested_at).toISOString() : null,
+    completedAt: row.completed_at ? new Date(row.completed_at).toISOString() : null,
     responderUserId: row.responder_user_id,
     responderName: row.responder_name,
   };
@@ -169,7 +169,7 @@ export async function listProvincialCoordinationIncidents(
       fr.id,
       fr.reference_number,
       m.name as origin_municipality,
-      fr.barangay,
+      b.name as barangay,
       fr.fire_type,
       fr.calculated_severity,
       fr.status,
@@ -188,12 +188,13 @@ export async function listProvincialCoordinationIncidents(
           and iar.status in ('REQUESTED', 'ACCEPTED', 'PARTIALLY_ACCEPTED')
       ), 0) as open_assistance_count,
       coalesce((
-        select bool_or(imo.degraded)
-        from incident_municipal_observers imo
-        where imo.fire_report_id = fr.id
+        select bool_or(event.event_type = 'SELECTION_DEGRADED')
+        from intermunicipal_coordination_events event
+        where event.fire_report_id = fr.id
       ), false) as nearby_selection_degraded
     from fire_reports fr
     join municipalities m on m.id = fr.municipality_id
+    left join barangays b on b.id = fr.barangay_id
     left join lateral (
       select idisp.dispatched_at
       from incident_dispatches idisp
@@ -217,28 +218,28 @@ export async function listProvincialCoordinationIncidents(
        imo.id,
        imo.observer_municipality_id,
        obs_m.name as observer_municipality_name,
-       imo.observer_station_id,
+       imo.nearest_station_id as observer_station_id,
        st.station_name as observer_station_name,
        imo.distance_meters,
-       imo.rank,
        imo.status,
        imo.acknowledged_at,
        imo.acknowledged_by_user_id,
        ack_p.display_name as acknowledged_by_name,
-       exists (
-         select 1
+       (
+         select iar.status
          from intermunicipal_assistance_requests iar
-         where iar.fire_report_id = imo.fire_report_id
+         where iar.dispatch_id = imo.dispatch_id
            and iar.recipient_municipality_id = imo.observer_municipality_id
            and iar.status in ('REQUESTED', 'ACCEPTED', 'PARTIALLY_ACCEPTED')
-       ) as has_open_assistance
+         order by iar.requested_at desc limit 1
+       ) as assistance_status
      from incident_municipal_observers imo
      join municipalities obs_m on obs_m.id = imo.observer_municipality_id
-     join bfp_stations st on st.id = imo.observer_station_id
+     join municipal_bfp_stations st on st.id = imo.nearest_station_id
      left join users ack_u on ack_u.id = imo.acknowledged_by_user_id
      left join bfp_personnel_profiles ack_p on ack_p.user_id = ack_u.id
      where imo.fire_report_id = any($1::uuid[])
-     order by imo.rank asc`,
+     order by imo.distance_meters asc, imo.observer_municipality_id`,
     [incidentIds],
   );
 
@@ -276,14 +277,14 @@ export async function getProvincialCoordinationIncident(
        fr.id,
        fr.reference_number,
        m.name as origin_municipality,
-       fr.barangay,
+       b.name as barangay,
        fr.fire_type,
        fr.calculated_severity,
        fr.status,
        fr.submitted_at,
        fr.latitude,
        fr.longitude,
-       fr.landmark,
+       fr.nearest_landmark as landmark,
        disp.dispatched_at,
        coalesce((
          select count(distinct ids.station_id)
@@ -304,12 +305,13 @@ export async function getProvincialCoordinationIncident(
            and iar.status in ('REQUESTED', 'ACCEPTED', 'PARTIALLY_ACCEPTED')
        ), 0) as open_assistance_count,
        coalesce((
-         select bool_or(imo.degraded)
-         from incident_municipal_observers imo
-         where imo.fire_report_id = fr.id
+         select bool_or(event.event_type = 'SELECTION_DEGRADED')
+         from intermunicipal_coordination_events event
+         where event.fire_report_id = fr.id
        ), false) as nearby_selection_degraded
      from fire_reports fr
      join municipalities m on m.id = fr.municipality_id
+     left join barangays b on b.id = fr.barangay_id
      left join lateral (
        select idisp.dispatched_at
        from incident_dispatches idisp
@@ -330,28 +332,28 @@ export async function getProvincialCoordinationIncident(
        imo.id,
        imo.observer_municipality_id,
        obs_m.name as observer_municipality_name,
-       imo.observer_station_id,
+       imo.nearest_station_id as observer_station_id,
        st.station_name as observer_station_name,
        imo.distance_meters,
-       imo.rank,
        imo.status,
        imo.acknowledged_at,
        imo.acknowledged_by_user_id,
        ack_p.display_name as acknowledged_by_name,
-       exists (
-         select 1
+       (
+         select iar.status
          from intermunicipal_assistance_requests iar
-         where iar.fire_report_id = imo.fire_report_id
+         where iar.dispatch_id = imo.dispatch_id
            and iar.recipient_municipality_id = imo.observer_municipality_id
            and iar.status in ('REQUESTED', 'ACCEPTED', 'PARTIALLY_ACCEPTED')
-       ) as has_open_assistance
+         order by iar.requested_at desc limit 1
+       ) as assistance_status
      from incident_municipal_observers imo
      join municipalities obs_m on obs_m.id = imo.observer_municipality_id
-     join bfp_stations st on st.id = imo.observer_station_id
+     join municipal_bfp_stations st on st.id = imo.nearest_station_id
      left join users ack_u on ack_u.id = imo.acknowledged_by_user_id
      left join bfp_personnel_profiles ack_p on ack_p.user_id = ack_u.id
      where imo.fire_report_id = $1
-     order by imo.rank asc`,
+     order by imo.distance_meters asc, imo.observer_municipality_id`,
     [fireReportId],
   );
 
@@ -372,14 +374,15 @@ export async function getProvincialCoordinationIncident(
        iar.offered_firetrucks,
        iar.offered_personnel,
        iar.responded_at,
+       iar.completed_at,
        iar.response_note,
-       iar.responder_user_id,
+       iar.responded_by_user_id as responder_user_id,
        resp_p.display_name as responder_name
      from intermunicipal_assistance_requests iar
      join fire_reports fr on fr.id = iar.fire_report_id
      join municipalities req_m on req_m.id = iar.requester_municipality_id
      join municipalities rec_m on rec_m.id = iar.recipient_municipality_id
-     left join users resp_u on resp_u.id = iar.responder_user_id
+     left join users resp_u on resp_u.id = iar.responded_by_user_id
      left join bfp_personnel_profiles resp_p on resp_p.user_id = resp_u.id
      where iar.fire_report_id = $1
      order by
@@ -457,14 +460,15 @@ export async function listProvincialAssistanceRequests(
        iar.offered_firetrucks,
        iar.offered_personnel,
        iar.responded_at,
+       iar.completed_at,
        iar.response_note,
-       iar.responder_user_id,
+       iar.responded_by_user_id as responder_user_id,
        resp_p.display_name as responder_name
      from intermunicipal_assistance_requests iar
      join fire_reports fr on fr.id = iar.fire_report_id
      join municipalities req_m on req_m.id = iar.requester_municipality_id
      join municipalities rec_m on rec_m.id = iar.recipient_municipality_id
-     left join users resp_u on resp_u.id = iar.responder_user_id
+     left join users resp_u on resp_u.id = iar.responded_by_user_id
      left join bfp_personnel_profiles resp_p on resp_p.user_id = resp_u.id
      ${statusClause}
      order by
