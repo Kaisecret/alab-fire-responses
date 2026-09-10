@@ -1,5 +1,5 @@
 import "server-only";
-import { sendResendEmail } from "../email/resend";
+import { sendGmailEmail, isGmailConfigured } from "../email/gmail";
 import { sendPhilSmsMessage } from "../sms/philsms";
 import { createCorrectionMessages } from "./correction-messages";
 import { claimResidentCorrectionDeliveries, completeResidentCorrectionDelivery, type DirectCorrectionDelivery, type DeliveryJob } from "./delivery-queue";
@@ -19,8 +19,8 @@ function dependencies() {
       const messages = createCorrectionMessages({ ...job.payload, applicationUrl: applicationUrl() });
       return job.channel === "SMS"
         ? sendPhilSmsMessage({ phone: job.destination, message: messages.sms })
-        : sendResendEmail({ to: job.destination, subject: messages.emailSubject, html: messages.emailHtml,
-            text: messages.emailText, idempotencyKey: `resident-correction-delivery:${job.id}` });
+        : sendGmailEmail({ to: job.destination, subject: messages.emailSubject, html: messages.emailHtml,
+            text: messages.emailText });
     },
   };
 }
@@ -30,7 +30,7 @@ export async function deliverResidentCorrectionNotifications(ids: string[], dire
 export async function retryResidentCorrectionNotifications() {
   const channels: ("SMS" | "EMAIL")[] = [];
   if (process.env.PHILSMS_API_TOKEN && process.env.PHILSMS_SENDER_ID) channels.push("SMS");
-  if (process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL) channels.push("EMAIL");
+  if (isGmailConfigured()) channels.push("EMAIL");
   if (!channels.length) return { processed: 0, message: "No delivery providers are configured." };
   const jobs = await claimResidentCorrectionDeliveries(null, channels);
   const results = await Promise.allSettled(jobs.map(job => processDeliveryJob(job, dependencies())));

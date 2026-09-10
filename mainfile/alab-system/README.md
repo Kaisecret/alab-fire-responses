@@ -31,16 +31,18 @@ To learn more about Next.js, take a look at the following resources:
 
 The Flutter BFP responder app uses the deployed ALAB API, not a direct Supabase database connection. Keep `DATABASE_URL` and a 32+-character `AUTH_SECRET` configured only in the Vercel project environment. Never place either value, a Supabase secret key, or a service-role key in the Flutter app.
 
-Resident correction notices use the existing PhilSMS account and Resend. Configure these values only in the Vercel project environment:
+Resident correction notices use the existing PhilSMS account and Gmail/Google Workspace through Nodemailer. Configure these values only in the Vercel project environment:
 
 - `PHILSMS_API_TOKEN` — PhilSMS bearer token.
 - `PHILSMS_SENDER_ID` — approved PhilSMS sender ID.
-- `RESEND_API_KEY` — Resend server API key.
-- `RESEND_FROM_EMAIL` — verified sender, such as `ALAB <updates@your-domain.gov.ph>`.
+- `GMAIL_USER` — `regalakhing@sac.edu.ph`. Emails display the sender name **ALAB**, using this actual address.
+- `GMAIL_APP_PASSWORD` — Google app password for that account (not its regular login password). Enable 2-Step Verification and create it at https://myaccount.google.com/apppasswords. School administrators may restrict app passwords; if unavailable, contact the school administrator.
 - `NEXT_PUBLIC_APP_URL` — public ALAB origin used for the resident application link.
 - `CRON_SECRET` — random server-only secret for the scheduled correction delivery worker. Vercel sends it in the Authorization header.
 
 Apply `supabase/migrations/20260910090000_add_resident_notification_deliveries.sql` before enabling correction delivery in production. Never commit any provider key to the repository.
+
+No purchased sending domain or Resend credentials are needed for the active Gmail integration. Set the Gmail variables in Production and redeploy. Replies go to the configured school email address. Gmail account limits and school sending policies still apply.
 
 Correction retries run daily via `vercel.json` at `/api/cron/resident-correction-deliveries` (00:00 UTC / 08:00 Manila, within Vercel's scheduling window). Each invocation claims at most five due jobs with row locks and a three-attempt default limit. Unconfigured channels are skipped without spending attempts. A more frequent schedule requires an appropriate Vercel plan. Without `CRON_SECRET`, the worker rejects requests and the UI does not promise scheduled retries.
 

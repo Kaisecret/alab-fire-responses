@@ -78,7 +78,8 @@ export async function claimResidentCorrectionDeliveries(ids: string[] | null, ch
             and channel = any($2::text[])
             and (status = 'PENDING' or (status = 'FAILED' and (
               last_error in ('PHILSMS_DELIVERY_FAILED', 'RESEND_DELIVERY_FAILED',
-                             'PHILSMS_NOT_CONFIGURED', 'RESEND_NOT_CONFIGURED')
+                             'PHILSMS_NOT_CONFIGURED', 'RESEND_NOT_CONFIGURED',
+                             'GMAIL_DELIVERY_FAILED', 'GMAIL_NOT_CONFIGURED')
             )))
             and attempt_count < max_attempts
             and next_attempt_at <= now()

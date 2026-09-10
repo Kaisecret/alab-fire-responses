@@ -22,8 +22,8 @@ export async function processDeliveryJob(job: DeliveryJob, deps: Dependencies, p
   try { accepted = await deps.send(job); }
   catch (error) {
     const message = error instanceof Error ? error.message : "";
-    const missing = /^(PHILSMS|RESEND)_NOT_CONFIGURED$/.test(message);
-    const rejected = /^(PHILSMS|RESEND)_DELIVERY_FAILED(?::|$)/.test(message);
+    const missing = /^(PHILSMS|RESEND|GMAIL)_NOT_CONFIGURED$/.test(message);
+    const rejected = /^(PHILSMS|RESEND|GMAIL)_DELIVERY_FAILED(?::|$)/.test(message);
     // A timeout may follow provider acceptance. Hold that job for review.
     const record: DeliveryRecord = {
       status: missing || rejected ? "FAILED" : "PROCESSING",
