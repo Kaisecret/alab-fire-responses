@@ -1087,6 +1087,13 @@ function ProvincialIncidentsContent() {
             </div>
 
             <div className="pbfp-modal-footer">
+              <Link
+                href={`/provincial-bfp/incident-reports?report=${encodeURIComponent(selectedIncidentId)}`}
+                className="pbfp-btn-gis"
+                style={{ textDecoration: 'none' }}
+              >
+                <i className="fa-solid fa-file-lines" /> View full report
+              </Link>
               <button
                 type="button"
                 className="pbfp-modal-close"

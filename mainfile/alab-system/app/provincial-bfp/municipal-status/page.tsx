@@ -1,265 +1,23 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
+import { useProvincialManagementList } from '../../_components/use-provincial-management-list';
 import Link from 'next/link';
-
-type StationStatus = 'ready' | 'responding' | 'aid';
-
-type MunicipalStation = {
-  name: string;
-  district: 'North Antique' | 'Central Antique' | 'South Antique';
-  status: StationStatus;
-  statusLabel: string;
-  respondingCount?: number;
-  availableTrucks: number;
-  totalTrucks: number;
-  crew: number;
-  hydrants: number;
-  contact: string;
-  leadOfficer: string;
-  activeAlarms?: string;
-  mutualAidTarget?: string;
-};
-
-const municipalitiesList: MunicipalStation[] = [
-  {
-    name: 'San Jose de Buenavista',
-    district: 'South Antique',
-    status: 'responding',
-    statusLabel: 'Responding',
-    respondingCount: 1,
-    availableTrucks: 4,
-    totalTrucks: 5,
-    crew: 16,
-    hydrants: 24,
-    contact: '(036) 540-8000',
-    leadOfficer: 'Insp. Rafael Mendoza',
-    activeAlarms: 'Brgy. Funda-Dalipe (2nd Alarm)',
-  },
-  {
-    name: 'Sibalom',
-    district: 'Central Antique',
-    status: 'responding',
-    statusLabel: 'Responding',
-    respondingCount: 1,
-    availableTrucks: 2,
-    totalTrucks: 3,
-    crew: 12,
-    hydrants: 18,
-    contact: '(036) 543-7000',
-    leadOfficer: 'SFO2 Mario Gomez',
-    activeAlarms: 'Brgy. Bari (1st Alarm)',
-  },
-  {
-    name: 'Tibiao',
-    district: 'North Antique',
-    status: 'responding',
-    statusLabel: 'Responding',
-    respondingCount: 1,
-    availableTrucks: 1,
-    totalTrucks: 2,
-    crew: 9,
-    hydrants: 8,
-    contact: '(036) 546-5000',
-    leadOfficer: 'FO3 Dennis Alcala',
-    activeAlarms: 'Brgy. Alegre (Under Control)',
-  },
-  {
-    name: 'Hamtic',
-    district: 'South Antique',
-    status: 'aid',
-    statusLabel: 'Mutual Aid Active',
-    availableTrucks: 2,
-    totalTrucks: 2,
-    crew: 10,
-    hydrants: 12,
-    contact: '(036) 540-9111',
-    leadOfficer: 'SFO1 Arthur Nolasco',
-    mutualAidTarget: 'Reinforcing San Jose Engine 2',
-  },
-  {
-    name: 'Bugasong',
-    district: 'Central Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 2,
-    totalTrucks: 2,
-    crew: 8,
-    hydrants: 10,
-    contact: '(036) 547-2000',
-    leadOfficer: 'FO2 Carlos Rivera',
-  },
-  {
-    name: 'Pandan',
-    district: 'North Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 2,
-    totalTrucks: 2,
-    crew: 10,
-    hydrants: 14,
-    contact: '(036) 549-3000',
-    leadOfficer: 'SFO1 Dante Perez',
-  },
-  {
-    name: 'Culasi',
-    district: 'North Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 2,
-    totalTrucks: 2,
-    crew: 11,
-    hydrants: 12,
-    contact: '(036) 548-1000',
-    leadOfficer: 'SFO1 Elena Soriano',
-  },
-  {
-    name: 'Barbaza',
-    district: 'North Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 1,
-    totalTrucks: 2,
-    crew: 8,
-    hydrants: 6,
-    contact: '(036) 545-4000',
-    leadOfficer: 'FO3 Jayson Villar',
-  },
-  {
-    name: 'Tobias Fornier',
-    district: 'South Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 2,
-    totalTrucks: 2,
-    crew: 9,
-    hydrants: 9,
-    contact: '(036) 541-6000',
-    leadOfficer: 'FO2 Ronald Cruz',
-  },
-  {
-    name: 'Patnongon',
-    district: 'Central Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 2,
-    totalTrucks: 2,
-    crew: 8,
-    hydrants: 11,
-    contact: '(036) 544-8000',
-    leadOfficer: 'SFO1 Neil Tan',
-  },
-  {
-    name: 'Anini-y',
-    district: 'South Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 1,
-    totalTrucks: 1,
-    crew: 7,
-    hydrants: 5,
-    contact: '(036) 542-1000',
-    leadOfficer: 'FO2 Gabriel Ramos',
-  },
-  {
-    name: 'Belison',
-    district: 'Central Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 1,
-    totalTrucks: 1,
-    crew: 6,
-    hydrants: 4,
-    contact: '(036) 540-6500',
-    leadOfficer: 'FO3 Victor Dela Cruz',
-  },
-  {
-    name: 'Caluya',
-    district: 'North Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 2,
-    totalTrucks: 2,
-    crew: 8,
-    hydrants: 6,
-    contact: '(036) 550-9000',
-    leadOfficer: 'SFO2 Patrick Uy',
-  },
-  {
-    name: 'Laua-an',
-    district: 'Central Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 1,
-    totalTrucks: 1,
-    crew: 7,
-    hydrants: 7,
-    contact: '(036) 546-2000',
-    leadOfficer: 'FO2 Leo Santos',
-  },
-  {
-    name: 'Libertad',
-    district: 'North Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 1,
-    totalTrucks: 1,
-    crew: 7,
-    hydrants: 6,
-    contact: '(036) 551-3000',
-    leadOfficer: 'FO3 Noel Morales',
-  },
-  {
-    name: 'San Remigio',
-    district: 'Central Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 1,
-    totalTrucks: 1,
-    crew: 8,
-    hydrants: 5,
-    contact: '(036) 543-9000',
-    leadOfficer: 'SFO1 Gary Flores',
-  },
-  {
-    name: 'Sebaste',
-    district: 'North Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 1,
-    totalTrucks: 1,
-    crew: 6,
-    hydrants: 4,
-    contact: '(036) 548-8000',
-    leadOfficer: 'FO2 Alvin Dimas',
-  },
-  {
-    name: 'Valderrama',
-    district: 'Central Antique',
-    status: 'ready',
-    statusLabel: 'Operational Ready',
-    availableTrucks: 1,
-    totalTrucks: 1,
-    crew: 7,
-    hydrants: 5,
-    contact: '(036) 544-1000',
-    leadOfficer: 'FO3 Joel Bautista',
-  },
-];
+import type { MunicipalitySummary } from '../../../lib/provincial-bfp/management/types';
 
 const styles = `
   .pbfp-page {
     padding: 10px 1.5rem 2.5rem;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: #EEF5FD;
     min-height: 100%;
     color: #0F172A;
   }
 
-  /* ========== HEADER ROW ========== */
+  /* Header Hub */
   .pbfp-header-hub {
     display: flex;
     justify-content: space-between;
@@ -297,10 +55,38 @@ const styles = `
     line-height: 1.2;
   }
 
+  .pbfp-header-title-box p {
+    font-size: 0.8rem;
+    color: #64748B;
+    margin: 0.15rem 0 0;
+    font-weight: 500;
+  }
+
   .pbfp-header-actions {
     display: flex;
     align-items: center;
     gap: 0.65rem;
+  }
+
+  .pbfp-btn-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.95rem;
+    background: #FFFFFF;
+    color: #334155;
+    border: 1px solid #CBD5E1;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .pbfp-btn-refresh:hover {
+    background: #F8FAFC;
+    color: #0F172A;
+    border-color: #94A3B8;
   }
 
   .pbfp-btn-gis {
@@ -324,7 +110,7 @@ const styles = `
     box-shadow: 0 6px 20px rgba(15, 23, 42, 0.25);
   }
 
-  /* ========== TOOLBAR HUB ========== */
+  /* Toolbar */
   .pbfp-toolbar-box {
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
@@ -345,6 +131,7 @@ const styles = `
     background: #F1F5F9;
     padding: 0.25rem;
     border-radius: 10px;
+    flex-wrap: wrap;
   }
 
   .pbfp-filter-pill {
@@ -393,7 +180,7 @@ const styles = `
     border: 1px solid #E2E8F0;
     border-radius: 999px;
     padding: 0.42rem 0.95rem;
-    width: 250px;
+    width: 270px;
     transition: all 0.15s;
   }
 
@@ -419,16 +206,11 @@ const styles = `
     font-family: inherit;
   }
 
-  .pbfp-search-input::placeholder {
-    color: #94A3B8;
-    font-weight: 500;
-  }
-
-  /* ========== 18 CLEAN & SLEEK MUNICIPAL TILES (10PX GAP) ========== */
+  /* Cards Grid */
   .pbfp-grid-cards {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    gap: 12px;
   }
 
   .pbfp-clean-card {
@@ -440,7 +222,7 @@ const styles = `
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 1.25rem;
+    gap: 1.1rem;
     cursor: pointer;
     transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
@@ -454,7 +236,7 @@ const styles = `
     border-color: #CBD5E1;
   }
 
-  .pbfp-clean-card.responding {
+  .pbfp-clean-card.has-active-incidents {
     border-color: rgba(226, 54, 50, 0.35);
     background: linear-gradient(180deg, #FFFDFD 0%, #FFFFFF 100%);
     box-shadow: 0 4px 16px rgba(226, 54, 50, 0.08);
@@ -518,28 +300,51 @@ const styles = `
     background: #059669;
   }
 
-  .pbfp-tile-status-pill.responding {
+  .pbfp-tile-status-pill.active-fire {
     background: #FFF1F2;
     color: #E23632;
     border: 1px solid #FFE4E6;
     box-shadow: 0 0 12px rgba(226, 54, 50, 0.2);
   }
-  .pbfp-tile-status-pill.responding .pbfp-beacon-dot {
+  .pbfp-tile-status-pill.active-fire .pbfp-beacon-dot {
     background: #E23632;
     box-shadow: 0 0 6px #E23632;
     animation: pbfpBreathe 1s infinite alternate;
   }
 
-  .pbfp-tile-status-pill.aid {
-    background: #FFFBEB;
-    color: #D97706;
-    border: 1px solid #FEF3C7;
-  }
-  .pbfp-tile-status-pill.aid .pbfp-beacon-dot {
-    background: #D97706;
+  .pbfp-metrics-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    background: #F8FAFC;
+    padding: 0.65rem;
+    border-radius: 12px;
+    border: 1px solid #F1F5F9;
   }
 
-  /* Clean Footer Cue */
+  .pbfp-metric-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .pbfp-metric-value {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0F172A;
+    line-height: 1.2;
+  }
+
+  .pbfp-metric-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-top: 0.15rem;
+  }
+
   .pbfp-clean-card-footer {
     display: flex;
     align-items: center;
@@ -564,92 +369,7 @@ const styles = `
     transform: translateX(3px);
   }
 
-  /* ========== 3-SECOND FLOATING FIRE LOADER (NO BACKGROUND CARD / CIRCLE ROTATING) ========== */
-  .pbfp-fire-loader-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100000;
-    animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  .pbfp-fire-loader-stage {
-    position: relative;
-    width: 140px;
-    height: 140px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: pbfpFloatLevitate 2.5s ease-in-out infinite alternate;
-  }
-
-  .pbfp-fire-outer-ring {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    padding: 6.5px;
-    background: conic-gradient(from 0deg, #E23632 0%, #FF6B35 30%, #FFAA00 65%, transparent 80%, #E23632 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    animation: pbfpRingSpin 1.6s linear infinite;
-    filter: drop-shadow(0 0 16px rgba(226, 54, 50, 0.95)) drop-shadow(0 0 30px rgba(255, 107, 53, 0.7));
-  }
-
-  .pbfp-fire-outer-ring-orbit {
-    position: absolute;
-    inset: -7px;
-    border-radius: 50%;
-    padding: 2px;
-    background: conic-gradient(from 180deg, rgba(255, 170, 0, 0.85) 0%, transparent 40%, rgba(226, 54, 50, 0.7) 80%, transparent 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    animation: pbfpRingSpinReverse 2.4s linear infinite;
-    filter: drop-shadow(0 0 10px rgba(255, 120, 40, 0.6));
-  }
-
-  .pbfp-fire-pulse-glow {
-    position: absolute;
-    width: 105px;
-    height: 105px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(226, 54, 50, 0.35) 0%, rgba(255, 107, 53, 0.12) 65%, transparent 80%);
-    animation: pbfpFlameBreathe 1.5s ease-in-out infinite alternate;
-  }
-
-  .pbfp-fire-logo-img {
-    width: 72px;
-    height: 72px;
-    object-fit: contain;
-    display: block;
-    position: relative;
-    z-index: 2;
-    filter: drop-shadow(0 4px 16px rgba(226, 54, 50, 0.55));
-    animation: pbfpFlameBreathe 1.5s ease-in-out infinite alternate;
-  }
-
-  .pbfp-ember {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    background: #FFAE00;
-    border-radius: 50%;
-    box-shadow: 0 0 8px #FF5100, 0 0 16px #FF1A00;
-    opacity: 0;
-  }
-
-  .pbfp-ember:nth-child(1) { left: 15%; bottom: 20%; animation: pbfpEmberDrift 1.6s ease-out infinite 0.1s; }
-  .pbfp-ember:nth-child(2) { right: 18%; bottom: 25%; animation: pbfpEmberDrift 1.9s ease-out infinite 0.3s; }
-  .pbfp-ember:nth-child(3) { left: 45%; bottom: 10%; animation: pbfpEmberDrift 1.4s ease-out infinite 0.6s; }
-  .pbfp-ember:nth-child(4) { right: 30%; bottom: 15%; animation: pbfpEmberDrift 1.8s ease-out infinite 0.9s; }
-
-  /* ========== FULL STATION COMMAND MODAL ========== */
+  /* Command Inspector Modal */
   .pbfp-modal-overlay {
     position: fixed;
     inset: 0;
@@ -669,7 +389,7 @@ const styles = `
     border-radius: 24px;
     box-shadow: 0 30px 70px rgba(15, 23, 42, 0.3);
     border: 1px solid #E2E8F0;
-    max-width: 580px;
+    max-width: 640px;
     width: 100%;
     overflow: hidden;
     animation: pbfpModalPop 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -691,8 +411,8 @@ const styles = `
   }
 
   .pbfp-modal-icon-badge {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: 10px;
     background: #FFF1F2;
     border: 1px solid #FFE4E6;
@@ -700,14 +420,20 @@ const styles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 1.2rem;
   }
 
   .pbfp-modal-title h3 {
     margin: 0;
-    font-size: 1.15rem;
+    font-size: 1.2rem;
     font-weight: 800;
     color: #0F172A;
+  }
+
+  .pbfp-modal-title span {
+    font-size: 0.74rem;
+    color: #64748B;
+    font-weight: 600;
   }
 
   .pbfp-modal-close {
@@ -734,38 +460,96 @@ const styles = `
     padding: 1.6rem;
     display: flex;
     flex-direction: column;
-    gap: 1.15rem;
+    gap: 1.25rem;
+    max-height: 70vh;
+    overflow-y: auto;
   }
 
-  .pbfp-modal-grid {
+  .pbfp-modal-stats-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
   }
 
-  .pbfp-modal-field {
+  .pbfp-modal-stat-box {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 0.85rem;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    background: #F8FAFC;
-    padding: 0.85rem 1rem;
-    border-radius: 12px;
-    border: 1px solid #F1F5F9;
+    align-items: center;
+    text-align: center;
   }
 
-  .pbfp-modal-field label {
-    font-size: 0.68rem;
-    font-weight: 800;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  .pbfp-modal-stat-box.alert {
+    background: #FFF1F2;
+    border-color: #FFE4E6;
   }
 
-  .pbfp-modal-field p {
-    font-size: 0.92rem;
+  .pbfp-modal-stat-box.warning {
+    background: #FFFBEB;
+    border-color: #FEF3C7;
+  }
+
+  .pbfp-modal-stat-num {
+    font-size: 1.4rem;
     font-weight: 800;
     color: #0F172A;
-    margin: 0;
+    line-height: 1.1;
+  }
+
+  .pbfp-modal-stat-box.alert .pbfp-modal-stat-num {
+    color: #E23632;
+  }
+
+  .pbfp-modal-stat-box.warning .pbfp-modal-stat-num {
+    color: #D97706;
+  }
+
+  .pbfp-modal-stat-lbl {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 0.2rem;
+  }
+
+  .pbfp-modal-links-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .pbfp-modal-links-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.2rem;
+  }
+
+  .pbfp-modal-link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    color: #0F172A;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .pbfp-modal-link-btn:hover {
+    background: #EEF5FD;
+    border-color: #CBD5E1;
+    transform: translateX(3px);
   }
 
   .pbfp-modal-footer {
@@ -803,121 +587,52 @@ const styles = `
     background: #C42724;
   }
 
-  @keyframes pbfpFloatLevitate {
-    0% { transform: translateY(0px) scale(1); }
-    100% { transform: translateY(-6px) scale(1.02); }
-  }
-
-  @keyframes pbfpRingSpin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  @keyframes pbfpRingSpinReverse {
-    0% { transform: rotate(360deg); }
-    100% { transform: rotate(0deg); }
-  }
-
-  @keyframes pbfpFlameBreathe {
-    0% { transform: scale(0.96); opacity: 0.85; }
-    100% { transform: scale(1.05); opacity: 1; }
-  }
-
-  @keyframes pbfpEmberDrift {
-    0% { opacity: 0; transform: translateY(0) scale(0.4); }
-    40% { opacity: 1; transform: translateY(-20px) translateX(6px) scale(1); }
-    100% { opacity: 0; transform: translateY(-50px) translateX(-8px) scale(0.2); }
-  }
-
   @keyframes pbfpBreathe {
     0% { transform: scale(0.9); opacity: 0.8; }
     100% { transform: scale(1.3); opacity: 1; }
   }
 
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-
   @keyframes pbfpCardReveal {
-    0% {
-      opacity: 0;
-      transform: translateY(16px) scale(0.96);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
+    0% { opacity: 0; transform: translateY(16px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
   }
-
   @keyframes pbfpModalPop {
-    0% {
-      opacity: 0;
-      transform: scale(0.92) translateY(20px);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
+    0% { opacity: 0; transform: scale(0.92) translateY(20px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
   }
 
-  /* Responsive Breakpoints */
   @media (max-width: 1280px) {
-    .pbfp-grid-cards {
-      grid-template-columns: repeat(3, 1fr);
-    }
+    .pbfp-grid-cards { grid-template-columns: repeat(3, 1fr); }
   }
-
   @media (max-width: 1024px) {
-    .pbfp-grid-cards {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    .pbfp-grid-cards { grid-template-columns: repeat(2, 1fr); }
   }
-
   @media (max-width: 640px) {
-    .pbfp-grid-cards {
-      grid-template-columns: 1fr;
-    }
-    .pbfp-toolbar-box {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .pbfp-search-box {
-      width: 100%;
-    }
+    .pbfp-grid-cards { grid-template-columns: 1fr; }
+    .pbfp-toolbar-box { flex-direction: column; align-items: stretch; }
+    .pbfp-search-box { width: 100%; }
   }
 `;
 
 export default function MunicipalStatusPage() {
-  const [filter, setFilter] = useState<'ALL' | 'responding' | 'aid' | 'ready'>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStation, setSelectedStation] = useState<MunicipalStation | null>(null);
-  const [isLoadingStation, setIsLoadingStation] = useState(false);
+  const [filter, setFilter] = useState<'ALL' | 'ACTIVE_INCIDENTS' | 'PENDING_APPS' | 'HAS_STATIONS'>('ALL');
 
-  const stations = municipalitiesList;
+  const [selectedMunicipality, setSelectedMunicipality] = useState<MunicipalitySummary | null>(null);
+  const { items: municipalities, loading, error, updatedAt: lastUpdated, filters, setFilter: setListFilter, refresh: fetchMunicipalities } = useProvincialManagementList<MunicipalitySummary>({ endpoint: '/api/provincial-bfp/municipalities', initialFilters: { pageSize: 25 } });
+  const searchQuery = filters.search || '';
+  const setSearchQuery = (value: string) => setListFilter('search', value);
 
-  // Filter & Search Logic
-  const filtered = useMemo(() => {
-    return stations.filter((st) => {
-      const matchesTab = filter === 'ALL' || st.status === filter;
-      const matchesQuery =
-        searchQuery.trim() === '' ||
-        st.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        st.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        st.contact.includes(searchQuery);
-      return matchesTab && matchesQuery;
-    });
-  }, [stations, filter, searchQuery]);
+  const filtered = municipalities.filter((m) => {
+    if (filter === 'ACTIVE_INCIDENTS') return m.activeIncidentCount > 0;
+    if (filter === 'PENDING_APPS') return m.pendingApplicationCount > 0;
+    if (filter === 'HAS_STATIONS') return m.stationCount > 0;
+    return true;
+  });
 
-  const respondingCount = stations.filter((s) => s.status === 'responding').length;
-  const aidCount = stations.filter((s) => s.status === 'aid').length;
-  const readyCount = stations.filter((s) => s.status === 'ready').length;
-
-  const handleStationClick = (st: MunicipalStation) => {
-    setIsLoadingStation(true);
-    setTimeout(() => {
-      setIsLoadingStation(false);
-      setSelectedStation(st);
-    }, 1000);
-  };
+  const activeIncidentsTotal = municipalities.filter((m) => m.activeIncidentCount > 0).length;
+  const pendingAppsTotal = municipalities.filter((m) => m.pendingApplicationCount > 0).length;
+  const hasStationsTotal = municipalities.filter((m) => m.stationCount > 0).length;
 
   return (
     <>
@@ -930,10 +645,22 @@ export default function MunicipalStatusPage() {
               <i className="fa-solid fa-building-shield" />
             </div>
             <div className="pbfp-header-title-box">
-              <h1>Municipal Fire Station Status & Readiness</h1>
+              <h1>Municipality Directory</h1>
+              <p>
+                Province of Antique · {municipalities.length} Local Government Units
+                {lastUpdated && ` · Updated ${new Date(lastUpdated).toLocaleTimeString()}`}
+              </p>
             </div>
           </div>
           <div className="pbfp-header-actions">
+            <button
+              type="button"
+              className="pbfp-btn-refresh"
+              onClick={() => fetchMunicipalities()}
+              disabled={loading}
+            >
+              <i className={`fa-solid fa-rotate ${loading ? 'fa-spin' : ''}`} /> Refresh
+            </button>
             <Link href="/provincial-bfp/gis-map" className="pbfp-btn-gis">
               <i className="fa-solid fa-map-location-dot" /> Open GIS View
             </Link>
@@ -948,32 +675,32 @@ export default function MunicipalStatusPage() {
               className={`pbfp-filter-pill ${filter === 'ALL' ? 'active' : ''}`}
               onClick={() => setFilter('ALL')}
             >
-              <span>All Stations</span>
-              <span className="pbfp-pill-count">{stations.length}</span>
+              <span>All LGUs</span>
+              <span className="pbfp-pill-count">{municipalities.length}</span>
             </button>
             <button
               type="button"
-              className={`pbfp-filter-pill ${filter === 'responding' ? 'active' : ''}`}
-              onClick={() => setFilter('responding')}
+              className={`pbfp-filter-pill ${filter === 'ACTIVE_INCIDENTS' ? 'active' : ''}`}
+              onClick={() => setFilter('ACTIVE_INCIDENTS')}
             >
-              <span>Responding</span>
-              <span className="pbfp-pill-count">{respondingCount}</span>
+              <span>Active Emergencies</span>
+              <span className="pbfp-pill-count">{activeIncidentsTotal}</span>
             </button>
             <button
               type="button"
-              className={`pbfp-filter-pill ${filter === 'aid' ? 'active' : ''}`}
-              onClick={() => setFilter('aid')}
+              className={`pbfp-filter-pill ${filter === 'PENDING_APPS' ? 'active' : ''}`}
+              onClick={() => setFilter('PENDING_APPS')}
             >
-              <span>Mutual Aid</span>
-              <span className="pbfp-pill-count">{aidCount}</span>
+              <span>Pending Reviews</span>
+              <span className="pbfp-pill-count">{pendingAppsTotal}</span>
             </button>
             <button
               type="button"
-              className={`pbfp-filter-pill ${filter === 'ready' ? 'active' : ''}`}
-              onClick={() => setFilter('ready')}
+              className={`pbfp-filter-pill ${filter === 'HAS_STATIONS' ? 'active' : ''}`}
+              onClick={() => setFilter('HAS_STATIONS')}
             >
-              <span>Operational Ready</span>
-              <span className="pbfp-pill-count">{readyCount}</span>
+              <span>Active Stations</span>
+              <span className="pbfp-pill-count">{hasStationsTotal}</span>
             </button>
           </div>
 
@@ -982,7 +709,7 @@ export default function MunicipalStatusPage() {
             <input
               type="text"
               className="pbfp-search-input"
-              placeholder="Search station or hotline..."
+              placeholder="Search municipality..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -998,69 +725,89 @@ export default function MunicipalStatusPage() {
           </div>
         </div>
 
-        {/* 18 Minimal & Aesthetic Municipal Tiles (8px gap) */}
+        {/* Error Notification */}
+        {error && (
+          <div style={{ background: '#FFF1F2', border: '1px solid #FFE4E6', borderRadius: '12px', padding: '1rem', color: '#E23632', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span><i className="fa-solid fa-circle-exclamation" style={{ marginRight: '0.5rem' }} />{error}</span>
+            <button type="button" onClick={() => fetchMunicipalities()} style={{ background: '#E23632', color: '#FFF', border: 'none', borderRadius: '8px', padding: '0.4rem 0.8rem', cursor: 'pointer', fontWeight: 700 }}>Retry</button>
+          </div>
+        )}
+
+        {/* Cards Grid */}
         <div className="pbfp-grid-cards">
-          {filtered.length === 0 ? (
+          {loading && municipalities.length === 0 ? (
+            Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} style={{ background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '16px', padding: '1.25rem', height: '180px', opacity: 0.6 }} />
+            ))
+          ) : filtered.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3.5rem 1rem', background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', color: '#64748B' }}>
               <i className="fa-solid fa-building-shield" style={{ fontSize: '2.5rem', color: '#CBD5E1', marginBottom: '0.5rem', display: 'block' }} />
-              <strong style={{ display: 'block', color: '#0F172A', fontSize: '1rem' }}>No matching fire stations found</strong>
+              <strong style={{ display: 'block', color: '#0F172A', fontSize: '1rem' }}>No matching Antique municipalities found</strong>
               <span style={{ fontSize: '0.8rem' }}>Try clearing your search query or choosing another status tab.</span>
             </div>
           ) : (
-            filtered.map((m, index) => (
-              <div
-                className={`pbfp-clean-card ${m.status === 'responding' ? 'responding' : ''}`}
-                key={m.name}
-                style={{ animationDelay: `${Math.min(index * 35, 400)}ms` }}
-                onClick={() => handleStationClick(m)}
-              >
-                <div className="pbfp-clean-card-header">
-                  <div className="pbfp-station-identity">
-                    <span className="pbfp-station-title">{m.name}</span>
-                    <span className="pbfp-station-district">{m.district}</span>
+            filtered.map((m, index) => {
+              const hasActive = m.activeIncidentCount > 0;
+              return (
+                <div
+                  className={`pbfp-clean-card ${hasActive ? 'has-active-incidents' : ''}`}
+                  key={m.id}
+                  style={{ animationDelay: `${Math.min(index * 35, 400)}ms` }}
+                  onClick={() => setSelectedMunicipality(m)}
+                >
+                  <div className="pbfp-clean-card-header">
+                    <div className="pbfp-station-identity">
+                      <span className="pbfp-station-title">{m.name}</span>
+                      <span className="pbfp-station-district">{m.province}</span>
+                    </div>
+                    {hasActive ? (
+                      <span className="pbfp-tile-status-pill active-fire">
+                        <span className="pbfp-beacon-dot" />
+                        <span>Active Incident ({m.activeIncidentCount})</span>
+                      </span>
+                    ) : (
+                      <span className="pbfp-tile-status-pill ready">
+                        <span className="pbfp-beacon-dot" />
+                        <span>No Active Incidents</span>
+                      </span>
+                    )}
                   </div>
-                  <span className={`pbfp-tile-status-pill ${m.status}`}>
-                    <span className="pbfp-beacon-dot" />
-                    <span>{m.status === 'responding' ? `Responding (${m.respondingCount || 1})` : m.statusLabel}</span>
-                  </span>
-                </div>
 
-                <div className="pbfp-clean-card-footer">
-                  <span>Station Details</span>
-                  <span className="pbfp-open-prompt">
-                    Open <i className="fa-solid fa-arrow-right" />
-                  </span>
+                  <div className="pbfp-metrics-strip">
+                    <div className="pbfp-metric-item">
+                      <span className="pbfp-metric-value">{m.stationCount}</span>
+                      <span className="pbfp-metric-label">Stations</span>
+                    </div>
+                    <div className="pbfp-metric-item">
+                      <span className="pbfp-metric-value">{m.personnelCount}</span>
+                      <span className="pbfp-metric-label">Personnel</span>
+                    </div>
+                    <div className="pbfp-metric-item">
+                      <span className="pbfp-metric-value">{m.residentCount}</span>
+                      <span className="pbfp-metric-label">Residents</span>
+                    </div>
+                  </div>
+
+                  <div className="pbfp-clean-card-footer">
+                    <span>
+                      {m.pendingApplicationCount > 0
+                        ? `${m.pendingApplicationCount} Pending Verification`
+                        : `${m.totalReportCount} Total Reports`}
+                    </span>
+                    <span className="pbfp-open-prompt">
+                      Inspect <i className="fa-solid fa-arrow-right" />
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
 
-      {/* 3-Second Floating Fire Loader */}
-      {isLoadingStation && (
-        <div className="pbfp-fire-loader-overlay">
-          <div className="pbfp-fire-loader-stage">
-            <div className="pbfp-fire-outer-ring" />
-            <div className="pbfp-fire-outer-ring-orbit" />
-            <div className="pbfp-fire-pulse-glow" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/fire logo.webp"
-              alt="Bureau of Fire Protection"
-              className="pbfp-fire-logo-img"
-            />
-            <div className="pbfp-ember" />
-            <div className="pbfp-ember" />
-            <div className="pbfp-ember" />
-            <div className="pbfp-ember" />
-          </div>
-        </div>
-      )}
-
-      {/* Full Station Command Modal (Opens after 3s loader) */}
-      {selectedStation && (
-        <div className="pbfp-modal-overlay" onClick={() => setSelectedStation(null)}>
+      {/* Command Inspector Modal */}
+      {selectedMunicipality && (
+        <div className="pbfp-modal-overlay" onClick={() => setSelectedMunicipality(null)}>
           <div className="pbfp-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="pbfp-modal-header">
               <div className="pbfp-modal-title-group">
@@ -1068,71 +815,84 @@ export default function MunicipalStatusPage() {
                   <i className="fa-solid fa-building-shield" />
                 </div>
                 <div className="pbfp-modal-title">
-                  <h3>{selectedStation.name} Fire Station</h3>
+                  <h3>{selectedMunicipality.name}</h3>
+                  <span>Province of Antique · Municipal Jurisdiction</span>
                 </div>
               </div>
               <button
                 type="button"
                 className="pbfp-modal-close"
-                onClick={() => setSelectedStation(null)}
+                onClick={() => setSelectedMunicipality(null)}
               >
                 <i className="fa-solid fa-xmark" />
               </button>
             </div>
 
             <div className="pbfp-modal-body">
-              <div className="pbfp-modal-grid">
-                <div className="pbfp-modal-field">
-                  <label>District Area</label>
-                  <p>{selectedStation.district}</p>
+              <div className="pbfp-modal-stats-grid">
+                <div className="pbfp-modal-stat-box">
+                  <span className="pbfp-modal-stat-num">{selectedMunicipality.stationCount}</span>
+                  <span className="pbfp-modal-stat-lbl">Active Stations</span>
                 </div>
-                <div className="pbfp-modal-field">
-                  <label>Operational Status</label>
-                  <p style={{ color: selectedStation.status === 'responding' ? '#E23632' : selectedStation.status === 'aid' ? '#D97706' : '#059669' }}>
-                    {selectedStation.statusLabel}
-                  </p>
+                <div className="pbfp-modal-stat-box">
+                  <span className="pbfp-modal-stat-num">{selectedMunicipality.personnelCount}</span>
+                  <span className="pbfp-modal-stat-lbl">BFP Personnel</span>
                 </div>
-              </div>
-
-              {selectedStation.activeAlarms && (
-                <div className="pbfp-modal-field" style={{ background: '#FFF1F2', borderColor: '#FFE4E6' }}>
-                  <label style={{ color: '#E23632' }}>Active Response Incident</label>
-                  <p style={{ color: '#E23632' }}>{selectedStation.activeAlarms}</p>
+                <div className="pbfp-modal-stat-box">
+                  <span className="pbfp-modal-stat-num">{selectedMunicipality.residentCount}</span>
+                  <span className="pbfp-modal-stat-lbl">Registered Residents</span>
                 </div>
-              )}
-
-              {selectedStation.mutualAidTarget && (
-                <div className="pbfp-modal-field" style={{ background: '#FFFBEB', borderColor: '#FEF3C7' }}>
-                  <label style={{ color: '#D97706' }}>Mutual Aid Coordination</label>
-                  <p style={{ color: '#D97706' }}>{selectedStation.mutualAidTarget}</p>
+                <div className={`pbfp-modal-stat-box ${selectedMunicipality.activeIncidentCount > 0 ? 'alert' : ''}`}>
+                  <span className="pbfp-modal-stat-num">{selectedMunicipality.activeIncidentCount}</span>
+                  <span className="pbfp-modal-stat-lbl">Active Emergencies</span>
                 </div>
-              )}
-
-              <div className="pbfp-modal-grid">
-                <div className="pbfp-modal-field">
-                  <label>Station Commander</label>
-                  <p>{selectedStation.leadOfficer}</p>
+                <div className={`pbfp-modal-stat-box ${selectedMunicipality.pendingApplicationCount > 0 ? 'warning' : ''}`}>
+                  <span className="pbfp-modal-stat-num">{selectedMunicipality.pendingApplicationCount}</span>
+                  <span className="pbfp-modal-stat-lbl">Pending Applications</span>
                 </div>
-                <div className="pbfp-modal-field">
-                  <label>24/7 Dispatch Hotline</label>
-                  <p><a href={`tel:${selectedStation.contact.replace(/[^0-9]/g, '')}`} style={{ color: '#2563EB', textDecoration: 'none' }}>{selectedStation.contact}</a></p>
+                <div className="pbfp-modal-stat-box">
+                  <span className="pbfp-modal-stat-num">{selectedMunicipality.resolvedIncidentCount}</span>
+                  <span className="pbfp-modal-stat-lbl">Resolved Fires</span>
                 </div>
               </div>
 
-              <div className="pbfp-modal-grid">
-                <div className="pbfp-modal-field">
-                  <label>Fleet Readiness</label>
-                  <p>{selectedStation.availableTrucks} of {selectedStation.totalTrucks} Operational ({Math.round((selectedStation.availableTrucks / selectedStation.totalTrucks) * 100)}%)</p>
-                </div>
-                <div className="pbfp-modal-field">
-                  <label>Active Duty Crew</label>
-                  <p>{selectedStation.crew} Firefighters on Shift</p>
-                </div>
-              </div>
-
-              <div className="pbfp-modal-field">
-                <label>Water Supply & Hydrants</label>
-                <p>{selectedStation.hydrants} Verified High-Pressure Municipal Hydrants</p>
+              <div className="pbfp-modal-links-section">
+                <span className="pbfp-modal-links-title">Provincial Management Modules</span>
+                <Link
+                  href={`/provincial-bfp/firetrucks-stations?municipalityId=${selectedMunicipality.id}`}
+                  className="pbfp-modal-link-btn"
+                >
+                  <span><i className="fa-solid fa-truck-fire" style={{ marginRight: '0.6rem', color: '#E23632' }} /> View Municipal Fire Stations ({selectedMunicipality.stationCount})</span>
+                  <i className="fa-solid fa-arrow-right" />
+                </Link>
+                <Link
+                  href={`/provincial-bfp/responders?municipalityId=${selectedMunicipality.id}`}
+                  className="pbfp-modal-link-btn"
+                >
+                  <span><i className="fa-solid fa-user-shield" style={{ marginRight: '0.6rem', color: '#2563EB' }} /> Manage BFP Personnel Roster ({selectedMunicipality.personnelCount})</span>
+                  <i className="fa-solid fa-arrow-right" />
+                </Link>
+                <Link
+                  href={`/provincial-bfp/residents?municipalityId=${selectedMunicipality.id}`}
+                  className="pbfp-modal-link-btn"
+                >
+                  <span><i className="fa-solid fa-users" style={{ marginRight: '0.6rem', color: '#059669' }} /> Inspect Registered Residents ({selectedMunicipality.residentCount})</span>
+                  <i className="fa-solid fa-arrow-right" />
+                </Link>
+                <Link
+                  href={`/provincial-bfp/resident-applications?municipalityId=${selectedMunicipality.id}`}
+                  className="pbfp-modal-link-btn"
+                >
+                  <span><i className="fa-solid fa-id-card" style={{ marginRight: '0.6rem', color: '#D97706' }} /> Review Resident Applications ({selectedMunicipality.pendingApplicationCount} Pending)</span>
+                  <i className="fa-solid fa-arrow-right" />
+                </Link>
+                <Link
+                  href={`/provincial-bfp/incident-reports?municipalityId=${selectedMunicipality.id}`}
+                  className="pbfp-modal-link-btn"
+                >
+                  <span><i className="fa-solid fa-fire" style={{ marginRight: '0.6rem', color: '#E23632' }} /> All Municipal Fire Reports ({selectedMunicipality.totalReportCount})</span>
+                  <i className="fa-solid fa-arrow-right" />
+                </Link>
               </div>
             </div>
 
@@ -1140,15 +900,15 @@ export default function MunicipalStatusPage() {
               <button
                 type="button"
                 className="pbfp-modal-btn"
-                onClick={() => setSelectedStation(null)}
+                onClick={() => setSelectedMunicipality(null)}
               >
                 Close
               </button>
               <Link
-                href="/provincial-bfp/gis-map"
+                href={`/provincial-bfp/gis-map?municipalityId=${selectedMunicipality.id}`}
                 className="pbfp-modal-btn primary"
               >
-                <i className="fa-solid fa-map-location-dot" /> Locate in Provincial GIS View
+                <i className="fa-solid fa-map-location-dot" /> Focus in GIS View
               </Link>
             </div>
           </div>

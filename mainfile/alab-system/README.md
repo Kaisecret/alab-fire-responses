@@ -58,6 +58,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
+### Provincial municipality management
+
+The provincial directories use the existing server-side `DATABASE_URL` and Provincial BFP session. Apply the reviewed migration `supabase/migrations/20260910140000_provincial_management_support.sql`, after its earlier dependencies, before using management mutations, audit history, or exports. These operations need the server-only audit and idempotency tables. Deploying application code does not apply database migrations.
+
+Run `npm test`, `node node_modules/typescript/bin/tsc --noEmit`, and `npm run build` before deployment. The provincial migration execution test uses an isolated PGlite database and never connects to a deployed database. Live multi-session checks and provider delivery checks require a separate test environment. See [the provincial verification record](docs/superpowers/reviews/2026-09-10-provincial-management-verification.md) for the checks actually performed and remaining limitations.
+
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

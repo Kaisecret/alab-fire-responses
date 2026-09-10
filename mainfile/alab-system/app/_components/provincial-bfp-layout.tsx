@@ -46,7 +46,11 @@ const navigationGroups: NavGroup[] = [
         label: 'Province Incidents',
         href: '/provincial-bfp/incidents',
         icon: 'fa-solid fa-fire',
-        badge: 3,
+      },
+      {
+        label: 'All Municipal Reports',
+        href: '/provincial-bfp/incident-reports',
+        icon: 'fa-solid fa-list-check',
       },
       {
         label: 'Municipal Status',
@@ -57,7 +61,6 @@ const navigationGroups: NavGroup[] = [
         label: 'Assistance Requests',
         href: '/provincial-bfp/assistance-requests',
         icon: 'fa-solid fa-handshake-angle',
-        badge: 1,
       },
       {
         label: 'Provincial GIS Map',
@@ -83,6 +86,21 @@ const navigationGroups: NavGroup[] = [
         label: 'Responders',
         href: '/provincial-bfp/responders',
         icon: 'fa-solid fa-users',
+      },
+    ],
+  },
+  {
+    groupTitle: 'COMMUNITY & RESIDENTS',
+    items: [
+      {
+        label: 'Resident Applications',
+        href: '/provincial-bfp/resident-applications',
+        icon: 'fa-solid fa-user-check',
+      },
+      {
+        label: 'Registered Residents',
+        href: '/provincial-bfp/residents',
+        icon: 'fa-solid fa-address-book',
       },
     ],
   },

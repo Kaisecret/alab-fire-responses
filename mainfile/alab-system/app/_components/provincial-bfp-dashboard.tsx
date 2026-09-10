@@ -5,35 +5,29 @@ import { useState, useEffect } from 'react';
 import { useProvincialIncidentFeed } from './use-provincial-incident-feed';
 import { useProvincialAssistanceFeed } from './use-provincial-assistance-feed';
 
-type MunicipalStationStatus = {
-  name: string;
-  status: 'READY' | 'RESPONDING' | 'MUTUAL_AID' | 'STANDBY';
+type ManagementSummaryData = {
+  totalMunicipalities: number;
+  totalStations: number;
+  totalPersonnel: number;
+  totalResidents: number;
+  pendingApplications: number;
+  totalReports: number;
   activeIncidents: number;
-  availableTrucks: number;
-  totalTrucks: number;
-  dutyResponders: number;
+  resolvedIncidents: number;
 };
 
-const municipalReadinessData: MunicipalStationStatus[] = [
-  { name: 'San Jose de Buenavista', status: 'RESPONDING', activeIncidents: 1, availableTrucks: 4, totalTrucks: 5, dutyResponders: 16 },
-  { name: 'Sibalom', status: 'RESPONDING', activeIncidents: 1, availableTrucks: 2, totalTrucks: 3, dutyResponders: 12 },
-  { name: 'Tibiao', status: 'RESPONDING', activeIncidents: 1, availableTrucks: 1, totalTrucks: 2, dutyResponders: 9 },
-  { name: 'Hamtic', status: 'MUTUAL_AID', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 10 },
-  { name: 'Bugasong', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 8 },
-  { name: 'Pandan', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 10 },
-  { name: 'Culasi', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 11 },
-  { name: 'Barbaza', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 2, dutyResponders: 8 },
-  { name: 'Tobias Fornier', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 9 },
-  { name: 'Patnongon', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 8 },
-  { name: 'Anini-y', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7 },
-  { name: 'Belison', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 6 },
-  { name: 'Caluya', status: 'READY', activeIncidents: 0, availableTrucks: 2, totalTrucks: 2, dutyResponders: 8 },
-  { name: 'Laua-an', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7 },
-  { name: 'Libertad', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7 },
-  { name: 'San Remigio', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 8 },
-  { name: 'Sebaste', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 6 },
-  { name: 'Valderrama', status: 'READY', activeIncidents: 0, availableTrucks: 1, totalTrucks: 1, dutyResponders: 7 },
-];
+type MunicipalitySummaryItem = {
+  id: string;
+  name: string;
+  province: string;
+  stationCount: number;
+  personnelCount: number;
+  residentCount: number;
+  pendingApplicationCount: number;
+  totalReportCount: number;
+  activeIncidentCount: number;
+  resolvedIncidentCount: number;
+};
 
 const dashboardStyles = `
   .pbfp-dash-clean {
@@ -343,7 +337,7 @@ const dashboardStyles = `
   /* NO-SCROLL Table styling with auto-fitting columns */
   .pbfp-table-container {
     width: 100%;
-    overflow: hidden;
+    overflow-x: auto;
   }
 
   .pbfp-clean-table {
@@ -711,6 +705,13 @@ export function ProvincialBfpDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
+  const [summary, setSummary] = useState<ManagementSummaryData | null>(null);
+  const [municipalities, setMunicipalities] = useState<MunicipalitySummaryItem[]>([]);
+  const [loadingSummary, setLoadingSummary] = useState(true);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const { incidents, loading: incidentFeedLoading } = useProvincialIncidentFeed();
   const { requests: assistanceRequests } = useProvincialAssistanceFeed({ includeClosed: false });
 
@@ -719,20 +720,71 @@ export function ProvincialBfpDashboard() {
     ['REQUESTED', 'ACCEPTED', 'PARTIALLY_ACCEPTED'].includes(request.status)
   ).length;
 
-  const filteredStations = municipalReadinessData.filter((s) =>
-    s.name.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    let active = true;
+    let inFlight = false;
+    const controller = new AbortController();
+    async function fetchDashboardData() {
+      if (inFlight || document.visibilityState === 'hidden') return;
+      inFlight = true;
+      try {
+        const [sumRes, munRes] = await Promise.all([
+          fetch('/api/provincial-bfp/management-summary', { cache: 'no-store', signal: controller.signal }),
+          fetch('/api/provincial-bfp/municipalities?pageSize=100&page=1', { cache: 'no-store', signal: controller.signal }),
+        ]);
+        if (!active) return;
+        if ([sumRes.status, munRes.status].some(status => status === 401 || status === 403)) {
+          setSummary(null);
+          setMunicipalities([]);
+          setUpdatedAt(null);
+          throw new Error('Your provincial session has expired. Please sign in again.');
+        }
+        if (!sumRes.ok || !munRes.ok) throw new Error('Unable to refresh municipality data. Please try again.');
+        const [sumData, munData] = await Promise.all([sumRes.json(), munRes.json()]);
+        if (active) {
+          setSummary(sumData);
+          setMunicipalities(munData.items ?? []);
+          setUpdatedAt(new Date().toISOString());
+          setSummaryError(null);
+        }
+      } catch (err) {
+        if (active && !controller.signal.aborted) setSummaryError(err instanceof Error ? err.message : 'Unable to load municipality data.');
+      } finally {
+        inFlight = false;
+        if (active) setLoadingSummary(false);
+      }
+    }
+
+    fetchDashboardData();
+    const timer = setInterval(fetchDashboardData, 30000);
+    document.addEventListener('visibilitychange', fetchDashboardData);
+    return () => {
+      active = false;
+      controller.abort();
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', fetchDashboardData);
+    };
+  }, [refreshKey]);
+
+  const filteredMunicipalities = municipalities.filter((m) =>
+    m.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredStations.length / pageSize) || 1;
-  const paginatedStations = filteredStations.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
+  const totalPages = Math.ceil(filteredMunicipalities.length / pageSize) || 1;
+  const visiblePage = Math.min(currentPage, totalPages);
+  const paginatedMunicipalities = filteredMunicipalities.slice(
+    (visiblePage - 1) * pageSize,
+    visiblePage * pageSize
   );
 
   return (
     <>
       <style>{dashboardStyles}</style>
       <div className="pbfp-dash-clean">
+        {summaryError && <div role="alert" style={{ padding: '12px 16px', border: '1px solid #FECACA', borderRadius: 10, background: '#FFF1F2', color: '#991B1B' }}>
+          {summaryError} {updatedAt && 'Showing the last loaded data. '}
+          <button type="button" className="pbfp-page-btn" style={{ display: 'inline-flex', width: 'auto', padding: '6px 12px', marginLeft: 8 }} onClick={() => setRefreshKey(key => key + 1)}>Retry</button>
+        </div>}
         {/* ===== 4 PASTEL STAT CARDS ROW ===== */}
         <section className="pbfp-kpi-row" aria-label="Provincial KPI Metrics">
           {/* Card 1: Active Incidents */}
@@ -751,70 +803,78 @@ export function ProvincialBfpDashboard() {
             </div>
             <div className="pbfp-kpi-body">
               <span className="pbfp-kpi-label">Active Province Incidents</span>
-              <span className="pbfp-kpi-number"><FastNumber value={activeIncidentCount} /></span>
+              <span className="pbfp-kpi-number">
+                {incidentFeedLoading ? '—' : <FastNumber value={activeIncidentCount} />}
+              </span>
             </div>
             <div className="pbfp-kpi-footer">
-              <span className="pbfp-kpi-footer-subtext">Live Operations</span>
+              <span className="pbfp-kpi-footer-subtext">Live Operations · {openAssistanceCount} aid requests</span>
               <i className="fa-solid fa-arrow-right" />
             </div>
           </Link>
 
-          {/* Card 2: Municipal Stations Online */}
-          <Link href="/provincial-bfp/municipal-status" className="pbfp-kpi-box amber">
+          {/* Card 2: Municipal Stations */}
+          <Link href="/provincial-bfp/firetrucks-stations" className="pbfp-kpi-box amber">
             <div className="pbfp-kpi-header">
               <div className="pbfp-kpi-badge-icon amber">
                 <i className="fa-solid fa-building" />
               </div>
               <span className="pbfp-kpi-trend-tag amber">
-                <i className="fa-solid fa-circle-check" /> 100% Online
+                <i className="fa-solid fa-circle-check" /> {summary?.totalMunicipalities ?? '—'} LGUs
               </span>
             </div>
             <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-label">Municipal Stations Online</span>
-              <span className="pbfp-kpi-number"><FastNumber value="18 / 18" /></span>
+              <span className="pbfp-kpi-label">Municipal Fire Stations</span>
+              <span className="pbfp-kpi-number">
+                {summary ? <FastNumber value={summary.totalStations} /> : '—'}
+              </span>
             </div>
             <div className="pbfp-kpi-footer">
-              <span className="pbfp-kpi-footer-subtext">All Stations Connected</span>
+              <span className="pbfp-kpi-footer-subtext">Station Directory</span>
               <i className="fa-solid fa-arrow-right" />
             </div>
           </Link>
 
-          {/* Card 3: Total Fire Trucks */}
-          <Link href="/provincial-bfp/firetrucks-stations" className="pbfp-kpi-box blue">
+          {/* Card 3: BFP Personnel Roster */}
+          <Link href="/provincial-bfp/responders" className="pbfp-kpi-box blue">
             <div className="pbfp-kpi-header">
               <div className="pbfp-kpi-badge-icon blue">
-                <i className="fa-solid fa-truck" />
+                <i className="fa-solid fa-user-shield" />
               </div>
               <span className="pbfp-kpi-trend-tag blue">
-                <i className="fa-solid fa-shield-halved" /> Fleet Ready
+                <i className="fa-solid fa-shield-halved" /> Officers & Staff
               </span>
             </div>
             <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-label">Total Fire Trucks</span>
-              <span className="pbfp-kpi-number"><FastNumber value={42} /></span>
+              <span className="pbfp-kpi-label">BFP Personnel Roster</span>
+              <span className="pbfp-kpi-number">
+                {summary ? <FastNumber value={summary.totalPersonnel} /> : '—'}
+              </span>
             </div>
             <div className="pbfp-kpi-footer">
-              <span className="pbfp-kpi-footer-subtext">Fleet Assets Total</span>
+              <span className="pbfp-kpi-footer-subtext">Personnel Registry</span>
               <i className="fa-solid fa-arrow-right" />
             </div>
           </Link>
 
-          {/* Card 4: Assistance Requests */}
-          <Link href="/provincial-bfp/assistance-requests" className="pbfp-kpi-box purple">
+          {/* Card 4: Registered Residents & Applications */}
+          <Link href="/provincial-bfp/residents" className="pbfp-kpi-box purple">
             <div className="pbfp-kpi-header">
               <div className="pbfp-kpi-badge-icon purple">
-                <i className="fa-solid fa-handshake" />
+                <i className="fa-solid fa-id-card" />
               </div>
               <span className="pbfp-kpi-trend-tag purple">
-                <i className="fa-solid fa-tower-broadcast" /> Mutual Aid
+                <i className="fa-solid fa-clock" /> {summary?.pendingApplications ?? '—'} Pending
               </span>
             </div>
             <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-label">Assistance Requests</span>
-              <span className="pbfp-kpi-number"><FastNumber value={openAssistanceCount} /></span>
+              <span className="pbfp-kpi-label">Registered Residents</span>
+              <span className="pbfp-kpi-number">
+                {summary ? <FastNumber value={summary.totalResidents} /> : '—'}
+              </span>
             </div>
             <div className="pbfp-kpi-footer">
-              <span className="pbfp-kpi-footer-subtext">Inter-Station Link</span>
+              <span className="pbfp-kpi-footer-subtext">Resident Directory</span>
               <i className="fa-solid fa-arrow-right" />
             </div>
           </Link>
@@ -834,9 +894,10 @@ export function ProvincialBfpDashboard() {
                   />
                 </div>
                 <div className="pbfp-card-title-group">
-                  <h2 className="pbfp-card-title">Municipal Readiness</h2>
+                  <h2 className="pbfp-card-title">Municipality Overview</h2>
                   <span className="pbfp-card-subtitle">
-                    Station Status ({filteredStations.length} Municipalities)
+                    {loadingSummary ? 'Loading municipalities…' : `${filteredMunicipalities.length} municipalities`}
+                    {updatedAt && ` · Updated ${new Date(updatedAt).toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' })}`}
                   </span>
                 </div>
               </div>
@@ -862,48 +923,55 @@ export function ProvincialBfpDashboard() {
                   <tr>
                     <th>MUNICIPALITY</th>
                     <th>STATUS</th>
-                    <th>INCIDENTS</th>
-                    <th>TRUCKS READY</th>
-                    <th>DUTY RESPONDERS</th>
+                    <th>ACTIVE</th>
+                    <th>STATIONS</th>
+                    <th>PERSONNEL</th>
+                    <th>RESIDENTS</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedStations.map((station) => (
-                    <tr key={station.name}>
-                      <td className="pbfp-muni-bold">{station.name}</td>
+                  {paginatedMunicipalities.map((m) => (
+                    <tr key={m.id}>
+                      <td className="pbfp-muni-bold">
+                        <Link
+                          href={`/provincial-bfp/municipal-status?municipalityId=${encodeURIComponent(m.id)}`}
+                          style={{ color: 'inherit', textDecoration: 'none' }}
+                        >
+                          {m.name}
+                        </Link>
+                      </td>
                       <td>
-                        {station.status === 'RESPONDING' && (
+                        {m.activeIncidentCount > 0 ? (
                           <span className="pbfp-status-pill responding">
                             <i className="fa-solid fa-fire" /> RESPONDING
                           </span>
-                        )}
-                        {station.status === 'MUTUAL_AID' && (
-                          <span className="pbfp-status-pill mutual-aid">
-                            <i className="fa-solid fa-handshake" /> MUTUAL AID
-                          </span>
-                        )}
-                        {station.status === 'READY' && (
+                        ) : (
                           <span className="pbfp-status-pill ready">
-                            <i className="fa-solid fa-check" /> READY
+                            <i className="fa-solid fa-minus" /> NO ACTIVE INCIDENTS
                           </span>
                         )}
                       </td>
                       <td>
-                        {station.activeIncidents > 0 ? (
-                          <span className="pbfp-incidents-count">{station.activeIncidents} Active</span>
+                        {m.activeIncidentCount > 0 ? (
+                          <span className="pbfp-incidents-count">{m.activeIncidentCount} Active</span>
                         ) : (
                           <span className="pbfp-incidents-zero">0</span>
                         )}
                       </td>
                       <td>
-                        <strong style={{ color: '#0F172A' }}>{station.availableTrucks}</strong>
-                        <span style={{ color: '#94A3B8' }}> / {station.totalTrucks}</span>
+                        <strong style={{ color: '#0F172A' }}>{m.stationCount}</strong>
                       </td>
                       <td>
-                        <span style={{ color: '#0F172A', fontWeight: 600 }}>{station.dutyResponders} crew</span>
+                        <strong style={{ color: '#0F172A' }}>{m.personnelCount}</strong>
+                      </td>
+                      <td>
+                        <span style={{ color: '#64748B' }}>{m.residentCount}</span>
                       </td>
                     </tr>
                   ))}
+                  {paginatedMunicipalities.length === 0 && <tr><td colSpan={6} style={{ padding: 28, textAlign: 'center', color: '#64748B' }}>
+                    {loadingSummary ? 'Loading municipalities…' : summaryError ? 'Municipality data is unavailable.' : searchQuery ? 'No municipalities match your search.' : 'No municipalities found.'}
+                  </td></tr>}
                 </tbody>
               </table>
             </div>
@@ -911,14 +979,14 @@ export function ProvincialBfpDashboard() {
             {/* Clean Pagination Footer */}
             <div className="pbfp-table-footer">
               <span>
-                Showing <strong>{paginatedStations.length}</strong> of <strong>{filteredStations.length}</strong> municipalities
+                Showing <strong>{paginatedMunicipalities.length}</strong> of <strong>{filteredMunicipalities.length}</strong> municipalities
               </span>
               <div className="pbfp-pagination">
                 <button
                   type="button"
                   className="pbfp-page-btn"
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(Math.max(visiblePage - 1, 1))}
+                  disabled={visiblePage === 1}
                   aria-label="Previous page"
                 >
                   <i className="fa-solid fa-chevron-left" />
@@ -927,7 +995,8 @@ export function ProvincialBfpDashboard() {
                   <button
                     key={pageNum}
                     type="button"
-                    className={`pbfp-page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                    className={`pbfp-page-btn ${visiblePage === pageNum ? 'active' : ''}`}
+                    aria-current={visiblePage === pageNum ? 'page' : undefined}
                     onClick={() => setCurrentPage(pageNum)}
                   >
                     {pageNum}
@@ -936,8 +1005,8 @@ export function ProvincialBfpDashboard() {
                 <button
                   type="button"
                   className="pbfp-page-btn"
-                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(Math.min(visiblePage + 1, totalPages))}
+                  disabled={visiblePage === totalPages}
                   aria-label="Next page"
                 >
                   <i className="fa-solid fa-chevron-right" />

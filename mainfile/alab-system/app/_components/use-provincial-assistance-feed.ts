@@ -18,101 +18,61 @@ export type ProvincialAssistanceFeedState = {
   refresh: (manual?: boolean) => Promise<void>;
 };
 
-interface FeedCache {
-  assistanceRequests: ProvincialAssistanceRequest[];
-  timestamp: number;
-}
-
-const FEED_CACHE_KEY = "alab_provincial_assistance_feed_cache";
-const memoryFeedCache: Record<string, FeedCache> = {};
-
-function getCachedFeed(key: string): FeedCache | null {
-  if (memoryFeedCache[key]) return memoryFeedCache[key];
-  if (typeof window !== "undefined") {
-    try {
-      const stored = sessionStorage.getItem(`${FEED_CACHE_KEY}_${key}`);
-      if (stored) {
-        const parsed = JSON.parse(stored) as FeedCache;
-        if (Date.now() - parsed.timestamp < 30 * 60 * 1000) {
-          memoryFeedCache[key] = parsed;
-          return parsed;
-        }
-      }
-    } catch {}
-  }
-  return null;
-}
-
-function setCachedFeed(key: string, assistanceRequests: ProvincialAssistanceRequest[]) {
-  const cacheObj: FeedCache = { assistanceRequests, timestamp: Date.now() };
-  memoryFeedCache[key] = cacheObj;
-  if (typeof window !== "undefined") {
-    try {
-      sessionStorage.setItem(`${FEED_CACHE_KEY}_${key}`, JSON.stringify(cacheObj));
-    } catch {}
-  }
-}
-
 export function useProvincialAssistanceFeed(options: {
   includeClosed?: boolean;
 } = {}): ProvincialAssistanceFeedState {
   const includeClosed = options.includeClosed ?? false;
-  const cacheKey = includeClosed ? "all" : "active";
-
-  const [rows, setRows] = useState<ProvincialAssistanceRequest[]>(() => {
-    return getCachedFeed(cacheKey)?.assistanceRequests || [];
-  });
-  const [loading, setLoading] = useState(() => {
-    return !getCachedFeed(cacheKey);
-  });
+  // Keep protected records inside this mounted view, never in a cross-account cache.
+  const [rows, setRows] = useState<ProvincialAssistanceRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
-  const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(() => {
-    const cached = getCachedFeed(cacheKey);
-    return cached ? new Date(cached.timestamp) : null;
-  });
+  const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
   const inFlight = useRef(false);
   const mounted = useRef(true);
+  const abortRequest = useRef<AbortController | null>(null);
 
-  const refresh = useCallback(async (manual = false) => {
+  const refresh = useCallback(async () => {
     if (inFlight.current) return;
     inFlight.current = true;
-    if (manual) {
-      setChecking(true);
-    } else {
-      setChecking(true);
-    }
+    const controller = new AbortController();
+    abortRequest.current = controller;
+    setChecking(true);
 
     try {
       const url = includeClosed
         ? "/api/provincial-bfp/assistance-requests?scope=all"
         : "/api/provincial-bfp/assistance-requests";
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await fetch(url, { cache: "no-store", signal: controller.signal });
+      if (!mounted.current || controller.signal.aborted) return;
       if (!res.ok) {
+        if (mounted.current && (res.status === 401 || res.status === 403)) {
+          setRows([]);
+          setLastCheckedAt(null);
+        }
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `Failed to fetch assistance requests (${res.status})`);
       }
       const data = await res.json();
-      if (!mounted.current) return;
+      if (!mounted.current || controller.signal.aborted) return;
 
       const requestRows: ProvincialAssistanceRequest[] = Array.isArray(data.assistanceRequests)
         ? data.assistanceRequests
         : [];
       setRows(requestRows);
-      setCachedFeed(cacheKey, requestRows);
       setError("");
       setLastCheckedAt(new Date());
     } catch (err) {
-      if (!mounted.current) return;
+      if (!mounted.current || controller.signal.aborted) return;
       setError(err instanceof Error ? err.message : "Live assistance sync error.");
     } finally {
-      if (mounted.current) {
+      if (mounted.current && !controller.signal.aborted) {
         setLoading(false);
         setChecking(false);
       }
-      inFlight.current = false;
+      if (abortRequest.current === controller) inFlight.current = false;
     }
-  }, [includeClosed, cacheKey]);
+  }, [includeClosed]);
 
   useEffect(() => {
     mounted.current = true;
@@ -158,6 +118,8 @@ export function useProvincialAssistanceFeed(options: {
     return () => {
       clearTimeout(initialTimer);
       mounted.current = false;
+      abortRequest.current?.abort();
+      inFlight.current = false;
       stopPolling();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
