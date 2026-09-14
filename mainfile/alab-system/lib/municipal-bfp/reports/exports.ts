@@ -1,0 +1,336 @@
+import "server-only";
+
+import { getDatabase } from "../../db";
+import type { MunicipalAdminIdentity } from "../auth";
+import { formatPhilippineDateTime } from "./formatters";
+import { listMunicipalReports, getMunicipalReportSummary } from "./service";
+import type {
+  MunicipalExportOptions,
+  MunicipalExportResult,
+  MunicipalReportFilters,
+  MunicipalReportRow,
+} from "./types";
+
+const MAX_EXPORT_ROWS = 10000;
+
+export function escapeCsvValue(val: unknown): string {
+  if (val === null || val === undefined) return "";
+  let str = String(val);
+
+  // Neutralize formula injection
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
+
+  // Wrap in quotes if it contains commas, quotes, or newlines
+  if (/[",\n\r]/.test(str)) {
+    str = `"${str.replace(/"/g, '""')}"`;
+  }
+
+  return str;
+}
+
+export function buildCsv(
+  headers: string[],
+  rows: (string | number | null | undefined)[][],
+): string {
+  const headerLine = headers.map(escapeCsvValue).join(",");
+  const dataLines = rows.map((row) => row.map(escapeCsvValue).join(","));
+  return [headerLine, ...dataLines].join("\r\n");
+}
+
+function sanitizeForFilename(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function getTimestampSuffix(): string {
+  const now = new Date();
+  const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+  // Return YYYYMMDDTHHMMSS
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}T${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}PHT`;
+}
+
+export async function exportMunicipalDataset(
+  actor: MunicipalAdminIdentity,
+  filters: MunicipalReportFilters,
+  options: MunicipalExportOptions,
+): Promise<MunicipalExportResult> {
+  // Authorization guards
+  if (!actor || actor.role !== "MUNICIPAL_BFP" || actor.assignmentRole !== "MUNICIPAL_ADMIN") {
+    throw new Error("UNAUTHORIZED: Municipal Administrator access is required.");
+  }
+
+  if (actor.mustChangePassword) {
+    throw new Error("PASSWORD_CHANGE_REQUIRED: You must update your password before exporting official records.");
+  }
+
+  const db = getDatabase();
+  const { dataset, scope, selectedIds } = options;
+  const muniSlug = sanitizeForFilename(actor.municipalityName || "municipality");
+  const timeSuffix = getTimestampSuffix();
+  const dateRangeSlug =
+    filters.from && filters.to
+      ? `${filters.from}-to-${filters.to}`
+      : filters.from
+        ? `from-${filters.from}`
+        : filters.to
+          ? `to-${filters.to}`
+          : "all-dates";
+
+  let csvContent = "";
+  let fileName = "";
+  let rowCount = 0;
+
+  switch (dataset) {
+    case "INCIDENT_REGISTER": {
+      fileName = `alab-${muniSlug}-incident-register-${dateRangeSlug}-${timeSuffix}.csv`;
+      let records: MunicipalReportRow[] = [];
+
+      if (scope === "SELECTED") {
+        if (!selectedIds || selectedIds.length === 0) {
+          throw new Error("NO_SELECTION: No reports were selected for export.");
+        }
+
+        // Validate all selected IDs belong strictly to actor's municipality
+        const checkRes = await db.query<{ id: string; municipality_id: string }>(
+          `select id, municipality_id from fire_reports where id = any($1::uuid[])`,
+          [selectedIds],
+        );
+
+        if (checkRes.rows.length !== selectedIds.length) {
+          throw new Error("INVALID_SELECTION: Some selected reports were not found.");
+        }
+
+        const crossMuni = checkRes.rows.some((r) => r.municipality_id !== actor.municipalityId);
+        if (crossMuni) {
+          throw new Error("CROSS_MUNICIPALITY_FORBIDDEN: Cannot export records from other municipalities.");
+        }
+
+        // Fetch selected records with all computed fields
+        const allRes = await listMunicipalReports(actor, {
+          ...filters,
+          page: 1,
+          pageSize: 100,
+        });
+
+        // If selection is large, fetch directly matching IDs
+        const selectedSet = new Set(selectedIds);
+        const matched = allRes.items.filter((r) => selectedSet.has(r.id));
+        let page = 2;
+        const totalPages = allRes.totalPages;
+
+        while (matched.length < selectedIds.length && page <= totalPages) {
+          const next = await listMunicipalReports(actor, {
+            ...filters,
+            page,
+            pageSize: 100,
+          });
+          matched.push(...next.items.filter((r) => selectedSet.has(r.id)));
+          page++;
+        }
+
+        records = matched;
+      } else if (scope === "CURRENT_PAGE") {
+        const pageRes = await listMunicipalReports(actor, filters);
+        records = pageRes.items;
+      } else {
+        // ALL_MATCHING
+        const firstPage = await listMunicipalReports(actor, {
+          ...filters,
+          page: 1,
+          pageSize: 100,
+        });
+
+        if (firstPage.total > MAX_EXPORT_ROWS) {
+          throw new Error("ROW_LIMIT_EXCEEDED: Dataset exceeds 10,000 rows. Please narrow your date or barangay filters.");
+        }
+
+        records = [...firstPage.items];
+        for (let p = 2; p <= firstPage.totalPages; p++) {
+          const next = await listMunicipalReports(actor, {
+            ...filters,
+            page: p,
+            pageSize: 100,
+          });
+          if (records.length + next.items.length > MAX_EXPORT_ROWS) {
+            throw new Error("ROW_LIMIT_EXCEEDED: Dataset exceeds 10,000 rows. Please narrow your filters.");
+          }
+          records.push(...next.items);
+        }
+      }
+
+      rowCount = records.length;
+      const headers = [
+        "Reference Number",
+        "Municipality",
+        "Barangay",
+        "Report Source",
+        "Fire Type",
+        "Calculated Severity",
+        "Status",
+        "Submitted At (PHT)",
+        "Response Started At (PHT)",
+        "Recorded Arrival At (PHT)",
+        "Resolved At (PHT)",
+        "Response Duration (mins)",
+        "Arrival Duration (mins)",
+        "Resolution Duration (mins)",
+      ];
+
+      const rows = records.map((r) => [
+        r.referenceNumber,
+        r.municipalityName,
+        r.barangay,
+        r.reportSource,
+        r.fireType,
+        r.severity,
+        r.status,
+        formatPhilippineDateTime(r.submittedAt),
+        formatPhilippineDateTime(r.responseStartedAt),
+        formatPhilippineDateTime(r.recordedArrivalAt),
+        formatPhilippineDateTime(r.resolvedAt),
+        r.timeToResponseMinutes ?? "",
+        r.timeToArrivalMinutes ?? "",
+        r.timeToResolutionMinutes ?? "",
+      ]);
+
+      csvContent = buildCsv(headers, rows);
+      break;
+    }
+
+    case "MUNICIPAL_SUMMARY": {
+      fileName = `alab-${muniSlug}-incident-summary-${dateRangeSlug}-${timeSuffix}.csv`;
+      const summary = await getMunicipalReportSummary(actor, filters);
+      rowCount = 1;
+
+      const summaryHeaders = [
+        "Municipality",
+        "Period Basis",
+        "Date From",
+        "Date To",
+        "Total Intake",
+        "Confirmed Incidents",
+        "Resolved Incidents",
+        "Unresolved Confirmed Incidents",
+        "Administrative Outcomes",
+        "Pending Intake",
+        "Avg Time to Response (mins)",
+        "Response Records Sample Count",
+        "Avg Time to Arrival (mins)",
+        "Arrival Records Sample Count",
+        "Avg Time to Resolution (mins)",
+        "Resolution Records Sample Count",
+      ];
+
+      const summaryRow = [
+        actor.municipalityName,
+        "Reported during (submitted_at)",
+        summary.dateBoundaries.from ?? "Beginning of records",
+        summary.dateBoundaries.to ?? "Latest recorded",
+        summary.totalReports,
+        summary.confirmedIncidents,
+        summary.resolvedIncidents,
+        summary.unresolvedConfirmedIncidents,
+        summary.administrativeOutcomes,
+        summary.pendingIntake,
+        summary.timingMetrics.avgResponseMinutes ?? "Not recorded",
+        summary.timingMetrics.responseRecordsCount,
+        summary.timingMetrics.avgArrivalMinutes ?? "Not recorded",
+        summary.timingMetrics.arrivalRecordsCount,
+        summary.timingMetrics.avgResolutionMinutes ?? "Not recorded",
+        summary.timingMetrics.resolutionRecordsCount,
+      ];
+
+      // Also include status, fire type, severity, and source breakdowns in CSV
+      const sections = [
+        buildCsv(summaryHeaders, [summaryRow]),
+        "\r\n--- STATUS BREAKDOWN ---",
+        buildCsv(
+          ["Status", "Count"],
+          Object.entries(summary.byStatus).map(([st, cnt]) => [st, cnt]),
+        ),
+        "\r\n--- FIRE TYPE BREAKDOWN ---",
+        buildCsv(
+          ["Fire Type", "Count"],
+          Object.entries(summary.byFireType).map(([ft, cnt]) => [ft, cnt]),
+        ),
+        "\r\n--- SEVERITY BREAKDOWN ---",
+        buildCsv(
+          ["Severity", "Count"],
+          Object.entries(summary.bySeverity).map(([sev, cnt]) => [sev, cnt]),
+        ),
+        "\r\n--- REPORT SOURCE BREAKDOWN ---",
+        buildCsv(
+          ["Source", "Count"],
+          Object.entries(summary.bySource).map(([src, cnt]) => [src, cnt]),
+        ),
+      ];
+
+      csvContent = sections.join("\r\n");
+      break;
+    }
+
+    case "BARANGAY_BREAKDOWN": {
+      fileName = `alab-${muniSlug}-barangay-breakdown-${dateRangeSlug}-${timeSuffix}.csv`;
+      const summary = await getMunicipalReportSummary(actor, filters);
+      rowCount = summary.byBarangay.length;
+
+      const headers = [
+        "Barangay",
+        "Total Reports",
+        "Confirmed Incidents",
+        "Resolved Incidents",
+        "Administrative Outcomes",
+        "Avg Time to Arrival (mins)",
+        "Arrival Records Sample Count",
+      ];
+
+      const rows = summary.byBarangay.map((b) => [
+        b.barangayName,
+        b.total,
+        b.confirmed,
+        b.resolved,
+        b.falseReport,
+        b.avgArrivalMinutes ?? "Not recorded",
+        b.arrivalCount,
+      ]);
+
+      csvContent = buildCsv(headers, rows);
+      break;
+    }
+
+    default:
+      throw new Error(`UNSUPPORTED_DATASET: ${dataset}`);
+  }
+
+  // Audit export in municipal_export_events table
+  try {
+    await db.query(
+      `insert into public.municipal_export_events
+        (actor_user_id, municipality_id, dataset, format, row_count, file_name, filters)
+       values ($1, $2, $3, $4, $5, $6, $7::jsonb)`,
+      [
+        actor.userId,
+        actor.municipalityId,
+        dataset,
+        options.format,
+        rowCount,
+        fileName,
+        JSON.stringify(filters),
+      ],
+    );
+  } catch (auditErr) {
+    console.error("Unable to record municipal export audit event:", auditErr);
+    // Even if audit insert logs warning, the table exists in migrations
+  }
+
+  return {
+    csvContent,
+    fileName,
+    rowCount,
+  };
+}
