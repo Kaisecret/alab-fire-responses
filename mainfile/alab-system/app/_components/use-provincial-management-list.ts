@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { ReportFilters } from "../../lib/provincial-bfp/management/types";
+import { ProvincialRequestError, requestProvincialJson } from "../../lib/provincial-bfp/client-request";
 
 type Filters = Partial<ReportFilters>;
 const filterKeys = ["municipalityId", "stationId", "barangayId", "search", "status", "from", "to", "reportSource", "fireType", "severity"] as const;
@@ -77,19 +78,24 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${endpoint}?${params}`, { signal: controller.signal, cache: "no-store" });
+        const body = await requestProvincialJson<Record<string, unknown> & { items?: T[]; total?: number; updatedAt?: string }>(
+          `${endpoint}?${params}`, { signal: controller.signal },
+        );
         if (controller.signal.aborted) return;
-        if (res.status === 401 || res.status === 403) { setItems([]); setTotal(0); setUpdatedAt(null); }
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body.error || "Unable to load records. Please retry.");
-        if (controller.signal.aborted) return;
-        setItems(body[dataKey] || body.items || []);
+        const records = body[dataKey] ?? body.items;
+        if (!Array.isArray(records)) throw new Error("The server returned invalid records. Please retry.");
+        setItems(records as T[]);
         setTotal(body.total || 0);
         setUpdatedAt(body.updatedAt || new Date().toISOString());
         const lastPage = Math.max(1, Math.ceil((body.total || 0) / pageSize));
         if (page > lastPage) setPage(lastPage);
       } catch (cause) {
-        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Unable to load records.");
+        if (!controller.signal.aborted) {
+          if (cause instanceof ProvincialRequestError && (cause.status === 401 || cause.status === 403)) {
+            setItems([]); setTotal(0); setUpdatedAt(null);
+          }
+          setError(cause instanceof Error ? cause.message : "Unable to load records.");
+        }
       } finally { if (!controller.signal.aborted) setLoading(false); }
     }, 200);
     return () => { controller.abort(); window.clearTimeout(timer); };

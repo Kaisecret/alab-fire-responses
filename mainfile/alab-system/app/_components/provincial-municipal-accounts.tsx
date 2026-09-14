@@ -1,7 +1,8 @@
 'use client';
 
-import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ProvincialRequestError, requestProvincialJson } from "../../lib/provincial-bfp/client-request";
+import { ProvincialAccountDialog } from "./provincial-account-dialog";
 
 type Municipality = { id: string; name: string; psgcCode: string | null };
 type Account = {
@@ -236,21 +237,16 @@ const pageStyles = `
   }
 
   /* ========== MODAL DIALOGS ========== */
-  .pma-overlay {
-    position: fixed;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    padding: 1rem;
+  .pma-dialog::backdrop {
     background: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(4px);
-    z-index: 1000;
-    animation: pmaFadeIn 0.2s ease;
   }
 
   .pma-dialog {
-    width: min(100%, 34rem);
-    max-height: 90vh;
+    width: min(calc(100vw - 2rem), 34rem);
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    overscroll-behavior: contain;
     overflow-y: auto;
     background: #FFFFFF;
     border-radius: 14px;
@@ -289,6 +285,10 @@ const pageStyles = `
     gap: 1rem;
     margin-top: 1.25rem;
   }
+
+  .pma-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+  .pma-btn:focus-visible { outline: 3px solid #DB1B0D; outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .pma-dialog { animation: none; } }
 
   .pma-form label {
     display: grid;
@@ -382,72 +382,51 @@ export function ProvincialMunicipalAccounts() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const submitting = useRef(false);
   const [issued, setIssued] = useState<{
     municipalityName: string;
     email: string;
     temporaryPassword: string;
   } | null>(null);
 
-  async function load() {
+  function refresh() {
     setLoading(true);
     setError("");
-    try {
-      const response = await fetch("/api/provincial-bfp/municipal-accounts", {
-        cache: "no-store",
-      });
-      const result = (await response.json()) as {
-        municipalities?: Municipality[];
-        accounts?: Account[];
-        error?: string;
-      };
-      if (!response.ok)
-        throw new Error(result.error || "Unable to load municipal accounts.");
-      setMunicipalities(result.municipalities ?? []);
-      setAccounts(result.accounts ?? []);
-    } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : "Unable to load municipal accounts."
-      );
-    } finally {
-      setLoading(false);
-    }
+    setRevision(value => value + 1);
   }
 
   useEffect(() => {
-    let active = true;
-    fetch("/api/provincial-bfp/municipal-accounts", { cache: "no-store" })
-      .then(async (response) => ({
-        response,
-        result: (await response.json()) as {
-          municipalities?: Municipality[];
-          accounts?: Account[];
-          error?: string;
-        },
-      }))
-      .then(({ response, result }) => {
-        if (!active) return;
-        if (!response.ok)
-          throw new Error(result.error || "Unable to load municipal accounts.");
-        setMunicipalities(result.municipalities ?? []);
-        setAccounts(result.accounts ?? []);
+    const controller = new AbortController();
+    requestProvincialJson<{ municipalities: Municipality[]; accounts: Account[] }>(
+      "/api/provincial-bfp/municipal-accounts", { signal: controller.signal },
+    )
+      .then(result => {
+        if (controller.signal.aborted) return;
+        if (!Array.isArray(result.municipalities) || !Array.isArray(result.accounts)) {
+          throw new Error("The account roster returned an invalid response. Please retry.");
+        }
+        setMunicipalities(result.municipalities);
+        setAccounts(result.accounts);
+        setLoaded(true);
+        setError("");
       })
       .catch((reason) => {
-        if (active)
-          setError(
-            reason instanceof Error
-              ? reason.message
-              : "Unable to load municipal accounts."
-          );
+        if (controller.signal.aborted) return;
+        if (reason instanceof ProvincialRequestError && (reason.status === 401 || reason.status === 403)) {
+          setMunicipalities([]);
+          setAccounts([]);
+          setLoaded(false);
+        }
+        setError(reason instanceof Error ? reason.message : "Unable to load municipal accounts.");
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
-    return () => {
-      active = false;
-    };
-  }, []);
+    return () => controller.abort();
+  }, [revision]);
 
   const filteredMunicipalities = useMemo(
     () =>
@@ -465,21 +444,21 @@ export function ProvincialMunicipalAccounts() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
     setSaving(true);
-    setError("");
+    setFormError("");
     try {
-      const response = await fetch("/api/provincial-bfp/municipal-accounts", {
+      const result = await requestProvincialJson<{
+        account?: { municipalityName: string; email: string };
+        temporaryPassword?: string;
+      }>("/api/provincial-bfp/municipal-accounts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      const result = (await response.json()) as {
-        account?: { municipalityName: string; email: string };
-        temporaryPassword?: string;
-        error?: string;
-      };
-      if (!response.ok || !result.account || !result.temporaryPassword)
-        throw new Error(result.error || "Unable to issue the account.");
+      if (!result.account || !result.temporaryPassword)
+        throw new Error("The account response was incomplete. Refresh the roster before submitting again.");
       setIssued({
         municipalityName: result.account.municipalityName,
         email: result.account.email,
@@ -487,14 +466,15 @@ export function ProvincialMunicipalAccounts() {
       });
       setForm(initialForm);
       setOpen(false);
-      await load();
+      refresh();
     } catch (reason) {
-      setError(
+      setFormError(
         reason instanceof Error
           ? reason.message
           : "Unable to issue the account."
       );
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   }
@@ -517,10 +497,14 @@ export function ProvincialMunicipalAccounts() {
           </p>
         </div>
         <div className="pma-actions">
+          <button className="pma-btn pma-btn-cancel" type="button" onClick={refresh} disabled={loading}>
+            {loading ? 'Loading…' : 'Refresh'}
+          </button>
           <button
             className="pma-btn pma-btn-primary"
             type="button"
-            onClick={() => setOpen(true)}
+            disabled={!loaded || saving}
+            onClick={() => { setFormError(""); setOpen(true); }}
           >
             <i className="fa-solid fa-user-plus" /> Issue New Account
           </button>
@@ -531,6 +515,7 @@ export function ProvincialMunicipalAccounts() {
         <div className="pma-alert" role="alert">
           <i className="fa-solid fa-circle-exclamation" style={{ marginRight: '0.4rem' }} />
           {error}
+          <button className="pma-btn pma-btn-cancel" type="button" onClick={refresh} disabled={loading}>Retry</button>
         </div>
       )}
 
@@ -539,7 +524,7 @@ export function ProvincialMunicipalAccounts() {
         <div className="pma-toolbar">
           <div className="pma-toolbar-title">
             <i className="fa-solid fa-city" style={{ color: '#DB1B0D' }} />
-            <span>{municipalities.length || 18} Municipalities in Antique</span>
+            <span>{loaded ? `${municipalities.length} Municipalities in Antique` : 'Municipalities in Antique'}</span>
           </div>
           <input
             className="pma-search-input"
@@ -561,13 +546,17 @@ export function ProvincialMunicipalAccounts() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && !loaded ? (
                 <tr>
                   <td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: '#64748B' }}>
                     <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '0.5rem' }} />
                     Loading municipal account roster…
                   </td>
                 </tr>
+              ) : filteredMunicipalities.length === 0 ? (
+                <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>
+                  {error ? 'The account roster could not be loaded. Use Retry above.' : query ? 'No municipalities match your search.' : 'No municipalities are available.'}
+                </td></tr>
               ) : (
                 filteredMunicipalities.map((municipality) => {
                   const active = activeFor(municipality.id);
@@ -630,14 +619,7 @@ export function ProvincialMunicipalAccounts() {
 
       {/* Issue Account Modal */}
       {open && (
-        <div
-          className="pma-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Issue municipal BFP account"
-          onClick={() => setOpen(false)}
-        >
-          <div className="pma-dialog" onClick={(e) => e.stopPropagation()}>
+        <ProvincialAccountDialog label="Issue municipal BFP account" onClose={() => setOpen(false)} dismissible={!saving}>
             <h2>
               <i className="fa-solid fa-shield-halved" style={{ color: '#DB1B0D', marginRight: '0.5rem' }} />
               Issue Municipal BFP Account
@@ -648,6 +630,7 @@ export function ProvincialMunicipalAccounts() {
             </p>
 
             <form className="pma-form" onSubmit={submit}>
+              {formError && <div className="pma-alert" role="alert">{formError}</div>}
               <label>
                 Target Municipality
                 <select
@@ -736,6 +719,7 @@ export function ProvincialMunicipalAccounts() {
                 <button
                   className="pma-btn pma-btn-cancel"
                   type="button"
+                  disabled={saving}
                   onClick={() => setOpen(false)}
                 >
                   Cancel
@@ -757,19 +741,12 @@ export function ProvincialMunicipalAccounts() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </ProvincialAccountDialog>
       )}
 
       {/* Issued Password Notice Modal */}
       {issued && (
-        <div
-          className="pma-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Temporary password"
-        >
-          <div className="pma-dialog">
+        <ProvincialAccountDialog label="Temporary password" onClose={() => setIssued(null)} dismissible={false}>
             <h2 style={{ color: '#059669' }}>
               <i className="fa-solid fa-circle-check" style={{ marginRight: '0.5rem' }} />
               Account Successfully Provisioned
@@ -795,8 +772,7 @@ export function ProvincialMunicipalAccounts() {
                 I have securely recorded this password
               </button>
             </div>
-          </div>
-        </div>
+        </ProvincialAccountDialog>
       )}
     </div>
   );

@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type MouseEvent } from 'react';
 import { NotificationBell } from './notifications/notification-bell';
+import { ProvincialRequestError, requestProvincialJson } from '../../lib/provincial-bfp/client-request';
+import { ProvincialProfilePopover } from './provincial-profile-popover';
 
 type NavItem = {
   label: string;
@@ -616,6 +618,10 @@ const provincialLayoutStyles = `
   }
 
   .pbfp-profile-card {
+    width: 100%;
+    font: inherit;
+    color: inherit;
+    text-align: left;
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -711,10 +717,11 @@ const provincialLayoutStyles = `
 
   /* Profile Dropdown Menu */
   .pbfp-profile-popover {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 10px;
-    right: 10px;
+    position: fixed;
+    width: min(240px, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     background: #1B2336;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 10px;
@@ -723,15 +730,8 @@ const provincialLayoutStyles = `
     display: flex;
     flex-direction: column;
     gap: 2px;
-    z-index: 200;
+    z-index: 1100;
     animation: pbfpPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .pbfp-sidebar.collapsed .pbfp-profile-popover {
-    left: calc(100% + 10px);
-    right: auto;
-    bottom: 10px;
-    width: 220px;
   }
 
   @keyframes pbfpPopIn {
@@ -759,7 +759,7 @@ const provincialLayoutStyles = `
   }
 
   .pbfp-popover-item:hover {
-    background: var(--pbfp-navy-hover);
+    background: var(--pbfp-navy-hover, #252F43);
     color: #FFFFFF;
   }
 
@@ -1015,11 +1015,9 @@ const provincialLayoutStyles = `
   @keyframes pbfpContentEntrance {
     0% {
       opacity: 0;
-      transform: translateY(12px);
     }
     100% {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 
@@ -1027,7 +1025,6 @@ const provincialLayoutStyles = `
     flex: 1;
     padding: 0;
     animation: pbfpContentEntrance 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: opacity, transform;
   }
 
   /* ========== FOOTER ========== */
@@ -1226,50 +1223,42 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [identity, setIdentity] = useState<ProvincialIdentity>({
-    displayName: 'CINSP Juan Dela Cruz',
-    rankOrPosition: 'Provincial Fire Marshal',
-    role: 'PROVINCIAL_BFP',
-    province: 'Antique',
-  });
+  const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null);
+  const [identity, setIdentity] = useState<ProvincialIdentity | null>(null);
+  const [identityLoading, setIdentityLoading] = useState(true);
+  const [identityError, setIdentityError] = useState('');
+  const [identityRevision, setIdentityRevision] = useState(0);
+  const closeProfile = useCallback(() => setIsProfileOpen(false), []);
+  const toggleProfile = (event: MouseEvent<HTMLButtonElement>) => {
+    const sameAnchor = profileAnchor === event.currentTarget;
+    setProfileAnchor(event.currentTarget);
+    setIsProfileOpen(previous => sameAnchor ? !previous : true);
+  };
 
   // Fetch Provincial Identity
   useEffect(() => {
     if (isAuthenticationPage) return;
-    let active = true;
-    fetch('/api/provincial-bfp/me')
-      .then(async (response) => {
-        if (!response.ok) {
-          return {
-            user: {
-              displayName: 'CINSP Juan Dela Cruz',
-              rankOrPosition: 'Provincial Fire Marshal',
-              role: 'PROVINCIAL_BFP',
-              province: 'Antique',
-            },
-          };
-        }
-        return (await response.json()) as { user?: typeof identity };
-      })
+    const controller = new AbortController();
+    requestProvincialJson<{ user?: ProvincialIdentity }>('/api/provincial-bfp/me', { signal: controller.signal })
       .then((data) => {
-        if (!active) return;
-        if (data.user) {
-          setIdentity(data.user);
+        if (controller.signal.aborted) return;
+        if (!data.user?.displayName) throw new Error('Unable to load your account profile.');
+        setIdentity(data.user);
+        setIdentityError('');
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        setIdentity(null);
+        setIdentityError(error instanceof Error ? error.message : 'Unable to load your account profile.');
+        if (error instanceof ProvincialRequestError && (error.status === 401 || error.status === 403)) {
+          window.location.replace('/provincial-bfp/login');
         }
       })
-      .catch(() => {
-        if (!active) return;
-        setIdentity({
-          displayName: 'CINSP Juan Dela Cruz',
-          rankOrPosition: 'Provincial Fire Marshal',
-          role: 'PROVINCIAL_BFP',
-          province: 'Antique',
-        });
+      .finally(() => {
+        if (!controller.signal.aborted) setIdentityLoading(false);
       });
-    return () => {
-      active = false;
-    };
-  }, [isAuthenticationPage]);
+    return () => controller.abort();
+  }, [isAuthenticationPage, identityRevision]);
 
   // Handle escape key to close menus
   useEffect(() => {
@@ -1283,7 +1272,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const closeMobileDrawer = () => setIsMobileOpen(false);
+  const closeMobileDrawer = () => { setIsMobileOpen(false); closeProfile(); };
 
   const isActive = (item: NavItem) => {
     if (item.exact) {
@@ -1351,7 +1340,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
               <button
                 type="button"
                 className="pbfp-collapse-btn"
-                onClick={() => setIsCollapsed(!isCollapsed)}
+                onClick={() => { closeProfile(); setIsCollapsed(!isCollapsed); }}
                 title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
@@ -1409,9 +1398,12 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
 
           {/* Profile Area at Bottom */}
           <div className="pbfp-sidebar-footer">
-            <div
+            <button
+              type="button"
               className="pbfp-profile-card"
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              onClick={toggleProfile}
+              aria-expanded={isProfileOpen && profileAnchor?.classList.contains('pbfp-profile-card')}
+              aria-controls="provincial-profile-popover"
               title="Administrator Profile"
             >
               <div className="pbfp-profile-avatar">
@@ -1419,7 +1411,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
               </div>
               <div className="pbfp-profile-info">
                 <div className="pbfp-profile-name">
-                  {identity?.displayName || 'CINSP Juan Dela Cruz'}
+                  {identity?.displayName || (identityLoading ? 'Loading account…' : 'Account unavailable')}
                 </div>
                 <div className="pbfp-profile-role">
                   <span>Provincial Administrator</span>
@@ -1430,11 +1422,11 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                 className={`fa-solid fa-chevron-up pbfp-profile-chevron ${isProfileOpen ? 'rotate-180' : ''
                   }`}
               />
-            </div>
+            </button>
 
             {/* Profile Popover Menu */}
-            {isProfileOpen && (
-              <div className="pbfp-profile-popover" role="menu">
+            {isProfileOpen && profileAnchor && (
+              <ProvincialProfilePopover anchor={profileAnchor} onClose={closeProfile}>
                 <Link
                   href="/provincial-bfp/settings"
                   className="pbfp-popover-item"
@@ -1466,7 +1458,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                   <i className="fa-solid fa-arrow-right-from-bracket" />
                   <span>Sign Out</span>
                 </button>
-              </div>
+              </ProvincialProfilePopover>
             )}
           </div>
         </aside>
@@ -1519,21 +1511,32 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
 
                 <NotificationBell apiPath="/api/provincial-bfp/notifications" allHref="/provincial-bfp/notifications" />
 
-                <div
+                <button
+                  type="button"
                   className="pbfp-topbar-admin-btn"
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  onClick={toggleProfile}
+                  aria-expanded={isProfileOpen && profileAnchor?.classList.contains('pbfp-topbar-admin-btn')}
+                  aria-controls="provincial-profile-popover"
                   title="Administrator Account"
                 >
                   <div className="pbfp-topbar-admin-avatar">
                     <i className="fa-solid fa-user-shield" />
                   </div>
                   <span className="pbfp-topbar-admin-text">
-                    {identity?.displayName ? identity.displayName.split(' ')[0] : 'Admin'}
+                    {identity?.displayName || (identityLoading ? 'Loading…' : 'Account')}
                   </span>
-                </div>
+                </button>
               </div>
             </div>
           </header>
+
+          {identityError && <div role="alert" style={{ padding: '0.75rem 1.5rem', background: '#FEF2F2', color: '#B91C1C' }}>
+            {identityError}{' '}
+            <button type="button" disabled={identityLoading} onClick={() => {
+              setIdentityLoading(true);
+              setIdentityRevision(value => value + 1);
+            }}>{identityLoading ? 'Loading…' : 'Retry account'}</button>
+          </div>}
 
           {/* Dynamic Page Content with entrance animation */}
           <main key={pathname} className="pbfp-content">{children}</main>
