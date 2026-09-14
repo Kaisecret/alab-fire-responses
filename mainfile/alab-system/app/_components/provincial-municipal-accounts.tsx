@@ -237,15 +237,38 @@ const pageStyles = `
   }
 
   /* ========== MODAL DIALOGS ========== */
-  .pma-dialog::backdrop {
-    background: rgba(15, 23, 42, 0.6);
+  .pma-modal::backdrop {
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
+  }
+
+  .pma-modal {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 1rem;
+    border: 0;
+    background: transparent;
+    box-sizing: border-box;
+    overflow: hidden;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .pma-modal[open] {
+    display: grid;
+    place-items: center;
   }
 
   .pma-dialog {
     width: min(calc(100vw - 2rem), 34rem);
     max-height: calc(100dvh - 2rem);
-    margin: auto;
+    margin: 0;
+    box-sizing: border-box;
+    min-height: 0;
     overscroll-behavior: contain;
     overflow-y: auto;
     background: #FFFFFF;

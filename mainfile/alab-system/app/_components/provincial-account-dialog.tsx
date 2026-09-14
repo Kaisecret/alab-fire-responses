@@ -26,15 +26,13 @@ export function ProvincialAccountDialog({ children, label, onClose, dismissible 
 
   if (typeof document === 'undefined') return null;
   return createPortal(
-    <dialog ref={ref} className="pma-dialog" aria-label={label}
+    <dialog ref={ref} className="pma-modal" aria-label={label}
       onCancel={event => { event.preventDefault(); if (dismissible) onClose(); }}
       onClick={event => {
         if (!dismissible || event.target !== event.currentTarget) return;
-        const bounds = event.currentTarget.getBoundingClientRect();
-        if (event.clientX < bounds.left || event.clientX > bounds.right ||
-            event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
+        onClose();
       }}>
-      {children}
+      <div className="pma-dialog">{children}</div>
     </dialog>, document.body,
   );
 }
