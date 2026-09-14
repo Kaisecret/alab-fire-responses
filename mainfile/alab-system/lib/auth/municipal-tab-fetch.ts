@@ -21,10 +21,21 @@ async function selectTab(): Promise<string> {
       void navigator.locks.request(`alab-municipal:${candidate}`, { ifAvailable: true }, (lock) => {
         resolve(Boolean(lock));
         if (!lock) return;
-        return new Promise<void>((release) => window.addEventListener("pagehide", () => release(), { once: true }));
+        return new Promise<void>((release) => {
+          window.addEventListener("pagehide", () => release(), { once: true });
+          window.addEventListener("beforeunload", () => release(), { once: true });
+        });
       }).catch(reject);
     });
-    if (!await claim(id)) {
+    let claimed = await claim(id);
+    if (!claimed && typeof performance !== "undefined") {
+      const nav = performance.getEntriesByType?.("navigation")?.[0] as PerformanceNavigationTiming | undefined;
+      if (nav?.type === "reload" || nav?.type === "navigate") {
+        await new Promise((r) => setTimeout(r, 60));
+        claimed = await claim(id);
+      }
+    }
+    if (!claimed) {
       id = crypto.randomUUID();
       await claim(id);
       clearMunicipalCache();

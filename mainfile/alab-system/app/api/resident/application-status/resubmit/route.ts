@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         context: { reference }, dedupeKey: `resident-application:${applicationId}:resubmitted`, createdAt: now,
       });
     });
-    return NextResponse.json({ application: { reference, status: "PENDING" }, message: "Corrections resubmitted for Municipal BFP review." });
+    return NextResponse.json({ application: { reference, status: "PENDING", submittedAt: now.toISOString() }, message: "Corrections resubmitted for Municipal BFP review." });
   } catch (error) {
     await removeIdentityEvidence(uploadedKeys);
     console.error("Resident correction resubmission failed", error);

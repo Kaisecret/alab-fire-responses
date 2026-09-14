@@ -768,6 +768,12 @@ export default function ProfilePage() {
         throw new Error(data.error || "Failed to update profile");
       }
       setIdentity(data.user);
+      try {
+        sessionStorage.setItem("alab_municipal_identity", JSON.stringify(data.user));
+        window.dispatchEvent(new CustomEvent("alab:municipal-identity-changed", { detail: data.user }));
+      } catch {
+        // ignore
+      }
       setIsEditing(false);
       showToast("Profile details updated successfully.");
     } catch (err) {
@@ -803,7 +809,17 @@ export default function ProfilePage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Photo upload failed");
 
-      setIdentity((prev) => (prev ? { ...prev, photoUrl: data.photoUrl } : null));
+      setIdentity((prev) => {
+        if (!prev) return null;
+        const updated = { ...prev, photoUrl: data.photoUrl };
+        try {
+          sessionStorage.setItem("alab_municipal_identity", JSON.stringify(updated));
+          window.dispatchEvent(new CustomEvent("alab:municipal-identity-changed", { detail: updated }));
+        } catch {
+          // ignore
+        }
+        return updated;
+      });
       showToast("Profile photo updated successfully.");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Unable to upload photo.", "error");
@@ -824,7 +840,17 @@ export default function ProfilePage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to reset avatar");
 
-      setIdentity((prev) => (prev ? { ...prev, photoUrl: null } : null));
+      setIdentity((prev) => {
+        if (!prev) return null;
+        const updated = { ...prev, photoUrl: null };
+        try {
+          sessionStorage.setItem("alab_municipal_identity", JSON.stringify(updated));
+          window.dispatchEvent(new CustomEvent("alab:municipal-identity-changed", { detail: updated }));
+        } catch {
+          // ignore
+        }
+        return updated;
+      });
       showToast("Profile avatar reset to default insignia.");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Unable to reset avatar.", "error");

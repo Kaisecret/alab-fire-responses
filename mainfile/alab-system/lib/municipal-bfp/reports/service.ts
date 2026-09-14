@@ -1,4 +1,5 @@
 import "server-only";
+import type { PoolClient } from "pg";
 
 import { getDatabase } from "../../db";
 import { getFireReportPhotoUrl } from "../../supabase/server-storage";
@@ -35,6 +36,7 @@ function calculateDurationMinutes(
 export async function listMunicipalReports(
   actor: MunicipalAdminIdentity,
   filters: MunicipalReportFilters,
+  connection?: Pick<PoolClient, "query">,
 ): Promise<{
   items: MunicipalReportRow[];
   total: number;
@@ -42,7 +44,7 @@ export async function listMunicipalReports(
   pageSize: number;
   totalPages: number;
 }> {
-  const db = getDatabase();
+  const db = connection ?? getDatabase();
   const { clauses: whereClauses, values } = municipalReportWhere(actor.municipalityId, filters);
   const whereSql = whereClauses.length > 0 ? `where ${whereClauses.join(" and ")}` : "";
 
@@ -84,7 +86,7 @@ export async function listMunicipalReports(
             fr.reference_number as "referenceNumber",
             fr.municipality_id as "municipalityId",
             m.name as "municipalityName",
-            coalesce(b.name, fr.address_label, 'Unknown Barangay') as "barangay",
+            coalesce(b.name, 'Unknown Barangay') as "barangay",
             fr.report_source as "reportSource",
             fr.fire_type as "fireType",
             coalesce(fr.calculated_severity, 'UNKNOWN') as "severity",
@@ -92,22 +94,13 @@ export async function listMunicipalReports(
             fr.latitude,
             fr.longitude,
             fr.submitted_at as "submittedAt",
-            coalesce(fr.response_started_at, (
-              select min(coalesce(r.acknowledged_at, r.en_route_at))
-                from incident_dispatch_recipients r
-                join incident_dispatches d on d.id = r.dispatch_id
-               where d.fire_report_id = fr.id
-            )) as "responseStartedAt",
+            fr.response_started_at as "responseStartedAt",
             (
               select min(arrival_time) from (
                 select min(r.on_scene_at) as arrival_time
                   from incident_dispatch_recipients r
                   join incident_dispatches d on d.id = r.dispatch_id
-                 where d.fire_report_id = fr.id and r.on_scene_at is not null
-                union all
-                select min(h.created_at) as arrival_time
-                  from fire_report_status_history h
-                 where h.fire_report_id = fr.id and h.next_status = 'RESPONDER_ARRIVED'
+                 where d.fire_report_id = fr.id and r.on_scene_at >= fr.submitted_at
               ) arrivals
             ) as "recordedArrivalAt",
             (case when fr.status in ('CLOSED', 'RESOLVED') then (
@@ -204,7 +197,7 @@ export async function getMunicipalReportDetail(
             fr.reference_number as "referenceNumber",
             fr.municipality_id as "municipalityId",
             m.name as "municipalityName",
-            coalesce(b.name, fr.address_label, 'Unknown Barangay') as "barangay",
+            coalesce(b.name, 'Unknown Barangay') as "barangay",
             fr.report_source as "reportSource",
             fr.fire_type as "fireType",
             coalesce(fr.calculated_severity, 'UNKNOWN') as "severity",
@@ -214,22 +207,13 @@ export async function getMunicipalReportDetail(
             fr.submitted_at as "submittedAt",
             fr.description,
             fr.address_label as "addressLabel",
-            coalesce(fr.response_started_at, (
-              select min(coalesce(r.acknowledged_at, r.en_route_at))
-                from incident_dispatch_recipients r
-                join incident_dispatches d on d.id = r.dispatch_id
-               where d.fire_report_id = fr.id
-            )) as "responseStartedAt",
+            fr.response_started_at as "responseStartedAt",
             (
               select min(arrival_time) from (
                 select min(r.on_scene_at) as arrival_time
                   from incident_dispatch_recipients r
                   join incident_dispatches d on d.id = r.dispatch_id
-                 where d.fire_report_id = fr.id and r.on_scene_at is not null
-                union all
-                select min(h.created_at) as arrival_time
-                  from fire_report_status_history h
-                 where h.fire_report_id = fr.id and h.next_status = 'RESPONDER_ARRIVED'
+                 where d.fire_report_id = fr.id and r.on_scene_at >= fr.submitted_at
               ) arrivals
             ) as "recordedArrivalAt",
             (case when fr.status in ('CLOSED', 'RESOLVED') then (
@@ -393,8 +377,9 @@ export async function getMunicipalReportDetail(
 export async function getMunicipalReportSummary(
   actor: MunicipalAdminIdentity,
   filters: MunicipalReportFilters,
+  connection?: Pick<PoolClient, "query">,
 ): Promise<MunicipalReportSummary> {
-  const db = getDatabase();
+  const db = connection ?? getDatabase();
   const { clauses: whereClauses, values } = municipalReportWhere(actor.municipalityId, filters);
   const whereSql = whereClauses.length > 0 ? `where ${whereClauses.join(" and ")}` : "";
 
@@ -506,22 +491,15 @@ export async function getMunicipalReportSummary(
        join municipalities m on m.id = fr.municipality_id
        left join barangays b on b.id = fr.barangay_id
        left join lateral (
-         select coalesce(fr.response_started_at, min(coalesce(r.acknowledged_at, r.en_route_at))) as start_time
-           from incident_dispatch_recipients r
-           join incident_dispatches d on d.id = r.dispatch_id
-          where d.fire_report_id = fr.id
-         having coalesce(fr.response_started_at, min(coalesce(r.acknowledged_at, r.en_route_at))) >= fr.submitted_at
+         select fr.response_started_at as start_time
+          where fr.response_started_at >= fr.submitted_at
        ) resp_start on true
        left join lateral (
          select min(arr.arrival_time) as arrival_time from (
            select min(r.on_scene_at) as arrival_time
              from incident_dispatch_recipients r
              join incident_dispatches d on d.id = r.dispatch_id
-            where d.fire_report_id = fr.id and r.on_scene_at is not null
-           union all
-           select min(h.created_at) as arrival_time
-             from fire_report_status_history h
-            where h.fire_report_id = fr.id and h.next_status = 'RESPONDER_ARRIVED'
+            where d.fire_report_id = fr.id and r.on_scene_at >= fr.submitted_at
          ) arr
          having min(arr.arrival_time) >= fr.submitted_at
        ) arrival_data on true
@@ -564,29 +542,28 @@ export async function getMunicipalReportSummary(
             count(fr.id) filter (where fr.status in ('FALSE_REPORT', 'DUPLICATE', 'REJECTED'))::text as false_report,
             avg(extract(epoch from (arr_lat.arrival_time - fr.submitted_at)) / 60.0)::numeric(10, 1)::text as avg_arrival_minutes,
             count(arr_lat.arrival_time)::text as arrival_count
-       from barangays b
-       left join fire_reports fr on fr.barangay_id = b.id ${barangayWhereJoin}
+       from (
+         select id, name from barangays where municipality_id = $1
+         union all select null::uuid, 'Unknown Barangay'
+       ) b
+       left join fire_reports fr on fr.barangay_id is not distinct from b.id ${barangayWhereJoin}
        left join lateral (
          select min(arr.arrival_time) as arrival_time from (
            select min(r.on_scene_at) as arrival_time
              from incident_dispatch_recipients r
              join incident_dispatches d on d.id = r.dispatch_id
-            where d.fire_report_id = fr.id and r.on_scene_at is not null
-           union all
-           select min(h.created_at) as arrival_time
-             from fire_report_status_history h
-            where h.fire_report_id = fr.id and h.next_status = 'RESPONDER_ARRIVED'
+            where d.fire_report_id = fr.id and r.on_scene_at >= fr.submitted_at
          ) arr
          having min(arr.arrival_time) >= fr.submitted_at
        ) arr_lat on true
-      where b.municipality_id = $1
       group by b.id, b.name
+      having b.id is not null or count(fr.id) > 0
       order by b.name asc`,
     barangayValues,
   );
 
   const byBarangay: MunicipalBarangaySummary[] = barangayRes.rows.map((row) => ({
-    barangayId: row.id,
+    barangayId: row.id ?? "unknown",
     barangayName: row.name,
     total: Number.parseInt(row.total, 10),
     confirmed: Number.parseInt(row.confirmed, 10),

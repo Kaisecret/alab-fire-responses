@@ -1,5 +1,7 @@
 "use client";
 
+import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
+
 import React, { useState, useEffect } from "react";
 import type {
   MunicipalReportFilters,
@@ -21,7 +23,7 @@ export function MunicipalReportDirectory() {
   const [reports, setReports] = useState<MunicipalReportRow[]>([]);
   const [total, setTotal] = useState(0);
   const [summary, setSummary] = useState<MunicipalReportSummary | null>(null);
-  const [municipalityName, setMunicipalityName] = useState<string>("San Jose de Buenavista");
+  const [municipalityName, setMunicipalityName] = useState<string>("Municipality");
   const [barangays, setBarangays] = useState<{ id: string; name: string }[]>([]);
 
   // Filter states initialized from URL parameters
@@ -109,11 +111,12 @@ export function MunicipalReportDirectory() {
     return null;
   });
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportSelected, setExportSelected] = useState(false);
   const [revision, setRevision] = useState(0);
 
   // Fetch municipal barangays list
   useEffect(() => {
-    fetch("/api/municipal-bfp/barangays")
+    municipalTabFetch("/api/municipal-bfp/barangays")
       .then((res) => res.json())
       .then((data) => {
         if (data.barangays) setBarangays(data.barangays);
@@ -187,7 +190,7 @@ export function MunicipalReportDirectory() {
       params.set("summary", "true");
 
       try {
-        const res = await fetch(`/api/municipal-bfp/reports?${params}`, {
+        const res = await municipalTabFetch(`/api/municipal-bfp/reports?${params}`, {
           signal: controller.signal,
           cache: "no-store",
         });
@@ -195,9 +198,11 @@ export function MunicipalReportDirectory() {
         if (controller.signal.aborted) return;
         const body = await res.json().catch(() => ({}));
         if (!res.ok) {
+          if (res.status === 401 || res.status === 403) { setReports([]); setSummary(null); setTotal(0); setSelectedIds([]); }
           throw new Error(body.error || "Failed to load municipal reports.");
         }
 
+        if (controller.signal.aborted) return;
         setReports(body.items || []);
         setSelectedIds([]);
         setTotal(body.total || 0);
@@ -407,8 +412,8 @@ export function MunicipalReportDirectory() {
 
         <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
           <a
-            href={`/municipal-bfp/incident-reports/print?mode=summary&period=${encodeURIComponent(period)}${from ? `&from=${encodeURIComponent(from)}` : ""}${to ? `&to=${encodeURIComponent(to)}` : ""}${barangayId ? `&barangayId=${encodeURIComponent(barangayId)}` : ""}`}
-            target="_blank"
+            href={`/municipal-bfp/incident-reports/print?mode=summary&period=${encodeURIComponent(period)}${from ? `&from=${encodeURIComponent(from)}` : ""}${to ? `&to=${encodeURIComponent(to)}` : ""}${barangayId ? `&barangayId=${encodeURIComponent(barangayId)}` : ""}${status ? `&status=${encodeURIComponent(status)}` : ""}${fireType ? `&fireType=${encodeURIComponent(fireType)}` : ""}${severity ? `&severity=${encodeURIComponent(severity)}` : ""}${reportSource ? `&reportSource=${encodeURIComponent(reportSource)}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}`}
+            target="_self"
             rel="noopener noreferrer"
             style={{
               display: "inline-flex",
@@ -926,7 +931,7 @@ export function MunicipalReportDirectory() {
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button
               type="button"
-              onClick={() => setIsExportDialogOpen(true)}
+              onClick={() => { setExportSelected(true); setIsExportDialogOpen(true); }}
               style={{
                 background: "#D00F09",
                 color: "#FFFFFF",
@@ -1275,7 +1280,8 @@ export function MunicipalReportDirectory() {
       {isExportDialogOpen && (
         <MunicipalReportExportDialog
           isOpen={isExportDialogOpen}
-          onClose={() => setIsExportDialogOpen(false)}
+          initialScope={exportSelected ? "SELECTED" : "ALL_MATCHING"}
+          onClose={() => { setIsExportDialogOpen(false); setExportSelected(false); }}
           filters={currentFilters}
           totalMatching={total}
           currentPageCount={reports.length}

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** Use the executing-plans skill to implement the approved scope task by task. The checkboxes below track future implementation, not completed work.
 
-**Status:** Proposed product design and implementation roadmap. Planning only; no application or database changes are included.
+**Status:** Phase 1 implementation reviewed against commit `35dc80e` (Gemini's implementation). Corrective changes are in the working tree. Phase 1 is not yet fully accepted: deployment of the audit migration and visual/print verification remain unverified. Phases 2 and 3 remain future scope.
 
 **Goal:** Give Municipal BFP personnel a clear, reliable way to review local incidents and export useful records and summaries.
 
@@ -13,6 +13,8 @@
 **Spec:** The product requirements and acceptance criteria are contained in this document. This is a roadmap; task-level implementation code follows when implementation is requested.
 
 ## 1. What the existing code shows
+
+The following bullets describe the baseline inspected before Gemini's implementation, not the current implementation. See the review below for the current findings.
 
 Paths in this document are relative to `mainfile/alab-system/` unless otherwise stated.
 
@@ -200,3 +202,53 @@ Reuse the provincial CSV escaping approach after behavior tests for delimiters, 
 ## 10. First-release completion criteria
 
 The feature is ready when the municipal user can filter real records, inspect an incident, export an accurate CSV, and print a readable summary; the table and exported counts agree for the same snapshot and filters; unauthorized records are excluded; exports are audited; and missing or uncollected information is never fabricated.
+
+## 11. Implementation review and corrections
+
+The overall first-release scope remains appropriate. The original file was a product roadmap, not an executable task-by-task specification; unchecked items must not be read as evidence that Gemini implemented or verified every requirement.
+
+### Errors corrected in this review
+
+- Municipal report, detail, export, and print requests now use `municipalTabFetch`. Ordinary `fetch` omitted the tab selector required by municipal authentication.
+- Print links navigate within the signed-in tab. A new tab intentionally has a separate municipal session and cannot be assumed to inherit the originating account.
+- Print summaries preserve status, fire type, severity, source, search, barangay, and reporting period. The print view reads identity from the API's `user` object and does not substitute a sample municipality or officer.
+- Printing waits for the identity and report, rejects preview/password-change-required identities, hides municipal navigation in print output, and declares an A4 layout. The individual print view excludes precise coordinates, raw narratives, and free-text timeline notes by default; it is labeled a system-generated incident report rather than an approved official form.
+- JSON numeric `page` and `pageSize` values survive filter parsing. Previously a current-page POST export could silently use page 1.
+- Response-start calculations use only `response_started_at`. Arrival calculations use the earliest valid on-scene event, excluding negative intervals before choosing the minimum.
+- A missing barangay is labeled Unknown Barangay rather than replaced by a personal address. The barangay breakdown adds an Unknown Barangay row when needed so its totals reconcile with municipal intake.
+- Export selection is validated for UUID format, duplicates, size, ownership, and matching filters. Aggregate exports reject selected/current-page scope instead of silently ignoring it.
+- CSV exports use a repeatable-read transaction shared by all record/summary queries and audit insertion. An audit failure now fails the export. Scope and selected IDs are included in the recorded export parameters.
+- Directory records and summary figures are read from the same database snapshot. API responses are noncached and unexpected database errors are not exposed to the browser.
+- CSV missing timestamps and measurements use blank cells. Filename timestamps use Philippine time independently of the server timezone.
+- The export dialog uses a native modal rendered outside the page container, with focus containment, focus restoration, background scroll locking, and protected dismissal while exporting. The selected-records action opens the selected scope; previews use selected rows when applicable.
+- Relative-period export previews resolve actual Philippine dates, and aggregate counts are labeled matching incident records rather than incorrectly claiming incident totals are barangay counts.
+
+### Requirements still needing acceptance or follow-up
+
+- Verify `20260914100000_add_municipal_export_events.sql` has been applied to the deployed database. This review does not claim a live migration was applied. Missing audit storage will now correctly prevent downloads.
+- Test with real municipal accounts in the browser: filtering, selection changes, keyboard focus, mobile layouts, printed page breaks, and the full download flow. No browser connection was available during the preceding work; automated checks cannot establish visual correctness.
+- Extend behavior coverage to the exact 10,000-record boundary, all route-level role/preview/password checks, concurrent updates, and exported totals against the deployed database. The existing Gemini tests largely search source text; they are not equivalent to these runtime checks.
+- Persist and display arrival-method provenance in detailed reporting, as required by section 4. This remains a gap rather than an inferred field.
+- Review and finish every first-release display requirement, including complete breakdowns and human-readable applied-filter labels on printouts. The current print filter label preserves values but can display an internal barangay ID.
+- Decide whether a machine-oriented summary CSV should use one rectangular schema instead of the existing multiple human-readable sections. Do not describe the current multi-section file as a native Excel workbook.
+- Print generation auditing is not implemented by this correction. A future print audit must record preparation/opening accurately and must not claim the browser actually printed or saved the document.
+
+### Verification evidence
+
+Review validation passed: 18 reporting/session tests, targeted ESLint checks for the changed reporting files, TypeScript checking, and a production Next.js build. These results do not replace the live database and browser acceptance checks above.
+
+`tests/municipal-report-review.test.mjs` adds behavior checks for JSON pagination, audit failures, snapshot transactions, missing CSV values, invalid export scopes/selections, and executable report SQL in an isolated PGlite database. The SQL fixture checks missing response start, earliest valid arrival among multiple responders, and reconciliation of unknown-barangay incidents while retaining zero-count barangays. Source checks also cover tab-session request wiring and same-tab print navigation.
+
+Run the reporting and session checks from `mainfile/alab-system/`:
+
+```powershell
+node --test tests/municipal-report*.test.mjs tests/municipal-export-schema.test.mjs tests/municipal-tab-session.test.mjs
+npx tsc --noEmit
+npm run build
+```
+
+Keep the phase checkboxes above unchecked until their full acceptance conditions have been verified. Future Excel/PDF generation, operational exports, and resource exports have not been implemented by this review.
+
+## 12. Related resident correction work
+
+The September 15 request about a resident correction form stuck loading and requiring a freshly taken selfie is tracked in [Resident correction loading and camera selfie plan](2026-09-15-resident-correction-camera-selfie-plan.md). Loading error handling is implemented locally; camera-only correction capture is planned separately and is not part of reporting/export completion.

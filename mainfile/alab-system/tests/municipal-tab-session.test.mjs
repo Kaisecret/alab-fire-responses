@@ -85,3 +85,42 @@ test('missing or malformed tab selectors never fall back to the shared municipal
   assert.notEqual(bfpSessionCookieName('MUNICIPAL_BFP', new Headers({ 'x-alab-municipal-tab': '../bad' })), legacy);
   assert.equal(bfpSessionCookieName('PROVINCIAL_BFP', new Headers()), bfpSessionCookieName('PROVINCIAL_BFP'));
 });
+
+test('municipal layout persists identity in sessionStorage across page refresh without full-screen loading flash', async () => {
+  const { readFileSync } = await import('node:fs');
+  const source = readFileSync(new URL('../app/_components/municipal-bfp-layout.tsx', import.meta.url), 'utf8');
+  assert.match(source, /MUNICIPAL_IDENTITY_KEY\s*=\s*['"]alab_municipal_identity['"]/);
+  assert.match(source, /sessionStorage\.getItem\(MUNICIPAL_IDENTITY_KEY\)/);
+  assert.match(source, /sessionStorage\.setItem\(MUNICIPAL_IDENTITY_KEY/);
+  assert.match(source, /sessionStorage\.removeItem\(MUNICIPAL_IDENTITY_KEY\)/);
+});
+
+test('resolveMunicipalSession resolves primary tab cookie or single municipal session fallback', async () => {
+  const { resolveMunicipalSession, createBfpSession } = await import('../lib/auth/session.ts');
+  const sessionToken = createBfpSession({
+    userId: 'officer-1',
+    displayName: 'Captain John',
+    role: 'MUNICIPAL_BFP',
+    municipalityId: 'muni-1',
+    mustChangePassword: false,
+  });
+
+  // Test 1: exact tab cookie match
+  const tabHeaders = new Headers({ 'x-alab-municipal-tab': '11111111-1111-4111-a111-111111111111' });
+  const cookies1 = {
+    get: (name) => name === 'alab_municipal_bfp_session_11111111-1111-4111-a111-111111111111' ? { value: sessionToken } : undefined,
+    getAll: () => [{ name: 'alab_municipal_bfp_session_11111111-1111-4111-a111-111111111111', value: sessionToken }],
+  };
+  const resolved1 = resolveMunicipalSession(cookies1, tabHeaders);
+  assert.equal(resolved1?.userId, 'officer-1');
+
+  // Test 2: fallback to single municipal session when tab ID drifted on refresh
+  const cookies2 = {
+    get: () => undefined,
+    getAll: () => [{ name: 'alab_municipal_bfp_session_old-tab', value: sessionToken }],
+  };
+  const resolved2 = resolveMunicipalSession(cookies2, new Headers({ 'x-alab-municipal-tab': '22222222-2222-4222-a222-222222222222' }));
+  assert.equal(resolved2?.userId, 'officer-1');
+});
+
+

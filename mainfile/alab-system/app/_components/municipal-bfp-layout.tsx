@@ -960,19 +960,31 @@ const layoutStyles = `
   }
 `;
 
+const MUNICIPAL_IDENTITY_KEY = 'alab_municipal_identity';
+
+type MunicipalUserIdentity = {
+  displayName: string;
+  rankOrPosition: string | null;
+  municipalityName: string | null;
+  assignmentRole: string | null;
+  mustChangePassword?: boolean;
+  photoUrl?: string | null;
+};
+
 export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [identity, setIdentity] = useState<{
-    displayName: string;
-    rankOrPosition: string | null;
-    municipalityName: string | null;
-    assignmentRole: string | null;
-    mustChangePassword?: boolean;
-    photoUrl?: string | null;
-  } | null>(null);
+  const [identity, setIdentity] = useState<MunicipalUserIdentity | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const stored = sessionStorage.getItem(MUNICIPAL_IDENTITY_KEY);
+      return stored ? (JSON.parse(stored) as MunicipalUserIdentity) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const isAuthenticationPage = pathname === '/municipal-bfp/login' || pathname === '/municipal-bfp/change-password';
 
@@ -980,10 +992,15 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
     if (isAuthenticationPage) return;
     let active = true;
     fetch('/api/municipal-bfp/me')
-      .then(async (response) => ({ response, body: await response.json() as { user?: typeof identity; error?: string } }))
+      .then(async (response) => ({ response, body: await response.json() as { user?: MunicipalUserIdentity; error?: string } }))
       .then(({ response, body }) => {
         if (!active) return;
         if (!response.ok || !body.user) {
+          try {
+            sessionStorage.removeItem(MUNICIPAL_IDENTITY_KEY);
+          } catch {
+            // ignore
+          }
           window.location.assign('/municipal-bfp/login');
           return;
         }
@@ -992,10 +1009,35 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
           return;
         }
         setIdentity(body.user);
+        try {
+          sessionStorage.setItem(MUNICIPAL_IDENTITY_KEY, JSON.stringify(body.user));
+        } catch {
+          // ignore
+        }
       })
-      .catch(() => { if (active) window.location.assign('/municipal-bfp/login'); });
+      .catch(() => {
+        if (active) {
+          try {
+            sessionStorage.removeItem(MUNICIPAL_IDENTITY_KEY);
+          } catch {
+            // ignore
+          }
+          window.location.assign('/municipal-bfp/login');
+        }
+      });
     return () => { active = false; };
   }, [isAuthenticationPage]);
+
+  useEffect(() => {
+    const onIdentityChanged = (e: Event) => {
+      const customEvent = e as CustomEvent<MunicipalUserIdentity>;
+      if (customEvent.detail) {
+        setIdentity(customEvent.detail);
+      }
+    };
+    window.addEventListener('alab:municipal-identity-changed', onIdentityChanged);
+    return () => window.removeEventListener('alab:municipal-identity-changed', onIdentityChanged);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1041,6 +1083,11 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
   };
 
   const handleLogout = async () => {
+    try {
+      sessionStorage.removeItem(MUNICIPAL_IDENTITY_KEY);
+    } catch {
+      // ignore
+    }
     setIdentity(null);
     try {
       await fetch('/api/auth/bfp/logout', {
@@ -1055,7 +1102,58 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
   };
 
   if (isAuthenticationPage) return <>{children}</>;
-  if (!identity) return <main role="status" aria-live="polite" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#EEF5FD' }}>Checking your municipal account…</main>;
+  if (!identity) {
+    return (
+      <main
+        role="status"
+        aria-live="polite"
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#0B1329',
+          color: '#ffffff',
+          fontFamily: "'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          padding: '2rem',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem', textAlign: 'center' }}>
+          <div style={{ position: 'relative', width: '56px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: '50%',
+                border: '3px solid rgba(225, 29, 72, 0.2)',
+                borderTopColor: '#e11d48',
+                animation: 'mbfpCheckSpin 0.8s linear infinite',
+              }}
+            />
+            <img
+              src="/images/FAVICON.webp"
+              alt="ALAB Logo"
+              style={{ width: '30px', height: '30px', objectFit: 'contain' }}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', color: '#F1F5F9' }}>
+              ALAB Municipal Command
+            </div>
+            <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#94A3B8' }}>
+              Checking your municipal account…
+            </div>
+          </div>
+        </div>
+        <style>{`
+          @keyframes mbfpCheckSpin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </main>
+    );
+  }
 
   return (
     <>

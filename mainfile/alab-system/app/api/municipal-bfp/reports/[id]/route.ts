@@ -31,9 +31,9 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ report });
+    return NextResponse.json({ report }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to load report detail.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Municipal report detail failed", error);
+    return NextResponse.json({ error: "Unable to load report details. Please retry." }, { status: 500 });
   }
 }

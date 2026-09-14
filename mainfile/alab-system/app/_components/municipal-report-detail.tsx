@@ -1,5 +1,7 @@
 "use client";
 
+import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
+
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import type {
   MunicipalReportDetail as MunicipalReportDetailType,
@@ -31,7 +33,7 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
 
   useEffect(() => {
     let isMounted = true;
-    fetch(`/api/municipal-bfp/reports/${encodeURIComponent(reportId)}`, {
+    municipalTabFetch(`/api/municipal-bfp/reports/${encodeURIComponent(reportId)}`, {
       cache: "no-store",
     })
       .then(async (res) => {
@@ -583,7 +585,7 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
           {report ? (
             <a
               href={`/municipal-bfp/incident-reports/print?mode=incident&id=${encodeURIComponent(report.id)}`}
-              target="_blank"
+              target="_self"
               rel="noopener noreferrer"
               style={{
                 display: "inline-flex",

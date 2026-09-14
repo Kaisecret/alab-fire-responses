@@ -70,6 +70,6 @@ test("municipal incident reports page renders directory, detail, and print views
   assert.match(detail, /Recorded Arrival/);
 
   assert.match(printPage, /MUNICIPAL INCIDENT SUMMARY & PERFORMANCE REPORT/);
-  assert.match(printPage, /OFFICIAL INCIDENT REPORT/);
+  assert.match(printPage, /INCIDENT REPORT/);
   assert.match(printPage, /window\.print/);
 });

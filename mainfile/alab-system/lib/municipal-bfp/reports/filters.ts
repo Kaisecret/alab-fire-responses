@@ -84,6 +84,7 @@ function getParam(params: URLSearchParams | Record<string, unknown>, key: string
     return val !== null ? val : undefined;
   }
   const raw = params[key];
+  if ((key === "page" || key === "pageSize") && typeof raw === "number") return String(raw);
   if (Array.isArray(raw)) return typeof raw[0] === "string" ? raw[0] : undefined;
   return typeof raw === "string" ? raw : undefined;
 }

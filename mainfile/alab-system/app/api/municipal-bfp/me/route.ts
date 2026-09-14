@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getBfpIdentity, updateBfpProfile } from "../../../../lib/auth/bfp-accounts";
 import { isLocalUiPreviewEnabled } from "../../../../lib/auth/local-ui-preview";
-import { bfpSessionCookie, bfpSessionCookieName, createBfpSession, verifyBfpSession } from "../../../../lib/auth/session";
+import { bfpSessionCookie, bfpSessionCookieName, createBfpSession, resolveMunicipalSession, verifyBfpSession } from "../../../../lib/auth/session";
 
 export const runtime = "nodejs";
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       },
     });
   }
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
+  const session = resolveMunicipalSession(request.cookies, request.headers) || verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
   if (!session || session.role !== "MUNICIPAL_BFP") return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
   try {
     const identity = await getBfpIdentity(session.userId);
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
+  const session = resolveMunicipalSession(request.cookies, request.headers) || verifyBfpSession(request.cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", request.headers))?.value);
   if (!session || session.role !== "MUNICIPAL_BFP") return NextResponse.json({ error: "Municipal BFP sign-in is required." }, { status: 401 });
 
   let body: { displayName?: unknown; rankOrPosition?: unknown };

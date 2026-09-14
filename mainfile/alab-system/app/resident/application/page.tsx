@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { requestResidentApplicationJson } from "../../../lib/resident-applications/client-request";
 
 type Application = {
   reference: string; status: "PENDING" | "VERIFIED" | "CHANGES_REQUESTED"; accountStatus: string;
@@ -13,11 +14,15 @@ export default function ResidentApplicationPage() {
   const [application, setApplication] = useState<Application | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const submitting = useRef(false);
   const load = useCallback(async () => {
-    const response = await fetch("/api/resident/application-status", { cache: "no-store" });
-    const result = await response.json() as { application?: Application; error?: string };
-    if (!response.ok || !result.application) { setError(result.error ?? "Unable to load your application."); return; }
-    setApplication(result.application); setError("");
+    try {
+      const result = await requestResidentApplicationJson<{ application?: Application }>("/api/resident/application-status");
+      if (!result.application) throw new Error("Unable to load your application.");
+      setApplication(result.application); setError("");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Unable to load your application.");
+    }
   }, []);
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
@@ -25,12 +30,23 @@ export default function ResidentApplicationPage() {
   }, [load]);
 
   async function resubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setSaving(true); setError("");
-    const response = await fetch("/api/resident/application-status/resubmit", { method: "POST", body: new FormData(event.currentTarget) });
-    const result = await response.json() as { error?: string };
-    setSaving(false);
-    if (!response.ok) { setError(result.error ?? "Unable to resubmit corrections."); return; }
-    await load();
+    event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true; setSaving(true); setError("");
+    try {
+      const result = await requestResidentApplicationJson<{ application?: { reference: string; status: string; submittedAt?: string } }>(
+        "/api/resident/application-status/resubmit", { method: "POST", body: new FormData(event.currentTarget) }, 60_000,
+      );
+      if (!result.application?.reference || result.application.status !== "PENDING") {
+        throw new Error("Unable to confirm submission. Check your application status before submitting again.");
+      }
+      const reference = result.application.reference;
+      setApplication(current => current ? { ...current, reference, status: "PENDING", correctionReason: null, submittedAt: result.application?.submittedAt ?? current.submittedAt } : current);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Unable to resubmit corrections. Check your application status before trying again.");
+    } finally {
+      submitting.current = false; setSaving(false);
+    }
   }
 
   const isApproved = application?.status === "VERIFIED" && application.accountStatus === "ACTIVE";
@@ -41,7 +57,7 @@ export default function ResidentApplicationPage() {
       <section className="approval-shell">
         <header className="approval-brand"><img src="/images/Logo.webp" alt="ALAB" /><span>Resident identity review</span></header>
         {!application && !error && <div className="approval-loading"><span />Loading your secure application…</div>}
-        {error && !application && <div className="approval-error"><h1>We could not open your application</h1><p>{error}</p><Link href="/resident/login">Return to resident login</Link></div>}
+        {error && !application && <div className="approval-error"><h1>We could not open your application</h1><p role="alert">{error}</p><button type="button" onClick={() => void load()}>Retry loading</button><Link href="/resident/login">Return to resident login</Link></div>}
         {application && (
           <>
             <div className={`approval-hero ${needsChanges ? "changes" : isApproved ? "approved" : "pending"}`}>
@@ -69,7 +85,7 @@ export default function ResidentApplicationPage() {
                   <label className="upload">Valid ID — back (optional)<input name="backId" type="file" accept="image/jpeg,image/png,image/webp" /></label>
                   <label className="upload wide">New selfie<input name="selfie" type="file" accept="image/jpeg,image/png,image/webp" capture="user" required /></label>
                 </div>
-                {error && <p className="inline-error" role="alert">{error}</p>}
+                {error && <div><p className="inline-error" role="alert">{error}</p><button type="button" disabled={saving} onClick={() => void load()}>Check application status</button></div>}
                 <button className="primary-action" disabled={saving}>{saving ? "Securing your corrections…" : "Resubmit for review"}</button>
               </form>
             )}

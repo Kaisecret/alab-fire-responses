@@ -1,5 +1,7 @@
 "use client";
 
+import { municipalTabFetch } from "../../../../lib/auth/municipal-tab-fetch";
+
 import React, { useEffect, useState } from "react";
 import type {
   MunicipalBarangaySummary,
@@ -18,106 +20,58 @@ import {
 } from "../../../../lib/municipal-bfp/reports/formatters";
 
 export default function IncidentReportsPrintPage() {
-  const [mode] = useState<"summary" | "incident">(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("mode") === "incident" ? "incident" : "summary";
-    }
-    return "summary";
-  });
+  const [mode, setMode] = useState<"summary" | "incident">("summary");
   const [report, setReport] = useState<MunicipalReportDetail | null>(null);
   const [summary, setSummary] = useState<MunicipalReportSummary | null>(null);
-  const [municipalityName, setMunicipalityName] = useState<string>("San Jose de Buenavista");
-  const [periodLabel] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const from = params.get("from");
-      const to = params.get("to");
-      if (from && to) return `${from} to ${to}`;
-      const period = params.get("period") || "THIS_MONTH";
-      return period.replace("_", " ");
-    }
-    return "This Month";
-  });
-  const [generatedBy, setGeneratedBy] = useState<string>("Municipal Fire Marshal");
-  const [loading, setLoading] = useState(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("mode") === "incident" && !params.get("id")) {
-        return false;
-      }
-    }
-    return true;
-  });
-  const [error, setError] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("mode") === "incident" && !params.get("id")) {
-        return "Report ID is required for individual incident printout.";
-      }
-    }
-    return null;
-  });
+  const [municipalityName, setMunicipalityName] = useState("");
+  const [periodLabel, setPeriodLabel] = useState("");
+  const [generatedBy, setGeneratedBy] = useState("");
+  const [filterLabel, setFilterLabel] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     const params = new URLSearchParams(window.location.search);
-    const m = params.get("mode") === "incident" ? "incident" : "summary";
-
-    // Fetch active identity for officer title
-    fetch("/api/municipal-bfp/me")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.displayName) {
-          setGeneratedBy(`${data.displayName}${data.rankOrPosition ? ` (${data.rankOrPosition})` : ""}`);
+    const load = async () => {
+      try {
+        const identityResponse = await municipalTabFetch("/api/municipal-bfp/me", { signal: controller.signal });
+        const identity = (await identityResponse.json()).user;
+        if (!identityResponse.ok || !identity?.displayName || !identity.municipalityName ||
+            identity.mustChangePassword || identity.email === "preview@municipal-bfp.local") {
+          throw new Error("Sign in with an assigned account and update your temporary password before printing.");
         }
-        if (data.municipalityName) {
-          setMunicipalityName(data.municipalityName);
+        const mode = params.get("mode") === "incident" ? "incident" : "summary";
+        const id = params.get("id");
+        if (mode === "incident" && !id) throw new Error("Report ID is required for individual incident printout.");
+        const query = new URLSearchParams();
+        for (const key of ["period", "from", "to", "barangayId", "status", "fireType", "severity", "reportSource", "search"]) {
+          if (params.get(key)) query.set(key, params.get(key)!);
         }
-      })
-      .catch(() => {});
-
-    if (m === "incident") {
-      const id = params.get("id");
-      if (!id) {
-        return;
+        query.set("summary", "true");
+        const response = await municipalTabFetch(mode === "incident"
+          ? `/api/municipal-bfp/reports/${encodeURIComponent(id!)}`
+          : `/api/municipal-bfp/reports?${query}`, { signal: controller.signal });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Could not load report.");
+        if (controller.signal.aborted) return;
+        setMode(mode);
+        setMunicipalityName(identity.municipalityName);
+        setGeneratedBy(`${identity.displayName}${identity.rankOrPosition ? ` (${identity.rankOrPosition})` : ""}`);
+        setReport(data.report ?? null);
+        setSummary(data.summary ?? null);
+        const dates = data.summary?.dateBoundaries;
+        setPeriodLabel(dates ? `${dates.from ?? "Beginning of records"} to ${dates.to ?? "Latest recorded"}` : "Individual incident");
+        setFilterLabel(["barangayId", "status", "fireType", "severity", "reportSource", "search"]
+          .filter(key => params.get(key)).map(key => `${key}: ${params.get(key)}`).join("; ") || "All records within the reporting period");
+      } catch (cause) {
+        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Unable to load report.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
       }
-
-      fetch(`/api/municipal-bfp/reports/${encodeURIComponent(id)}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Could not load incident report.");
-          return res.json();
-        })
-        .then((data) => {
-          setReport(data.report);
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError(err instanceof Error ? err.message : "Failed to load incident.");
-          setLoading(false);
-        });
-    } else {
-      // Summary mode
-      const queryParams = new URLSearchParams();
-      if (params.get("period")) queryParams.set("period", params.get("period")!);
-      if (params.get("from")) queryParams.set("from", params.get("from")!);
-      if (params.get("to")) queryParams.set("to", params.get("to")!);
-      if (params.get("barangayId")) queryParams.set("barangayId", params.get("barangayId")!);
-      queryParams.set("summary", "true");
-
-      fetch(`/api/municipal-bfp/reports?${queryParams}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Could not load municipal summary.");
-          return res.json();
-        })
-        .then((data) => {
-          setSummary(data.summary);
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError(err instanceof Error ? err.message : "Failed to load summary.");
-          setLoading(false);
-        });
-    }
+    };
+    void load();
+    return () => controller.abort();
   }, []);
 
   return (
@@ -141,12 +95,17 @@ export default function IncidentReportsPrintPage() {
             max-width: 900px;
             margin: 1rem auto 0;
             display: flex;
-            justifyContent: space-between;
+            justify-content: space-between;
             align-items: center;
           }
         }
 
+        @page { size: A4 portrait; margin: 12mm; }
         @media print {
+          .mbfp-sidebar, .mbfp-header, .mbfp-topbar, .mbfp-sidebar-backdrop { display: none !important; }
+          .mbfp-main-area, .mbfp-main-area.collapsed { margin: 0 !important; width: 100% !important; }
+          .mbfp-content { animation: none !important; transform: none !important; }
+          thead { display: table-header-group; }
           body {
             background: transparent !important;
             margin: 0 !important;
@@ -215,6 +174,7 @@ export default function IncidentReportsPrintPage() {
 
         <button
           type="button"
+          disabled={loading || !!error || (!report && !summary)}
           onClick={() => window.print()}
           style={{
             display: "inline-flex",
@@ -280,7 +240,7 @@ export default function IncidentReportsPrintPage() {
                   MUNICIPAL INCIDENT SUMMARY & PERFORMANCE REPORT
                 </h1>
                 <div style={{ fontSize: "0.82rem", color: "#475569", marginTop: 3 }}>
-                  Reporting Basis: <strong>Reported during period (submitted_at)</strong> &bull; Period: <strong>{periodLabel}</strong>
+                  Reporting Basis: <strong>Reported during period (submitted_at)</strong> &bull; Period: <strong>{periodLabel}</strong><div>Filters: {filterLabel}</div><div>Current status of reports received during this period; resolved incidents are included in confirmed incidents.</div>
                 </div>
               </div>
 
@@ -456,7 +416,7 @@ export default function IncidentReportsPrintPage() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
               <div>
                 <h1 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 800, color: "#0F172A" }}>
-                  OFFICIAL INCIDENT REPORT
+                  INCIDENT REPORT
                 </h1>
                 <div style={{ fontSize: "0.95rem", fontWeight: 700, fontFamily: "monospace", color: "#D00F09", marginTop: 2 }}>
                   REFERENCE #{report.referenceNumber}
@@ -465,7 +425,7 @@ export default function IncidentReportsPrintPage() {
 
               <div style={{ textAlign: "right", fontSize: "0.75rem", color: "#64748B" }}>
                 <div>Reported: <strong>{formatPhilippineDateTime(report.submittedAt)}</strong></div>
-                <div>Station: <strong>{municipalityName} Fire Station</strong></div>
+                <div>Municipality: <strong>{municipalityName}</strong></div>
               </div>
             </div>
 
@@ -485,8 +445,8 @@ export default function IncidentReportsPrintPage() {
                   <td style={{ fontWeight: 700 }}>{getSeverityLabel(report.severity)} Severity</td>
                 </tr>
                 <tr>
-                  <th>Coordinates</th>
-                  <td style={{ fontFamily: "monospace" }}>{report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}</td>
+                  <th>Municipality</th>
+                  <td>{report.municipalityName}</td>
                   <th>Report Source</th>
                   <td>{report.reportSource === "ALAB_APP" ? "Resident Emergency App" : "Emergency Phone Call"}</td>
                 </tr>
@@ -502,14 +462,6 @@ export default function IncidentReportsPrintPage() {
                 </tr>
               </tbody>
             </table>
-
-            {/* Narrative / Description */}
-            <h3 style={{ fontSize: "0.85rem", fontWeight: 800, textTransform: "uppercase", margin: "0 0 0.3rem", color: "#1E293B" }}>
-              Incident Narrative / Tactical Notes
-            </h3>
-            <div style={{ border: "1px solid #CBD5E1", padding: "0.75rem", borderRadius: 4, fontSize: "0.85rem", marginBottom: "1.25rem", whiteSpace: "pre-wrap" }}>
-              {report.description || "No narrative remarks submitted."}
-            </div>
 
             {/* Responding Stations & Dispatches */}
             {report.dispatches && report.dispatches.length > 0 && (
@@ -553,7 +505,7 @@ export default function IncidentReportsPrintPage() {
                     <tr>
                       <th style={{ width: "30%" }}>Timestamp (PHT)</th>
                       <th style={{ width: "25%" }}>Stage / Event</th>
-                      <th>Operational Remarks / Notes</th>
+
                     </tr>
                   </thead>
                   <tbody>
@@ -561,7 +513,7 @@ export default function IncidentReportsPrintPage() {
                       <tr key={idx}>
                         <td style={{ fontFamily: "monospace" }}>{formatPhilippineDateTime(event.timestamp)}</td>
                         <td style={{ fontWeight: 700 }}>{getStatusLabel(event.stage)}</td>
-                        <td>{event.notes || "-"}</td>
+
                       </tr>
                     ))}
                   </tbody>
@@ -572,7 +524,7 @@ export default function IncidentReportsPrintPage() {
             {/* Signature Area */}
             <div style={{ marginTop: "2.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
               <div style={{ fontSize: "0.75rem", color: "#64748B", maxWidth: 400 }}>
-                This operational record was generated from authenticated ALAB database events. Standard export excludes private reporter identifiable data in accordance with Philippine privacy standards.
+                Generated from recorded operational events. Missing values are not zero. This is a system-generated report, not an approved BFP form.
               </div>
 
               <div style={{ textAlign: "center", minWidth: 220 }}>

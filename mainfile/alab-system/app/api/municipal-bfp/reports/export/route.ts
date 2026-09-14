@@ -104,6 +104,7 @@ async function handleExport(
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="${result.fileName}"`,
+        "X-Export-Row-Count": String(result.rowCount),
         "Cache-Control": "private, no-cache, no-store, must-revalidate",
         Pragma: "no-cache",
         Expires: "0",
@@ -120,7 +121,8 @@ async function handleExport(
           ? 403
           : 500;
 
-    return NextResponse.json({ error: message }, { status });
+    if (status === 500) console.error("Municipal export failed", error);
+    return NextResponse.json({ error: status === 500 ? "Unable to generate and audit this export. Please retry or contact the administrator." : message }, { status });
   }
 }
 

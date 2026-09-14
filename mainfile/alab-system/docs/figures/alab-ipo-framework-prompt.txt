@@ -1,0 +1,20 @@
+Create a crisp academic Input-Process-Output conceptual framework diagram for an ALAB capstone. Pure white background, black lines, no colors, no illustrations, no icons, generous legible text. Landscape image at high resolution. Closely follow the user reference's layout: three equal tall rectangular content boxes in a row, each with a smaller centered outlined heading box above: INPUT, PROCESS, OUTPUT. Thin rightward arrows connect INPUT to PROCESS to OUTPUT. Underneath is a centered outlined EVALUATE box connected as a feedback loop: a line from OUTPUT down and left to EVALUATE, then left and up with arrow entering bottom of INPUT. Add small feedback caption under EVALUATE: "User feedback, data accuracy, usability, and coordination effectiveness". Top title in two centered lines, exact wording: "GIS-Based Provincial Fire Response and Decision Support System" then "with Inter-Municipality Coordination for BFP in Antique". Subtitle "ALAB — Input–Process–Output Conceptual Framework". Use readable black sans-serif body type, bold heading type. All five bullets in each box must fit with balanced spacing. Exact body text:
+INPUT
+• Residents provide registration, contact, and location information.
+• Fire reports include incident details, photographs, GPS coordinates, and municipality.
+• BFP personnel maintain station, responder, and firetruck records.
+• Municipal BFP supplies dispatch updates and backup resource requirements.
+• Provincial BFP accesses municipal records, incident histories, and reporting criteria.
+PROCESS
+• Authenticate users, apply role-based access, and validate submitted records.
+• Store fire reports and display incidents and stations on GIS maps.
+• Assess incident severity and support Municipal BFP response decisions.
+• After local dispatch, identify up to two nearest eligible municipalities and notify observers.
+• Process explicit backup requests, track responses, and consolidate provincial reports.
+OUTPUT
+• GIS maps show fire incidents and station locations across Antique.
+• Municipal BFP receives incident details and decision-support information.
+• Nearby municipalities receive alerts, backup requests, and coordination updates.
+• Provincial BFP receives monitoring dashboards, incident summaries, and reports.
+• Dispatch and backup decisions remain with authorized Municipal BFP personnel.
+This diagram describes system scope, not measured performance claims. Do not include that instruction as text. Render the text accurately with normal bullet points.

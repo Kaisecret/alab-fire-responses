@@ -1,5 +1,9 @@
 "use client";
 
+import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
+
+import { createPortal } from "react-dom";
+import { resolvePeriodDates } from "../../lib/municipal-bfp/reports/filters";
 import React, { useState, useEffect, useRef } from "react";
 import type {
   MunicipalExportDataset,
@@ -18,48 +22,42 @@ interface MunicipalReportExportDialogProps {
   selectedIds: string[];
   sampleRows: MunicipalReportRow[];
   municipalityName: string;
+  initialScope?: MunicipalExportScope;
 }
 
 export function MunicipalReportExportDialog({
   isOpen,
   onClose,
-  filters,
+  filters: inputFilters,
   totalMatching,
   currentPageCount,
   selectedIds,
   sampleRows,
   municipalityName,
+  initialScope = "ALL_MATCHING",
 }: MunicipalReportExportDialogProps) {
   const [dataset, setDataset] = useState<MunicipalExportDataset>("INCIDENT_REGISTER");
-  const [scope, setScope] = useState<MunicipalExportScope>("ALL_MATCHING");
+  const [scope, setScope] = useState<MunicipalExportScope>(initialScope);
   const [showPreview, setShowPreview] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus trap and Escape key listener
   useEffect(() => {
     if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-
-    // Initial focus on download button or dialog
-    const timer = setTimeout(() => {
-      downloadButtonRef.current?.focus();
-    }, 50);
-
+    const dialog = dialogRef.current;
+    const previousFocus = document.activeElement;
+    const overflow = document.body.style.overflow;
+    dialog?.showModal();
+    document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      clearTimeout(timer);
+      dialog?.close();
+      document.body.style.overflow = overflow;
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const handleSelectDataset = (selected: MunicipalExportDataset) => {
     setDataset(selected);
@@ -68,7 +66,10 @@ export function MunicipalReportExportDialog({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
+  const dates = resolvePeriodDates(inputFilters.period ?? "CUSTOM", inputFilters.from, inputFilters.to);
+  const filters = { ...inputFilters, ...dates };
+  const previewRows = scope === "SELECTED" ? sampleRows.filter(row => selectedIds.includes(row.id)) : sampleRows;
 
   const dateRangeLabel =
     filters.from && filters.to
@@ -117,7 +118,7 @@ export function MunicipalReportExportDialog({
   const isRegisterEmpty = dataset === "INCIDENT_REGISTER" && effectiveCount === 0;
 
   const handleDownload = async () => {
-    if (isRegisterEmpty) return;
+    if (isRegisterEmpty || exporting) return;
     setExporting(true);
     setErrorMessage(null);
 
@@ -129,7 +130,7 @@ export function MunicipalReportExportDialog({
         filters,
       };
 
-      const res = await fetch("/api/municipal-bfp/reports/export", {
+      const res = await municipalTabFetch("/api/municipal-bfp/reports/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -156,7 +157,7 @@ export function MunicipalReportExportDialog({
       a.download = downloadName;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
       document.body.removeChild(a);
 
       onClose();
@@ -167,8 +168,9 @@ export function MunicipalReportExportDialog({
     }
   };
 
-  return (
-    <div
+  return createPortal(
+    <dialog
+      onCancel={event => { event.preventDefault(); if (!exporting) onClose(); }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="export-dialog-title"
@@ -176,6 +178,7 @@ export function MunicipalReportExportDialog({
       style={{
         position: "fixed",
         inset: 0,
+        margin: 0, width: "100%", height: "100dvh", maxWidth: "none", maxHeight: "none", border: 0, boxSizing: "border-box",
         backgroundColor: "rgba(15, 23, 42, 0.6)",
         backdropFilter: "blur(4px)",
         display: "flex",
@@ -467,7 +470,7 @@ export function MunicipalReportExportDialog({
                     marginTop: 1,
                   }}
                 >
-                  {effectiveCount} {dataset === "BARANGAY_BREAKDOWN" ? "barangays" : "records"}
+                  {effectiveCount} matching incident records
                 </div>
               </div>
               <div>
@@ -535,7 +538,7 @@ export function MunicipalReportExportDialog({
                       </tr>
                     </thead>
                     <tbody>
-                      {sampleRows.slice(0, 3).map((r) => (
+                      {previewRows.slice(0, 3).map((r) => (
                         <tr key={r.id} style={{ borderTop: "1px solid #F1F5F9" }}>
                           <td style={{ padding: "6px 8px", fontFamily: "monospace", fontWeight: 700 }}>
                             {r.referenceNumber}
@@ -642,6 +645,6 @@ export function MunicipalReportExportDialog({
           </button>
         </div>
       </div>
-    </div>
+    </dialog>, document.body,
   );
 }

@@ -144,6 +144,36 @@ export function verifyBfpSession(token: string | undefined): BfpSession | null {
   }
 }
 
+export function resolveMunicipalSession(
+  cookies: { get: (name: string) => { value?: string } | undefined; getAll?: () => Array<{ name: string; value: string }> },
+  headers?: Headers,
+): BfpSession | null {
+  const cookieName = bfpSessionCookieName("MUNICIPAL_BFP", headers);
+  const primaryValue = cookies.get(cookieName)?.value;
+  const primary = verifyBfpSession(primaryValue);
+  if (primary && primary.role === "MUNICIPAL_BFP") return primary;
+
+  // Fallback: base municipal cookie if present and valid
+  const baseValue = cookies.get(MUNICIPAL_BFP_SESSION_COOKIE)?.value;
+  if (baseValue) {
+    const base = verifyBfpSession(baseValue);
+    if (base && base.role === "MUNICIPAL_BFP") return base;
+  }
+
+  // Fallback: single active municipal cookie across tabs in this browser
+  if (cookies.getAll) {
+    const all = cookies.getAll().filter(
+      (c) => c.name.startsWith(MUNICIPAL_BFP_SESSION_COOKIE) && !c.name.endsWith("_unselected")
+    );
+    if (all.length === 1) {
+      const single = verifyBfpSession(all[0].value);
+      if (single && single.role === "MUNICIPAL_BFP") return single;
+    }
+  }
+
+  return null;
+}
+
 export const residentSessionCookie = {
   httpOnly: true,
   sameSite: "lax" as const,
