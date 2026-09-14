@@ -18,6 +18,13 @@ export type MunicipalReportRow = {
   timeToResponseMinutes: number | null;
   timeToArrivalMinutes: number | null;
   timeToResolutionMinutes: number | null;
+  reporterName?: string;
+  reporterPhone?: string;
+  nearestLandmark?: string | null;
+  addressLabel?: string | null;
+  description?: string;
+  locationMethod?: string | null;
+  locationAccuracyMeters?: number | null;
 };
 
 export type MunicipalTimelineEvent = {
@@ -124,7 +131,7 @@ export type MunicipalExportDataset =
 
 export type MunicipalExportScope = "ALL_MATCHING" | "SELECTED" | "CURRENT_PAGE";
 
-export type MunicipalExportFormat = "CSV";
+export type MunicipalExportFormat = "CSV" | "PDF";
 
 export type MunicipalExportOptions = {
   dataset: MunicipalExportDataset;

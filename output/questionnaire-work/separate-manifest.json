@@ -1,0 +1,26 @@
+[
+  {
+    "file": "C:\\Users\\janna\\OneDrive\\Documents\\Bestcapstone for us\\tests\\PROVINCIAL BFP QUESTIONNAIRE.docx",
+    "role": "Provincial BFP Personnel",
+    "yes_no": 15,
+    "optional": 5,
+    "sha256": "500c0e38fa8682ca8f49e97525c11e6c5aae9d88ad62660a692fe38b37a480e8",
+    "source_parts_preserved": 15
+  },
+  {
+    "file": "C:\\Users\\janna\\OneDrive\\Documents\\Bestcapstone for us\\tests\\MUNICIPAL BFP QUESTIONNAIRE.docx",
+    "role": "Municipal BFP Personnel",
+    "yes_no": 15,
+    "optional": 5,
+    "sha256": "971b2c6b32962d2b28760b4291374e3e5d71a7d5c543465b4c70faf815939c22",
+    "source_parts_preserved": 15
+  },
+  {
+    "file": "C:\\Users\\janna\\OneDrive\\Documents\\Bestcapstone for us\\tests\\RESIDENTS QUESTIONNAIRE.docx",
+    "role": "Residents of Antique",
+    "yes_no": 15,
+    "optional": 0,
+    "sha256": "2d328cab59b105e8b30c1b7f91580e75b300de95e6b9ae36af7db08488b8f4c9",
+    "source_parts_preserved": 15
+  }
+]

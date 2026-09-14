@@ -23,6 +23,7 @@ interface MunicipalReportExportDialogProps {
   sampleRows: MunicipalReportRow[];
   municipalityName: string;
   initialScope?: MunicipalExportScope;
+  initialFormat?: "PDF" | "CSV";
 }
 
 export function MunicipalReportExportDialog({
@@ -35,7 +36,9 @@ export function MunicipalReportExportDialog({
   sampleRows,
   municipalityName,
   initialScope = "ALL_MATCHING",
+  initialFormat = "PDF",
 }: MunicipalReportExportDialogProps) {
+  const [format, setFormat] = useState<"PDF" | "CSV">(initialFormat);
   const [dataset, setDataset] = useState<MunicipalExportDataset>("INCIDENT_REGISTER");
   const [scope, setScope] = useState<MunicipalExportScope>(initialScope);
   const [showPreview, setShowPreview] = useState(false);
@@ -44,6 +47,13 @@ export function MunicipalReportExportDialog({
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormat(initialFormat);
+      setScope(initialScope);
+    }
+  }, [isOpen, initialFormat, initialScope]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -98,7 +108,8 @@ export function MunicipalReportExportDialog({
     if (dataset === "MUNICIPAL_SUMMARY") datasetSlug = "incident-summary";
     if (dataset === "BARANGAY_BREAKDOWN") datasetSlug = "barangay-breakdown";
 
-    return `alab-${muniSlug}-${datasetSlug}-${datesSlug}-PHT.csv`;
+    const ext = format === "PDF" ? "pdf" : "csv";
+    return `alab-${muniSlug}-${datasetSlug}-${datesSlug}-PHT.${ext}`;
   };
 
   const getEffectiveCount = () => {
@@ -119,8 +130,46 @@ export function MunicipalReportExportDialog({
 
   const handleDownload = async () => {
     if (isRegisterEmpty || exporting) return;
-    setExporting(true);
     setErrorMessage(null);
+
+    // PDF Format export: navigate to dedicated colored print/PDF view in current tab
+    if (format === "PDF") {
+      const query = new URLSearchParams();
+      if (dataset === "INCIDENT_REGISTER") {
+        query.set("mode", "register");
+        if (filters.period) query.set("period", filters.period);
+        if (filters.from) query.set("from", filters.from);
+        if (filters.to) query.set("to", filters.to);
+        if (filters.barangayId) query.set("barangayId", filters.barangayId);
+        if (filters.status) query.set("status", filters.status);
+        if (filters.fireType) query.set("fireType", filters.fireType);
+        if (filters.severity) query.set("severity", filters.severity);
+        if (filters.reportSource) query.set("reportSource", filters.reportSource);
+        if (filters.search) query.set("search", filters.search);
+        if (scope === "SELECTED" && selectedIds.length > 0) {
+          query.set("selectedIds", selectedIds.join(","));
+        }
+        query.set("scope", scope);
+        query.set("autoPrint", "true");
+      } else {
+        query.set("mode", "summary");
+        if (filters.period) query.set("period", filters.period);
+        if (filters.from) query.set("from", filters.from);
+        if (filters.to) query.set("to", filters.to);
+        if (filters.barangayId) query.set("barangayId", filters.barangayId);
+        if (filters.status) query.set("status", filters.status);
+        if (filters.fireType) query.set("fireType", filters.fireType);
+        if (filters.severity) query.set("severity", filters.severity);
+        if (filters.reportSource) query.set("reportSource", filters.reportSource);
+        if (filters.search) query.set("search", filters.search);
+        query.set("autoPrint", "true");
+      }
+      onClose();
+      window.location.href = `/municipal-bfp/incident-reports/print?${query.toString()}`;
+      return;
+    }
+
+    setExporting(true);
 
     try {
       const payload = {
@@ -298,6 +347,110 @@ export function MunicipalReportExportDialog({
             </div>
           )}
 
+          {/* Export Format selection */}
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                color: "#334155",
+                marginBottom: "0.4rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+              }}
+            >
+              Select Export Format
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+              <button
+                type="button"
+                onClick={() => setFormat("PDF")}
+                style={{
+                  background: format === "PDF" ? "#FEF2F2" : "#FFFFFF",
+                  border: `1.5px solid ${format === "PDF" ? "#D00F09" : "#CBD5E1"}`,
+                  borderRadius: 8,
+                  padding: "0.75rem",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "0.65rem",
+                  transition: "all 0.15s ease",
+                  boxShadow: format === "PDF" ? "0 2px 5px rgba(208, 15, 9, 0.12)" : "none",
+                }}
+              >
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 6,
+                    background: format === "PDF" ? "#FEE2E2" : "#F1F5F9",
+                    color: "#DC2626",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "1.1rem",
+                    flexShrink: 0,
+                  }}
+                >
+                  <i className="fa-solid fa-file-pdf" />
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 700, color: format === "PDF" ? "#991B1B" : "#1E293B" }}>
+                    PDF Document (.pdf)
+                  </div>
+                  <div style={{ fontSize: "0.7rem", color: "#64748B", marginTop: 2, lineHeight: 1.3 }}>
+                    Official full-color BFP report with reporter data, badges & signatures
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFormat("CSV")}
+                style={{
+                  background: format === "CSV" ? "#F0FDF4" : "#FFFFFF",
+                  border: `1.5px solid ${format === "CSV" ? "#059669" : "#CBD5E1"}`,
+                  borderRadius: 8,
+                  padding: "0.75rem",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "0.65rem",
+                  transition: "all 0.15s ease",
+                  boxShadow: format === "CSV" ? "0 2px 5px rgba(5, 150, 105, 0.12)" : "none",
+                }}
+              >
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 6,
+                    background: format === "CSV" ? "#DCFCE7" : "#F1F5F9",
+                    color: "#059669",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "1.1rem",
+                    flexShrink: 0,
+                  }}
+                >
+                  <i className="fa-solid fa-file-csv" />
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 700, color: format === "CSV" ? "#065F46" : "#1E293B" }}>
+                    CSV Spreadsheet (.csv)
+                  </div>
+                  <div style={{ fontSize: "0.7rem", color: "#64748B", marginTop: 2, lineHeight: 1.3 }}>
+                    Raw data table (RFC 4180) for Excel, Sheets, or data archiving
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
           {/* Dataset selection */}
           <div>
             <label
@@ -451,8 +604,18 @@ export function MunicipalReportExportDialog({
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
               <div>
                 <span style={{ color: "#64748B", fontSize: "0.72rem" }}>Target Format:</span>
-                <div style={{ fontWeight: 700, color: "#0F172A", marginTop: 1 }}>
-                  CSV (.csv, RFC 4180 compliant)
+                <div style={{ fontWeight: 700, color: "#0F172A", marginTop: 1, display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  {format === "PDF" ? (
+                    <>
+                      <i className="fa-solid fa-file-pdf" style={{ color: "#DC2626" }} />
+                      <span>PDF Document (Official Full-Color Layout)</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-file-csv" style={{ color: "#059669" }} />
+                      <span>CSV (.csv, RFC 4180 compliant)</span>
+                    </>
+                  )}
                 </div>
               </div>
               <div>
@@ -608,10 +771,14 @@ export function MunicipalReportExportDialog({
             onClick={handleDownload}
             disabled={exporting || isRegisterEmpty}
             style={{
-              padding: "0.5rem 1.25rem",
-              borderRadius: 6,
+              padding: "0.55rem 1.35rem",
+              borderRadius: 8,
               border: "none",
-              background: isRegisterEmpty ? "#94A3B8" : "linear-gradient(135deg, #D00F09, #DC2626)",
+              background: isRegisterEmpty
+                ? "#94A3B8"
+                : format === "PDF"
+                  ? "linear-gradient(135deg, #D00F09, #DC2626)"
+                  : "linear-gradient(135deg, #059669, #10B981)",
               color: "#FFFFFF",
               fontSize: "0.82rem",
               fontWeight: 700,
@@ -619,7 +786,11 @@ export function MunicipalReportExportDialog({
               display: "flex",
               alignItems: "center",
               gap: "0.5rem",
-              boxShadow: isRegisterEmpty ? "none" : "0 2px 6px rgba(208, 15, 9, 0.3)",
+              boxShadow: isRegisterEmpty
+                ? "none"
+                : format === "PDF"
+                  ? "0 2px 8px rgba(208, 15, 9, 0.35)"
+                  : "0 2px 8px rgba(5, 150, 105, 0.35)",
               opacity: exporting ? 0.8 : 1,
             }}
           >
@@ -636,6 +807,10 @@ export function MunicipalReportExportDialog({
                   }}
                 />
                 Preparing export...
+              </>
+            ) : format === "PDF" ? (
+              <>
+                <i className="fa-solid fa-file-pdf" /> Export PDF Document
               </>
             ) : (
               <>

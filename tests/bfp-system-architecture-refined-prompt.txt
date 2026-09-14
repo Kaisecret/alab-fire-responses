@@ -1,0 +1,28 @@
+Redesign the provided academic system architecture diagram to be polished, readable, technically coherent, and presentable in a research paper. PRESERVE the sample's icon-and-arrow visual pattern, exactly FOUR horizontal user rows, white background. Do NOT turn it into a card layout, stacked layers, feature poster or block diagram. Use refined realistic miniature device illustrations: modern smartphone, desktop monitor, secure server, database cylinder. Users are simple professional human pictograms (resident civilian, two distinct BFP office personnel, firefighter helmet) with no extra people. Consistent restrained navy and steel-blue accents, tiny red SOS accent, precise black connectors, white background, no dramatic shadows. Generous whitespace. Every word must be readable. Request highest available resolution, ideally 3840x2560. Small centered heading "System Architecture". No ALAB branding or lengthy title.
+
+TECHNICALLY CORRECT TOPOLOGY:
+Four users access their respective client applications on devices. The client applications communicate over Internet/HTTPS with ONE shared Backend API server. The backend handles authentication, jurisdiction authorization and business processing. Backend connects independently to Database, Private File Storage, GIS / Routing / Weather, Notification Services. NO direct client-database link. GIS and notifications must NOT form a chain. Each shared service must connect to the backend, not another service. Use a simple joining network line for client connections, but show an actual server icon labeled Backend API before any storage connection.
+
+LAYOUT precise:
+Four rows occupy left 68% of canvas and y18%,37%,56%,75%. 
+Each row: user icon centered x7% -> device icon x21% -> Internet cloud icon x34% -> application icon x48% -> shared joining vertical network line x64%.
+All connections between icons use clean TWO-WAY arrows (requests and returned information). Equal icon sizes.
+Place role names above user icons, device names above device icons, Internet above clouds, app names above app icons. Small readable function labels below app icons, never across arrows. Avoid "Log in" under the user-to-device arrow because authentication belongs to the backend.
+
+ROW1 exact labels: "Resident"; "Smartphone"; "Internet"; "Resident PWA". Below PWA: "Register and submit SOS report" / "Receive report status".
+ROW2: "Municipal BFP" / "Personnel"; "Computer"; "Internet"; "Municipal Dashboard". Below app: "Review reports and dispatch" / "Request or accept backup".
+ROW3: "Provincial BFP" / "Personnel"; "Computer"; "Internet"; "Provincial Dashboard". Below app: "Manage records and applications" / "Monitor incidents and reports".
+ROW4: "Field Responder"; "Smartphone"; "Internet"; "Firefighter App". Below app: "Receive assignments and routes" / "Send GPS and response updates".
+
+Join client network x64% via a clear two-way connector to server icon x74%, y46%. Label connector "HTTPS" above. Server label above icon "Backend API". Under server use concise 3 lines: "Authentication and access" / "Incidents, dispatch and backup" / "Severity, reports and audit".
+Server is actual separate central processing component, not merely text on database arrow.
+
+Four service icons vertically down far right column at x92% with y17%,37%,59%,81%.
+Top service database cylinder labeled "Database", below "Users, incidents and resources".
+Second service folder/document labeled "Private File Storage", below "IDs and incident photos".
+Third map pin labeled "GIS / Routing / Weather", below "Maps, routes and water sources".
+Fourth envelope/bell labeled "Notifications", below "In-app, push, SMS and email".
+Backend has an outgoing right connection to a small shared service bus x83%. This service bus branches to EACH of the four services independently using tidy orthogonal connectors with bidirectional arrowheads. Keep service bus separate from client bus. Absolutely no arrow connects one service icon directly to another.
+
+Bottom y95% small readable note: "Municipal BFP authorizes dispatch and backup; Provincial BFP monitors and manages records."
+Typography black clear sans serif, ideally 24px equivalent main labels and 18px secondary at 1536px. No border around diagram. No giant title. Straight aligned rows, uniform typography. If space is tight enlarge canvas rather than shrinking all text. Preserve academic sample aesthetic while improving realism, spacing, and correct data flow.

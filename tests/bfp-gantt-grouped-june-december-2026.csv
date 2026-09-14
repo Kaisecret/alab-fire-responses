@@ -1,0 +1,28 @@
+﻿Phase,Task,Proposed start,Proposed end
+Planning,Project objectives and goals,2026-06-01,2026-06-07
+Planning,Project scope and limitations,2026-06-01,2026-06-14
+Planning,Resource and tool planning,2026-06-08,2026-06-21
+Planning,Initial project and task allocation,2026-06-15,2026-06-30
+Analysis,Gather user requirements,2026-06-15,2026-06-30
+Analysis,Functional and non-functional requirements,2026-06-22,2026-07-07
+Analysis,Review BFP response workflows,2026-07-01,2026-07-14
+Analysis,Validate system requirements,2026-07-08,2026-07-14
+Design,Database schema and data flow design,2026-07-01,2026-07-21
+Design,System architecture design,2026-07-01,2026-07-21
+Design,Web and mobile interface design,2026-07-08,2026-08-07
+Design,Review and finalize design documents,2026-07-15,2026-07-31
+Documentation,Chapter 1,2026-06-01,2026-07-14
+Documentation,Chapter 2,2026-06-15,2026-07-31
+Documentation,Chapter 3,2026-07-01,2026-08-31
+Implementation,Backend and database integration,2026-07-15,2026-08-14
+Implementation,Web and mobile development,2026-08-01,2026-10-31
+Implementation,"GIS, dispatch and coordination",2026-08-15,2026-11-07
+Implementation,Debugging and refinements,2026-09-15,2026-11-30
+Testing,Unit testing,2026-08-01,2026-11-30
+Testing,Integration testing,2026-10-15,2026-11-30
+Testing,User testing,2026-11-15,2026-12-14
+Testing,Bug fixing and adjustments,2026-11-22,2026-12-21
+Deployment,Final preparation for deployment,2026-12-01,2026-12-07
+Deployment,Pilot deployment at participating BFP offices,2026-12-08,2026-12-14
+Deployment,Final reporting and turnover,2026-12-15,2026-12-31
+Deployment,Maintenance,2026-12-15,2026-12-31

@@ -462,88 +462,184 @@ export function MunicipalReportDirectory() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "0.85rem",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "0.9rem",
         }}
       >
+        {/* Total Reports */}
         <div
           style={{
             background: "#FFFFFF",
             border: "1px solid #E2E8F0",
+            borderTop: "3px solid #64748B",
             borderRadius: 10,
-            padding: "1rem 1.2rem",
+            padding: "1.1rem 1.25rem",
             boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
           }}
         >
-          <div style={{ fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700, color: "#64748B", letterSpacing: "0.03em" }}>
-            Total Reports
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700, color: "#64748B", letterSpacing: "0.04em" }}>
+                Total Reports
+              </div>
+              <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0F172A", marginTop: 4, letterSpacing: "-0.02em" }}>
+                {summary ? summary.totalReports : total}
+              </div>
+            </div>
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 8,
+                background: "#F1F5F9",
+                color: "#475569",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1rem",
+              }}
+            >
+              <i className="fa-solid fa-folder-open" />
+            </div>
           </div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0F172A", marginTop: 4 }}>
-            {summary ? summary.totalReports : total}
-          </div>
-          <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: 2 }}>
+          <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: 4 }}>
             Intake during selected period
           </div>
         </div>
 
+        {/* Confirmed Incidents */}
         <div
           style={{
             background: "#FFFFFF",
-            border: "1px solid #E2E8F0",
+            border: "1px solid #FED7AA",
+            borderTop: "3px solid #DC2626",
             borderRadius: 10,
-            padding: "1rem 1.2rem",
+            padding: "1.1rem 1.25rem",
             boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
           }}
         >
-          <div style={{ fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700, color: "#DC2626", letterSpacing: "0.03em" }}>
-            Confirmed Incidents
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700, color: "#DC2626", letterSpacing: "0.04em" }}>
+                Confirmed Incidents
+              </div>
+              <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "#DC2626", marginTop: 4, letterSpacing: "-0.02em" }}>
+                {summary ? summary.confirmedIncidents : "-"}
+              </div>
+            </div>
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 8,
+                background: "#FEF2F2",
+                color: "#DC2626",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1rem",
+              }}
+            >
+              <i className="fa-solid fa-fire-flame-curved" />
+            </div>
           </div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#DC2626", marginTop: 4 }}>
-            {summary ? summary.confirmedIncidents : "-"}
-          </div>
-          <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: 2 }}>
+          <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: 4 }}>
             Verified structural/fire events
           </div>
         </div>
 
+        {/* Resolved Incidents */}
         <div
           style={{
             background: "#FFFFFF",
-            border: "1px solid #E2E8F0",
+            border: "1px solid #BBF7D0",
+            borderTop: "3px solid #059669",
             borderRadius: 10,
-            padding: "1rem 1.2rem",
+            padding: "1.1rem 1.25rem",
             boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
           }}
         >
-          <div style={{ fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700, color: "#059669", letterSpacing: "0.03em" }}>
-            Resolved Incidents
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700, color: "#059669", letterSpacing: "0.04em" }}>
+                Resolved Incidents
+              </div>
+              <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "#059669", marginTop: 4, letterSpacing: "-0.02em" }}>
+                {summary ? summary.resolvedIncidents : "-"}
+              </div>
+            </div>
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 8,
+                background: "#F0FDF4",
+                color: "#059669",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1rem",
+              }}
+            >
+              <i className="fa-solid fa-circle-check" />
+            </div>
           </div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#059669", marginTop: 4 }}>
-            {summary ? summary.resolvedIncidents : "-"}
-          </div>
-          <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: 2 }}>
+          <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: 4 }}>
             Under control, resolved or closed
           </div>
         </div>
 
+        {/* Avg Time to Arrival */}
         <div
           style={{
             background: "#FFFFFF",
-            border: "1px solid #E2E8F0",
+            border: "1px solid #BFDBFE",
+            borderTop: "3px solid #2563EB",
             borderRadius: 10,
-            padding: "1rem 1.2rem",
+            padding: "1.1rem 1.25rem",
             boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
           }}
         >
-          <div style={{ fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700, color: "#2563EB", letterSpacing: "0.03em" }}>
-            Avg Time to Arrival
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700, color: "#2563EB", letterSpacing: "0.04em" }}>
+                Avg Time to Arrival
+              </div>
+              <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0F172A", marginTop: 4, letterSpacing: "-0.02em" }}>
+                {summary?.timingMetrics.avgArrivalMinutes !== null && summary?.timingMetrics.avgArrivalMinutes !== undefined
+                  ? formatMinutes(summary.timingMetrics.avgArrivalMinutes)
+                  : "Not recorded"}
+              </div>
+            </div>
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 8,
+                background: "#EFF6FF",
+                color: "#2563EB",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1rem",
+              }}
+            >
+              <i className="fa-solid fa-stopwatch" />
+            </div>
           </div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0F172A", marginTop: 4 }}>
-            {summary?.timingMetrics.avgArrivalMinutes !== null && summary?.timingMetrics.avgArrivalMinutes !== undefined
-              ? formatMinutes(summary.timingMetrics.avgArrivalMinutes)
-              : "Not recorded"}
-          </div>
-          <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: 2 }}>
+          <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: 4 }}>
             {summary && summary.totalReports > 0
               ? `${summary.timingMetrics.arrivalRecordsCount} of ${summary.totalReports} incidents have arrival records`
               : "No timing records in period"}
@@ -912,38 +1008,76 @@ export function MunicipalReportDirectory() {
       {selectedIds.length > 0 && (
         <div
           style={{
-            background: "#FEF2F2",
+            background: "linear-gradient(135deg, #FFF5F5, #FEF2F2)",
             border: "1px solid #FECACA",
             borderRadius: 8,
-            padding: "0.6rem 1rem",
+            padding: "0.65rem 1.1rem",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             flexWrap: "wrap",
-            gap: "0.5rem",
+            gap: "0.6rem",
+            boxShadow: "0 2px 5px rgba(220, 38, 38, 0.06)",
           }}
         >
-          <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#991B1B" }}>
-            <i className="fa-solid fa-check-circle" style={{ marginRight: 6 }} />
-            {selectedIds.length} report{selectedIds.length > 1 ? "s" : ""} selected on this page
+          <div style={{ fontSize: "0.84rem", fontWeight: 700, color: "#991B1B", display: "flex", alignItems: "center", gap: "0.45rem" }}>
+            <span
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                background: "#DC2626",
+                color: "#FFFFFF",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.7rem",
+              }}
+            >
+              {selectedIds.length}
+            </span>
+            <span>{selectedIds.length} report{selectedIds.length > 1 ? "s" : ""} selected on this page</span>
           </div>
 
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <a
+              href={`/municipal-bfp/incident-reports/print?mode=register&selectedIds=${encodeURIComponent(selectedIds.join(","))}&autoPrint=true`}
+              target="_self"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                background: "linear-gradient(135deg, #D00F09, #DC2626)",
+                color: "#FFFFFF",
+                borderRadius: 5,
+                padding: "5px 12px",
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                textDecoration: "none",
+                boxShadow: "0 1px 3px rgba(208, 15, 9, 0.25)",
+              }}
+            >
+              <i className="fa-solid fa-file-pdf" /> Export as PDF
+            </a>
             <button
               type="button"
               onClick={() => { setExportSelected(true); setIsExportDialogOpen(true); }}
               style={{
-                background: "#D00F09",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: 4,
-                padding: "4px 10px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                background: "#FFFFFF",
+                color: "#991B1B",
+                border: "1px solid #FECACA",
+                borderRadius: 5,
+                padding: "5px 12px",
                 fontSize: "0.78rem",
                 fontWeight: 700,
                 cursor: "pointer",
               }}
             >
-              Export selected records
+              <i className="fa-solid fa-file-export" /> Export selected records
             </button>
             <button
               type="button"
@@ -952,9 +1086,9 @@ export function MunicipalReportDirectory() {
                 background: "transparent",
                 color: "#64748B",
                 border: "1px solid #CBD5E1",
-                borderRadius: 4,
-                padding: "4px 8px",
-                fontSize: "0.75rem",
+                borderRadius: 5,
+                padding: "5px 9px",
+                fontSize: "0.76rem",
                 fontWeight: 600,
                 cursor: "pointer",
               }}
@@ -1130,12 +1264,25 @@ export function MunicipalReportDirectory() {
                         />
                       </td>
 
-                      <td style={{ padding: "0.75rem 1rem", fontFamily: "monospace", fontWeight: 700, color: "#0F172A", fontSize: "0.85rem" }}>
-                        {r.referenceNumber}
+                      <td style={{ padding: "0.75rem 1rem" }}>
+                        <div style={{ fontFamily: "monospace", fontWeight: 700, color: "#0F172A", fontSize: "0.84rem" }}>
+                          {r.referenceNumber}
+                        </div>
+                        {r.reporterName && (
+                          <div style={{ fontSize: "0.71rem", color: "#64748B", fontWeight: 500, marginTop: 2, display: "flex", alignItems: "center", gap: 3 }}>
+                            <i className="fa-regular fa-user" style={{ fontSize: "0.68rem", color: "#94A3B8" }} />
+                            <span>{r.reporterName}</span>
+                          </div>
+                        )}
                       </td>
 
-                      <td style={{ padding: "0.75rem 1rem", fontSize: "0.82rem", color: "#334155", fontWeight: 500 }}>
-                        {r.barangay}
+                      <td style={{ padding: "0.75rem 1rem", fontSize: "0.82rem" }}>
+                        <div style={{ color: "#1E293B", fontWeight: 600 }}>{r.barangay}</div>
+                        {r.nearestLandmark && (
+                          <div style={{ fontSize: "0.71rem", color: "#991B1B", fontWeight: 500, marginTop: 1 }}>
+                            Near {r.nearestLandmark}
+                          </div>
+                        )}
                       </td>
 
                       <td style={{ padding: "0.75rem 1rem", fontSize: "0.82rem", color: "#475569" }}>
@@ -1159,18 +1306,21 @@ export function MunicipalReportDirectory() {
                           type="button"
                           onClick={() => setSelectedReportId(r.id)}
                           style={{
-                            background: "none",
-                            border: "none",
+                            background: "#FEF2F2",
+                            border: "1px solid #FECACA",
                             color: "#D00F09",
                             fontWeight: 700,
-                            fontSize: "0.8rem",
+                            fontSize: "0.78rem",
+                            borderRadius: 5,
+                            padding: "3px 8px",
                             cursor: "pointer",
                             display: "inline-flex",
                             alignItems: "center",
                             gap: "0.25rem",
+                            transition: "all 0.15s ease",
                           }}
                         >
-                          View <i className="fa-solid fa-arrow-right" style={{ fontSize: "0.7rem" }} />
+                          View <i className="fa-solid fa-arrow-right" style={{ fontSize: "0.68rem" }} />
                         </button>
                       </td>
                     </tr>

@@ -1,0 +1,29 @@
+[
+  {
+    "file": "PROVINCIAL BFP QUESTIONNAIRE.docx",
+    "pages": 2,
+    "yes_no": 15,
+    "optional": 5,
+    "font": "Tahoma 11 pt (preserved source styles)",
+    "visual_review": "all pages inspected",
+    "source_letterhead_and_styles": "unchanged"
+  },
+  {
+    "file": "MUNICIPAL BFP QUESTIONNAIRE.docx",
+    "pages": 2,
+    "yes_no": 15,
+    "optional": 5,
+    "font": "Tahoma 11 pt (preserved source styles)",
+    "visual_review": "all pages inspected",
+    "source_letterhead_and_styles": "unchanged"
+  },
+  {
+    "file": "RESIDENTS QUESTIONNAIRE.docx",
+    "pages": 1,
+    "yes_no": 15,
+    "optional": 0,
+    "font": "Tahoma 11 pt (preserved source styles)",
+    "visual_review": "all pages inspected",
+    "source_letterhead_and_styles": "unchanged"
+  }
+]

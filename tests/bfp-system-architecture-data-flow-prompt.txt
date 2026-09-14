@@ -1,0 +1,25 @@
+Create a professional thesis-style SYSTEM ARCHITECTURE AND DATA-FLOW diagram for a fire-response application. White background, black thin orthogonal arrows, compact navy/blue line icons, small red SOS accent. Refined standalone user, phone, desktop, server, database, map, document, notification pictograms. NO cards, panels, boxes around groups, colored bands, long descriptions or repeated horizontal lanes. Match a traditional thesis architecture diagram with user workflows on opposite sides of a central database/backend and branching arrows with short data labels. Use a balanced asymmetric composition with four user groups in four quadrants, and central processing/storage. Clear large legible type; no tiny footnotes. Landscape high resolution preferably 3840x2560. No ALAB branding; heading only "System Architecture and Data Flow".
+
+Exactly FOUR human figures, labeled:
+top-left "Resident"
+bottom-left "Municipal BFP Personnel"
+top-right "Field Responder"
+bottom-right "Provincial BFP Personnel".
+These represent four roles. Do not add Admin, fifth user, or human-like icons inside dashboards.
+
+ARCHITECTURE CENTER:
+server icon near canvas center at x50%, y43%, label "Backend API", small subtitle "Validate • Authorize • Process".
+database cylinder directly below server at x50%,y64%, label "PostgreSQL Database".
+TWO distinct parallel vertical arrows between server and database: server→database labeled "Save records"; database→server labeled "Read records". No other process connects directly to database. Central database can also have small text "Reports • Users • Dispatch".
+folder icon at x68%,y44%, label "Private Storage", short bidirectional arrow from backend to folder labeled "Photos / IDs".
+
+USER GROUPS AND LABELLED FLOWS:
+TOP LEFT: Resident figure at x5%,y20% → smartphone at x18%,y20% labeled "Resident PWA". From phone branch to a small SOS document icon x31%,y18% label "SOS Report". Directed arrow PWA→SOS labeled "Details + GPS". Directed elbow arrow SOS→Backend labeled "Submit report". Draw a separate returning path Backend→Resident PWA around the top-left group's lower margin, label "Reference + status". Show arrowheads clearly. Registration and login are covered by common Authentication node below.
+BOTTOM LEFT: Municipal BFP Personnel figure at x5%,y68% → desktop at x18%,y68% label "Municipal Dashboard". Backend→dashboard arrow labeled "Report + severity". Dashboard branches to clipboard icon x31%,y60% label "Review / Dispatch"; this process returns to Backend with arrow labeled "Assignments / resolution". A second branch from municipal dashboard goes downward to handshake/document icon x30%,y84% label "Backup Requests", and an elbow arrow from this to Backend labeled "Request / decision". No automatic dispatch, no auto-approval; municipality authorizes.
+TOP RIGHT: Backend→phone x82%,y20% labeled "Firefighter App" with arrow label "Dispatch assignment". Phone connects to Field Responder figure x95%,y20%. Separate return arrow phone→Backend labeled "Route start + GPS". A small route-map icon x70%,y8% labeled "Road Routes" with arrow Backend→Road Routes labeled "Coordinates", arrow Road Routes→Firefighter App labeled "Route". This is a routing service interaction, not a database.
+BOTTOM RIGHT: Provincial BFP Personnel figure x95%,y68% →desktop x82%,y68% labeled "Provincial Dashboard". Backend→dashboard arrow label "Incidents + summaries". Dashboard branches downward to records/document icon x69%,y84% label "Manage Records"; arrow from this to Backend routed clearly labeled "Edits / approvals". Provincial manages stations/personnel/residents and reviews applications, but does not dispatch responders.
+UPPER CENTER: lock/shield icon x43%,y8% labeled "Authentication", vertical connection with Backend labeled "Session + role". Backend applies this to all app requests, do not connect users directly to the database.
+Small sun/map icon x51%,y24% label "Severity Assessment", arrow into Backend label "Score"; short side text near icon "Weather + incident factors".
+LOWER CENTER: bell icon x50%,y88% label "Notifications". Backend→Notifications via clean side path avoiding database labeled "Event alerts". Notifications represents in-app/push/email/SMS events; do not draw a huge fan-out web. Tiny second line under bell "In-app • Push • SMS • Email".
+
+READABILITY: use empty whitespace routing channels, NO crossing lines through icons or text, arrows end at icon boundaries, each label 1–3 words except specified short data labels. Every connector must have a clear arrowhead and meaning. Main data flow is reporting → backend storage → municipal review → authorized dispatch → mobile assignment → GPS updates; province retrieves summaries and submits permitted administrative changes. Show these through directed labeled paths, NOT generic double-headed buses. Let typography and spacing dominate, icons modest size. Place short bottom legend "All application requests use HTTPS and backend access checks." No long full project title, no caption, no extra modules, no water-source claims or automatic firetruck selection. Use the depicted app behavior accurately.

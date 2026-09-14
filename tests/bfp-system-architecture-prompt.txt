@@ -1,0 +1,22 @@
+Create a high-resolution academic SYSTEM ARCHITECTURE diagram for a research paper, white background, landscape 3:2 composition, crisp black sans-serif text, restrained blue accents on simple device/server/cloud icons, thin black orthogonal connectors with arrowheads. Large readable labels and generous whitespace. No logos, no ALAB wording, no decorative illustrations, no tiny captions. Target 3840x2560 if possible. This is a conceptual architecture of a proposed system, not a feature poster. Exactly FOUR human user roles, each visible once as a distinct person icon and role label. Title at top "SYSTEM ARCHITECTURE"; subtitle on two lines "GIS-Based Provincial Fire Response and Decision Support System" / "with Inter-Municipality Coordination for BFP in Antique".
+
+LAYOUT: upper half has four equal width vertical columns. Each column has one user icon, then a device icon and application rectangle below, connected with two-way arrows.
+Column 1 role "Resident"; device "Smartphone / Browser"; application "Resident PWA"; application text on separate short lines "Register / Log in", "SOS fire reporting", "Photos and GPS location", "Report status".
+Column 2 role "Municipal BFP Personnel"; device "Computer / Browser"; application "Municipal Web Dashboard"; application text "Review fire reports", "Dispatch responders", "Manage local resources", "Request / approve backup".
+Column 3 role "Provincial BFP Personnel"; device "Computer / Browser"; application "Provincial Web Dashboard"; text "Province-wide monitoring", "Manage municipal records", "Review resident applications", "Reports and audit history".
+Column 4 role "Field Responder"; device "Smartphone"; application "Firefighter Mobile App"; text "View assigned incidents", "Routes and water sources", "Response / GPS updates".
+
+All four applications connect via two-way vertical lines to a single clearly visible horizontal shared network band labeled "INTERNET / HTTPS". A centered two-way connection goes from this band to a wide central rectangle labeled "CENTRAL BACKEND API". Inside backend use only these four short lines, arranged in two columns if needed:
+"Authentication and jurisdiction access"
+"Incident, dispatch and backup coordination"
+"Severity and resource decision support"
+"Notifications, reports and audit logging"
+
+LOWER PART: four equally spaced components beneath the backend, each connected individually to backend via bidirectional vertical connectors, using tidy aligned ports, no crossed arrows. No application or user connects directly to database.
+1 database cylinder icon label "Central Database"; text "Users, incidents, resources", "Dispatch and assistance records".
+2 file icon label "Private File Storage"; text "Identification documents", "Incident photographs".
+3 map icon label "GIS and Decision Services"; text "Maps, roads and weather", "Routes and nearby water sources".
+4 message icon label "Notification Services"; text "In-app and push", "SMS and email".
+
+Small readable note at bottom: "Municipal BFP retains authority over dispatch, backup assistance, and incident resolution."
+All text must be spelled correctly, label hierarchy clear, diagram readable when inserted into a research document. Include all four user roles. Use larger typography instead of excessive detail. Do not show AI image analysis, IoT, knowledge base, or additional user roles. No figure caption inside image; that will be supplied separately.

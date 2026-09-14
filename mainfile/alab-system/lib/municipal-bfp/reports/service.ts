@@ -81,6 +81,10 @@ export async function listMunicipalReports(
     recordedArrivalAt: Date | null;
     resolvedAt: Date | null;
     latestDispatchSummary: string | null;
+    description?: string;
+    addressLabel?: string | null;
+    nearestLandmark?: string | null;
+    reporterName?: string;
   }>(
     `select fr.id,
             fr.reference_number as "referenceNumber",
@@ -94,6 +98,10 @@ export async function listMunicipalReports(
             fr.latitude,
             fr.longitude,
             fr.submitted_at as "submittedAt",
+            fr.description,
+            fr.address_label as "addressLabel",
+            fr.nearest_landmark as "nearestLandmark",
+            coalesce(fr.caller_name, fr.reporter_name_snapshot) as "reporterName",
             fr.response_started_at as "responseStartedAt",
             (
               select min(arrival_time) from (
@@ -153,6 +161,10 @@ export async function listMunicipalReports(
       timeToResponseMinutes: calculateDurationMinutes(submittedAtIso, responseStartedAtIso),
       timeToArrivalMinutes: calculateDurationMinutes(submittedAtIso, recordedArrivalAtIso),
       timeToResolutionMinutes: calculateDurationMinutes(submittedAtIso, resolvedAtIso),
+      description: row.description,
+      addressLabel: row.addressLabel,
+      nearestLandmark: row.nearestLandmark,
+      reporterName: row.reporterName,
     };
   });
 
@@ -188,6 +200,11 @@ export async function getMunicipalReportDetail(
     submittedAt: Date;
     description: string;
     addressLabel: string | null;
+    nearestLandmark: string | null;
+    locationMethod: string | null;
+    locationAccuracyMeters: string | number | null;
+    reporterName?: string;
+    reporterPhone?: string;
     responseStartedAt: Date | null;
     recordedArrivalAt: Date | null;
     resolvedAt: Date | null;
@@ -207,6 +224,11 @@ export async function getMunicipalReportDetail(
             fr.submitted_at as "submittedAt",
             fr.description,
             fr.address_label as "addressLabel",
+            fr.nearest_landmark as "nearestLandmark",
+            fr.location_method as "locationMethod",
+            fr.location_accuracy_meters as "locationAccuracyMeters",
+            coalesce(fr.caller_name, fr.reporter_name_snapshot) as "reporterName",
+            coalesce(fr.caller_phone, u.phone) as "reporterPhone",
             fr.response_started_at as "responseStartedAt",
             (
               select min(arrival_time) from (
@@ -234,6 +256,8 @@ export async function getMunicipalReportDetail(
        from fire_reports fr
        join municipalities m on m.id = fr.municipality_id
        left join barangays b on b.id = fr.barangay_id
+       left join resident_profiles rp on rp.id = fr.resident_profile_id
+       left join users u on u.id = rp.user_id
       where (fr.id::text = $1 or fr.reference_number = $1)
         and fr.municipality_id = $2
       limit 1`,
@@ -368,6 +392,11 @@ export async function getMunicipalReportDetail(
     timeToResolutionMinutes: calculateDurationMinutes(submittedAtIso, resolvedAtIso),
     description: rep.description,
     addressLabel: rep.addressLabel,
+    nearestLandmark: rep.nearestLandmark ?? null,
+    locationMethod: rep.locationMethod ?? null,
+    locationAccuracyMeters: rep.locationAccuracyMeters ? Number(rep.locationAccuracyMeters) : null,
+    reporterName: rep.reporterName ?? undefined,
+    reporterPhone: rep.reporterPhone ?? undefined,
     photos,
     timeline,
     dispatches,

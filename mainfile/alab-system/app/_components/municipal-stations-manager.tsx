@@ -901,7 +901,7 @@ export function MunicipalStationsManager() {
                   ? "Try adjusting your search keywords or clear your status filters."
                   : "Assign official BFP personnel to this station from the Personnel directory."}
               </p>
-              {rosterSearch || rosterStatusFilter !== "ALL" ? (
+              {(rosterSearch || rosterStatusFilter !== "ALL") && (
                 <button
                   type="button"
                   className="mbfp-empty-btn"
@@ -911,15 +911,6 @@ export function MunicipalStationsManager() {
                   }}
                 >
                   Clear Filters
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="mbfp-add-btn"
-                  onClick={() => openIssueAccount(selectedRosterStation?.id)}
-                >
-                  <i className="fa-solid fa-user-plus" />
-                  <span>Issue Account for Station</span>
                 </button>
               )}
             </div>
@@ -3159,6 +3150,71 @@ const pageStyles = `
   .mbfp-roster-screen-content {
     background: transparent;
     margin-top: 3px;
+  }
+
+  /* ================= ROSTER EMPTY STATE ================= */
+  .mbfp-roster-empty {
+    padding: 4rem 2rem;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    margin-top: 0.5rem;
+  }
+
+  .mbfp-roster-empty-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    background: #FEF2F2;
+    color: #DC2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    margin-bottom: 1.1rem;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.12);
+    border: 1px solid #FECACA;
+  }
+
+  .mbfp-roster-empty h3 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0 0 0.45rem;
+    letter-spacing: -0.01em;
+  }
+
+  .mbfp-roster-empty p {
+    color: #64748B;
+    font-size: 0.88rem;
+    max-width: 26rem;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .mbfp-roster-empty .mbfp-empty-btn {
+    margin-top: 1.25rem;
+    padding: 0.55rem 1.25rem;
+    border-radius: 8px;
+    border: 1px solid #CBD5E1;
+    background: #FFFFFF;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mbfp-roster-empty .mbfp-empty-btn:hover {
+    background: #F8FAFC;
+    border-color: #94A3B8;
+    color: #0F172A;
   }
 
   /* ================= ROSTER PERSONNEL CARDS (EXACT JOEYLENE RIVERA REDESIGN) ================= */

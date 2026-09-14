@@ -1,0 +1,8 @@
+{
+  "reference": "C:/Users/janna/OneDrive/Documents/Bestcapstone for us/tests/PSWDO QUESTIONNAIRE.docx",
+  "sha256": "bbed941b1957276911143136e58272c6ae6ae62ae29ac2162321ef73e0831afe",
+  "pages": 4,
+  "sections": 1,
+  "render": "reference-render/reference.pdf",
+  "renderer": "WPS COM ExportAsFixedFormat; Poppler page PNGs"
+}

@@ -1,0 +1,28 @@
+﻿Phase,Activity,Proposed start,Proposed end
+Planning,"Define objectives, scope and limitations",2026-06-01,2026-06-07
+Planning,Gather applicant and PSWDO requirements,2026-06-01,2026-06-21
+Planning,Analyze AICS workflows and requirements,2026-06-08,2026-06-21
+Planning,"Plan resources, roles and product backlog",2026-06-15,2026-06-30
+Design,Design system architecture and process flows,2026-07-01,2026-07-14
+Design,Design database and centralized records,2026-07-01,2026-07-21
+Design,Create web interface layouts and wireframes,2026-07-08,2026-07-31
+Design,Review designs and prepare sprint backlog,2026-07-15,2026-07-31
+Development,"Build accounts, roles and database integration",2026-08-01,2026-08-14
+Development,Build application submission and file uploads,2026-08-01,2026-08-21
+Development,Develop pre-screening and AI verification,2026-08-08,2026-09-07
+Development,Develop duplicate checks and prioritization,2026-08-15,2026-09-07
+Development,Build personnel review and application tracking,2026-08-22,2026-09-14
+Development,"Integrate SMS, email and applicant chatbot",2026-09-01,2026-09-21
+Development,Build distribution management and geo-mapping,2026-09-01,2026-09-21
+Development,"Build dashboards, reports and audit trails",2026-09-08,2026-09-30
+Development,Review sprint outputs and refine integrations,2026-08-08,2026-09-30
+Testing and validation,Conduct alpha and system integration testing,2026-10-01,2026-10-14
+Testing and validation,"Test verification, records and notifications",2026-10-01,2026-10-21
+Testing and validation,Conduct IT expert software-quality review,2026-10-08,2026-10-21
+Testing and validation,Run applicant and PSWDO acceptance testing,2026-10-15,2026-10-31
+Testing and validation,Resolve defects and retest affected functions,2026-10-08,2026-10-31
+Deployment and maintenance,Prepare production setup and user orientation,2026-11-01,2026-11-14
+Deployment and maintenance,Deploy system at PSWDO in Antique,2026-11-08,2026-11-21
+Deployment and maintenance,Evaluate use and gather operational feedback,2026-11-15,2026-12-14
+Deployment and maintenance,"Monitor, maintain and apply improvements",2026-11-15,2026-12-31
+Deployment and maintenance,Finalize documentation and project turnover,2026-12-15,2026-12-31

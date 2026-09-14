@@ -1,0 +1,113 @@
+{
+  "title": "GIS-Based Provincial Fire Response and Decision Support System with Smart Dispatch and Inter-Municipality Coordination for BFP in Antique",
+  "groups": [
+    {
+      "role": "PROVINCIAL BFP PERSONNEL",
+      "profile": "Office: ______________________________    Position: ______________________",
+      "sections": [
+        [
+          "A. Current Records and Monitoring Practices",
+          [
+            "Does your office receive fire-incident reports from municipal BFP offices?",
+            "Does your office use paper records to monitor fire incidents?",
+            "Does your office use spreadsheets to compile municipal fire reports?",
+            "Can your office retrieve past fire-incident records when needed?",
+            "Does your office keep records of assistance provided between municipalities?"
+          ]
+        ],
+        [
+          "B. Challenges in Provincial Monitoring",
+          [
+            "Does your office receive delayed incident updates from municipal BFP offices?",
+            "Is confirming the latest status of active fire incidents difficult?",
+            "Is checking firetruck availability across municipalities difficult?",
+            "Is tracking the status of inter-municipality assistance requests difficult?",
+            "Is combining municipal fire reports into provincial summaries time-consuming?"
+          ]
+        ],
+        [
+          "C. Proposed System Requirements",
+          [
+            "Would a shared incident database be useful for provincial monitoring?",
+            "Would a digital map of active fires be useful for provincial monitoring?",
+            "Would a dashboard of municipal response activities be useful to your office?",
+            "Would searchable assistance-request histories be useful for reviewing coordination?",
+            "Should access to provincial records depend on a user's assigned role?"
+          ]
+        ]
+      ]
+    },
+    {
+      "role": "MUNICIPAL BFP PERSONNEL",
+      "profile": "Municipality: _________________________    Position: ______________________",
+      "sections": [
+        [
+          "A. Current Reporting and Response Practices",
+          [
+            "Does your station receive fire reports by telephone?",
+            "Does your station record fire incidents in paper logbooks?",
+            "Do personnel verify incident details before dispatching responders?",
+            "Does your station record responder assignments for each fire incident?",
+            "Does your station contact another municipality when additional assistance is needed?"
+          ]
+        ],
+        [
+          "B. Challenges in Local Response and Coordination",
+          [
+            "Are incomplete location details a problem when locating reported fires?",
+            "Is checking the availability of firetrucks before dispatch difficult?",
+            "Is identifying accessible routes to reported fires difficult?",
+            "Is obtaining updated responder locations during operations difficult?",
+            "Does your station experience delays in receiving replies to assistance requests?"
+          ]
+        ],
+        [
+          "C. Proposed System Requirements",
+          [
+            "Would online fire reports with location details be useful to your station?",
+            "Would preliminary fire-severity recommendations help personnel assess reported fires?",
+            "Would digital route guidance be useful for responding firefighters?",
+            "Would a shared request-tracking system be useful when seeking municipal assistance?",
+            "Should dispatch decisions remain with authorized Municipal BFP personnel?"
+          ]
+        ]
+      ]
+    },
+    {
+      "role": "RESIDENTS OF ANTIQUE",
+      "profile": "Municipality: _________________________    Barangay: ______________________",
+      "sections": [
+        [
+          "A. Access and Fire-Reporting Experience",
+          [
+            "Do you know the contact number of your local BFP station?",
+            "Do you have access to a smartphone that can connect to the internet?",
+            "Is mobile internet available in your barangay?",
+            "Do you know where your nearest fire station is located?",
+            "Have you ever reported a fire to the BFP?"
+          ]
+        ],
+        [
+          "B. Reporting Readiness and Connectivity",
+          [
+            "Can you describe your location using nearby landmarks?",
+            "Can you share a location pin using your phone?",
+            "Can you upload a photo using your phone?",
+            "Do you experience mobile internet interruptions in your barangay?",
+            "Do you know what information the BFP needs when someone reports a fire?"
+          ]
+        ],
+        [
+          "C. Preferences for the Proposed System",
+          [
+            "Would you use an online form to report a fire if internet access is available?",
+            "Are you willing to register a verified account for online fire reporting?",
+            "Would notifications about the status of a reported fire be useful to you?",
+            "Would you use fire-safety guidance provided through the application?",
+            "Would a stored BFP contact number be useful when internet access is unavailable?"
+          ]
+        ]
+      ]
+    }
+  ]
+}

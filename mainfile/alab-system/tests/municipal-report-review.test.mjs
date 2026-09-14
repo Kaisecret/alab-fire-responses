@@ -57,7 +57,7 @@ test('real report SQL preserves missing response times and reconciles unknown ba
       create table barangays(id uuid primary key, municipality_id uuid, name text);
       create table fire_reports(id uuid primary key, municipality_id uuid, barangay_id uuid, reference_number text,
         report_source text, fire_type text, calculated_severity text, status text, latitude numeric, longitude numeric,
-        submitted_at timestamptz, response_started_at timestamptz, description text, address_label text);
+        submitted_at timestamptz, response_started_at timestamptz, description text, address_label text, nearest_landmark text, reporter_name_snapshot text, caller_name text);
       create table incident_dispatches(id uuid, fire_report_id uuid, status text, dispatched_at timestamptz);
       create table incident_dispatch_recipients(dispatch_id uuid, on_scene_at timestamptz, acknowledged_at timestamptz, en_route_at timestamptz);
       create table incident_dispatch_stations(dispatch_id uuid);

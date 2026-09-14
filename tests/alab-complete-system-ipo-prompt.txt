@@ -1,0 +1,30 @@
+Create a polished academic conceptual framework diagram as a high-resolution landscape image, ideally 3840x2560. Black text and thin black rectangular borders on pure white. No icons, decorations, shadows, gradients or photographic elements. Readable sans serif. Three equal-width columns INPUT, PROCESS, OUTPUT with separate small header rectangles, large body rectangles containing exactly seven bullets each. Generous padding, careful wrapping, evenly spaced bullet paragraphs. Horizontal arrows INPUT → PROCESS → OUTPUT centered in gaps. Bottom feedback loop from OUTPUT down and left into a centered EVALUATE box then left and upward into INPUT. Use a smaller title to maximize body space. User reference is a plain academic IPO figure; create a fresh composition with the full content below, not a screenshot copy. Title on two lines: "ALAB: GIS-Based Provincial Fire Response and Decision Support System" / "with Inter-Municipality Coordination for BFP in Antique". Subtitle: "Input–Process–Output Conceptual Framework". All text must be accurate and complete, no omissions or duplicated bullet points.
+INPUT
+• Residents submit identity evidence, contact details, addresses, and registration corrections.
+• Residents and BFP staff submit app-based or phone-call fire reports with photos, location, landmarks, and fire details.
+• GIS, building density, road access, structure materials, and weather provide severity-assessment inputs.
+• BFP personnel maintain municipality, station, personnel, resident, and account records.
+• Municipal BFP selects responders and submits dispatch actions, backup requirements, and incident outcomes.
+• Mobile responders provide route-start and GPS location updates for assigned incidents.
+• Users supply search criteria, reporting periods, notification preferences, and emergency text for translation.
+
+PROCESS
+• Authenticate users; enforce role and jurisdiction access; review resident applications for approval or correction.
+• Validate and store reports; route incidents to Municipal BFP for review and map their locations.
+• Calculate weighted severity and alarm recommendations using environmental and incident factors.
+• Record authorized dispatches; deliver mobile assignments; provide road routes and track responder locations.
+• After local dispatch, notify nearby eligible municipalities; process explicit backup requests and responses.
+• Manage provincial and municipal records; preserve incident histories, permissions, and audit trails.
+• Update report status; send relevant notifications; translate emergency text; aggregate and export provincial reports.
+
+OUTPUT
+• Verified resident accounts, application decisions, correction instructions, and updated profiles.
+• Fire-report references, status histories, incident details, and GIS maps of incidents and stations.
+• Severity scores, alarm recommendations, road routes, and responder-location views for decision support.
+• Mobile dispatch assignments, response tracking, and municipally recorded incident resolutions.
+• Neighbor alerts, backup-request decisions, and inter-municipality coordination records.
+• Province-wide directories, monitoring dashboards, filtered incident summaries, CSV exports, and audit logs.
+• In-app, push, SMS, or email messages where supported; translated emergency text and resident safety guidance.
+Bottom box label: EVALUATE
+Below box: "Review data accuracy, access control, usability, notification delivery, response times, and coordination effectiveness."
+Small final footer: "Final dispatch, backup, and incident-resolution decisions remain with authorized Municipal BFP personnel."

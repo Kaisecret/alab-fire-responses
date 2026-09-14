@@ -1,0 +1,170 @@
+{
+  "input": "C:\\Users\\janna\\OneDrive\\Documents\\Bestcapstone for us\\tests\\BFP Thesis Questionnaire - Provincial Municipal and Residents.docx",
+  "fonts_by_char_count": {
+    "Segoe UI Symbol": 90
+  },
+  "direct_run_formatting_runs": 141,
+  "direct_paragraph_formatting_paragraphs": 189,
+  "heading_like_paragraphs_not_heading_style": [
+    {
+      "para_index": 2,
+      "text": "RESEARCH QUESTIONNAIRE | PROVINCIAL BFP PERSONNEL",
+      "style": "Body Text"
+    },
+    {
+      "para_index": 8,
+      "text": "RESEARCH QUESTIONNAIRE | MUNICIPAL BFP PERSONNEL",
+      "style": "Body Text"
+    },
+    {
+      "para_index": 14,
+      "text": "RESEARCH QUESTIONNAIRE | RESIDENTS OF ANTIQUE",
+      "style": "Body Text"
+    },
+    {
+      "para_index": 19,
+      "text": "QUESTIONS",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 20,
+      "text": "YES",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 21,
+      "text": "NO",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 22,
+      "text": "A. Current Records and Monitoring Practices",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 23,
+      "text": "A. Current Records and Monitoring Practices",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 24,
+      "text": "A. Current Records and Monitoring Practices",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 40,
+      "text": "B. Challenges in Provincial Monitoring",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 41,
+      "text": "B. Challenges in Provincial Monitoring",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 42,
+      "text": "B. Challenges in Provincial Monitoring",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 58,
+      "text": "C. Proposed System Requirements",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 59,
+      "text": "C. Proposed System Requirements",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 60,
+      "text": "C. Proposed System Requirements",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 76,
+      "text": "QUESTIONS",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 77,
+      "text": "YES",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 78,
+      "text": "NO",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 79,
+      "text": "A. Current Reporting and Response Practices",
+      "style": "Table Paragraph"
+    },
+    {
+      "para_index": 80,
+      "text": "A. Current Reporting and Response Practices",
+      "style": "Table Paragraph"
+    }
+  ],
+  "examples": {
+    "direct_paragraph_formatting": [
+      {
+        "para_index": 1,
+        "text": "Project Proposal: GIS-Based Provincial Fire Response and Decision Support System with Smart Dispatch and Inter-Municipal",
+        "style": "Body Text"
+      },
+      {
+        "para_index": 2,
+        "text": "RESEARCH QUESTIONNAIRE | PROVINCIAL BFP PERSONNEL",
+        "style": "Body Text"
+      },
+      {
+        "para_index": 3,
+        "text": "Instructions: Check one box under Yes or No for each question. Answer based on your experience or opinion. Participation",
+        "style": "Body Text"
+      },
+      {
+        "para_index": 4,
+        "text": "Name (optional): ______________________________    Date: ______________",
+        "style": "Body Text"
+      },
+      {
+        "para_index": 5,
+        "text": "Office: ______________________________    Position: ______________________",
+        "style": "Body Text"
+      }
+    ],
+    "direct_run_formatting": [
+      {
+        "para_index": 1,
+        "run_text": "Project Proposal: ",
+        "style": "Body Text"
+      },
+      {
+        "para_index": 2,
+        "run_text": "RESEARCH QUESTIONNAIRE | PROVINCIAL BFP PERSONNEL",
+        "style": "Body Text"
+      },
+      {
+        "para_index": 3,
+        "run_text": "Instructions: ",
+        "style": "Body Text"
+      },
+      {
+        "para_index": 4,
+        "run_text": "Name (optional): ______________________________    Date: ______________",
+        "style": "Body Text"
+      },
+      {
+        "para_index": 5,
+        "run_text": "Office: ______________________________    Position: ______________________",
+        "style": "Body Text"
+      }
+    ]
+  },
+  "notes": [
+    "Direct formatting is not always wrong, but it often causes inconsistent output when templates change.",
+    "Heading-like paragraphs not using Heading styles can break TOC and accessibility."
+  ]
+}

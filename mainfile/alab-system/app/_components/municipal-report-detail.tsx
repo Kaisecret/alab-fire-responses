@@ -282,24 +282,51 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
             )}
           </div>
 
-          <button
-            onClick={onClose}
-            aria-label="Close dialog"
-            style={{
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              padding: "0.4rem",
-              borderRadius: "50%",
-              color: "#64748B",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "1.2rem",
-            }}
-          >
-            &times;
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            {report && (
+              <a
+                href={`/municipal-bfp/incident-reports/print?mode=incident&id=${encodeURIComponent(report.id)}&autoPrint=true`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.4rem 0.85rem",
+                  borderRadius: 6,
+                  border: "1px solid #FECACA",
+                  background: "#FEF2F2",
+                  color: "#D00F09",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <i className="fa-solid fa-file-pdf" style={{ color: "#D00F09" }} /> Print / Save PDF
+              </a>
+            )}
+
+            <button
+              onClick={onClose}
+              aria-label="Close dialog"
+              style={{
+                background: "#F1F5F9",
+                border: "none",
+                cursor: "pointer",
+                padding: "0.4rem",
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                color: "#64748B",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.2rem",
+              }}
+            >
+              &times;
+            </button>
+          </div>
         </div>
 
         {/* Body content */}
@@ -397,6 +424,49 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
                     {report.resolvedAt ? formatPhilippineDateTime(report.resolvedAt) : "In progress"}
                   </div>
                 </div>
+              </div>
+
+              {/* Reporting Citizen & Intake Information Card */}
+              <div style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "1rem", background: "linear-gradient(180deg, #FAF5FF, #FFFFFF)", borderColor: "#E9D5FF" }}>
+                <h3 style={{ margin: "0 0 0.6rem", fontSize: "0.85rem", fontWeight: 800, color: "#6B21A8", textTransform: "uppercase", letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <i className="fa-solid fa-user-shield" style={{ color: "#9333EA" }} />
+                  Reporting Citizen & Intake Details
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", fontSize: "0.85rem" }}>
+                  <div>
+                    <span style={{ color: "#6B7280", fontSize: "0.72rem", fontWeight: 600 }}>Reporter Full Name:</span>
+                    <div style={{ fontWeight: 700, color: "#1E1B4B", marginTop: 2 }}>
+                      {report.reporterName || "Civilian Resident"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ color: "#6B7280", fontSize: "0.72rem", fontWeight: 600 }}>Contact Phone:</span>
+                    <div style={{ fontWeight: 700, color: "#1E1B4B", marginTop: 2, fontFamily: "monospace" }}>
+                      {report.reporterPhone || "No contact phone on record"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ color: "#6B7280", fontSize: "0.72rem", fontWeight: 600 }}>Intake Channel:</span>
+                    <div style={{ fontWeight: 700, color: "#1E1B4B", marginTop: 2 }}>
+                      {report.reportSource === "ALAB_APP" ? "ALAB Citizen Emergency Mobile App" : "Direct Station Emergency Call"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ color: "#6B7280", fontSize: "0.72rem", fontWeight: 600 }}>Location Verification:</span>
+                    <div style={{ fontWeight: 600, color: "#1E1B4B", marginTop: 2 }}>
+                      {report.locationMethod || "GPS"} {report.locationAccuracyMeters ? `(±${report.locationAccuracyMeters}m)` : ""}
+                    </div>
+                  </div>
+                </div>
+
+                {report.nearestLandmark && (
+                  <div style={{ marginTop: "0.6rem", paddingTop: "0.6rem", borderTop: "1px dashed #DDD6FE", fontSize: "0.8rem", color: "#581C87" }}>
+                    <strong>Nearest Landmark:</strong> {report.nearestLandmark}
+                  </div>
+                )}
               </div>
 
               {/* Location & Details Card */}
