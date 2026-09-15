@@ -62,7 +62,7 @@ test("municipal incident reports page renders directory, detail, and print views
   assert.match(directory, /api\/municipal-bfp\/reports/);
   assert.match(directory, /MunicipalReportDetail/);
   assert.match(directory, /MunicipalReportExportDialog/);
-  assert.match(directory, /Print summary/);
+  assert.match(directory, /Download summary/);
   assert.match(directory, /Export data/);
 
   assert.match(detail, /Operational Timeline/);
@@ -71,5 +71,8 @@ test("municipal incident reports page renders directory, detail, and print views
 
   assert.match(printPage, /MUNICIPAL INCIDENT SUMMARY & PERFORMANCE REPORT/);
   assert.match(printPage, /INCIDENT REPORT/);
-  assert.match(printPage, /window\.print/);
+  // Exports download a generated PDF; no view may open the browser print dialog.
+  assert.doesNotMatch(printPage, /window\.print/);
+  assert.doesNotMatch(directory, /window\.print/);
+  assert.doesNotMatch(detail, /window\.print/);
 });

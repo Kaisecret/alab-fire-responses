@@ -13,8 +13,12 @@ import {
 } from "./formatters";
 import type {
   MunicipalBarangaySummary,
+  MunicipalDispatchRecipient,
+  MunicipalDispatchRecord,
+  MunicipalReportDetail,
   MunicipalReportRow,
   MunicipalReportSummary,
+  MunicipalTimelineEvent,
 } from "./types";
 
 /** Official BFP document palette. Kept in one place so every section matches. */
@@ -78,7 +82,11 @@ function severityColors(severity: string): { fill: string; text: string } {
   }
 }
 
-export type MunicipalPdfKind = "INCIDENT_REGISTER" | "MUNICIPAL_SUMMARY" | "BARANGAY_BREAKDOWN";
+export type MunicipalPdfKind =
+  | "INCIDENT_REGISTER"
+  | "MUNICIPAL_SUMMARY"
+  | "BARANGAY_BREAKDOWN"
+  | "INCIDENT_DOSSIER";
 
 export interface MunicipalPdfContext {
   kind: MunicipalPdfKind;
@@ -88,6 +96,8 @@ export interface MunicipalPdfContext {
   filterLabel: string;
   rows: MunicipalReportRow[];
   summary: MunicipalReportSummary | null;
+  /** Populated only for the INCIDENT_DOSSIER kind. */
+  detail?: MunicipalReportDetail | null;
 }
 
 type Doc = PDFKit.PDFDocument;
@@ -170,12 +180,15 @@ function drawHeader(doc: Doc, context: MunicipalPdfContext, logo: Buffer | null)
 
 function documentTitle(kind: MunicipalPdfKind): string {
   switch (kind) {
-    case "INCIDENT_REGISTER":
-      return "MUNICIPAL INCIDENT REGISTER & DISPATCH AUDIT LOG";
     case "MUNICIPAL_SUMMARY":
       return "MUNICIPAL INCIDENT SUMMARY & PERFORMANCE REPORT";
     case "BARANGAY_BREAKDOWN":
       return "BARANGAY INCIDENT DISTRIBUTION REPORT";
+    case "INCIDENT_DOSSIER":
+      return "INCIDENT REPORT & CITIZEN INTAKE DOSSIER";
+    case "INCIDENT_REGISTER":
+    default:
+      return "MUNICIPAL INCIDENT REGISTER & DISPATCH AUDIT LOG";
   }
 }
 
@@ -736,6 +749,257 @@ function renderBarangayBreakdown(doc: Doc, context: MunicipalPdfContext, logo: B
   );
 }
 
+/** Label/value pairs for the intake panel, laid out in two columns. */
+function drawFieldGrid(
+  doc: Doc,
+  y: number,
+  fields: { label: string; value: string; span?: boolean; accent?: string }[],
+): number {
+  const gap = 12;
+  const colWidth = (CONTENT_WIDTH - 24 - gap) / 2;
+  let cursorY = y;
+  let column = 0;
+  let rowHeight = 0;
+
+  for (const field of fields) {
+    const width = field.span ? CONTENT_WIDTH - 24 : colWidth;
+    if (field.span && column === 1) {
+      cursorY += rowHeight + 8;
+      column = 0;
+      rowHeight = 0;
+    }
+
+    const x = PAGE.margin + 12 + (column === 1 ? colWidth + gap : 0);
+
+    doc
+      .fillColor(COLORS.muted)
+      .font("Helvetica-Bold")
+      .fontSize(6.2)
+      .text(field.label.toUpperCase(), x, cursorY, { width, characterSpacing: 0.3 });
+
+    doc
+      .fillColor(field.accent ?? COLORS.ink)
+      .font("Helvetica-Bold")
+      .fontSize(8)
+      .text(field.value, x, cursorY + 9, { width });
+
+    const used = 9 + doc.heightOfString(field.value, { width, lineGap: 0 });
+    rowHeight = Math.max(rowHeight, used);
+
+    if (field.span) {
+      cursorY += rowHeight + 8;
+      column = 0;
+      rowHeight = 0;
+    } else if (column === 1) {
+      cursorY += rowHeight + 8;
+      column = 0;
+      rowHeight = 0;
+    } else {
+      column = 1;
+    }
+  }
+
+  if (column === 1) cursorY += rowHeight + 8;
+  return cursorY;
+}
+
+function renderDossier(doc: Doc, context: MunicipalPdfContext, logo: Buffer | null): void {
+  const report = context.detail;
+  if (!report) return;
+
+  let y = PAGE.margin + 66;
+
+  // Reference banner with the incident's current standing.
+  doc.save();
+  doc.roundedRect(PAGE.margin, y, CONTENT_WIDTH, 44, 5).fillAndStroke(COLORS.panel, COLORS.hairline);
+  doc.rect(PAGE.margin, y, 4, 44).fill(COLORS.brand);
+  doc.restore();
+
+  doc
+    .fillColor(COLORS.brand)
+    .font("Courier-Bold")
+    .fontSize(11)
+    .text(`REFERENCE #${report.referenceNumber}`, PAGE.margin + 14, y + 9, { width: CONTENT_WIDTH * 0.55 });
+
+  const status = statusColors(report.status);
+  const severity = severityColors(report.severity);
+  drawBadge(doc, PAGE.margin + 14, y + 25, getStatusLabel(report.status), status.fill, status.text);
+  doc.font("Helvetica-Bold").fontSize(6.5);
+  const statusWidth = doc.widthOfString(getStatusLabel(report.status)) + 10;
+  drawBadge(doc, PAGE.margin + 14 + statusWidth + 5, y + 25, getSeverityLabel(report.severity), severity.fill, severity.text);
+
+  doc
+    .fillColor(COLORS.muted)
+    .font("Helvetica")
+    .fontSize(7)
+    .text(`Reported: ${formatPhilippineDateTime(report.submittedAt)}`, PAGE.margin + CONTENT_WIDTH * 0.58, y + 11, {
+      width: CONTENT_WIDTH * 0.42 - 14,
+      align: "right",
+    })
+    .text(`Station Jurisdiction: ${context.municipalityName} Fire Station`, PAGE.margin + CONTENT_WIDTH * 0.58, y + 23, {
+      width: CONTENT_WIDTH * 0.42 - 14,
+      align: "right",
+    });
+
+  y += 56;
+
+  y = drawSectionHeading(doc, y, "1. Reporting Citizen & Intake Telemetry");
+
+  const panelTop = y;
+  const fieldsStart = y + 10;
+  const fieldsEnd = drawFieldGrid(doc, fieldsStart, [
+    { label: "Reporter Full Name", value: report.reporterName || "Anonymous Resident / App Intake" },
+    { label: "Contact Phone Number", value: report.reporterPhone || "Protected — held on file" },
+    {
+      label: "Intake Channel & Transmission",
+      value:
+        report.reportSource === "ALAB_APP"
+          ? "ALAB Resident Emergency Mobile App (Encrypted GPS Stream)"
+          : "Direct Emergency Phone Dispatch Call",
+    },
+    { label: "Barangay & Recorded Jurisdiction", value: `Brgy. ${report.barangay}, ${context.municipalityName}` },
+    {
+      label: "Nearest Landmark / Fire Access Route",
+      value: report.nearestLandmark || report.addressLabel || "No landmark tag provided during intake",
+      span: true,
+      accent: COLORS.brandDark,
+    },
+    {
+      label: "Geolocation Coordinates & Verification Accuracy",
+      value: [
+        report.latitude && report.longitude
+          ? `Lat ${Number(report.latitude).toFixed(6)}°, Lon ${Number(report.longitude).toFixed(6)}°`
+          : "Recorded via barangay geocode boundary",
+        report.locationAccuracyMeters ? `GPS accuracy ±${report.locationAccuracyMeters} m` : null,
+        report.locationMethod ? `Method: ${report.locationMethod}` : null,
+      ]
+        .filter(Boolean)
+        .join("  •  "),
+      span: true,
+    },
+    {
+      label: "Citizen Eyewitness Narrative & Intake Remarks",
+      value: report.description ? `"${report.description}"` : "No description provided.",
+      span: true,
+    },
+  ]);
+
+  doc.save();
+  doc
+    .roundedRect(PAGE.margin, panelTop, CONTENT_WIDTH, fieldsEnd - panelTop + 6, 5)
+    .strokeColor("#FECACA")
+    .lineWidth(1)
+    .stroke();
+  doc.restore();
+
+  y = fieldsEnd + 18;
+
+  // Milestones. Section numbers are computed so a hidden block leaves no gap.
+  let sectionNumber = 2;
+  y = ensureSpace(doc, y, 80, context, logo, null);
+  y = drawSectionHeading(doc, y, `${sectionNumber}. Operational Response Benchmarks & Incident Milestones`);
+  sectionNumber += 1;
+
+  y = drawMetricTiles(doc, y, [
+    {
+      label: "Alert Received",
+      value: report.submittedAt ? formatPhilippineDateTime(report.submittedAt) : "Not recorded",
+      accent: COLORS.ink,
+      tint: COLORS.panel,
+    },
+    {
+      label: "Response Started",
+      value: report.responseStartedAt ? formatPhilippineDateTime(report.responseStartedAt) : "Not recorded",
+      accent: "#C2410C",
+      tint: "#FFF7ED",
+    },
+    {
+      label: "Recorded Arrival",
+      value: report.recordedArrivalAt ? formatPhilippineDateTime(report.recordedArrivalAt) : "Not recorded",
+      accent: "#1D4ED8",
+      tint: "#EFF6FF",
+    },
+    {
+      label: "Incident Resolved",
+      value: report.resolvedAt ? formatPhilippineDateTime(report.resolvedAt) : "In progress",
+      accent: "#15803D",
+      tint: "#F0FDF4",
+    },
+  ]);
+
+  doc
+    .fillColor(COLORS.muted)
+    .font("Helvetica")
+    .fontSize(7)
+    .text(
+      `Elapsed to response: ${formatMinutes(report.timeToResponseMinutes)}    •    Elapsed to arrival: ${formatMinutes(report.timeToArrivalMinutes)}    •    Total duration: ${formatMinutes(report.timeToResolutionMinutes)}`,
+      PAGE.margin,
+      y - 8,
+      { width: CONTENT_WIDTH },
+    );
+
+  y += 14;
+
+  if (report.dispatches && report.dispatches.length > 0) {
+    y = ensureSpace(doc, y, 70, context, logo, null);
+    y = drawSectionHeading(doc, y, `${sectionNumber}. Dispatched Fire Stations & Personnel`);
+    sectionNumber += 1;
+
+    y = drawSimpleTable(
+      doc,
+      y,
+      [
+        { label: "Station", width: 130 },
+        { label: "Dispatch Status", width: 95 },
+        { label: "Dispatched At (PHT)", width: 120 },
+        { label: "Responding Crew", width: 170 },
+      ],
+      report.dispatches.map((d: MunicipalDispatchRecord) => [
+        d.stationName,
+        getStatusLabel(d.status),
+        formatPhilippineDateTime(d.dispatchedAt),
+        d.recipients && d.recipients.length > 0
+          ? d.recipients
+              .map((r: MunicipalDispatchRecipient) => `${r.name} (${r.onSceneAt ? "On Scene" : getStatusLabel(r.status)})`)
+              .join(", ")
+          : "Station Unit Team",
+      ]),
+      context,
+      logo,
+    );
+    y += 14;
+  }
+
+  if (report.timeline && report.timeline.length > 0) {
+    y = ensureSpace(doc, y, 70, context, logo, null);
+    y = drawSectionHeading(doc, y, `${sectionNumber}. Chronological Operational Timeline`);
+
+    y = drawSimpleTable(
+      doc,
+      y,
+      [
+        { label: "Timestamp (PHT)", width: 150 },
+        { label: "Operational Stage", width: 150 },
+        { label: "Event Notes & Status", width: 215 },
+      ],
+      report.timeline.map((event: MunicipalTimelineEvent) => [
+        formatPhilippineDateTime(event.timestamp),
+        getStatusLabel(event.stage),
+        event.notes || `Operational transition to ${getStatusLabel(event.stage)}`,
+      ]),
+      context,
+      logo,
+    );
+  }
+
+  drawSignatureBlock(
+    doc,
+    y,
+    context,
+    "Certification: This official report document is generated from audited intake records and operational milestones captured by the ALAB Emergency System.",
+  );
+}
+
 /**
  * Builds the official PDF as a vector document, so the text stays selectable and
  * searchable rather than being flattened into an image.
@@ -768,6 +1032,8 @@ export async function buildMunicipalReportPdf(context: MunicipalPdfContext): Pro
     renderRegister(doc, context, logo);
   } else if (context.kind === "MUNICIPAL_SUMMARY") {
     renderSummary(doc, context, logo);
+  } else if (context.kind === "INCIDENT_DOSSIER") {
+    renderDossier(doc, context, logo);
   } else {
     renderBarangayBreakdown(doc, context, logo);
   }

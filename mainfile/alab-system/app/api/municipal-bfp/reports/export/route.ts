@@ -19,6 +19,7 @@ const ALLOWED_DATASETS = new Set<MunicipalExportDataset>([
   "INCIDENT_REGISTER",
   "MUNICIPAL_SUMMARY",
   "BARANGAY_BREAKDOWN",
+  "INCIDENT_DOSSIER",
 ]);
 
 const ALLOWED_SCOPES = new Set<MunicipalExportScope>([
@@ -36,6 +37,7 @@ async function handleExport(
   selectedIdsInput: unknown,
   filters: MunicipalReportFilters,
   formatInput: unknown,
+  reportIdInput: unknown,
 ) {
   const admin = await requireMunicipalAdmin(request);
   if (isAuthorizationResponse(admin)) {
@@ -106,6 +108,7 @@ async function handleExport(
       scope,
       format,
       selectedIds,
+      reportId: typeof reportIdInput === "string" ? reportIdInput : undefined,
       preparedBy: admin.rankOrPosition
         ? `${admin.displayName} (${admin.rankOrPosition})`
         : admin.displayName,
@@ -163,8 +166,9 @@ export async function GET(request: NextRequest) {
   const scopeInput = searchParams.get("scope");
   const selectedIdsInput = searchParams.get("selectedIds");
   const formatInput = searchParams.get("format");
+  const reportIdInput = searchParams.get("reportId");
 
-  return handleExport(request, datasetInput, scopeInput, selectedIdsInput, filters, formatInput);
+  return handleExport(request, datasetInput, scopeInput, selectedIdsInput, filters, formatInput, reportIdInput);
 }
 
 export async function POST(request: NextRequest) {
@@ -191,5 +195,6 @@ export async function POST(request: NextRequest) {
     body.selectedIds,
     filters,
     body.format,
+    body.reportId,
   );
 }

@@ -4,10 +4,11 @@ import { getDatabase } from "../../db";
 import type { MunicipalAdminIdentity } from "../auth";
 import { formatPhilippineDateTime } from "./formatters";
 import { buildMunicipalReportPdf } from "./pdf";
-import { listMunicipalReports, getMunicipalReportSummary } from "./service";
+import { listMunicipalReports, getMunicipalReportDetail, getMunicipalReportSummary } from "./service";
 import type {
   MunicipalExportOptions,
   MunicipalExportResult,
+  MunicipalReportDetail,
   MunicipalReportFilters,
   MunicipalReportRow,
   MunicipalReportSummary,
@@ -130,6 +131,7 @@ export async function exportMunicipalDataset(
   // Retained so a PDF export can lay out the same records the CSV would list.
   let pdfRows: MunicipalReportRow[] = [];
   let pdfSummary: MunicipalReportSummary | null = null;
+  let pdfDetail: MunicipalReportDetail | null = null;
   const fileExtension = options.format === "PDF" ? "pdf" : "csv";
 
   switch (dataset) {
@@ -355,6 +357,26 @@ export async function exportMunicipalDataset(
       break;
     }
 
+    case "INCIDENT_DOSSIER": {
+      // A single incident renders as a formatted dossier, which has no CSV shape.
+      if (options.format !== "PDF") {
+        throw new Error("INVALID_FORMAT: The incident dossier is available as PDF only.");
+      }
+      if (!options.reportId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(options.reportId)) {
+        throw new Error("INVALID_SELECTION: A valid report ID is required for an incident dossier.");
+      }
+
+      const detail = await getMunicipalReportDetail(actor, options.reportId);
+      if (!detail) {
+        throw new Error("INVALID_SELECTION: That report was not found in your municipality.");
+      }
+
+      pdfDetail = detail;
+      rowCount = 1;
+      fileName = `alab-${muniSlug}-incident-${sanitizeForFilename(detail.referenceNumber)}-${timeSuffix}.pdf`;
+      break;
+    }
+
     default:
       throw new Error(`UNSUPPORTED_DATASET: ${dataset}`);
   }
@@ -376,6 +398,7 @@ export async function exportMunicipalDataset(
           filterLabel: describeFilters(filters, scope),
           rows: pdfRows,
           summary: pdfSummary,
+          detail: pdfDetail,
         })
       : undefined;
 
