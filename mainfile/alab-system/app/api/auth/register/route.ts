@@ -44,8 +44,16 @@ export async function POST(request: Request) {
 
   let input: RegistrationPayload;
   try {
+    // The code itself expires 5 minutes after it is sent, but that deadline
+    // stops applying once the resident has actually verified it. Finishing the
+    // form still means uploading two ID photos and a selfie, which routinely
+    // takes longer than the remainder of those 5 minutes on a phone. Measuring
+    // this window from consumed_at instead of expires_at is why a resident
+    // could enter a live code, verify, and still be told it had expired.
     const pending = await getDatabase().query<{ payload: RegistrationPayload }>(
-      "select payload from registration_otps where id = $1 and consumed_at is not null and expires_at > now()", [phoneVerificationId],
+      `select payload from registration_otps
+        where id = $1 and consumed_at is not null
+          and consumed_at > now() - interval '30 minutes'`, [phoneVerificationId],
     );
     if (!pending.rowCount) return NextResponse.json({ error: "Your verification has expired. Please request a new code." }, { status: 400 });
     input = pending.rows[0].payload;
