@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { NotificationBell } from './notifications/notification-bell';
+import { MunicipalIncidentAlarm } from './municipal-incident-alarm';
 
 type NavItem = {
   label: string;
@@ -1424,6 +1425,9 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
           <main key={pathname} className="mbfp-content">{children}</main>
         </div>
       </div>
+
+      {/* Sounds on every municipal page until a duty officer acknowledges. */}
+      <MunicipalIncidentAlarm />
     </>
   );
 }
