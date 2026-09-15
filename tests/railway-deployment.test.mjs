@@ -31,7 +31,7 @@ test("the repository root exposes Railway build and start commands", async () =>
   assert.equal(packageJson.scripts.start, "node scripts/start.mjs");
   assert.equal(packageJson.engines.node, ">=20.9.0");
   assert.equal(appPackageJson.overrides.postcss, "8.5.24");
-  assert.equal(appPackageJson.overrides.sharp, "0.35.3");
+  assert.equal(appPackageJson.dependencies.sharp, "0.35.3");
 });
 
 test("the standalone app lockfile installs Next beside the app", async () => {
@@ -46,20 +46,11 @@ test("the standalone app lockfile installs Next beside the app", async () => {
     packageLock.packages["node_modules/next"],
     "the app lockfile does not include Next",
   );
-  assert.ok(
-    packageLock.packages["node_modules/@emnapi/core"],
-    "the app lockfile is missing the Linux WASM core used during Railway installs",
-  );
-  assert.ok(
-    packageLock.packages["node_modules/@emnapi/runtime"],
-    "the app lockfile is missing the Linux WASM runtime used during Railway installs",
-  );
-  assert.ok(
-    packageLock.packages[
-      "node_modules/@unrs/resolver-binding-wasm32-wasi/node_modules/@emnapi/runtime"
-    ],
-    "the app lockfile is missing the nested Linux WASM runtime",
-  );
+  // Native Sharp and its shared library must both be installable on the
+  // production Linux host. WASM transitive dependency nesting is not stable.
+  for (const dependency of ["@img/sharp-linux-x64", "@img/sharp-libvips-linux-x64"]) {
+    assert.ok(packageLock.packages[`node_modules/${dependency}`], `${dependency} is missing`);
+  }
 });
 
 test("Railway postinstall avoids strict nested ci for platform optional packages", async () => {

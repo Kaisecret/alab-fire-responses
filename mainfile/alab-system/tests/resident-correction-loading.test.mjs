@@ -31,6 +31,7 @@ function pageHarness(request) {
   };
   const mod = loadServerModule('app/resident/application/page.tsx', {
     react,
+    "../../../lib/resident-applications/id-file": loadServerModule("lib/resident-applications/id-file.ts", {}),
     'react/jsx-runtime': jsx,
     'next/link': { default: 'a' },
     '../../../lib/resident-applications/client-request': request,

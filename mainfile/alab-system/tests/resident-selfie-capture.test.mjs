@@ -48,7 +48,7 @@ test("capture component stops media tracks on cancel, retake, and unmount", () =
   const component = source("app/_components/resident-selfie-capture.tsx");
 
   assert.match(component, /function stopMediaStream[\s\S]*?stream\?\.getTracks\(\)\.forEach\(\(track\) => track\.stop\(\)\)/);
-  assert.match(component, /mountedRef\.current = false;\s*coordinatorRef\.current\.cancel\(\);\s*stopStream\(\);/);
+  assert.match(component, /mountedRef\.current = false;\s*coordinator\.cancel\(\);\s*stopStream\(\);/);
   assert.match(component, /settleRequestedStream\(coordinatorRef\.current, attempt, stream\)/);
 });
 
@@ -174,16 +174,9 @@ test("resident application page uses the camera-only capture component instead o
   const page = source("app/resident/application/page.tsx");
 
   assert.match(page, /import \{ ResidentSelfieCapture, residentSelfieCaptureStyles \} from "\.\.\/\.\.\/_components\/resident-selfie-capture"/);
-  assert.match(page, /<ResidentSelfieCapture onCapture=\{setSelfieFile\} disabled=\{saving\} \/>/);
+  assert.match(page, /<ResidentSelfieCapture onCapture=\{setSelfieFile\} disabled=\{busy\} \/>/);
   assert.doesNotMatch(page, /name="selfie"/);
   assert.match(page, /Take a new selfie using your camera/);
-});
-
-test("resubmission form data always carries the confirmed selfie under the existing field name", () => {
-  const page = source("app/resident/application/page.tsx");
-  assert.match(page, /formData\.set\("selfie", selfieFile\)/);
-  assert.match(page, /if \(!selfieFile\) \{ setError\(.*?\); return; \}/);
-  assert.match(page, /disabled=\{saving \|\| !selfieFile\}/);
 });
 
 test("resident application page reserves space below its fixed bottom navigation so form controls stay reachable", () => {

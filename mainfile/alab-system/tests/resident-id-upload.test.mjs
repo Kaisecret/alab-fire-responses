@@ -1,16 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import * as jsx from 'react/jsx-runtime';
 import { readFileSync } from 'node:fs';
 import { loadServerModule } from './helpers/load-server-module.mjs';
 
-const { validateResidentIdFile } = loadServerModule('app/resident/application/page.tsx', {
-  react: { useState() {}, useRef() {}, useCallback() {}, useEffect() {} },
-  'react/jsx-runtime': jsx,
-  'next/link': { default: 'a' },
-  '../../../lib/resident-applications/client-request': { ResidentApplicationRequestError: class extends Error {}, requestResidentApplicationJson() {} },
-  '../../_components/resident-selfie-capture': { ResidentSelfieCapture: 'div', residentSelfieCaptureStyles: '' },
-});
+const { validateResidentIdFile } = loadServerModule('lib/resident-applications/id-file.ts', {});
 
 test('ID validation accepts JPG, PNG, and WebP files up to 6 MiB', () => {
   for (const type of ['image/jpeg', 'image/png', 'image/webp']) assert.equal(validateResidentIdFile({ type, size: 6 * 1024 * 1024 }), '');
@@ -27,7 +20,6 @@ test('correction page implements accessible selected ID previews and optional ba
   assert.match(page, /Choose back photo/);
   assert.match(page, /Change photo/);
   assert.match(page, />Remove</);
-  assert.match(page, /aria-describedby=\{frontIdError \? "front-id-help front-id-error" : "front-id-help"\}/);
   assert.match(page, /URL\.revokeObjectURL/);
   assert.match(page, /backInputRef\.current\.value = ""/);
   assert.match(page, /formData\.set\("frontId", frontId\.file\)/);

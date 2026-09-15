@@ -309,8 +309,8 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
       setState("error"); setErrorKind("encoding-failed");
       return;
     }
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
     try {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
       canvas.toBlob((blob) => {
         if (!coordinatorRef.current.finishEncoding(attempt) || !mountedRef.current) return;
         setEncoding(false);

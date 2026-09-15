@@ -2,6 +2,7 @@
 
 import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { RESIDENT_ID_ACCEPT as ID_ACCEPT, validateResidentIdFile } from "../../../lib/resident-applications/id-file";
 import {
   ResidentApplicationRequestError,
   requestResidentApplicationJson,
@@ -32,15 +33,6 @@ type RecoveryIssue = {
   requiresStatusCheck: boolean;
   sessionExpired: boolean;
 };
-
-const ID_ACCEPT = "image/jpeg,image/png,image/webp";
-const MAX_ID_BYTES = 6 * 1024 * 1024;
-
-export function validateResidentIdFile(file: Pick<File, "type" | "size">): string {
-  if (!ID_ACCEPT.split(",").includes(file.type)) return "Choose a JPG, PNG or WebP photo.";
-  if (file.size > MAX_ID_BYTES) return "Choose a photo that is 6 MB or smaller.";
-  return "";
-}
 
 function fileSizeLabel(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -181,7 +173,7 @@ export default function ResidentApplicationPage() {
 
   async function resubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (operationRef.current || recoveryIssue?.requiresStatusCheck) return;
+    if (operationRef.current || recoveryIssue?.requiresStatusCheck || recoveryIssue?.sessionExpired) return;
     if (!selfieFile) {
       setValidationError("Take a new selfie using your camera before resubmitting.");
       return;
@@ -220,6 +212,11 @@ export default function ResidentApplicationPage() {
     } catch (error) {
       if (requestVersionRef.current !== version) return;
       const details = requestDetails(error);
+      if (details.status === 400) {
+        setValidationError(error instanceof Error && error.message === "Enter a valid barangay in your registered municipality."
+          ? error.message : "Check your details and choose readable JPG, PNG or WebP images, up to 6 MB each.");
+        return;
+      }
       setRecoveryIssue({
         kind: "submission",
         status: details.status,
@@ -281,7 +278,7 @@ export default function ResidentApplicationPage() {
                 accept={ID_ACCEPT}
                 required={isFront}
                 aria-invalid={Boolean(fieldError)}
-                aria-describedby={frontIdError ? "front-id-help front-id-error" : "front-id-help"}
+                aria-describedby={fieldError ? `${helpId} ${errorId}` : helpId}
                 onChange={event => selectId(kind, event)}
               />
             </label>
@@ -357,7 +354,7 @@ export default function ResidentApplicationPage() {
                   <section className="form-section" aria-labelledby="selfie-heading">
                     <h3 id="selfie-heading" className="form-section-title">New selfie</h3>
                     <p className="form-help small">Take a clear photo with your camera so we can review your identity.</p>
-                    <ResidentSelfieCapture onCapture={setSelfieFile} disabled={saving} />
+                    <ResidentSelfieCapture onCapture={setSelfieFile} disabled={busy} />
                   </section>
                 </fieldset>
 
@@ -386,7 +383,7 @@ export default function ResidentApplicationPage() {
                 {statusMessage && <p className="status-message" role="status">{statusMessage}</p>}
                 {busy && <p className="progress-message" role="status"><span aria-hidden="true" />{checking ? "Checking application status…" : "Submitting corrections…"}</p>}
 
-                <button className="primary-action" disabled={busy || !selfieFile || Boolean(recoveryIssue?.requiresStatusCheck)}>
+                <button className="primary-action" disabled={busy || !selfieFile || Boolean(recoveryIssue?.requiresStatusCheck || recoveryIssue?.sessionExpired)}>
                   {saving ? <><span className="button-spinner" aria-hidden="true" />Submitting corrections…</> : "Resubmit for review"}
                 </button>
               </form>

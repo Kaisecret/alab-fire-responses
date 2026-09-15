@@ -125,6 +125,9 @@ export async function POST(request: NextRequest) {
       try { await removeIdentityEvidence(uploadedKeys); }
       catch { console.error("Resident correction evidence cleanup failed", { requestId, stage: "cleanup" }); }
     }
+    if (error instanceof Error && error.message === "IMAGE_PROCESSING_UNAVAILABLE") {
+      return NextResponse.json({ error: "We cannot process photos right now. Your corrections were not saved. Please try again later.", requestId }, { status: 503 });
+    }
     if (error instanceof CorrectionConflictError) {
       return NextResponse.json({ error: "Your application status has changed. Check your application status before submitting again." }, { status: 409 });
     }

@@ -186,6 +186,20 @@ npx eslint app/resident/application/page.tsx app/_components/resident-selfie-cap
 - [ ] Confirm successful resubmission shows **Under review** and enters the municipal queue with usable protected, watermarked evidence.
 - [ ] Recheck the originally affected deployed flow after deploying the identified fix. Record environment/date; leave unchecked until verified.
 
+## Implementation verification — September 16, 2026
+
+Implemented the correction form, explicit camera confirmation, retained evidence during recovery, serialized resubmission, safe JSON errors, and request references. Production logs identified a missing Sharp/libvips shared library as the route-startup failure. Next.js now traces the native dependencies explicitly, and the build verifies their presence for registration, resubmission, and evidence review routes.
+
+Verification completed:
+
+- Application suite: 489 passed, one skipped; repository deployment checks: six passed.
+- Focused resident and PDF checks: 53 passed. Production webpack build, native dependency verification, and TypeScript passed. Changed-file lint has zero errors and five warnings for image previews and camera focus restoration.
+- Headless Chromium with a simulated camera: capture, confirmation, HTTP 500 recovery, retained name/ID/selfie, status check, deliberate retry, and transition to Under review passed. No horizontal overflow at 320, 375, 390, 430, or 1280 pixels.
+- Municipal incident PDF redesigned against the supplied reference: measured letterhead, red title banner, numbered navy sections, readable fields, milestone tiles, wrapped timeline, signature, and footer. The short dossier is one page. Long narratives and timelines retain their ending content across continuation pages. All four export layouts were rendered and inspected.
+- Synthetic preview: `output/pdf/incident-report-sample.pdf` in the main workspace. Browser and PDF verification images are under ignored `tmp/`.
+
+Still requiring live verification: production deployment smoke checks, an authenticated resident resubmission entering the municipal queue, and real mobile/desktop camera hardware. Simulated camera checks do not establish physical-device behavior. No real resident submission was created during automated testing.
+
 ## 5. Completion criteria
 
 - [ ] Original HTTP 500 has an evidenced cause and verified fix, or an explicitly recorded external blocker.
