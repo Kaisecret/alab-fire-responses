@@ -2,9 +2,34 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import ts from "typescript";
 
 const appRoot = process.cwd();
 const source = (path) => readFileSync(join(appRoot, path), "utf8");
+
+function loadSelfieModule() {
+  const component = source("app/_components/resident-selfie-capture.tsx");
+  const code = ts.transpileModule(component, {
+    compilerOptions: {
+      jsx: ts.JsxEmit.ReactJSX,
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2022,
+    },
+  }).outputText;
+  const exports = {};
+  const reactStub = {
+    useCallback: (callback) => callback,
+    useEffect: () => {},
+    useRef: (value) => ({ current: value }),
+    useState: (value) => [value, () => {}],
+  };
+  new Function("require", "exports", code)((name) => {
+    if (name === "react") return reactStub;
+    if (name === "react/jsx-runtime") return { jsx: () => null, jsxs: () => null };
+    throw new Error(`Unexpected dependency: ${name}`);
+  }, exports);
+  return exports;
+}
 
 test("resident correction selfie capture component exists with camera-only states", () => {
   const path = "app/_components/resident-selfie-capture.tsx";
@@ -22,9 +47,84 @@ test("resident correction selfie capture component exists with camera-only state
 test("capture component stops media tracks on cancel, retake, and unmount", () => {
   const component = source("app/_components/resident-selfie-capture.tsx");
 
-  assert.match(component, /streamRef\.current\?\.getTracks\(\)\.forEach\(\(track\) => track\.stop\(\)\)/);
-  assert.match(component, /mountedRef\.current = false;\s*stopStream\(\);/);
-  assert.match(component, /stream\.getTracks\(\)\.forEach\(\(track\) => track\.stop\(\)\)/); // permission-resolved-after-unmount guard
+  assert.match(component, /function stopMediaStream[\s\S]*?stream\?\.getTracks\(\)\.forEach\(\(track\) => track\.stop\(\)\)/);
+  assert.match(component, /mountedRef\.current = false;\s*coordinatorRef\.current\.cancel\(\);\s*stopStream\(\);/);
+  assert.match(component, /settleRequestedStream\(coordinatorRef\.current, attempt, stream\)/);
+});
+
+test("a cancelled permission request rejects and stops its late camera stream", () => {
+  const { createCameraAttemptCoordinator, settleRequestedStream } = loadSelfieModule();
+  const coordinator = createCameraAttemptCoordinator();
+  const request = coordinator.begin();
+  const stopped = [];
+  const stream = {
+    getTracks: () => [
+      { stop: () => stopped.push("video") },
+      { stop: () => stopped.push("audio") },
+    ],
+  };
+
+  coordinator.cancel();
+
+  assert.equal(settleRequestedStream(coordinator, request, stream), false);
+  assert.deepEqual(stopped, ["video", "audio"]);
+});
+
+test("only one encoding operation can run and a cancelled result stays ignored", () => {
+  const { createCameraAttemptCoordinator } = loadSelfieModule();
+  const coordinator = createCameraAttemptCoordinator();
+  const request = coordinator.begin();
+
+  assert.equal(coordinator.beginEncoding(request), true);
+  assert.equal(coordinator.beginEncoding(request), false);
+
+  coordinator.cancel();
+
+  assert.equal(coordinator.finishEncoding(request), false);
+});
+
+test("capture readiness requires loaded video data and a non-zero frame", () => {
+  const { hasUsableVideoFrame } = loadSelfieModule();
+
+  assert.equal(hasUsableVideoFrame({ readyState: 1, videoWidth: 640, videoHeight: 480 }), false);
+  assert.equal(hasUsableVideoFrame({ readyState: 2, videoWidth: 0, videoHeight: 480 }), false);
+  assert.equal(hasUsableVideoFrame({ readyState: 2, videoWidth: 640, videoHeight: 0 }), false);
+  assert.equal(hasUsableVideoFrame({ readyState: 2, videoWidth: 640, videoHeight: 480 }), true);
+});
+
+test("dialog Tab handling wraps focus at both ends", () => {
+  const { trapDialogFocus } = loadSelfieModule();
+  const focused = [];
+  const first = { focus: () => focused.push("first") };
+  const middle = { focus: () => focused.push("middle") };
+  const last = { focus: () => focused.push("last") };
+  const dialog = { querySelectorAll: () => [first, middle, last] };
+  const makeEvent = (shiftKey) => ({
+    key: "Tab",
+    shiftKey,
+    preventDefaultCalled: false,
+    preventDefault() { this.preventDefaultCalled = true; },
+  });
+
+  const backwards = makeEvent(true);
+  assert.equal(trapDialogFocus(backwards, dialog, first), true);
+  assert.equal(backwards.preventDefaultCalled, true);
+  assert.deepEqual(focused, ["last"]);
+
+  const forwards = makeEvent(false);
+  assert.equal(trapDialogFocus(forwards, dialog, last), true);
+  assert.equal(forwards.preventDefaultCalled, true);
+  assert.deepEqual(focused, ["last", "first"]);
+});
+
+test("dialog focus restoration uses the remounted camera action when its opener is gone", () => {
+  const { restoreDialogFocus } = loadSelfieModule();
+  const focused = [];
+  const removedOpener = { isConnected: false, focus: () => focused.push("removed") };
+  const remountedAction = { isConnected: true, focus: () => focused.push("fallback") };
+
+  assert.equal(restoreDialogFocus(removedOpener, remountedAction), true);
+  assert.deepEqual(focused, ["fallback"]);
 });
 
 test("capture component releases object URLs and enforces the evidence size limit", () => {

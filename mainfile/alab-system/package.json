@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build",
+    "build": "next build && node scripts/verify-evidence-runtime.mjs",
     "start": "next start",
     "bootstrap:provincial-bfp": "node scripts/bootstrap-provincial-bfp.mjs",
     "gis:import-buildings": "node scripts/import-open-buildings.mjs",

@@ -1,6 +1,19 @@
 import type { NextConfig } from "next";
 
+// Sharp loads libvips through its native addon. Static tracing can include the
+// addon but omit its shared libraries, crashing evidence routes on Linux before
+// their handlers run. Include the installed platform packages in those bundles.
+const evidenceRuntimeFiles = ["node_modules/sharp/**/*", "node_modules/@img/sharp-*/**/*"];
+
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    "/api/auth/register": evidenceRuntimeFiles,
+    "/api/resident/application-status/resubmit": evidenceRuntimeFiles,
+    "/api/municipal-bfp/resident-applications": evidenceRuntimeFiles,
+    "/api/municipal-bfp/resident-applications/**": evidenceRuntimeFiles,
+    "/api/provincial-bfp/resident-applications": evidenceRuntimeFiles,
+    "/api/provincial-bfp/resident-applications/**": evidenceRuntimeFiles,
+  },
   allowedDevOrigins: ["169.254.6.6"],
   turbopack: {
     root: __dirname,

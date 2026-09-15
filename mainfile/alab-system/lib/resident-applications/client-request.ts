@@ -1,5 +1,5 @@
 export class ResidentApplicationRequestError extends Error {
-  constructor(message: string, public readonly status = 0) {
+  constructor(message: string, public readonly status = 0, public readonly requestId?: string) {
     super(message);
     this.name = 'ResidentApplicationRequestError';
   }
@@ -37,7 +37,11 @@ export async function requestResidentApplicationJson<T>(
           : response.status === 401 ? 'Your session has expired. Please sign in again.'
           : response.status === 403 ? 'You no longer have access to these records.'
           : `The server returned an unexpected response (HTTP ${response.status}). Please retry.`;
-        throw new ResidentApplicationRequestError(message, response.status);
+        const requestId = body && typeof body.requestId === 'string' &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.requestId)
+          ? body.requestId
+          : undefined;
+        throw new ResidentApplicationRequestError(message, response.status, requestId);
       }
       if (!body || typeof body !== 'object') {
         throw new ResidentApplicationRequestError('The server returned an invalid response. Please retry.');
