@@ -16,6 +16,7 @@ import {
   getStatusLabel,
   getSeverityLabel,
 } from "../../lib/municipal-bfp/reports/formatters";
+import { BfpDataLoader } from "./bfp-data-loader";
 import { MunicipalReportDetail } from "./municipal-report-detail";
 import { MunicipalReportExportDialog } from "./municipal-report-export-dialog";
 
@@ -1255,19 +1256,8 @@ export function MunicipalReportDirectory() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} style={{ padding: "3rem", textAlign: "center", color: "#64748B" }}>
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        border: "3px solid #E2E8F0",
-                        borderTopColor: "#D00F09",
-                        borderRadius: "50%",
-                        animation: "spin 1s linear infinite",
-                        margin: "0 auto 0.5rem",
-                      }}
-                    />
-                    <span style={{ fontSize: "0.82rem" }}>Loading incident records...</span>
+                  <td colSpan={8} style={{ padding: "1.5rem", textAlign: "center", color: "#64748B" }}>
+                    <BfpDataLoader size="sm" minHeight="150px" title="Loading incident records…" />
                   </td>
                 </tr>
               )}

@@ -48,3 +48,20 @@ test("export audit constraints accept generated PDF documents and incident dossi
   assert.match(migration, /PRINT_SUMMARY/);
   assert.match(migration, /PRINT_INCIDENT/);
 });
+
+test("export audit migration creates its own table when the earlier one never ran", () => {
+  const migration = readFileSync(pdfMigrationPath, "utf8");
+
+  // Altering a table that was never created fails with 42P01, so this
+  // migration has to stand on its own rather than assume the earlier one ran.
+  assert.match(migration, /create table if not exists public\.municipal_export_events/i);
+  assert.match(migration, /actor_user_id\s+uuid\s+not\s+null\s+references public\.users\(id\)/i);
+  assert.match(migration, /municipality_id\s+uuid\s+not\s+null\s+references public\.municipalities\(id\)/i);
+  assert.match(migration, /create extension if not exists pgcrypto/i);
+
+  // The security posture of the original table must be reproduced, not dropped.
+  assert.match(migration, /enable row level security/i);
+  assert.match(migration, /revoke all on table public\.municipal_export_events from public, anon, authenticated/i);
+  assert.match(migration, /prevent_municipal_export_event_mutation/i);
+  assert.match(migration, /before update or delete on public\.municipal_export_events/i);
+});

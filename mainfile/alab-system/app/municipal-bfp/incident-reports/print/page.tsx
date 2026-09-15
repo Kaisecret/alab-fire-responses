@@ -1,6 +1,7 @@
 "use client";
 
 import { municipalTabFetch } from "../../../../lib/auth/municipal-tab-fetch";
+import { BfpDataLoader } from "../../../_components/bfp-data-loader";
 
 import React, { useEffect, useState } from "react";
 import type {
@@ -460,8 +461,8 @@ export default function IncidentReportsPrintPage() {
             src="/images/logo alab.png"
             alt="ALAB"
             style={{
-              width: 54,
-              height: 54,
+              width: 72,
+              height: 72,
               objectFit: "contain",
               flexShrink: 0,
               WebkitPrintColorAdjust: "exact",
@@ -503,12 +504,7 @@ export default function IncidentReportsPrintPage() {
           </div>
         </div>
 
-        {loading && (
-          <div style={{ padding: "3rem", textAlign: "center", color: "#64748B" }}>
-            <i className="fa-solid fa-circle-notch fa-spin" style={{ fontSize: "1.8rem", color: "#D00F09", marginBottom: "0.5rem" }} />
-            <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 600 }}>Loading official print layout...</p>
-          </div>
-        )}
+        {loading && <BfpDataLoader minHeight="260px" title="Loading official report layout…" />}
 
         {error && (
           <div style={{ padding: "1.5rem", background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B", borderRadius: 8 }}>

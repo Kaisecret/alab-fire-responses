@@ -4,6 +4,7 @@ import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
+import { BfpDataLoader } from "./bfp-data-loader";
 import type {
   MunicipalReportDetail as MunicipalReportDetailType,
   MunicipalDispatchRecord,
@@ -385,22 +386,7 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
 
         {/* Body content */}
         <div style={{ padding: "1.5rem", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-          {loading && (
-            <div style={{ padding: "3rem", textAlign: "center", color: "#64748B" }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  border: "3px solid #E2E8F0",
-                  borderTopColor: "#D00F09",
-                  borderRadius: "50%",
-                  animation: "spin 1s linear infinite",
-                  margin: "0 auto 0.75rem",
-                }}
-              />
-              <p style={{ margin: 0, fontSize: "0.875rem" }}>Loading incident details...</p>
-            </div>
-          )}
+          {loading && <BfpDataLoader size="sm" minHeight="200px" title="Loading incident details…" />}
 
           {error && (
             <div

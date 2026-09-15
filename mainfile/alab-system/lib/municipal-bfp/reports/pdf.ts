@@ -120,31 +120,47 @@ async function loadLogo(): Promise<Buffer | null> {
   }
 }
 
+/** Letterhead emblem size. The wording block below runs to LETTERHEAD_HEIGHT. */
+const EMBLEM_SIZE = 64;
+const LETTERHEAD_HEIGHT = 54;
+
 function drawHeader(doc: Doc, context: MunicipalPdfContext, logo: Buffer | null): void {
   const top = PAGE.margin;
 
+  // The emblem is taller than the wording, so it is centred against that block
+  // and allowed to sit slightly above it rather than stretching the header.
+  const emblemTop = top + (LETTERHEAD_HEIGHT - EMBLEM_SIZE) / 2;
+
   if (logo) {
-    doc.image(logo, PAGE.margin, top, { fit: [46, 46], align: "center", valign: "center" });
+    doc.image(logo, PAGE.margin, emblemTop, {
+      fit: [EMBLEM_SIZE, EMBLEM_SIZE],
+      align: "center",
+      valign: "center",
+    });
   } else {
+    const radius = EMBLEM_SIZE / 2;
     doc.save();
-    doc.circle(PAGE.margin + 23, top + 23, 23).fill(COLORS.brand);
+    doc.circle(PAGE.margin + radius, emblemTop + radius, radius).fill(COLORS.brand);
     doc
       .fillColor(COLORS.white)
       .font("Helvetica-Bold")
-      .fontSize(15)
-      .text("A", PAGE.margin, top + 14, { width: 46, align: "center" });
+      .fontSize(21)
+      .text("A", PAGE.margin, emblemTop + radius - 8, { width: EMBLEM_SIZE, align: "center" });
     doc.restore();
   }
 
-  const textLeft = PAGE.margin + 58;
-  const textWidth = CONTENT_WIDTH - 58;
-
+  /*
+   * The letterhead is centred across the full content width, with the emblem
+   * overlaid at the left margin, so the wording sits on the page centre line
+   * rather than being pushed right by the emblem.
+   */
   doc
     .fillColor(COLORS.muted)
     .font("Helvetica")
     .fontSize(7)
-    .text("REPUBLIC OF THE PHILIPPINES  •  DEPARTMENT OF THE INTERIOR AND LOCAL GOVERNMENT", textLeft, top + 1, {
-      width: textWidth,
+    .text("REPUBLIC OF THE PHILIPPINES  •  DEPARTMENT OF THE INTERIOR AND LOCAL GOVERNMENT", PAGE.margin, top + 1, {
+      width: CONTENT_WIDTH,
+      align: "center",
       characterSpacing: 0.4,
     });
 
@@ -152,7 +168,11 @@ function drawHeader(doc: Doc, context: MunicipalPdfContext, logo: Buffer | null)
     .fillColor(COLORS.brandDark)
     .font("Helvetica-Bold")
     .fontSize(13)
-    .text("BUREAU OF FIRE PROTECTION", textLeft, top + 12, { width: textWidth, characterSpacing: 0.6 });
+    .text("BUREAU OF FIRE PROTECTION", PAGE.margin, top + 12, {
+      width: CONTENT_WIDTH,
+      align: "center",
+      characterSpacing: 0.6,
+    });
 
   doc
     .fillColor(COLORS.ink)
@@ -160,23 +180,31 @@ function drawHeader(doc: Doc, context: MunicipalPdfContext, logo: Buffer | null)
     .fontSize(9)
     .text(
       `MUNICIPAL FIRE STATION  •  ${(context.municipalityName || "MUNICIPAL").toUpperCase()}, ANTIQUE`,
-      textLeft,
+      PAGE.margin,
       top + 28,
-      { width: textWidth },
+      { width: CONTENT_WIDTH, align: "center" },
     );
 
   doc
     .fillColor(COLORS.muted)
     .font("Helvetica")
     .fontSize(7.5)
-    .text("ALAB Emergency Dispatch, Telemetry & Citizen Intake System", textLeft, top + 39, { width: textWidth });
+    .text("ALAB Emergency Dispatch, Telemetry & Citizen Intake System", PAGE.margin, top + 39, {
+      width: CONTENT_WIDTH,
+      align: "center",
+    });
 
-  const ruleY = top + 54;
+  // The rule clears the emblem, which overhangs the wording block.
+  const ruleY = Math.max(top + LETTERHEAD_HEIGHT, emblemTop + EMBLEM_SIZE + 4);
   doc.save();
   doc.lineWidth(2).strokeColor(COLORS.brand);
   doc.moveTo(PAGE.margin, ruleY).lineTo(PAGE.width - PAGE.margin, ruleY).stroke();
   doc.restore();
 }
+
+/** First safe y for body content: below the letterhead rule. */
+const HEADER_BOTTOM =
+  PAGE.margin + Math.max(LETTERHEAD_HEIGHT, (LETTERHEAD_HEIGHT - EMBLEM_SIZE) / 2 + EMBLEM_SIZE + 4);
 
 function documentTitle(kind: MunicipalPdfKind): string {
   switch (kind) {
@@ -193,28 +221,33 @@ function documentTitle(kind: MunicipalPdfKind): string {
 }
 
 function drawTitleBlock(doc: Doc, context: MunicipalPdfContext, recordCount: number): number {
-  let y = PAGE.margin + 66;
+  let y = HEADER_BOTTOM + 12;
 
-  doc
-    .fillColor(COLORS.ink)
-    .font("Helvetica-Bold")
-    .fontSize(13)
-    .text(documentTitle(context.kind), PAGE.margin, y, { width: CONTENT_WIDTH * 0.66 });
+  // The title is measured rather than assumed: a long one wraps to a second
+  // line, which previously overlapped the municipality row beneath it.
+  const titleWidth = CONTENT_WIDTH * 0.62;
+  const title = documentTitle(context.kind);
+
+  doc.font("Helvetica-Bold").fontSize(12);
+  const titleHeight = doc.heightOfString(title, { width: titleWidth });
+
+  doc.fillColor(COLORS.ink).text(title, PAGE.margin, y, { width: titleWidth });
 
   doc
     .fillColor(COLORS.muted)
     .font("Helvetica")
     .fontSize(7.5)
-    .text(`Generated: ${formatPhilippineDateTime(new Date().toISOString())}`, PAGE.margin + CONTENT_WIDTH * 0.66, y + 1, {
-      width: CONTENT_WIDTH * 0.34,
+    .text(`Generated: ${formatPhilippineDateTime(new Date().toISOString())}`, PAGE.margin + CONTENT_WIDTH * 0.64, y + 1, {
+      width: CONTENT_WIDTH * 0.36,
       align: "right",
     })
-    .text(`Prepared by: ${context.preparedBy}`, PAGE.margin + CONTENT_WIDTH * 0.66, y + 11, {
-      width: CONTENT_WIDTH * 0.34,
+    .text(`Prepared by: ${context.preparedBy}`, PAGE.margin + CONTENT_WIDTH * 0.64, y + 11, {
+      width: CONTENT_WIDTH * 0.36,
       align: "right",
     });
 
-  y += 20;
+  // Clear whichever column is taller: the wrapped title or the two meta lines.
+  y += Math.max(titleHeight, 22) + 6;
 
   doc
     .fillColor(COLORS.body)
@@ -333,7 +366,7 @@ function ensureSpace(
 
   doc.addPage();
   drawHeader(doc, context, logo);
-  let next = PAGE.margin + 68;
+  let next = HEADER_BOTTOM + 14;
   if (columns) next = drawTableHeader(doc, next, columns);
   return next;
 }
@@ -807,7 +840,7 @@ function renderDossier(doc: Doc, context: MunicipalPdfContext, logo: Buffer | nu
   const report = context.detail;
   if (!report) return;
 
-  let y = PAGE.margin + 66;
+  let y = HEADER_BOTTOM + 12;
 
   // Reference banner with the incident's current standing.
   doc.save();
