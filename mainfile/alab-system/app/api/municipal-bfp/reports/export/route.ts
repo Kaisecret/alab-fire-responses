@@ -148,7 +148,7 @@ async function handleExport(
           : 500;
 
     if (status === 500) console.error("Municipal export failed", error);
-    return NextResponse.json({ error: status === 500 ? "Unable to generate and audit this export. Please retry or contact the administrator." : message }, { status });
+    return NextResponse.json({ error: status === 500 ? "This export could not be generated. Please try again." : message }, { status });
   }
 }
 
