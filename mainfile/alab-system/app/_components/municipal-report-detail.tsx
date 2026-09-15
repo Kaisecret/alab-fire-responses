@@ -3,6 +3,7 @@
 import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import type {
   MunicipalReportDetail as MunicipalReportDetailType,
   MunicipalDispatchRecord,
@@ -185,7 +186,14 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
     );
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  /*
+   * Rendered into document.body: the page content area animates transform and
+   * sets will-change, which makes it a containing block for fixed positioning.
+   * Inside it the overlay could not cover the sidebar or header.
+   */
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -740,6 +748,6 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
           </div>
         </div>
       )}
-    </div>
+    </div>, document.body,
   );
 }

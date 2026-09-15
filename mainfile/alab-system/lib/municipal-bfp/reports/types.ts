@@ -138,10 +138,14 @@ export type MunicipalExportOptions = {
   scope: MunicipalExportScope;
   format: MunicipalExportFormat;
   selectedIds?: string[];
+  /** Signature name printed on a PDF export; defaults to the actor's own name. */
+  preparedBy?: string;
 };
 
 export type MunicipalExportResult = {
   csvContent: string;
+  /** Present only for PDF exports; CSV exports carry their text in csvContent. */
+  pdfContent?: Buffer;
   fileName: string;
   rowCount: number;
 };

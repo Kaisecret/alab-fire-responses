@@ -87,8 +87,9 @@ const layoutStyles = `
   .mbfp-sidebar {
     width: 260px;
     min-width: 260px;
-    background: #940D07;
-    border-right: 1px solid rgba(0, 0, 0, 0.25);
+    /* Deep vertical gradient reads as one solid rail rather than a flat block. */
+    background: linear-gradient(180deg, #A50F08 0%, #8C0C06 52%, #730A05 100%);
+    border-right: 1px solid rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -97,7 +98,7 @@ const layoutStyles = `
     bottom: 0;
     z-index: 100;
     transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 4px 0 28px rgba(0, 0, 0, 0.45);
+    box-shadow: 2px 0 24px rgba(69, 6, 3, 0.4);
     overflow: hidden;
     animation: mbfpSidebarSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
@@ -306,15 +307,27 @@ const layoutStyles = `
   .mbfp-nav-group:nth-child(4) { animation: mbfpNavItemEntrance 0.42s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
   .mbfp-nav-group-title {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     font-weight: 800;
-    color: rgba(255, 255, 255, 0.7);
+    /* Lifted from 0.7 alpha so the label clears 4.5:1 on the rail. */
+    color: rgba(255, 255, 255, 0.82);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 0 1.25rem 0.35rem;
+    letter-spacing: 0.1em;
+    padding: 0 1.35rem 0.4rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* Hairline under each group heading separates sections without extra spacing. */
+  .mbfp-nav-group + .mbfp-nav-group .mbfp-nav-group-title {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 0.9rem;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-nav-group + .mbfp-nav-group {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 0.6rem;
   }
 
   .mbfp-sidebar.collapsed .mbfp-nav-group-title {
@@ -355,6 +368,32 @@ const layoutStyles = `
     transform: translateX(3px);
   }
 
+  /*
+   * The rail had no keyboard focus indicator at all. A white ring on the dark
+   * red clears the 3:1 contrast the focus-appearance guidance asks for.
+   */
+  .mbfp-nav-link:focus-visible,
+  .mbfp-collapse-btn:focus-visible,
+  .mbfp-sidebar-close:focus-visible,
+  .mbfp-profile-card:focus-visible,
+  .mbfp-brand-link:focus-visible {
+    outline: 2px solid #FFFFFF;
+    outline-offset: 2px;
+    border-radius: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mbfp-nav-link,
+    .mbfp-nav-link:hover,
+    .mbfp-nav-group,
+    .mbfp-sidebar,
+    .mbfp-sidebar-header {
+      transition: none !important;
+      animation: none !important;
+      transform: none !important;
+    }
+  }
+
   .mbfp-sidebar.collapsed .mbfp-nav-link:hover {
     transform: none;
   }
@@ -365,12 +404,25 @@ const layoutStyles = `
     opacity: 1;
   }
 
-  /* Active Pill State */
+  /*
+   * Active Pill State. Hover already darkens the row, so the current page is
+   * marked by a lighter fill plus a left accent bar instead of a deeper one.
+   */
   .mbfp-nav-link.active {
-    background: rgba(0, 0, 0, 0.22);
+    background: rgba(255, 255, 255, 0.16);
     color: #FFFFFF;
     font-weight: 700;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: inset 3px 0 0 #FFFFFF, 0 1px 3px rgba(69, 6, 3, 0.3);
+  }
+
+  .mbfp-nav-link.active:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: none;
+  }
+
+  .mbfp-sidebar.collapsed .mbfp-nav-link.active {
+    box-shadow: inset 0 -2px 0 #FFFFFF, 0 1px 3px rgba(69, 6, 3, 0.3);
   }
 
   .mbfp-nav-icon {
@@ -494,10 +546,12 @@ const layoutStyles = `
     animation: mbfpFooterEntrance 0.45s 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
+  /* A native button, so the defaults are reset back to the card layout. */
   .mbfp-profile-card {
     display: flex;
     align-items: center;
     gap: 0.65rem;
+    width: 100%;
     padding: 0.55rem 0.65rem;
     border-radius: 14px;
     background: rgba(0, 0, 0, 0.25);
@@ -505,6 +559,12 @@ const layoutStyles = `
     cursor: pointer;
     touch-action: manipulation;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    -webkit-appearance: none;
+    appearance: none;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    text-align: left;
   }
 
   .mbfp-sidebar.collapsed .mbfp-profile-card {
@@ -1246,10 +1306,13 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
 
           {/* Profile Area at Bottom */}
           <div className="mbfp-sidebar-footer">
-            <div
+            <button
+              type="button"
               className="mbfp-profile-card"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               title="Station Officer Profile"
+              aria-expanded={isProfileOpen}
+              aria-haspopup="menu"
             >
               <div className="mbfp-profile-avatar" style={{ overflow: "hidden" }}>
                 {identity?.photoUrl ? (
@@ -1273,7 +1336,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
               <i
                 className={`fa-solid fa-chevron-up mbfp-profile-chevron ${isProfileOpen ? 'rotate-180' : ''}`}
               />
-            </div>
+            </button>
 
             {/* Profile Popover Menu */}
             {isProfileOpen && (

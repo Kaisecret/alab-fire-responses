@@ -623,50 +623,13 @@ export function MunicipalReportExportDialog({
   const handleDownload = async () => {
     if (isRegisterEmpty || exporting) return;
     setErrorMessage(null);
-
-    // PDF Format export: navigate to dedicated colored print/PDF view in current tab
-    if (format === "PDF") {
-      const query = new URLSearchParams();
-      if (dataset === "INCIDENT_REGISTER") {
-        query.set("mode", "register");
-        if (filters.period) query.set("period", filters.period);
-        if (filters.from) query.set("from", filters.from);
-        if (filters.to) query.set("to", filters.to);
-        if (filters.barangayId) query.set("barangayId", filters.barangayId);
-        if (filters.status) query.set("status", filters.status);
-        if (filters.fireType) query.set("fireType", filters.fireType);
-        if (filters.severity) query.set("severity", filters.severity);
-        if (filters.reportSource) query.set("reportSource", filters.reportSource);
-        if (filters.search) query.set("search", filters.search);
-        if (scope === "SELECTED" && selectedIds.length > 0) {
-          query.set("selectedIds", selectedIds.join(","));
-        }
-        query.set("scope", scope);
-        query.set("autoPrint", "true");
-      } else {
-        query.set("mode", "summary");
-        if (filters.period) query.set("period", filters.period);
-        if (filters.from) query.set("from", filters.from);
-        if (filters.to) query.set("to", filters.to);
-        if (filters.barangayId) query.set("barangayId", filters.barangayId);
-        if (filters.status) query.set("status", filters.status);
-        if (filters.fireType) query.set("fireType", filters.fireType);
-        if (filters.severity) query.set("severity", filters.severity);
-        if (filters.reportSource) query.set("reportSource", filters.reportSource);
-        if (filters.search) query.set("search", filters.search);
-        query.set("autoPrint", "true");
-      }
-      onClose();
-      window.location.href = `/municipal-bfp/incident-reports/print?${query.toString()}`;
-      return;
-    }
-
     setExporting(true);
 
     try {
       const payload = {
         dataset,
         scope,
+        format,
         selectedIds: scope === "SELECTED" ? selectedIds : undefined,
         filters,
       };
@@ -1000,7 +963,7 @@ export function MunicipalReportExportDialog({
               </>
             ) : format === "PDF" ? (
               <>
-                <i className="fa-solid fa-file-pdf" /> Export PDF Document
+                <i className="fa-solid fa-file-pdf" /> Download PDF
               </>
             ) : (
               <>

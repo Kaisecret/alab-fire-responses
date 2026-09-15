@@ -403,26 +403,20 @@ export default function IncidentReportsPrintPage() {
             gap: "1.5rem",
           }}
         >
-          {/* Official Emblem / Symbol */}
-          <div
+          {/* Official ALAB Emblem */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/logo alab.png"
+            alt="ALAB"
             style={{
               width: 54,
               height: 54,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #D00F09, #991B1B)",
-              color: "#FFFFFF",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "1.6rem",
+              objectFit: "contain",
               flexShrink: 0,
-              boxShadow: "0 2px 6px rgba(208, 15, 9, 0.3)",
               WebkitPrintColorAdjust: "exact",
               printColorAdjust: "exact",
             }}
-          >
-            <i className="fa-solid fa-fire-shield" />
-          </div>
+          />
 
           <div style={{ flex: 1, textAlign: "center" }}>
             <div style={{ fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#475569", fontWeight: 600 }}>

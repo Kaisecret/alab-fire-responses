@@ -17,6 +17,7 @@ function exporter({ auditFails = false } = {}) {
     '../../db': { getDatabase: () => ({ ...db, connect: async () => db }) },
     './formatters': loadServerModule('lib/municipal-bfp/reports/formatters.ts', {}),
     './service': { listMunicipalReports: async () => ({ items: [{ referenceNumber: 'TEST', municipalityName: 'Hamtic', barangay: 'Unknown', submittedAt: null }], total: 1, totalPages: 1 }), getMunicipalReportSummary: async () => ({}) },
+    './pdf': { buildMunicipalReportPdf: async () => Buffer.from('%PDF-1.3 stub') },
   });
   return { ...mod, calls };
 }
