@@ -30,10 +30,13 @@ export async function requestResidentApplicationJson<T>(
       const response = await fetch(url, { cache: 'no-store', ...init, signal: controller.signal });
       const body = await response.json().catch(() => null);
       if (!response.ok) {
+        // A non-JSON body means something upstream answered instead of the API
+        // (a gateway or access-control page, an HTML error page, a bad path).
+        // Name the status so that case is diagnosable rather than anonymous.
         const message = body && typeof body.error === 'string' ? body.error
           : response.status === 401 ? 'Your session has expired. Please sign in again.'
           : response.status === 403 ? 'You no longer have access to these records.'
-          : 'Unable to load the response. Please retry.';
+          : `The server returned an unexpected response (HTTP ${response.status}). Please retry.`;
         throw new ResidentApplicationRequestError(message, response.status);
       }
       if (!body || typeof body !== 'object') {
