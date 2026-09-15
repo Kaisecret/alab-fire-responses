@@ -132,7 +132,7 @@ export type MunicipalExportDataset =
 
 export type MunicipalExportScope = "ALL_MATCHING" | "SELECTED" | "CURRENT_PAGE";
 
-export type MunicipalExportFormat = "CSV" | "PDF";
+export type MunicipalExportFormat = "CSV" | "PDF" | "XLSX";
 
 export type MunicipalExportOptions = {
   dataset: MunicipalExportDataset;
@@ -149,6 +149,8 @@ export type MunicipalExportResult = {
   csvContent: string;
   /** Present only for PDF exports; CSV exports carry their text in csvContent. */
   pdfContent?: Buffer;
+  /** Present only for Excel exports. */
+  xlsxContent?: Buffer;
   fileName: string;
   rowCount: number;
 };

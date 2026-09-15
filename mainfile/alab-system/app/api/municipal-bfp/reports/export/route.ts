@@ -28,7 +28,10 @@ const ALLOWED_SCOPES = new Set<MunicipalExportScope>([
   "CURRENT_PAGE",
 ]);
 
-const ALLOWED_FORMATS = new Set<MunicipalExportFormat>(["CSV", "PDF"]);
+const ALLOWED_FORMATS = new Set<MunicipalExportFormat>(["CSV", "PDF", "XLSX"]);
+
+const XLSX_CONTENT_TYPE =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 async function handleExport(
   request: NextRequest,
@@ -129,6 +132,16 @@ async function handleExport(
       return new NextResponse(new Uint8Array(result.pdfContent), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/pdf" },
+      });
+    }
+
+    if (format === "XLSX") {
+      if (!result.xlsxContent) {
+        throw new Error("Export produced no Excel workbook.");
+      }
+      return new NextResponse(new Uint8Array(result.xlsxContent), {
+        status: 200,
+        headers: { ...headers, "Content-Type": XLSX_CONTENT_TYPE },
       });
     }
 

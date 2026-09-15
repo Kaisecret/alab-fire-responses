@@ -23,7 +23,7 @@ interface MunicipalReportExportDialogProps {
   sampleRows: MunicipalReportRow[];
   municipalityName: string;
   initialScope?: MunicipalExportScope;
-  initialFormat?: "PDF" | "CSV";
+  initialFormat?: "PDF" | "CSV" | "XLSX";
 }
 
 const styles = `
@@ -530,7 +530,7 @@ export function MunicipalReportExportDialog({
   initialScope = "ALL_MATCHING",
   initialFormat = "PDF",
 }: MunicipalReportExportDialogProps) {
-  const [format, setFormat] = useState<"PDF" | "CSV">(initialFormat);
+  const [format, setFormat] = useState<"PDF" | "CSV" | "XLSX">(initialFormat);
   const [dataset, setDataset] = useState<MunicipalExportDataset>("INCIDENT_REGISTER");
   const [scope, setScope] = useState<MunicipalExportScope>(initialScope);
   const [showPreview, setShowPreview] = useState(false);
@@ -600,7 +600,7 @@ export function MunicipalReportExportDialog({
     if (dataset === "MUNICIPAL_SUMMARY") datasetSlug = "incident-summary";
     if (dataset === "BARANGAY_BREAKDOWN") datasetSlug = "barangay-breakdown";
 
-    const ext = format === "PDF" ? "pdf" : "csv";
+    const ext = format === "PDF" ? "pdf" : format === "XLSX" ? "xlsx" : "csv";
     return `alab-${muniSlug}-${datasetSlug}-${datesSlug}-PHT.${ext}`;
   };
 
@@ -678,6 +678,12 @@ export function MunicipalReportExportDialog({
       icon: "fa-solid fa-file-pdf",
       name: "PDF Document (.pdf)",
       desc: "Official full-color BFP report with reporter data, badges & signatures",
+    },
+    {
+      id: "XLSX" as const,
+      icon: "fa-solid fa-file-excel",
+      name: "Excel Workbook (.xlsx)",
+      desc: "Formatted sheet with colour-coded severity and status, ready to read",
     },
     {
       id: "CSV" as const,
@@ -856,6 +862,11 @@ export function MunicipalReportExportDialog({
                       <i className="fa-solid fa-file-pdf" style={{ color: "#DC2626" }} />
                       <span>PDF Document</span>
                     </>
+                  ) : format === "XLSX" ? (
+                    <>
+                      <i className="fa-solid fa-file-excel" style={{ color: "#047857" }} />
+                      <span>Excel Workbook (.xlsx)</span>
+                    </>
                   ) : (
                     <>
                       <i className="fa-solid fa-file-csv" style={{ color: "#059669" }} />
@@ -964,6 +975,10 @@ export function MunicipalReportExportDialog({
             ) : format === "PDF" ? (
               <>
                 <i className="fa-solid fa-file-pdf" /> Download PDF
+              </>
+            ) : format === "XLSX" ? (
+              <>
+                <i className="fa-solid fa-file-excel" /> Download Excel
               </>
             ) : (
               <>

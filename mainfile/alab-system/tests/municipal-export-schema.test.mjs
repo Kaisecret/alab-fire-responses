@@ -18,6 +18,13 @@ const pdfMigrationPath = join(
   "20260916090000_allow_pdf_and_dossier_export_events.sql",
 );
 
+const xlsxMigrationPath = join(
+  root,
+  "supabase",
+  "migrations",
+  "20260916120000_allow_xlsx_export_events.sql",
+);
+
 test("municipal export events migration creates secure audit log with immutability controls", () => {
   const migration = readFileSync(migrationPath, "utf8");
 
@@ -43,6 +50,20 @@ test("export audit constraints accept generated PDF documents and incident dossi
 
   assert.match(migration, /municipal_export_events_dataset_check/);
   assert.match(migration, /INCIDENT_DOSSIER/);
+
+  // Existing audit rows must stay valid under the replacement constraint.
+  assert.match(migration, /PRINT_SUMMARY/);
+  assert.match(migration, /PRINT_INCIDENT/);
+});
+
+test("export audit constraints accept generated Excel workbooks", () => {
+  const migration = readFileSync(xlsxMigrationPath, "utf8");
+
+  // An Excel export writes format 'XLSX'; the previous constraint listed only
+  // CSV, PDF and the two retired print modes.
+  assert.match(migration, /municipal_export_events_format_check/);
+  assert.match(migration, /'XLSX'/);
+  assert.match(migration, /check \(format in \('CSV', 'PDF', 'XLSX'/);
 
   // Existing audit rows must stay valid under the replacement constraint.
   assert.match(migration, /PRINT_SUMMARY/);

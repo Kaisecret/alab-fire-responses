@@ -3,6 +3,7 @@ import "server-only";
 import { getDatabase } from "../../db";
 import type { MunicipalAdminIdentity } from "../auth";
 import { formatPhilippineDateTime } from "./formatters";
+import { buildMunicipalReportExcel } from "./excel";
 import { buildMunicipalReportPdf } from "./pdf";
 import { listMunicipalReports, getMunicipalReportDetail, getMunicipalReportSummary } from "./service";
 import type {
@@ -97,7 +98,9 @@ export async function exportMunicipalDataset(
   if (actor.accountStatus !== "ACTIVE" || !actor.municipalityId || actor.email === "preview@municipal-bfp.local" || actor.userId === "afbc9f03-312c-4208-a15c-05f87a3ad6fe") {
     throw new Error("UNAUTHORIZED: An active assigned account is required.");
   }
-  if (options.format !== "CSV" && options.format !== "PDF") throw new Error("INVALID_FORMAT: Choose CSV or PDF.");
+  if (!["CSV", "PDF", "XLSX"].includes(options.format)) {
+    throw new Error("INVALID_FORMAT: Choose CSV, PDF or XLSX.");
+  }
   if (!["ALL_MATCHING", "SELECTED", "CURRENT_PAGE"].includes(options.scope) ||
       (options.dataset !== "INCIDENT_REGISTER" && options.scope !== "ALL_MATCHING")) {
     throw new Error("INVALID_SCOPE: Aggregate reports require all matching records.");
@@ -132,7 +135,7 @@ export async function exportMunicipalDataset(
   let pdfRows: MunicipalReportRow[] = [];
   let pdfSummary: MunicipalReportSummary | null = null;
   let pdfDetail: MunicipalReportDetail | null = null;
-  const fileExtension = options.format === "PDF" ? "pdf" : "csv";
+  const fileExtension = options.format === "PDF" ? "pdf" : options.format === "XLSX" ? "xlsx" : "csv";
 
   switch (dataset) {
     case "INCIDENT_REGISTER": {
@@ -358,7 +361,7 @@ export async function exportMunicipalDataset(
     }
 
     case "INCIDENT_DOSSIER": {
-      // A single incident renders as a formatted dossier, which has no CSV shape.
+      // A single incident renders as a formatted dossier, which has no row shape.
       if (options.format !== "PDF") {
         throw new Error("INVALID_FORMAT: The incident dossier is available as PDF only.");
       }
@@ -380,6 +383,26 @@ export async function exportMunicipalDataset(
     default:
       throw new Error(`UNSUPPORTED_DATASET: ${dataset}`);
   }
+
+  const xlsxContent =
+    options.format === "XLSX"
+      ? await buildMunicipalReportExcel({
+          kind: dataset as Exclude<typeof dataset, "INCIDENT_DOSSIER">,
+          municipalityName: actor.municipalityName || "Municipality",
+          preparedBy: options.preparedBy || actor.displayName || "Authorized Officer",
+          periodLabel:
+            filters.from && filters.to
+              ? `${filters.from} to ${filters.to}`
+              : filters.from
+                ? `From ${filters.from}`
+                : filters.to
+                  ? `Until ${filters.to}`
+                  : "All recorded dates",
+          filterLabel: describeFilters(filters, scope),
+          rows: pdfRows,
+          summary: pdfSummary ?? (await getMunicipalReportSummary(actor, filters, db)),
+        })
+      : undefined;
 
   const pdfContent =
     options.format === "PDF"
@@ -422,6 +445,7 @@ export async function exportMunicipalDataset(
   return {
     csvContent,
     pdfContent,
+    xlsxContent,
     fileName,
     rowCount,
   };
