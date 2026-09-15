@@ -70,6 +70,10 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
   const streamRef = useRef<MediaStream | null>(null);
   const objectUrlRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
+  // Holds a captured-but-unconfirmed frame until the resident taps "Use this photo".
+  const pendingFileRef = useRef<File | null>(null);
+  // Lets the Escape handler reach cancel() without re-subscribing on every render.
+  const cancelRef = useRef<(() => void) | null>(null);
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -91,6 +95,23 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
       releasePreviewUrl();
     };
   }, [stopStream, releasePreviewUrl]);
+
+  // The camera takes over the whole screen while open, so lock background
+  // scrolling and let Escape close it the way the resident logout dialog does.
+  const overlayOpen = state === "requesting" || state === "live" || state === "captured";
+  useEffect(() => {
+    if (!overlayOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") cancelRef.current?.();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [overlayOpen]);
 
   const openCamera = useCallback(async () => {
     setErrorKind(null);
@@ -158,13 +179,24 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
       setState("captured");
       setAnnouncement("Photo captured. Confirm to use it, or retake.");
       const file = new File([blob], `resident-selfie-${Date.now()}.jpg`, { type: "image/jpeg" });
-      onCapture(file);
+      pendingFileRef.current = file;
     }, "image/jpeg", 0.92);
-  }, [onCapture, stopStream]);
+  }, [stopStream]);
+
+  // The photo is only committed to the form when the resident confirms it,
+  // so a captured-but-unconfirmed frame never counts as a usable selfie.
+  const confirmPhoto = useCallback(() => {
+    const file = pendingFileRef.current;
+    if (!file) return;
+    onCapture(file);
+    setState("idle");
+    setAnnouncement("Selfie confirmed.");
+  }, [onCapture]);
 
   const retake = useCallback(() => {
     releasePreviewUrl();
     setPreviewUrl(null);
+    pendingFileRef.current = null;
     onCapture(null);
     setErrorKind(null);
     void openCamera();
@@ -175,46 +207,80 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
     releasePreviewUrl();
     setPreviewUrl(null);
     onCapture(null);
+    pendingFileRef.current = null;
     setState("idle");
   }, [onCapture, releasePreviewUrl, stopStream]);
+
+  useEffect(() => { cancelRef.current = cancel; }, [cancel]);
 
   return (
     <div className="selfie-capture">
       <div aria-live="polite" className="sr-only">{announcement}</div>
 
-      {state === "idle" && (
+      {state === "idle" && !previewUrl && (
         <button type="button" className="selfie-open-btn" onClick={() => void openCamera()} disabled={disabled}>
           <span className="selfie-camera-icon" aria-hidden="true">📷</span>
           Open camera
         </button>
       )}
 
-      {state === "requesting" && (
-        <div className="selfie-status">
-          <span className="selfie-spinner" aria-hidden="true" />
-          Requesting camera access…
-        </div>
+      {/* Once confirmed the overlay closes and the photo stays visible in the
+          form as a chip, so the resident can see and retake what they sent. */}
+      {state === "idle" && previewUrl && (
+        <button type="button" className="selfie-thumb" onClick={retake} disabled={disabled}>
+          <img src={previewUrl} alt="Confirmed selfie" className="selfie-thumb-img" />
+          <span className="selfie-thumb-meta">
+            <span className="selfie-thumb-ok">✓ Selfie confirmed</span>
+            <span className="selfie-thumb-hint">Tap to retake</span>
+          </span>
+        </button>
       )}
 
-      {state === "live" && (
-        <div className="selfie-live">
-          <div className="selfie-video-frame">
-            <video ref={videoRef} autoPlay playsInline muted className="selfie-video" />
-            <div className="selfie-face-guide" aria-hidden="true" />
-          </div>
-          <div className="selfie-live-actions">
-            <button type="button" className="selfie-secondary-btn" onClick={cancel}>Cancel</button>
-            <button type="button" className="selfie-primary-btn" onClick={takePhoto}>Take photo</button>
-          </div>
-        </div>
-      )}
+      {overlayOpen && (
+        <div className="selfie-overlay" role="dialog" aria-modal="true" aria-label="Take a new selfie">
+          <div className="selfie-overlay-stage">
+            {state !== "captured" && (
+              <video ref={videoRef} autoPlay playsInline muted className="selfie-overlay-video" />
+            )}
+            {state === "captured" && previewUrl && (
+              <img src={previewUrl} alt="Captured selfie preview" className="selfie-overlay-video" />
+            )}
 
-      {state === "captured" && previewUrl && (
-        <div className="selfie-captured">
-          <img src={previewUrl} alt="Captured selfie preview" className="selfie-preview-img" />
-          <div className="selfie-live-actions">
-            <button type="button" className="selfie-secondary-btn" onClick={retake} disabled={disabled}>Retake</button>
-            <button type="button" className="selfie-confirmed-btn" disabled>✓ Photo confirmed</button>
+            {state === "requesting" && (
+              <div className="selfie-overlay-waiting">
+                <span className="selfie-spinner" aria-hidden="true" />
+                Requesting camera access…
+              </div>
+            )}
+
+            {state === "live" && <div className="selfie-oval" aria-hidden="true" />}
+
+            <div className="selfie-overlay-top">
+              <p className="selfie-overlay-title">
+                {state === "captured"
+                  ? "Use this photo?"
+                  : state === "requesting"
+                    ? "Waiting for camera permission…"
+                    : "Center your face in the oval"}
+              </p>
+              <button type="button" className="selfie-close" onClick={cancel} aria-label="Close camera">✕</button>
+            </div>
+          </div>
+
+          <div className="selfie-overlay-bar">
+            {state === "live" && (
+              <>
+                <span className="selfie-bar-side" />
+                <button type="button" className="selfie-shutter" onClick={takePhoto} aria-label="Take photo" />
+                <span className="selfie-bar-side selfie-bar-text">Camera only</span>
+              </>
+            )}
+            {state === "captured" && (
+              <>
+                <button type="button" className="selfie-ghost-btn" onClick={retake} disabled={disabled}>Retake</button>
+                <button type="button" className="selfie-use-btn" onClick={confirmPhoto} disabled={disabled}>Use this photo</button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -235,13 +301,37 @@ export const residentSelfieCaptureStyles = `
 .selfie-open-btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;padding:1.1rem;border:1px dashed #ef9a91;border-radius:12px;background:#fff;font:800 .92rem inherit;color:#7f1d1d;cursor:pointer}
 .selfie-open-btn:disabled{opacity:.6;cursor:not-allowed}
 .selfie-camera-icon{font-size:1.2rem}
-.selfie-status{display:flex;align-items:center;justify-content:center;gap:.6rem;padding:1.1rem;border:1px solid #e5e7eb;border-radius:12px;color:#64748b;font-weight:700}
-.selfie-spinner{display:inline-block;width:16px;height:16px;border:2px solid #fecaca;border-top-color:#db1b0d;border-radius:50%;animation:selfie-spin .8s linear infinite}
+.selfie-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:selfie-spin .8s linear infinite}
 @keyframes selfie-spin{to{transform:rotate(360deg)}}
-.selfie-video-frame{position:relative;width:100%;aspect-ratio:3/4;max-height:60vh;border-radius:14px;overflow:hidden;background:#111;margin:0 auto}
-.selfie-video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-.selfie-face-guide{position:absolute;inset:12% 22%;border:2px dashed rgba(255,255,255,.75);border-radius:50%;pointer-events:none}
-.selfie-live-actions{display:flex;gap:.6rem;margin-top:.7rem}
+
+/* Confirmed-photo chip shown inline in the form once the overlay closes. */
+.selfie-thumb{display:flex;align-items:center;gap:.8rem;width:100%;padding:.7rem;border:1px solid #bbf7d0;border-radius:14px;background:#f0fdf4;cursor:pointer;text-align:left;font:inherit}
+.selfie-thumb:disabled{opacity:.6;cursor:not-allowed}
+.selfie-thumb-img{width:56px;height:56px;border-radius:12px;object-fit:cover;background:#111;flex:none}
+.selfie-thumb-meta{display:grid;gap:.15rem}
+.selfie-thumb-ok{font-weight:850;font-size:.88rem;color:#16834b}
+.selfie-thumb-hint{font-size:.78rem;color:#64748b}
+
+/* Fullscreen camera. Fixed to the viewport so it covers the page and the
+   resident bottom navigation; dvh keeps it correct with mobile browser bars. */
+.selfie-overlay{position:fixed;inset:0;z-index:2000;display:grid;grid-template-rows:1fr auto;background:#000;animation:selfie-fade .18s ease-out}
+@keyframes selfie-fade{from{opacity:0}to{opacity:1}}
+.selfie-overlay-stage{position:relative;overflow:hidden;min-height:0}
+.selfie-overlay-video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+.selfie-overlay-waiting{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:.7rem;color:#fff;font-weight:750;background:#000}
+.selfie-oval{position:absolute;left:50%;top:46%;width:min(68vw,19rem);aspect-ratio:3/4;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 0 0 100vmax rgba(0,0,0,.45);pointer-events:none}
+.selfie-overlay-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:calc(.9rem + env(safe-area-inset-top)) 1rem .9rem;background:linear-gradient(180deg,rgba(0,0,0,.6),transparent)}
+.selfie-overlay-title{margin:0;color:#fff;font-weight:800;font-size:.95rem;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.selfie-close{width:2.4rem;height:2.4rem;flex:none;border:0;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:1rem;font-weight:800;cursor:pointer;backdrop-filter:blur(8px)}
+.selfie-overlay-bar{display:flex;align-items:center;justify-content:space-between;gap:.8rem;padding:1.1rem 1.2rem calc(1.4rem + env(safe-area-inset-bottom));background:#000}
+.selfie-bar-side{flex:1;min-width:0}
+.selfie-bar-text{color:rgba(255,255,255,.5);font-size:.75rem;font-weight:700;text-align:right}
+.selfie-shutter{width:4.6rem;height:4.6rem;flex:none;border:5px solid rgba(255,255,255,.35);border-radius:50%;background:#fff;cursor:pointer;transition:transform .12s ease}
+.selfie-shutter:active{transform:scale(.92)}
+.selfie-ghost-btn,.selfie-use-btn{flex:1;padding:1rem;border-radius:13px;font:800 .95rem inherit;cursor:pointer}
+.selfie-ghost-btn{border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff}
+.selfie-use-btn{border:0;background:#db1b0d;color:#fff}
+.selfie-ghost-btn:disabled,.selfie-use-btn:disabled{opacity:.55;cursor:not-allowed}
 .selfie-primary-btn,.selfie-secondary-btn,.selfie-confirmed-btn{flex:1;padding:.85rem 1rem;border-radius:11px;font:800 .88rem inherit;cursor:pointer;border:1px solid transparent}
 .selfie-primary-btn{background:#db1b0d;color:#fff}
 .selfie-secondary-btn{background:#fff;border-color:#cbd5e1;color:#334155}

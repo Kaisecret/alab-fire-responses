@@ -47,6 +47,29 @@ test("capture component handles permission denied, no camera, camera busy, and i
   assert.match(component, /role="alert"/);
 });
 
+test("camera takes over the full screen and locks background scrolling while open", () => {
+  const component = source("app/_components/resident-selfie-capture.tsx");
+
+  // Fixed to the viewport so the camera covers the page and the fixed
+  // resident bottom navigation rather than sitting in the form flow.
+  assert.match(component, /\.selfie-overlay\{position:fixed;inset:0/);
+  assert.match(component, /role="dialog" aria-modal="true"/);
+  assert.match(component, /document\.body\.style\.overflow = "hidden"/);
+  assert.match(component, /event\.key === "Escape"/);
+  // The old inline, in-flow camera box is gone.
+  assert.doesNotMatch(component, /selfie-video-frame/);
+});
+
+test("a captured frame is only committed to the form once the resident confirms it", () => {
+  const component = source("app/_components/resident-selfie-capture.tsx");
+
+  assert.match(component, /pendingFileRef\.current = file/);
+  assert.match(component, /const confirmPhoto = useCallback\(\(\) => \{[\s\S]*?onCapture\(file\)/);
+  assert.match(component, /onClick=\{confirmPhoto\}/);
+  // Capturing alone must not hand a file to the form.
+  assert.doesNotMatch(component, /onCapture\(file\);\s*\}, "image\/jpeg"/);
+});
+
 test("resident application page uses the camera-only capture component instead of a selfie file input", () => {
   const page = source("app/resident/application/page.tsx");
 
