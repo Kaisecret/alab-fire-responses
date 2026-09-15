@@ -306,10 +306,10 @@ const dashboardStyles = `
   .mbfp-stat-card {
     position: relative;
     border-radius: 12px;
-    padding: 0.8rem 0.95rem;
+    padding: 1rem 1.1rem 0.95rem;
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.55rem;
     transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
     cursor: pointer;
     overflow: hidden;
@@ -322,55 +322,45 @@ const dashboardStyles = `
   .mbfp-stat-card:nth-child(3) { animation-delay: 0.15s; }
   .mbfp-stat-card:nth-child(4) { animation-delay: 0.2s; }
 
-  /* Distinct Pastel Gradient Themes */
-  .mbfp-stat-card.red {
-    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
-    border: 1.5px solid #FFBEBE;
-    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
+  /*
+   * White tiles with a single colour accent. The pastel gradients competed with
+   * the numbers they framed; the colour now sits in the icon and the top rule
+   * so the figure itself carries the card.
+   */
+  .mbfp-stat-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
   }
-  .mbfp-stat-card.amber {
-    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
-    border: 1.5px solid #FFDC99;
-    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
-  }
-  .mbfp-stat-card.blue {
-    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
-    border: 1.5px solid #B8D3FD;
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
-  }
-  .mbfp-stat-card.emerald {
-    background: linear-gradient(145deg, #E3F8ED 0%, #CEF2DE 100%);
-    border: 1.5px solid #B1ECC8;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
-  }
+
+  .mbfp-stat-card.red,
+  .mbfp-stat-card.amber,
+  .mbfp-stat-card.blue,
+  .mbfp-stat-card.emerald,
   .mbfp-stat-card.purple {
-    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
-    border: 1.5px solid #D0BCFD;
-    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
+    background: #FFFFFF;
+    border: 1px solid #E8EDF4;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   }
+
+  .mbfp-stat-card.red::before { background: #E23632; }
+  .mbfp-stat-card.amber::before { background: #D97706; }
+  .mbfp-stat-card.blue::before { background: #2563EB; }
+  .mbfp-stat-card.emerald::before { background: #059669; }
+  .mbfp-stat-card.purple::before { background: #7C3AED; }
 
   .mbfp-stat-card:hover {
     transform: translateY(-3px);
   }
-  .mbfp-stat-card.red:hover {
-    border-color: #FFA3A3;
-    box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2);
-  }
-  .mbfp-stat-card.amber:hover {
-    border-color: #FFCF70;
-    box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2);
-  }
-  .mbfp-stat-card.blue:hover {
-    border-color: #91B8FA;
-    box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2);
-  }
-  .mbfp-stat-card.emerald:hover {
-    border-color: #88E4AA;
-    box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2);
-  }
+  /* One lift for every tile; the accent rule already states the category. */
+  .mbfp-stat-card.red:hover,
+  .mbfp-stat-card.amber:hover,
+  .mbfp-stat-card.blue:hover,
+  .mbfp-stat-card.emerald:hover,
   .mbfp-stat-card.purple:hover {
-    border-color: #B79BFB;
-    box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2);
+    border-color: #CBD5E1;
+    box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.14);
   }
 
   .mbfp-stat-header {
@@ -381,24 +371,22 @@ const dashboardStyles = `
     margin-bottom: 0.5rem;
   }
 
+  /* Tinted ground: a white icon chip is invisible on a white card. */
   .mbfp-stat-icon {
     width: 2.35rem;
     height: 2.35rem;
     border-radius: 10px;
-    background: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.95);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.05rem;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
-  .mbfp-stat-icon.red { color: #E23632; }
-  .mbfp-stat-icon.amber { color: #D97706; }
-  .mbfp-stat-icon.blue { color: #2563EB; }
-  .mbfp-stat-icon.emerald { color: #059669; }
-  .mbfp-stat-icon.purple { color: #7C3AED; }
+  .mbfp-stat-icon.red { color: #E23632; background: #FEF2F2; }
+  .mbfp-stat-icon.amber { color: #D97706; background: #FFFBEB; }
+  .mbfp-stat-icon.blue { color: #2563EB; background: #EFF6FF; }
+  .mbfp-stat-icon.emerald { color: #059669; background: #ECFDF5; }
+  .mbfp-stat-icon.purple { color: #7C3AED; background: #F5F3FF; }
 
   .mbfp-stat-trend-tag {
     font-size: 0.65rem;
@@ -444,8 +432,8 @@ const dashboardStyles = `
   /* ========== UNIFIED 2-COLUMN WORKSPACE ========== */
   .mbfp-columns {
     display: grid;
-    grid-template-columns: 1.55fr 1fr;
-    gap: 0.85rem;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 1.1rem;
     align-items: start;
   }
 
@@ -453,7 +441,7 @@ const dashboardStyles = `
   .mbfp-col-side {
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 1.1rem;
   }
 
   @media (max-width: 1100px) {
@@ -474,12 +462,13 @@ const dashboardStyles = `
   }
 
   .mbfp-card-header {
-    padding: 0.85rem 1.25rem;
+    padding: 0.95rem 1.25rem;
     border-bottom: 1px solid #F1F5F9;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #FAFCFF;
+    gap: 0.75rem;
+    background: #FFFFFF;
   }
 
   .mbfp-card-title-wrap {
@@ -514,6 +503,9 @@ const dashboardStyles = `
     background: #F1F5F9;
     color: #475569;
     border: 1px solid #E2E8F0;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
   }
 
   /* ========== INCIDENT QUEUE TABLE ========== */
@@ -1395,9 +1387,9 @@ export function MunicipalBfpDashboard() {
                   <div className="mbfp-card-title-icon">
                     <i className="fa-solid fa-fire" />
                   </div>
-                  <span className="mbfp-card-title">Recent / Active Incident Queue</span>
+                  <span className="mbfp-card-title">Incident Queue</span>
                 </div>
-                <span className="mbfp-card-badge">{recentIncidents.length} Active in {municipality}</span>
+                <span className="mbfp-card-badge">{recentIncidents.length} active</span>
               </div>
 
               <div className="mbfp-incident-table-wrap">
@@ -1494,12 +1486,10 @@ export function MunicipalBfpDashboard() {
                   <div className="mbfp-card-title-icon" style={{ background: '#FFFBEB', color: '#D97706' }}>
                     <i className="fa-solid fa-triangle-exclamation" />
                   </div>
-                  <span className="mbfp-card-title">
-                    Verification Requests ({totalPending})
-                  </span>
+                  <span className="mbfp-card-title">Verification</span>
                 </div>
                 <span className="mbfp-card-badge" style={{ color: '#D97706', background: '#FFFBEB', borderColor: '#FDE68A' }}>
-                  Citizen Reports &amp; Resident KYC
+                  {totalPending} pending
                 </span>
               </div>
 
@@ -1616,9 +1606,8 @@ export function MunicipalBfpDashboard() {
                   <div className="mbfp-card-title-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
                     <i className="fa-solid fa-bolt" />
                   </div>
-                  <span className="mbfp-card-title">Tactical Quick Actions</span>
+                  <span className="mbfp-card-title">Quick Actions</span>
                 </div>
-                <span className="mbfp-card-badge">Instant Access</span>
               </div>
 
               <div className="mbfp-quick-actions-wrap">
@@ -1669,8 +1658,8 @@ export function MunicipalBfpDashboard() {
                     <i className="fa-solid fa-file-circle-plus" />
                   </div>
                   <div>
-                    <div className="mbfp-qa-text">Log Phone Alarm / Incident Report</div>
-                    <div className="mbfp-qa-sub">Record emergency call or investigation report</div>
+                    <div className="mbfp-qa-text">Log Incident Report</div>
+                    <div className="mbfp-qa-sub">Phone alarm or investigation</div>
                   </div>
                   <i className="fa-solid fa-arrow-right" style={{ marginLeft: 'auto', color: '#E23632', fontSize: '0.85rem' }} />
                 </Link>
@@ -1684,7 +1673,7 @@ export function MunicipalBfpDashboard() {
                   <div className="mbfp-card-title-icon" style={{ background: '#ECFDF5', color: '#059669' }}>
                     <i className="fa-solid fa-building-shield" />
                   </div>
-                  <span className="mbfp-card-title">Municipal Stations &amp; Readiness</span>
+                  <span className="mbfp-card-title">Stations</span>
                 </div>
                 <Link href="/municipal-bfp/stations" style={{ fontSize: '0.72rem', fontWeight: 750, color: '#2563EB', textDecoration: 'none' }}>
                   Manage
@@ -1705,9 +1694,9 @@ export function MunicipalBfpDashboard() {
                   ))
                 ) : stations.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '1.2rem', color: '#64748B', fontSize: '0.8rem' }}>
-                    No stations registered in this municipality yet.{' '}
+                    No stations yet.{' '}
                     <Link href="/municipal-bfp/stations" style={{ color: '#2563EB', fontWeight: 700 }}>
-                      Add Primary Station
+                      Add one
                     </Link>
                   </div>
                 ) : (
@@ -1720,7 +1709,7 @@ export function MunicipalBfpDashboard() {
                         <div className="mbfp-station-name">{st.stationName}</div>
                         <div className="mbfp-station-sub">
                           <i className="fa-solid fa-user-shield" style={{ fontSize: '0.65rem' }} />
-                          <span>{st.assignedPersonnelCount} Responders Assigned</span>
+                          <span>{st.assignedPersonnelCount} responders</span>
                         </div>
                       </div>
                       <div className="mbfp-station-status-pill">
@@ -1740,9 +1729,8 @@ export function MunicipalBfpDashboard() {
                   <div className="mbfp-card-title-icon" style={{ background: '#F5F3FF', color: '#7C3AED' }}>
                     <i className="fa-solid fa-tower-broadcast" />
                   </div>
-                  <span className="mbfp-card-title">Antique Mutual Aid Grid</span>
+                  <span className="mbfp-card-title">Mutual Aid</span>
                 </div>
-                <span className="mbfp-card-badge">Neighbor Support</span>
               </div>
 
               <div className="mbfp-mutual-aid-wrap">

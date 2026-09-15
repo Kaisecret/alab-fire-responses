@@ -108,103 +108,139 @@ interface Column {
   align?: "left" | "right";
 }
 
+interface Emblems {
+  bfp: Buffer | null;
+  alab: Buffer | null;
+}
+
 /**
- * The ALAB emblem is optional: a missing or unreadable file must never fail an
- * official export, so the caller falls back to a drawn monogram instead.
+ * Emblems are optional: a missing or unreadable file must never fail an
+ * official export, so the letterhead falls back to a drawn monogram instead.
  */
-async function loadLogo(): Promise<Buffer | null> {
+async function loadEmblem(fileName: string): Promise<Buffer | null> {
   try {
-    return await readFile(path.join(process.cwd(), "public", "images", "logo alab.png"));
+    return await readFile(path.join(process.cwd(), "public", "images", fileName));
   } catch {
     return null;
   }
 }
 
-/** Letterhead emblem size. The wording block below runs to LETTERHEAD_HEIGHT. */
-const EMBLEM_SIZE = 64;
-const LETTERHEAD_HEIGHT = 54;
+async function loadEmblems(): Promise<Emblems> {
+  const [bfp, alab] = await Promise.all([
+    loadEmblem("bfp logo.png"),
+    loadEmblem("logo alab.png"),
+  ]);
+  return { bfp, alab };
+}
 
-function drawHeader(doc: Doc, context: MunicipalPdfContext, logo: Buffer | null): void {
+/** Letterhead geometry. The masthead runs from the top margin to its rule. */
+const SEAL_SIZE = 62;
+const LETTERHEAD_HEIGHT = 72;
+const CREED = ["PREVENT", "PREPARE", "RESPOND", "RECOVER", "TOGETHER"];
+const CREED_WIDTH = 62;
+
+function drawHeader(doc: Doc, context: MunicipalPdfContext, emblems: Emblems): void {
   const top = PAGE.margin;
+  const sealY = top + (LETTERHEAD_HEIGHT - SEAL_SIZE) / 2;
 
-  // The emblem is taller than the wording, so it is centred against that block
-  // and allowed to sit slightly above it rather than stretching the header.
-  const emblemTop = top + (LETTERHEAD_HEIGHT - EMBLEM_SIZE) / 2;
-
-  if (logo) {
-    doc.image(logo, PAGE.margin, emblemTop, {
-      fit: [EMBLEM_SIZE, EMBLEM_SIZE],
-      align: "center",
-      valign: "center",
-    });
+  // Both seals sit at the left; the creed column is reserved at the right, and
+  // the wording is centred in the space that remains between them.
+  if (emblems.bfp) {
+    doc.image(emblems.bfp, PAGE.margin, sealY, { fit: [SEAL_SIZE, SEAL_SIZE], align: "center", valign: "center" });
   } else {
-    const radius = EMBLEM_SIZE / 2;
+    const r = SEAL_SIZE / 2;
     doc.save();
-    doc.circle(PAGE.margin + radius, emblemTop + radius, radius).fill(COLORS.brand);
-    doc
-      .fillColor(COLORS.white)
-      .font("Helvetica-Bold")
-      .fontSize(21)
-      .text("A", PAGE.margin, emblemTop + radius - 8, { width: EMBLEM_SIZE, align: "center" });
+    doc.circle(PAGE.margin + r, sealY + r, r).lineWidth(1.5).strokeColor(COLORS.brandDark).stroke();
+    doc.fillColor(COLORS.brandDark).font("Helvetica-Bold").fontSize(13)
+      .text("BFP", PAGE.margin, sealY + r - 6, { width: SEAL_SIZE, align: "center" });
     doc.restore();
   }
 
-  /*
-   * The letterhead is centred across the full content width, with the emblem
-   * overlaid at the left margin, so the wording sits on the page centre line
-   * rather than being pushed right by the emblem.
-   */
+  const alabX = PAGE.margin + SEAL_SIZE + 12;
+  if (emblems.alab) {
+    doc.image(emblems.alab, alabX, sealY + 4, { fit: [SEAL_SIZE + 24, SEAL_SIZE - 8], align: "center", valign: "center" });
+  }
+
+  // Thin divider between the emblem pair and the wording.
+  const dividerX = alabX + SEAL_SIZE + 30;
+  doc.save();
+  doc.lineWidth(0.75).strokeColor(COLORS.hairline);
+  doc.moveTo(dividerX, sealY + 4).lineTo(dividerX, sealY + SEAL_SIZE - 4).stroke();
+  doc.restore();
+
+  const wordLeft = dividerX + 10;
+  const wordWidth = PAGE.width - PAGE.margin - CREED_WIDTH - 10 - wordLeft;
+
   doc
     .fillColor(COLORS.muted)
     .font("Helvetica")
-    .fontSize(7)
-    .text("REPUBLIC OF THE PHILIPPINES  •  DEPARTMENT OF THE INTERIOR AND LOCAL GOVERNMENT", PAGE.margin, top + 1, {
-      width: CONTENT_WIDTH,
+    .fontSize(6.8)
+    .text("REPUBLIC OF THE PHILIPPINES  •  DEPARTMENT OF THE INTERIOR AND LOCAL GOVERNMENT", wordLeft, top + 6, {
+      width: wordWidth,
       align: "center",
-      characterSpacing: 0.4,
+      characterSpacing: 0.3,
     });
 
   doc
     .fillColor(COLORS.brandDark)
     .font("Helvetica-Bold")
-    .fontSize(13)
-    .text("BUREAU OF FIRE PROTECTION", PAGE.margin, top + 12, {
-      width: CONTENT_WIDTH,
+    .fontSize(17)
+    .text("BUREAU OF FIRE PROTECTION", wordLeft, top + 17, {
+      width: wordWidth,
       align: "center",
-      characterSpacing: 0.6,
+      characterSpacing: 0.4,
     });
 
   doc
     .fillColor(COLORS.ink)
     .font("Helvetica-Bold")
-    .fontSize(9)
+    .fontSize(10.5)
     .text(
       `MUNICIPAL FIRE STATION  •  ${(context.municipalityName || "MUNICIPAL").toUpperCase()}, ANTIQUE`,
-      PAGE.margin,
-      top + 28,
-      { width: CONTENT_WIDTH, align: "center" },
+      wordLeft,
+      top + 38,
+      { width: wordWidth, align: "center" },
     );
 
   doc
-    .fillColor(COLORS.muted)
+    .fillColor("#2563EB")
     .font("Helvetica")
-    .fontSize(7.5)
-    .text("ALAB Emergency Dispatch, Telemetry & Citizen Intake System", PAGE.margin, top + 39, {
-      width: CONTENT_WIDTH,
+    .fontSize(8)
+    .text("ALAB Emergency Dispatch, Telemetry & Citizen Intake System", wordLeft, top + 52, {
+      width: wordWidth,
       align: "center",
     });
 
-  // The rule clears the emblem, which overhangs the wording block.
-  const ruleY = Math.max(top + LETTERHEAD_HEIGHT, emblemTop + EMBLEM_SIZE + 4);
+  // Creed column, one word per line, flush right.
+  const creedX = PAGE.width - PAGE.margin - CREED_WIDTH;
+  doc.fillColor(COLORS.muted).font("Helvetica").fontSize(7);
+  CREED.forEach((word, i) => {
+    doc.text(word, creedX, top + 4 + i * 10.5, { width: CREED_WIDTH, align: "right", characterSpacing: 0.3 });
+  });
+
+  // Tricolour rule: the Philippine flag's blue, red and gold.
+  const ruleY = top + LETTERHEAD_HEIGHT;
   doc.save();
-  doc.lineWidth(2).strokeColor(COLORS.brand);
+  doc.lineWidth(2.4).strokeColor("#1E3A8A");
   doc.moveTo(PAGE.margin, ruleY).lineTo(PAGE.width - PAGE.margin, ruleY).stroke();
+  doc.lineWidth(1.4).strokeColor(COLORS.brand);
+  doc.moveTo(PAGE.margin, ruleY + 3.2).lineTo(PAGE.width - PAGE.margin, ruleY + 3.2).stroke();
   doc.restore();
+
+  doc
+    .fillColor(COLORS.ink)
+    .font("Helvetica-Oblique")
+    .fontSize(7.5)
+    .text(
+      `Sa Bagong Pilipinas, Ligtas ang Buhay at Ari-arian`,
+      PAGE.margin,
+      ruleY + 8,
+      { width: CONTENT_WIDTH, align: "right" },
+    );
 }
 
-/** First safe y for body content: below the letterhead rule. */
-const HEADER_BOTTOM =
-  PAGE.margin + Math.max(LETTERHEAD_HEIGHT, (LETTERHEAD_HEIGHT - EMBLEM_SIZE) / 2 + EMBLEM_SIZE + 4);
+/** First safe y for body content: below the letterhead rule and its tagline. */
+const HEADER_BOTTOM = PAGE.margin + LETTERHEAD_HEIGHT + 20;
 
 function documentTitle(kind: MunicipalPdfKind): string {
   switch (kind) {
@@ -358,20 +394,20 @@ function ensureSpace(
   y: number,
   needed: number,
   context: MunicipalPdfContext,
-  logo: Buffer | null,
+  emblems: Emblems,
   columns: Column[] | null,
 ): number {
   const limit = PAGE.height - PAGE.margin - 40;
   if (y + needed <= limit) return y;
 
   doc.addPage();
-  drawHeader(doc, context, logo);
+  drawHeader(doc, context, emblems);
   let next = HEADER_BOTTOM + 14;
   if (columns) next = drawTableHeader(doc, next, columns);
   return next;
 }
 
-function drawRegisterTable(doc: Doc, startY: number, context: MunicipalPdfContext, logo: Buffer | null): number {
+function drawRegisterTable(doc: Doc, startY: number, context: MunicipalPdfContext, emblems: Emblems): number {
   const columns: Column[] = [
     { label: "Reference", width: 84 },
     { label: "Reported At (PHT)", width: 88 },
@@ -385,7 +421,7 @@ function drawRegisterTable(doc: Doc, startY: number, context: MunicipalPdfContex
 
   for (const row of context.rows) {
     const rowHeight = 30;
-    y = ensureSpace(doc, y, rowHeight, context, logo, columns);
+    y = ensureSpace(doc, y, rowHeight, context, emblems, columns);
 
     doc.save();
     doc.rect(PAGE.margin, y, CONTENT_WIDTH, rowHeight).strokeColor(COLORS.hairline).lineWidth(0.5).stroke();
@@ -477,13 +513,13 @@ function drawSimpleTable(
   columns: Column[],
   rows: string[][],
   context: MunicipalPdfContext,
-  logo: Buffer | null,
+  emblems: Emblems,
 ): number {
   let y = drawTableHeader(doc, startY, columns);
 
   for (const row of rows) {
     const rowHeight = 17;
-    y = ensureSpace(doc, y, rowHeight, context, logo, columns);
+    y = ensureSpace(doc, y, rowHeight, context, emblems, columns);
 
     doc.save();
     doc.rect(PAGE.margin, y, CONTENT_WIDTH, rowHeight).strokeColor(COLORS.hairline).lineWidth(0.5).stroke();
@@ -569,7 +605,7 @@ function stampPageNumbers(doc: Doc): void {
   }
 }
 
-function renderRegister(doc: Doc, context: MunicipalPdfContext, logo: Buffer | null): void {
+function renderRegister(doc: Doc, context: MunicipalPdfContext, emblems: Emblems): void {
   let y = drawTitleBlock(doc, context, context.rows.length);
 
   const summary = context.summary;
@@ -592,7 +628,7 @@ function renderRegister(doc: Doc, context: MunicipalPdfContext, logo: Buffer | n
     },
   ]);
 
-  y = drawRegisterTable(doc, y, context, logo);
+  y = drawRegisterTable(doc, y, context, emblems);
 
   drawSignatureBlock(
     doc,
@@ -602,7 +638,7 @@ function renderRegister(doc: Doc, context: MunicipalPdfContext, logo: Buffer | n
   );
 }
 
-function renderSummary(doc: Doc, context: MunicipalPdfContext, logo: Buffer | null): void {
+function renderSummary(doc: Doc, context: MunicipalPdfContext, emblems: Emblems): void {
   const summary = context.summary;
   if (!summary) return;
 
@@ -651,11 +687,11 @@ function renderSummary(doc: Doc, context: MunicipalPdfContext, logo: Buffer | nu
       ],
     ],
     context,
-    logo,
+    emblems,
   );
 
   y += 14;
-  y = ensureSpace(doc, y, 90, context, logo, null);
+  y = ensureSpace(doc, y, 90, context, emblems, null);
   y = drawSectionHeading(doc, y, "2. Incident Classifications & Intake Outcomes");
 
   const statusRows = Object.entries(summary.byStatus).map(([status, count]) => [
@@ -674,11 +710,11 @@ function renderSummary(doc: Doc, context: MunicipalPdfContext, logo: Buffer | nu
     ],
     statusRows,
     context,
-    logo,
+    emblems,
   );
 
   y += 14;
-  y = ensureSpace(doc, y, 90, context, logo, null);
+  y = ensureSpace(doc, y, 90, context, emblems, null);
   y = drawSectionHeading(doc, y, "3. Fire Type & Severity Distribution");
 
   const fireTypes = ["HOUSE_BUILDING", "GRASS", "FOREST", "VEHICLE", "OTHER"];
@@ -701,13 +737,13 @@ function renderSummary(doc: Doc, context: MunicipalPdfContext, logo: Buffer | nu
     ],
     classificationRows,
     context,
-    logo,
+    emblems,
   );
 
   y += 14;
-  y = ensureSpace(doc, y, 90, context, logo, null);
+  y = ensureSpace(doc, y, 90, context, emblems, null);
   y = drawSectionHeading(doc, y, "4. Barangay Incident Distribution");
-  y = drawBarangayTable(doc, y, summary.byBarangay, context, logo);
+  y = drawBarangayTable(doc, y, summary.byBarangay, context, emblems);
 
   drawSignatureBlock(
     doc,
@@ -722,7 +758,7 @@ function drawBarangayTable(
   y: number,
   barangays: MunicipalBarangaySummary[],
   context: MunicipalPdfContext,
-  logo: Buffer | null,
+  emblems: Emblems,
 ): number {
   return drawSimpleTable(
     doc,
@@ -746,11 +782,11 @@ function drawBarangayTable(
       String(b.arrivalCount),
     ]),
     context,
-    logo,
+    emblems,
   );
 }
 
-function renderBarangayBreakdown(doc: Doc, context: MunicipalPdfContext, logo: Buffer | null): void {
+function renderBarangayBreakdown(doc: Doc, context: MunicipalPdfContext, emblems: Emblems): void {
   const summary = context.summary;
   if (!summary) return;
 
@@ -772,7 +808,7 @@ function renderBarangayBreakdown(doc: Doc, context: MunicipalPdfContext, logo: B
   ]);
 
   y = drawSectionHeading(doc, y, "Barangay Incident Distribution & Response Benchmarks");
-  y = drawBarangayTable(doc, y, summary.byBarangay, context, logo);
+  y = drawBarangayTable(doc, y, summary.byBarangay, context, emblems);
 
   drawSignatureBlock(
     doc,
@@ -836,7 +872,7 @@ function drawFieldGrid(
   return cursorY;
 }
 
-function renderDossier(doc: Doc, context: MunicipalPdfContext, logo: Buffer | null): void {
+function renderDossier(doc: Doc, context: MunicipalPdfContext, emblems: Emblems): void {
   const report = context.detail;
   if (!report) return;
 
@@ -929,7 +965,7 @@ function renderDossier(doc: Doc, context: MunicipalPdfContext, logo: Buffer | nu
 
   // Milestones. Section numbers are computed so a hidden block leaves no gap.
   let sectionNumber = 2;
-  y = ensureSpace(doc, y, 80, context, logo, null);
+  y = ensureSpace(doc, y, 80, context, emblems, null);
   y = drawSectionHeading(doc, y, `${sectionNumber}. Operational Response Benchmarks & Incident Milestones`);
   sectionNumber += 1;
 
@@ -974,7 +1010,7 @@ function renderDossier(doc: Doc, context: MunicipalPdfContext, logo: Buffer | nu
   y += 14;
 
   if (report.dispatches && report.dispatches.length > 0) {
-    y = ensureSpace(doc, y, 70, context, logo, null);
+    y = ensureSpace(doc, y, 70, context, emblems, null);
     y = drawSectionHeading(doc, y, `${sectionNumber}. Dispatched Fire Stations & Personnel`);
     sectionNumber += 1;
 
@@ -998,13 +1034,13 @@ function renderDossier(doc: Doc, context: MunicipalPdfContext, logo: Buffer | nu
           : "Station Unit Team",
       ]),
       context,
-      logo,
+      emblems,
     );
     y += 14;
   }
 
   if (report.timeline && report.timeline.length > 0) {
-    y = ensureSpace(doc, y, 70, context, logo, null);
+    y = ensureSpace(doc, y, 70, context, emblems, null);
     y = drawSectionHeading(doc, y, `${sectionNumber}. Chronological Operational Timeline`);
 
     y = drawSimpleTable(
@@ -1021,7 +1057,7 @@ function renderDossier(doc: Doc, context: MunicipalPdfContext, logo: Buffer | nu
         event.notes || `Operational transition to ${getStatusLabel(event.stage)}`,
       ]),
       context,
-      logo,
+      emblems,
     );
   }
 
@@ -1038,7 +1074,7 @@ function renderDossier(doc: Doc, context: MunicipalPdfContext, logo: Buffer | nu
  * searchable rather than being flattened into an image.
  */
 export async function buildMunicipalReportPdf(context: MunicipalPdfContext): Promise<Buffer> {
-  const logo = await loadLogo();
+  const emblems = await loadEmblems();
 
   const doc = new PDFDocument({
     size: PAGE.size,
@@ -1059,16 +1095,16 @@ export async function buildMunicipalReportPdf(context: MunicipalPdfContext): Pro
     doc.on("error", reject);
   });
 
-  drawHeader(doc, context, logo);
+  drawHeader(doc, context, emblems);
 
   if (context.kind === "INCIDENT_REGISTER") {
-    renderRegister(doc, context, logo);
+    renderRegister(doc, context, emblems);
   } else if (context.kind === "MUNICIPAL_SUMMARY") {
-    renderSummary(doc, context, logo);
+    renderSummary(doc, context, emblems);
   } else if (context.kind === "INCIDENT_DOSSIER") {
-    renderDossier(doc, context, logo);
+    renderDossier(doc, context, emblems);
   } else {
-    renderBarangayBreakdown(doc, context, logo);
+    renderBarangayBreakdown(doc, context, emblems);
   }
 
   stampPageNumbers(doc);
