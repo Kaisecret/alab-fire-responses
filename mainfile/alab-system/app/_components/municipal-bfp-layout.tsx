@@ -33,7 +33,6 @@ const navigationGroups: NavGroup[] = [
   {
     groupTitle: 'DISPATCH & TACTICAL',
     items: [
-      { label: 'Dispatch & Routing', href: '/municipal-bfp/dispatch-routing', icon: 'fa-solid fa-route' },
       { label: 'GIS Map', href: '/municipal-bfp/gis-map', icon: 'fa-solid fa-map-location-dot' },
     ],
   },
@@ -49,7 +48,6 @@ const navigationGroups: NavGroup[] = [
     groupTitle: 'RECORDS & ARCHIVES',
     items: [
       { label: 'Incident Reports', href: '/municipal-bfp/incident-reports', icon: 'fa-solid fa-file-lines' },
-      { label: 'Knowledge Base', href: '/municipal-bfp/knowledge-base', icon: 'fa-solid fa-book' },
     ],
   },
 ];
@@ -1064,14 +1062,12 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
     if (path === '/municipal-bfp' || path === '/municipal-bfp/') return 'Dashboard';
     if (path.startsWith('/municipal-bfp/active-incidents')) return 'Active Incidents';
     if (path.startsWith('/municipal-bfp/incident-reports')) return 'Incident Reports';
-    if (path.startsWith('/municipal-bfp/dispatch-routing')) return 'Dispatch & Routing';
     if (path.startsWith('/municipal-bfp/gis-map')) return 'GIS Map';
     if (path.startsWith('/municipal-bfp/verification-queue') || path.startsWith('/municipal-bfp/resident-applications')) return 'Resident Applications';
     if (path.startsWith('/municipal-bfp/stations')) return 'Fire Stations';
     if (path.startsWith('/municipal-bfp/firetrucks')) return 'Firetrucks';
     if (path.startsWith('/municipal-bfp/water-sources')) return 'Water Sources';
     if (path.startsWith('/municipal-bfp/responders')) return 'Responders';
-    if (path.startsWith('/municipal-bfp/knowledge-base')) return 'Knowledge Base';
     if (path.startsWith('/municipal-bfp/profile')) return 'Profile Settings';
     if (path.startsWith('/municipal-bfp/notifications')) return 'Notifications';
 

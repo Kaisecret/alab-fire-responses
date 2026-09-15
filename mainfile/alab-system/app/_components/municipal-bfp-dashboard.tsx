@@ -296,10 +296,10 @@ const dashboardStyles = `
     animation: mbfpSpin 0.9s linear infinite;
   }
 
-  /* ========== 5 CLEAN KPI METRIC CARDS ROW ========== */
+  /* ========== 4 CLEAN KPI METRIC CARDS ROW ========== */
   .mbfp-stats-row {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.75rem;
   }
 
@@ -321,7 +321,6 @@ const dashboardStyles = `
   .mbfp-stat-card:nth-child(2) { animation-delay: 0.1s; }
   .mbfp-stat-card:nth-child(3) { animation-delay: 0.15s; }
   .mbfp-stat-card:nth-child(4) { animation-delay: 0.2s; }
-  .mbfp-stat-card:nth-child(5) { animation-delay: 0.25s; }
 
   /* Distinct Pastel Gradient Themes */
   .mbfp-stat-card.red {
@@ -1383,24 +1382,6 @@ export function MunicipalBfpDashboard() {
               <span className="mbfp-stat-label">Responders on Duty</span>
             </div>
           </Link>
-
-          {/* Card 5: Dispatches & Mutual Aid */}
-          <Link href="/municipal-bfp/dispatch-routing" className="mbfp-stat-card purple">
-            <div className="mbfp-stat-header">
-              <div className="mbfp-stat-icon purple">
-                <i className="fa-solid fa-tower-broadcast" />
-              </div>
-              <span className="mbfp-stat-trend-tag purple">
-                <i className="fa-solid fa-handshake" /> Support
-              </span>
-            </div>
-            <div className="mbfp-stat-body">
-              <span className="mbfp-stat-value">
-                {dashLoading ? <span className="mbfp-skeleton-val" /> : (stats?.assistanceRequests ?? 0)}
-              </span>
-              <span className="mbfp-stat-label">Active Dispatches</span>
-            </div>
-          </Link>
         </div>
 
         {/* Unified 2-Column Responsive Workspace */}
@@ -1662,13 +1643,13 @@ export function MunicipalBfpDashboard() {
                     </div>
                   </Link>
 
-                  <Link href="/municipal-bfp/dispatch-routing" className="mbfp-qa-box">
+                  <Link href="/municipal-bfp/firetrucks" className="mbfp-qa-box">
                     <div className="mbfp-qa-icon-wrap red">
                       <i className="fa-solid fa-truck-moving" />
                     </div>
                     <div>
-                      <div className="mbfp-qa-text">Dispatch Units</div>
-                      <div className="mbfp-qa-sub">Route Teams</div>
+                      <div className="mbfp-qa-text">Firetrucks</div>
+                      <div className="mbfp-qa-sub">Fleet Status</div>
                     </div>
                   </Link>
 
@@ -1787,7 +1768,7 @@ export function MunicipalBfpDashboard() {
                           <span>{aid.phone}</span>
                         </a>
                       </div>
-                      <Link href="/municipal-bfp/dispatch-routing" className="mbfp-aid-btn support">
+                      <Link href="/municipal-bfp/active-incidents" className="mbfp-aid-btn support">
                         <i className="fa-solid fa-handshake" /> Request Backup
                       </Link>
                     </div>
