@@ -107,6 +107,12 @@ export async function POST(request: NextRequest) {
         console.error("Resident correction evidence cleanup failed", cleanupError);
       }
     }
+    // Image processing depends on a native binary that can be missing from a
+    // deployment. Name that case so the resident is not told to retry
+    // something that cannot succeed until the deployment is fixed.
+    if (error instanceof Error && error.message === "IMAGE_PROCESSING_UNAVAILABLE") {
+      return NextResponse.json({ error: "We cannot process photos right now. Your corrections were not saved. Please try again later." }, { status: 503 });
+    }
     // Database and storage messages can carry connection and schema detail, so
     // the resident sees fixed copy while the cause stays in the server log.
     return NextResponse.json({ error: "We could not save your corrections. Check your application status before trying again." }, { status: 500 });

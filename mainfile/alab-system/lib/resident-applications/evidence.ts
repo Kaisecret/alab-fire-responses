@@ -3,7 +3,25 @@ import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 
 import { createClient } from "@supabase/supabase-js";
-import sharp from "sharp";
+import type Sharp from "sharp";
+
+// sharp ships a platform-specific native binary. A static import makes a
+// failure to load it (a missing linux-x64 libvips in the deployed bundle,
+// say) crash the whole route module before any handler runs, so the runtime
+// answers with a bare 500 that carries no JSON for the client to show.
+// Loading it lazily turns that into an ordinary caught error instead.
+let sharpModule: typeof Sharp | null = null;
+async function loadSharp(): Promise<typeof Sharp> {
+  if (!sharpModule) {
+    try {
+      sharpModule = (await import("sharp")).default;
+    } catch (error) {
+      console.error("Identity evidence image processing is unavailable", error);
+      throw new Error("IMAGE_PROCESSING_UNAVAILABLE");
+    }
+  }
+  return sharpModule;
+}
 
 const EVIDENCE_BUCKET = process.env.SUPABASE_RESIDENT_EVIDENCE_BUCKET || "resident-identity-evidence";
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
@@ -55,6 +73,7 @@ async function validatedImage(file: File, label: string) {
     throw new Error(`${label} must be a JPG, PNG, or WebP image no larger than 6 MB.`);
   }
   const bytes = Buffer.from(await file.arrayBuffer());
+  const sharp = await loadSharp();
   try {
     const metadata = await sharp(bytes, { failOn: "error" }).metadata();
     if (!metadata.width || !metadata.height) throw new Error("missing dimensions");
@@ -86,7 +105,7 @@ async function processAsset(
   await uploadObject(originalKey, original, file.type);
   uploadedKeys.push(originalKey);
 
-  const review = await sharp(original)
+  const review = await (await loadSharp())(original)
     .rotate()
     .resize({ width: 1800, height: 1800, fit: "inside", withoutEnlargement: true })
     .composite([{ input: watermarkSvg(reference, submittedAt), tile: true, blend: "over" }])

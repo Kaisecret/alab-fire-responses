@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
 import { loadServerModule } from "./helpers/load-server-module.mjs";
 
@@ -149,6 +151,32 @@ test("a successful resubmission returns the reference, PENDING status, and a tim
   assert.match(response.body.application.reference, /^ALAB-APP-/);
   assert.equal(typeof response.body.application.submittedAt, "string");
   assert.equal(removed, false, "committed evidence must never be deleted");
+});
+
+test("unavailable image processing answers 503 rather than crashing the route module", async () => {
+  // sharp loads a platform-specific native binary. When that binary is missing
+  // from a deployment a static import crashes the whole route module before any
+  // handler runs, and the runtime answers with a bare 500 carrying no JSON.
+  // The evidence module loads it lazily and raises this sentinel instead.
+  let call_ = 0;
+  const route = loadRoute({
+    query: async () => (++call_ === 1 ? changesRequestedRow : { rows: [{ barangay_id: "b1" }], rowCount: 1 }),
+    upload: async () => { throw new Error("IMAGE_PROCESSING_UNAVAILABLE"); },
+  });
+  const response = await call(route);
+
+  assert.equal(response.status, 503);
+  assert.match(response.body.error, /cannot process photos/i);
+  assert.doesNotMatch(response.body.error, /sharp|libvips|IMAGE_PROCESSING_UNAVAILABLE/i);
+});
+
+test("the evidence module never imports sharp at module scope", () => {
+  const evidence = readFileSync(join(process.cwd(), "lib/resident-applications/evidence.ts"), "utf8");
+
+  assert.doesNotMatch(evidence, /^import sharp from "sharp"/m);
+  assert.match(evidence, /import type Sharp from "sharp"/);
+  assert.match(evidence, /await import\("sharp"\)/);
+  assert.match(evidence, /IMAGE_PROCESSING_UNAVAILABLE/);
 });
 
 test("a resident whose application is not awaiting corrections gets 409, not a 500", async () => {
