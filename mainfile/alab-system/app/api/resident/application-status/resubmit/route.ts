@@ -28,27 +28,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Complete the corrected information, front ID, and selfie." }, { status: 400 });
   }
 
-  const current = await getDatabase().query<{
-    profile_id: string; verification_id: string; municipality_id: string; status: string; submission_number: number;
-  }>(
-    `select rp.id as profile_id, rv.id as verification_id, ra.municipality_id, rv.status, rv.submission_number
-       from resident_profiles rp join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
-       join lateral (select * from resident_verifications where resident_profile_id = rp.id order by submitted_at desc limit 1) rv on true
-      where rp.user_id = $1`, [session.userId],
-  );
-  const previous = current.rows[0];
-  if (!previous || previous.status !== "CHANGES_REQUESTED") return NextResponse.json({ error: "Corrections are not currently requested for this application." }, { status: 409 });
-  const locality = await getDatabase().query<{ barangay_id: string }>(
-    "select id as barangay_id from barangays where municipality_id = $1 and lower(name) = lower($2) limit 1",
-    [previous.municipality_id, barangay],
-  );
-  if (!locality.rowCount) return NextResponse.json({ error: "Enter a valid barangay in your registered municipality." }, { status: 400 });
-
+  // Every fallible step below runs inside this boundary. The lookups used to
+  // sit outside it, so a database or storage failure escaped the handler and
+  // the runtime answered with a bare 500 carrying no JSON error for the
+  // resident's client to show.
   const applicationId = randomUUID();
   const reference = `ALAB-APP-${applicationId.replaceAll("-", "").slice(0, 10).toUpperCase()}`;
   const now = new Date();
   let uploadedKeys: string[] = [];
+  let committed = false;
   try {
+    const current = await getDatabase().query<{
+      profile_id: string; verification_id: string; municipality_id: string; status: string; submission_number: number;
+    }>(
+      `select rp.id as profile_id, rv.id as verification_id, ra.municipality_id, rv.status, rv.submission_number
+         from resident_profiles rp join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
+         join lateral (select * from resident_verifications where resident_profile_id = rp.id order by submitted_at desc limit 1) rv on true
+        where rp.user_id = $1`, [session.userId],
+    );
+    const previous = current.rows[0];
+    if (!previous || previous.status !== "CHANGES_REQUESTED") return NextResponse.json({ error: "Corrections are not currently requested for this application." }, { status: 409 });
+    const locality = await getDatabase().query<{ barangay_id: string }>(
+      "select id as barangay_id from barangays where municipality_id = $1 and lower(name) = lower($2) limit 1",
+      [previous.municipality_id, barangay],
+    );
+    if (!locality.rowCount) return NextResponse.json({ error: "Enter a valid barangay in your registered municipality." }, { status: 400 });
+
     const evidence = await uploadIdentityEvidence({
       applicationId, reference, submittedAt: now, front,
       back: back instanceof File && back.size ? back : null, selfie,
@@ -87,10 +92,23 @@ export async function POST(request: NextRequest) {
         context: { reference }, dedupeKey: `resident-application:${applicationId}:resubmitted`, createdAt: now,
       });
     });
+    committed = true;
     return NextResponse.json({ application: { reference, status: "PENDING", submittedAt: now.toISOString() }, message: "Corrections resubmitted for Municipal BFP review." });
   } catch (error) {
-    await removeIdentityEvidence(uploadedKeys);
     console.error("Resident correction resubmission failed", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to resubmit corrections." }, { status: 500 });
+    // Cleanup is best effort and must never become the response: building a
+    // storage client throws when the storage key is unusable, and that throw
+    // used to escape this catch and surface as a bare 500. Evidence belonging
+    // to a committed verification is never removed.
+    if (!committed && uploadedKeys.length) {
+      try {
+        await removeIdentityEvidence(uploadedKeys);
+      } catch (cleanupError) {
+        console.error("Resident correction evidence cleanup failed", cleanupError);
+      }
+    }
+    // Database and storage messages can carry connection and schema detail, so
+    // the resident sees fixed copy while the cause stays in the server log.
+    return NextResponse.json({ error: "We could not save your corrections. Check your application status before trying again." }, { status: 500 });
   }
 }
