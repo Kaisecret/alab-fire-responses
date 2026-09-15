@@ -68,12 +68,35 @@ function watermarkSvg(reference: string, submittedAt: Date) {
   </svg>`);
 }
 
+// Magic-byte check used only when the image library is unavailable. It confirms
+// the bytes really are the declared image type; it does not prove decodability,
+// so the library check above stays authoritative whenever it can run.
+function hasSupportedImageSignature(bytes: Buffer, declaredType: string) {
+  const isJpeg = bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const isPng = bytes.length > 8 && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  const isWebp = bytes.length > 12 && bytes.subarray(0, 4).toString("ascii") === "RIFF" && bytes.subarray(8, 12).toString("ascii") === "WEBP";
+  if (declaredType === "image/jpeg") return isJpeg;
+  if (declaredType === "image/png") return isPng;
+  if (declaredType === "image/webp") return isWebp;
+  return false;
+}
+
 async function validatedImage(file: File, label: string) {
   if (!ALLOWED_IMAGE_TYPES.has(file.type) || file.size < 1 || file.size > MAX_IMAGE_BYTES) {
     throw new Error(`${label} must be a JPG, PNG, or WebP image no larger than 6 MB.`);
   }
   const bytes = Buffer.from(await file.arrayBuffer());
-  const sharp = await loadSharp();
+  // Decoding with the image library is the authoritative check, but it must not
+  // be the only one: when the native binary cannot load, fall back to verifying
+  // the file's magic bytes so a genuine image is still accepted and a disguised
+  // file is still rejected.
+  let sharp: typeof Sharp;
+  try {
+    sharp = await loadSharp();
+  } catch {
+    if (!hasSupportedImageSignature(bytes, file.type)) throw new Error(`${label} is not a readable image.`);
+    return bytes;
+  }
   try {
     const metadata = await sharp(bytes, { failOn: "error" }).metadata();
     if (!metadata.width || !metadata.height) throw new Error("missing dimensions");
@@ -105,15 +128,26 @@ async function processAsset(
   await uploadObject(originalKey, original, file.type);
   uploadedKeys.push(originalKey);
 
-  const review = await (await loadSharp())(original)
-    .rotate()
-    .resize({ width: 1800, height: 1800, fit: "inside", withoutEnlargement: true })
-    .composite([{ input: watermarkSvg(reference, submittedAt), tile: true, blend: "over" }])
-    .webp({ quality: 88 })
-    .toBuffer();
-  const reviewKey = `${applicationId}/review/${kind}-review-${assetId}.webp`;
-  await uploadObject(reviewKey, review, "image/webp");
-  uploadedKeys.push(reviewKey);
+  // The watermarked review copy is a reviewer convenience, not a security
+  // control: the original is already stored privately and is what the record
+  // depends on. When the image library cannot load, degrade to the original
+  // rather than failing the whole submission, which would otherwise block
+  // every signup and correction outright.
+  let reviewKey: string | null = null;
+  try {
+    const review = await (await loadSharp())(original)
+      .rotate()
+      .resize({ width: 1800, height: 1800, fit: "inside", withoutEnlargement: true })
+      .composite([{ input: watermarkSvg(reference, submittedAt), tile: true, blend: "over" }])
+      .webp({ quality: 88 })
+      .toBuffer();
+    reviewKey = `${applicationId}/review/${kind}-review-${assetId}.webp`;
+    await uploadObject(reviewKey, review, "image/webp");
+    uploadedKeys.push(reviewKey);
+  } catch (error) {
+    console.error(`Watermarked review copy unavailable for ${kind}; storing the original only`, error);
+    reviewKey = null;
+  }
 
   return {
     originalKey,

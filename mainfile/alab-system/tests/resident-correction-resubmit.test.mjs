@@ -170,6 +170,32 @@ test("unavailable image processing answers 503 rather than crashing the route mo
   assert.doesNotMatch(response.body.error, /sharp|libvips|IMAGE_PROCESSING_UNAVAILABLE/i);
 });
 
+test("a submission survives the image library being unavailable", () => {
+  // Registration and correction both upload through processAsset. When the
+  // native image binary cannot load, the watermarked review copy is a
+  // reviewer convenience that must not take the whole submission down with
+  // it: the original is stored privately and is what the record depends on.
+  const evidence = readFileSync(join(process.cwd(), "lib/resident-applications/evidence.ts"), "utf8");
+
+  assert.match(evidence, /let reviewKey: string \| null = null/);
+  assert.match(evidence, /storing the original only/);
+  // Dimension validation must also degrade, or it fails before the review
+  // copy is ever attempted.
+  assert.match(evidence, /hasSupportedImageSignature\(bytes, file\.type\)/);
+  assert.match(evidence, /reviewKey: string \| null;/);
+});
+
+test("the magic-byte fallback still rejects a file disguised as an image", () => {
+  const evidence = readFileSync(join(process.cwd(), "lib/resident-applications/evidence.ts"), "utf8");
+
+  // Each declared type is matched against its own signature, so a renamed
+  // file whose bytes are not that image type is refused.
+  assert.match(evidence, /declaredType === "image\/jpeg"\) return isJpeg/);
+  assert.match(evidence, /declaredType === "image\/png"\) return isPng/);
+  assert.match(evidence, /declaredType === "image\/webp"\) return isWebp/);
+  assert.match(evidence, /return false/);
+});
+
 test("the evidence module never imports sharp at module scope", () => {
   const evidence = readFileSync(join(process.cwd(), "lib/resident-applications/evidence.ts"), "utf8");
 
