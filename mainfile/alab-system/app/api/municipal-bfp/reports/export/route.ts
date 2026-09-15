@@ -8,6 +8,7 @@ import { parseMunicipalReportFilters } from "../../../../../lib/municipal-bfp/re
 import { exportMunicipalDataset } from "../../../../../lib/municipal-bfp/reports/exports";
 import type {
   MunicipalExportDataset,
+  MunicipalExportFormat,
   MunicipalExportScope,
   MunicipalReportFilters,
 } from "../../../../../lib/municipal-bfp/reports/types";
@@ -18,6 +19,7 @@ const ALLOWED_DATASETS = new Set<MunicipalExportDataset>([
   "INCIDENT_REGISTER",
   "MUNICIPAL_SUMMARY",
   "BARANGAY_BREAKDOWN",
+  "INCIDENT_DOSSIER",
 ]);
 
 const ALLOWED_SCOPES = new Set<MunicipalExportScope>([
@@ -26,12 +28,16 @@ const ALLOWED_SCOPES = new Set<MunicipalExportScope>([
   "CURRENT_PAGE",
 ]);
 
+const ALLOWED_FORMATS = new Set<MunicipalExportFormat>(["CSV", "PDF"]);
+
 async function handleExport(
   request: NextRequest,
   datasetInput: unknown,
   scopeInput: unknown,
   selectedIdsInput: unknown,
   filters: MunicipalReportFilters,
+  formatInput: unknown,
+  reportIdInput: unknown,
 ) {
   const admin = await requireMunicipalAdmin(request);
   if (isAuthorizationResponse(admin)) {
@@ -81,6 +87,11 @@ async function handleExport(
     return NextResponse.json({ error: "INVALID_SCOPE: Choose an authorized scope." }, { status: 400 });
   }
 
+  const format = String(formatInput || "CSV").toUpperCase() as MunicipalExportFormat;
+  if (!ALLOWED_FORMATS.has(format)) {
+    return NextResponse.json({ error: "INVALID_FORMAT: Choose CSV or PDF." }, { status: 400 });
+  }
+
   let selectedIds: string[] | undefined;
   if (Array.isArray(selectedIdsInput)) {
     selectedIds = selectedIdsInput.map(String).filter(Boolean);
@@ -95,20 +106,35 @@ async function handleExport(
     const result = await exportMunicipalDataset(admin, filters, {
       dataset,
       scope,
-      format: "CSV",
+      format,
       selectedIds,
+      reportId: typeof reportIdInput === "string" ? reportIdInput : undefined,
+      preparedBy: admin.rankOrPosition
+        ? `${admin.displayName} (${admin.rankOrPosition})`
+        : admin.displayName,
     });
+
+    const headers = {
+      "Content-Disposition": `attachment; filename="${result.fileName}"`,
+      "X-Export-Row-Count": String(result.rowCount),
+      "Cache-Control": "private, no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    };
+
+    if (format === "PDF") {
+      if (!result.pdfContent) {
+        throw new Error("Export produced no PDF document.");
+      }
+      return new NextResponse(new Uint8Array(result.pdfContent), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/pdf" },
+      });
+    }
 
     return new NextResponse(result.csvContent, {
       status: 200,
-      headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${result.fileName}"`,
-        "X-Export-Row-Count": String(result.rowCount),
-        "Cache-Control": "private, no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
+      headers: { ...headers, "Content-Type": "text/csv; charset=utf-8" },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Export failed.";
@@ -122,7 +148,7 @@ async function handleExport(
           : 500;
 
     if (status === 500) console.error("Municipal export failed", error);
-    return NextResponse.json({ error: status === 500 ? "Unable to generate and audit this export. Please retry or contact the administrator." : message }, { status });
+    return NextResponse.json({ error: status === 500 ? "This export could not be generated. Please try again." : message }, { status });
   }
 }
 
@@ -139,8 +165,10 @@ export async function GET(request: NextRequest) {
   const datasetInput = searchParams.get("dataset");
   const scopeInput = searchParams.get("scope");
   const selectedIdsInput = searchParams.get("selectedIds");
+  const formatInput = searchParams.get("format");
+  const reportIdInput = searchParams.get("reportId");
 
-  return handleExport(request, datasetInput, scopeInput, selectedIdsInput, filters);
+  return handleExport(request, datasetInput, scopeInput, selectedIdsInput, filters, formatInput, reportIdInput);
 }
 
 export async function POST(request: NextRequest) {
@@ -166,5 +194,7 @@ export async function POST(request: NextRequest) {
     body.scope,
     body.selectedIds,
     filters,
+    body.format,
+    body.reportId,
   );
 }

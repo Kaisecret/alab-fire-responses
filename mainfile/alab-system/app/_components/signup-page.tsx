@@ -30,7 +30,10 @@ const STEP_CONFIG = [
   { title: "Address Information", subtitle: "Tell us where you are located in Antique." },
   { title: "Identity Verification", subtitle: "Upload your identification details for account verification." },
   { title: "Account Security", subtitle: "Set up your login credentials." },
-  { title: "Verify your phone", subtitle: "Confirm the one-time code to protect your resident account." },
+  // The panel below this header changes from code entry to a verified summary,
+  // so the subtitle must read correctly in both states rather than instructing
+  // the resident to confirm a code they have already confirmed.
+  { title: "Verify your phone", subtitle: "" },
 ];
 
 export function SignupPage({ fontVariableClassName }: SignupPageProps) {

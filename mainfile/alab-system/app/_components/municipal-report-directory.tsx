@@ -16,6 +16,7 @@ import {
   getStatusLabel,
   getSeverityLabel,
 } from "../../lib/municipal-bfp/reports/formatters";
+import { BfpDataLoader } from "./bfp-data-loader";
 import { MunicipalReportDetail } from "./municipal-report-detail";
 import { MunicipalReportExportDialog } from "./municipal-report-export-dialog";
 
@@ -113,6 +114,8 @@ export function MunicipalReportDirectory() {
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [exportSelected, setExportSelected] = useState(false);
   const [revision, setRevision] = useState(0);
+  const [pdfBusy, setPdfBusy] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   // Fetch municipal barangays list
   useEffect(() => {
@@ -377,6 +380,51 @@ export function MunicipalReportDirectory() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
+  /** Requests a generated PDF and hands it to the browser as a file download. */
+  const downloadPdf = async (
+    dataset: "MUNICIPAL_SUMMARY" | "INCIDENT_REGISTER" | "BARANGAY_BREAKDOWN",
+    scope: "ALL_MATCHING" | "SELECTED" | "CURRENT_PAGE" = "ALL_MATCHING",
+  ) => {
+    if (pdfBusy) return;
+    setPdfBusy(dataset);
+    setPdfError(null);
+
+    try {
+      const res = await municipalTabFetch("/api/municipal-bfp/reports/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dataset,
+          scope,
+          format: "PDF",
+          selectedIds: scope === "SELECTED" ? selectedIds : undefined,
+          filters: currentFilters,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Unable to generate this report.");
+      }
+
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition");
+      const match = disposition?.match(/filename="?([^"]+)"?/);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = match?.[1] || "alab-municipal-report.pdf";
+      document.body.appendChild(link);
+      link.click();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      document.body.removeChild(link);
+    } catch (cause) {
+      setPdfError(cause instanceof Error ? cause.message : "Download failed. Please retry.");
+    } finally {
+      setPdfBusy(null);
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", fontFamily: "inherit" }}>
       {/* Header */}
@@ -411,10 +459,10 @@ export function MunicipalReportDirectory() {
         </div>
 
         <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-          <a
-            href={`/municipal-bfp/incident-reports/print?mode=summary&period=${encodeURIComponent(period)}${from ? `&from=${encodeURIComponent(from)}` : ""}${to ? `&to=${encodeURIComponent(to)}` : ""}${barangayId ? `&barangayId=${encodeURIComponent(barangayId)}` : ""}${status ? `&status=${encodeURIComponent(status)}` : ""}${fireType ? `&fireType=${encodeURIComponent(fireType)}` : ""}${severity ? `&severity=${encodeURIComponent(severity)}` : ""}${reportSource ? `&reportSource=${encodeURIComponent(reportSource)}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}`}
-            target="_self"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => downloadPdf("MUNICIPAL_SUMMARY")}
+            disabled={pdfBusy !== null}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -426,13 +474,34 @@ export function MunicipalReportDirectory() {
               color: "#334155",
               fontSize: "0.82rem",
               fontWeight: 600,
-              textDecoration: "none",
+              cursor: pdfBusy ? "progress" : "pointer",
               boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
               transition: "all 0.15s ease",
             }}
           >
-            <i className="fa-solid fa-print" style={{ color: "#475569" }} /> Print summary
-          </a>
+            <i
+              className={`fa-solid ${pdfBusy === "MUNICIPAL_SUMMARY" ? "fa-circle-notch fa-spin" : "fa-download"}`}
+              style={{ color: "#475569" }}
+            />
+            {pdfBusy === "MUNICIPAL_SUMMARY" ? "Preparing..." : "Download summary"}
+          </button>
+
+          {pdfError && (
+            <span
+              role="status"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                fontSize: "0.78rem",
+                fontWeight: 600,
+                color: "#B91C1C",
+              }}
+            >
+              <i className="fa-solid fa-circle-exclamation" />
+              {pdfError}
+            </span>
+          )}
 
           <button
             type="button"
@@ -1040,26 +1109,28 @@ export function MunicipalReportDirectory() {
           </div>
 
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <a
-              href={`/municipal-bfp/incident-reports/print?mode=register&selectedIds=${encodeURIComponent(selectedIds.join(","))}&autoPrint=true`}
-              target="_self"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => downloadPdf("INCIDENT_REGISTER", "SELECTED")}
+              disabled={pdfBusy !== null}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "0.35rem",
                 background: "linear-gradient(135deg, #D00F09, #DC2626)",
                 color: "#FFFFFF",
+                border: "none",
                 borderRadius: 5,
                 padding: "5px 12px",
                 fontSize: "0.78rem",
                 fontWeight: 700,
-                textDecoration: "none",
+                cursor: pdfBusy ? "progress" : "pointer",
                 boxShadow: "0 1px 3px rgba(208, 15, 9, 0.25)",
               }}
             >
-              <i className="fa-solid fa-file-pdf" /> Export as PDF
-            </a>
+              <i className={`fa-solid ${pdfBusy === "INCIDENT_REGISTER" ? "fa-circle-notch fa-spin" : "fa-file-pdf"}`} />
+              {pdfBusy === "INCIDENT_REGISTER" ? "Preparing..." : "Download PDF"}
+            </button>
             <button
               type="button"
               onClick={() => { setExportSelected(true); setIsExportDialogOpen(true); }}
@@ -1185,19 +1256,8 @@ export function MunicipalReportDirectory() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} style={{ padding: "3rem", textAlign: "center", color: "#64748B" }}>
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        border: "3px solid #E2E8F0",
-                        borderTopColor: "#D00F09",
-                        borderRadius: "50%",
-                        animation: "spin 1s linear infinite",
-                        margin: "0 auto 0.5rem",
-                      }}
-                    />
-                    <span style={{ fontSize: "0.82rem" }}>Loading incident records...</span>
+                  <td colSpan={8} style={{ padding: "1.5rem", textAlign: "center", color: "#64748B" }}>
+                    <BfpDataLoader size="sm" minHeight="150px" title="Loading incident records…" />
                   </td>
                 </tr>
               )}

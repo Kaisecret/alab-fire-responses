@@ -127,7 +127,8 @@ export type MunicipalReportSummary = {
 export type MunicipalExportDataset =
   | "INCIDENT_REGISTER"
   | "MUNICIPAL_SUMMARY"
-  | "BARANGAY_BREAKDOWN";
+  | "BARANGAY_BREAKDOWN"
+  | "INCIDENT_DOSSIER";
 
 export type MunicipalExportScope = "ALL_MATCHING" | "SELECTED" | "CURRENT_PAGE";
 
@@ -138,10 +139,16 @@ export type MunicipalExportOptions = {
   scope: MunicipalExportScope;
   format: MunicipalExportFormat;
   selectedIds?: string[];
+  /** Signature name printed on a PDF export; defaults to the actor's own name. */
+  preparedBy?: string;
+  /** Required by the INCIDENT_DOSSIER dataset: the single report to render. */
+  reportId?: string;
 };
 
 export type MunicipalExportResult = {
   csvContent: string;
+  /** Present only for PDF exports; CSV exports carry their text in csvContent. */
+  pdfContent?: Buffer;
   fileName: string;
   rowCount: number;
 };

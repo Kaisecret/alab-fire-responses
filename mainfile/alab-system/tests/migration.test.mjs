@@ -52,6 +52,8 @@ test("public images use approved WebP, Resident Guide, or PWA formats", () => {
     "home screen bg bfp.png",
     "icon for bfp app.png",
     "logo alab.png",
+    // Embedded into generated PDFs server-side, where pdfkit reads PNG not WebP.
+    "bfp logo.png",
   ]);
   const nonWebpImages = readdirSync(join(root, "public", "images")).filter(
     (image) => !image.toLowerCase().endsWith(".webp") && !approvedNonWebpImages.has(image),

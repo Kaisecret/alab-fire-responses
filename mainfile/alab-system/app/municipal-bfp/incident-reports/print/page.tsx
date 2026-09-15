@@ -1,6 +1,7 @@
 "use client";
 
 import { municipalTabFetch } from "../../../../lib/auth/municipal-tab-fetch";
+import { BfpDataLoader } from "../../../_components/bfp-data-loader";
 
 import React, { useEffect, useState } from "react";
 import type {
@@ -31,6 +32,68 @@ export default function IncidentReportsPrintPage() {
   const [filterLabel, setFilterLabel] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  /**
+   * Downloads the generated PDF for whichever view is on screen. The browser
+   * print dialog is never opened; the file comes from the export API.
+   */
+  const handleDownloadPdf = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    setDownloadError(null);
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const dataset =
+        mode === "incident" ? "INCIDENT_DOSSIER" : mode === "register" ? "INCIDENT_REGISTER" : "MUNICIPAL_SUMMARY";
+
+      const filters: Record<string, string | number> = { page: 1, pageSize: 100 };
+      for (const key of ["period", "from", "to", "barangayId", "status", "fireType", "severity", "reportSource", "search"]) {
+        const value = params.get(key);
+        if (value) filters[key] = value;
+      }
+      if (!filters.period) filters.period = "ALL";
+
+      const selectedIdsParam = params.get("selectedIds");
+      const selectedIds = selectedIdsParam ? selectedIdsParam.split(",").filter(Boolean) : [];
+
+      const res = await municipalTabFetch("/api/municipal-bfp/reports/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dataset,
+          format: "PDF",
+          scope: selectedIds.length > 0 ? "SELECTED" : "ALL_MATCHING",
+          selectedIds: selectedIds.length > 0 ? selectedIds : undefined,
+          reportId: mode === "incident" ? params.get("id") || undefined : undefined,
+          filters,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Unable to generate this document.");
+      }
+
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition");
+      const match = disposition?.match(/filename="?([^"]+)"?/);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = match?.[1] || "alab-incident-report.pdf";
+      document.body.appendChild(link);
+      link.click();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      document.body.removeChild(link);
+    } catch (cause) {
+      setDownloadError(cause instanceof Error ? cause.message : "Download failed. Please retry.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -106,18 +169,6 @@ export default function IncidentReportsPrintPage() {
     return () => controller.abort();
   }, []);
 
-  // Handle autoPrint trigger after data is fully loaded
-  useEffect(() => {
-    if (!loading && !error && (report || summary || registerItems.length > 0)) {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("autoPrint") === "true") {
-        const timer = setTimeout(() => {
-          window.print();
-        }, 600);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [loading, error, report, summary, registerItems]);
 
   const renderStatusBadge = (statusValue: string) => {
     let bg = "#F1F5F9";
@@ -363,13 +414,13 @@ export default function IncidentReportsPrintPage() {
         </a>
 
         <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
-          <span style={{ fontSize: "0.78rem", color: "#64748B" }}>
-            Ready to export: Use browser &ldquo;Save as PDF&rdquo; destination
-          </span>
+          {downloadError && (
+            <span style={{ fontSize: "0.78rem", color: "#B91C1C", fontWeight: 600 }}>{downloadError}</span>
+          )}
           <button
             type="button"
-            disabled={loading || !!error}
-            onClick={() => window.print()}
+            disabled={loading || !!error || downloading}
+            onClick={handleDownloadPdf}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -381,11 +432,12 @@ export default function IncidentReportsPrintPage() {
               color: "#FFFFFF",
               fontSize: "0.88rem",
               fontWeight: 700,
-              cursor: "pointer",
+              cursor: downloading ? "progress" : "pointer",
               boxShadow: "0 2px 8px rgba(208, 15, 9, 0.35)",
             }}
           >
-            <i className="fa-solid fa-file-pdf" /> Print / Save as PDF
+            <i className={`fa-solid ${downloading ? "fa-circle-notch fa-spin" : "fa-download"}`} />
+            {downloading ? "Preparing PDF..." : "Download PDF"}
           </button>
         </div>
       </div>
@@ -403,26 +455,20 @@ export default function IncidentReportsPrintPage() {
             gap: "1.5rem",
           }}
         >
-          {/* Official Emblem / Symbol */}
-          <div
+          {/* Official ALAB Emblem */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/logo alab.png"
+            alt="ALAB"
             style={{
-              width: 54,
-              height: 54,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #D00F09, #991B1B)",
-              color: "#FFFFFF",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "1.6rem",
+              width: 72,
+              height: 72,
+              objectFit: "contain",
               flexShrink: 0,
-              boxShadow: "0 2px 6px rgba(208, 15, 9, 0.3)",
               WebkitPrintColorAdjust: "exact",
               printColorAdjust: "exact",
             }}
-          >
-            <i className="fa-solid fa-fire-shield" />
-          </div>
+          />
 
           <div style={{ flex: 1, textAlign: "center" }}>
             <div style={{ fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#475569", fontWeight: 600 }}>
@@ -458,12 +504,7 @@ export default function IncidentReportsPrintPage() {
           </div>
         </div>
 
-        {loading && (
-          <div style={{ padding: "3rem", textAlign: "center", color: "#64748B" }}>
-            <i className="fa-solid fa-circle-notch fa-spin" style={{ fontSize: "1.8rem", color: "#D00F09", marginBottom: "0.5rem" }} />
-            <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 600 }}>Loading official print layout...</p>
-          </div>
-        )}
+        {loading && <BfpDataLoader minHeight="260px" title="Loading official report layout…" />}
 
         {error && (
           <div style={{ padding: "1.5rem", background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B", borderRadius: 8 }}>
@@ -653,11 +694,11 @@ export default function IncidentReportsPrintPage() {
               </div>
             </div>
 
-            {/* 3. DISPATCHED UNITS & PERSONNEL */}
+            {/* Dispatched units. Numbered at render time so a hidden block leaves no gap. */}
             {report.dispatches && report.dispatches.length > 0 && (
               <>
                 <h3 style={{ fontSize: "0.82rem", fontWeight: 800, textTransform: "uppercase", margin: "1rem 0 0.3rem", color: "#1E293B" }}>
-                  3. Dispatched Fire Stations & Personnel
+                  3. Dispatched Fire Stations &amp; Personnel
                 </h3>
                 <table className="print-table" style={{ marginBottom: "1.25rem" }}>
                   <thead>
@@ -690,7 +731,7 @@ export default function IncidentReportsPrintPage() {
             {report.timeline && report.timeline.length > 0 && (
               <>
                 <h3 style={{ fontSize: "0.82rem", fontWeight: 800, textTransform: "uppercase", margin: "1rem 0 0.3rem", color: "#1E293B" }}>
-                  4. Chronological Operational Timeline
+                  {report.dispatches && report.dispatches.length > 0 ? "4" : "3"}. Chronological Operational Timeline
                 </h3>
                 <table className="print-table" style={{ marginBottom: "1.5rem" }}>
                   <thead>

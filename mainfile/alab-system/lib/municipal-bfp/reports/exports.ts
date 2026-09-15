@@ -3,12 +3,15 @@ import "server-only";
 import { getDatabase } from "../../db";
 import type { MunicipalAdminIdentity } from "../auth";
 import { formatPhilippineDateTime } from "./formatters";
-import { listMunicipalReports, getMunicipalReportSummary } from "./service";
+import { buildMunicipalReportPdf } from "./pdf";
+import { listMunicipalReports, getMunicipalReportDetail, getMunicipalReportSummary } from "./service";
 import type {
   MunicipalExportOptions,
   MunicipalExportResult,
+  MunicipalReportDetail,
   MunicipalReportFilters,
   MunicipalReportRow,
+  MunicipalReportSummary,
 } from "./types";
 
 const MAX_EXPORT_ROWS = 10000;
@@ -37,6 +40,31 @@ export function buildCsv(
   const headerLine = headers.map(escapeCsvValue).join(",");
   const dataLines = rows.map((row) => row.map(escapeCsvValue).join(","));
   return [headerLine, ...dataLines].join("\r\n");
+}
+
+/**
+ * Excel reads a CSV as the local ANSI codepage unless the file opens with a
+ * byte order mark, which mangles Philippine place and reporter names.
+ */
+const UTF8_BOM = "﻿";
+
+export function withUtf8Bom(csv: string): string {
+  return csv.startsWith(UTF8_BOM) ? csv : `${UTF8_BOM}${csv}`;
+}
+
+/** Restates the active filters for the PDF header, matching the print view. */
+function describeFilters(filters: MunicipalReportFilters, scope: string): string {
+  const parts: string[] = [];
+  if (filters.barangayId) parts.push("Barangay filter applied");
+  if (filters.status) parts.push(`Status: ${filters.status}`);
+  if (filters.fireType) parts.push(`Fire type: ${filters.fireType}`);
+  if (filters.severity) parts.push(`Severity: ${filters.severity}`);
+  if (filters.reportSource) parts.push(`Source: ${filters.reportSource}`);
+  if (filters.search) parts.push(`Search: ${filters.search}`);
+  if (scope === "SELECTED") parts.push("Selected records only");
+  if (scope === "CURRENT_PAGE") parts.push("Current page only");
+
+  return parts.length > 0 ? parts.join("; ") : "All records within the reporting period";
 }
 
 function sanitizeForFilename(str: string): string {
@@ -69,7 +97,7 @@ export async function exportMunicipalDataset(
   if (actor.accountStatus !== "ACTIVE" || !actor.municipalityId || actor.email === "preview@municipal-bfp.local" || actor.userId === "afbc9f03-312c-4208-a15c-05f87a3ad6fe") {
     throw new Error("UNAUTHORIZED: An active assigned account is required.");
   }
-  if (options.format !== "CSV") throw new Error("INVALID_FORMAT: Choose CSV.");
+  if (options.format !== "CSV" && options.format !== "PDF") throw new Error("INVALID_FORMAT: Choose CSV or PDF.");
   if (!["ALL_MATCHING", "SELECTED", "CURRENT_PAGE"].includes(options.scope) ||
       (options.dataset !== "INCIDENT_REGISTER" && options.scope !== "ALL_MATCHING")) {
     throw new Error("INVALID_SCOPE: Aggregate reports require all matching records.");
@@ -100,9 +128,15 @@ export async function exportMunicipalDataset(
   let fileName = "";
   let rowCount = 0;
 
+  // Retained so a PDF export can lay out the same records the CSV would list.
+  let pdfRows: MunicipalReportRow[] = [];
+  let pdfSummary: MunicipalReportSummary | null = null;
+  let pdfDetail: MunicipalReportDetail | null = null;
+  const fileExtension = options.format === "PDF" ? "pdf" : "csv";
+
   switch (dataset) {
     case "INCIDENT_REGISTER": {
-      fileName = `alab-${muniSlug}-incident-register-${dateRangeSlug}-${timeSuffix}.csv`;
+      fileName = `alab-${muniSlug}-incident-register-${dateRangeSlug}-${timeSuffix}.${fileExtension}`;
       let records: MunicipalReportRow[] = [];
 
       if (scope === "SELECTED") {
@@ -214,13 +248,18 @@ export async function exportMunicipalDataset(
         r.timeToResolutionMinutes ?? "",
       ]);
 
-      csvContent = buildCsv(headers, rows);
+      csvContent = withUtf8Bom(buildCsv(headers, rows));
+      pdfRows = records;
+      if (options.format === "PDF") {
+        pdfSummary = await getMunicipalReportSummary(actor, filters, db);
+      }
       break;
     }
 
     case "MUNICIPAL_SUMMARY": {
-      fileName = `alab-${muniSlug}-incident-summary-${dateRangeSlug}-${timeSuffix}.csv`;
+      fileName = `alab-${muniSlug}-incident-summary-${dateRangeSlug}-${timeSuffix}.${fileExtension}`;
       const summary = await getMunicipalReportSummary(actor, filters, db);
+      pdfSummary = summary;
       rowCount = 1;
 
       const summaryHeaders = [
@@ -261,38 +300,37 @@ export async function exportMunicipalDataset(
         summary.timingMetrics.resolutionRecordsCount,
       ];
 
-      // Also include status, fire type, severity, and source breakdowns in CSV
-      const sections = [
-        buildCsv(summaryHeaders, [summaryRow]),
-        "\r\n--- STATUS BREAKDOWN ---",
-        buildCsv(
-          ["Status", "Count"],
-          Object.entries(summary.byStatus).map(([st, cnt]) => [st, cnt]),
-        ),
-        "\r\n--- FIRE TYPE BREAKDOWN ---",
-        buildCsv(
-          ["Fire Type", "Count"],
-          Object.entries(summary.byFireType).map(([ft, cnt]) => [ft, cnt]),
-        ),
-        "\r\n--- SEVERITY BREAKDOWN ---",
-        buildCsv(
-          ["Severity", "Count"],
-          Object.entries(summary.bySeverity).map(([sev, cnt]) => [sev, cnt]),
-        ),
-        "\r\n--- REPORT SOURCE BREAKDOWN ---",
-        buildCsv(
-          ["Source", "Count"],
-          Object.entries(summary.bySource).map(([src, cnt]) => [src, cnt]),
-        ),
-      ];
+      /*
+       * Each breakdown keeps the same three columns, so the whole file stays a
+       * single valid CSV table instead of several tables stacked behind
+       * separator rows that spreadsheets cannot parse.
+       */
+      const breakdownRows: (string | number)[][] = [];
+      const addBreakdown = (section: string, counts: Record<string, number>) => {
+        for (const [label, count] of Object.entries(counts)) {
+          breakdownRows.push([section, label, count]);
+        }
+      };
 
-      csvContent = sections.join("\r\n");
+      addBreakdown("Status", summary.byStatus);
+      addBreakdown("Fire Type", summary.byFireType);
+      addBreakdown("Severity", summary.bySeverity);
+      addBreakdown("Report Source", summary.bySource);
+
+      csvContent = withUtf8Bom(
+        [
+          buildCsv(summaryHeaders, [summaryRow]),
+          "",
+          buildCsv(["Breakdown", "Category", "Count"], breakdownRows),
+        ].join("\r\n"),
+      );
       break;
     }
 
     case "BARANGAY_BREAKDOWN": {
-      fileName = `alab-${muniSlug}-barangay-breakdown-${dateRangeSlug}-${timeSuffix}.csv`;
+      fileName = `alab-${muniSlug}-barangay-breakdown-${dateRangeSlug}-${timeSuffix}.${fileExtension}`;
       const summary = await getMunicipalReportSummary(actor, filters, db);
+      pdfSummary = summary;
       rowCount = summary.byBarangay.length;
 
       const headers = [
@@ -315,13 +353,54 @@ export async function exportMunicipalDataset(
         b.arrivalCount,
       ]);
 
-      csvContent = buildCsv(headers, rows);
+      csvContent = withUtf8Bom(buildCsv(headers, rows));
+      break;
+    }
+
+    case "INCIDENT_DOSSIER": {
+      // A single incident renders as a formatted dossier, which has no CSV shape.
+      if (options.format !== "PDF") {
+        throw new Error("INVALID_FORMAT: The incident dossier is available as PDF only.");
+      }
+      if (!options.reportId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(options.reportId)) {
+        throw new Error("INVALID_SELECTION: A valid report ID is required for an incident dossier.");
+      }
+
+      const detail = await getMunicipalReportDetail(actor, options.reportId);
+      if (!detail) {
+        throw new Error("INVALID_SELECTION: That report was not found in your municipality.");
+      }
+
+      pdfDetail = detail;
+      rowCount = 1;
+      fileName = `alab-${muniSlug}-incident-${sanitizeForFilename(detail.referenceNumber)}-${timeSuffix}.pdf`;
       break;
     }
 
     default:
       throw new Error(`UNSUPPORTED_DATASET: ${dataset}`);
   }
+
+  const pdfContent =
+    options.format === "PDF"
+      ? await buildMunicipalReportPdf({
+          kind: dataset,
+          municipalityName: actor.municipalityName || "Municipality",
+          preparedBy: options.preparedBy || actor.displayName || "Authorized Officer",
+          periodLabel:
+            filters.from && filters.to
+              ? `${filters.from} to ${filters.to}`
+              : filters.from
+                ? `From ${filters.from}`
+                : filters.to
+                  ? `Until ${filters.to}`
+                  : "All recorded dates",
+          filterLabel: describeFilters(filters, scope),
+          rows: pdfRows,
+          summary: pdfSummary,
+          detail: pdfDetail,
+        })
+      : undefined;
 
   // Audit export in municipal_export_events table
   await db.query(
@@ -342,6 +421,7 @@ export async function exportMunicipalDataset(
 
   return {
     csvContent,
+    pdfContent,
     fileName,
     rowCount,
   };

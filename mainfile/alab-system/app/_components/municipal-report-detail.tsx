@@ -3,6 +3,8 @@
 import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
+import { BfpDataLoader } from "./bfp-data-loader";
 import type {
   MunicipalReportDetail as MunicipalReportDetailType,
   MunicipalDispatchRecord,
@@ -30,6 +32,49 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const [retryCount, setRetryCount] = useState(0);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  const handleDownloadPdf = useCallback(async () => {
+    if (downloading) return;
+    setDownloading(true);
+    setDownloadError(null);
+
+    try {
+      const res = await municipalTabFetch("/api/municipal-bfp/reports/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dataset: "INCIDENT_DOSSIER",
+          format: "PDF",
+          scope: "ALL_MATCHING",
+          reportId,
+          filters: { page: 1, pageSize: 25, period: "ALL" },
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Unable to generate this incident report.");
+      }
+
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition");
+      const match = disposition?.match(/filename="?([^"]+)"?/);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = match?.[1] || "alab-incident-report.pdf";
+      document.body.appendChild(link);
+      link.click();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      document.body.removeChild(link);
+    } catch (cause) {
+      setDownloadError(cause instanceof Error ? cause.message : "Download failed. Please retry.");
+    } finally {
+      setDownloading(false);
+    }
+  }, [downloading, reportId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -185,7 +230,14 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
     );
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  /*
+   * Rendered into document.body: the page content area animates transform and
+   * sets will-change, which makes it a containing block for fixed positioning.
+   * Inside it the overlay could not cover the sidebar or header.
+   */
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -284,8 +336,10 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             {report && (
-              <a
-                href={`/municipal-bfp/incident-reports/print?mode=incident&id=${encodeURIComponent(report.id)}&autoPrint=true`}
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={downloading}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -297,13 +351,14 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
                   color: "#D00F09",
                   fontSize: "0.78rem",
                   fontWeight: 700,
-                  textDecoration: "none",
+                  cursor: downloading ? "progress" : "pointer",
                   boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                   transition: "all 0.15s ease",
                 }}
               >
-                <i className="fa-solid fa-file-pdf" style={{ color: "#D00F09" }} /> Print / Save PDF
-              </a>
+                <i className={`fa-solid ${downloading ? "fa-circle-notch fa-spin" : "fa-file-pdf"}`} style={{ color: "#D00F09" }} />
+                {downloading ? "Preparing..." : "Download PDF"}
+              </button>
             )}
 
             <button
@@ -331,22 +386,7 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
 
         {/* Body content */}
         <div style={{ padding: "1.5rem", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-          {loading && (
-            <div style={{ padding: "3rem", textAlign: "center", color: "#64748B" }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  border: "3px solid #E2E8F0",
-                  borderTopColor: "#D00F09",
-                  borderRadius: "50%",
-                  animation: "spin 1s linear infinite",
-                  margin: "0 auto 0.75rem",
-                }}
-              />
-              <p style={{ margin: 0, fontSize: "0.875rem" }}>Loading incident details...</p>
-            </div>
-          )}
+          {loading && <BfpDataLoader size="sm" minHeight="200px" title="Loading incident details…" />}
 
           {error && (
             <div
@@ -653,27 +693,32 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
           }}
         >
           {report ? (
-            <a
-              href={`/municipal-bfp/incident-reports/print?mode=incident&id=${encodeURIComponent(report.id)}`}
-              target="_self"
-              rel="noopener noreferrer"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                padding: "0.5rem 1rem",
-                borderRadius: 6,
-                border: "1px solid #CBD5E1",
-                background: "#FFFFFF",
-                color: "#334155",
-                fontSize: "0.82rem",
-                fontWeight: 600,
-                textDecoration: "none",
-                cursor: "pointer",
-              }}
-            >
-              <i className="fa-solid fa-print" /> Print Incident Report
-            </a>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={downloading}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  padding: "0.5rem 1rem",
+                  borderRadius: 6,
+                  border: "1px solid #CBD5E1",
+                  background: "#FFFFFF",
+                  color: "#334155",
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  cursor: downloading ? "progress" : "pointer",
+                }}
+              >
+                <i className={`fa-solid ${downloading ? "fa-circle-notch fa-spin" : "fa-download"}`} />
+                {downloading ? "Preparing..." : "Download Incident Report"}
+              </button>
+              {downloadError && (
+                <span style={{ fontSize: "0.76rem", color: "#B91C1C", fontWeight: 600 }}>{downloadError}</span>
+              )}
+            </div>
           ) : (
             <div />
           )}
@@ -740,6 +785,6 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
           </div>
         </div>
       )}
-    </div>
+    </div>, document.body,
   );
 }
