@@ -60,6 +60,12 @@ export async function getResidentApplication(municipalityId: string, application
     selfieReviewKey: string | null; legacySelfieKey: string | null;
   };
 
+  // A resident can resubmit corrections, which inserts a new verification row
+  // rather than updating the old one. Any id or reference captured before a
+  // resubmission (a notification, a bookmark, an already-open reviewer tab)
+  // would otherwise keep resolving to that superseded row and its outdated
+  // evidence. Resolve the requested id to the resident, then always load
+  // that resident's latest verification so stale references self-heal.
   const queryApplication = (evidenceColumns: string) => getDatabase().query<ResidentApplicationRow>(
     `select rv.id, rv.application_reference as reference, rv.status, rv.submitted_at as "submittedAt",
             rv.rejection_reason as "correctionReason", rp.first_name as "firstName", rp.last_name as "lastName",
@@ -71,7 +77,10 @@ export async function getResidentApplication(municipalityId: string, application
        join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
        join municipalities m on m.id = ra.municipality_id
        join barangays b on b.id = ra.barangay_id
-      where (rv.id::text = $1 or rv.application_reference = $1) and ra.municipality_id = $2 and u.role = 'RESIDENT'
+      where ra.municipality_id = $2 and u.role = 'RESIDENT' and rv.resident_profile_id = (
+        select resident_profile_id from resident_verifications where id::text = $1 or application_reference = $1 limit 1
+      )
+      order by rv.submitted_at desc, rv.created_at desc
       limit 1`,
     [applicationId, municipalityId],
   );
@@ -152,6 +161,9 @@ export async function getResidentApplication(municipalityId: string, application
 }
 
 async function lockedApplication(client: Parameters<Parameters<typeof withTransaction>[0]>[0], municipalityId: string, applicationId: string) {
+  // Resolve a possibly-stale id/reference to the resident, then lock and act
+  // on that resident's latest verification row — never a superseded one from
+  // before a resubmission. See the matching note in getResidentApplication.
   const result = await client.query<{
     id: string;
     resident_profile_id: string;
@@ -171,7 +183,11 @@ async function lockedApplication(client: Parameters<Parameters<typeof withTransa
        join users u on u.id = rp.user_id
        join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
        join municipalities m on m.id = ra.municipality_id
-      where (rv.id::text = $1 or rv.application_reference = $1) and ra.municipality_id = $2
+      where ra.municipality_id = $2 and rv.resident_profile_id = (
+        select resident_profile_id from resident_verifications where id::text = $1 or application_reference = $1 limit 1
+      )
+      order by rv.submitted_at desc, rv.created_at desc
+      limit 1
       for update of rv`,
     [applicationId, municipalityId],
   );

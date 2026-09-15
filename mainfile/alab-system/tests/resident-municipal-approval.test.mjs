@@ -115,6 +115,33 @@ test("municipal resident application APIs are assignment and municipality scoped
   assert.doesNotMatch(combined, /front_document_key[^\n]+signed/i);
 });
 
+test("resubmission creates a new verification row instead of updating the previous one", () => {
+  const resubmit = source("app/api/resident/application-status/resubmit/route.ts");
+  assert.match(resubmit, /randomUUID\(\)/);
+  assert.match(resubmit, /insert into resident_verifications/i);
+});
+
+test("application detail and review actions resolve stale ids to the resident's latest submission", () => {
+  const service = source("lib/resident-applications/service.ts");
+
+  // A resubmission (see resident-correction-loading tests) inserts a new
+  // resident_verifications row rather than updating the old one, so any id
+  // captured before a resubmission (a notification, a bookmark, an
+  // already-open reviewer tab) must not keep resolving to that superseded
+  // row's outdated evidence. Both lookups must re-resolve to the resident's
+  // most recent submission rather than matching the requested id directly.
+  const getApplicationBlock = service.slice(
+    service.indexOf("export async function getResidentApplication"),
+    service.indexOf("async function lockedApplication"),
+  );
+  assert.match(getApplicationBlock, /resident_profile_id\s*=\s*\(\s*select resident_profile_id from resident_verifications where id::text = \$1 or application_reference = \$1/i);
+  assert.match(getApplicationBlock, /order by rv\.submitted_at desc, rv\.created_at desc/i);
+
+  const lockedApplicationBlock = service.slice(service.indexOf("async function lockedApplication"));
+  assert.match(lockedApplicationBlock, /resident_profile_id\s*=\s*\(\s*select resident_profile_id from resident_verifications where id::text = \$1 or application_reference = \$1/i);
+  assert.match(lockedApplicationBlock, /order by rv\.submitted_at desc, rv\.created_at desc/i);
+});
+
 test("resident and municipal approval screens use real APIs and correct review language", () => {
   const municipal = source("app/municipal-bfp/verification-queue/page.tsx");
   const applicant = source("app/resident/application/page.tsx");
