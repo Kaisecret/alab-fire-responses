@@ -17,13 +17,17 @@ const ALARM_STATUSES = new Set([
   "CONFIRMED",
 ]);
 
-/** Acknowledged ids live per tab, so a page change does not re-ring the alarm. */
+/*
+ * Acknowledgements persist across sessions. Holding them per tab meant every
+ * sign-in re-raised the alarm for reports the officer had already attended to,
+ * because the tab storage had been cleared in between.
+ */
 const ACK_KEY = "alab_acknowledged_incident_alarms";
 
 function readAcknowledged(): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const raw = sessionStorage.getItem(ACK_KEY);
+    const raw = localStorage.getItem(ACK_KEY);
     return new Set(raw ? (JSON.parse(raw) as string[]) : []);
   } catch {
     return new Set();
@@ -32,7 +36,7 @@ function readAcknowledged(): Set<string> {
 
 function writeAcknowledged(ids: Set<string>): void {
   try {
-    sessionStorage.setItem(ACK_KEY, JSON.stringify([...ids]));
+    localStorage.setItem(ACK_KEY, JSON.stringify([...ids]));
   } catch {
     // A full or blocked storage must never stop the alarm from being dismissed.
   }
@@ -306,11 +310,18 @@ export function MunicipalIncidentAlarm() {
   const acknowledge = useCallback((incidentId: string) => {
     stopSiren();
     setAcknowledged((current) => {
-      const next = new Set(current).add(incidentId);
+      /*
+       * Keep only ids the queue still knows about. Acknowledgements now outlive
+       * the tab, so without this the stored list would grow for the life of the
+       * browser profile.
+       */
+      const live = new Set(incidents.map((incident) => incident.id));
+      const next = new Set([...current].filter((id) => live.has(id)));
+      next.add(incidentId);
       writeAcknowledged(next);
       return next;
     });
-  }, [stopSiren]);
+  }, [stopSiren, incidents]);
 
   if (!active) return null;
 
