@@ -13,6 +13,7 @@ import '../services/mobile_bfp_api.dart';
 import '../services/road_routing_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/liquid_glass.dart';
+import '../widgets/request_backup_button.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({
@@ -1168,6 +1169,14 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                                 ),
                               ),
                             ],
+                          ),
+
+                          // Backup is called for from here, by the responder
+                          // who can see what the fire is actually doing.
+                          const SizedBox(height: 8),
+                          RequestBackupButton(
+                            token: widget.dispatchStore.session.token,
+                            dispatchId: assignment.dispatchId,
                           ),
                         ],
                       ),
