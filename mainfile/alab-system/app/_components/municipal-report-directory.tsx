@@ -993,7 +993,7 @@ export function MunicipalReportDirectory() {
           )}
         </div>
 
-        {/* Extended filters (Fire type, Severity, Source) */}
+        {/* Extended filters (Fire type, Level of Danger, Source) */}
         {showMoreFilters && (
           <div
             style={{
@@ -1043,11 +1043,11 @@ export function MunicipalReportDirectory() {
               }}
             >
               <option value="">All Severities</option>
-              <option value="CRITICAL">Critical Severity</option>
-              <option value="HIGH">High Severity</option>
-              <option value="MODERATE">Moderate Severity</option>
-              <option value="LOW">Low Severity</option>
-              <option value="UNKNOWN">Unknown Severity</option>
+              <option value="CRITICAL">Critical Danger</option>
+              <option value="HIGH">High Danger</option>
+              <option value="MODERATE">Moderate Danger</option>
+              <option value="LOW">Low Danger</option>
+              <option value="UNKNOWN">Unknown Danger</option>
             </select>
 
             <select
@@ -1240,7 +1240,7 @@ export function MunicipalReportDirectory() {
                   Fire Type
                 </th>
                 <th style={{ padding: "0.8rem 1rem", fontSize: "0.72rem", fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                  Severity
+                  Level of Danger
                 </th>
                 <th style={{ padding: "0.8rem 1rem", fontSize: "0.72rem", fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                   Reported At (PHT)

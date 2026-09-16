@@ -827,7 +827,7 @@ export default function IncidentReportsPrintPage() {
                   <th style={{ width: "15%" }}>Reported At (PHT)</th>
                   <th style={{ width: "20%" }}>Reporter & Channel</th>
                   <th style={{ width: "18%" }}>Barangay / Landmark</th>
-                  <th style={{ width: "13%" }}>Type & Severity</th>
+                  <th style={{ width: "13%" }}>Type & Danger Level</th>
                   <th style={{ width: "18%" }}>Current Status</th>
                 </tr>
               </thead>
@@ -1001,7 +1001,7 @@ export default function IncidentReportsPrintPage() {
                     <tr>
                       <th>Fire Type</th>
                       <th style={{ textAlign: "right" }}>Count</th>
-                      <th>Calculated Severity</th>
+                      <th>Level of Danger</th>
                       <th style={{ textAlign: "right" }}>Count</th>
                     </tr>
                   </thead>

@@ -889,7 +889,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
         </div>
         <div className="resident-hero-badges">
           <span className={`severity-pill ${severity}`}>
-            {severity} {lang === "en" ? "Severity" : lang === "hil" ? "Kagrabehon" : "Kaselanan"}
+            {severity} {lang === "en" ? "Danger" : lang === "hil" ? "Kadilikado" : "Panganib"}
           </span>
           <span className="resident-status-pill">{getLocalizedStatusLabel(report.status, lang)}</span>
         </div>

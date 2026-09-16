@@ -1406,7 +1406,7 @@ export function MunicipalBfpDashboard() {
                     <tr>
                       <th style={{ width: '1%', whiteSpace: 'nowrap' }}>Ref. No.</th>
                       <th>Barangay &amp; Landmark</th>
-                      <th style={{ whiteSpace: 'nowrap' }}>Fire Type &amp; Severity</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Fire Type &amp; Danger Level</th>
                       <th style={{ whiteSpace: 'nowrap' }}>Reported</th>
                       <th>Status</th>
                     </tr>

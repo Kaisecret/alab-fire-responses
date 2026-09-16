@@ -145,7 +145,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
       listMunicipalNotificationRecipients(client, municipalityId),
       listProvincialNotificationRecipients(client),
     ]);
-    const summary = `${reference} · ${barangay.barangayName} · ${severityAssessment.level} SEVERITY`;
+    const summary = `${reference} · ${barangay.barangayName} · ${severityAssessment.level} DANGER LEVEL`;
     await createAccountNotifications(client, {
       recipientUserIds: municipalRecipients,
       actorUserId: userId,

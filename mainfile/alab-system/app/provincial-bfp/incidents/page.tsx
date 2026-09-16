@@ -978,7 +978,7 @@ function ProvincialIncidentsContent() {
 
                   <div className="pbfp-modal-grid">
                     <div className="pbfp-modal-field">
-                      <label>Classification & Severity</label>
+                      <label>Classification & Level of Danger</label>
                       <p>{incidentDetail.fireType.replaceAll('_', ' ')} · {incidentDetail.calculatedSeverity || 'MODERATE'}</p>
                     </div>
                     <div className="pbfp-modal-field">

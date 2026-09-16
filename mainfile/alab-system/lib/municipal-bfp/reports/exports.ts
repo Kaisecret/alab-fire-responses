@@ -59,7 +59,7 @@ function describeFilters(filters: MunicipalReportFilters, scope: string): string
   if (filters.barangayId) parts.push("Barangay filter applied");
   if (filters.status) parts.push(`Status: ${filters.status}`);
   if (filters.fireType) parts.push(`Fire type: ${filters.fireType}`);
-  if (filters.severity) parts.push(`Severity: ${filters.severity}`);
+  if (filters.severity) parts.push(`Level of danger: ${filters.severity}`);
   if (filters.reportSource) parts.push(`Source: ${filters.reportSource}`);
   if (filters.search) parts.push(`Search: ${filters.search}`);
   if (scope === "SELECTED") parts.push("Selected records only");
@@ -223,7 +223,7 @@ export async function exportMunicipalDataset(
         "Barangay",
         "Report Source",
         "Fire Type",
-        "Calculated Severity",
+        "Level of Danger",
         "Status",
         "Submitted At (PHT)",
         "Response Started At (PHT)",
@@ -317,7 +317,7 @@ export async function exportMunicipalDataset(
 
       addBreakdown("Status", summary.byStatus);
       addBreakdown("Fire Type", summary.byFireType);
-      addBreakdown("Severity", summary.bySeverity);
+      addBreakdown("Level of Danger", summary.bySeverity);
       addBreakdown("Report Source", summary.bySource);
 
       csvContent = withUtf8Bom(

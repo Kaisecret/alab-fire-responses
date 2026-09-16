@@ -349,7 +349,7 @@ export function MunicipalIncidentAlarm() {
                 <div className="mia-val">{getFireTypeLabel(active.fireType)}</div>
               </div>
               <div>
-                <span className="mia-key">Severity</span>
+                <span className="mia-key">Level of Danger</span>
                 <div className="mia-val">{getSeverityLabel(active.calculatedSeverity || "UNKNOWN")}</div>
               </div>
               <div>

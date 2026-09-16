@@ -188,7 +188,7 @@ export function MunicipalGisIncidentModal({ incidents, onClose, onSelectedIncide
               <article><span>Fire classification</span><strong>{humanize(detail.fireType)}</strong></article>
               <article><span>Response started</span><strong>{formatDate(detail.responseStartedAt)}</strong></article>
               <article><span>Completed / closed</span><strong>{completion ? formatDate(completion.createdAt) : "Not completed"}</strong></article>
-              <article><span>Calculated severity</span><strong>{humanize(detail.calculatedSeverity)}</strong></article>
+              <article><span>Level of danger</span><strong>{humanize(detail.calculatedSeverity)}</strong></article>
               <article><span>Effective house density</span><strong>{humanize(detail.houseDensity)}</strong></article>
             </div>
 

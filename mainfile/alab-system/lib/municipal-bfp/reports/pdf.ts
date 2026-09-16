@@ -334,7 +334,7 @@ function drawRegisterTable(doc: Doc, startY: number, context: MunicipalPdfContex
     { label: "Reported At (PHT)", width: 88 },
     { label: "Reporter & Channel", width: 104 },
     { label: "Barangay / Landmark", width: 96 },
-    { label: "Type & Severity", width: 76 },
+    { label: "Type & Danger Level", width: 76 },
     { label: "Status", width: 67 },
   ];
 
@@ -632,7 +632,7 @@ function renderSummary(doc: Doc, context: MunicipalPdfContext, emblems: Emblems)
 
   y += 14;
   y = ensureSpace(doc, y, 90, context, emblems, null);
-  y = drawSectionHeading(doc, y, "3. Fire Type & Severity Distribution");
+  y = drawSectionHeading(doc, y, "3. Fire Type & Danger Level Distribution");
 
   const fireTypes = ["HOUSE_BUILDING", "GRASS", "FOREST", "VEHICLE", "OTHER"];
   const severities = ["CRITICAL", "HIGH", "MODERATE", "LOW", "UNKNOWN"];
@@ -649,7 +649,7 @@ function renderSummary(doc: Doc, context: MunicipalPdfContext, emblems: Emblems)
     [
       { label: "Fire Type", width: 160 },
       { label: "Count", width: 97, align: "right" },
-      { label: "Calculated Severity", width: 161 },
+      { label: "Level of Danger", width: 161 },
       { label: "Count", width: 97, align: "right" },
     ],
     classificationRows,

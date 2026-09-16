@@ -683,7 +683,7 @@ export function MunicipalReportExportDialog({
       id: "XLSX" as const,
       icon: "fa-solid fa-file-excel",
       name: "Excel Workbook (.xlsx)",
-      desc: "Formatted sheet with colour-coded severity and status, ready to read",
+      desc: "Formatted sheet with colour-coded danger level and status, ready to read",
     },
     {
       id: "CSV" as const,

@@ -225,7 +225,7 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
           fontWeight: 700,
         }}
       >
-        {getSeverityLabel(severity)} Severity
+        {getSeverityLabel(severity)} Danger
       </span>
     );
   };

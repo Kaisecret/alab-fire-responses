@@ -194,7 +194,7 @@ function buildRegisterSheet(sheet: Sheet, context: MunicipalExcelContext): void 
     { header: "Reported By", width: 22 },
     { header: "Intake Channel", width: 18 },
     { header: "Fire Type", width: 16 },
-    { header: "Severity", width: 12 },
+    { header: "Level of Danger", width: 16 },
     { header: "Status", width: 18 },
     { header: "Submitted At (PHT)", width: 22 },
     { header: "Response Started (PHT)", width: 22 },
@@ -315,7 +315,7 @@ function buildSummarySheet(sheet: Sheet, context: MunicipalExcelContext): void {
   const sections: [string, Record<string, number>, (key: string) => string][] = [
     ["Status", summary.byStatus, getStatusLabel],
     ["Fire Type", summary.byFireType, getFireTypeLabel],
-    ["Severity", summary.bySeverity, getSeverityLabel],
+    ["Level of Danger", summary.bySeverity, getSeverityLabel],
     ["Report Source", summary.bySource, (key) => (key === "ALAB_APP" ? "ALAB Mobile App" : "Emergency Call")],
   ];
 

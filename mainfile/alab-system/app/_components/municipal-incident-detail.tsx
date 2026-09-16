@@ -1760,7 +1760,7 @@ export function MunicipalIncidentDetail({
               {incident.calculatedSeverity && (
                 <span className={`mbfp-severity-hero-badge ${incident.calculatedSeverity}`}>
                   <i className="fa-solid fa-triangle-exclamation" />
-                  <span>{incident.calculatedSeverity} SEVERITY ({incident.severityScore ?? '--'}/100)</span>
+                  <span>{incident.calculatedSeverity} DANGER LEVEL ({incident.severityScore ?? '--'}/100)</span>
                 </span>
               )}
             </div>
@@ -1843,7 +1843,7 @@ export function MunicipalIncidentDetail({
               <div className="mbfp-card-header">
                 <h2 id="mbfp-severity-heading" className="mbfp-card-title">
                   <i className="fa-solid fa-shield-halved" style={{ color: "#DC2626" }} />
-                  <span>Tactical Severity &amp; Conflagration Assessment</span>
+                  <span>Level of Danger &amp; Conflagration Assessment</span>
                 </h2>
                 <span className={`mbfp-severity-tag ${incident.calculatedSeverity || "MODERATE"}`}>
                   {incident.calculatedSeverity || "MODERATE"} ({incident.severityScore ?? 45}/100)
