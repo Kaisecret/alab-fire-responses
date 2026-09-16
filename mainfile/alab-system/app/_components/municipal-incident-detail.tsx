@@ -144,12 +144,12 @@ const detailStyles = `
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
     border-radius: 16px;
-    padding: 1.15rem 1.5rem;
+    padding: 1.5rem 1.75rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1.25rem;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
     flex-wrap: wrap;
   }
@@ -157,13 +157,14 @@ const detailStyles = `
   .mbfp-hero-left {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.6rem;
   }
 
+  /* 8px minimum between adjacent tags keeps them separable at a glance. */
   .mbfp-hero-meta-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.6rem;
     flex-wrap: wrap;
   }
 
@@ -327,13 +328,14 @@ const detailStyles = `
   .mbfp-severity-hero-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.28rem 0.75rem;
+    gap: 0.45rem;
+    padding: 0.4rem 0.85rem;
     border-radius: 999px;
-    font-size: 0.74rem;
+    font-size: 0.78rem;
     font-weight: 850;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    line-height: 1.2;
   }
   .mbfp-severity-hero-badge.CRITICAL { background: #7F1D1D; color: #FEE2E2; border: 1px solid #B91C1C; }
   .mbfp-severity-hero-badge.HIGH { background: #991B1B; color: #FEF2F2; border: 1px solid #DC2626; }
@@ -366,11 +368,11 @@ const detailStyles = `
   .mbfp-tactical-metrics-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 0.85rem;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
   }
   .mbfp-metric-item {
-    padding: 0.85rem 1rem;
+    padding: 1rem 1.15rem;
     border: 1px solid #E2E8F0;
     border-radius: 10px;
     background: #F8FAFC;
@@ -391,16 +393,18 @@ const detailStyles = `
     background: #FFFDFB;
     border-left: 4px solid #EA580C;
   }
+  /* #64748B on #F8FAFC fell short of 4.5:1; #475569 clears it. */
   .mbfp-metric-label {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
-    font-size: 0.71rem;
+    gap: 0.5rem;
+    font-size: 0.72rem;
     font-weight: 750;
-    color: #64748B;
+    color: #475569;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.55rem;
+    line-height: 1.4;
   }
   .mbfp-metric-label i {
     font-size: 0.85rem;
@@ -408,10 +412,10 @@ const detailStyles = `
   }
   .mbfp-metric-val {
     display: block;
-    font-size: 0.88rem;
+    font-size: 0.95rem;
     font-weight: 750;
     color: #0F172A;
-    line-height: 1.35;
+    line-height: 1.5;
   }
   .mbfp-metric-item.alert-conflagration .mbfp-metric-val {
     color: #B91C1C;
@@ -421,46 +425,54 @@ const detailStyles = `
   }
 
   .mbfp-factors-list {
-    padding: 0.8rem 1rem;
-    border-radius: 8px;
+    padding: 1.1rem 1.15rem;
+    border-radius: 10px;
     background: #FEF2F2;
     border: 1px solid #FEE2E2;
   }
   .mbfp-factors-title {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.5rem;
     font-size: 0.72rem;
     font-weight: 800;
     color: #991B1B;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
   }
+  /*
+   * Hazards stack one per line rather than wrapping as chips. Each is a full
+   * sentence, and wrapped chips broke them mid-phrase.
+   */
   .mbfp-factors-list ul {
     margin: 0;
     padding: 0;
     list-style: none;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 0.5rem;
   }
   .mbfp-factors-list li {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
     background: #FFFFFF;
     border: 1px solid #FECACA;
-    padding: 0.35rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    color: #991B1B;
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 650;
+    color: #7F1D1D;
+    line-height: 1.5;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
   .mbfp-factors-list li i {
     color: #DC2626;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
+    margin-top: 0.18rem;
+    flex-shrink: 0;
   }
   @media (max-width: 640px) {
     .mbfp-tactical-metrics-grid { grid-template-columns: 1fr; }
@@ -470,14 +482,14 @@ const detailStyles = `
   .mbfp-tactical-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    gap: 14px;
+    gap: 1.5rem;
     align-items: start;
   }
 
   @media (max-width: 1080px) {
     .mbfp-tactical-grid {
       grid-template-columns: 1fr;
-      gap: 14px;
+      gap: 1.25rem;
     }
   }
 
@@ -494,7 +506,7 @@ const detailStyles = `
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
     border-radius: 16px;
-    padding: 1.15rem 1.35rem;
+    padding: 1.5rem 1.6rem;
     margin-bottom: 0;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
   }
@@ -503,8 +515,9 @@ const detailStyles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 0.85rem;
-    padding-bottom: 0.75rem;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid #F1F5F9;
   }
 
@@ -515,8 +528,9 @@ const detailStyles = `
     margin: 0;
     display: flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.6rem;
     letter-spacing: -0.02em;
+    line-height: 1.35;
   }
 
   .mbfp-card-title i {
