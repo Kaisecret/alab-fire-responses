@@ -339,6 +339,22 @@ class MobileBfpApi {
     _successJson(response);
   }
 
+  /// Whether backup is already open for this dispatch.
+  ///
+  /// Asked on load so the control reflects the server rather than whatever the
+  /// app happened to remember before it was closed.
+  Future<bool> hasOpenBackupRequest({
+    required String token,
+    required String dispatchId,
+  }) async {
+    final response = await _send(() => _client.get(
+      _uri('/api/mobile-bfp/backup-requests?dispatchId=$dispatchId'),
+      headers: _authorizationHeaders(token),
+    ));
+    final payload = _successJson(response);
+    return payload['alreadyRequested'] == true;
+  }
+
   /// Calls for backup on an incident this responder was dispatched to.
   Future<void> requestBackup({
     required String token,

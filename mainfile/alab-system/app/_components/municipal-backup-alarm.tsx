@@ -188,11 +188,16 @@ export function MunicipalBackupAlarm() {
     if (document.visibilityState !== "visible") return;
     try {
       const res = await municipalTabFetch("/api/municipal-bfp/backup-requests", { cache: "no-store" });
-      if (!res.ok) return;
+      if (!res.ok) {
+        // A refused poll is worth saying out loud: the alarm is the only thing
+        // telling this station a responder has called for help.
+        console.error("Backup request poll refused", res.status);
+        return;
+      }
       const body = await res.json();
       setRequests(Array.isArray(body.backupRequests) ? body.backupRequests : []);
-    } catch {
-      // A failed poll must not clear what is already on screen.
+    } catch (cause) {
+      console.error("Backup request poll failed", cause);
     }
   }, []);
 

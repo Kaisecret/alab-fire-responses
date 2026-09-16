@@ -128,9 +128,13 @@ export async function requestBackup(input: {
     [fireReportId],
   );
 
+  /*
+   * One open request per incident. A second call is refused rather than
+   * silently joined: the responder is told help is already coming, instead of
+   * being shown a fresh confirmation that raises nothing.
+   */
   if (existing.rowCount && existing.rows[0]) {
-    const joined = await getBackupRequest(existing.rows[0].id);
-    if (joined) return joined;
+    throw new Error("BACKUP_ALREADY_REQUESTED");
   }
 
   const inserted = await db.query<{ id: string }>(
@@ -161,6 +165,28 @@ export async function requestBackup(input: {
 function clampResource(value: number | undefined): number {
   if (!Number.isInteger(value) || value === undefined || value < 0) return 0;
   return Math.min(value, 500);
+}
+
+/**
+ * The open request for a dispatch this responder is on, if there is one. The
+ * mobile app asks on load so its control survives the app being closed.
+ */
+export async function findOpenBackupRequestForDispatch(
+  responderUserId: string,
+  dispatchId: string,
+): Promise<BackupRequest | null> {
+  const result = await getDatabase().query<BackupRequest>(
+    `select ${SELECT_COLUMNS} ${FROM_JOINS}
+      where r.status in ('PENDING_MUNICIPAL','FORWARDED_PROVINCIAL')
+        and fr.id = (select fire_report_id from public.incident_dispatches where id = $2)
+        and exists (
+          select 1 from public.incident_dispatch_recipients dr
+           where dr.dispatch_id = $2 and dr.recipient_user_id = $1
+        )
+      limit 1`,
+    [responderUserId, dispatchId],
+  );
+  return result.rows[0] ?? null;
 }
 
 export async function getBackupRequest(id: string): Promise<BackupRequest | null> {

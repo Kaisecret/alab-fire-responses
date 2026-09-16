@@ -102,6 +102,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     final assignment = widget.dispatchStore.activeAssignment;
     if (assignment != null && assignment.dispatchId != _lastCenteredDispatchId) {
       _lastCenteredDispatchId = assignment.dispatchId;
+      unawaited(_syncBackupState(assignment.dispatchId));
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _centerOn(LatLng(assignment.latitude, assignment.longitude), zoom: 15.5);
@@ -681,14 +682,46 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       );
     } catch (error) {
       if (!mounted) return;
+      final already = error is MobileBfpApiException && error.statusCode == 409;
+      if (already) {
+        // Someone on this incident already called it in.
+        setState(() {
+          _backupRequested = true;
+          _backupRequestedForDispatchId = assignment.dispatchId;
+        });
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error is MobileBfpApiException ? error.message : 'Could not request backup. Try again.'),
-          backgroundColor: const Color(0xFFB91C1C),
+          content: Text(
+            already
+                ? 'Backup was already requested for this incident.'
+                : error is MobileBfpApiException
+                    ? error.message
+                    : 'Could not request backup. Try again.',
+          ),
+          backgroundColor: already ? const Color(0xFFB45309) : const Color(0xFFB91C1C),
         ),
       );
     } finally {
       if (mounted) setState(() => _backupSending = false);
+    }
+  }
+
+  /// Reflects the server's view of whether backup is already open.
+  Future<void> _syncBackupState(String dispatchId) async {
+    try {
+      final open = await MobileBfpApi().hasOpenBackupRequest(
+        token: widget.dispatchStore.session.token,
+        dispatchId: dispatchId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _backupRequested = open;
+        _backupRequestedForDispatchId = open ? dispatchId : null;
+      });
+    } catch (_) {
+      // A failed check leaves the control enabled; the server still refuses a
+      // duplicate, so the worst case is one rejected tap.
     }
   }
 

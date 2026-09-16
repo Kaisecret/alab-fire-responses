@@ -1,9 +1,30 @@
 import { NextResponse } from "next/server";
 
 import { isMobileBfpAuthorization, requireMobileMunicipalBfp } from "../../../../lib/auth/mobile-bfp";
-import { requestBackup } from "../../../../lib/incidents/backup-escalation";
+import { findOpenBackupRequestForDispatch, requestBackup } from "../../../../lib/incidents/backup-escalation";
 
 export const runtime = "nodejs";
+
+/** Whether an open backup request already exists for this dispatch. */
+export async function GET(request: Request) {
+  const session = requireMobileMunicipalBfp(request);
+  if (isMobileBfpAuthorization(session)) return session;
+
+  const url = new URL(request.url);
+  const dispatchId = url.searchParams.get("dispatchId") ?? "";
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dispatchId)) {
+    return NextResponse.json({ error: "A valid dispatch is required." }, { status: 400 });
+  }
+
+  try {
+    const open = await findOpenBackupRequestForDispatch(session.userId, dispatchId);
+    return NextResponse.json({ alreadyRequested: open !== null, backupRequest: open });
+  } catch (error) {
+    console.error("Backup request lookup failed", error);
+    return NextResponse.json({ error: "Unable to check backup status." }, { status: 500 });
+  }
+}
+
 
 /** A responder on scene calls for backup on an incident they are working. */
 export async function POST(request: Request) {
@@ -41,6 +62,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ backupRequest: created }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
+    if (message === "BACKUP_ALREADY_REQUESTED") {
+      return NextResponse.json(
+        { error: "Backup was already requested for this incident.", code: "ALREADY_REQUESTED" },
+        { status: 409 },
+      );
+    }
     if (message === "INCIDENT_NOT_FOUND") {
       return NextResponse.json({ error: "That incident was not found." }, { status: 404 });
     }
