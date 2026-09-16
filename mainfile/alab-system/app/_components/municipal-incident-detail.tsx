@@ -510,7 +510,7 @@ const detailStyles = `
   .mbfp-profile-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.15rem 1rem;
+    gap: 7px;
   }
 
   /*
@@ -1508,7 +1508,7 @@ const detailStyles = `
     }
     .mbfp-profile-grid {
       grid-template-columns: 1fr;
-      gap: 0.85rem;
+      gap: 7px;
     }
     .mbfp-respond-btn {
       width: 100%;

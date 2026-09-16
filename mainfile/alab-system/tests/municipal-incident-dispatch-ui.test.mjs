@@ -20,3 +20,12 @@ test("an active response keeps its green status control available for inspection
   assert.match(component, /onClick=\{\(\) => void openDispatch\(\)\}/);
   assert.doesNotMatch(component, /disabled=\{sending \|\| isResponding\}/);
 });
+
+test("resident emergency profile cards keep a seven-pixel gap at every breakpoint", () => {
+  const component = readFileSync(join(process.cwd(), "app", "_components", "municipal-incident-detail.tsx"), "utf8");
+  const sevenPixelProfileGrids = component.match(
+    /\.mbfp-profile-grid\s*\{[^}]*gap:\s*7px;/g,
+  ) ?? [];
+
+  assert.equal(sevenPixelProfileGrids.length, 2);
+});
