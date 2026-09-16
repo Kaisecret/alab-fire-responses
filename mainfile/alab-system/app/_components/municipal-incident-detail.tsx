@@ -342,12 +342,12 @@ const detailStyles = `
   .mbfp-severity-hero-badge.MODERATE { background: #D97706; color: #FFFBEB; border: 1px solid #F59E0B; }
   .mbfp-severity-hero-badge.LOW { background: #047857; color: #ECFDF5; border: 1px solid #10B981; }
 
+  /* The column gap governs the spacing between cards; no extra margin here. */
   .mbfp-tactical-severity-card {
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
-    margin-bottom: 1.25rem;
   }
   .mbfp-severity-tag {
     display: inline-flex;
@@ -497,7 +497,7 @@ const detailStyles = `
   .mbfp-map-card-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 7px;
     min-width: 0;
   }
 
