@@ -537,42 +537,64 @@ const detailStyles = `
     color: #DC2626;
   }
 
-  /* Resident Profile Data Grid (Strictly 8px Spacing) */
+  /*
+   * Resident profile grid. A single repeated interval gave every field the
+   * same weight, so the label binds tightly to its value while the cells
+   * themselves separate.
+   */
   .mbfp-profile-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: 0.75rem;
   }
 
   .mbfp-data-cell {
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
     border-radius: 10px;
-    padding: 0.65rem 0.85rem;
+    padding: 0.85rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.3rem;
+    min-width: 0;
   }
   .mbfp-data-cell.mbfp-data-cell--full {
     grid-column: 1 / -1;
   }
 
+  /* #64748B on #F8FAFC misses 4.5:1; #475569 clears it. */
   .mbfp-data-label {
     font-size: 0.7rem;
     font-weight: 800;
-    color: #64748B;
+    color: #475569;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    line-height: 1.4;
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
+  }
+
+  .mbfp-data-label i {
+    flex-shrink: 0;
   }
 
   .mbfp-data-value {
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: #0F172A;
+    line-height: 1.5;
     word-break: break-word;
+  }
+
+  /*
+   * Coordinates, addresses and identifiers are measurements: tabular figures
+   * keep the digits on a common width so two readings compare by eye.
+   */
+  .mbfp-data-value.is-measurement {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    letter-spacing: 0.01em;
   }
 
   .mbfp-phone-link {
@@ -591,17 +613,26 @@ const detailStyles = `
   }
 
 
-  /* Incident Details Description Block */
+  /*
+   * Narrative account of the incident. The measure is capped so long reports
+   * stay readable instead of running the full width of the column.
+   */
   .mbfp-desc-box {
     background: #F8FAFC;
-    border-left: 3.5px solid #DC2626;
-    border-radius: 4px 10px 10px 4px;
-    padding: 0.85rem 1.05rem;
-    font-size: 0.88rem;
-    line-height: 1.55;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+    font-size: 0.92rem;
+    line-height: 1.65;
     color: #334155;
     font-weight: 500;
     margin: 0;
+    max-width: 68ch;
+  }
+
+  .mbfp-desc-box.is-empty {
+    color: #64748B;
+    font-style: italic;
   }
 
   /* Photo Evidence Card & Lightbox Trigger */
@@ -1508,6 +1539,7 @@ const detailStyles = `
     }
     .mbfp-profile-grid {
       grid-template-columns: 1fr;
+      gap: 0.6rem;
     }
     .mbfp-respond-btn {
       width: 100%;
@@ -2007,14 +2039,14 @@ export function MunicipalIncidentDetail({
                     <span className="mbfp-data-label">
                       <i className="fa-regular fa-clock" /> Verified Timestamp
                     </span>
-                    <span className="mbfp-data-value">{new Date(incident.submittedAt).toLocaleString()}</span>
+                    <span className="mbfp-data-value is-measurement">{new Date(incident.submittedAt).toLocaleString()}</span>
                   </div>
 
                   <div className="mbfp-data-cell">
                     <span className="mbfp-data-label">
                       <i className="fa-solid fa-crosshairs" /> GPS coordinates
                     </span>
-                    <span className="mbfp-data-value">{incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}</span>
+                    <span className="mbfp-data-value is-measurement">{incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}</span>
                   </div>
 
 
@@ -2023,7 +2055,7 @@ export function MunicipalIncidentDetail({
                       <span className="mbfp-data-label">
                         <i className="fa-solid fa-network-wired" /> Public IP address
                       </span>
-                      <span className="mbfp-data-value">{incident.reporterIpAddress || "Unavailable"}</span>
+                      <span className="mbfp-data-value is-measurement">{incident.reporterIpAddress || "Unavailable"}</span>
                     </div>
 
                     <div className="mbfp-data-cell mbfp-data-cell--full">
@@ -2085,7 +2117,7 @@ export function MunicipalIncidentDetail({
                   <span>Situation Report &amp; Description</span>
                 </h2>
               </div>
-              <p className="mbfp-desc-box">
+              <p className={`mbfp-desc-box${incident.description ? "" : " is-empty"}`}>
                 {incident.description || "No written description provided with initial transmission."}
               </p>
             </section>
