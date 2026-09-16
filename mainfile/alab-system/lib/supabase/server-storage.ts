@@ -25,6 +25,20 @@ export async function uploadFireReportPhoto(reportId: string, file: File) {
   return { storageKey, originalFileName: file.name.slice(0, 255), mimeType: file.type, fileSizeBytes: file.size };
 }
 
+/**
+ * Photographs attached to a backup request. They live in the same private
+ * bucket as incident evidence, under their own prefix.
+ */
+export async function uploadBackupRequestPhoto(backupRequestId: string, file: File) {
+  const storageKey = `backup-requests/${backupRequestId}/${crypto.randomUUID()}.${safeName(file.name)}`;
+  const { error } = await storageClient().storage.from(bucket).upload(storageKey, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (error) throw new Error("Unable to securely upload the backup request photo.");
+  return { storageKey, originalFileName: file.name.slice(0, 255), mimeType: file.type, fileSizeBytes: file.size };
+}
+
 export async function deleteFireReportPhoto(storageKey: string) {
   await storageClient().storage.from(bucket).remove([storageKey]);
 }

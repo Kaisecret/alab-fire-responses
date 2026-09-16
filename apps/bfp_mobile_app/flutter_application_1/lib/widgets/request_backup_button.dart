@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// What the responder asked for.
 class RequestBackupResult {
@@ -7,12 +10,17 @@ class RequestBackupResult {
     required this.firetrucks,
     required this.personnel,
     required this.description,
+    this.photos = const [],
   });
 
   final int firetrucks;
   final int personnel;
   final String description;
+  final List<XFile> photos;
 }
+
+/// A responder may attach up to this many photographs to one request.
+const int kMaxBackupPhotos = 3;
 
 const _kOrange = Color(0xFFEA580C);
 const _kOrangeDeep = Color(0xFFC2410C);
@@ -35,6 +43,7 @@ class RequestBackupSheet extends StatefulWidget {
 
 class _RequestBackupSheetState extends State<RequestBackupSheet> {
   final TextEditingController _description = TextEditingController();
+  final List<XFile> _photos = [];
   int _firetrucks = 1;
   int _personnel = 0;
 
@@ -45,6 +54,48 @@ class _RequestBackupSheetState extends State<RequestBackupSheet> {
   }
 
   bool get _hasResources => _firetrucks > 0 || _personnel > 0;
+
+  Future<void> _addPhoto() async {
+    if (_photos.length >= kMaxBackupPhotos) return;
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_rounded, color: _kOrange),
+              title: Text('Take a photo', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded, color: _kOrange),
+              title: Text('Choose from gallery', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+
+    // Downscaled on device: these travel over a field connection.
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 80,
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _photos.add(picked));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -188,6 +239,49 @@ class _RequestBackupSheetState extends State<RequestBackupSheet> {
                       ),
                     ),
 
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Text(
+                          'PHOTOS',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: _kMuted,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${_photos.length} of $kMaxBackupPhotos',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: _kMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 78,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _photos.length + (_photos.length < kMaxBackupPhotos ? 1 : 0),
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          if (index == _photos.length) {
+                            return _AddPhotoTile(onTap: _addPhoto);
+                          }
+                          return _PhotoTile(
+                            file: _photos[index],
+                            onRemove: () => setState(() => _photos.removeAt(index)),
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -226,6 +320,7 @@ class _RequestBackupSheetState extends State<RequestBackupSheet> {
                                     firetrucks: _firetrucks,
                                     personnel: _personnel,
                                     description: _description.text.trim(),
+                                    photos: List<XFile>.unmodifiable(_photos),
                                   ),
                                 )
                             : null,
@@ -347,6 +442,87 @@ class _StepButton extends StatelessWidget {
             ),
             child: Icon(icon, size: 17, color: enabled ? _kInk : const Color(0xFFCBD5E1)),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One attached photograph, with a way to take it back off.
+class _PhotoTile extends StatelessWidget {
+  const _PhotoTile({required this.file, required this.onRemove});
+
+  final XFile file;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 78,
+      height: 78,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.file(
+              File(file.path),
+              width: 78,
+              height: 78,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Container(
+                width: 78,
+                height: 78,
+                color: const Color(0xFFF1F5F9),
+                child: const Icon(Icons.broken_image_rounded, color: _kMuted, size: 20),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 2,
+            right: 2,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: const BoxDecoration(color: Color(0xCC0F172A), shape: BoxShape.circle),
+                child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddPhotoTile extends StatelessWidget {
+  const _AddPhotoTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 78,
+        height: 78,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _kLine, style: BorderStyle.solid),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.add_a_photo_rounded, color: _kOrange, size: 22),
+            const SizedBox(height: 4),
+            Text(
+              'Add',
+              style: GoogleFonts.plusJakartaSans(fontSize: 10.5, fontWeight: FontWeight.w700, color: _kMuted),
+            ),
+          ],
         ),
       ),
     );

@@ -15,6 +15,7 @@ interface BackupRequest {
   forwardedAt: string | null;
   forwardedAutomatically: boolean;
   alarmLevel: number | null;
+  photos: string[];
 }
 
 const POLL_INTERVAL_MS = 10_000;
@@ -108,6 +109,19 @@ const styles = `
   .pap-level:disabled { opacity: 0.45; cursor: not-allowed; }
   .pap-level:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
   .pap-err { margin-top: 0.6rem; font-size: 0.78rem; color: #B91C1C; font-weight: 600; }
+  .pap-photos { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+  .pap-photo {
+    width: 92px;
+    height: 92px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #E2E8F0;
+    background: #F1F5F9;
+    padding: 0;
+    cursor: zoom-in;
+  }
+  .pap-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pap-photo:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
   .pap-empty {
     padding: 2rem 1rem;
     text-align: center;
@@ -214,6 +228,23 @@ export function ProvincialAlarmPanel() {
             </div>
 
             {request.reason && <div className="pap-reason">{request.reason}</div>}
+
+            {request.photos?.length > 0 && (
+              <div className="pap-photos">
+                {request.photos.map((photo, index) => (
+                  <button
+                    key={photo}
+                    type="button"
+                    className="pap-photo"
+                    onClick={() => window.open(photo, "_blank", "noopener")}
+                    title="Open photo"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo} alt={`Scene photo ${index + 1} from the responder`} />
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="pap-declare">
               <span className="pap-label">

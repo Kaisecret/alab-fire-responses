@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'locality_helper.dart';
 
@@ -356,24 +357,60 @@ class MobileBfpApi {
   }
 
   /// Calls for backup on an incident this responder was dispatched to.
+  ///
+  /// Photographs ride along as multipart so the station deciding whether to
+  /// forward can see the scene rather than only read about it.
   Future<void> requestBackup({
     required String token,
     required String dispatchId,
     String? reason,
     int requestedFiretrucks = 0,
     int requestedPersonnel = 0,
+    List<XFile> photos = const [],
   }) async {
-    final response = await _send(() => _client.post(
-      _uri('/api/mobile-bfp/backup-requests'),
-      headers: _authorizationHeaders(token),
-      body: jsonEncode({
-        'dispatchId': dispatchId,
-        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
-        'requestedFiretrucks': requestedFiretrucks,
-        'requestedPersonnel': requestedPersonnel,
-      }),
-    ));
+    if (photos.isEmpty) {
+      final response = await _send(() => _client.post(
+        _uri('/api/mobile-bfp/backup-requests'),
+        headers: _authorizationHeaders(token),
+        body: jsonEncode({
+          'dispatchId': dispatchId,
+          if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+          'requestedFiretrucks': requestedFiretrucks,
+          'requestedPersonnel': requestedPersonnel,
+        }),
+      ));
+      _successJson(response);
+      return;
+    }
+
+    final request = http.MultipartRequest('POST', _uri('/api/mobile-bfp/backup-requests'))
+      ..headers['Authorization'] = 'Bearer $token'
+      ..fields['dispatchId'] = dispatchId
+      ..fields['requestedFiretrucks'] = '$requestedFiretrucks'
+      ..fields['requestedPersonnel'] = '$requestedPersonnel';
+
+    if (reason != null && reason.trim().isNotEmpty) {
+      request.fields['reason'] = reason.trim();
+    }
+
+    for (final photo in photos) {
+      request.files.add(await http.MultipartFile.fromPath(
+        'photos',
+        photo.path,
+        contentType: MediaType('image', _imageSubtype(photo.path)),
+      ));
+    }
+
+    final streamed = await request.send().timeout(_requestTimeout);
+    final response = await http.Response.fromStream(streamed);
     _successJson(response);
+  }
+
+  static String _imageSubtype(String path) {
+    final extension = path.split('.').last.toLowerCase();
+    if (extension == 'png') return 'png';
+    if (extension == 'webp') return 'webp';
+    return 'jpeg';
   }
 
   Future<Map<String, dynamic>> sendDispatchLocation({

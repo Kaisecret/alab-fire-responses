@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { isMobileBfpAuthorization, requireMobileMunicipalBfp } from "../../../../lib/auth/mobile-bfp";
-import { findOpenBackupRequestForDispatch, requestBackup } from "../../../../lib/incidents/backup-escalation";
+import {
+  attachBackupRequestPhotos,
+  findOpenBackupRequestForDispatch,
+  getBackupRequest,
+  MAX_BACKUP_PHOTOS,
+  requestBackup,
+} from "../../../../lib/incidents/backup-escalation";
 
 export const runtime = "nodejs";
 
@@ -32,10 +38,32 @@ export async function POST(request: Request) {
   if (isMobileBfpAuthorization(session)) return session;
 
   let body: Record<string, unknown> = {};
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  let photos: File[] = [];
+
+  const contentType = request.headers.get("content-type") ?? "";
+  if (contentType.includes("multipart/form-data")) {
+    try {
+      const form = await request.formData();
+      body = {
+        dispatchId: form.get("dispatchId"),
+        fireReportId: form.get("fireReportId"),
+        reason: form.get("reason"),
+        requestedFiretrucks: form.get("requestedFiretrucks"),
+        requestedPersonnel: form.get("requestedPersonnel"),
+      };
+      photos = form
+        .getAll("photos")
+        .filter((entry): entry is File => entry instanceof File && entry.size > 0)
+        .slice(0, MAX_BACKUP_PHOTOS);
+    } catch {
+      return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+    }
+  } else {
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+    }
   }
 
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -59,7 +87,12 @@ export async function POST(request: Request) {
       requestedFiretrucks: Number(body.requestedFiretrucks) || 0,
       requestedPersonnel: Number(body.requestedPersonnel) || 0,
     });
-    return NextResponse.json({ backupRequest: created }, { status: 201 });
+    if (photos.length > 0) {
+      await attachBackupRequestPhotos(created.id, photos);
+    }
+    // Re-read so the response carries the signed photo URLs.
+    const withPhotos = photos.length > 0 ? await getBackupRequest(created.id) : created;
+    return NextResponse.json({ backupRequest: withPhotos ?? created }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message === "BACKUP_ALREADY_REQUESTED") {

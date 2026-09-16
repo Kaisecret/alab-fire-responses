@@ -17,6 +17,7 @@ interface BackupRequest {
   status: "PENDING_MUNICIPAL" | "FORWARDED_PROVINCIAL" | "RESOLVED" | "CANCELLED";
   autoForwardAt: string;
   acknowledgedAt: string | null;
+  photos: string[];
 }
 
 const POLL_INTERVAL_MS = 5_000;
@@ -162,6 +163,19 @@ const styles = `
   .mba-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .mba-btn:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
   .mba-err { font-size: 0.78rem; color: #B91C1C; font-weight: 600; }
+  .mba-photos { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .mba-photo {
+    width: 84px;
+    height: 84px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #E2E8F0;
+    background: #F1F5F9;
+    padding: 0;
+    cursor: zoom-in;
+  }
+  .mba-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mba-photo:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
 
   @media (max-width: 480px) {
     .mba-grid { grid-template-columns: 1fr; }
@@ -318,6 +332,23 @@ export function MunicipalBackupAlarm() {
             </div>
 
             {active.reason && <div className="mba-reason">{active.reason}</div>}
+
+            {active.photos?.length > 0 && (
+              <div className="mba-photos">
+                {active.photos.map((photo, index) => (
+                  <button
+                    key={photo}
+                    type="button"
+                    className="mba-photo"
+                    onClick={() => window.open(photo, "_blank", "noopener")}
+                    title="Open photo"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo} alt={`Scene photo ${index + 1} from the responder`} />
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className={`mba-countdown${secondsLeft === 0 ? " is-elapsed" : ""}`} role="status">
               <i className="fa-regular fa-clock" />

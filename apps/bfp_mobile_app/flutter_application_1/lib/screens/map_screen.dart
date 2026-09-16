@@ -668,6 +668,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         reason: result.description,
         requestedFiretrucks: result.firetrucks,
         requestedPersonnel: result.personnel,
+        photos: result.photos,
       );
       if (!mounted) return;
       setState(() {

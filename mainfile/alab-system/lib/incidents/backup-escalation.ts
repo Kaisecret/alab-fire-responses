@@ -2,6 +2,7 @@ import "server-only";
 
 import { getDatabase } from "../db";
 import { createAccountNotifications } from "../notifications/service";
+import { getFireReportPhotoUrl, uploadBackupRequestPhoto } from "../supabase/server-storage";
 
 /**
  * Backup escalation.
@@ -36,7 +37,12 @@ export interface BackupRequest {
   autoForwardAt: string;
   createdAt: string;
   alarmLevel: number | null;
+  /** Signed, short-lived URLs; empty when none were attached. */
+  photos: string[];
 }
+
+/** A responder may attach up to this many photographs to one request. */
+export const MAX_BACKUP_PHOTOS = 3;
 
 /** Seconds a municipality has to forward before it escalates on its own. */
 export const AUTO_FORWARD_SECONDS = 60;
@@ -189,12 +195,71 @@ export async function findOpenBackupRequestForDispatch(
   return result.rows[0] ?? null;
 }
 
+/**
+ * Attaches photographs to a request. Upload failures are tolerated: the call
+ * for help matters more than the pictures, and losing the request because a
+ * photo would not store would be the worse outcome.
+ */
+export async function attachBackupRequestPhotos(
+  backupRequestId: string,
+  files: File[],
+): Promise<number> {
+  const db = getDatabase();
+  let stored = 0;
+
+  for (const file of files.slice(0, MAX_BACKUP_PHOTOS)) {
+    try {
+      const uploaded = await uploadBackupRequestPhoto(backupRequestId, file);
+      await db.query(
+        `insert into public.incident_backup_request_photos
+           (backup_request_id, storage_key, original_file_name, mime_type, file_size_bytes)
+         values ($1, $2, $3, $4, $5)`,
+        [
+          backupRequestId,
+          uploaded.storageKey,
+          uploaded.originalFileName,
+          uploaded.mimeType,
+          uploaded.fileSizeBytes,
+        ],
+      );
+      stored += 1;
+    } catch (error) {
+      console.error("Backup request photo upload failed", error);
+    }
+  }
+  return stored;
+}
+
+/** Signs the photographs on each request so they can be viewed briefly. */
+async function withPhotos(requests: BackupRequest[]): Promise<BackupRequest[]> {
+  if (requests.length === 0) return requests;
+
+  const keys = await getDatabase().query<{ backupRequestId: string; storageKey: string }>(
+    `select backup_request_id as "backupRequestId", storage_key as "storageKey"
+       from public.incident_backup_request_photos
+      where backup_request_id = any($1::uuid[])
+      order by uploaded_at`,
+    [requests.map((request) => request.id)],
+  );
+
+  const signed = new Map<string, string[]>();
+  for (const row of keys.rows) {
+    const url = await getFireReportPhotoUrl(row.storageKey);
+    if (!url) continue;
+    signed.set(row.backupRequestId, [...(signed.get(row.backupRequestId) ?? []), url]);
+  }
+
+  return requests.map((request) => ({ ...request, photos: signed.get(request.id) ?? [] }));
+}
+
 export async function getBackupRequest(id: string): Promise<BackupRequest | null> {
   const result = await getDatabase().query<BackupRequest>(
     `select ${SELECT_COLUMNS} ${FROM_JOINS} where r.id = $1`,
     [id],
   );
-  return result.rows[0] ?? null;
+  if (!result.rows[0]) return null;
+  const [withUrls] = await withPhotos([result.rows[0]]);
+  return withUrls;
 }
 
 /** Open requests a municipality still has to act on or is waiting on. */
@@ -206,7 +271,7 @@ export async function listMunicipalBackupRequests(municipalityId: string): Promi
       order by r.created_at desc`,
     [municipalityId],
   );
-  return result.rows;
+  return withPhotos(result.rows);
 }
 
 /** Everything the province has been asked to weigh in on. */
@@ -216,7 +281,7 @@ export async function listProvincialBackupRequests(): Promise<BackupRequest[]> {
       where r.status = 'FORWARDED_PROVINCIAL'
       order by r.forwarded_at desc nulls last, r.created_at desc`,
   );
-  return result.rows;
+  return withPhotos(result.rows);
 }
 
 /**
