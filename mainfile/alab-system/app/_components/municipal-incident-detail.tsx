@@ -368,11 +368,11 @@ const detailStyles = `
   .mbfp-tactical-metrics-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.25rem;
+    gap: 1.15rem 1rem;
+    margin-bottom: 1.5rem;
   }
   .mbfp-metric-item {
-    padding: 1rem 1.15rem;
+    padding: 1.15rem 1.25rem;
     border: 1px solid #E2E8F0;
     border-radius: 10px;
     background: #F8FAFC;
@@ -545,17 +545,21 @@ const detailStyles = `
   .mbfp-profile-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 1.15rem 1rem;
   }
 
+  /*
+   * Each cell already carries a border and a fill, so the gap between them has
+   * to clear both edges before the grid reads as separate fields.
+   */
   .mbfp-data-cell {
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
-    border-radius: 10px;
-    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    padding: 1.05rem 1.15rem;
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
+    gap: 0.45rem;
     min-width: 0;
   }
   .mbfp-data-cell.mbfp-data-cell--full {
@@ -1539,7 +1543,7 @@ const detailStyles = `
     }
     .mbfp-profile-grid {
       grid-template-columns: 1fr;
-      gap: 0.6rem;
+      gap: 0.85rem;
     }
     .mbfp-respond-btn {
       width: 100%;

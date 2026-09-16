@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { NotificationBell } from './notifications/notification-bell';
 import { MunicipalIncidentAlarm } from './municipal-incident-alarm';
+import { useMunicipalIncidentFeed } from './use-municipal-incident-feed';
 
 type NavItem = {
   label: string;
@@ -27,7 +28,7 @@ const navigationGroups: NavGroup[] = [
     groupTitle: 'MAIN COMMAND',
     items: [
       { label: 'Dashboard', href: '/municipal-bfp', icon: 'custom-dashboard-grid', exact: true },
-      { label: 'Active Incidents', href: '/municipal-bfp/active-incidents', icon: 'fa-solid fa-fire', badge: 3, badgeType: 'red' },
+      { label: 'Active Incidents', href: '/municipal-bfp/active-incidents', icon: 'fa-solid fa-fire', badgeType: 'red' },
       { label: 'Resident Applications', href: '/municipal-bfp/verification-queue', icon: 'fa-solid fa-id-card' },
     ],
   },
@@ -1032,6 +1033,10 @@ type MunicipalUserIdentity = {
 
 export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // The sidebar badge shows the real queue depth, not a fixed number.
+  const { incidents: liveIncidents } = useMunicipalIncidentFeed();
+  const activeIncidentCount = liveIncidents.length;
+
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -1293,9 +1298,14 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                         <i className={`${item.icon} mbfp-nav-icon`} />
                       )}
                       <span className="mbfp-nav-label">{item.label}</span>
-                      {item.badge !== undefined && (
-                        <span className={`mbfp-nav-badge ${item.badgeType || 'red'}`}>{item.badge}</span>
-                      )}
+                      {(() => {
+                        const count = item.href === '/municipal-bfp/active-incidents'
+                          ? activeIncidentCount
+                          : item.badge;
+                        return count ? (
+                          <span className={`mbfp-nav-badge ${item.badgeType || 'red'}`}>{count}</span>
+                        ) : null;
+                      })()}
                       {/* Tooltip in collapsed mode */}
                       {isCollapsed && <span className="mbfp-tooltip">{item.label}</span>}
                     </Link>
