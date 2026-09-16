@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/mobile_bfp_api.dart';
 import '../theme/app_colors.dart';
 import '../theme/liquid_glass.dart';
-import '../widgets/request_backup_button.dart';
 
 class IncidentDetailSheet extends StatelessWidget {
   final String title;
@@ -520,16 +519,6 @@ class IncidentDetailSheet extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 14),
-
-                      // Backup is called for from the field, by the responder
-                      // who can see what the fire is actually doing.
-                      if (sessionToken != null && assignment != null) ...[
-                        RequestBackupButton(
-                          token: sessionToken!,
-                          dispatchId: assignment!.dispatchId,
-                        ),
-                        const SizedBox(height: 10),
-                      ],
 
                       // Primary Button: Create Incident Report
                       SizedBox(

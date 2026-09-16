@@ -44,6 +44,11 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   StreamSubscription<Position>? _positionStream;
   StreamSubscription<CompassEvent>? _compassStream;
 
+  // Backup request state
+  bool _backupSending = false;
+  bool _backupRequested = false;
+  String? _backupRequestedForDispatchId;
+
   // Road Routing state
   List<RoadRouteOption> _roadRoutes = [];
   int _selectedRouteIndex = 0;
@@ -638,6 +643,55 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// Opens the backup request sheet for the dispatch this responder is on.
+  Future<void> _openBackupRequest(MobileDispatchAssignment assignment) async {
+    // A new dispatch clears the sent state so backup can be raised again.
+    if (_backupRequestedForDispatchId != assignment.dispatchId) {
+      _backupRequested = false;
+    }
+    if (_backupSending || _backupRequested) return;
+
+    final result = await showModalBottomSheet<RequestBackupResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => RequestBackupSheet(referenceNumber: assignment.referenceNumber),
+    );
+    if (result == null || !mounted) return;
+
+    setState(() => _backupSending = true);
+    try {
+      await MobileBfpApi().requestBackup(
+        token: widget.dispatchStore.session.token,
+        dispatchId: assignment.dispatchId,
+        reason: result.description,
+        requestedFiretrucks: result.firetrucks,
+        requestedPersonnel: result.personnel,
+      );
+      if (!mounted) return;
+      setState(() {
+        _backupRequested = true;
+        _backupRequestedForDispatchId = assignment.dispatchId;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Backup requested. Your station has been notified.'),
+          backgroundColor: Color(0xFF047857),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error is MobileBfpApiException ? error.message : 'Could not request backup. Try again.'),
+          backgroundColor: const Color(0xFFB91C1C),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _backupSending = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final assignment = widget.dispatchStore.activeAssignment;
@@ -922,6 +976,17 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       color: AppColors.primaryRed,
                       onTap: () => _centerOn(incidentPoint, zoom: 16.0),
                     ),
+                    // Backup is called for by the responder on scene.
+                    const SizedBox(height: 8),
+                    _MapActionButton(
+                      icon: _backupRequested
+                          ? Icons.check_circle_rounded
+                          : Icons.campaign_rounded,
+                      tooltip: _backupRequested ? 'Backup requested' : 'Request backup',
+                      color: _backupRequested ? const Color(0xFF047857) : const Color(0xFFEA580C),
+                      isLoading: _backupSending,
+                      onTap: () => _openBackupRequest(assignment),
+                    ),
                   ],
                 ],
               ),
@@ -1171,13 +1236,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                             ],
                           ),
 
-                          // Backup is called for from here, by the responder
-                          // who can see what the fire is actually doing.
-                          const SizedBox(height: 8),
-                          RequestBackupButton(
-                            token: widget.dispatchStore.session.token,
-                            dispatchId: assignment.dispatchId,
-                          ),
                         ],
                       ),
                     )

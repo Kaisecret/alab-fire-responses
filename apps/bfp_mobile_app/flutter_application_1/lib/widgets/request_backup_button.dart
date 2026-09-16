@@ -1,191 +1,354 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../services/mobile_bfp_api.dart';
-
-/// Calls for backup on an incident the responder is working.
-///
-/// The request goes to the municipality that owns the incident, and forwards
-/// itself to the province if that municipality does not act in time, so the
-/// responder never has to chase the escalation.
-class RequestBackupButton extends StatefulWidget {
-  const RequestBackupButton({
-    super.key,
-    required this.token,
-    required this.dispatchId,
-    this.api,
+/// What the responder asked for.
+class RequestBackupResult {
+  const RequestBackupResult({
+    required this.firetrucks,
+    required this.personnel,
+    required this.description,
   });
 
-  final String token;
-  final String dispatchId;
-  final MobileBfpApi? api;
-
-  @override
-  State<RequestBackupButton> createState() => _RequestBackupButtonState();
+  final int firetrucks;
+  final int personnel;
+  final String description;
 }
 
-class _RequestBackupButtonState extends State<RequestBackupButton> {
-  late final MobileBfpApi _api = widget.api ?? MobileBfpApi();
-  bool _sending = false;
-  bool _sent = false;
+const _kOrange = Color(0xFFEA580C);
+const _kOrangeDeep = Color(0xFFC2410C);
+const _kInk = Color(0xFF0F172A);
+const _kMuted = Color(0xFF64748B);
+const _kLine = Color(0xFFE2E8F0);
 
-  Future<void> _confirmAndSend() async {
-    final reasonController = TextEditingController();
-    var firetrucks = 1;
-    var personnel = 0;
+/// Asks what the scene needs before calling for backup.
+///
+/// A request with nothing in it cannot be sent: the station receiving it has to
+/// know what to move, so at least one firetruck or one responder is required.
+class RequestBackupSheet extends StatefulWidget {
+  const RequestBackupSheet({super.key, required this.referenceNumber});
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text('Request backup', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800)),
-          content: Column(
+  final String referenceNumber;
+
+  @override
+  State<RequestBackupSheet> createState() => _RequestBackupSheetState();
+}
+
+class _RequestBackupSheetState extends State<RequestBackupSheet> {
+  final TextEditingController _description = TextEditingController();
+  int _firetrucks = 1;
+  int _personnel = 0;
+
+  @override
+  void dispose() {
+    _description.dispose();
+    super.dispose();
+  }
+
+  bool get _hasResources => _firetrucks > 0 || _personnel > 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Your station is notified first. If they do not forward it within a minute, it goes to the province automatically.',
-                style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.5),
+              // Grabber
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 10, bottom: 6),
+                decoration: BoxDecoration(
+                  color: _kLine,
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
-              const SizedBox(height: 16),
-              _Stepper(
-                label: 'Firetrucks',
-                value: firetrucks,
-                onChanged: (value) => setDialogState(() => firetrucks = value),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: _kOrange.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.campaign_rounded, color: _kOrange, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Request backup',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: _kInk,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.referenceNumber,
+                            style: GoogleFonts.robotoMono(fontSize: 11.5, color: _kMuted, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded, color: _kMuted),
+                      tooltip: 'Close',
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-              _Stepper(
-                label: 'Personnel',
-                value: personnel,
-                onChanged: (value) => setDialogState(() => personnel = value),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: reasonController,
-                maxLines: 2,
-                maxLength: 200,
-                decoration: const InputDecoration(
-                  labelText: 'What is happening?',
-                  hintText: 'Fire spreading to next house',
-                  border: OutlineInputBorder(),
+
+              const SizedBox(height: 4),
+              const Divider(height: 24, thickness: 1, color: Color(0xFFF1F5F9)),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'WHAT DO YOU NEED',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: _kMuted,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _ResourceRow(
+                      icon: Icons.fire_truck_rounded,
+                      label: 'Firetrucks',
+                      value: _firetrucks,
+                      onChanged: (value) => setState(() => _firetrucks = value),
+                    ),
+                    const SizedBox(height: 10),
+                    _ResourceRow(
+                      icon: Icons.groups_rounded,
+                      label: 'Personnel',
+                      value: _personnel,
+                      onChanged: (value) => setState(() => _personnel = value),
+                    ),
+
+                    const SizedBox(height: 20),
+                    Text(
+                      'WHAT IS HAPPENING',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: _kMuted,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _description,
+                      maxLines: 3,
+                      maxLength: 240,
+                      textCapitalization: TextCapitalization.sentences,
+                      style: GoogleFonts.plusJakartaSans(fontSize: 13.5, height: 1.5, color: _kInk),
+                      decoration: InputDecoration(
+                        hintText: 'Fire is spreading to the next house. Water running low.',
+                        hintStyle: GoogleFonts.plusJakartaSans(fontSize: 13, color: const Color(0xFF94A3B8), height: 1.5),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.all(14),
+                        counterStyle: GoogleFonts.plusJakartaSans(fontSize: 10.5, color: _kMuted),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: _kLine),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: _kLine),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: _kOrange, width: 1.5),
+                        ),
+                      ),
+                    ),
+
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFED7AA)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.info_outline_rounded, size: 16, color: _kOrangeDeep),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Your station is notified first. If they do not forward it, this goes to the province on its own.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11.5,
+                                height: 1.45,
+                                color: _kOrangeDeep,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        // Nothing to send means nothing to dispatch.
+                        onPressed: _hasResources
+                            ? () => Navigator.of(context).pop(
+                                  RequestBackupResult(
+                                    firetrucks: _firetrucks,
+                                    personnel: _personnel,
+                                    description: _description.text.trim(),
+                                  ),
+                                )
+                            : null,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _kOrange,
+                          disabledBackgroundColor: const Color(0xFFCBD5E1),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(
+                          _hasResources ? 'Send request' : 'Add a firetruck or responder',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 14.5, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                 ),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: FilledButton.styleFrom(backgroundColor: const Color(0xFFD00F09)),
-              child: const Text('Send request'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    setState(() => _sending = true);
-    try {
-      await _api.requestBackup(
-        token: widget.token,
-        dispatchId: widget.dispatchId,
-        reason: reasonController.text,
-        requestedFiretrucks: firetrucks,
-        requestedPersonnel: personnel,
-      );
-      if (!mounted) return;
-      setState(() => _sent = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Backup requested. Your station has been notified.'),
-          backgroundColor: Color(0xFF047857),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error is MobileBfpApiException ? error.message : 'Could not request backup. Try again.'),
-          backgroundColor: const Color(0xFFB91C1C),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: _sending || _sent ? null : _confirmAndSend,
-        icon: _sending
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              )
-            : Icon(_sent ? Icons.check_circle_outline : Icons.campaign_outlined),
-        label: Text(
-          _sending
-              ? 'Sending...'
-              : _sent
-                  ? 'Backup requested'
-                  : 'Request backup',
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _sent ? const Color(0xFF047857) : const Color(0xFFD00F09),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: _sent ? const Color(0xFF047857) : const Color(0xFF94A3B8),
-          disabledForegroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
   }
 }
 
-class _Stepper extends StatelessWidget {
-  const _Stepper({required this.label, required this.value, required this.onChanged});
+/// One resource line: label on the left, a stepper on the right.
+class _ResourceRow extends StatelessWidget {
+  const _ResourceRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
 
+  final IconData icon;
   final String label;
   final int value;
   final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(label, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700)),
-        ),
-        IconButton(
-          onPressed: value > 0 ? () => onChanged(value - 1) : null,
-          icon: const Icon(Icons.remove_circle_outline),
-          tooltip: 'Fewer $label',
-        ),
-        SizedBox(
-          width: 28,
-          child: Text(
-            '$value',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w800),
+    final isSet = value > 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isSet ? const Color(0xFFFFF7ED) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isSet ? const Color(0xFFFED7AA) : _kLine),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: isSet ? _kOrange : _kMuted),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                color: _kInk,
+              ),
+            ),
+          ),
+          _StepButton(
+            icon: Icons.remove_rounded,
+            // 44x44 target, so a gloved hand can still hit it.
+            onTap: value > 0 ? () => onChanged(value - 1) : null,
+          ),
+          SizedBox(
+            width: 36,
+            child: Text(
+              '$value',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: isSet ? _kOrangeDeep : _kMuted,
+              ),
+            ),
+          ),
+          _StepButton(
+            icon: Icons.add_rounded,
+            onTap: value < 20 ? () => onChanged(value + 1) : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepButton extends StatelessWidget {
+  const _StepButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          child: Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: enabled ? Colors.white : const Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+              border: Border.all(color: enabled ? _kLine : Colors.transparent),
+            ),
+            child: Icon(icon, size: 17, color: enabled ? _kInk : const Color(0xFFCBD5E1)),
           ),
         ),
-        IconButton(
-          onPressed: value < 20 ? () => onChanged(value + 1) : null,
-          icon: const Icon(Icons.add_circle_outline),
-          tooltip: 'More $label',
-        ),
-      ],
+      ),
     );
   }
 }
