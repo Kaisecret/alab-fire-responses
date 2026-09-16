@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { PhotoLightbox } from "./photo-lightbox";
+
 interface BackupRequest {
   id: string;
   fireReportId: string;
@@ -109,18 +111,46 @@ const styles = `
   .pap-level:disabled { opacity: 0.45; cursor: not-allowed; }
   .pap-level:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
   .pap-err { margin-top: 0.6rem; font-size: 0.78rem; color: #B91C1C; font-weight: 600; }
-  .pap-photos { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+  .pap-photos-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.66rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #475569;
+    margin: 0.9rem 0 0.5rem;
+  }
+  .pap-photos { display: flex; gap: 0.55rem; flex-wrap: wrap; }
   .pap-photo {
-    width: 92px;
-    height: 92px;
-    border-radius: 8px;
+    position: relative;
+    width: 96px;
+    height: 96px;
+    border-radius: 10px;
     overflow: hidden;
     border: 1px solid #E2E8F0;
     background: #F1F5F9;
     padding: 0;
     cursor: zoom-in;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
   }
   .pap-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pap-photo::after {
+    content: '\f00e';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #FFFFFF;
+    background: rgba(15, 23, 42, 0.45);
+    opacity: 0;
+    transition: opacity 0.16s ease;
+  }
+  .pap-photo:hover { transform: translateY(-2px); border-color: #CBD5E1; box-shadow: 0 6px 16px rgba(15,23,42,0.14); }
+  .pap-photo:hover::after, .pap-photo:focus-visible::after { opacity: 1; }
   .pap-photo:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
   .pap-empty {
     padding: 2rem 1rem;
@@ -140,6 +170,7 @@ export function ProvincialAlarmPanel() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{ requestId: string; index: number } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -230,19 +261,25 @@ export function ProvincialAlarmPanel() {
             {request.reason && <div className="pap-reason">{request.reason}</div>}
 
             {request.photos?.length > 0 && (
-              <div className="pap-photos">
-                {request.photos.map((photo, index) => (
-                  <button
-                    key={photo}
-                    type="button"
-                    className="pap-photo"
-                    onClick={() => window.open(photo, "_blank", "noopener")}
-                    title="Open photo"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={photo} alt={`Scene photo ${index + 1} from the responder`} />
-                  </button>
-                ))}
+              <div>
+                <div className="pap-photos-head">
+                  <i className="fa-solid fa-camera" />
+                  From the scene ({request.photos.length})
+                </div>
+                <div className="pap-photos">
+                  {request.photos.map((photo, index) => (
+                    <button
+                      key={photo}
+                      type="button"
+                      className="pap-photo"
+                      onClick={() => setViewer({ requestId: request.id, index })}
+                      title="View photo"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photo} alt={`Scene photograph ${index + 1} from the responder`} />
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -269,6 +306,20 @@ export function ProvincialAlarmPanel() {
           </div>
         ))}
       </div>
+
+      {viewer && (() => {
+        const request = requests.find((item) => item.id === viewer.requestId);
+        if (!request?.photos?.length) return null;
+        return (
+          <PhotoLightbox
+            photos={request.photos}
+            index={viewer.index}
+            onIndexChange={(index) => setViewer({ requestId: viewer.requestId, index })}
+            onClose={() => setViewer(null)}
+            caption={`${request.referenceNumber} · ${request.municipalityName}`}
+          />
+        );
+      })()}
     </>
   );
 }

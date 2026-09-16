@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
+import { PhotoLightbox } from "./photo-lightbox";
 
 interface BackupRequest {
   id: string;
@@ -163,18 +164,46 @@ const styles = `
   .mba-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .mba-btn:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
   .mba-err { font-size: 0.78rem; color: #B91C1C; font-weight: 600; }
+  .mba-photos-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.64rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #475569;
+    margin-bottom: 0.5rem;
+  }
   .mba-photos { display: flex; gap: 0.5rem; flex-wrap: wrap; }
   .mba-photo {
-    width: 84px;
-    height: 84px;
-    border-radius: 8px;
+    position: relative;
+    width: 88px;
+    height: 88px;
+    border-radius: 10px;
     overflow: hidden;
     border: 1px solid #E2E8F0;
     background: #F1F5F9;
     padding: 0;
     cursor: zoom-in;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
   }
   .mba-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mba-photo::after {
+    content: '\f00e';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #FFFFFF;
+    background: rgba(15, 23, 42, 0.45);
+    opacity: 0;
+    transition: opacity 0.16s ease;
+  }
+  .mba-photo:hover { transform: translateY(-2px); border-color: #CBD5E1; box-shadow: 0 6px 16px rgba(15,23,42,0.14); }
+  .mba-photo:hover::after, .mba-photo:focus-visible::after { opacity: 1; }
   .mba-photo:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
 
   @media (max-width: 480px) {
@@ -194,6 +223,7 @@ export function MunicipalBackupAlarm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [photoIndex, setPhotoIndex] = useState<number | null>(null);
 
   const contextRef = useRef<AudioContext | null>(null);
   const stopToneRef = useRef<(() => void) | null>(null);
@@ -334,19 +364,25 @@ export function MunicipalBackupAlarm() {
             {active.reason && <div className="mba-reason">{active.reason}</div>}
 
             {active.photos?.length > 0 && (
-              <div className="mba-photos">
-                {active.photos.map((photo, index) => (
-                  <button
-                    key={photo}
-                    type="button"
-                    className="mba-photo"
-                    onClick={() => window.open(photo, "_blank", "noopener")}
-                    title="Open photo"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={photo} alt={`Scene photo ${index + 1} from the responder`} />
-                  </button>
-                ))}
+              <div>
+                <div className="mba-photos-head">
+                  <i className="fa-solid fa-camera" />
+                  From the scene ({active.photos.length})
+                </div>
+                <div className="mba-photos">
+                  {active.photos.map((photo, index) => (
+                    <button
+                      key={photo}
+                      type="button"
+                      className="mba-photo"
+                      onClick={() => setPhotoIndex(index)}
+                      title="View photo"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photo} alt={`Scene photograph ${index + 1} from the responder`} />
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -382,6 +418,16 @@ export function MunicipalBackupAlarm() {
           </div>
         </div>
       </div>
+
+      {photoIndex !== null && (
+        <PhotoLightbox
+          photos={active.photos ?? []}
+          index={photoIndex}
+          onIndexChange={setPhotoIndex}
+          onClose={() => setPhotoIndex(null)}
+          caption={`${active.referenceNumber} · ${active.requestedByName}`}
+        />
+      )}
     </>
   );
 }
