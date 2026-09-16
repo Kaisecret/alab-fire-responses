@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { NotificationBell } from './notifications/notification-bell';
 import { MunicipalIncidentAlarm } from './municipal-incident-alarm';
+import { MunicipalBackupAlarm } from './municipal-backup-alarm';
 import { useMunicipalIncidentFeed } from './use-municipal-incident-feed';
 
 type NavItem = {
@@ -1438,6 +1439,9 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
 
       {/* Sounds on every municipal page until a duty officer acknowledges. */}
       <MunicipalIncidentAlarm />
+
+      {/* Backup called for by a responder in the field. */}
+      <MunicipalBackupAlarm />
     </>
   );
 }

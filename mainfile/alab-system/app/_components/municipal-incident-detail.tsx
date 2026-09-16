@@ -1848,17 +1848,11 @@ export function MunicipalIncidentDetail({
                 </>
               )}
             </button>
-            <button
-              type="button"
-              className="mbfp-backup-hero-btn"
-              disabled={sending}
-              onClick={() => setShowBackupModal(true)}
-              title="Request mutual-aid backup from neighboring municipal BFP stations"
-              aria-label="Request backup assistance from neighboring municipal BFP stations"
-            >
-              <i className="fa-solid fa-plus" />
-              <span>REQUEST BACKUP</span>
-            </button>
+            {/*
+              Backup is called for by the responder on scene from the mobile
+              app, not from this desk. The municipality's part is to forward
+              that request to the province.
+            */}
             {canResolve && (
               <button
                 className="mbfp-resolve-btn"

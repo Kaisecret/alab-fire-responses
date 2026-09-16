@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useProvincialAssistanceFeed } from '../../_components/use-provincial-assistance-feed';
 import { BfpDataLoader } from '../../_components/bfp-data-loader';
+import { ProvincialAlarmPanel } from '../../_components/provincial-alarm-panel';
 
 const pageStyles = `
   .pbfp-aid-page {
@@ -557,6 +558,8 @@ function AssistanceRequestsContent() {
       <style>{pageStyles}</style>
       <div className="pbfp-aid-page">
         {/* Header */}
+        <ProvincialAlarmPanel />
+
         <div className="pbfp-aid-header-hub">
           <div className="pbfp-aid-header-left">
             <div className="pbfp-aid-icon-badge">

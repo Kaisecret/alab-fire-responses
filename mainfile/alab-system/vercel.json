@@ -1,4 +1,7 @@
 {
-  "crons": [{ "path": "/api/cron/resident-correction-deliveries", "schedule": "0 0 * * *" }],
+  "crons": [
+    { "path": "/api/cron/resident-correction-deliveries", "schedule": "0 0 * * *" },
+    { "path": "/api/cron/backup-escalations", "schedule": "* * * * *" }
+  ],
   "installCommand": "npm install --include=optional"
 }

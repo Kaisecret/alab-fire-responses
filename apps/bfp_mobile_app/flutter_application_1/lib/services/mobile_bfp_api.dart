@@ -339,6 +339,27 @@ class MobileBfpApi {
     _successJson(response);
   }
 
+  /// Calls for backup on an incident this responder was dispatched to.
+  Future<void> requestBackup({
+    required String token,
+    required String dispatchId,
+    String? reason,
+    int requestedFiretrucks = 0,
+    int requestedPersonnel = 0,
+  }) async {
+    final response = await _send(() => _client.post(
+      _uri('/api/mobile-bfp/backup-requests'),
+      headers: _authorizationHeaders(token),
+      body: jsonEncode({
+        'dispatchId': dispatchId,
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+        'requestedFiretrucks': requestedFiretrucks,
+        'requestedPersonnel': requestedPersonnel,
+      }),
+    ));
+    _successJson(response);
+  }
+
   Future<Map<String, dynamic>> sendDispatchLocation({
     required String token,
     required String dispatchId,
