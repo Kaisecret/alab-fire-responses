@@ -62,7 +62,7 @@ test('open incident detail polls visible tabs, retains data on refresh failure, 
   }
 });
 
-test('backup form opens from its own button and allows deselecting every recipient', () => {
+test('backup form opens from the external flag and allows deselecting every recipient', () => {
   const states = [], effects = [];
   let cursor = 0;
   const react = {
@@ -74,14 +74,14 @@ test('backup form opens from its own button and allows deselecting every recipie
     react: { ...react, default: react }, 'react/jsx-runtime': jsx,
     '../../lib/auth/municipal-tab-fetch': {},
   });
-  const props = { incidentId: 'incident', accessScope: 'ORIGIN', showRequestModal: false,
+  const props = { incidentId: 'incident', accessScope: 'ORIGIN', showRequestModal: true,
     observers: [{ municipalityId: 'recipient', municipalityName: 'Recipient', distanceMeters: 100, status: 'ACTIVE' }],
     assistanceRequests: [], onChanged() {} };
   const render = () => { cursor = 0; effects.length = 0; const tree = module.IntermunicipalityCoordinationPanel(props); effects.forEach(fn => fn()); return tree; };
   const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree)
     ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)];
-  const button = nodes(render()).find(node => node.type === 'button' && node.props.title === 'Request mutual aid assistance');
-  button.props.onClick();
+  const requestButton = nodes(render()).find(node => node.type === 'button' && node.props.title === 'Request mutual aid assistance');
+  assert.equal(requestButton, undefined, 'backup is raised by the responder on scene, not from the municipal panel');
   const checkbox = nodes(render()).find(node => node.type === 'input' && node.props.type === 'checkbox');
   assert.ok(checkbox, 'panel request button must open the form even when the external modal flag is false');
   checkbox.props.onChange({ target: { checked: false } });

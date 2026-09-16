@@ -579,23 +579,11 @@ export function IntermunicipalityCoordinationPanel({
           </div>
         </div>
 
-        {isOrigin && (
-          <div>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedRecipientIds(observers.map((o) => o.municipalityId));
-                setInternalShowRequestModal(true);
-              }}
-              disabled={observers.length === 0 || submitting}
-              className="mbfp-coord-btn primary"
-              title={observers.length === 0 ? "Dispatch active response first to request mutual aid" : "Request mutual aid assistance"}
-            >
-              <i className="fa-solid fa-plus" />
-              <span>Request Backup</span>
-            </button>
-          </div>
-        )}
+        {/*
+          Backup is called for by the responder on scene from the mobile app.
+          The municipality's part is to forward that request to the province,
+          which it does from the alarm the request raises.
+        */}
       </div>
 
       {/* Live Feedback Message */}

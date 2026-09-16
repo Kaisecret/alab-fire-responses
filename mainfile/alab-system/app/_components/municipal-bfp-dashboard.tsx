@@ -1768,8 +1768,10 @@ export function MunicipalBfpDashboard() {
                           <span>{aid.phone}</span>
                         </a>
                       </div>
+                      {/* Backup is raised by the responder on scene, so this
+                          card offers the station rather than a request. */}
                       <Link href="/municipal-bfp/active-incidents" className="mbfp-aid-btn support">
-                        <i className="fa-solid fa-handshake" /> Request Backup
+                        <i className="fa-solid fa-handshake" /> View Incidents
                       </Link>
                     </div>
                   ))

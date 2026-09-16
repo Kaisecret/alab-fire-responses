@@ -257,41 +257,6 @@ const detailStyles = `
     opacity: 0.85;
   }
 
-  /* Request Backup Hero Button */
-  .mbfp-backup-hero-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.75rem 1.35rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 14px rgba(234, 88, 12, 0.25);
-    color: #FFFFFF;
-    background: linear-gradient(135deg, #EA580C 0%, #F97316 100%);
-    font-family: inherit;
-    white-space: nowrap;
-  }
-
-  .mbfp-backup-hero-btn:hover:not(:disabled) {
-    transform: translateY(-1.5px);
-    box-shadow: 0 6px 18px rgba(234, 88, 12, 0.35);
-    background: linear-gradient(135deg, #C2410C 0%, #EA580C 100%);
-  }
-
-  .mbfp-backup-hero-btn:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  .mbfp-backup-hero-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
 
   .mbfp-hero-actions {
     display: flex;
@@ -1549,7 +1514,7 @@ const detailStyles = `
       width: 100%;
       justify-content: center;
     }
-    .mbfp-backup-hero-btn {
+    .mbfp-resolve-btn {
       width: 100%;
       justify-content: center;
     }
