@@ -71,12 +71,18 @@ class _RequestBackupSheetState extends State<RequestBackupSheet> {
             const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.photo_camera_rounded, color: _kOrange),
-              title: Text('Take a photo', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+              title: Text(
+                'Take a photo',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              ),
               onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_rounded, color: _kOrange),
-              title: Text('Choose from gallery', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+              title: Text(
+                'Choose from gallery',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              ),
               onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
             ),
             const SizedBox(height: 8),
@@ -99,11 +105,16 @@ class _RequestBackupSheetState extends State<RequestBackupSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final media = MediaQuery.of(context);
+    final bottomInset = media.viewInsets.bottom;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
+        // Never taller than the space the keyboard leaves behind.
+        constraints: BoxConstraints(
+          maxHeight: media.size.height - media.padding.top - bottomInset - 24,
+        ),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -135,7 +146,11 @@ class _RequestBackupSheetState extends State<RequestBackupSheet> {
                         color: _kOrange.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(Icons.campaign_rounded, color: _kOrange, size: 22),
+                      child: const Icon(
+                        Icons.campaign_rounded,
+                        color: _kOrange,
+                        size: 22,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -154,7 +169,11 @@ class _RequestBackupSheetState extends State<RequestBackupSheet> {
                           const SizedBox(height: 2),
                           Text(
                             widget.referenceNumber,
-                            style: GoogleFonts.robotoMono(fontSize: 11.5, color: _kMuted, fontWeight: FontWeight.w600),
+                            style: GoogleFonts.robotoMono(
+                              fontSize: 11.5,
+                              color: _kMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
@@ -171,151 +190,177 @@ class _RequestBackupSheetState extends State<RequestBackupSheet> {
               const SizedBox(height: 4),
               const Divider(height: 24, thickness: 1, color: Color(0xFFF1F5F9)),
 
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'WHAT DO YOU NEED',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        color: _kMuted,
-                        letterSpacing: 0.8,
+              // The header stays put; the form scrolls under it.
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'WHAT DO YOU NEED',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: _kMuted,
+                          letterSpacing: 0.8,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    _ResourceRow(
-                      icon: Icons.fire_truck_rounded,
-                      label: 'Firetrucks',
-                      value: _firetrucks,
-                      onChanged: (value) => setState(() => _firetrucks = value),
-                    ),
-                    const SizedBox(height: 10),
-                    _ResourceRow(
-                      icon: Icons.groups_rounded,
-                      label: 'Personnel',
-                      value: _personnel,
-                      onChanged: (value) => setState(() => _personnel = value),
-                    ),
+                      const SizedBox(height: 12),
+                      _ResourceRow(
+                        icon: Icons.fire_truck_rounded,
+                        label: 'Firetrucks',
+                        value: _firetrucks,
+                        onChanged: (value) =>
+                            setState(() => _firetrucks = value),
+                      ),
+                      const SizedBox(height: 10),
+                      _ResourceRow(
+                        icon: Icons.groups_rounded,
+                        label: 'Personnel',
+                        value: _personnel,
+                        onChanged: (value) =>
+                            setState(() => _personnel = value),
+                      ),
 
-                    const SizedBox(height: 20),
-                    Text(
-                      'WHAT IS HAPPENING',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        color: _kMuted,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _description,
-                      maxLines: 3,
-                      maxLength: 240,
-                      textCapitalization: TextCapitalization.sentences,
-                      style: GoogleFonts.plusJakartaSans(fontSize: 13.5, height: 1.5, color: _kInk),
-                      decoration: InputDecoration(
-                        hintText: 'Fire is spreading to the next house. Water running low.',
-                        hintStyle: GoogleFonts.plusJakartaSans(fontSize: 13, color: const Color(0xFF94A3B8), height: 1.5),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        contentPadding: const EdgeInsets.all(14),
-                        counterStyle: GoogleFonts.plusJakartaSans(fontSize: 10.5, color: _kMuted),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: _kLine),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: _kLine),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: _kOrange, width: 1.5),
+                      const SizedBox(height: 20),
+                      Text(
+                        'WHAT IS HAPPENING',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: _kMuted,
+                          letterSpacing: 0.8,
                         ),
                       ),
-                    ),
-
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Text(
-                          'PHOTOS',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            color: _kMuted,
-                            letterSpacing: 0.8,
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _description,
+                        maxLines: 3,
+                        maxLength: 240,
+                        textCapitalization: TextCapitalization.sentences,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13.5,
+                          height: 1.5,
+                          color: _kInk,
+                        ),
+                        decoration: InputDecoration(
+                          hintText:
+                              'Fire is spreading to the next house. Water running low.',
+                          hintStyle: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            color: const Color(0xFF94A3B8),
+                            height: 1.5,
                           ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          '${_photos.length} of $kMaxBackupPhotos',
-                          style: GoogleFonts.plusJakartaSans(
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.all(14),
+                          counterStyle: GoogleFonts.plusJakartaSans(
                             fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
                             color: _kMuted,
                           ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: _kLine),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: _kLine),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: _kOrange,
+                              width: 1.5,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      height: 78,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _photos.length + (_photos.length < kMaxBackupPhotos ? 1 : 0),
-                        separatorBuilder: (_, _) => const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          if (index == _photos.length) {
-                            return _AddPhotoTile(onTap: _addPhoto);
-                          }
-                          return _PhotoTile(
-                            file: _photos[index],
-                            onRemove: () => setState(() => _photos.removeAt(index)),
-                          );
-                        },
                       ),
-                    ),
 
-                    const SizedBox(height: 18),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7ED),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFED7AA)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 6),
+                      Row(
                         children: [
-                          const Icon(Icons.info_outline_rounded, size: 16, color: _kOrangeDeep),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Your station is notified first. If they do not forward it, this goes to the province on its own.',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11.5,
-                                height: 1.45,
-                                color: _kOrangeDeep,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          Text(
+                            'PHOTOS',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              color: _kMuted,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${_photos.length} of $kMaxBackupPhotos',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: _kMuted,
                             ),
                           ),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 78,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount:
+                              _photos.length +
+                              (_photos.length < kMaxBackupPhotos ? 1 : 0),
+                          separatorBuilder: (_, _) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            if (index == _photos.length) {
+                              return _AddPhotoTile(onTap: _addPhoto);
+                            }
+                            return _PhotoTile(
+                              file: _photos[index],
+                              onRemove: () =>
+                                  setState(() => _photos.removeAt(index)),
+                            );
+                          },
+                        ),
+                      ),
 
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        // Nothing to send means nothing to dispatch.
-                        onPressed: _hasResources
-                            ? () => Navigator.of(context).pop(
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF7ED),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFFED7AA)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              size: 16,
+                              color: _kOrangeDeep,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Your station is notified first. If they do not forward it, this goes to the province on its own.',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11.5,
+                                  height: 1.45,
+                                  color: _kOrangeDeep,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          // Nothing to send means nothing to dispatch.
+                          onPressed: _hasResources
+                              ? () => Navigator.of(context).pop(
                                   RequestBackupResult(
                                     firetrucks: _firetrucks,
                                     personnel: _personnel,
@@ -323,21 +368,29 @@ class _RequestBackupSheetState extends State<RequestBackupSheet> {
                                     photos: List<XFile>.unmodifiable(_photos),
                                   ),
                                 )
-                            : null,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: _kOrange,
-                          disabledBackgroundColor: const Color(0xFFCBD5E1),
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: Text(
-                          _hasResources ? 'Send request' : 'Add a firetruck or responder',
-                          style: GoogleFonts.plusJakartaSans(fontSize: 14.5, fontWeight: FontWeight.w800),
+                              : null,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _kOrange,
+                            disabledBackgroundColor: const Color(0xFFCBD5E1),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            _hasResources
+                                ? 'Send request'
+                                : 'Add a firetruck or responder',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -440,7 +493,11 @@ class _StepButton extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: enabled ? _kLine : Colors.transparent),
             ),
-            child: Icon(icon, size: 17, color: enabled ? _kInk : const Color(0xFFCBD5E1)),
+            child: Icon(
+              icon,
+              size: 17,
+              color: enabled ? _kInk : const Color(0xFFCBD5E1),
+            ),
           ),
         ),
       ),
@@ -473,7 +530,11 @@ class _PhotoTile extends StatelessWidget {
                 width: 78,
                 height: 78,
                 color: const Color(0xFFF1F5F9),
-                child: const Icon(Icons.broken_image_rounded, color: _kMuted, size: 20),
+                child: const Icon(
+                  Icons.broken_image_rounded,
+                  color: _kMuted,
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -485,8 +546,15 @@ class _PhotoTile extends StatelessWidget {
               child: Container(
                 width: 22,
                 height: 22,
-                decoration: const BoxDecoration(color: Color(0xCC0F172A), shape: BoxShape.circle),
-                child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
+                decoration: const BoxDecoration(
+                  color: Color(0xCC0F172A),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -520,7 +588,11 @@ class _AddPhotoTile extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Add',
-              style: GoogleFonts.plusJakartaSans(fontSize: 10.5, fontWeight: FontWeight.w700, color: _kMuted),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: _kMuted,
+              ),
             ),
           ],
         ),
