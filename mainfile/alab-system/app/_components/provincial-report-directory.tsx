@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useProvincialManagementList } from './use-provincial-management-list';
 import { ProvincialMunicipalityFilter, ProvincialManagementPagination } from './provincial-management-toolbar';
 import type { ProvincialReportRow } from '../../lib/provincial-bfp/management/types';
+import { getFireTypeLabel, getSeverityLabel, getStatusLabel } from '../../lib/municipal-bfp/reports/formatters';
 import { ProvincialReportDetail } from './provincial-report-detail';
 
 interface ProvincialReportDirectoryProps {
@@ -37,37 +38,48 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
     return () => window.removeEventListener('popstate', restoreReport);
   }, []);
 
+  const badgeStyle = (bg: string, color: string, border: string): React.CSSProperties => ({
+    display: 'inline-block',
+    background: bg,
+    color,
+    border: `1px solid ${border}`,
+    padding: '3px 9px',
+    borderRadius: 999,
+    fontSize: '0.72rem',
+    fontWeight: 800,
+    whiteSpace: 'nowrap',
+    letterSpacing: '0.01em',
+  });
+
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'CONFIRMED':
-        return <span style={{ background: '#DC2626', color: '#FFFFFF', padding: '3px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700 }}>CONFIRMED</span>;
-      case 'CLOSED':
-        return <span style={{ background: '#059669', color: '#FFFFFF', padding: '3px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700 }}>CLOSED</span>;
-      case 'SUBMITTED':
-      case 'UNDER_VERIFICATION':
-        return <span style={{ background: '#FEF3C7', color: '#92400E', padding: '3px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700 }}>SUBMITTED</span>;
-      case 'FALSE_REPORT':
-      case 'REJECTED':
-      case 'DUPLICATE':
-        return <span style={{ background: '#F1F5F9', color: '#64748B', padding: '3px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700 }}>{status}</span>;
-      default:
-        return <span style={{ background: '#E2E8F0', color: '#475569', padding: '3px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700 }}>{status}</span>;
-    }
+    const palette: Record<string, [string, string, string]> = {
+      CONFIRMED: ['#DC2626', '#FFFFFF', '#B91C1C'],
+      VERIFIED: ['#DC2626', '#FFFFFF', '#B91C1C'],
+      RESPONDING: ['#EA580C', '#FFFFFF', '#C2410C'],
+      FIRETRUCK_DISPATCHED: ['#EA580C', '#FFFFFF', '#C2410C'],
+      RESPONDER_ARRIVED: ['#2563EB', '#FFFFFF', '#1D4ED8'],
+      UNDER_CONTROL: ['#2563EB', '#FFFFFF', '#1D4ED8'],
+      RESOLVED: ['#059669', '#FFFFFF', '#047857'],
+      CLOSED: ['#059669', '#FFFFFF', '#047857'],
+      SUBMITTED: ['#FEF3C7', '#92400E', '#FDE68A'],
+      PENDING_VERIFICATION: ['#FEF3C7', '#92400E', '#FDE68A'],
+      UNDER_VERIFICATION: ['#FEF3C7', '#92400E', '#FDE68A'],
+    };
+    const [bg, color, border] = palette[status] ?? ['#F1F5F9', '#475569', '#E2E8F0'];
+    return <span style={badgeStyle(bg, color, border)}>{getStatusLabel(status)}</span>;
   };
 
   const getSeverityBadge = (severity: string) => {
-    switch (severity) {
-      case 'CRITICAL':
-        return <span style={{ background: '#7F1D1D', color: '#FECACA', padding: '2px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 800 }}>CRITICAL</span>;
-      case 'HIGH':
-        return <span style={{ background: '#991B1B', color: '#FEE2E2', padding: '2px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 800 }}>HIGH</span>;
-      case 'MODERATE':
-        return <span style={{ background: '#D97706', color: '#FEF3C7', padding: '2px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 800 }}>MODERATE</span>;
-      case 'LOW':
-        return <span style={{ background: '#047857', color: '#D1FAE5', padding: '2px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700 }}>LOW</span>;
-      default: return <span style={{ color: '#64748B' }}>Not available</span>;
-    }
+    const palette: Record<string, [string, string, string]> = {
+      CRITICAL: ['#FEE2E2', '#991B1B', '#FECACA'],
+      HIGH: ['#FFEDD5', '#C2410C', '#FED7AA'],
+      MODERATE: ['#FEF3C7', '#B45309', '#FDE68A'],
+      LOW: ['#DCFCE7', '#15803D', '#BBF7D0'],
+    };
+    const [bg, color, border] = palette[severity] ?? ['#F1F5F9', '#475569', '#E2E8F0'];
+    return <span style={badgeStyle(bg, color, border)}>{getSeverityLabel(severity)}</span>;
   };
+
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', fontFamily: 'inherit' }}>
@@ -231,14 +243,14 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  <th style={{ padding: '10px 16px' }}>Reference</th>
-                  <th style={{ padding: '10px 16px' }}>Municipality / Barangay</th>
-                  <th style={{ padding: '10px 16px' }}>Source</th>
-                  <th style={{ padding: '10px 16px' }}>Type / Danger Level</th>
-                  <th style={{ padding: '10px 16px' }}>Status</th>
-                  <th style={{ padding: '10px 16px' }}>Submitted Time</th>
-                  <th style={{ padding: '10px 16px' }}>Dispatches</th>
-                  <th style={{ padding: '10px 16px', textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '14px 18px' }}>Reference</th>
+                  <th style={{ padding: '14px 18px' }}>Municipality / Barangay</th>
+                  <th style={{ padding: '14px 18px' }}>Source</th>
+                  <th style={{ padding: '14px 18px' }}>Type / Danger Level</th>
+                  <th style={{ padding: '14px 18px' }}>Status</th>
+                  <th style={{ padding: '14px 18px' }}>Submitted Time</th>
+                  <th style={{ padding: '14px 18px' }}>Dispatches</th>
+                  <th style={{ padding: '14px 18px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -250,32 +262,36 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
                       transition: 'background-color 0.15s ease',
                     }}
                   >
-                    <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontWeight: 700, color: '#0F172A' }}>
+                    <td style={{ padding: '17px 18px', fontFamily: 'monospace', fontWeight: 700, color: '#0F172A', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                       {rep.referenceNumber}
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    <td style={{ padding: '17px 18px' }}>
                       <div style={{ fontWeight: 600, color: '#1E293B' }}>{rep.municipalityName}</div>
                       <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{rep.barangay}</div>
                     </td>
-                    <td style={{ padding: '12px 16px', fontSize: '0.8125rem' }}>
+                    <td style={{ padding: '17px 18px', fontSize: '0.8125rem' }}>
                       <span style={{ padding: '2px 6px', background: '#F1F5F9', borderRadius: 4, fontWeight: 600, color: '#475569' }}>
                         {rep.reportSource === 'ALAB_APP' ? 'App' : 'Phone'}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ fontWeight: 500, color: '#1E293B' }}>{rep.fireType}</div>
-                      <div style={{ marginTop: 2 }}>{getSeverityBadge(rep.severity)}</div>
+                    <td style={{ padding: '17px 18px' }}>
+                      <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.85rem' }}>{getFireTypeLabel(rep.fireType)}</div>
+                      <div style={{ marginTop: 4 }}>
+                        {rep.severity && rep.severity !== 'UNKNOWN'
+                          ? getSeverityBadge(rep.severity)
+                          : <span style={{ fontSize: '0.76rem', color: '#94A3B8', fontWeight: 600 }}>Not rated</span>}
+                      </div>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    <td style={{ padding: '17px 18px' }}>
                       {getStatusBadge(rep.status)}
                     </td>
-                    <td style={{ padding: '12px 16px', color: '#64748B', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '17px 18px', color: '#64748B', whiteSpace: 'nowrap' }}>
                       {new Date(rep.submittedAt).toLocaleDateString()} {new Date(rep.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
-                    <td style={{ padding: '12px 16px', fontSize: '0.75rem', color: '#64748B' }}>
+                    <td style={{ padding: '17px 18px', fontSize: '0.75rem', color: '#64748B' }}>
                       {rep.latestDispatchSummary || 'No dispatch active'}
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                    <td style={{ padding: '17px 18px', textAlign: 'right' }}>
                       <button
                         onClick={() => setSelectedReportId(rep.id)}
                         style={{
