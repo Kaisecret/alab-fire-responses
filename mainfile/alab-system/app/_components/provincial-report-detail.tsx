@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useManagementDialog } from './use-management-dialog';
 import type { ProvincialReportDetail as ReportDetailType } from '../../lib/provincial-bfp/management/types';
+import { getFireTypeLabel, getStatusLabel } from '../../lib/municipal-bfp/reports/formatters';
 
 interface ProvincialReportDetailProps {
   reportId: string;
@@ -178,7 +179,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
               </div>
               <div>
                 <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>FIRE CLASSIFICATION</div>
-                <div style={{ fontWeight: 700, color: '#0F172A' }}>{report.fireType}</div>
+                <div style={{ fontWeight: 700, color: '#0F172A' }}>{getFireTypeLabel(report.fireType)}</div>
               </div>
               <div>
                 <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>COORDINATES</div>
@@ -260,7 +261,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
               <h3 style={{ margin: '0 0 10px', fontSize: '0.9rem', color: '#0F172A' }}>Status history</h3>
               {report.timeline?.length ? <ol style={{ margin: 0, paddingLeft: 20, display: 'grid', gap: 10 }}>
                 {report.timeline.map((event, index) => <li key={`${event.timestamp}-${index}`} style={{ color: '#475569', fontSize: '0.85rem' }}>
-                  <strong>{event.stage.replaceAll('_', ' ')}</strong> ? {new Date(event.timestamp).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}
+                  <strong>{getStatusLabel(event.stage)}</strong> · {new Date(event.timestamp).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}
                   {event.notes && <p style={{ margin: '4px 0 0' }}>{event.notes}</p>}
                 </li>)}
               </ol> : <p style={{ color: '#64748B', fontSize: '0.85rem' }}>No status history recorded.</p>}
@@ -287,7 +288,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                           </span>
                         </div>
                         <span style={{ background: d.status === 'COMPLETED' ? '#D1FAE5' : '#FEF3C7', color: d.status === 'COMPLETED' ? '#065F46' : '#92400E', padding: '2px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700 }}>
-                          {d.status}
+                          {getStatusLabel(d.status)}
                         </span>
                       </div>
 
@@ -300,7 +301,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                       {/* Responders involved */}
                       <div style={{ fontSize: '0.8125rem', color: '#475569' }}>
                         <strong>Responders ({(d.recipients || []).length}): </strong>
-                        {(d.recipients || []).map((r) => `${r.name} (${r.status})`).join(' · ') || 'None'}
+                        {(d.recipients || []).map((r) => `${r.name} (${getStatusLabel(r.status)})`).join(' · ') || 'None'}
                       </div>
                     </div>
                   ))}
