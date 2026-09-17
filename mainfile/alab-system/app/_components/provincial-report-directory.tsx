@@ -85,14 +85,40 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', fontFamily: 'inherit' }}>
       <ProvincialManagementToolbar exportOnly dataset="FIRE_REPORTS" filters={filters} onFilterChange={() => {}} />
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            All Municipal Fire Reports
-          </h1>
-          <p style={{ margin: '4px 0 0', fontSize: '0.875rem', color: '#64748B' }}>
-            Comprehensive unified registry of all emergency fire reports and dispatches across Antique Province.
-          </p>
+      <div style={{
+        background: '#FFFFFF',
+        border: '1px solid #E8EDF4',
+        borderRadius: 14,
+        padding: '1.35rem 1.5rem',
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '1rem',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', minWidth: 0 }}>
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            background: '#FEF2F2',
+            color: '#E23632',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '1.05rem',
+            flexShrink: 0,
+          }}>
+            <i className="fa-solid fa-file-lines" />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              All Municipal Fire Reports
+            </h1>
+            <p style={{ margin: '3px 0 0', fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
+              Every emergency report and dispatch across Antique Province.
+            </p>
+          </div>
         </div>
 
         <button
@@ -101,8 +127,8 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
           style={{
             background: '#FFFFFF',
             border: '1px solid #CBD5E1',
-            padding: '8px 16px',
-            borderRadius: 6,
+            padding: '9px 16px',
+            borderRadius: 8,
             fontSize: '0.875rem',
             fontWeight: 600,
             color: '#334155',
@@ -119,22 +145,22 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
       <div
         style={{
           background: '#FFFFFF',
-          padding: '1rem 1.25rem',
-          borderRadius: 8,
-          border: '1px solid #E2E8F0',
+          padding: '1.25rem 1.5rem',
+          borderRadius: 14,
+          border: '1px solid #E8EDF4',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: '0.875rem',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+          gap: '1.1rem',
           alignItems: 'flex-end',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Status</label>
+          <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</label>
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
+            style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.86rem', background: '#FFFFFF', color: '#0F172A' }}
           >
             <option value="">All Statuses</option>
             <option value="SUBMITTED">Submitted</option>
@@ -154,11 +180,11 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Source</label>
+          <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Source</label>
           <select
             value={sourceFilter}
             onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }}
-            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
+            style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.86rem', background: '#FFFFFF', color: '#0F172A' }}
           >
             <option value="">All Sources</option>
             <option value="ALAB_APP">ALAB Mobile App</option>
@@ -167,11 +193,11 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Fire Type</label>
+          <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fire Type</label>
           <select
             value={fireTypeFilter}
             onChange={(e) => { setFireTypeFilter(e.target.value); setPage(1); }}
-            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
+            style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.86rem', background: '#FFFFFF', color: '#0F172A' }}
           >
             <option value="">All Types</option>
             <option value="HOUSE_BUILDING">House / Building</option>
@@ -183,33 +209,33 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>From Date</label>
+          <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>From Date</label>
           <input
             type="date"
             value={fromDate}
             onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
-            style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
+            style={{ padding: '8px 11px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.86rem', background: '#FFFFFF', color: '#0F172A' }}
           />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>To Date</label>
+          <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>To Date</label>
           <input
             type="date"
             value={toDate}
             onChange={(e) => { setToDate(e.target.value); setPage(1); }}
-            style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
+            style={{ padding: '8px 11px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.86rem', background: '#FFFFFF', color: '#0F172A' }}
           />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, gridColumn: 'span 2' }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Search</label>
+          <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Search</label>
           <input
             type="text"
             placeholder="Search reference, barangay, municipality, narrative..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
+            style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.86rem', background: '#FFFFFF', color: '#0F172A' }}
           />
         </div>
       </div>
@@ -218,9 +244,9 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
       <div
         style={{
           background: '#FFFFFF',
-          borderRadius: 8,
-          border: '1px solid #E2E8F0',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+          borderRadius: 14,
+          border: '1px solid #E8EDF4',
+          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
           overflow: 'hidden',
         }}
       >

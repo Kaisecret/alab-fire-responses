@@ -21,6 +21,7 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [revision, setRevision] = useState(0);
+  const hasRows = useRef(false);
 
   useEffect(() => {
     const restore = () => {
@@ -56,9 +57,8 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
   useEffect(() => {
     const visibleRefresh = () => { if (document.visibilityState === "visible") refresh(); };
     document.addEventListener("visibilitychange", visibleRefresh);
-    window.addEventListener("focus", visibleRefresh);
     const timer = window.setInterval(visibleRefresh, 60000);
-    return () => { document.removeEventListener("visibilitychange", visibleRefresh); window.removeEventListener("focus", visibleRefresh); window.clearInterval(timer); };
+    return () => { document.removeEventListener("visibilitychange", visibleRefresh); window.clearInterval(timer); };
   }, [refresh]);
 
   useEffect(() => {
@@ -75,7 +75,9 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
     url.searchParams.set("pageSize", String(pageSize));
     window.history.replaceState(window.history.state, "", url);
     const timer = window.setTimeout(async () => {
-      setLoading(true);
+      // Only the first load empties the table. A background refresh keeps the
+      // rows on screen, so the page does not flash while it re-reads.
+      setLoading(!hasRows.current);
       setError(null);
       try {
         const body = await requestProvincialJson<Record<string, unknown> & { items?: T[]; total?: number; updatedAt?: string }>(
@@ -85,6 +87,7 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
         const records = body[dataKey] ?? body.items;
         if (!Array.isArray(records)) throw new Error("The server returned invalid records. Please retry.");
         setItems(records as T[]);
+        hasRows.current = (records as T[]).length > 0;
         setTotal(body.total || 0);
         setUpdatedAt(body.updatedAt || new Date().toISOString());
         const lastPage = Math.max(1, Math.ceil((body.total || 0) / pageSize));
@@ -92,7 +95,7 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
       } catch (cause) {
         if (!controller.signal.aborted) {
           if (cause instanceof ProvincialRequestError && (cause.status === 401 || cause.status === 403)) {
-            setItems([]); setTotal(0); setUpdatedAt(null);
+            setItems([]); hasRows.current = false; setTotal(0); setUpdatedAt(null);
           }
           setError(cause instanceof Error ? cause.message : "Unable to load records.");
         }
