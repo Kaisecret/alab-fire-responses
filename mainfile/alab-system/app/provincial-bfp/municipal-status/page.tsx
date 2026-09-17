@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useProvincialManagementList } from '../../_components/use-provincial-management-list';
 import Link from 'next/link';
 import type { MunicipalitySummary } from '../../../lib/provincial-bfp/management/types';
@@ -215,74 +215,127 @@ const styles = `
 
   .pbfp-clean-card {
     background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
+    border: 1px solid #E2E8F0;
     border-radius: 16px;
-    padding: 1.25rem 1.3rem;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+    padding: 1.1rem 1.15rem 0.9rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 1.1rem;
+    gap: 0.9rem;
     cursor: pointer;
-    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
     position: relative;
     user-select: none;
+    overflow: hidden;
     animation: pbfpCardReveal 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
+  /* The accent rail is the card's status in peripheral vision, before any text is read. */
+  .pbfp-clean-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: #E2E8F0;
+    transition: background 0.18s ease;
+  }
+
   .pbfp-clean-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09), 0 0 0 1px #CBD5E1;
+    transform: translateY(-2px);
     border-color: #CBD5E1;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  .pbfp-clean-card:focus-visible {
+    outline: none;
+    border-color: #E23632;
+    box-shadow: 0 0 0 3px rgba(226, 54, 50, 0.18);
   }
 
   .pbfp-clean-card.has-active-incidents {
-    border-color: rgba(226, 54, 50, 0.35);
-    background: linear-gradient(180deg, #FFFDFD 0%, #FFFFFF 100%);
-    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.08);
+    border-color: rgba(226, 54, 50, 0.3);
+  }
+
+  .pbfp-clean-card.has-active-incidents::before {
+    background: #E23632;
   }
 
   .pbfp-clean-card-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 0.6rem;
   }
 
   .pbfp-station-identity {
     display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+  }
+
+  /* Crest tile: gives every card a fixed optical anchor on the left. */
+  .pbfp-card-crest {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: #F1F5F9;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    transition: background 0.18s ease, color 0.18s ease;
+  }
+
+  .pbfp-clean-card.has-active-incidents .pbfp-card-crest {
+    background: #FFF1F2;
+    color: #E23632;
+  }
+
+  .pbfp-station-text {
+    display: flex;
     flex-direction: column;
     min-width: 0;
   }
 
   .pbfp-station-title {
-    font-size: 1.05rem;
+    font-size: 0.98rem;
     font-weight: 800;
     color: #0F172A;
-    line-height: 1.22;
+    line-height: 1.25;
     letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .pbfp-station-district {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: #94A3B8;
     font-weight: 600;
-    margin-top: 0.25rem;
+    margin-top: 0.1rem;
   }
 
   /* Status Badges */
   .pbfp-tile-status-pill {
-    font-size: 0.68rem;
+    font-size: 0.64rem;
     font-weight: 800;
-    padding: 0.25rem 0.65rem;
+    padding: 0.22rem 0.55rem;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.3rem;
     white-space: nowrap;
     flex-shrink: 0;
     text-transform: uppercase;
     letter-spacing: 0.03em;
+  }
+
+  /* A quiet municipality says so with a dot; only a live one spends words. */
+  .pbfp-tile-status-pill.ready .pbfp-status-word {
+    display: none;
   }
 
   .pbfp-beacon-dot {
@@ -315,45 +368,98 @@ const styles = `
   .pbfp-metrics-strip {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-    background: #F8FAFC;
-    padding: 0.65rem;
-    border-radius: 12px;
-    border: 1px solid #F1F5F9;
+    gap: 0.4rem;
   }
 
   .pbfp-metric-item {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    text-align: center;
+    gap: 0.5rem;
+    background: #F8FAFC;
+    border: 1px solid #F1F5F9;
+    border-radius: 10px;
+    padding: 0.5rem 0.55rem;
+    min-width: 0;
+  }
+
+  .pbfp-metric-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    flex-shrink: 0;
+  }
+
+  .pbfp-metric-icon.stations { background: #FEE2E2; color: #DC2626; }
+  .pbfp-metric-icon.personnel { background: #DBEAFE; color: #2563EB; }
+  .pbfp-metric-icon.residents { background: #DCFCE7; color: #059669; }
+
+  .pbfp-metric-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.1;
   }
 
   .pbfp-metric-value {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 800;
     color: #0F172A;
-    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Zero is real information here, but it should not shout like a count does. */
+  .pbfp-metric-item.is-zero .pbfp-metric-value {
+    color: #94A3B8;
   }
 
   .pbfp-metric-label {
-    font-size: 0.66rem;
+    font-size: 0.6rem;
     font-weight: 700;
     color: #64748B;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    margin-top: 0.15rem;
+    margin-top: 0.1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .pbfp-clean-card-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.5rem;
     padding-top: 0.6rem;
+    margin-top: auto;
     border-top: 1px solid #F1F5F9;
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: #64748B;
+  }
+
+  .pbfp-footer-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .pbfp-footer-note i {
+    font-size: 0.68rem;
+    color: #94A3B8;
+  }
+
+  /* Pending work is a queue someone has to clear, so it is amber, not grey. */
+  .pbfp-footer-note.pending {
+    color: #B45309;
+  }
+
+  .pbfp-footer-note.pending i {
+    color: #D97706;
   }
 
   .pbfp-open-prompt {
@@ -362,6 +468,7 @@ const styles = `
     gap: 0.35rem;
     color: #E23632;
     font-weight: 700;
+    flex-shrink: 0;
     transition: transform 0.15s ease;
   }
 
@@ -370,6 +477,11 @@ const styles = `
   }
 
   /* Command Inspector Modal */
+  /* The page behind a dialog must not scroll, so the overlay owns the scrolling. */
+  body.pbfp-scroll-locked {
+    overflow: hidden;
+  }
+
   .pbfp-modal-overlay {
     position: fixed;
     inset: 0;
@@ -381,27 +493,34 @@ const styles = `
     justify-content: center;
     z-index: 99999;
     padding: 1.5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .pbfp-modal-card {
     background: #FFFFFF;
-    border-radius: 24px;
+    border-radius: 20px;
     box-shadow: 0 30px 70px rgba(15, 23, 42, 0.3);
     border: 1px solid #E2E8F0;
     max-width: 640px;
     width: 100%;
+    max-height: calc(100vh - 3rem);
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     animation: pbfpModalPop 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .pbfp-modal-header {
-    padding: 1.35rem 1.6rem;
-    background: #F8FAFC;
+    padding: 1.15rem 1.35rem;
+    background: #FFFFFF;
     border-bottom: 1px solid #E2E8F0;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.75rem;
+    flex-shrink: 0;
   }
 
   .pbfp-modal-title-group {
@@ -457,30 +576,48 @@ const styles = `
   }
 
   .pbfp-modal-body {
-    padding: 1.6rem;
+    padding: 1.35rem;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    max-height: 70vh;
+    gap: 1.35rem;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .pbfp-modal-stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.85rem;
+    gap: 0.6rem;
   }
 
   .pbfp-modal-stat-box {
-    background: #F8FAFC;
+    background: #FFFFFF;
     border: 1px solid #E2E8F0;
     border-radius: 12px;
-    padding: 0.85rem;
+    padding: 0.8rem 0.75rem;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    gap: 0.45rem;
   }
+
+  .pbfp-modal-stat-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    background: #F1F5F9;
+    color: #64748B;
+  }
+
+  .pbfp-modal-stat-icon.red { background: #FEE2E2; color: #DC2626; }
+  .pbfp-modal-stat-icon.blue { background: #DBEAFE; color: #2563EB; }
+  .pbfp-modal-stat-icon.green { background: #DCFCE7; color: #059669; }
+  .pbfp-modal-stat-icon.amber { background: #FEF3C7; color: #D97706; }
 
   .pbfp-modal-stat-box.alert {
     background: #FFF1F2;
@@ -493,10 +630,15 @@ const styles = `
   }
 
   .pbfp-modal-stat-num {
-    font-size: 1.4rem;
+    font-size: 1.35rem;
     font-weight: 800;
     color: #0F172A;
     line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pbfp-modal-stat-box.is-zero .pbfp-modal-stat-num {
+    color: #94A3B8;
   }
 
   .pbfp-modal-stat-box.alert .pbfp-modal-stat-num {
@@ -508,12 +650,12 @@ const styles = `
   }
 
   .pbfp-modal-stat-lbl {
-    font-size: 0.68rem;
+    font-size: 0.64rem;
     font-weight: 700;
     color: #64748B;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    margin-top: 0.2rem;
+    line-height: 1.25;
   }
 
   .pbfp-modal-links-section {
@@ -534,31 +676,78 @@ const styles = `
   .pbfp-modal-link-btn {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-    background: #F8FAFC;
+    gap: 0.7rem;
+    padding: 0.7rem 0.85rem;
+    background: #FFFFFF;
     border: 1px solid #E2E8F0;
-    border-radius: 10px;
+    border-radius: 12px;
     color: #0F172A;
     font-size: 0.82rem;
     font-weight: 700;
     text-decoration: none;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
   }
 
   .pbfp-modal-link-btn:hover {
-    background: #EEF5FD;
+    background: #F8FAFC;
     border-color: #CBD5E1;
     transform: translateX(3px);
   }
 
+  .pbfp-link-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+  }
+
+  .pbfp-link-icon.red { background: #FEE2E2; color: #DC2626; }
+  .pbfp-link-icon.blue { background: #DBEAFE; color: #2563EB; }
+  .pbfp-link-icon.green { background: #DCFCE7; color: #059669; }
+  .pbfp-link-icon.amber { background: #FEF3C7; color: #D97706; }
+
+  .pbfp-link-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+  }
+
+  .pbfp-link-count {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #94A3B8;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .pbfp-link-count.pending {
+    color: #B45309;
+  }
+
+  /* The chevron sits hard right whatever the label length. */
+  .pbfp-modal-link-btn > .fa-arrow-right {
+    margin-left: auto;
+    color: #CBD5E1;
+    font-size: 0.75rem;
+  }
+
+  .pbfp-modal-link-btn:hover > .fa-arrow-right {
+    color: #64748B;
+  }
+
   .pbfp-modal-footer {
-    padding: 1.1rem 1.6rem;
+    padding: 0.95rem 1.35rem;
     background: #F8FAFC;
     border-top: 1px solid #E2E8F0;
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
+    flex-shrink: 0;
   }
 
   .pbfp-modal-btn {
@@ -587,6 +776,29 @@ const styles = `
     background: #C42724;
   }
 
+  /* Skeletons carry the height of a real card so the grid does not jump. */
+  .pbfp-card-skeleton {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    height: 168px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pbfp-card-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(148, 163, 184, 0.12) 50%, transparent 100%);
+    animation: pbfpShimmer 1.4s infinite;
+  }
+
+  @keyframes pbfpShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
   @keyframes pbfpBreathe {
     0% { transform: scale(0.9); opacity: 0.8; }
     100% { transform: scale(1.3); opacity: 1; }
@@ -612,6 +824,24 @@ const styles = `
     .pbfp-grid-cards { grid-template-columns: 1fr; }
     .pbfp-toolbar-box { flex-direction: column; align-items: stretch; }
     .pbfp-search-box { width: 100%; }
+    .pbfp-modal-overlay { padding: 0.75rem; }
+    .pbfp-modal-card { max-height: calc(100vh - 1.5rem); }
+    .pbfp-modal-stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .pbfp-modal-footer { flex-direction: column-reverse; }
+    .pbfp-modal-btn { justify-content: center; }
+  }
+
+  /* Honour a reduced-motion preference: keep the states, drop the movement. */
+  @media (prefers-reduced-motion: reduce) {
+    .pbfp-clean-card,
+    .pbfp-modal-card,
+    .pbfp-modal-overlay {
+      animation: none;
+    }
+    .pbfp-clean-card:hover { transform: none; }
+    .pbfp-modal-link-btn:hover { transform: none; }
+    .pbfp-clean-card:hover .pbfp-open-prompt { transform: none; }
+    .pbfp-tile-status-pill.active-fire .pbfp-beacon-dot { animation: none; }
   }
 `;
 
@@ -633,6 +863,23 @@ export default function MunicipalStatusPage() {
   const activeIncidentsTotal = municipalities.filter((m) => m.activeIncidentCount > 0).length;
   const pendingAppsTotal = municipalities.filter((m) => m.pendingApplicationCount > 0).length;
   const hasStationsTotal = municipalities.filter((m) => m.stationCount > 0).length;
+
+  // While the inspector is open the directory behind it must hold still, and
+  // Escape has to close it the way every other dialog on the desktop does.
+  useEffect(() => {
+    if (!selectedMunicipality) return;
+
+    document.body.classList.add('pbfp-scroll-locked');
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedMunicipality(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.classList.remove('pbfp-scroll-locked');
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [selectedMunicipality]);
 
   return (
     <>
@@ -737,7 +984,7 @@ export default function MunicipalStatusPage() {
         <div className="pbfp-grid-cards">
           {loading && municipalities.length === 0 ? (
             Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} style={{ background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '16px', padding: '1.25rem', height: '180px', opacity: 0.6 }} />
+              <div key={i} className="pbfp-card-skeleton" style={{ animationDelay: `${i * 60}ms` }} />
             ))
           ) : filtered.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3.5rem 1rem', background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', color: '#64748B' }}>
@@ -754,46 +1001,81 @@ export default function MunicipalStatusPage() {
                   key={m.id}
                   style={{ animationDelay: `${Math.min(index * 35, 400)}ms` }}
                   onClick={() => setSelectedMunicipality(m)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedMunicipality(m);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Inspect ${m.name}${hasActive ? `, ${m.activeIncidentCount} active incidents` : ', no active incidents'}`}
                 >
                   <div className="pbfp-clean-card-header">
                     <div className="pbfp-station-identity">
-                      <span className="pbfp-station-title">{m.name}</span>
-                      <span className="pbfp-station-district">{m.province}</span>
+                      <span className="pbfp-card-crest">
+                        <i className={`fa-solid ${hasActive ? 'fa-fire' : 'fa-building-shield'}`} />
+                      </span>
+                      <span className="pbfp-station-text">
+                        <span className="pbfp-station-title">{m.name}</span>
+                        <span className="pbfp-station-district">{m.province}</span>
+                      </span>
                     </div>
                     {hasActive ? (
-                      <span className="pbfp-tile-status-pill active-fire">
+                      <span className="pbfp-tile-status-pill active-fire" title={`${m.activeIncidentCount} active incidents`}>
                         <span className="pbfp-beacon-dot" />
-                        <span>Active Incident ({m.activeIncidentCount})</span>
+                        <span className="pbfp-status-word">{m.activeIncidentCount} Active</span>
                       </span>
                     ) : (
-                      <span className="pbfp-tile-status-pill ready">
+                      <span className="pbfp-tile-status-pill ready" title="No active incidents">
                         <span className="pbfp-beacon-dot" />
-                        <span>No Active Incidents</span>
+                        <span className="pbfp-status-word">Clear</span>
                       </span>
                     )}
                   </div>
 
                   <div className="pbfp-metrics-strip">
-                    <div className="pbfp-metric-item">
-                      <span className="pbfp-metric-value">{m.stationCount}</span>
-                      <span className="pbfp-metric-label">Stations</span>
+                    <div className={`pbfp-metric-item ${m.stationCount === 0 ? 'is-zero' : ''}`}>
+                      <span className="pbfp-metric-icon stations">
+                        <i className="fa-solid fa-truck-fire" />
+                      </span>
+                      <span className="pbfp-metric-text">
+                        <span className="pbfp-metric-value">{m.stationCount}</span>
+                        <span className="pbfp-metric-label">Stations</span>
+                      </span>
                     </div>
-                    <div className="pbfp-metric-item">
-                      <span className="pbfp-metric-value">{m.personnelCount}</span>
-                      <span className="pbfp-metric-label">Personnel</span>
+                    <div className={`pbfp-metric-item ${m.personnelCount === 0 ? 'is-zero' : ''}`}>
+                      <span className="pbfp-metric-icon personnel">
+                        <i className="fa-solid fa-user-shield" />
+                      </span>
+                      <span className="pbfp-metric-text">
+                        <span className="pbfp-metric-value">{m.personnelCount}</span>
+                        <span className="pbfp-metric-label">Personnel</span>
+                      </span>
                     </div>
-                    <div className="pbfp-metric-item">
-                      <span className="pbfp-metric-value">{m.residentCount}</span>
-                      <span className="pbfp-metric-label">Residents</span>
+                    <div className={`pbfp-metric-item ${m.residentCount === 0 ? 'is-zero' : ''}`}>
+                      <span className="pbfp-metric-icon residents">
+                        <i className="fa-solid fa-users" />
+                      </span>
+                      <span className="pbfp-metric-text">
+                        <span className="pbfp-metric-value">{m.residentCount}</span>
+                        <span className="pbfp-metric-label">Residents</span>
+                      </span>
                     </div>
                   </div>
 
                   <div className="pbfp-clean-card-footer">
-                    <span>
-                      {m.pendingApplicationCount > 0
-                        ? `${m.pendingApplicationCount} Pending Verification`
-                        : `${m.totalReportCount} Total Reports`}
-                    </span>
+                    {m.pendingApplicationCount > 0 ? (
+                      <span className="pbfp-footer-note pending">
+                        <i className="fa-solid fa-id-card" />
+                        {m.pendingApplicationCount} Pending Verification
+                      </span>
+                    ) : (
+                      <span className="pbfp-footer-note">
+                        <i className="fa-solid fa-file-lines" />
+                        {m.totalReportCount} Total Reports
+                      </span>
+                    )}
                     <span className="pbfp-open-prompt">
                       Inspect <i className="fa-solid fa-arrow-right" />
                     </span>
@@ -808,14 +1090,20 @@ export default function MunicipalStatusPage() {
       {/* Command Inspector Modal */}
       {selectedMunicipality && (
         <div className="pbfp-modal-overlay" onClick={() => setSelectedMunicipality(null)}>
-          <div className="pbfp-modal-card" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="pbfp-modal-card"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pbfp-modal-heading"
+          >
             <div className="pbfp-modal-header">
               <div className="pbfp-modal-title-group">
                 <div className="pbfp-modal-icon-badge">
                   <i className="fa-solid fa-building-shield" />
                 </div>
                 <div className="pbfp-modal-title">
-                  <h3>{selectedMunicipality.name}</h3>
+                  <h3 id="pbfp-modal-heading">{selectedMunicipality.name}</h3>
                   <span>Province of Antique · Municipal Jurisdiction</span>
                 </div>
               </div>
@@ -823,6 +1111,7 @@ export default function MunicipalStatusPage() {
                 type="button"
                 className="pbfp-modal-close"
                 onClick={() => setSelectedMunicipality(null)}
+                aria-label="Close municipality inspector"
               >
                 <i className="fa-solid fa-xmark" />
               </button>
@@ -830,27 +1119,33 @@ export default function MunicipalStatusPage() {
 
             <div className="pbfp-modal-body">
               <div className="pbfp-modal-stats-grid">
-                <div className="pbfp-modal-stat-box">
+                <div className={`pbfp-modal-stat-box ${selectedMunicipality.stationCount === 0 ? 'is-zero' : ''}`}>
+                  <span className="pbfp-modal-stat-icon red"><i className="fa-solid fa-truck-fire" /></span>
                   <span className="pbfp-modal-stat-num">{selectedMunicipality.stationCount}</span>
                   <span className="pbfp-modal-stat-lbl">Active Stations</span>
                 </div>
-                <div className="pbfp-modal-stat-box">
+                <div className={`pbfp-modal-stat-box ${selectedMunicipality.personnelCount === 0 ? 'is-zero' : ''}`}>
+                  <span className="pbfp-modal-stat-icon blue"><i className="fa-solid fa-user-shield" /></span>
                   <span className="pbfp-modal-stat-num">{selectedMunicipality.personnelCount}</span>
                   <span className="pbfp-modal-stat-lbl">BFP Personnel</span>
                 </div>
-                <div className="pbfp-modal-stat-box">
+                <div className={`pbfp-modal-stat-box ${selectedMunicipality.residentCount === 0 ? 'is-zero' : ''}`}>
+                  <span className="pbfp-modal-stat-icon green"><i className="fa-solid fa-users" /></span>
                   <span className="pbfp-modal-stat-num">{selectedMunicipality.residentCount}</span>
                   <span className="pbfp-modal-stat-lbl">Registered Residents</span>
                 </div>
-                <div className={`pbfp-modal-stat-box ${selectedMunicipality.activeIncidentCount > 0 ? 'alert' : ''}`}>
+                <div className={`pbfp-modal-stat-box ${selectedMunicipality.activeIncidentCount > 0 ? 'alert' : 'is-zero'}`}>
+                  <span className="pbfp-modal-stat-icon red"><i className="fa-solid fa-fire" /></span>
                   <span className="pbfp-modal-stat-num">{selectedMunicipality.activeIncidentCount}</span>
                   <span className="pbfp-modal-stat-lbl">Active Emergencies</span>
                 </div>
-                <div className={`pbfp-modal-stat-box ${selectedMunicipality.pendingApplicationCount > 0 ? 'warning' : ''}`}>
+                <div className={`pbfp-modal-stat-box ${selectedMunicipality.pendingApplicationCount > 0 ? 'warning' : 'is-zero'}`}>
+                  <span className="pbfp-modal-stat-icon amber"><i className="fa-solid fa-id-card" /></span>
                   <span className="pbfp-modal-stat-num">{selectedMunicipality.pendingApplicationCount}</span>
                   <span className="pbfp-modal-stat-lbl">Pending Applications</span>
                 </div>
-                <div className="pbfp-modal-stat-box">
+                <div className={`pbfp-modal-stat-box ${selectedMunicipality.resolvedIncidentCount === 0 ? 'is-zero' : ''}`}>
+                  <span className="pbfp-modal-stat-icon green"><i className="fa-solid fa-circle-check" /></span>
                   <span className="pbfp-modal-stat-num">{selectedMunicipality.resolvedIncidentCount}</span>
                   <span className="pbfp-modal-stat-lbl">Resolved Fires</span>
                 </div>
@@ -862,35 +1157,59 @@ export default function MunicipalStatusPage() {
                   href={`/provincial-bfp/firetrucks-stations?municipalityId=${selectedMunicipality.id}`}
                   className="pbfp-modal-link-btn"
                 >
-                  <span><i className="fa-solid fa-truck-fire" style={{ marginRight: '0.6rem', color: '#E23632' }} /> View Municipal Fire Stations ({selectedMunicipality.stationCount})</span>
+                  <span className="pbfp-link-icon red"><i className="fa-solid fa-truck-fire" /></span>
+                  <span className="pbfp-link-text">
+                    <span>Municipal Fire Stations</span>
+                    <span className="pbfp-link-count">{selectedMunicipality.stationCount} on record</span>
+                  </span>
                   <i className="fa-solid fa-arrow-right" />
                 </Link>
                 <Link
                   href={`/provincial-bfp/responders?municipalityId=${selectedMunicipality.id}`}
                   className="pbfp-modal-link-btn"
                 >
-                  <span><i className="fa-solid fa-user-shield" style={{ marginRight: '0.6rem', color: '#2563EB' }} /> Manage BFP Personnel Roster ({selectedMunicipality.personnelCount})</span>
+                  <span className="pbfp-link-icon blue"><i className="fa-solid fa-user-shield" /></span>
+                  <span className="pbfp-link-text">
+                    <span>BFP Personnel Roster</span>
+                    <span className="pbfp-link-count">{selectedMunicipality.personnelCount} assigned</span>
+                  </span>
                   <i className="fa-solid fa-arrow-right" />
                 </Link>
                 <Link
                   href={`/provincial-bfp/residents?municipalityId=${selectedMunicipality.id}`}
                   className="pbfp-modal-link-btn"
                 >
-                  <span><i className="fa-solid fa-users" style={{ marginRight: '0.6rem', color: '#059669' }} /> Inspect Registered Residents ({selectedMunicipality.residentCount})</span>
+                  <span className="pbfp-link-icon green"><i className="fa-solid fa-users" /></span>
+                  <span className="pbfp-link-text">
+                    <span>Registered Residents</span>
+                    <span className="pbfp-link-count">{selectedMunicipality.residentCount} registered</span>
+                  </span>
                   <i className="fa-solid fa-arrow-right" />
                 </Link>
                 <Link
                   href={`/provincial-bfp/resident-applications?municipalityId=${selectedMunicipality.id}`}
                   className="pbfp-modal-link-btn"
                 >
-                  <span><i className="fa-solid fa-id-card" style={{ marginRight: '0.6rem', color: '#D97706' }} /> Review Resident Applications ({selectedMunicipality.pendingApplicationCount} Pending)</span>
+                  <span className="pbfp-link-icon amber"><i className="fa-solid fa-id-card" /></span>
+                  <span className="pbfp-link-text">
+                    <span>Resident Applications</span>
+                    <span className={`pbfp-link-count ${selectedMunicipality.pendingApplicationCount > 0 ? 'pending' : ''}`}>
+                      {selectedMunicipality.pendingApplicationCount > 0
+                        ? `${selectedMunicipality.pendingApplicationCount} awaiting review`
+                        : 'Nothing awaiting review'}
+                    </span>
+                  </span>
                   <i className="fa-solid fa-arrow-right" />
                 </Link>
                 <Link
                   href={`/provincial-bfp/incident-reports?municipalityId=${selectedMunicipality.id}`}
                   className="pbfp-modal-link-btn"
                 >
-                  <span><i className="fa-solid fa-fire" style={{ marginRight: '0.6rem', color: '#E23632' }} /> All Municipal Fire Reports ({selectedMunicipality.totalReportCount})</span>
+                  <span className="pbfp-link-icon red"><i className="fa-solid fa-fire" /></span>
+                  <span className="pbfp-link-text">
+                    <span>Municipal Fire Reports</span>
+                    <span className="pbfp-link-count">{selectedMunicipality.totalReportCount} filed</span>
+                  </span>
                   <i className="fa-solid fa-arrow-right" />
                 </Link>
               </div>
