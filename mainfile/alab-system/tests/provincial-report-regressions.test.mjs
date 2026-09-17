@@ -5,6 +5,11 @@ const path = 'lib/provincial-bfp/management/';
 const filters = loadServerModule(path + 'filters.ts', {});
 const actor = { userId: 'a', role: 'PROVINCIAL_BFP', province: 'Antique' };
 const base = { page: 1, pageSize: 25 };
+const excelStub = {
+  buildProvincialExcel: async () => Buffer.from('PK stub'),
+  formatPhilippineDateTime: value => String(value ?? ''),
+  getFireTypeLabel: value => String(value ?? ''),
+};
 test('rejects normalized impossible dates, inverted ranges, and UUID suffixes', () => {
   for (const raw of [{from:'2026-02-30'}, {from:'2026-09-02',to:'2026-09-01'}, {municipalityId:'a4ba607b-8863-4f0f-bcaf-a86beb0acb29extra'}]) {
     assert.throws(() => filters.parseManagementFilters(raw));
@@ -25,8 +30,9 @@ test('CSV exports all report pages and uses schema-compatible audit columns', as
     './scope':{assertManagementActor(){}}, './filters':filters,
     './reports':{listProvincialReports:async (_,f)=>({total:101,items:Array.from({length:f.page===1?100:1},(_,i)=>({referenceNumber:`report-${(f.page-1)*100+i}`}))})},
     './report-summaries':{}, './stations':{}, './personnel':{}, './residents':{}, './applications':{},
+    './excel': excelStub,
   });
-  const result = await mod.exportManagementDataset(actor,'FIRE_REPORTS',base);
+  const result = await mod.exportManagementDataset(actor,'FIRE_REPORTS',base,'CSV');
   assert.equal(result.csvContent.split('\r\n').length,102);
 });
 
@@ -34,13 +40,13 @@ test('resident CSV reuses directory filters and excludes contact and evidence da
   const calls = [];
   const mod = loadServerModule(path+'exports.ts', {
     '../../db': {getDatabase: () => ({query: async () => ({rows: []})})},
-    './scope': {assertManagementActor() {}}, './reports': {}, './report-summaries': {}, './stations': {}, './personnel': {}, './applications': {},
+    './scope': {assertManagementActor() {}}, './reports': {}, './report-summaries': {}, './stations': {}, './personnel': {}, './applications': {}, './excel': excelStub,
     './residents': {listManagedResidents: async (_, filters) => {
       calls.push(filters);
       return {total: 1, items: [{firstName: '=FORMULA()', lastName: 'Resident', email:'private@example.test', phone:'09123456789', completeAddress:'private address', evidence:'private evidence', municipalityName:null, accountStatus:'SUSPENDED', latestApplicationStatus:'VERIFIED', createdAt:'2026-09-10'}]};
     }},
   });
-  const result = await mod.exportManagementDataset(actor,'RESIDENTS',{...base, status:'SUSPENDED',search:'Resident'});
+  const result = await mod.exportManagementDataset(actor,'RESIDENTS',{...base, status:'SUSPENDED',search:'Resident'},'CSV');
   assert.equal(calls[0].status, 'SUSPENDED');
   assert.equal(calls[0].search, 'Resident');
   assert.match(result.csvContent, /'=FORMULA\(\)/);

@@ -35,7 +35,7 @@ export function ProvincialManagementToolbar({
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  const handleExportCsv = async () => {
+  const handleExportExcel = async () => {
     if (!dataset) return;
     setIsExporting(true);
     try {
@@ -51,7 +51,10 @@ export function ProvincialManagementToolbar({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${dataset.toLowerCase()}.csv`;
+      // The route names the file after the dataset and the day it was pulled.
+      const disposition = response.headers.get('Content-Disposition') ?? '';
+      const named = /filename="([^"]+)"/.exec(disposition)?.[1];
+      link.download = named || `${dataset.toLowerCase()}.xlsx`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -65,8 +68,8 @@ export function ProvincialManagementToolbar({
 
   if (exportOnly) return <div className="no-print" style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'flex-end' }}>
     {exportError && <span role="alert" style={{ color: '#B91C1C' }}>{exportError}</span>}
-    <button type="button" onClick={handleExportCsv} disabled={isExporting || !dataset} style={{ padding: '10px 16px', border: '1px solid #CBD5E1', borderRadius: 8, background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
-      {isExporting ? 'Exporting?' : 'Export CSV'}
+    <button type="button" onClick={handleExportExcel} disabled={isExporting || !dataset} style={{ padding: '10px 16px', border: '1px solid #CBD5E1', borderRadius: 8, background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
+      {isExporting ? 'Exporting…' : 'Export Excel'}
     </button>
   </div>;
 
@@ -155,12 +158,12 @@ export function ProvincialManagementToolbar({
         </div>
       </div>
 
-      {/* Export CSV Button */}
+      {/* Export workbook button */}
       {dataset && (
         <div style={{ marginLeft: 'auto', alignSelf: 'flex-end' }}>
           <button
             type="button"
-            onClick={handleExportCsv}
+            onClick={handleExportExcel}
             disabled={isExporting}
             style={{
               background: '#FFFFFF',
@@ -177,7 +180,7 @@ export function ProvincialManagementToolbar({
               boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
             }}
           >
-            <span>📥</span> {isExporting ? 'Exporting…' : 'Export CSV'}
+            <span>📊</span> {isExporting ? 'Exporting…' : 'Export Excel'}
           </button>
         </div>
       )}

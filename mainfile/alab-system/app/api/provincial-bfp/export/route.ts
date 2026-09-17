@@ -5,6 +5,9 @@ import { exportManagementDataset } from "../../../../lib/provincial-bfp/manageme
 
 export const runtime = "nodejs";
 
+const XLSX_CONTENT_TYPE =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
 const VALID_DATASETS = new Set([
   "STATIONS",
   "PERSONNEL",
@@ -30,19 +33,34 @@ export async function GET(request: NextRequest) {
 
   try {
     const filters = (datasetParam === "FIRE_REPORTS" || datasetParam === "REPORT_SUMMARY" ? parseReportFilters : parseManagementFilters)(request.nextUrl.searchParams);
-    const { csvContent, fileName } = await exportManagementDataset(
+    // The styled workbook is the default; raw CSV stays available for anyone
+    // feeding the extract to another system.
+    const format = request.nextUrl.searchParams.get("format")?.toUpperCase() === "CSV" ? "CSV" : "XLSX";
+    const { csvContent, xlsxContent, fileName } = await exportManagementDataset(
       actor,
       datasetParam as "STATIONS" | "PERSONNEL" | "RESIDENTS" | "APPLICATIONS" | "FIRE_REPORTS" | "REPORT_SUMMARY",
       filters,
+      format,
     );
+
+    const headers = {
+      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Cache-Control": "no-store",
+    };
+
+    if (format === "XLSX") {
+      if (!xlsxContent) {
+        throw new Error("Export produced no Excel workbook.");
+      }
+      return new Response(new Uint8Array(xlsxContent), {
+        status: 200,
+        headers: { ...headers, "Content-Type": XLSX_CONTENT_TYPE },
+      });
+    }
 
     return new Response(csvContent, {
       status: 200,
-      headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${fileName}"`,
-        "Cache-Control": "no-store",
-      },
+      headers: { ...headers, "Content-Type": "text/csv; charset=utf-8" },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Export failed";
