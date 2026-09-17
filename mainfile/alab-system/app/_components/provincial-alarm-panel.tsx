@@ -16,6 +16,7 @@ interface BackupRequest {
   requestedPersonnel: number;
   forwardedAt: string | null;
   forwardedAutomatically: boolean;
+  provincialAcknowledgedAt: string | null;
   alarmLevel: number | null;
   photos: string[];
 }

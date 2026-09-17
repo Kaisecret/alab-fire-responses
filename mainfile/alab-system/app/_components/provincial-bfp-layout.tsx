@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState, type MouseEvent } from 'react';
 import { NotificationBell } from './notifications/notification-bell';
 import { ProvincialRequestError, requestProvincialJson } from '../../lib/provincial-bfp/client-request';
 import { ProvincialProfilePopover } from './provincial-profile-popover';
+import { ProvincialBackupAlarm } from './provincial-backup-alarm';
 
 type NavItem = {
   label: string;
@@ -1542,6 +1543,10 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
           <main key={pathname} className="pbfp-content">{children}</main>
         </div>
       </div>
+
+      {/* Escalated backup has to reach the duty officer on whatever page they
+          are on, so the alarm lives in the shell rather than on one screen. */}
+      <ProvincialBackupAlarm />
     </>
   );
 }

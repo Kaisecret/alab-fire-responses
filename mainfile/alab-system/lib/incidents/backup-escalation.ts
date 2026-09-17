@@ -32,6 +32,7 @@ export interface BackupRequest {
   requestedPersonnel: number;
   status: BackupRequestStatus;
   acknowledgedAt: string | null;
+  provincialAcknowledgedAt: string | null;
   forwardedAt: string | null;
   forwardedAutomatically: boolean;
   autoForwardAt: string;
@@ -61,6 +62,7 @@ const SELECT_COLUMNS = `
   r.requested_personnel as "requestedPersonnel",
   r.status,
   r.acknowledged_at as "acknowledgedAt",
+  r.provincial_acknowledged_at as "provincialAcknowledgedAt",
   r.forwarded_at as "forwardedAt",
   r.forwarded_automatically as "forwardedAutomatically",
   r.auto_forward_at as "autoForwardAt",
@@ -296,6 +298,27 @@ export async function acknowledgeBackupRequest(id: string, userId: string): Prom
             acknowledged_at = coalesce(acknowledged_at, now()),
             updated_at = now()
       where id = $1 and status = 'PENDING_MUNICIPAL'`,
+    [id, userId],
+  );
+  return getBackupRequest(id);
+}
+
+/**
+ * Records that the province has seen a forwarded request. This silences the
+ * provincial alarm; it is kept apart from the municipal acknowledgement because
+ * a municipality that acknowledged before forwarding would otherwise arrive at
+ * the province already marked as seen, and the alarm would never sound.
+ */
+export async function acknowledgeProvincialBackupRequest(
+  id: string,
+  userId: string,
+): Promise<BackupRequest | null> {
+  await getDatabase().query(
+    `update public.incident_backup_requests
+        set provincial_acknowledged_by_user_id = $2,
+            provincial_acknowledged_at = coalesce(provincial_acknowledged_at, now()),
+            updated_at = now()
+      where id = $1 and status = 'FORWARDED_PROVINCIAL'`,
     [id, userId],
   );
   return getBackupRequest(id);

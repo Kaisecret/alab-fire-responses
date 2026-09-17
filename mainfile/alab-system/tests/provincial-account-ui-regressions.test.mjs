@@ -31,6 +31,7 @@ function harness(path, name) {
     '../../lib/provincial-bfp/client-request': request,
     './provincial-account-dialog': { ProvincialAccountDialog: 'account-dialog' },
     './provincial-profile-popover': { ProvincialProfilePopover: 'profile-popover' },
+    './provincial-backup-alarm': { ProvincialBackupAlarm: 'backup-alarm' },
   });
   return { render() { cursor = 0; effects.length = 0; return mod[name]({ children: null }); }, effects };
 }

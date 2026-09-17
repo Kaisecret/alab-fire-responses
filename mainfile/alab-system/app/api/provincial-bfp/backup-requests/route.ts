@@ -5,6 +5,7 @@ import {
   requireProvincialBfp,
 } from "../../../../lib/provincial-bfp/auth";
 import {
+  acknowledgeProvincialBackupRequest,
   declareAlarmLevel,
   forwardExpiredBackupRequests,
   listProvincialBackupRequests,
@@ -24,6 +25,35 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Provincial backup request list failed", error);
     return NextResponse.json({ error: "Unable to load backup requests." }, { status: 500 });
+  }
+}
+
+/** Silences the provincial alarm for one request. It declares nothing. */
+export async function PATCH(request: NextRequest) {
+  const identity = await requireProvincialBfp(request);
+  if (isProvincialAuthorizationResponse(identity)) return identity;
+
+  let body: Record<string, unknown> = {};
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  const backupRequestId = typeof body.backupRequestId === "string" ? body.backupRequestId : "";
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(backupRequestId)) {
+    return NextResponse.json({ error: "A valid backup request is required." }, { status: 400 });
+  }
+
+  try {
+    const backupRequest = await acknowledgeProvincialBackupRequest(backupRequestId, identity.userId);
+    if (!backupRequest) {
+      return NextResponse.json({ error: "That backup request no longer exists." }, { status: 404 });
+    }
+    return NextResponse.json({ backupRequest });
+  } catch (error) {
+    console.error("Provincial backup acknowledgement failed", error);
+    return NextResponse.json({ error: "Unable to acknowledge that request." }, { status: 500 });
   }
 }
 
