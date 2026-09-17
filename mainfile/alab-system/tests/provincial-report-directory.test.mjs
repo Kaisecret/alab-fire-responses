@@ -46,3 +46,16 @@ test("provincial incident reports page renders directory and detail components w
   assert.match(detail, /Photos/);
   assert.match(detail, /Dispatches/);
 });
+
+test("provincial report registry exposes the redesigned command filters and responsive records", () => {
+  const directory = source("app/_components/provincial-report-directory.tsx");
+
+  assert.match(directory, /updatedAt/);
+  assert.match(directory, /activeFilterCount/);
+  assert.match(directory, /Clear filters/);
+  assert.match(directory, /aria-label="Search fire reports"/);
+  assert.match(directory, /prd-filter-console/);
+  assert.match(directory, /prd-mobile-records/);
+  assert.match(directory, /@media \(max-width: 900px\)/);
+  assert.match(directory, /setPageSize/);
+});
