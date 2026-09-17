@@ -12,6 +12,52 @@ interface ProvincialReportDirectoryProps {
   initialMunicipalityId?: string;
 }
 
+const directoryStyles = `
+  /*
+   * Inline styles cannot express a hover, a focus ring or a selection, so the
+   * parts of this page the browser draws for us are themed here rather than
+   * left at their defaults.
+   */
+  .prd-row { transition: background-color 0.14s ease; }
+  .prd-row:hover { background: #F8FAFC; }
+  .prd-row:last-child td { border-bottom: none; }
+
+  .prd-view {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #E23632;
+    color: #FFFFFF;
+    border: none;
+    padding: 0.55rem 0.95rem;
+    border-radius: 9px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  .prd-view:hover { background: #C42B27; transform: translateY(-1px); }
+  .prd-view:active { transform: none; }
+
+  .prd-card ::selection { background: #FEE2E2; color: #7F1D1D; }
+
+  .prd-card :is(button, select, input, a):focus-visible {
+    outline: 2px solid #E23632;
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  .prd-card select:hover,
+  .prd-card input:hover { border-color: #94A3B8; }
+
+  .prd-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+  .prd-scroll::-webkit-scrollbar { height: 9px; }
+  .prd-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 999px; }
+  .prd-scroll::-webkit-scrollbar-track { background: transparent; }
+`;
+
 export function ProvincialReportDirectory({ initialMunicipalityId = '' }: ProvincialReportDirectoryProps) {
   const { items: reports, total, page, pageSize, setPage, loading, error, filters, setFilter, refresh: fetchReports } = useProvincialManagementList<ProvincialReportRow>({ endpoint: '/api/provincial-bfp/incident-reports', initialFilters: { municipalityId: initialMunicipalityId } });
   const municipalityFilter = filters.municipalityId || '';
@@ -82,9 +128,14 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
 
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', fontFamily: 'inherit' }}>
-      <ProvincialManagementToolbar exportOnly dataset="FIRE_REPORTS" filters={filters} onFilterChange={() => {}} />
-      {/* Header */}
+    <div className="prd-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', fontFamily: 'inherit' }}>
+      <style>{directoryStyles}</style>
+      {/*
+        One command strip: the title, what the registry currently holds, and the
+        two actions that act on it. The export button used to float above the
+        page with nothing around it, and the municipality filter sat loose
+        between two cards belonging to neither.
+      */}
       <div style={{
         background: '#FFFFFF',
         border: '1px solid #E8EDF4',
@@ -92,55 +143,71 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
         padding: '1.35rem 1.5rem',
         boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '1rem',
+        flexDirection: 'column',
+        gap: '1.25rem',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', minWidth: 0 }}>
-          <div style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            background: '#FEF2F2',
-            color: '#E23632',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: '1.05rem',
-            flexShrink: 0,
-          }}>
-            <i className="fa-solid fa-file-lines" />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', minWidth: 0 }}>
+            <div style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: '#FEF2F2',
+              color: '#E23632',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: '1.05rem',
+              flexShrink: 0,
+            }}>
+              <i className="fa-solid fa-file-lines" />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+                All Municipal Fire Reports
+              </h1>
+              <p style={{ margin: '3px 0 0', fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
+                {loading && total === 0
+                  ? 'Reading the provincial registry…'
+                  : `${total.toLocaleString()} report${total === 1 ? '' : 's'} across Antique Province`}
+              </p>
+            </div>
           </div>
-          <div style={{ minWidth: 0 }}>
-            <h1 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-              All Municipal Fire Reports
-            </h1>
-            <p style={{ margin: '3px 0 0', fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
-              Every emergency report and dispatch across Antique Province.
-            </p>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={fetchReports}
+              disabled={loading}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                background: '#FFFFFF',
+                border: '1px solid #CBD5E1',
+                padding: '9px 15px',
+                borderRadius: 9,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                color: '#334155',
+                cursor: loading ? 'progress' : 'pointer',
+                transition: 'background 0.15s ease, border-color 0.15s ease',
+              }}
+            >
+              <i className={`fa-solid fa-arrows-rotate${loading ? ' fa-spin' : ''}`} style={{ fontSize: '0.78rem' }} />
+              {loading ? 'Refreshing' : 'Refresh'}
+            </button>
+            <ProvincialManagementToolbar exportOnly dataset="FIRE_REPORTS" filters={filters} onFilterChange={() => {}} />
           </div>
         </div>
 
-        <button
-          onClick={fetchReports}
-          disabled={loading}
-          style={{
-            background: '#FFFFFF',
-            border: '1px solid #CBD5E1',
-            padding: '9px 16px',
-            borderRadius: 8,
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            color: '#334155',
-            cursor: 'pointer',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-          }}
-        >
-          {loading ? 'Refreshing…' : '↻ Refresh Reports'}
-        </button>
+        <ProvincialMunicipalityFilter value={municipalityFilter} onChange={setMunicipalityFilter} />
       </div>
 
-<ProvincialMunicipalityFilter value={municipalityFilter} onChange={setMunicipalityFilter} />
       {/* Filter Bar */}
       <div
         style={{
@@ -265,10 +332,10 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
             No incident reports found for the selected criteria.
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="prd-scroll">
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
-                <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0', color: '#475569', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   <th style={{ padding: '14px 18px' }}>Reference</th>
                   <th style={{ padding: '14px 18px' }}>Municipality / Barangay</th>
                   <th style={{ padding: '14px 18px' }}>Source</th>
@@ -283,10 +350,8 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
                 {reports.map((rep) => (
                   <tr
                     key={rep.id}
-                    style={{
-                      borderBottom: '1px solid #F1F5F9',
-                      transition: 'background-color 0.15s ease',
-                    }}
+                    className="prd-row"
+                    style={{ borderBottom: '1px solid #F1F5F9' }}
                   >
                     <td style={{ padding: '17px 18px', fontFamily: 'monospace', fontWeight: 700, color: '#0F172A', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                       {rep.referenceNumber}
@@ -320,19 +385,10 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
                     <td style={{ padding: '17px 18px', textAlign: 'right' }}>
                       <button
                         onClick={() => setSelectedReportId(rep.id)}
-                        style={{
-                          background: '#E23632',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          padding: '6px 12px',
-                          borderRadius: 6,
-                          fontSize: '0.8125rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          boxShadow: '0 1px 2px rgba(226, 54, 50, 0.2)',
-                        }}
+                        className="prd-view"
                       >
-                        View Report
+                        <i className="fa-solid fa-arrow-right" style={{ fontSize: '0.72rem' }} />
+                        View
                       </button>
                     </td>
                   </tr>
