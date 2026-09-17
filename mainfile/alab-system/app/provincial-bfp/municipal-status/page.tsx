@@ -15,6 +15,22 @@ const styles = `
     background: #EEF5FD;
     min-height: 100%;
     color: #0F172A;
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* Frosted panels need something to refract. These wide, faint colour fields
+     sit behind the grid and only register through the blur. */
+  .pbfp-page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(760px circle at 12% 8%, rgba(226, 54, 50, 0.1), transparent 60%),
+      radial-gradient(680px circle at 88% 22%, rgba(37, 99, 235, 0.11), transparent 62%),
+      radial-gradient(720px circle at 62% 92%, rgba(5, 150, 105, 0.09), transparent 60%);
   }
 
   /* Header Hub */
@@ -112,8 +128,10 @@ const styles = `
 
   /* Toolbar */
   .pbfp-toolbar-box {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: rgba(255, 255, 255, 0.68);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
     border-radius: 14px;
     padding: 0.75rem 1.15rem;
     display: flex;
@@ -121,7 +139,9 @@ const styles = `
     justify-content: space-between;
     gap: 0.8rem;
     flex-wrap: wrap;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+    box-shadow:
+      0 4px 16px rgba(38, 65, 99, 0.07),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
   .pbfp-filter-pills {
@@ -206,6 +226,19 @@ const styles = `
     font-family: inherit;
   }
 
+  /* Carries the metric names for assistive tech now that the captions are gone. */
+  .pbfp-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /* Cards Grid */
   .pbfp-grid-cards {
     display: grid;
@@ -213,17 +246,23 @@ const styles = `
     gap: 12px;
   }
 
+  /* Frosted panel: a translucent surface over the page tint, lifted by a bright
+     inner top edge. The blur is what sells it, so the fill stays under 70%. */
   .pbfp-clean-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: rgba(255, 255, 255, 0.62);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
     border-radius: 16px;
     padding: 1.1rem 1.15rem 0.9rem;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    box-shadow:
+      0 4px 16px rgba(38, 65, 99, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
     cursor: pointer;
-    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background 0.18s ease;
     position: relative;
     user-select: none;
     overflow: hidden;
@@ -242,8 +281,11 @@ const styles = `
 
   .pbfp-clean-card:hover {
     transform: translateY(-2px);
-    border-color: #CBD5E1;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    background: rgba(255, 255, 255, 0.78);
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow:
+      0 14px 32px rgba(38, 65, 99, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
   }
 
   .pbfp-clean-card:focus-visible {
@@ -252,12 +294,18 @@ const styles = `
     box-shadow: 0 0 0 3px rgba(226, 54, 50, 0.18);
   }
 
+  /* An active municipality is busy, not broken. It gets a warmer surface and a
+     lit rail rather than a hard red outline, so it stands out in the grid
+     without reading as an error state. */
   .pbfp-clean-card.has-active-incidents {
-    border-color: rgba(226, 54, 50, 0.3);
+    border-color: rgba(226, 54, 50, 0.22);
+    background:
+      linear-gradient(180deg, rgba(255, 241, 242, 0.92) 0%, rgba(255, 255, 255, 0.72) 55%),
+      rgba(255, 255, 255, 0.55);
   }
 
   .pbfp-clean-card.has-active-incidents::before {
-    background: #E23632;
+    background: linear-gradient(180deg, #F97316 0%, #E23632 100%);
   }
 
   .pbfp-clean-card-header {
@@ -279,7 +327,8 @@ const styles = `
     width: 38px;
     height: 38px;
     border-radius: 11px;
-    background: #F1F5F9;
+    background: rgba(241, 245, 249, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.8);
     color: #64748B;
     display: flex;
     align-items: center;
@@ -371,25 +420,29 @@ const styles = `
     gap: 0.4rem;
   }
 
+  /* The icon names the measure and the figure carries it, so the caption that
+     used to truncate under a narrow tile is no longer needed. */
   .pbfp-metric-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    background: #F8FAFC;
-    border: 1px solid #F1F5F9;
-    border-radius: 10px;
-    padding: 0.5rem 0.55rem;
+    justify-content: center;
+    gap: 0.45rem;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    border-radius: 11px;
+    padding: 0.5rem 0.4rem;
     min-width: 0;
   }
 
   .pbfp-metric-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: 7px;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     flex-shrink: 0;
   }
 
@@ -397,17 +450,11 @@ const styles = `
   .pbfp-metric-icon.personnel { background: #DBEAFE; color: #2563EB; }
   .pbfp-metric-icon.residents { background: #DCFCE7; color: #059669; }
 
-  .pbfp-metric-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    line-height: 1.1;
-  }
-
   .pbfp-metric-value {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 800;
     color: #0F172A;
+    line-height: 1;
     font-variant-numeric: tabular-nums;
   }
 
@@ -416,16 +463,8 @@ const styles = `
     color: #94A3B8;
   }
 
-  .pbfp-metric-label {
-    font-size: 0.6rem;
-    font-weight: 700;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    margin-top: 0.1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .pbfp-metric-item.is-zero .pbfp-metric-icon {
+    opacity: 0.55;
   }
 
   .pbfp-clean-card-footer {
@@ -499,10 +538,14 @@ const styles = `
   }
 
   .pbfp-modal-card {
-    background: #FFFFFF;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
     border-radius: 20px;
-    box-shadow: 0 30px 70px rgba(15, 23, 42, 0.3);
-    border: 1px solid #E2E8F0;
+    box-shadow:
+      0 30px 70px rgba(15, 23, 42, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.9);
     max-width: 640px;
     width: 100%;
     max-height: calc(100vh - 3rem);
@@ -514,8 +557,8 @@ const styles = `
 
   .pbfp-modal-header {
     padding: 1.15rem 1.35rem;
-    background: #FFFFFF;
-    border-bottom: 1px solid #E2E8F0;
+    background: rgba(255, 255, 255, 0.55);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -593,8 +636,9 @@ const styles = `
   }
 
   .pbfp-modal-stat-box {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
     border-radius: 12px;
     padding: 0.8rem 0.75rem;
     display: flex;
@@ -678,8 +722,8 @@ const styles = `
     align-items: center;
     gap: 0.7rem;
     padding: 0.7rem 0.85rem;
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.85);
     border-radius: 12px;
     color: #0F172A;
     font-size: 0.82rem;
@@ -689,8 +733,8 @@ const styles = `
   }
 
   .pbfp-modal-link-btn:hover {
-    background: #F8FAFC;
-    border-color: #CBD5E1;
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(203, 213, 225, 0.9);
     transform: translateX(3px);
   }
 
@@ -742,8 +786,8 @@ const styles = `
 
   .pbfp-modal-footer {
     padding: 0.95rem 1.35rem;
-    background: #F8FAFC;
-    border-top: 1px solid #E2E8F0;
+    background: rgba(248, 250, 252, 0.72);
+    border-top: 1px solid rgba(226, 232, 240, 0.9);
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
@@ -1035,32 +1079,35 @@ export default function MunicipalStatusPage() {
                   </div>
 
                   <div className="pbfp-metrics-strip">
-                    <div className={`pbfp-metric-item ${m.stationCount === 0 ? 'is-zero' : ''}`}>
+                    <div
+                      className={`pbfp-metric-item ${m.stationCount === 0 ? 'is-zero' : ''}`}
+                      title={`${m.stationCount} fire stations`}
+                    >
                       <span className="pbfp-metric-icon stations">
-                        <i className="fa-solid fa-truck-fire" />
+                        <i className="fa-solid fa-truck-fast" aria-hidden="true" />
                       </span>
-                      <span className="pbfp-metric-text">
-                        <span className="pbfp-metric-value">{m.stationCount}</span>
-                        <span className="pbfp-metric-label">Stations</span>
-                      </span>
+                      <span className="pbfp-metric-value">{m.stationCount}</span>
+                      <span className="pbfp-sr-only">fire stations</span>
                     </div>
-                    <div className={`pbfp-metric-item ${m.personnelCount === 0 ? 'is-zero' : ''}`}>
+                    <div
+                      className={`pbfp-metric-item ${m.personnelCount === 0 ? 'is-zero' : ''}`}
+                      title={`${m.personnelCount} BFP personnel`}
+                    >
                       <span className="pbfp-metric-icon personnel">
-                        <i className="fa-solid fa-user-shield" />
+                        <i className="fa-solid fa-user-shield" aria-hidden="true" />
                       </span>
-                      <span className="pbfp-metric-text">
-                        <span className="pbfp-metric-value">{m.personnelCount}</span>
-                        <span className="pbfp-metric-label">Personnel</span>
-                      </span>
+                      <span className="pbfp-metric-value">{m.personnelCount}</span>
+                      <span className="pbfp-sr-only">BFP personnel</span>
                     </div>
-                    <div className={`pbfp-metric-item ${m.residentCount === 0 ? 'is-zero' : ''}`}>
+                    <div
+                      className={`pbfp-metric-item ${m.residentCount === 0 ? 'is-zero' : ''}`}
+                      title={`${m.residentCount} registered residents`}
+                    >
                       <span className="pbfp-metric-icon residents">
-                        <i className="fa-solid fa-users" />
+                        <i className="fa-solid fa-users" aria-hidden="true" />
                       </span>
-                      <span className="pbfp-metric-text">
-                        <span className="pbfp-metric-value">{m.residentCount}</span>
-                        <span className="pbfp-metric-label">Residents</span>
-                      </span>
+                      <span className="pbfp-metric-value">{m.residentCount}</span>
+                      <span className="pbfp-sr-only">registered residents</span>
                     </div>
                   </div>
 
@@ -1120,7 +1167,7 @@ export default function MunicipalStatusPage() {
             <div className="pbfp-modal-body">
               <div className="pbfp-modal-stats-grid">
                 <div className={`pbfp-modal-stat-box ${selectedMunicipality.stationCount === 0 ? 'is-zero' : ''}`}>
-                  <span className="pbfp-modal-stat-icon red"><i className="fa-solid fa-truck-fire" /></span>
+                  <span className="pbfp-modal-stat-icon red"><i className="fa-solid fa-truck-fast" /></span>
                   <span className="pbfp-modal-stat-num">{selectedMunicipality.stationCount}</span>
                   <span className="pbfp-modal-stat-lbl">Active Stations</span>
                 </div>
@@ -1157,7 +1204,7 @@ export default function MunicipalStatusPage() {
                   href={`/provincial-bfp/firetrucks-stations?municipalityId=${selectedMunicipality.id}`}
                   className="pbfp-modal-link-btn"
                 >
-                  <span className="pbfp-link-icon red"><i className="fa-solid fa-truck-fire" /></span>
+                  <span className="pbfp-link-icon red"><i className="fa-solid fa-truck-fast" /></span>
                   <span className="pbfp-link-text">
                     <span>Municipal Fire Stations</span>
                     <span className="pbfp-link-count">{selectedMunicipality.stationCount} on record</span>

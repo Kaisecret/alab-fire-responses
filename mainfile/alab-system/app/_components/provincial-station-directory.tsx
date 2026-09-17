@@ -161,7 +161,7 @@ export function ProvincialStationDirectory() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-            <i className="fa-solid fa-truck-fire" style={{ color: '#E23632', marginRight: '0.6rem' }} />
+            <i className="fa-solid fa-truck-fast" style={{ color: '#E23632', marginRight: '0.6rem' }} />
             Provincial Fire Station Directory
           </h1>
           <p style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.2rem 0 0' }}>
