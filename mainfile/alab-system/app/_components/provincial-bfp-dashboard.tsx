@@ -31,10 +31,10 @@ type MunicipalitySummaryItem = {
 
 const dashboardStyles = `
   .pbfp-dash-clean {
-    padding: 10px 1.5rem 2.5rem;
+    padding: 1.25rem 1.75rem 2.5rem;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 1.25rem;
     background: #EEF5FD;
     min-height: 100%;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -43,15 +43,15 @@ const dashboardStyles = `
   /* ========== 4 PASTEL KPI METRIC CARDS ROW ========== */
   .pbfp-kpi-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.85rem;
-    margin-bottom: 0.5rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 0;
   }
 
   .pbfp-kpi-box {
     position: relative;
     border-radius: 14px;
-    padding: 0.85rem 0.95rem 0.75rem;
+    padding: 1.1rem 1.2rem 1rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -67,47 +67,37 @@ const dashboardStyles = `
   .pbfp-kpi-box:nth-child(3) { animation-delay: 0.15s; }
   .pbfp-kpi-box:nth-child(4) { animation-delay: 0.2s; }
 
-  /* Distinct Pastel Gradient Themes */
-  .pbfp-kpi-box.red {
-    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
-    border: 1.5px solid #FFBEBE;
-    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
-  }
-  .pbfp-kpi-box.amber {
-    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
-    border: 1.5px solid #FFDC99;
-    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
-  }
-  .pbfp-kpi-box.blue {
-    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
-    border: 1.5px solid #B8D3FD;
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
-  }
-  .pbfp-kpi-box.purple {
-    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
-    border: 1.5px solid #D0BCFD;
-    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
+  /*
+   * White tiles with a single accent rule. The pastel gradients competed with
+   * the figures they framed, so the colour now sits in the icon and the rule
+   * and the number itself carries the card.
+   */
+  .pbfp-kpi-box::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
   }
 
-  /* Hover Lift & Refined Shadow */
+  .pbfp-kpi-box.red,
+  .pbfp-kpi-box.amber,
+  .pbfp-kpi-box.blue,
+  .pbfp-kpi-box.purple {
+    background: #FFFFFF;
+    border: 1px solid #E8EDF4;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  }
+
+  .pbfp-kpi-box.red::before { background: #E23632; }
+  .pbfp-kpi-box.amber::before { background: #D97706; }
+  .pbfp-kpi-box.blue::before { background: #2563EB; }
+  .pbfp-kpi-box.purple::before { background: #7C3AED; }
+
+  /* One lift for every tile; the accent already states the category. */
   .pbfp-kpi-box:hover {
-    transform: translateY(-3px);
-  }
-  .pbfp-kpi-box.red:hover {
-    border-color: #FFA3A3;
-    box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2);
-  }
-  .pbfp-kpi-box.amber:hover {
-    border-color: #FFCF70;
-    box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2);
-  }
-  .pbfp-kpi-box.blue:hover {
-    border-color: #91B8FA;
-    box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2);
-  }
-  .pbfp-kpi-box.purple:hover {
-    border-color: #B79BFB;
-    box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2);
+    transform: translateY(-2px);
+    border-color: #CBD5E1;
+    box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.14);
   }
 
   .pbfp-kpi-header {
@@ -118,31 +108,26 @@ const dashboardStyles = `
     margin-bottom: 0.45rem;
   }
 
-  /* Pure White Squircle Icon Wrapper */
   .pbfp-kpi-badge-icon {
     width: 2.35rem;
     height: 2.35rem;
     border-radius: 10px;
-    background: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.95);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.05rem;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .pbfp-kpi-box:hover .pbfp-kpi-badge-icon {
-    transform: scale(1.08);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    transform: scale(1.06);
   }
 
-  .pbfp-kpi-badge-icon.red { color: #E23632; }
-  .pbfp-kpi-badge-icon.amber { color: #D97706; }
-  .pbfp-kpi-badge-icon.blue { color: #2563EB; }
-  .pbfp-kpi-badge-icon.purple { color: #7C3AED; }
+  .pbfp-kpi-badge-icon.red { color: #E23632; background: #FEF2F2; }
+  .pbfp-kpi-badge-icon.amber { color: #D97706; background: #FFFBEB; }
+  .pbfp-kpi-badge-icon.blue { color: #2563EB; background: #EFF6FF; }
+  .pbfp-kpi-badge-icon.purple { color: #7C3AED; background: #F5F3FF; }
 
   .pbfp-kpi-badge-img {
     width: 20px;
@@ -163,21 +148,21 @@ const dashboardStyles = `
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   }
 
-  .pbfp-kpi-trend-tag.red { color: #E23632; border: 1px solid #FFCDCD; }
-  .pbfp-kpi-trend-tag.amber { color: #D97706; border: 1px solid #FFE0A3; }
-  .pbfp-kpi-trend-tag.blue { color: #2563EB; border: 1px solid #BFD7FE; }
-  .pbfp-kpi-trend-tag.purple { color: #7C3AED; border: 1px solid #D5C4FE; }
+  .pbfp-kpi-trend-tag.red { color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; }
+  .pbfp-kpi-trend-tag.amber { color: #B45309; background: #FFFBEB; border: 1px solid #FDE68A; }
+  .pbfp-kpi-trend-tag.blue { color: #1D4ED8; background: #EFF6FF; border: 1px solid #BFDBFE; }
+  .pbfp-kpi-trend-tag.purple { color: #6D28D9; background: #F5F3FF; border: 1px solid #DDD6FE; }
 
   .pbfp-kpi-body {
     display: flex;
     flex-direction: column;
-    gap: 0.08rem;
+    gap: 0.25rem;
   }
 
   .pbfp-kpi-label {
-    font-size: 0.74rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    color: #1E293B;
+    color: #475569;
     letter-spacing: -0.01em;
     white-space: nowrap;
     overflow: hidden;
@@ -185,11 +170,12 @@ const dashboardStyles = `
   }
 
   .pbfp-kpi-number {
-    font-size: 1.6rem;
+    font-size: 1.85rem;
     font-weight: 800;
     color: #0F172A;
     line-height: 1.05;
     letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
   }
 
   .pbfp-kpi-footer {
@@ -225,7 +211,7 @@ const dashboardStyles = `
   /* ========== TWO COLUMN SECTION ========== */
   .pbfp-main-grid {
     display: grid;
-    grid-template-columns: 1.55fr 1fr;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
     gap: 10px;
     align-items: stretch;
   }
@@ -716,6 +702,33 @@ export function ProvincialBfpDashboard() {
   const { requests: assistanceRequests } = useProvincialAssistanceFeed({ includeClosed: false });
 
   const activeIncidentCount = incidents.length;
+  const [backupCount, setBackupCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/provincial-bfp/backup-requests", { cache: "no-store" });
+        if (!res.ok) return;
+        const body = await res.json();
+        if (!cancelled) {
+          setBackupCount(Array.isArray(body.backupRequests) ? body.backupRequests.length : 0);
+        }
+      } catch {
+        // Leave the last known count on screen.
+      }
+    };
+    const initial = window.setTimeout(() => void load(), 0);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, 10_000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(initial);
+      window.clearInterval(timer);
+    };
+  }, []);
+
   const openAssistanceCount = assistanceRequests.filter((request) =>
     ['REQUESTED', 'ACCEPTED', 'PARTIALLY_ACCEPTED'].includes(request.status)
   ).length;
@@ -808,7 +821,11 @@ export function ProvincialBfpDashboard() {
               </span>
             </div>
             <div className="pbfp-kpi-footer">
-              <span className="pbfp-kpi-footer-subtext">Live Operations · {openAssistanceCount} aid requests</span>
+              <span className="pbfp-kpi-footer-subtext">
+                {backupCount > 0
+                  ? `${backupCount} backup request${backupCount > 1 ? "s" : ""} awaiting an alarm`
+                  : `Live Operations · ${openAssistanceCount} aid requests`}
+              </span>
               <i className="fa-solid fa-arrow-right" />
             </div>
           </Link>
