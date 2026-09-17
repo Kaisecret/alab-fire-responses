@@ -9,7 +9,7 @@ import type { ProvincialIncidentDetail } from '../../../lib/intermunicipality/pr
 
 const pageStyles = `
   .pbfp-incidents-page {
-    padding: 10px 1.5rem 2.5rem;
+    padding: 1.25rem 1.75rem 2.5rem;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -113,25 +113,26 @@ const pageStyles = `
   /* 4 Tactical KPI Cards */
   .pbfp-kpi-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
   }
 
   .pbfp-kpi-card {
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    border: 1px solid #E8EDF4;
     border-radius: 14px;
-    padding: 0.9rem 1.1rem;
+    padding: 1.15rem 1.25rem;
     display: flex;
     align-items: center;
-    gap: 0.85rem;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
-    transition: transform 0.18s, box-shadow 0.18s;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
   }
 
   .pbfp-kpi-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    border-color: #CBD5E1;
+    box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.14);
   }
 
   .pbfp-kpi-badge {
@@ -283,7 +284,7 @@ const pageStyles = `
   }
 
   .pbfp-roster-table th {
-    padding: 0.75rem 1rem;
+    padding: 0.9rem 1.15rem;
     background: #F8FAFC;
     color: #475569;
     font-weight: 800;
@@ -295,9 +296,13 @@ const pageStyles = `
   }
 
   .pbfp-roster-table td {
-    padding: 0.85rem 1rem;
+    padding: 1.05rem 1.15rem;
     border-bottom: 1px solid #F1F5F9;
     vertical-align: middle;
+  }
+
+  .pbfp-roster-table tr {
+    transition: background 0.14s ease;
   }
 
   .pbfp-roster-table tr:hover td {
@@ -458,7 +463,7 @@ const pageStyles = `
   }
 
   .pbfp-modal-header {
-    padding: 1.15rem 1.35rem;
+    padding: 1.35rem 1.6rem;
     background: #F8FAFC;
     border-bottom: 1px solid #E2E8F0;
     display: flex;
@@ -492,49 +497,64 @@ const pageStyles = `
   }
 
   .pbfp-modal-body {
-    padding: 1.25rem 1.35rem;
+    padding: 1.5rem 1.6rem;
     display: flex;
     flex-direction: column;
-    gap: 1.1rem;
+    gap: 1.35rem;
     overflow-y: auto;
   }
 
+  /*
+   * Each field carries its own border and fill, so the gap has to clear both
+   * edges before the grid reads as separate readings.
+   */
   .pbfp-modal-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.15rem 1rem;
   }
 
   .pbfp-modal-field {
     background: #F8FAFC;
-    padding: 0.7rem 0.85rem;
-    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    border-radius: 12px;
     border: 1px solid #E2E8F0;
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.4rem;
+    min-width: 0;
   }
 
+  /* #64748B on #F8FAFC misses 4.5:1; #475569 clears it. */
   .pbfp-modal-field label {
     font-size: 0.68rem;
     font-weight: 800;
-    color: #64748B;
+    color: #475569;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
   }
 
   .pbfp-modal-field p {
-    font-size: 0.84rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: #0F172A;
     margin: 0;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  /* Coordinates are measurements: tabular figures let two readings compare. */
+  .pbfp-modal-field p.is-measurement {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
   }
 
   .pbfp-modal-section-title {
     font-size: 0.82rem;
     font-weight: 800;
     color: #0F172A;
-    margin: 0.35rem 0 0.2rem;
+    margin: 0.5rem 0 0.35rem;
     display: flex;
     align-items: center;
     gap: 0.45rem;
@@ -543,8 +563,8 @@ const pageStyles = `
   .pbfp-observer-card {
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
-    border-radius: 10px;
-    padding: 0.75rem 0.95rem;
+    border-radius: 12px;
+    padding: 0.95rem 1.1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -990,7 +1010,7 @@ function ProvincialIncidentsContent() {
                   <div className="pbfp-modal-grid">
                     <div className="pbfp-modal-field">
                       <label>GPS Coordinates</label>
-                      <p>{incidentDetail.latitude.toFixed(6)}, {incidentDetail.longitude.toFixed(6)}</p>
+                      <p className="is-measurement">{incidentDetail.latitude.toFixed(6)}, {incidentDetail.longitude.toFixed(6)}</p>
                     </div>
                     <div className="pbfp-modal-field">
                       <label>Nearest Landmark</label>
