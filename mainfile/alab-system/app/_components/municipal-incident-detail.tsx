@@ -63,6 +63,68 @@ type DispatchStation = {
   activePersonnelCount: number;
 };
 
+type ResponderStage = "ASSIGNED" | "ACKNOWLEDGED" | "EN_ROUTE" | "ON_SCENE" | "COMPLETED";
+
+type DispatchResponderProgress = {
+  id: string;
+  name: string;
+  stationName: string;
+  status: ResponderStage;
+  assignedAt: string;
+  acknowledgedAt: string | null;
+  enRouteAt: string | null;
+  onSceneAt: string | null;
+  completedAt: string | null;
+  arrivalMethod: "AUTO_GEOFENCE" | "MANUAL" | null;
+  latestLocationAt: string | null;
+};
+
+type DispatchProgress = {
+  dispatchId: string;
+  dispatchedAt: string;
+  dispatchedByName: string | null;
+  stationNames: string[];
+  responders: DispatchResponderProgress[];
+};
+
+/** The four stages a responder passes through, in the order they happen. */
+const RESPONDER_STAGES: Array<{ key: ResponderStage; label: string; icon: string }> = [
+  { key: "ASSIGNED", label: "Alerted", icon: "fa-bell" },
+  { key: "ACKNOWLEDGED", label: "Answered", icon: "fa-check" },
+  { key: "EN_ROUTE", label: "On the way", icon: "fa-truck-fast" },
+  { key: "ON_SCENE", label: "On scene", icon: "fa-location-dot" },
+];
+
+const STAGE_ORDER: Record<ResponderStage, number> = {
+  ASSIGNED: 0,
+  ACKNOWLEDGED: 1,
+  EN_ROUTE: 2,
+  ON_SCENE: 3,
+  COMPLETED: 4,
+};
+
+/** "4 min ago", or "just now" while it is still fresh. */
+function sinceLabel(iso: string | null, now: number | null): string {
+  if (!iso || now === null) return "";
+  const elapsed = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
+  if (elapsed < 45) return "just now";
+  const minutes = Math.round(elapsed / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours}h ${rest}m ago` : `${hours}h ago`;
+}
+
+function clockLabel(iso: string | null): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("en-PH", {
+    timeZone: "Asia/Manila",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 const detailStyles = `
   /* ========== MUNICIPAL INCIDENT DETAIL STYLES ========== */
   .mbfp-detail-shell {
@@ -1297,6 +1359,218 @@ const detailStyles = `
     text-align: center;
   }
 
+  /* ===== LIVE DISPATCH STATUS BOARD ===== */
+  .mbfp-status-board { display: flex; flex-direction: column; gap: 0.85rem; }
+
+  /* The one line a commander reads first, colour-coded by how far the
+     response has actually got. */
+  .mbfp-status-headline {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    border: 1px solid;
+  }
+  .mbfp-status-headline strong { display: block; font-size: 0.95rem; font-weight: 800; }
+  .mbfp-status-headline span { font-size: 0.78rem; opacity: 0.85; }
+  .mbfp-status-headline-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: currentColor;
+  }
+  .mbfp-status-headline.is-on-scene { background: #ECFDF5; border-color: #A7F3D0; color: #047857; }
+  .mbfp-status-headline.is-moving { background: #EFF6FF; border-color: #BFDBFE; color: #1D4ED8; }
+  .mbfp-status-headline.is-waiting { background: #FFFBEB; border-color: #FDE68A; color: #B45309; }
+  .mbfp-status-headline.is-moving .mbfp-status-headline-dot,
+  .mbfp-status-headline.is-waiting .mbfp-status-headline-dot {
+    animation: mbfpStatusPulse 1.4s ease-in-out infinite;
+  }
+
+  .mbfp-status-tally {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+  .mbfp-status-tally-item {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 0.6rem 0.4rem;
+    text-align: center;
+  }
+  .mbfp-status-tally-item.is-good { background: #ECFDF5; border-color: #A7F3D0; }
+  .mbfp-status-tally-num {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0F172A;
+    font-variant-numeric: tabular-nums;
+  }
+  .mbfp-status-tally-item.is-good .mbfp-status-tally-num { color: #047857; }
+  .mbfp-status-tally-lbl {
+    display: block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 0.15rem;
+  }
+
+  .mbfp-status-group {
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .mbfp-status-group-head {
+    background: #F8FAFC;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 0.6rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .mbfp-status-group-stations {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #0F172A;
+  }
+  .mbfp-status-group-stations i { color: #64748B; font-size: 0.75rem; }
+  .mbfp-status-group-meta { font-size: 0.7rem; color: #64748B; font-weight: 600; }
+
+  .mbfp-status-responder {
+    padding: 0.8rem 0.85rem;
+    border-top: 1px solid #F1F5F9;
+  }
+  .mbfp-status-responder:first-of-type { border-top: none; }
+  .mbfp-status-responder-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-bottom: 0.7rem;
+    flex-wrap: wrap;
+  }
+  .mbfp-status-responder-name {
+    display: block;
+    font-size: 0.87rem;
+    font-weight: 800;
+    color: #0F172A;
+  }
+  .mbfp-status-responder-station { font-size: 0.7rem; color: #94A3B8; font-weight: 600; }
+
+  .mbfp-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .mbfp-status-chip em { font-style: normal; font-weight: 600; opacity: 0.75; }
+  .mbfp-status-chip.stage-assigned { background: #FFFBEB; border-color: #FDE68A; color: #B45309; }
+  .mbfp-status-chip.stage-acknowledged { background: #F1F5F9; border-color: #E2E8F0; color: #475569; }
+  .mbfp-status-chip.stage-en_route { background: #EFF6FF; border-color: #BFDBFE; color: #1D4ED8; }
+  .mbfp-status-chip.stage-on_scene { background: #ECFDF5; border-color: #A7F3D0; color: #047857; }
+  .mbfp-status-chip.stage-completed { background: #F1F5F9; border-color: #E2E8F0; color: #475569; }
+
+  /* The four stages, so progress is read left to right without counting. */
+  .mbfp-status-track {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .mbfp-status-step {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.3rem;
+  }
+  .mbfp-status-step-mark {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 0.62rem;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    color: #94A3B8;
+    position: relative;
+    z-index: 1;
+  }
+  .mbfp-status-step.is-done .mbfp-status-step-mark {
+    background: #059669;
+    border-color: #059669;
+    color: #FFFFFF;
+  }
+  .mbfp-status-step.is-current .mbfp-status-step-mark {
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.16);
+  }
+  .mbfp-status-step-line {
+    position: absolute;
+    top: 13px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: #E2E8F0;
+    z-index: 0;
+  }
+  .mbfp-status-step.is-done .mbfp-status-step-line { background: #A7F3D0; }
+  .mbfp-status-step-label {
+    display: block;
+    font-size: 0.64rem;
+    font-weight: 700;
+    color: #475569;
+  }
+  .mbfp-status-step.is-done .mbfp-status-step-label { color: #0F172A; }
+  .mbfp-status-step-time {
+    display: block;
+    font-size: 0.62rem;
+    color: #94A3B8;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mbfp-status-note {
+    margin: 0.6rem 0 0;
+    font-size: 0.7rem;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .mbfp-status-note i { color: #94A3B8; }
+
+  @keyframes mbfpStatusPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.82); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mbfp-status-headline-dot { animation: none !important; }
+  }
+
+  @media (max-width: 520px) {
+    .mbfp-status-tally { grid-template-columns: repeat(2, 1fr); }
+    .mbfp-status-step-label { font-size: 0.6rem; }
+  }
+
   .mbfp-dispatch-error {
     background: #FEF2F2;
     color: #B91C1C;
@@ -1545,6 +1819,9 @@ export function MunicipalIncidentDetail({
   const [stationsLoading, setStationsLoading] = useState(false);
   const [dispatchError, setDispatchError] = useState("");
   const [showBackupModal, setShowBackupModal] = useState(false);
+  const [dispatchProgress, setDispatchProgress] = useState<DispatchProgress[]>([]);
+  const [progressLoading, setProgressLoading] = useState(false);
+  const [progressAt, setProgressAt] = useState<number | null>(null);
   const pendingLoad = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -1567,6 +1844,36 @@ export function MunicipalIncidentDetail({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [dispatchOpen, resolveOpen, sending]);
+
+  const loadDispatchProgress = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}/dispatch-status`, { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setDispatchProgress(Array.isArray(data.dispatches) ? data.dispatches : []);
+      setProgressAt(Date.now());
+    } catch {
+      // Keep the last picture rather than blanking the board mid-incident.
+    } finally {
+      setProgressLoading(false);
+    }
+  }, [incidentId]);
+
+  // While the board is open it follows the responders; a stale view of who is
+  // on scene is worse than no view at all.
+  useEffect(() => {
+    if (!dispatchOpen) return;
+    setProgressLoading(true);
+    void loadDispatchProgress();
+    const poll = window.setInterval(() => {
+      if (document.visibilityState === "visible") void loadDispatchProgress();
+    }, 10_000);
+    const tick = window.setInterval(() => setProgressAt(Date.now()), 15_000);
+    return () => {
+      window.clearInterval(poll);
+      window.clearInterval(tick);
+    };
+  }, [dispatchOpen, loadDispatchProgress]);
 
   const load = useCallback(async () => {
     if (pendingLoad.current) return;
@@ -2265,10 +2572,12 @@ export function MunicipalIncidentDetail({
                 </div>
                 <div>
                   <h2 id="mbfp-dispatch-title" className="mbfp-dispatch-title">
-                    <span>Select station teams</span>
+                    <span>{isResponding ? "Dispatch status" : "Select station teams"}</span>
                   </h2>
                   <p className="mbfp-dispatch-subtitle">
-                    Alert available stations to dispatch responders.
+                    {isResponding
+                      ? `${incident.referenceNumber} · updates every few seconds`
+                      : "Alert available stations to dispatch responders."}
                   </p>
                 </div>
               </div>
@@ -2284,19 +2593,13 @@ export function MunicipalIncidentDetail({
             </header>
 
             <div className="mbfp-dispatch-body">
-              {isResponding && (
-                <div className="mbfp-dispatch-alert-dispatched">
-                  <div className="mbfp-dispatch-dispatched-icon">
-                    <i className="fa-solid fa-circle-check" />
-                  </div>
-                  <div>
-                    <strong>Incident Dispatched</strong>
-                    <p>Station teams are active on mobile navigation.</p>
-                  </div>
-                </div>
-              )}
-
-              {stationsLoading ? (
+              {isResponding ? (
+                <DispatchStatusBoard
+                  dispatches={dispatchProgress}
+                  loading={progressLoading}
+                  now={progressAt}
+                />
+              ) : stationsLoading ? (
                 <BfpDataLoader theme="municipal" size="sm" title="Loading available stations" minHeight="190px" />
               ) : (
                 <>
@@ -2521,5 +2824,166 @@ export function MunicipalIncidentDetail({
         document.body
       )}
     </>
+  );
+}
+
+/**
+ * What is happening on the ground, for a municipality that has already
+ * dispatched. It answers the questions asked while an incident is live: who
+ * was alerted, who picked up, who is driving, and who has reached the scene.
+ */
+function DispatchStatusBoard({
+  dispatches,
+  loading,
+  now,
+}: {
+  dispatches: DispatchProgress[];
+  loading: boolean;
+  /** Null until the first poll lands, which keeps the clock out of render. */
+  now: number | null;
+}) {
+  if (loading && dispatches.length === 0) {
+    return <BfpDataLoader theme="municipal" size="sm" title="Checking the teams" minHeight="190px" />;
+  }
+
+  const responders = dispatches.flatMap((dispatch) => dispatch.responders);
+
+  if (responders.length === 0) {
+    return (
+      <p className="mbfp-dispatch-empty">
+        The stations were alerted, but no responder has been assigned to this incident yet.
+      </p>
+    );
+  }
+
+  const onScene = responders.filter((r) => STAGE_ORDER[r.status] >= STAGE_ORDER.ON_SCENE).length;
+  const moving = responders.filter((r) => r.status === "EN_ROUTE").length;
+  const answered = responders.filter((r) => STAGE_ORDER[r.status] >= STAGE_ORDER.ACKNOWLEDGED).length;
+  const waiting = responders.length - answered;
+
+  // The single sentence a commander needs before reading any detail.
+  const headline =
+    onScene > 0
+      ? `${onScene} of ${responders.length} on scene`
+      : moving > 0
+        ? `${moving} on the way, none on scene yet`
+        : answered > 0
+          ? `${answered} answered, nobody moving yet`
+          : "Alerted. Waiting for a responder to answer.";
+
+  return (
+    <div className="mbfp-status-board">
+      <div className={`mbfp-status-headline ${onScene > 0 ? "is-on-scene" : moving > 0 ? "is-moving" : "is-waiting"}`}>
+        <span className="mbfp-status-headline-dot" />
+        <div>
+          <strong>{headline}</strong>
+          <span>
+            {waiting > 0
+              ? `${waiting} still to answer`
+              : "Every alerted responder has answered"}
+          </span>
+        </div>
+      </div>
+
+      <div className="mbfp-status-tally">
+        <div className="mbfp-status-tally-item">
+          <span className="mbfp-status-tally-num">{responders.length}</span>
+          <span className="mbfp-status-tally-lbl">Alerted</span>
+        </div>
+        <div className="mbfp-status-tally-item">
+          <span className="mbfp-status-tally-num">{answered}</span>
+          <span className="mbfp-status-tally-lbl">Answered</span>
+        </div>
+        <div className="mbfp-status-tally-item">
+          <span className="mbfp-status-tally-num">{moving}</span>
+          <span className="mbfp-status-tally-lbl">On the way</span>
+        </div>
+        <div className={`mbfp-status-tally-item ${onScene > 0 ? "is-good" : ""}`}>
+          <span className="mbfp-status-tally-num">{onScene}</span>
+          <span className="mbfp-status-tally-lbl">On scene</span>
+        </div>
+      </div>
+
+      {dispatches.map((dispatch) => (
+        <div className="mbfp-status-group" key={dispatch.dispatchId}>
+          <div className="mbfp-status-group-head">
+            <span className="mbfp-status-group-stations">
+              <i className="fa-solid fa-building-shield" />
+              {dispatch.stationNames.length ? dispatch.stationNames.join(" · ") : "Station"}
+            </span>
+            <span className="mbfp-status-group-meta">
+              Dispatched {clockLabel(dispatch.dispatchedAt)}
+              {dispatch.dispatchedByName ? ` by ${dispatch.dispatchedByName}` : ""}
+            </span>
+          </div>
+
+          {dispatch.responders.map((responder) => {
+            const reached = STAGE_ORDER[responder.status];
+            const stamps: Record<ResponderStage, string | null> = {
+              ASSIGNED: responder.assignedAt,
+              ACKNOWLEDGED: responder.acknowledgedAt,
+              EN_ROUTE: responder.enRouteAt,
+              ON_SCENE: responder.onSceneAt,
+              COMPLETED: responder.completedAt,
+            };
+            const latest = responder.onSceneAt ?? responder.enRouteAt ?? responder.acknowledgedAt ?? responder.assignedAt;
+
+            return (
+              <div className="mbfp-status-responder" key={responder.id}>
+                <div className="mbfp-status-responder-top">
+                  <div className="mbfp-status-responder-who">
+                    <span className="mbfp-status-responder-name">{responder.name}</span>
+                    <span className="mbfp-status-responder-station">{responder.stationName}</span>
+                  </div>
+                  <span className={`mbfp-status-chip stage-${responder.status.toLowerCase()}`}>
+                    {responder.status === "COMPLETED"
+                      ? "Finished"
+                      : RESPONDER_STAGES.find((stage) => stage.key === responder.status)?.label ?? responder.status}
+                    <em>{sinceLabel(latest, now)}</em>
+                  </span>
+                </div>
+
+                <ol className="mbfp-status-track" aria-label={`Progress for ${responder.name}`}>
+                  {RESPONDER_STAGES.map((stage, index) => {
+                    const done = reached >= STAGE_ORDER[stage.key];
+                    const current = responder.status === stage.key;
+                    return (
+                      <li
+                        key={stage.key}
+                        className={`mbfp-status-step ${done ? "is-done" : ""} ${current ? "is-current" : ""}`}
+                      >
+                        <span className="mbfp-status-step-mark">
+                          <i className={`fa-solid ${done ? stage.icon : "fa-minus"}`} />
+                        </span>
+                        <span className="mbfp-status-step-text">
+                          <span className="mbfp-status-step-label">{stage.label}</span>
+                          <span className="mbfp-status-step-time">
+                            {done ? clockLabel(stamps[stage.key]) || "—" : "—"}
+                          </span>
+                        </span>
+                        {index < RESPONDER_STAGES.length - 1 && <span className="mbfp-status-step-line" />}
+                      </li>
+                    );
+                  })}
+                </ol>
+
+                {responder.status === "ON_SCENE" && responder.arrivalMethod === "AUTO_GEOFENCE" && (
+                  <p className="mbfp-status-note">
+                    <i className="fa-solid fa-satellite-dish" />
+                    Arrival recorded by location, not self-reported.
+                  </p>
+                )}
+                {responder.status === "EN_ROUTE" && responder.latestLocationAt && (
+                  <p className="mbfp-status-note">
+                    <i className="fa-solid fa-location-crosshairs" />
+                    Location last updated {sinceLabel(responder.latestLocationAt, now)}.
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
   );
 }

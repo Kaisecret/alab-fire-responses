@@ -86,6 +86,104 @@ export async function listDispatchableStations(municipalityId: string): Promise<
   return queryDispatchableStations(getDatabase(), municipalityId);
 }
 
+export type DispatchResponderProgress = {
+  id: string;
+  name: string;
+  stationName: string;
+  status: "ASSIGNED" | "ACKNOWLEDGED" | "EN_ROUTE" | "ON_SCENE" | "COMPLETED";
+  assignedAt: string;
+  acknowledgedAt: string | null;
+  enRouteAt: string | null;
+  onSceneAt: string | null;
+  completedAt: string | null;
+  /** How the arrival was established; a geofence arrival was not self-reported. */
+  arrivalMethod: "AUTO_GEOFENCE" | "MANUAL" | null;
+  latestLocationAt: string | null;
+};
+
+export type DispatchProgress = {
+  dispatchId: string;
+  dispatchedAt: string;
+  dispatchedByName: string | null;
+  stationNames: string[];
+  responders: DispatchResponderProgress[];
+};
+
+/**
+ * What is actually happening to an incident right now: who was alerted, who
+ * answered, who is moving and who has arrived. The municipality owns the
+ * incident, so the scope is checked here rather than trusted from the caller.
+ */
+export async function getIncidentDispatchProgress(
+  fireReportId: string,
+  municipalityId: string,
+): Promise<DispatchProgress[]> {
+  if (!validId(fireReportId) || !validId(municipalityId)) return [];
+
+  const dispatches = await getDatabase().query<{
+    dispatchId: string;
+    dispatchedAt: string;
+    dispatchedByName: string | null;
+    stationNames: string[];
+  }>(
+    `select d.id as "dispatchId",
+            d.dispatched_at as "dispatchedAt",
+            p.display_name as "dispatchedByName",
+            coalesce(
+              array_agg(distinct ds.station_name_snapshot)
+                filter (where ds.station_name_snapshot is not null),
+              '{}'
+            ) as "stationNames"
+       from incident_dispatches d
+       join fire_reports fr on fr.id = d.fire_report_id
+       left join incident_dispatch_stations ds on ds.dispatch_id = d.id
+       left join bfp_personnel_profiles p on p.user_id = d.dispatched_by_user_id
+      where d.fire_report_id = $1
+        and fr.municipality_id = $2
+        and d.cancelled_at is null
+      group by d.id, d.dispatched_at, p.display_name
+      order by d.dispatched_at desc`,
+    [fireReportId, municipalityId],
+  );
+
+  if (dispatches.rows.length === 0) return [];
+
+  const responders = await getDatabase().query<DispatchResponderProgress & { dispatchId: string }>(
+    `select r.dispatch_id as "dispatchId",
+            r.id,
+            r.recipient_name_snapshot as name,
+            coalesce(ds.station_name_snapshot, 'Station') as "stationName",
+            r.status,
+            r.assigned_at as "assignedAt",
+            r.acknowledged_at as "acknowledgedAt",
+            r.en_route_at as "enRouteAt",
+            r.on_scene_at as "onSceneAt",
+            r.completed_at as "completedAt",
+            r.arrival_method as "arrivalMethod",
+            r.latest_location_at as "latestLocationAt"
+       from incident_dispatch_recipients r
+       join incident_dispatch_stations ds on ds.id = r.dispatch_station_id
+      where r.dispatch_id = any($1::uuid[])
+      order by
+        case r.status
+          when 'ON_SCENE' then 1
+          when 'EN_ROUTE' then 2
+          when 'ACKNOWLEDGED' then 3
+          when 'ASSIGNED' then 4
+          else 5
+        end,
+        lower(r.recipient_name_snapshot) asc`,
+    [dispatches.rows.map((row) => row.dispatchId)],
+  );
+
+  return dispatches.rows.map((dispatch) => ({
+    ...dispatch,
+    responders: responders.rows
+      .filter((responder) => responder.dispatchId === dispatch.dispatchId)
+      .map(({ dispatchId: _dispatchId, ...responder }) => responder),
+  }));
+}
+
 export async function listStationResponders(municipalityId: string, stationId: string): Promise<DispatchableResponder[]> {
   if (!validId(municipalityId) || !validId(stationId)) return [];
   const result = await getDatabase().query<{
