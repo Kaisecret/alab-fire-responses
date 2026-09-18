@@ -42,22 +42,35 @@ const ORDINALS: Record<number, string> = {
 };
 
 const styles = `
-  .pap-wrap { display: flex; flex-direction: column; gap: 0.85rem; }
-  /* Each card is one escalation. The rail down its left edge carries the
-     alarm it is standing at, so a screenful reads at a glance. */
+  .pap-wrap {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 0.85rem;
+    align-items: stretch;
+  }
+  @media (max-width: 768px) {
+    .pap-wrap { grid-template-columns: 1fr; }
+  }
+
+  /* Compact tactical escalation card */
   .pap-card {
     position: relative;
     background: #FFFFFF;
-    border: 1px solid #E6EDF5;
-    border-radius: 16px;
-    padding: 1.15rem 1.25rem 1.25rem 1.5rem;
-    box-shadow: 0 1px 2px rgba(16, 32, 56, 0.04), 0 8px 24px -16px rgba(16, 32, 56, 0.28);
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.75rem;
     overflow: hidden;
-    transition: box-shadow 0.18s ease, border-color 0.18s ease;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
   .pap-card:hover {
-    border-color: #D6E2EF;
-    box-shadow: 0 1px 2px rgba(16, 32, 56, 0.05), 0 14px 32px -18px rgba(16, 32, 56, 0.38);
+    transform: translateY(-2px);
+    border-color: #CBD5E1;
+    box-shadow: 0 6px 20px -4px rgba(15, 23, 42, 0.1);
   }
   .pap-card::before {
     content: '';
@@ -66,80 +79,105 @@ const styles = `
     width: 4px;
     background: #CBD5E1;
   }
-  .pap-card.level-2::before { background: linear-gradient(180deg, #FBBF24, #F59E0B); }
-  .pap-card.level-3::before { background: linear-gradient(180deg, #FB923C, #EA580C); }
-  .pap-card.level-4::before { background: linear-gradient(180deg, #F87171, #DC2626); }
+  .pap-card.level-2::before { background: linear-gradient(180deg, #F59E0B, #D97706); }
+  .pap-card.level-3::before { background: linear-gradient(180deg, #F97316, #EA580C); }
+  .pap-card.level-4::before { background: linear-gradient(180deg, #EF4444, #DC2626); }
 
   .pap-top {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.75rem;
     flex-wrap: wrap;
   }
-  .pap-identity { display: flex; align-items: flex-start; gap: 0.8rem; min-width: 0; }
+  .pap-identity {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    min-width: 0;
+  }
   .pap-crest {
-    width: 40px;
-    height: 40px;
-    border-radius: 11px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     display: grid;
     place-items: center;
     flex-shrink: 0;
     background: #FEF2F2;
     color: #DC2626;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    border: 1px solid #FECACA;
   }
   .pap-ref {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 800;
     color: #0F172A;
     letter-spacing: -0.01em;
   }
-  .pap-where { font-size: 0.86rem; font-weight: 700; color: #1E293B; margin-top: 2px; }
-  .pap-who { font-size: 0.76rem; color: #64748B; margin-top: 2px; }
+  .pap-where {
+    font-size: 0.82rem;
+    font-weight: 750;
+    color: #1E293B;
+    margin-top: 1px;
+  }
+  .pap-who {
+    font-size: 0.73rem;
+    color: #64748B;
+    margin-top: 1px;
+  }
 
-  /* What was asked for, as countable facts rather than a run-on line. */
-  .pap-asks { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
+  .pap-asks {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-top: 0.45rem;
+  }
   .pap-ask {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.25rem 0.55rem;
-    border-radius: 7px;
-    background: #F1F5F9;
+    gap: 0.3rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    background: #F8FAFC;
     border: 1px solid #E2E8F0;
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: #334155;
   }
-  .pap-ask i { color: #94A3B8; font-size: 0.7rem; }
+  .pap-ask i { color: #64748B; font-size: 0.68rem; }
 
-  .pap-badges { display: flex; gap: 0.45rem; flex-wrap: wrap; flex-shrink: 0; }
+  .pap-badges {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
   .pap-auto {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    font-size: 0.66rem;
+    gap: 0.3rem;
+    font-size: 0.65rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 0.3rem 0.6rem;
-    border-radius: 8px;
+    letter-spacing: 0.04em;
+    padding: 0.22rem 0.55rem;
+    border-radius: 6px;
     background: #FFF7ED;
     border: 1px solid #FED7AA;
     color: #9A3412;
     white-space: nowrap;
   }
-  /* The alarm currently standing, coloured by how far it reaches. */
   .pap-current {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    font-size: 0.72rem;
+    gap: 0.35rem;
+    font-size: 0.68rem;
     font-weight: 800;
-    padding: 0.32rem 0.7rem;
-    border-radius: 8px;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
     border: 1px solid;
     white-space: nowrap;
   }
@@ -148,85 +186,171 @@ const styles = `
   .pap-current.level-4 { background: #FEF2F2; border-color: #FECACA; color: #B91C1C; }
 
   .pap-reason {
-    margin-top: 0.9rem;
+    margin-top: 0.4rem;
     border-left: 3px solid #CBD5E1;
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
     border-radius: 8px;
-    padding: 0.7rem 0.85rem;
-    font-size: 0.83rem;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.78rem;
     color: #334155;
-    line-height: 1.55;
+    line-height: 1.45;
   }
-  .pap-declare {
-    margin-top: 1.1rem;
-    padding-top: 0.95rem;
-    border-top: 1px dashed #E2E8F0;
-  }
-  .pap-label {
-    display: block;
-    font-size: 0.68rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #475569;
-    margin-bottom: 0.5rem;
-  }
-  /* A ladder: each rung is a wider call for help than the one below it. */
-  .pap-levels { display: flex; flex-direction: column; gap: 0.35rem; }
-  .pap-level {
+
+  .pap-photos-head {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    width: 100%;
-    text-align: left;
-    padding: 0.6rem 0.85rem;
-    border-radius: 10px;
-    border: 1px solid #E2E8F0;
-    background: #FFFFFF;
-    color: #334155;
-    cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    gap: 0.35rem;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+    margin: 0.5rem 0 0.35rem;
   }
-  .pap-level-ord {
+  .pap-photos {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+  .pap-photo {
+    position: relative;
+    width: 62px;
+    height: 62px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #E2E8F0;
+    background: #F1F5F9;
+    padding: 0;
+    cursor: zoom-in;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  }
+  .pap-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pap-photo::after {
+    content: '\\f00e';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    inset: 0;
     display: grid;
     place-items: center;
-    width: 30px;
-    height: 30px;
-    flex-shrink: 0;
-    border-radius: 8px;
-    background: #F1F5F9;
-    color: #475569;
-    font-size: 0.74rem;
-    font-weight: 800;
-    transition: background 0.15s ease, color 0.15s ease;
+    color: #FFFFFF;
+    background: rgba(15, 23, 42, 0.45);
+    opacity: 0;
+    font-size: 0.75rem;
+    transition: opacity 0.16s ease;
   }
-  .pap-level-who { font-size: 0.78rem; font-weight: 600; color: #64748B; }
-  .pap-level-go {
-    margin-left: auto;
-    font-size: 0.7rem;
-    color: #CBD5E1;
-    flex-shrink: 0;
+  .pap-photo:hover { transform: translateY(-1px); border-color: #CBD5E1; box-shadow: 0 4px 10px rgba(15,23,42,0.12); }
+  .pap-photo:hover::after, .pap-photo:focus-visible::after { opacity: 1; }
+  .pap-photo:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
+
+  .pap-declare {
+    margin-top: 0.5rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid #F1F5F9;
   }
-  .pap-level:hover:not(:disabled) {
-    border-color: #FCA5A5;
-    background: #FFFBFB;
-    transform: translateX(2px);
-  }
-  .pap-level:hover:not(:disabled) .pap-level-ord { background: #FEE2E2; color: #B91C1C; }
-  .pap-level:hover:not(:disabled) .pap-level-who { color: #7F1D1D; }
-  .pap-level:hover:not(:disabled) .pap-level-go { color: #DC2626; }
-  /* A level already passed is history, not a choice. */
-  .pap-level:disabled { opacity: 0.5; cursor: default; background: #F8FAFC; }
-  .pap-level:disabled .pap-level-go { visibility: hidden; }
-  .pap-level:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
-  .pap-level-done {
-    margin-left: auto;
+  .pap-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: 0.66rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    color: #64748B;
+    margin-bottom: 0.45rem;
+  }
+  /* Horizontal compact 3-rung ladder */
+  .pap-levels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+  }
+  @media (max-width: 500px) {
+    .pap-levels { grid-template-columns: 1fr; }
+  }
+
+  .pap-level {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.45rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    background: #FFFFFF;
+    color: #334155;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+  }
+  .pap-level-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.35rem;
+  }
+  .pap-level-ord {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.1rem 0.35rem;
+    border-radius: 5px;
+    background: #F1F5F9;
+    color: #334155;
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.2;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .pap-level-who {
+    font-size: 0.69rem;
+    font-weight: 600;
+    color: #64748B;
+    line-height: 1.25;
+    white-space: normal;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .pap-level-go {
+    font-size: 0.65rem;
     color: #94A3B8;
+    flex-shrink: 0;
+    transition: color 0.15s ease, transform 0.15s ease;
+  }
+  .pap-level:hover:not(:disabled) {
+    border-color: #DC2626;
+    background: #FFFDFD;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.12);
+    transform: translateY(-1px);
+  }
+  .pap-level:hover:not(:disabled) .pap-level-ord { background: #FEE2E2; color: #B91C1C; }
+  .pap-level:hover:not(:disabled) .pap-level-who { color: #0F172A; }
+  .pap-level:hover:not(:disabled) .pap-level-go { color: #DC2626; transform: translateX(2px); }
+
+  .pap-level:disabled {
+    opacity: 0.7;
+    cursor: default;
+    background: #F8FAFC;
+    border-color: #E2E8F0;
+  }
+  .pap-level:disabled .pap-level-go { visibility: hidden; }
+  .pap-level:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
+  .pap-level-done {
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #059669;
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    padding: 0.08rem 0.35rem;
+    border-radius: 4px;
     flex-shrink: 0;
   }
 
@@ -237,81 +361,41 @@ const styles = `
     display: flex;
     align-items: flex-start;
     gap: 0.45rem;
-    margin-top: 0.7rem;
-    padding: 0.6rem 0.75rem;
-    border-radius: 9px;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.65rem;
+    border-radius: 8px;
     background: #FEF2F2;
     border: 1px solid #FECACA;
-    font-size: 0.76rem;
+    font-size: 0.74rem;
     color: #B91C1C;
     font-weight: 600;
-    line-height: 1.45;
+    line-height: 1.4;
   }
-  .pap-photos-head {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.66rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #475569;
-    margin: 0.9rem 0 0.5rem;
-  }
-  .pap-photos { display: flex; gap: 0.55rem; flex-wrap: wrap; }
-  .pap-photo {
-    position: relative;
-    width: 96px;
-    height: 96px;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid #E2E8F0;
-    background: #F1F5F9;
-    padding: 0;
-    cursor: zoom-in;
-    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
-  }
-  .pap-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .pap-photo::after {
-    content: '\f00e';
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    color: #FFFFFF;
-    background: rgba(15, 23, 42, 0.45);
-    opacity: 0;
-    transition: opacity 0.16s ease;
-  }
-  .pap-photo:hover { transform: translateY(-2px); border-color: #CBD5E1; box-shadow: 0 6px 16px rgba(15,23,42,0.14); }
-  .pap-photo:hover::after, .pap-photo:focus-visible::after { opacity: 1; }
-  .pap-photo:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
   .pap-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding: 3rem 1.25rem;
+    gap: 0.4rem;
+    padding: 2.2rem 1.25rem;
     text-align: center;
     color: #64748B;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     background: #FFFFFF;
     border: 1px dashed #E2E8F0;
-    border-radius: 16px;
+    border-radius: 14px;
   }
   .pap-empty-icon {
     display: grid;
     place-items: center;
-    width: 52px;
-    height: 52px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: #F1F5F9;
     color: #94A3B8;
-    font-size: 1.25rem;
+    font-size: 1.1rem;
+    margin-bottom: 0.2rem;
   }
-  .pap-empty strong { display: block; color: #0F172A; font-size: 0.95rem; }
+  .pap-empty strong { display: block; color: #0F172A; font-size: 0.9rem; }
 `;
 
 /**
@@ -394,97 +478,108 @@ export function ProvincialAlarmPanel() {
 
         {requests.map((request) => (
           <div className={`pap-card${request.alarmLevel ? ` level-${request.alarmLevel}` : ""}`} key={request.id}>
-            <div className="pap-top">
-              <div className="pap-identity">
-                <span className="pap-crest" aria-hidden="true">
-                  <i className="fa-solid fa-fire" />
-                </span>
-                <div style={{ minWidth: 0 }}>
-                  <div className="pap-ref">{request.referenceNumber}</div>
-                  <div className="pap-where">
-                    {request.municipalityName}
-                    {request.barangay ? ` · ${request.barangay}` : ""}
-                  </div>
-                  <div className="pap-who">Requested by {request.requestedByName}</div>
-                  {(request.requestedFiretrucks > 0 || request.requestedPersonnel > 0) && (
-                    <div className="pap-asks">
-                      {request.requestedFiretrucks > 0 && (
-                        <span className="pap-ask">
-                          <i className="fa-solid fa-truck-fast" />
-                          {request.requestedFiretrucks} firetruck{request.requestedFiretrucks > 1 ? "s" : ""}
-                        </span>
-                      )}
-                      {request.requestedPersonnel > 0 && (
-                        <span className="pap-ask">
-                          <i className="fa-solid fa-user-shield" />
-                          {request.requestedPersonnel} personnel
-                        </span>
-                      )}
+            <div>
+              <div className="pap-top">
+                <div className="pap-identity">
+                  <span className="pap-crest" aria-hidden="true">
+                    <i className="fa-solid fa-fire" />
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="pap-ref">{request.referenceNumber}</div>
+                    <div className="pap-where">
+                      {request.municipalityName}
+                      {request.barangay ? ` · ${request.barangay}` : ""}
                     </div>
+                    <div className="pap-who">Requested by {request.requestedByName}</div>
+                    {(request.requestedFiretrucks > 0 || request.requestedPersonnel > 0) && (
+                      <div className="pap-asks">
+                        {request.requestedFiretrucks > 0 && (
+                          <span className="pap-ask">
+                            <i className="fa-solid fa-truck-fast" />
+                            {request.requestedFiretrucks} firetruck{request.requestedFiretrucks > 1 ? "s" : ""}
+                          </span>
+                        )}
+                        {request.requestedPersonnel > 0 && (
+                          <span className="pap-ask">
+                            <i className="fa-solid fa-user-shield" />
+                            {request.requestedPersonnel} personnel
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="pap-badges">
+                  {request.forwardedAutomatically && (
+                    <span className="pap-auto">
+                      <i className="fa-regular fa-clock" /> Auto-escalated
+                    </span>
+                  )}
+                  {request.alarmLevel && (
+                    <span className={`pap-current level-${request.alarmLevel}`}>
+                      <i className="fa-solid fa-bell" /> {ORDINALS[request.alarmLevel]} alarm standing
+                    </span>
                   )}
                 </div>
               </div>
-              <div className="pap-badges">
-                {request.forwardedAutomatically && (
-                  <span className="pap-auto">
-                    <i className="fa-regular fa-clock" /> Auto-escalated
-                  </span>
-                )}
-                {request.alarmLevel && (
-                  <span className={`pap-current level-${request.alarmLevel}`}>
-                    <i className="fa-solid fa-bell" /> {ORDINALS[request.alarmLevel]} alarm standing
-                  </span>
-                )}
-              </div>
+
+              {request.reason && <div className="pap-reason">{request.reason}</div>}
+
+              {request.photos?.length > 0 && (
+                <div>
+                  <div className="pap-photos-head">
+                    <i className="fa-solid fa-camera" />
+                    From the scene ({request.photos.length})
+                  </div>
+                  <div className="pap-photos">
+                    {request.photos.map((photo, index) => (
+                      <button
+                        key={photo}
+                        type="button"
+                        className="pap-photo"
+                        onClick={() => setViewer({ requestId: request.id, index })}
+                        title="View photo"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={photo} alt={`Scene photograph ${index + 1} from the responder`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {request.reason && <div className="pap-reason">{request.reason}</div>}
-
-            {request.photos?.length > 0 && (
-              <div>
-                <div className="pap-photos-head">
-                  <i className="fa-solid fa-camera" />
-                  From the scene ({request.photos.length})
-                </div>
-                <div className="pap-photos">
-                  {request.photos.map((photo, index) => (
-                    <button
-                      key={photo}
-                      type="button"
-                      className="pap-photo"
-                      onClick={() => setViewer({ requestId: request.id, index })}
-                      title="View photo"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={photo} alt={`Scene photograph ${index + 1} from the responder`} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="pap-declare">
-              <span className="pap-label">
-                {request.alarmLevel ? "Raise the alarm to" : "Declare an alarm level"}
-              </span>
+              <div className="pap-label">
+                <span>{request.alarmLevel ? "Raise Alarm Level" : "Declare Alarm Level"}</span>
+                <span style={{ fontSize: "0.62rem", color: "#94A3B8", fontWeight: 600, textTransform: "none" }}>
+                  Summons jurisdiction reinforcements
+                </span>
+              </div>
               <div className="pap-levels">
                 {DECLARABLE_LEVELS.map((entry) => {
                   const passed = entry.level <= (request.alarmLevel ?? 0);
+                  const isCurrent = entry.level === (request.alarmLevel ?? 0);
                   return (
                     <button
                       key={entry.level}
                       type="button"
                       className="pap-level"
-                      // A level only ever goes up: the fire does not get smaller.
                       disabled={busyId === request.id || passed}
                       onClick={() => void declare(request, entry.level)}
                       title={entry.summons}
                     >
-                      <span className="pap-level-ord">{entry.label}</span>
+                      <div className="pap-level-top-row">
+                        <span className="pap-level-ord">{entry.label} Alarm</span>
+                        {passed ? (
+                          <span className="pap-level-done">{isCurrent ? "Standing" : "Declared"}</span>
+                        ) : busyId === request.id ? (
+                          <i className="fa-solid fa-circle-notch fa-spin pap-level-go" />
+                        ) : (
+                          <i className="fa-solid fa-arrow-right pap-level-go" />
+                        )}
+                      </div>
                       <span className="pap-level-who">{entry.summons}</span>
-                      {passed
-                        ? <span className="pap-level-done">Declared</span>
-                        : <i className="fa-solid fa-arrow-right pap-level-go" />}
                     </button>
                   );
                 })}
