@@ -2041,7 +2041,15 @@ export function MunicipalIncidentDetail({
   }
 
   const isPhoneReport = incident.reportSource === "PHONE_CALL";
-  const isResponding = incident.status === "RESPONDING";
+  /*
+   * A response is under way from the moment stations are dispatched until the
+   * incident closes. Testing for RESPONDING alone meant an incident whose crews
+   * had already reached the scene still offered to acknowledge and respond, as
+   * though nobody had gone: the button asked for a decision that had been made
+   * and acted on.
+   */
+  const isResponding = ["RESPONDING", "FIRETRUCK_DISPATCHED", "RESPONDER_ARRIVED", "UNDER_CONTROL"]
+    .includes(incident.status);
   const canResolve = incident.accessScope === "ORIGIN" && canMunicipalResolveReport(incident.status);
   const isTerminal = ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(incident.status);
   const validPhotos = (incident.photos ?? []).filter((p): p is { url: string } => Boolean(p && p.url));

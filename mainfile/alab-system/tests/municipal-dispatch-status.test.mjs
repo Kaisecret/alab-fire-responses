@@ -142,3 +142,22 @@ test("the progress query reports each responder's furthest stage", async () => {
     await db.close();
   }
 });
+
+test("an incident whose crews are committed does not ask to be acknowledged", () => {
+  const detail = source("app/_components/municipal-incident-detail.tsx");
+
+  /*
+   * Testing for RESPONDING alone left every later stage offering "Acknowledge
+   * & Respond": a fire whose responders had already reached the scene invited
+   * the station to decide whether to send anyone, as though nobody had gone.
+   */
+  assert.match(
+    detail,
+    /\["RESPONDING", "FIRETRUCK_DISPATCHED", "RESPONDER_ARRIVED", "UNDER_CONTROL"\]/,
+  );
+  assert.doesNotMatch(detail, /const isResponding = incident\.status === "RESPONDING";/);
+
+  // Those stages show the board instead, which is what the button then means.
+  assert.match(detail, /isResponding \? \(\s*<DispatchStatusBoard/);
+  assert.match(detail, /aria-label=\{isResponding \? "View active BFP dispatch status"/);
+});
