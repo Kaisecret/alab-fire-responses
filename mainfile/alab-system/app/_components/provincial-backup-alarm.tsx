@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { PhotoLightbox } from "./photo-lightbox";
@@ -277,6 +278,29 @@ export function ProvincialBackupAlarm() {
 
   const contextRef = useRef<AudioContext | null>(null);
   const stopToneRef = useRef<(() => void) | null>(null);
+  const markedOnScreenRef = useRef<string | null>(null);
+
+  /*
+   * The request the assistance screen is currently showing, if any. This reads
+   * the address bar rather than useSearchParams, which would force the whole
+   * provincial shell under a Suspense boundary it does not have.
+   */
+  const pathname = usePathname();
+  const [search, setSearch] = useState("");
+
+  // The address bar is outside React, so it is read on navigation rather than
+  // during render, which would differ between the server and the browser.
+  useEffect(() => {
+    const sync = () => setSearch(window.location.search);
+    sync();
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, [pathname]);
+
+  const onScreenRequestId =
+    pathname === "/provincial-bfp/assistance-requests"
+      ? new URLSearchParams(search).get("request")
+      : null;
 
   const load = useCallback(async () => {
     if (document.visibilityState !== "visible") return;
@@ -305,9 +329,38 @@ export function ProvincialBackupAlarm() {
     };
   }, [load]);
 
-  // Only a forwarded request the province has not yet seen rings.
-  const pending = requests.filter((request) => !request.provincialAcknowledgedAt);
+  /*
+   * A request being read on screen is not an unheard one. The officer who
+   * opened it from the alarm, or who walked to it themselves, was being
+   * alarmed about the very thing in front of them on every poll and every
+   * refresh, so a request open in the page is never raised again here.
+   */
+  const pending = requests.filter(
+    (request) => !request.provincialAcknowledgedAt && request.id !== onScreenRequestId,
+  );
   const active = pending[0];
+
+  // Reading a request counts as seeing it, even when the page was reached by
+  // hand rather than through the alarm. Recorded once: the poll rebuilds the
+  // list every few seconds, and this must not follow it with a PATCH each time.
+  useEffect(() => {
+    if (!onScreenRequestId) return;
+    if (markedOnScreenRef.current === onScreenRequestId) return;
+    const unseen = requests.some(
+      (request) => request.id === onScreenRequestId && !request.provincialAcknowledgedAt,
+    );
+    if (!unseen) return;
+
+    markedOnScreenRef.current = onScreenRequestId;
+    void fetch("/api/provincial-bfp/backup-requests", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ backupRequestId: onScreenRequestId }),
+    }).catch(() => {
+      // Let a later poll try again rather than leaving it silently unseen.
+      markedOnScreenRef.current = null;
+    });
+  }, [onScreenRequestId, requests]);
 
   useEffect(() => {
     if (!active) {
@@ -370,6 +423,34 @@ export function ProvincialBackupAlarm() {
       setBusy(false);
     }
   }, [active, load]);
+
+  /*
+   * Opening the request is seeing it. Navigating without recording that left
+   * the request unacknowledged on the server, so the shell on the next page
+   * polled, found it still pending, and raised the same alarm again: the
+   * officer was followed from page to page by a request they were in the
+   * middle of reading. The acknowledgement goes in before the navigation,
+   * and a failure to record it does not trap them on this dialog.
+   */
+  const openRequest = useCallback(async () => {
+    if (!active) return;
+    const target = `/provincial-bfp/assistance-requests?request=${active.id}`;
+    setBusy(true);
+    setError(null);
+    try {
+      await fetch("/api/provincial-bfp/backup-requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backupRequestId: active.id }),
+      });
+    } catch {
+      // Still open it: reading the request matters more than the bookkeeping.
+    } finally {
+      stopToneRef.current?.();
+      stopToneRef.current = null;
+      window.location.assign(target);
+    }
+  }, [active]);
 
   const declare = useCallback(async (alarmLevel: number) => {
     if (!active) return;
@@ -531,13 +612,15 @@ export function ProvincialBackupAlarm() {
             >
               {busy ? "Working..." : "Acknowledge"}
             </button>
-            <a
+            <button
+              type="button"
               className="pba-btn primary"
-              href={`/provincial-bfp/assistance-requests?request=${active.id}`}
+              disabled={busy}
+              onClick={() => void openRequest()}
             >
               <i className="fa-solid fa-arrow-up-right-from-square" />
               Open the request
-            </a>
+            </button>
           </div>
         </div>
       </div>

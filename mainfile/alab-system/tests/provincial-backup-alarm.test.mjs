@@ -118,3 +118,25 @@ test("the provincial route accepts an acknowledgement", () => {
   assert.match(route, /acknowledgeProvincialBackupRequest/);
   assert.match(route, /requireProvincialBfp/);
 });
+
+test("opening a request records that it was seen before navigating away", () => {
+  const alarm = source("app/_components/provincial-backup-alarm.tsx");
+
+  // The defect: "Open the request" was a plain link. The officer read the
+  // request, but nothing was recorded, so the shell on the next page polled,
+  // found it unacknowledged and raised the same alarm again on every refresh.
+  assert.doesNotMatch(alarm, /href=\{`\/provincial-bfp\/assistance-requests\?request=/);
+  assert.match(alarm, /const openRequest = useCallback/);
+  assert.match(alarm, /window\.location\.assign\(target\)/);
+  // The navigation happens even if the bookkeeping call fails.
+  assert.match(alarm, /} finally \{\s*stopToneRef\.current\?\.\(\);/);
+});
+
+test("a request already open on screen does not raise the alarm", () => {
+  const alarm = source("app/_components/provincial-backup-alarm.tsx");
+
+  assert.match(alarm, /onScreenRequestId/);
+  assert.match(alarm, /request\.id !== onScreenRequestId/);
+  // Reading it counts as seeing it, recorded once rather than on every poll.
+  assert.match(alarm, /markedOnScreenRef/);
+});
