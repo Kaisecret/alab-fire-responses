@@ -140,3 +140,34 @@ test("a request already open on screen does not raise the alarm", () => {
   // Reading it counts as seeing it, recorded once rather than on every poll.
   assert.match(alarm, /markedOnScreenRef/);
 });
+
+test("dismissing answers for every request the dialog is showing", () => {
+  const alarm = source("app/_components/provincial-backup-alarm.tsx");
+
+  // The defect: acknowledging marked only pending[0], so the request queued
+  // behind it became active at once and rang again. A province with two
+  // escalations could never silence the alarm.
+  assert.match(alarm, /pending\.map\(\(request\) =>/);
+  assert.doesNotMatch(alarm, /body: JSON\.stringify\(\{ backupRequestId: active\.id \}\),\s*\}\);\s*if \(!res\.ok\)/);
+  assert.match(alarm, /Acknowledge all \$\{pending\.length\}/);
+});
+
+test("opening a request already on screen releases the dialog", () => {
+  const alarm = source("app/_components/provincial-backup-alarm.tsx");
+
+  // window.location.assign to the address already showing does nothing, which
+  // left busy true forever: every control disabled, stuck on "Working...".
+  assert.match(alarm, /const alreadyThere =/);
+  assert.match(alarm, /if \(alreadyThere\) \{/);
+  assert.match(alarm, /setBusy\(false\);/);
+});
+
+test("the siren keys on the request, not the polled object", () => {
+  const alarm = source("app/_components/provincial-backup-alarm.tsx");
+
+  // Depending on `active` re-ran the effect every poll, since the list is
+  // rebuilt into fresh objects each time.
+  assert.match(alarm, /const activeId = active\?\.id \?\? null;/);
+  assert.match(alarm, /\}, \[activeId\]\);/);
+  assert.doesNotMatch(alarm, /\}, \[active\]\);/);
+});

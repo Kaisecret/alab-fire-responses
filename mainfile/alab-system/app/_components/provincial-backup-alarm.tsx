@@ -339,6 +339,7 @@ export function ProvincialBackupAlarm() {
     (request) => !request.provincialAcknowledgedAt && request.id !== onScreenRequestId,
   );
   const active = pending[0];
+  const activeId = active?.id ?? null;
 
   // Reading a request counts as seeing it, even when the page was reached by
   // hand rather than through the alarm. Recorded once: the poll rebuilds the
@@ -362,8 +363,14 @@ export function ProvincialBackupAlarm() {
     });
   }, [onScreenRequestId, requests]);
 
+  /*
+   * Keyed on the request's identity rather than the object, which the poll
+   * replaces every few seconds: depending on the object re-ran this constantly
+   * and left the tone resting on a guard rather than on the request actually
+   * having changed.
+   */
   useEffect(() => {
-    if (!active) {
+    if (!activeId) {
       stopToneRef.current?.();
       stopToneRef.current = null;
       return;
@@ -389,29 +396,41 @@ export function ProvincialBackupAlarm() {
     return () => {
       cancelled = true;
     };
-  }, [active]);
+  }, [activeId]);
 
   useEffect(() => () => stopToneRef.current?.(), []);
 
   // The dialog holds the page still while it is up.
   useEffect(() => {
-    if (!active) return;
+    if (!activeId) return;
     document.body.classList.add("pba-scroll-locked");
     return () => document.body.classList.remove("pba-scroll-locked");
-  }, [active]);
+  }, [activeId]);
 
+  /*
+   * Acknowledging clears every request the dialog is showing, not only the one
+   * on top. Marking them one at a time handed the officer the next request the
+   * instant they dismissed the last, siren and all, so a station with two
+   * escalations could not be silenced at all. The dialog says how many are
+   * behind, so dismissing it is an answer about all of them.
+   */
   const acknowledge = useCallback(async () => {
-    if (!active) return;
+    if (pending.length === 0) return;
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/provincial-bfp/backup-requests", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backupRequestId: active.id }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
+      const results = await Promise.all(
+        pending.map((request) =>
+          fetch("/api/provincial-bfp/backup-requests", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ backupRequestId: request.id }),
+          }),
+        ),
+      );
+      const refused = results.find((res) => !res.ok);
+      if (refused) {
+        const body = await refused.json().catch(() => ({}));
         throw new Error(body.error || "Unable to acknowledge that request.");
       }
       stopToneRef.current?.();
@@ -422,7 +441,7 @@ export function ProvincialBackupAlarm() {
     } finally {
       setBusy(false);
     }
-  }, [active, load]);
+  }, [pending, load]);
 
   /*
    * Opening the request is seeing it. Navigating without recording that left
@@ -435,22 +454,39 @@ export function ProvincialBackupAlarm() {
   const openRequest = useCallback(async () => {
     if (!active) return;
     const target = `/provincial-bfp/assistance-requests?request=${active.id}`;
+    const alreadyThere = window.location.pathname + window.location.search === target;
     setBusy(true);
     setError(null);
     try {
-      await fetch("/api/provincial-bfp/backup-requests", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backupRequestId: active.id }),
-      });
+      // Opening answers for the whole dialog, exactly as dismissing it does,
+      // or the requests queued behind would ring the moment the page settled.
+      await Promise.all(
+        pending.map((request) =>
+          fetch("/api/provincial-bfp/backup-requests", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ backupRequestId: request.id }),
+          }),
+        ),
+      );
     } catch {
       // Still open it: reading the request matters more than the bookkeeping.
     } finally {
       stopToneRef.current?.();
       stopToneRef.current = null;
-      window.location.assign(target);
+      if (alreadyThere) {
+        /*
+         * Navigating to the address already showing does nothing, which left
+         * the dialog frozen on "Working..." with every control disabled. The
+         * officer is on the request; refresh the list and let it close.
+         */
+        await load();
+        setBusy(false);
+      } else {
+        window.location.assign(target);
+      }
     }
-  }, [active]);
+  }, [active, pending, load]);
 
   const declare = useCallback(async (alarmLevel: number) => {
     if (!active) return;
@@ -610,7 +646,11 @@ export function ProvincialBackupAlarm() {
               onClick={() => void acknowledge()}
               autoFocus
             >
-              {busy ? "Working..." : "Acknowledge"}
+              {busy
+                ? "Working..."
+                : pending.length > 1
+                  ? `Acknowledge all ${pending.length}`
+                  : "Acknowledge"}
             </button>
             <button
               type="button"
