@@ -68,36 +68,47 @@ const dashboardStyles = `
   .pbfp-kpi-box:nth-child(4) { animation-delay: 0.2s; }
 
   /*
-   * White tiles with a single accent rule. The pastel gradients competed with
-   * the figures they framed, so the colour now sits in the icon and the rule
-   * and the number itself carries the card.
+   * The same pastel tiles the municipal console uses for its own counters, so
+   * an officer moving between the two reads one vocabulary rather than two.
+   * The tint carries the category and the white icon tile lifts off it.
    */
-  .pbfp-kpi-box::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 3px;
+  .pbfp-kpi-box.red {
+    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
+    border: 1.5px solid #FFBEBE;
+    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
   }
-
-  .pbfp-kpi-box.red,
-  .pbfp-kpi-box.amber,
-  .pbfp-kpi-box.blue,
+  .pbfp-kpi-box.amber {
+    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
+    border: 1.5px solid #FFDC99;
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+  }
+  .pbfp-kpi-box.blue {
+    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
+    border: 1.5px solid #B8D3FD;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  }
   .pbfp-kpi-box.purple {
-    background: #FFFFFF;
-    border: 1px solid #E8EDF4;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
+    border: 1.5px solid #D0BCFD;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
   }
 
-  .pbfp-kpi-box.red::before { background: #E23632; }
-  .pbfp-kpi-box.amber::before { background: #D97706; }
-  .pbfp-kpi-box.blue::before { background: #2563EB; }
-  .pbfp-kpi-box.purple::before { background: #7C3AED; }
-
-  /* One lift for every tile; the accent already states the category. */
-  .pbfp-kpi-box:hover {
-    transform: translateY(-2px);
-    border-color: #CBD5E1;
-    box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.14);
+  .pbfp-kpi-box:hover { transform: translateY(-3px); }
+  .pbfp-kpi-box.red:hover {
+    border-color: #FFA3A3;
+    box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2);
+  }
+  .pbfp-kpi-box.amber:hover {
+    border-color: #FFCF70;
+    box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2);
+  }
+  .pbfp-kpi-box.blue:hover {
+    border-color: #91B8FA;
+    box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2);
+  }
+  .pbfp-kpi-box.purple:hover {
+    border-color: #B79BFB;
+    box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2);
   }
 
   .pbfp-kpi-header {
@@ -112,6 +123,9 @@ const dashboardStyles = `
     width: 2.35rem;
     height: 2.35rem;
     border-radius: 10px;
+    background: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -124,10 +138,10 @@ const dashboardStyles = `
     transform: scale(1.06);
   }
 
-  .pbfp-kpi-badge-icon.red { color: #E23632; background: #FEF2F2; }
-  .pbfp-kpi-badge-icon.amber { color: #D97706; background: #FFFBEB; }
-  .pbfp-kpi-badge-icon.blue { color: #2563EB; background: #EFF6FF; }
-  .pbfp-kpi-badge-icon.purple { color: #7C3AED; background: #F5F3FF; }
+  .pbfp-kpi-badge-icon.red { color: #E23632; }
+  .pbfp-kpi-badge-icon.amber { color: #D97706; }
+  .pbfp-kpi-badge-icon.blue { color: #2563EB; }
+  .pbfp-kpi-badge-icon.purple { color: #7C3AED; }
 
   .pbfp-kpi-badge-img {
     width: 20px;
@@ -137,41 +151,49 @@ const dashboardStyles = `
 
   /* Pure White Trend/Status Pill Badge */
   .pbfp-kpi-trend-tag {
-    font-size: 0.62rem;
-    font-weight: 700;
-    padding: 0.18rem 0.55rem;
-    border-radius: 999px;
-    background: #FFFFFF;
-    display: flex;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    gap: 0.25rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
 
-  .pbfp-kpi-trend-tag.red { color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; }
-  .pbfp-kpi-trend-tag.amber { color: #B45309; background: #FFFBEB; border: 1px solid #FDE68A; }
-  .pbfp-kpi-trend-tag.blue { color: #1D4ED8; background: #EFF6FF; border: 1px solid #BFDBFE; }
-  .pbfp-kpi-trend-tag.purple { color: #6D28D9; background: #F5F3FF; border: 1px solid #DDD6FE; }
+  .pbfp-kpi-trend-tag.red { color: #991B1B; background: #FDE8E8; }
+  .pbfp-kpi-trend-tag.amber { color: #92400E; background: #FEF3C7; }
+  .pbfp-kpi-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
+  .pbfp-kpi-trend-tag.purple { color: #5B21B6; background: #EDE9FE; }
 
+  /* The figure leads and the caption follows it, as on the municipal cards:
+     the count is what is being read, the words only say what it counts. The
+     order is set here so the markup can keep naming the thing before its
+     value. */
   .pbfp-kpi-body {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.1rem;
+    margin: 0.15rem 0 0.1rem;
   }
 
   .pbfp-kpi-label {
-    font-size: 0.75rem;
-    font-weight: 700;
+    order: 2;
+    font-size: 0.69rem;
+    font-weight: 750;
     color: #475569;
-    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .pbfp-kpi-number {
+    order: 1;
     font-size: 1.85rem;
-    font-weight: 800;
+    font-weight: 900;
     color: #0F172A;
     line-height: 1.05;
     letter-spacing: -0.02em;
