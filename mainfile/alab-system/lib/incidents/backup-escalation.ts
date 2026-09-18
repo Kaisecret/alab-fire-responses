@@ -1,5 +1,7 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import { getDatabase } from "../db";
 import { createAssistanceRequests } from "../intermunicipality/assistance";
 import type { StationCandidate } from "../intermunicipality/types";
@@ -572,13 +574,16 @@ async function summonForAlarmLevel(input: {
 
   for (const candidate of candidates) {
     await db.query(
+      // The primary key carries no default on this table, so the id is supplied
+      // here rather than left to the database.
       `insert into public.incident_municipal_observers (
-         fire_report_id, dispatch_id, origin_municipality_id, observer_municipality_id,
+         id, fire_report_id, dispatch_id, origin_municipality_id, observer_municipality_id,
          nearest_station_id, station_latitude_snapshot, station_longitude_snapshot,
          distance_meters, status, selected_at
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,'ACTIVE',now())
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ACTIVE',now())
        on conflict (dispatch_id, observer_municipality_id) do nothing`,
       [
+        randomUUID(),
         input.fireReportId,
         dispatchId,
         origin.municipalityId,

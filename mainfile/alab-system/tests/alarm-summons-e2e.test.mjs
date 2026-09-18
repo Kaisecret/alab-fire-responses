@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -44,7 +45,9 @@ const SCHEMA = `
     dispatched_at timestamptz not null default now()
   );
   create table incident_municipal_observers(
-    id uuid primary key default gen_random_uuid(),
+    -- No default, exactly as the real migration declares it: an insert that
+    -- omits the id fails, which is the fault this suite missed once already.
+    id uuid primary key,
     fire_report_id uuid not null references fire_reports(id),
     dispatch_id uuid not null references incident_dispatches(id),
     origin_municipality_id uuid not null references municipalities(id),
@@ -58,7 +61,7 @@ const SCHEMA = `
     unique (dispatch_id, observer_municipality_id)
   );
   create table intermunicipal_assistance_requests(
-    id uuid primary key default gen_random_uuid(),
+    id uuid primary key,
     fire_report_id uuid not null references fire_reports(id),
     dispatch_id uuid not null references incident_dispatches(id),
     observer_id uuid not null references incident_municipal_observers(id),
@@ -151,13 +154,13 @@ async function summon(db, ids, level, candidates) {
   for (const candidate of fresh) {
     await db.query(
       `insert into incident_municipal_observers (
-         fire_report_id, dispatch_id, origin_municipality_id, observer_municipality_id,
+         id, fire_report_id, dispatch_id, origin_municipality_id, observer_municipality_id,
          nearest_station_id, station_latitude_snapshot, station_longitude_snapshot,
          distance_meters, status, selected_at
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,'ACTIVE',now())
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ACTIVE',now())
        on conflict (dispatch_id, observer_municipality_id) do nothing`,
       [
-        ids.fireReport, ids.dispatch, ids.hamtic, candidate.municipalityId,
+        randomUUID(), ids.fireReport, ids.dispatch, ids.hamtic, candidate.municipalityId,
         candidate.stationId, candidate.latitude, candidate.longitude, candidate.distanceMeters,
       ],
     );
@@ -172,14 +175,14 @@ async function summon(db, ids, level, candidates) {
     );
     const request = await db.query(
       `insert into intermunicipal_assistance_requests
-         (fire_report_id, dispatch_id, observer_id, requester_municipality_id,
+         (id, fire_report_id, dispatch_id, observer_id, requester_municipality_id,
           recipient_municipality_id, status)
-       values ($1,$2,$3,$4,$5,'REQUESTED')
+       values ($1,$2,$3,$4,$5,$6,'REQUESTED')
        on conflict (dispatch_id, recipient_municipality_id)
          where status in ('REQUESTED','ACCEPTED','PARTIALLY_ACCEPTED')
          do nothing
        returning id`,
-      [ids.fireReport, ids.dispatch, observer.rows[0].id, ids.hamtic, candidate.municipalityId],
+      [randomUUID(), ids.fireReport, ids.dispatch, observer.rows[0].id, ids.hamtic, candidate.municipalityId],
     );
     await db.query(
       `insert into incident_alarm_summons
@@ -206,11 +209,11 @@ test("a wider alarm enrols the municipalities it reaches as observers", async ()
     for (const key of ["sanjose", "sibalom"]) {
       await db.query(
         `insert into incident_municipal_observers (
-           fire_report_id, dispatch_id, origin_municipality_id, observer_municipality_id,
+           id, fire_report_id, dispatch_id, origin_municipality_id, observer_municipality_id,
            nearest_station_id, station_latitude_snapshot, station_longitude_snapshot,
            distance_meters, status, selected_at
-         ) values ($1,$2,$3,$4,$5,10.75,121.94,5000,'ACTIVE',now())`,
-        [ids.fireReport, ids.dispatch, ids.hamtic, ids[key], ids[`${key}Station`]],
+         ) values ($1,$2,$3,$4,$5,$6,10.75,121.94,5000,'ACTIVE',now())`,
+        [randomUUID(), ids.fireReport, ids.dispatch, ids.hamtic, ids[key], ids[`${key}Station`]],
       );
     }
 
@@ -378,4 +381,31 @@ test("the summons enrols observers before asking for aid", () => {
   // are enrolled at dispatch, so a wider alarm was refused outright.
   assert.match(escalation, /insert into public\.incident_municipal_observers/);
   assert.match(escalation, /on conflict \(dispatch_id, observer_municipality_id\) do nothing/);
+});
+
+test("the test schema matches the migration it stands in for", () => {
+  const migration = readFileSync(
+    join(process.cwd(), "supabase/migrations/20260907090000_add_intermunicipality_coordination.sql"),
+    "utf8",
+  );
+
+  /*
+   * This suite once declared these tables with a generated primary key while
+   * the real ones have none, so an insert that omitted the id passed here and
+   * failed in production. Whatever the migration says about defaults, the
+   * fixture has to say too.
+   */
+  const observerTable = migration.slice(
+    migration.indexOf("create table if not exists public.incident_municipal_observers"),
+  );
+  assert.match(observerTable.slice(0, 120), /id uuid primary key,/);
+  assert.doesNotMatch(
+    SCHEMA.slice(SCHEMA.indexOf("create table incident_municipal_observers"), SCHEMA.indexOf("create table intermunicipal_assistance_requests")),
+    /id uuid primary key default/,
+  );
+
+  // ...and the service supplies one rather than trusting the database to.
+  const escalation = readFileSync(join(process.cwd(), "lib/incidents/backup-escalation.ts"), "utf8");
+  assert.match(escalation, /import \{ randomUUID \} from "node:crypto"/);
+  assert.match(escalation, /randomUUID\(\),\s*\n\s*input\.fireReportId,/);
 });
