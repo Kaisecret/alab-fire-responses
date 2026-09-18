@@ -165,6 +165,44 @@ const pageStyles = `
   }
 
   /* Controls & Filter Bar */
+  /* The escalation section is set apart from the feed below it: these are
+     decisions waiting on the province, not a log of what has happened. */
+  .pbfp-escalation-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .pbfp-escalation-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .pbfp-escalation-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #DC2626;
+    font-size: 0.9rem;
+  }
+  .pbfp-escalation-head h2 {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+  }
+  .pbfp-escalation-head p {
+    margin: 2px 0 0;
+    font-size: 0.78rem;
+    color: #64748B;
+    font-weight: 500;
+  }
+
   .pbfp-aid-controls {
     display: flex;
     justify-content: space-between;
@@ -557,9 +595,6 @@ function AssistanceRequestsContent() {
     <>
       <style>{pageStyles}</style>
       <div className="pbfp-aid-page">
-        {/* Header */}
-        <ProvincialAlarmPanel />
-
         <div className="pbfp-aid-header-hub">
           <div className="pbfp-aid-header-left">
             <div className="pbfp-aid-icon-badge">
@@ -647,6 +682,25 @@ function AssistanceRequestsContent() {
             </div>
           </div>
         </div>
+
+        {/*
+          Escalations the province has to answer, above the feed of what has
+          already been asked. It carries its own heading: mounting it bare and
+          ahead of the page title meant the title was pushed off the screen the
+          moment a request arrived.
+        */}
+        <section className="pbfp-escalation-section" aria-labelledby="pbfp-escalation-heading">
+          <div className="pbfp-escalation-head">
+            <span className="pbfp-escalation-icon" aria-hidden="true">
+              <i className="fa-solid fa-tower-broadcast" />
+            </span>
+            <div>
+              <h2 id="pbfp-escalation-heading">Escalated to the province</h2>
+              <p>Backup a municipality could not absorb alone. Raise the alarm to widen the call.</p>
+            </div>
+          </div>
+          <ProvincialAlarmPanel />
+        </section>
 
         {/* Controls Bar */}
         <div className="pbfp-aid-controls">

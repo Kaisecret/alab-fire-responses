@@ -115,6 +115,38 @@ const styles = `
   }
   .pap-ask i { color: #94A3B8; font-size: 0.7rem; }
 
+  .pap-badges { display: flex; gap: 0.45rem; flex-wrap: wrap; flex-shrink: 0; }
+  .pap-auto {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.66rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    background: #FFF7ED;
+    border: 1px solid #FED7AA;
+    color: #9A3412;
+    white-space: nowrap;
+  }
+  /* The alarm currently standing, coloured by how far it reaches. */
+  .pap-current {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.32rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .pap-current.level-2 { background: #FFFBEB; border-color: #FDE68A; color: #B45309; }
+  .pap-current.level-3 { background: #FFF7ED; border-color: #FED7AA; color: #C2410C; }
+  .pap-current.level-4 { background: #FEF2F2; border-color: #FECACA; color: #B91C1C; }
+
   .pap-reason {
     margin-top: 0.9rem;
     border-left: 3px solid #CBD5E1;
