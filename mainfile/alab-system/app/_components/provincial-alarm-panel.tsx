@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { PhotoLightbox } from "./photo-lightbox";
+import { ProvincialReportDetail } from "./provincial-report-detail";
 
 interface BackupRequest {
   id: string;
@@ -89,11 +90,41 @@ const styles = `
     gap: 0.75rem;
     flex-wrap: wrap;
   }
+  /* The identity block is the card's handle: it holds what an officer reads
+     first, so it is what they press to read the rest. Stripped back from the
+     button defaults and given its own affordance instead. */
   .pap-identity {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
     min-width: 0;
+    flex: 1 1 auto;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0.3rem;
+    margin: -0.3rem;
+    border-radius: 10px;
+    font: inherit;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .pap-identity:hover { background: rgba(15, 23, 42, 0.035); }
+  .pap-identity:focus-visible { outline: 2px solid #DC2626; outline-offset: 2px; }
+  .pap-open-hint {
+    align-self: center;
+    margin-left: auto;
+    font-size: 0.72rem;
+    color: #CBD5E1;
+    flex-shrink: 0;
+    transition: color 0.15s ease, transform 0.15s ease;
+  }
+  .pap-identity:hover .pap-open-hint { color: #DC2626; transform: translate(1px, -1px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pap-identity:hover .pap-open-hint { transform: none; }
   }
   .pap-crest {
     width: 36px;
@@ -452,6 +483,8 @@ export function ProvincialAlarmPanel() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [viewer, setViewer] = useState<{ requestId: string; index: number } | null>(null);
+  /** The incident whose full report is open, if any. */
+  const [openReportId, setOpenReportId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -523,7 +556,14 @@ export function ProvincialAlarmPanel() {
           <div className={`pap-card${request.alarmLevel ? ` level-${request.alarmLevel}` : ""}`} key={request.id}>
             <div>
               <div className="pap-top">
-                <div className="pap-identity">
+                {/* The identity block is what an officer reads first, so it is
+                    what they press to read the rest of the report. */}
+                <button
+                  type="button"
+                  className="pap-identity"
+                  onClick={() => setOpenReportId(request.fireReportId)}
+                  aria-label={`Open the full report for ${request.referenceNumber}`}
+                >
                   <span className="pap-crest" aria-hidden="true">
                     <i className="fa-solid fa-fire" />
                   </span>
@@ -555,7 +595,10 @@ export function ProvincialAlarmPanel() {
                       </div>
                     )}
                   </div>
-                </div>
+                  <span className="pap-open-hint" aria-hidden="true">
+                    <i className="fa-solid fa-arrow-up-right-from-square" />
+                  </span>
+                </button>
                 <div className="pap-badges">
                   {request.forwardedAutomatically && (
                     <span className="pap-auto">
@@ -651,6 +694,13 @@ export function ProvincialAlarmPanel() {
           </div>
         ))}
       </div>
+
+      {openReportId && (
+        <ProvincialReportDetail
+          reportId={openReportId}
+          onClose={() => setOpenReportId(null)}
+        />
+      )}
 
       {viewer && (() => {
         const request = requests.find((item) => item.id === viewer.requestId);

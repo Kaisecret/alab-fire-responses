@@ -60,3 +60,32 @@ test("the escalations sit under the page heading, not above it", () => {
   assert.match(page, /pbfp-escalation-section/);
   assert.match(page, /Escalated to the province/);
 });
+
+test("a request card opens the full report it stands for", () => {
+  const panel = source("app/_components/provincial-alarm-panel.tsx");
+
+  /*
+   * The card carried a reference, a place and a caller's name and went no
+   * further: an officer deciding how wide to call for help could not see the
+   * ground, the time, or what the caller actually said without leaving the
+   * alarm behind.
+   */
+  assert.match(panel, /setOpenReportId\(request\.fireReportId\)/);
+  assert.match(panel, /<ProvincialReportDetail/);
+  // The thing they read is the thing they press.
+  assert.match(panel, /className="pap-identity"\s*\n\s*onClick=/);
+  assert.match(panel, /aria-label=\{`Open the full report for/);
+});
+
+test("the report shows the ground, not a pair of numbers", () => {
+  const detail = source("app/_components/provincial-report-detail.tsx");
+  const map = source("app/_components/provincial-incident-mini-map.tsx");
+
+  assert.match(detail, /<ProvincialIncidentMiniMap/);
+  assert.match(detail, /Tactical Ground Reconnaissance Map/);
+  // Coordinates stay, on the map itself, rather than standing in for it.
+  assert.match(map, /pmm-coords/);
+  assert.match(map, /tileLayer/);
+  // A map that cannot load says so instead of leaving an empty frame.
+  assert.match(map, /The map could not load/);
+});
