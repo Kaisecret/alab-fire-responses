@@ -8,3 +8,4 @@
 .vercel
 ~$*
 tmp/
+output/
