@@ -432,11 +432,27 @@ export async function declareAlarmLevel(input: {
     ],
   );
 
-  const summoned = await summonForAlarmLevel({
-    fireReportId: input.fireReportId,
-    alarmLevel: input.alarmLevel,
-    declaredByUserId: input.declaredByUserId,
-  });
+  /*
+   * A level that recorded itself but summoned nobody is worse than one that
+   * was refused: it cannot be declared again, so the province would be left
+   * holding an alarm that never called for help and no way to retry it. If the
+   * call fails, the level goes back and the declaration can be made again.
+   */
+  let summoned: AlarmSummonSummary[];
+  try {
+    summoned = await summonForAlarmLevel({
+      fireReportId: input.fireReportId,
+      alarmLevel: input.alarmLevel,
+      declaredByUserId: input.declaredByUserId,
+    });
+  } catch (error) {
+    await db.query(
+      `delete from public.incident_alarm_levels
+        where fire_report_id = $1 and alarm_level = $2`,
+      [input.fireReportId, input.alarmLevel],
+    ).catch(() => undefined);
+    throw error;
+  }
 
   await notifyAlarmDeclaration(input.fireReportId, input.alarmLevel);
 
@@ -536,6 +552,45 @@ async function summonForAlarmLevel(input: {
 
   if (candidates.length === 0) return [];
 
+  /*
+   * An assistance request hangs off an observer row, and only the two nearest
+   * municipalities are made observers when the incident is first dispatched. A
+   * third or fourth alarm reaches further than that, so the municipalities it
+   * names are enrolled as observers here before they can be asked. Without
+   * this the wider alarms were refused outright as unselected recipients.
+   */
+  const dispatch = await db.query<{ dispatchId: string }>(
+    `select id as "dispatchId"
+       from public.incident_dispatches
+      where fire_report_id = $1 and status = 'ACTIVE'
+      order by dispatched_at desc
+      limit 1`,
+    [input.fireReportId],
+  );
+  const dispatchId = dispatch.rows[0]?.dispatchId;
+  if (!dispatchId) return [];
+
+  for (const candidate of candidates) {
+    await db.query(
+      `insert into public.incident_municipal_observers (
+         fire_report_id, dispatch_id, origin_municipality_id, observer_municipality_id,
+         nearest_station_id, station_latitude_snapshot, station_longitude_snapshot,
+         distance_meters, status, selected_at
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,'ACTIVE',now())
+       on conflict (dispatch_id, observer_municipality_id) do nothing`,
+      [
+        input.fireReportId,
+        dispatchId,
+        origin.municipalityId,
+        candidate.municipalityId,
+        candidate.stationId,
+        candidate.latitude,
+        candidate.longitude,
+        candidate.distanceMeters,
+      ],
+    );
+  }
+
   let requests: Awaited<ReturnType<typeof createAssistanceRequests>> = [];
   try {
     requests = await createAssistanceRequests({
@@ -543,15 +598,28 @@ async function summonForAlarmLevel(input: {
       requesterMunicipalityId: origin.municipalityId,
       actorUserId: input.declaredByUserId,
       recipientMunicipalityIds: candidates.map((candidate) => candidate.municipalityId),
-      requestedFiretrucks: 0,
+      /*
+       * An alarm names a reach, not a shopping list: it asks each municipality
+       * for whatever it can spare. A request for nothing at all is refused, so
+       * one truck stands for that, and the receiving station answers with what
+       * it actually sends.
+       */
+      requestedFiretrucks: 1,
       requestedPersonnel: 0,
-      requestNote: `${ALARM_DOCTRINE[input.alarmLevel].label} declared by the province.`,
+      requestNote: `${ALARM_DOCTRINE[input.alarmLevel].label} declared by the province. Send what you can spare.`,
       allowProvincialReach: true,
     });
   } catch (error) {
-    // The alarm level stands even if the assistance requests could not be
-    // raised; the province is told rather than left believing help was called.
+    /*
+     * The alarm level stands even if the call for aid could not be raised, so
+     * the province has to be told which it was. An incident nobody has
+     * dispatched to has no mutual aid to offer yet, and that is worth saying
+     * plainly rather than reporting as a fault.
+     */
+    const reason = error instanceof Error ? error.message : "";
     console.error("Alarm summons failed", error);
+    if (reason === "INCIDENT_NOT_FOUND") throw new Error("ALARM_NEEDS_DISPATCH");
+    if (reason === "INCIDENT_NOT_ACTIVE") throw new Error("ALARM_INCIDENT_CLOSED");
     throw new Error("ALARM_SUMMONS_FAILED");
   }
 

@@ -101,6 +101,18 @@ export async function POST(request: NextRequest) {
     if (message === "INVALID_ALARM_LEVEL") {
       return NextResponse.json({ error: "Choose an alarm level from 2 to 4." }, { status: 400 });
     }
+    if (message === "ALARM_NEEDS_DISPATCH") {
+      return NextResponse.json(
+        { error: "No station has been dispatched to this incident yet, so there is nothing to reinforce." },
+        { status: 409 },
+      );
+    }
+    if (message === "ALARM_INCIDENT_CLOSED") {
+      return NextResponse.json(
+        { error: "That incident is already closed." },
+        { status: 409 },
+      );
+    }
     if (message === "ALARM_SUMMONS_FAILED") {
       // The level stands, but nobody was called: say so rather than let the
       // province believe mutual aid is on its way.
