@@ -48,6 +48,11 @@ export type ObserverIncidentDetail = {
   severityFactors: string[] | null;
   barangay: string | null;
   municipality: string;
+  /** The observing municipality's own nearest station, for the route to drive. */
+  stationName: string | null;
+  stationLatitude: number | null;
+  stationLongitude: number | null;
+  distanceMeters: number | null;
   accessScope: "OBSERVER";
 };
 
@@ -253,10 +258,17 @@ select fr.id,
        fr.severity_factors as "severityFactors",
        barangay.name as barangay,
        origin.name as municipality,
+       -- The observing municipality's own nearest station, so the map can draw
+       -- the road their crews would actually drive rather than the origin's.
+       station.station_name as "stationName",
+       observer.station_latitude_snapshot::float as "stationLatitude",
+       observer.station_longitude_snapshot::float as "stationLongitude",
+       observer.distance_meters::float as "distanceMeters",
        'OBSERVER'::text as "accessScope"
   from incident_municipal_observers observer
   join fire_reports fr on fr.id = observer.fire_report_id
   join municipalities origin on origin.id = observer.origin_municipality_id
+  left join municipal_bfp_stations station on station.id = observer.nearest_station_id
   left join barangays barangay on barangay.id = fr.barangay_id
  where fr.id = $1
    and observer.observer_municipality_id = $2

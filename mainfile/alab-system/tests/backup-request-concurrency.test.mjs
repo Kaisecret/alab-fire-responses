@@ -82,27 +82,37 @@ test("the insert guards itself rather than trusting a separate read", () => {
   assert.match(service, /BACKUP_ALREADY_REQUESTED/);
 });
 
-test("an unacknowledged request still rings after it has escalated", () => {
+test("the alarm stops once the request has gone to the province", () => {
   const alarm = source("app/_components/municipal-backup-alarm.tsx");
   const service = source("lib/incidents/backup-escalation.ts");
 
-  // Gating on PENDING_MUNICIPAL alone meant a request that auto-forwarded
-  // before the next 5s poll never rang at the station that raised it.
-  assert.match(alarm, /!request\.acknowledgedAt/);
-  assert.match(alarm, /request\.status === "FORWARDED_PROVINCIAL"/);
-  // ...and it has to be silenceable once it is showing.
+  /*
+   * The alarm is for a decision the municipality still has to make. Once the
+   * request is with the province that decision is behind them, and sounding it
+   * again only repeats what they already know: they raised it themselves. From
+   * then on it belongs on the incident as something to watch.
+   */
+  assert.match(alarm, /!request\.acknowledgedAt && request\.status === "PENDING_MUNICIPAL"/);
+  assert.doesNotMatch(alarm, /alreadyForwarded/);
+
+  // Acknowledgement still covers both states, so a request that was showing
+  // when it escalated can still be cleared.
   assert.match(
     service,
     /where id = \$1 and status in \('PENDING_MUNICIPAL','FORWARDED_PROVINCIAL'\)/,
   );
 });
 
-test("a forwarded request is not offered a second forward", () => {
-  const alarm = source("app/_components/municipal-backup-alarm.tsx");
+test("the municipality that asked is shown what came of it", () => {
+  const board = source("app/_components/incident-mutual-aid-board.tsx");
+  const detail = source("app/_components/municipal-incident-detail.tsx");
 
-  assert.match(alarm, /alreadyForwarded/);
-  assert.match(alarm, /\{!alreadyForwarded && \(/);
-  assert.match(alarm, /Already escalated to the province/);
+  // Replacing the alarm with a board: which alarm stands, who was called, and
+  // which of them are actually coming.
+  assert.match(detail, /<IncidentMutualAidBoard alarmStatus=\{incident\.alarmStatus\} \/>/);
+  assert.match(board, /declared by the province/);
+  assert.match(board, /ACCEPTED/);
+  assert.match(board, /REJECTED/);
 });
 
 test("photo uploads fail with an instruction rather than a raw timeout", () => {

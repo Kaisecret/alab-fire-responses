@@ -9,6 +9,7 @@ import {
   getObserverIncidentDetail,
   resolveMunicipalIncidentAccess,
 } from "../../../../../lib/intermunicipality/incident-access";
+import { getIncidentAlarmStatus } from "../../../../../lib/incidents/alarm-status";
 import { getFireReportPhotoUrl } from "../../../../../lib/supabase/server-storage";
 
 export const runtime = "nodejs";
@@ -53,13 +54,14 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     }
 
     if (accessScope === "OBSERVER") {
-      const [observerIncident, historyResult, coordination] = await Promise.all([
+      const [observerIncident, historyResult, coordination, alarmStatus] = await Promise.all([
         getObserverIncidentDetail(id, municipalityId).catch(() => null),
         database.query(
           "select next_status as status, null::text as message, created_at as \"createdAt\" from fire_report_status_history where fire_report_id = $1 order by created_at asc",
           [id],
         ).catch(() => ({ rows: [] })),
         getIncidentCoordinationContext(id, municipalityId, "OBSERVER").catch(() => ({ observers: [], assistanceRequests: [] })),
+        getIncidentAlarmStatus(id),
       ]);
 
       if (!observerIncident) {
@@ -73,6 +75,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
             accessScope: "OBSERVER",
             nearbyObservers: coordination.observers,
             assistanceRequests: coordination.assistanceRequests,
+            alarmStatus,
             history: historyResult.rows,
             photos: [],
             previousReports: [],
@@ -193,11 +196,12 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       ? database.query("select id, reference_number as \"referenceNumber\", status, submitted_at as \"submittedAt\" from fire_reports where resident_profile_id = $1 order by submitted_at desc limit 10", [incident.residentProfileId]).catch(() => ({ rows: [] }))
       : Promise.resolve({ rows: [] });
 
-    const [photoResult, historyResult, previousResult, coordination] = await Promise.all([
+    const [photoResult, historyResult, previousResult, coordination, alarmStatus] = await Promise.all([
       database.query<{ storage_key: string }>("select storage_key from fire_report_photos where fire_report_id = $1 order by uploaded_at asc", [id]).catch(() => ({ rows: [] })),
       database.query("select next_status as status, resident_message as message, created_at as \"createdAt\" from fire_report_status_history where fire_report_id = $1 order by created_at asc", [id]).catch(() => ({ rows: [] })),
       previousReports,
       getIncidentCoordinationContext(id, municipalityId, "ORIGIN").catch(() => ({ observers: [], assistanceRequests: [] })),
+      getIncidentAlarmStatus(id),
     ]);
 
     const photos = await Promise.all(
@@ -217,6 +221,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
           accessScope: "ORIGIN",
           nearbyObservers: coordination.observers,
           assistanceRequests: coordination.assistanceRequests,
+          alarmStatus,
           photos,
           history: historyResult.rows,
           previousReports: previousResult.rows,

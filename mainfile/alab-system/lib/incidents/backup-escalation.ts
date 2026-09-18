@@ -456,7 +456,7 @@ export async function declareAlarmLevel(input: {
     throw error;
   }
 
-  await notifyAlarmDeclaration(input.fireReportId, input.alarmLevel);
+  await notifyAlarmDeclaration(input.fireReportId, input.alarmLevel, summoned);
 
   return {
     alarmLevel: input.alarmLevel,
@@ -713,37 +713,116 @@ async function notifyProvince(request: BackupRequest): Promise<void> {
   }
 }
 
-async function notifyAlarmDeclaration(fireReportId: string, alarmLevel: number): Promise<void> {
+/**
+ * Tells each side what the declaration means for them.
+ *
+ * One notice to every municipal account saying "respond as directed" left the
+ * summoned municipalities to work out that it meant them, and the municipality
+ * that asked for help with nothing to show for the request they raised. The
+ * message now differs by who is reading it.
+ */
+async function notifyAlarmDeclaration(
+  fireReportId: string,
+  alarmLevel: number,
+  summoned: AlarmSummonSummary[],
+): Promise<void> {
   try {
     const db = getDatabase();
-    const report = await db.query<{ referenceNumber: string; municipalityName: string }>(
-      `select fr.reference_number as "referenceNumber", m.name as "municipalityName"
+    const report = await db.query<{
+      referenceNumber: string;
+      municipalityId: string;
+      municipalityName: string;
+      barangay: string | null;
+    }>(
+      `select fr.reference_number as "referenceNumber",
+              fr.municipality_id as "municipalityId",
+              m.name as "municipalityName",
+              b.name as barangay
          from public.fire_reports fr
          join public.municipalities m on m.id = fr.municipality_id
+         left join public.barangays b on b.id = fr.barangay_id
         where fr.id = $1`,
       [fireReportId],
     );
     if (report.rowCount === 0) return;
 
-    // The alarm level summons help, so every municipal account hears it.
-    const recipients = await db.query<{ userId: string }>(
-      `select id as "userId" from public.users
-        where role in ('MUNICIPAL_BFP','PROVINCIAL_BFP') and account_status = 'ACTIVE'`,
-    );
-    if (recipients.rowCount === 0) return;
+    const { referenceNumber, municipalityId, municipalityName, barangay } = report.rows[0];
+    const where = barangay ? `${barangay}, ${municipalityName}` : municipalityName;
+    const label = `${ordinal(alarmLevel)} alarm`;
 
-    const { referenceNumber, municipalityName } = report.rows[0];
-    await createAccountNotifications(db, {
-      recipientUserIds: recipients.rows.map((row) => row.userId),
-      eventType: "ALARM_DECLARED",
-      category: "RESPONSE",
-      title: `${ordinal(alarmLevel)} alarm declared`,
-      summary: `${referenceNumber} · ${municipalityName} · respond as directed`,
-      actionHref: "/municipal-bfp/active-incidents",
-      entityType: "FIRE_REPORT",
-      entityId: fireReportId,
-      dedupeKey: `alarm-declared:${fireReportId}:${alarmLevel}`,
-    });
+    const recipientsFor = async (targetMunicipalityId: string) => {
+      const result = await db.query<{ userId: string }>(
+        `select u.id as "userId"
+           from public.users u
+           join public.bfp_personnel_profiles p on p.user_id = u.id
+           join public.bfp_municipality_assignments a
+             on a.personnel_profile_id = p.id and a.status = 'ACTIVE'
+          where a.municipality_id = $1
+            and u.role = 'MUNICIPAL_BFP'
+            and u.account_status = 'ACTIVE'`,
+        [targetMunicipalityId],
+      );
+      return result.rows.map((row) => row.userId);
+    };
+
+    // The municipalities being called. They are told they are wanted, and where.
+    for (const municipality of summoned) {
+      const recipients = await recipientsFor(municipality.municipalityId);
+      if (recipients.length === 0) continue;
+      await createAccountNotifications(db, {
+        recipientUserIds: recipients,
+        eventType: "ALARM_DECLARED",
+        category: "RESPONSE",
+        title: `${label}: your municipality is called`,
+        summary: `${referenceNumber} · ${where} · open the incident for the location and the route`,
+        actionHref: `/municipal-bfp/active-incidents?incident=${fireReportId}`,
+        entityType: "FIRE_REPORT",
+        entityId: fireReportId,
+        dedupeKey: `alarm-summoned:${fireReportId}:${alarmLevel}:${municipality.municipalityId}`,
+      });
+    }
+
+    // The municipality that asked. They know they asked; what they need is who
+    // is coming, so the notice names them rather than repeating the alarm.
+    const originRecipients = await recipientsFor(municipalityId);
+    if (originRecipients.length > 0) {
+      const names = summoned.map((entry) => entry.municipalityName);
+      const who = names.length === 0
+        ? "No municipality was within reach"
+        : names.length <= 3
+          ? names.join(", ")
+          : `${names.slice(0, 2).join(", ")} and ${names.length - 2} more`;
+      await createAccountNotifications(db, {
+        recipientUserIds: originRecipients,
+        eventType: "ALARM_DECLARED",
+        category: "RESPONSE",
+        title: `${label} declared on your incident`,
+        summary: `${referenceNumber} · called: ${who}`,
+        actionHref: `/municipal-bfp/active-incidents?incident=${fireReportId}`,
+        entityType: "FIRE_REPORT",
+        entityId: fireReportId,
+        dedupeKey: `alarm-origin:${fireReportId}:${alarmLevel}`,
+      });
+    }
+
+    // The province keeps its own record of what it declared.
+    const provincial = await db.query<{ userId: string }>(
+      `select id as "userId" from public.users
+        where role = 'PROVINCIAL_BFP' and account_status = 'ACTIVE'`,
+    );
+    if (provincial.rows.length > 0) {
+      await createAccountNotifications(db, {
+        recipientUserIds: provincial.rows.map((row) => row.userId),
+        eventType: "ALARM_DECLARED",
+        category: "RESPONSE",
+        title: `${label} declared`,
+        summary: `${referenceNumber} · ${where} · ${summoned.length} municipalit${summoned.length === 1 ? "y" : "ies"} called`,
+        actionHref: "/provincial-bfp/assistance-requests",
+        entityType: "FIRE_REPORT",
+        entityId: fireReportId,
+        dedupeKey: `alarm-declared:${fireReportId}:${alarmLevel}`,
+      });
+    }
   } catch (error) {
     console.error("Alarm declaration notification failed", error);
   }

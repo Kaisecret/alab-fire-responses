@@ -9,6 +9,7 @@ import { MunicipalIncidentMap } from "./municipal-incident-map";
 import { canMunicipalResolveReport } from "../../lib/fire-reports/validation";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 import { IntermunicipalityCoordinationPanel } from "./intermunicipality-coordination-panel";
+import { IncidentMutualAidBoard, type IncidentAlarmStatus } from "./incident-mutual-aid-board";
 import type { NearbyObserver, AssistanceRequestSummary } from "../../lib/intermunicipality/types";
 
 type Incident = {
@@ -20,6 +21,7 @@ type Incident = {
   originMunicipality?: string;
   nearbyObservers?: NearbyObserver[];
   assistanceRequests?: AssistanceRequestSummary[];
+  alarmStatus?: IncidentAlarmStatus | null;
   fireType: string;
   description: string;
   landmark: string | null;
@@ -2138,6 +2140,11 @@ export function MunicipalIncidentDetail({
             )}
           </div>}
         </header>
+
+        {/* What the province declared, and who is actually coming. The
+            municipality that asked raised the request themselves, so this is
+            here to be read rather than to interrupt them. */}
+        <IncidentMutualAidBoard alarmStatus={incident.alarmStatus} />
 
         {/* Inter-municipality Live Coordination */}
         <IntermunicipalityCoordinationPanel

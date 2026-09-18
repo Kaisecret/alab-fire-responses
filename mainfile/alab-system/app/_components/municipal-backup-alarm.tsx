@@ -258,19 +258,15 @@ export function MunicipalBackupAlarm() {
   }, [load]);
 
   /*
-   * An unacknowledged request rings whether or not the grace period has run
-   * out. Gating on PENDING_MUNICIPAL alone meant a request that auto-forwarded
-   * before the next poll was silently escalated past the very station whose
-   * responder had called for help: the alarm never sounded, and the crew on
-   * scene appeared to have been ignored.
+   * The alarm is for a decision this municipality still has to make: forward
+   * the request, or answer it themselves. Once it has gone to the province
+   * that decision is behind them, and sounding a siren about a request they
+   * raised only tells them what they already know. From then on it is
+   * something to watch on the incident, not to be interrupted by.
    */
   const active = requests.find(
-    (request) =>
-      !request.acknowledgedAt &&
-      (request.status === "PENDING_MUNICIPAL" || request.status === "FORWARDED_PROVINCIAL"),
+    (request) => !request.acknowledgedAt && request.status === "PENDING_MUNICIPAL",
   );
-
-  const alreadyForwarded = active?.status === "FORWARDED_PROVINCIAL";
 
   useEffect(() => {
     if (!active) {
@@ -396,13 +392,11 @@ export function MunicipalBackupAlarm() {
               </div>
             )}
 
-            <div className={`mba-countdown${alreadyForwarded || secondsLeft === 0 ? " is-elapsed" : ""}`} role="status">
-              <i className={`fa-solid ${alreadyForwarded ? "fa-tower-broadcast" : "fa-clock"}`} />
-              {alreadyForwarded
-                ? "Already escalated to the province. Your crew still needs an answer."
-                : secondsLeft > 0
-                  ? `Forwards to the province in ${secondsLeft}s if not sent on`
-                  : "Forwarding to the province now"}
+            <div className={`mba-countdown${secondsLeft === 0 ? " is-elapsed" : ""}`} role="status">
+              <i className="fa-regular fa-clock" />
+              {secondsLeft > 0
+                ? `Forwards to the province in ${secondsLeft}s if not sent on`
+                : "Forwarding to the province now"}
             </div>
 
             {error && <div className="mba-err">{error}</div>}
@@ -417,18 +411,16 @@ export function MunicipalBackupAlarm() {
             >
               Acknowledge
             </button>
-            {!alreadyForwarded && (
-              <button
-                type="button"
-                className="mba-btn primary"
-                disabled={busy}
-                onClick={() => void act(active.id, "FORWARD")}
-                autoFocus
-              >
-                <i className="fa-solid fa-arrow-up-right-from-square" />
-                {busy ? "Working..." : "Forward to Provincial"}
-              </button>
-            )}
+            <button
+              type="button"
+              className="mba-btn primary"
+              disabled={busy}
+              onClick={() => void act(active.id, "FORWARD")}
+              autoFocus
+            >
+              <i className="fa-solid fa-arrow-up-right-from-square" />
+              {busy ? "Working..." : "Forward to Provincial"}
+            </button>
           </div>
         </div>
       </div>

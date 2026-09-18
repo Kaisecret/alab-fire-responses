@@ -116,6 +116,7 @@ test('observer API does not return resident history notes and maps ended access 
     '../../../../../lib/auth/local-ui-preview': { isLocalUiPreviewEnabled: () => false },
     '../../../../../lib/auth/session': { bfpSessionCookieName: () => 'session', verifyBfpSession: () => ({ userId: actor, role: 'MUNICIPAL_BFP' }) },
     '../../../../../lib/db': { getDatabase: () => ({ query: async sql => { queries.push(sql); return { rows: [] }; } }) },
+    '../../../../../lib/incidents/alarm-status': { getIncidentAlarmStatus: async () => ({ level: null, levelLabel: null, reachSummary: null, declaredAt: null, summoned: [] }) },
     '../../../../../lib/intermunicipality/incident-access': {
       resolveMunicipalIncidentAccess: async () => { if (ended) throw Error('OBSERVER_ACCESS_ENDED'); return 'OBSERVER'; },
       getObserverIncidentDetail: async () => ({ id: reportId }),

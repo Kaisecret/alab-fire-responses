@@ -33,6 +33,7 @@ test('open incident detail polls visible tabs, retains data on refresh failure, 
       '../../lib/fire-reports/validation': { canMunicipalResolveReport: () => false },
       '../../lib/fire-reports/types': { fireReportStatusLabels: {} },
       './intermunicipality-coordination-panel': { IntermunicipalityCoordinationPanel() {} },
+      './incident-mutual-aid-board': { IncidentMutualAidBoard() {} },
     });
     module.MunicipalIncidentDetail({ incidentId: 'incident-a' });
     cleanup = effects.map(effect => effect()).filter(fn => typeof fn === 'function');
