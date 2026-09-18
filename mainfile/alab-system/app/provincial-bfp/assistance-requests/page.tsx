@@ -162,7 +162,7 @@ const pageStyles = `
   .pbfp-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
   @media (max-width: 1024px) {
@@ -173,38 +173,42 @@ const pageStyles = `
   }
 
   .pbfp-kpi-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 14px;
-    padding: 1.05rem 1.25rem;
+    padding: 0.85rem 1.1rem;
     display: flex;
     align-items: center;
-    gap: 1rem;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    gap: 0.85rem;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.95);
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
 
   .pbfp-kpi-card:hover {
     transform: translateY(-2px);
-    border-color: #CBD5E1;
-    box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.12);
+    border-color: rgba(255, 255, 255, 1);
+    box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.1);
   }
 
   .pbfp-kpi-badge {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 1rem;
     flex-shrink: 0;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
-  .pbfp-kpi-badge.blue { background: #EFF6FF; border: 1px solid #DBEAFE; color: #2563EB; }
-  .pbfp-kpi-badge.amber { background: #FFFBEB; border: 1px solid #FDE68A; color: #D97706; }
-  .pbfp-kpi-badge.emerald { background: #ECFDF5; border: 1px solid #D1FAE5; color: #059669; }
-  .pbfp-kpi-badge.slate { background: #F1F5F9; border: 1px solid #E2E8F0; color: #475569; }
+  .pbfp-kpi-badge.blue { background: rgba(239, 246, 255, 0.85); border: 1px solid rgba(219, 234, 254, 0.9); color: #2563EB; }
+  .pbfp-kpi-badge.amber { background: rgba(255, 247, 237, 0.85); border: 1px solid rgba(254, 215, 170, 0.9); color: #C2410C; }
+  .pbfp-kpi-badge.emerald { background: rgba(236, 253, 245, 0.85); border: 1px solid rgba(209, 250, 229, 0.9); color: #059669; }
+  .pbfp-kpi-badge.slate { background: rgba(241, 245, 249, 0.85); border: 1px solid rgba(226, 232, 240, 0.9); color: #475569; }
 
   .pbfp-kpi-body {
     display: flex;
@@ -213,7 +217,7 @@ const pageStyles = `
   }
 
   .pbfp-kpi-lbl {
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     font-weight: 800;
     color: #64748B;
     text-transform: uppercase;
@@ -221,7 +225,7 @@ const pageStyles = `
   }
 
   .pbfp-kpi-val {
-    font-size: 1.45rem;
+    font-size: 1.35rem;
     font-weight: 850;
     color: #0F172A;
     line-height: 1.15;
@@ -229,7 +233,7 @@ const pageStyles = `
   }
 
   .pbfp-kpi-sub {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: #64748B;
     font-weight: 600;
     white-space: nowrap;
@@ -241,31 +245,33 @@ const pageStyles = `
   .pbfp-escalation-section {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
 
   .pbfp-escalation-head {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
 
   .pbfp-escalation-icon {
     display: grid;
     place-items: center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     flex-shrink: 0;
-    border-radius: 10px;
-    background: #FEF2F2;
-    border: 1px solid #FECACA;
+    border-radius: 9px;
+    background: rgba(254, 242, 242, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(254, 202, 202, 0.85);
     color: #DC2626;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .pbfp-escalation-head h2 {
     margin: 0;
-    font-size: 0.98rem;
+    font-size: 0.95rem;
     font-weight: 800;
     color: #0F172A;
     letter-spacing: -0.01em;
@@ -273,17 +279,19 @@ const pageStyles = `
 
   .pbfp-escalation-head p {
     margin: 2px 0 0;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     color: #64748B;
     font-weight: 500;
   }
 
   /* Unified Coordination Panel */
   .pbfp-aid-panel {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05), inset 0 1px 1px rgba(255, 255, 255, 0.95);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -505,30 +513,34 @@ const pageStyles = `
     gap: 0.35rem;
     padding: 0.22rem 0.65rem;
     border-radius: 999px;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 800;
     letter-spacing: 0.02em;
     white-space: nowrap;
     text-transform: uppercase;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
-  .pbfp-status-pill.requested { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
-  .pbfp-status-pill.accepted { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
-  .pbfp-status-pill.partially_accepted { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
-  .pbfp-status-pill.rejected { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
-  .pbfp-status-pill.cancelled { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
-  .pbfp-status-pill.completed { background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; }
+  .pbfp-status-pill.requested { background: rgba(255, 247, 237, 0.9); color: #C2410C; border: 1px solid rgba(254, 215, 170, 0.9); }
+  .pbfp-status-pill.accepted { background: rgba(236, 253, 245, 0.9); color: #065F46; border: 1px solid rgba(167, 243, 207, 0.9); }
+  .pbfp-status-pill.partially_accepted { background: rgba(239, 246, 255, 0.9); color: #1E40AF; border: 1px solid rgba(191, 219, 254, 0.9); }
+  .pbfp-status-pill.rejected { background: rgba(254, 242, 242, 0.9); color: #991B1B; border: 1px solid rgba(254, 202, 202, 0.9); }
+  .pbfp-status-pill.cancelled { background: rgba(241, 245, 249, 0.9); color: #475569; border: 1px solid rgba(203, 213, 225, 0.9); }
+  .pbfp-status-pill.completed { background: rgba(243, 244, 246, 0.9); color: #374151; border: 1px solid rgba(209, 213, 219, 0.9); }
 
   .pbfp-btn-inspect {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.35rem 0.7rem;
-    background: #F1F5F9;
-    border: 1px solid #CBD5E1;
+    padding: 0.32rem 0.65rem;
+    background: rgba(241, 245, 249, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(203, 213, 225, 0.9);
     border-radius: 6px;
     color: #334155;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 750;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -543,28 +555,30 @@ const pageStyles = `
   /* Compact Cards Grid View */
   .pbfp-aid-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 0.85rem;
-    padding: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 0.75rem;
+    padding: 0.85rem;
   }
 
   .pbfp-aid-grid-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 0.95rem 1.15rem;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    border-radius: 14px;
+    padding: 0.85rem 1.05rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 0.75rem;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    gap: 0.65rem;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03), inset 0 1px 1px rgba(255, 255, 255, 0.95);
     transition: all 0.16s ease;
   }
 
   .pbfp-aid-grid-card:hover {
     transform: translateY(-2px);
-    border-color: #CBD5E1;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    border-color: rgba(255, 255, 255, 1);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
   }
 
   .pbfp-aid-grid-card.highlighted {
