@@ -89,9 +89,9 @@ function toReportSummary(
       avgResponseMinutes: summary.timingMetrics.avgResponseMinutes,
       avgArrivalMinutes: null,
       avgResolutionMinutes: summary.timingMetrics.avgResolutionMinutes ?? null,
-      responseRecordsCount: summary.timingMetrics.responseRecordsCount ?? 0,
+      responseRecordsCount: (summary.timingMetrics as { responseRecordsCount?: number })?.responseRecordsCount ?? 0,
       arrivalRecordsCount: 0,
-      resolutionRecordsCount: summary.timingMetrics.resolutionRecordsCount ?? 0,
+      resolutionRecordsCount: (summary.timingMetrics as { resolutionRecordsCount?: number })?.resolutionRecordsCount ?? 0,
     },
     byBarangay: summary.byMunicipality.map((row) => ({
       barangayId: row.municipalityId,

@@ -839,9 +839,6 @@ function AssistanceRequestsContent() {
                   Live (5s)
                 </span>
               </h1>
-              <p>
-                Provincial real-time situational oversight of mutual apparatus dispatch, tanker reinforcements, and resource transfers across Antique.
-              </p>
             </div>
           </div>
 
@@ -927,7 +924,6 @@ function AssistanceRequestsContent() {
             </div>
             <div>
               <h2 id="pbfp-escalation-heading">Escalated to the province</h2>
-              <p>Backup a municipality could not absorb alone. Raise the alarm to widen the call.</p>
             </div>
           </div>
           <ProvincialAlarmPanel />

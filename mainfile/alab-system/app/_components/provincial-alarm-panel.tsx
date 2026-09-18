@@ -52,25 +52,25 @@ const styles = `
     .pap-wrap { grid-template-columns: 1fr; }
   }
 
-  /* Compact tactical escalation card */
+  /* High-end tactical escalation card */
   .pap-card {
     position: relative;
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 1rem 1.2rem;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    border-radius: 16px;
+    padding: 1.15rem 1.3rem;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 0.75rem;
+    gap: 0.85rem;
     overflow: hidden;
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
   .pap-card:hover {
     transform: translateY(-2px);
     border-color: #CBD5E1;
-    box-shadow: 0 6px 20px -4px rgba(15, 23, 42, 0.1);
+    box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.1);
   }
   .pap-card::before {
     content: '';
@@ -79,77 +79,82 @@ const styles = `
     width: 4px;
     background: #CBD5E1;
   }
-  .pap-card.level-2::before { background: linear-gradient(180deg, #F59E0B, #D97706); }
-  .pap-card.level-3::before { background: linear-gradient(180deg, #F97316, #EA580C); }
-  .pap-card.level-4::before { background: linear-gradient(180deg, #EF4444, #DC2626); }
+  .pap-card.level-2::before { background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%); }
+  .pap-card.level-3::before { background: linear-gradient(180deg, #F97316 0%, #EA580C 100%); }
+  .pap-card.level-4::before { background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%); }
 
   .pap-top {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 0.75rem;
+    gap: 0.85rem;
     flex-wrap: wrap;
   }
   .pap-identity {
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
+    gap: 0.85rem;
     min-width: 0;
   }
   .pap-crest {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
     display: grid;
     place-items: center;
     flex-shrink: 0;
-    background: #FEF2F2;
+    background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
     color: #DC2626;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     border: 1px solid #FECACA;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.12);
   }
   .pap-ref {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.85rem;
-    font-weight: 800;
+    font-size: 0.88rem;
+    font-weight: 850;
     color: #0F172A;
     letter-spacing: -0.01em;
   }
   .pap-where {
-    font-size: 0.82rem;
-    font-weight: 750;
+    font-size: 0.84rem;
+    font-weight: 800;
     color: #1E293B;
     margin-top: 1px;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
   }
   .pap-who {
-    font-size: 0.73rem;
+    font-size: 0.74rem;
     color: #64748B;
-    margin-top: 1px;
+    margin-top: 2px;
+    font-weight: 500;
   }
 
   .pap-asks {
     display: flex;
-    gap: 0.35rem;
+    gap: 0.4rem;
     flex-wrap: wrap;
-    margin-top: 0.45rem;
+    margin-top: 0.5rem;
   }
   .pap-ask {
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    padding: 0.2rem 0.5rem;
+    gap: 0.35rem;
+    padding: 0.22rem 0.55rem;
     border-radius: 6px;
-    background: #F8FAFC;
+    background: #F1F5F9;
     border: 1px solid #E2E8F0;
     font-size: 0.72rem;
-    font-weight: 700;
+    font-weight: 750;
     color: #334155;
   }
-  .pap-ask i { color: #64748B; font-size: 0.68rem; }
+  .pap-ask i { font-size: 0.7rem; color: #64748B; }
 
   .pap-badges {
     display: flex;
-    gap: 0.35rem;
+    gap: 0.4rem;
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
@@ -158,13 +163,13 @@ const styles = `
   .pap-auto {
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    font-size: 0.65rem;
+    gap: 0.35rem;
+    font-size: 0.68rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 0.22rem 0.55rem;
-    border-radius: 6px;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
     background: #FFF7ED;
     border: 1px solid #FED7AA;
     color: #9A3412;
@@ -173,25 +178,26 @@ const styles = `
   .pap-current {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    font-size: 0.68rem;
+    gap: 0.4rem;
+    font-size: 0.72rem;
     font-weight: 800;
-    padding: 0.25rem 0.6rem;
-    border-radius: 6px;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
     border: 1px solid;
     white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
   .pap-current.level-2 { background: #FFFBEB; border-color: #FDE68A; color: #B45309; }
   .pap-current.level-3 { background: #FFF7ED; border-color: #FED7AA; color: #C2410C; }
   .pap-current.level-4 { background: #FEF2F2; border-color: #FECACA; color: #B91C1C; }
 
   .pap-reason {
-    margin-top: 0.4rem;
+    margin-top: 0.5rem;
     border-left: 3px solid #CBD5E1;
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
     border-radius: 8px;
-    padding: 0.5rem 0.7rem;
+    padding: 0.55rem 0.75rem;
     font-size: 0.78rem;
     color: #334155;
     line-height: 1.45;
@@ -201,23 +207,23 @@ const styles = `
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    font-size: 0.65rem;
+    font-size: 0.66rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #475569;
-    margin: 0.5rem 0 0.35rem;
+    margin: 0.6rem 0 0.4rem;
   }
   .pap-photos {
     display: flex;
-    gap: 0.45rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
   }
   .pap-photo {
     position: relative;
-    width: 62px;
-    height: 62px;
-    border-radius: 8px;
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
     overflow: hidden;
     border: 1px solid #E2E8F0;
     background: #F1F5F9;
@@ -226,6 +232,16 @@ const styles = `
     transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
   }
   .pap-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pap-photo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F8FAFC;
+    color: #94A3B8;
+    font-size: 1.1rem;
+  }
   .pap-photo::after {
     content: '\\f00e';
     font-family: 'Font Awesome 6 Free';
@@ -237,54 +253,56 @@ const styles = `
     color: #FFFFFF;
     background: rgba(15, 23, 42, 0.45);
     opacity: 0;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     transition: opacity 0.16s ease;
   }
-  .pap-photo:hover { transform: translateY(-1px); border-color: #CBD5E1; box-shadow: 0 4px 10px rgba(15,23,42,0.12); }
+  .pap-photo:hover { transform: translateY(-2px); border-color: #CBD5E1; box-shadow: 0 4px 12px rgba(15,23,42,0.14); }
   .pap-photo:hover::after, .pap-photo:focus-visible::after { opacity: 1; }
   .pap-photo:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
 
   .pap-declare {
-    margin-top: 0.5rem;
-    padding-top: 0.65rem;
+    margin-top: 0.65rem;
+    padding-top: 0.75rem;
     border-top: 1px solid #F1F5F9;
   }
   .pap-label {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 0.66rem;
+    font-size: 0.68rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #64748B;
-    margin-bottom: 0.45rem;
+    color: #475569;
+    margin-bottom: 0.55rem;
   }
-  /* Horizontal compact 3-rung ladder */
+
+  /* 3-column tactical ladder */
   .pap-levels {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.4rem;
+    gap: 0.55rem;
   }
-  @media (max-width: 500px) {
+  @media (max-width: 600px) {
     .pap-levels { grid-template-columns: 1fr; }
   }
 
   .pap-level {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
+    justify-content: space-between;
+    gap: 0.45rem;
     width: 100%;
     text-align: left;
-    padding: 0.45rem 0.6rem;
-    border-radius: 8px;
-    border: 1px solid #E2E8F0;
+    padding: 0.65rem 0.8rem;
+    border-radius: 12px;
+    border: 1.5px solid #E2E8F0;
     background: #FFFFFF;
     color: #334155;
     cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
   }
   .pap-level-top-row {
     display: flex;
@@ -294,63 +312,70 @@ const styles = `
     gap: 0.35rem;
   }
   .pap-level-ord {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.1rem 0.35rem;
-    border-radius: 5px;
-    background: #F1F5F9;
-    color: #334155;
-    font-size: 0.68rem;
-    font-weight: 800;
-    line-height: 1.2;
-    transition: background 0.15s ease, color 0.15s ease;
+    font-size: 0.78rem;
+    font-weight: 850;
+    color: #0F172A;
+    letter-spacing: -0.01em;
   }
   .pap-level-who {
-    font-size: 0.69rem;
-    font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 550;
     color: #64748B;
-    line-height: 1.25;
-    white-space: normal;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    line-height: 1.35;
   }
   .pap-level-go {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     color: #94A3B8;
     flex-shrink: 0;
-    transition: color 0.15s ease, transform 0.15s ease;
+    transition: transform 0.15s ease, color 0.15s ease;
   }
+
+  /* Standing level styling */
+  .pap-level.standing {
+    background: linear-gradient(145deg, #FFFDF5 0%, #FEF9C3 100%);
+    border-color: #FACC15;
+    box-shadow: 0 2px 8px rgba(234, 179, 8, 0.12);
+  }
+  .pap-level.standing .pap-level-ord {
+    color: #854D0E;
+  }
+  .pap-level.standing .pap-level-who {
+    color: #713F12;
+    font-weight: 600;
+  }
+
+  /* Actionable hover */
   .pap-level:hover:not(:disabled) {
     border-color: #DC2626;
     background: #FFFDFD;
-    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.12);
-    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.14);
+    transform: translateY(-2px);
   }
-  .pap-level:hover:not(:disabled) .pap-level-ord { background: #FEE2E2; color: #B91C1C; }
+  .pap-level:hover:not(:disabled) .pap-level-ord { color: #DC2626; }
   .pap-level:hover:not(:disabled) .pap-level-who { color: #0F172A; }
   .pap-level:hover:not(:disabled) .pap-level-go { color: #DC2626; transform: translateX(2px); }
 
   .pap-level:disabled {
-    opacity: 0.7;
     cursor: default;
+  }
+  .pap-level:disabled:not(.standing) {
+    opacity: 0.6;
     background: #F8FAFC;
     border-color: #E2E8F0;
   }
   .pap-level:disabled .pap-level-go { visibility: hidden; }
   .pap-level:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
+
   .pap-level-done {
     font-size: 0.62rem;
-    font-weight: 800;
+    font-weight: 850;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #059669;
-    background: #ECFDF5;
+    color: #065F46;
+    background: #D1FAE5;
     border: 1px solid #A7F3D0;
-    padding: 0.08rem 0.35rem;
-    border-radius: 4px;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
     flex-shrink: 0;
   }
 
@@ -487,10 +512,14 @@ export function ProvincialAlarmPanel() {
                   <div style={{ minWidth: 0 }}>
                     <div className="pap-ref">{request.referenceNumber}</div>
                     <div className="pap-where">
+                      <i className="fa-solid fa-location-dot" style={{ color: '#DC2626', fontSize: '0.78rem' }} />
                       {request.municipalityName}
                       {request.barangay ? ` · ${request.barangay}` : ""}
                     </div>
-                    <div className="pap-who">Requested by {request.requestedByName}</div>
+                    <div className="pap-who">
+                      <i className="fa-solid fa-user-shield" style={{ marginRight: '0.25rem', color: '#94A3B8' }} />
+                      Requested by {request.requestedByName}
+                    </div>
                     {(request.requestedFiretrucks > 0 || request.requestedPersonnel > 0) && (
                       <div className="pap-asks">
                         {request.requestedFiretrucks > 0 && (
@@ -534,14 +563,24 @@ export function ProvincialAlarmPanel() {
                   <div className="pap-photos">
                     {request.photos.map((photo, index) => (
                       <button
-                        key={photo}
+                        key={photo || index}
                         type="button"
                         className="pap-photo"
                         onClick={() => setViewer({ requestId: request.id, index })}
                         title="View photo"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={photo} alt={`Scene photograph ${index + 1} from the responder`} />
+                        {photo ? (
+                          <img
+                            src={photo}
+                            alt={`Scene photograph ${index + 1} from responder`}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                        <div className="pap-photo-placeholder">
+                          <i className="fa-solid fa-camera" />
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -564,7 +603,7 @@ export function ProvincialAlarmPanel() {
                     <button
                       key={entry.level}
                       type="button"
-                      className="pap-level"
+                      className={`pap-level ${isCurrent ? 'standing' : ''}`}
                       disabled={busyId === request.id || passed}
                       onClick={() => void declare(request, entry.level)}
                       title={entry.summons}
@@ -572,7 +611,7 @@ export function ProvincialAlarmPanel() {
                       <div className="pap-level-top-row">
                         <span className="pap-level-ord">{entry.label} Alarm</span>
                         {passed ? (
-                          <span className="pap-level-done">{isCurrent ? "Standing" : "Declared"}</span>
+                          <span className="pap-level-done">{isCurrent ? "STANDING" : "DECLARED"}</span>
                         ) : busyId === request.id ? (
                           <i className="fa-solid fa-circle-notch fa-spin pap-level-go" />
                         ) : (
