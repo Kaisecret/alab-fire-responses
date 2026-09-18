@@ -42,6 +42,13 @@ export type CreateAssistanceRequestsInput = {
   requestedFiretrucks: number;
   requestedPersonnel: number;
   requestNote?: string | null;
+  /**
+   * A municipal officer may ask two neighbours at most, which keeps one station
+   * from calling the province out on its own judgement. A provincial alarm is a
+   * different authority: the doctrine decides the reach, so the cap does not
+   * apply to it.
+   */
+  allowProvincialReach?: boolean;
 };
 
 export type TransitionAssistanceRequestInput = {
@@ -63,7 +70,8 @@ export async function createAssistanceRequests(
 
   const rawRecipients = Array.isArray(input.recipientMunicipalityIds) ? input.recipientMunicipalityIds : [];
   const recipientMunicipalityIds = [...new Set(rawRecipients.filter(isValidUuid))];
-  if (recipientMunicipalityIds.length === 0 || recipientMunicipalityIds.length > 2) {
+  const recipientLimit = input.allowProvincialReach === true ? 100 : 2;
+  if (recipientMunicipalityIds.length === 0 || recipientMunicipalityIds.length > recipientLimit) {
     throw new Error("INVALID_ASSISTANCE_INPUT");
   }
 

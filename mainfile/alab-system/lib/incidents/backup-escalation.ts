@@ -1,8 +1,15 @@
 import "server-only";
 
 import { getDatabase } from "../db";
+import { createAssistanceRequests } from "../intermunicipality/assistance";
+import type { StationCandidate } from "../intermunicipality/types";
 import { createAccountNotifications } from "../notifications/service";
 import { getFireReportPhotoUrl, uploadBackupRequestPhoto } from "../supabase/server-storage";
+import {
+  ALARM_DOCTRINE,
+  isDeclarableAlarmLevel,
+  resolveAlarmSummons,
+} from "./alarm-doctrine";
 
 /**
  * Backup escalation.
@@ -393,8 +400,10 @@ export async function declareAlarmLevel(input: {
   declaredByUserId: string;
   backupRequestId?: string | null;
   note?: string | null;
-}): Promise<{ alarmLevel: number; declaredAt: string }> {
-  if (!Number.isInteger(input.alarmLevel) || input.alarmLevel < 1 || input.alarmLevel > 5) {
+}): Promise<{ alarmLevel: number; declaredAt: string; summoned: AlarmSummonSummary[] }> {
+  // The first alarm is raised by the report itself and the fifth belongs to
+  // Region VI, so neither is a level the province declares here.
+  if (!isDeclarableAlarmLevel(input.alarmLevel)) {
     throw new Error("INVALID_ALARM_LEVEL");
   }
 
@@ -423,9 +432,154 @@ export async function declareAlarmLevel(input: {
     ],
   );
 
+  const summoned = await summonForAlarmLevel({
+    fireReportId: input.fireReportId,
+    alarmLevel: input.alarmLevel,
+    declaredByUserId: input.declaredByUserId,
+  });
+
   await notifyAlarmDeclaration(input.fireReportId, input.alarmLevel);
 
-  return { alarmLevel: input.alarmLevel, declaredAt: inserted.rows[0].declaredAt };
+  return {
+    alarmLevel: input.alarmLevel,
+    declaredAt: inserted.rows[0].declaredAt,
+    summoned,
+  };
+}
+
+export type AlarmSummonSummary = {
+  municipalityId: string;
+  municipalityName: string;
+  distanceMeters: number;
+};
+
+/**
+ * Calls the municipalities a level reaches, and records who was called.
+ *
+ * Declaring an alarm used to write a number and stop there, so a second alarm
+ * summoned nobody: the level said help was needed and no help was asked for.
+ * The doctrine decides the reach from where the fire actually is, and each
+ * municipality it names is asked through the ordinary assistance request, which
+ * they may still accept or decline. Nobody is asked twice for the same fire.
+ */
+async function summonForAlarmLevel(input: {
+  fireReportId: string;
+  alarmLevel: number;
+  declaredByUserId: string;
+}): Promise<AlarmSummonSummary[]> {
+  const db = getDatabase();
+
+  const incident = await db.query<{
+    municipalityId: string;
+    latitude: number | null;
+    longitude: number | null;
+  }>(
+    `select municipality_id as "municipalityId",
+            latitude::float as latitude,
+            longitude::float as longitude
+       from public.fire_reports
+      where id = $1`,
+    [input.fireReportId],
+  );
+
+  const origin = incident.rows[0];
+  if (!origin || origin.latitude === null || origin.longitude === null) return [];
+  if (!isDeclarableAlarmLevel(input.alarmLevel)) return [];
+
+  // Active stations of every municipality that has someone to send.
+  const stations = await db.query<StationCandidate>(
+    `select station.id as "stationId",
+            station.station_name as "stationName",
+            station.municipality_id as "municipalityId",
+            municipality.name as "municipalityName",
+            station.latitude::float as latitude,
+            station.longitude::float as longitude
+       from public.municipal_bfp_stations station
+       join public.municipalities municipality on municipality.id = station.municipality_id
+      where station.status = 'ACTIVE'
+        and station.municipality_id <> $1
+        and exists (
+          select 1
+            from public.users u
+            join public.bfp_personnel_profiles p on p.user_id = u.id
+            join public.bfp_municipality_assignments a
+              on a.personnel_profile_id = p.id and a.status = 'ACTIVE'
+           where a.municipality_id = station.municipality_id
+             and u.role = 'MUNICIPAL_BFP'
+             and u.account_status = 'ACTIVE'
+        )`,
+    [origin.municipalityId],
+  );
+
+  const alreadySummoned = await db.query<{ municipalityId: string }>(
+    `select summoned_municipality_id as "municipalityId"
+       from public.incident_alarm_summons
+      where fire_report_id = $1 and summoned_municipality_id is not null`,
+    [input.fireReportId],
+  );
+
+  let candidates;
+  try {
+    candidates = resolveAlarmSummons({
+      level: input.alarmLevel,
+      latitude: origin.latitude,
+      longitude: origin.longitude,
+      originMunicipalityId: origin.municipalityId,
+      stations: stations.rows,
+      alreadySummonedMunicipalityIds: alreadySummoned.rows.map((row) => row.municipalityId),
+    });
+  } catch {
+    // A fire without usable coordinates still records its level; it simply
+    // cannot have neighbours chosen for it by distance.
+    return [];
+  }
+
+  if (candidates.length === 0) return [];
+
+  let requests: Awaited<ReturnType<typeof createAssistanceRequests>> = [];
+  try {
+    requests = await createAssistanceRequests({
+      fireReportId: input.fireReportId,
+      requesterMunicipalityId: origin.municipalityId,
+      actorUserId: input.declaredByUserId,
+      recipientMunicipalityIds: candidates.map((candidate) => candidate.municipalityId),
+      requestedFiretrucks: 0,
+      requestedPersonnel: 0,
+      requestNote: `${ALARM_DOCTRINE[input.alarmLevel].label} declared by the province.`,
+      allowProvincialReach: true,
+    });
+  } catch (error) {
+    // The alarm level stands even if the assistance requests could not be
+    // raised; the province is told rather than left believing help was called.
+    console.error("Alarm summons failed", error);
+    throw new Error("ALARM_SUMMONS_FAILED");
+  }
+
+  const requestByMunicipality = new Map(
+    requests.map((request) => [request.recipientMunicipalityId, request.id]),
+  );
+
+  for (const candidate of candidates) {
+    await db.query(
+      `insert into public.incident_alarm_summons
+         (fire_report_id, alarm_level, summoned_municipality_id, assistance_request_id, distance_meters)
+       values ($1, $2, $3, $4, $5)
+       on conflict (fire_report_id, summoned_municipality_id) do nothing`,
+      [
+        input.fireReportId,
+        input.alarmLevel,
+        candidate.municipalityId,
+        requestByMunicipality.get(candidate.municipalityId) ?? null,
+        Math.round(candidate.distanceMeters),
+      ],
+    );
+  }
+
+  return candidates.map((candidate) => ({
+    municipalityId: candidate.municipalityId,
+    municipalityName: candidate.municipalityName,
+    distanceMeters: Math.round(candidate.distanceMeters),
+  }));
 }
 
 async function notifyMunicipality(request: BackupRequest): Promise<void> {

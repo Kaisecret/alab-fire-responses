@@ -23,7 +23,16 @@ interface BackupRequest {
 }
 
 const POLL_INTERVAL_MS = 5_000;
-const ALARM_LEVELS = [1, 2, 3, 4, 5];
+/*
+ * The province declares the second through the fourth. The first is the
+ * municipality's own response, raised by the report itself, and the fifth
+ * belongs to Region VI, which is outside this system.
+ */
+const DECLARABLE_LEVELS: Array<{ level: number; label: string; summons: string }> = [
+  { level: 2, label: "2nd", summons: "The municipality nearest the fire" },
+  { level: 3, label: "3rd", summons: "Every municipality within 25 km" },
+  { level: 4, label: "4th", summons: "Every municipality in the province" },
+];
 
 const ORDINALS: Record<number, string> = {
   1: "1st",
@@ -172,9 +181,13 @@ const styles = `
     color: #475569;
     margin-bottom: 0.5rem;
   }
-  .pba-levels { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .pba-levels { display: flex; flex-direction: column; gap: 0.4rem; }
+  /* Each level says who it calls, because that is the decision being made. */
   .pba-level {
-    padding: 0.5rem 0.95rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.55rem 0.8rem;
     border-radius: 8px;
     border: 1px solid #CBD5E1;
     background: #FFFFFF;
@@ -182,8 +195,12 @@ const styles = `
     font-size: 0.82rem;
     font-weight: 800;
     cursor: pointer;
+    text-align: left;
     transition: all 0.15s ease;
   }
+  .pba-level-ord { flex-shrink: 0; }
+  .pba-level-who { font-size: 0.72rem; font-weight: 600; color: #64748B; }
+  .pba-level:hover:not(:disabled) .pba-level-who { color: #991B1B; }
   .pba-level:hover:not(:disabled) { border-color: #DC2626; color: #991B1B; background: #FEF2F2; }
   .pba-level:disabled { opacity: 0.45; cursor: not-allowed; }
   .pba-level:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
@@ -620,16 +637,18 @@ export function ProvincialBackupAlarm() {
                 {active.alarmLevel ? "Raise the alarm to" : "Declare an alarm level"}
               </span>
               <div className="pba-levels">
-                {ALARM_LEVELS.map((level) => (
+                {DECLARABLE_LEVELS.map((entry) => (
                   <button
-                    key={level}
+                    key={entry.level}
                     type="button"
                     className="pba-level"
                     // A level only ever goes up: the fire does not get smaller.
-                    disabled={busy || level <= (active.alarmLevel ?? 0)}
-                    onClick={() => void declare(level)}
+                    disabled={busy || entry.level <= (active.alarmLevel ?? 0)}
+                    onClick={() => void declare(entry.level)}
+                    title={entry.summons}
                   >
-                    {ORDINALS[level]}
+                    <span className="pba-level-ord">{entry.label}</span>
+                    <span className="pba-level-who">{entry.summons}</span>
                   </button>
                 ))}
               </div>

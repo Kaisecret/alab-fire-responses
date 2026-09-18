@@ -365,6 +365,23 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
     const recipientUserIds = recipientResult.rows.map((recipient) => recipient.user_id);
     const report = current.rows[0];
 
+    /*
+     * The first alarm is the municipality turning out to its own report. It is
+     * not a decision anyone makes, so it is recorded here rather than offered
+     * as a button: by the time a station is rolling, the first alarm is a fact.
+     * Higher levels are the province's to declare, and each widens the call for
+     * mutual aid.
+     */
+    await client.query(
+      `insert into incident_alarm_levels (fire_report_id, alarm_level, declared_by_user_id, note)
+       select $1, 1, $2, 'Raised automatically when the municipality dispatched.'
+        where not exists (
+          select 1 from incident_alarm_levels
+           where fire_report_id = $1 and alarm_level = 1
+        )`,
+      [input.fireReportId, input.actorUserId],
+    );
+
     const nearbySelection = await createNearbyIncidentObservers(client, {
       fireReportId: input.fireReportId,
       dispatchId,

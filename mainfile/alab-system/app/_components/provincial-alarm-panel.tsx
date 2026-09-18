@@ -22,7 +22,16 @@ interface BackupRequest {
 }
 
 const POLL_INTERVAL_MS = 10_000;
-const ALARM_LEVELS = [1, 2, 3, 4, 5];
+/*
+ * Only the second through the fourth are the province's to declare. The first
+ * is the municipality's own response to its own report, and the fifth is
+ * Region VI's, which this system does not reach.
+ */
+const DECLARABLE_LEVELS: Array<{ level: number; label: string; summons: string }> = [
+  { level: 2, label: "2nd", summons: "The municipality nearest the fire" },
+  { level: 3, label: "3rd", summons: "Every municipality within 25 km" },
+  { level: 4, label: "4th", summons: "Every municipality in the province" },
+];
 
 const ORDINALS: Record<number, string> = {
   1: "1st",
@@ -96,9 +105,15 @@ const styles = `
     color: #475569;
     margin-bottom: 0.5rem;
   }
-  .pap-levels { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .pap-levels { display: flex; flex-direction: column; gap: 0.4rem; }
+  .pap-level-ord { flex-shrink: 0; }
+  .pap-level-who { font-size: 0.72rem; font-weight: 600; color: #64748B; }
   .pap-level {
-    padding: 0.5rem 0.95rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    text-align: left;
+    padding: 0.5rem 0.8rem;
     border-radius: 8px;
     border: 1px solid #CBD5E1;
     background: #FFFFFF;
@@ -289,16 +304,18 @@ export function ProvincialAlarmPanel() {
                 {request.alarmLevel ? "Raise to" : "Declare alarm level"}
               </span>
               <div className="pap-levels">
-                {ALARM_LEVELS.map((level) => (
+                {DECLARABLE_LEVELS.map((entry) => (
                   <button
-                    key={level}
+                    key={entry.level}
                     type="button"
                     className="pap-level"
                     // A level only ever goes up: the fire does not get smaller.
-                    disabled={busyId === request.id || level <= (request.alarmLevel ?? 0)}
-                    onClick={() => void declare(request, level)}
+                    disabled={busyId === request.id || entry.level <= (request.alarmLevel ?? 0)}
+                    onClick={() => void declare(request, entry.level)}
+                    title={entry.summons}
                   >
-                    {ORDINALS[level]}
+                    <span className="pap-level-ord">{entry.label}</span>
+                    <span className="pap-level-who">{entry.summons}</span>
                   </button>
                 ))}
               </div>

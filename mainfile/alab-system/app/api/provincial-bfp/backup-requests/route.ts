@@ -10,6 +10,7 @@ import {
   forwardExpiredBackupRequests,
   listProvincialBackupRequests,
 } from "../../../../lib/incidents/backup-escalation";
+import { isDeclarableAlarmLevel } from "../../../../lib/incidents/alarm-doctrine";
 
 export const runtime = "nodejs";
 
@@ -75,8 +76,9 @@ export async function POST(request: NextRequest) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fireReportId)) {
     return NextResponse.json({ error: "A valid incident is required." }, { status: 400 });
   }
-  if (!Number.isInteger(alarmLevel) || alarmLevel < 1 || alarmLevel > 5) {
-    return NextResponse.json({ error: "Choose an alarm level from 1 to 5." }, { status: 400 });
+  // The first alarm is raised by the report itself; the fifth is Region VI's.
+  if (!isDeclarableAlarmLevel(alarmLevel)) {
+    return NextResponse.json({ error: "Choose an alarm level from 2 to 4." }, { status: 400 });
   }
 
   try {
@@ -97,7 +99,15 @@ export async function POST(request: NextRequest) {
       );
     }
     if (message === "INVALID_ALARM_LEVEL") {
-      return NextResponse.json({ error: "Choose an alarm level from 1 to 5." }, { status: 400 });
+      return NextResponse.json({ error: "Choose an alarm level from 2 to 4." }, { status: 400 });
+    }
+    if (message === "ALARM_SUMMONS_FAILED") {
+      // The level stands, but nobody was called: say so rather than let the
+      // province believe mutual aid is on its way.
+      return NextResponse.json(
+        { error: "The alarm was recorded, but the other municipalities could not be called. Retry." },
+        { status: 502 },
+      );
     }
     console.error("Alarm declaration failed", error);
     return NextResponse.json({ error: "Unable to declare that alarm level." }, { status: 500 });
