@@ -257,10 +257,20 @@ export function MunicipalBackupAlarm() {
     };
   }, [load]);
 
-  // Only an unacknowledged request still pending with this municipality rings.
+  /*
+   * An unacknowledged request rings whether or not the grace period has run
+   * out. Gating on PENDING_MUNICIPAL alone meant a request that auto-forwarded
+   * before the next poll was silently escalated past the very station whose
+   * responder had called for help: the alarm never sounded, and the crew on
+   * scene appeared to have been ignored.
+   */
   const active = requests.find(
-    (request) => request.status === "PENDING_MUNICIPAL" && !request.acknowledgedAt,
+    (request) =>
+      !request.acknowledgedAt &&
+      (request.status === "PENDING_MUNICIPAL" || request.status === "FORWARDED_PROVINCIAL"),
   );
+
+  const alreadyForwarded = active?.status === "FORWARDED_PROVINCIAL";
 
   useEffect(() => {
     if (!active) {
@@ -386,11 +396,13 @@ export function MunicipalBackupAlarm() {
               </div>
             )}
 
-            <div className={`mba-countdown${secondsLeft === 0 ? " is-elapsed" : ""}`} role="status">
-              <i className="fa-regular fa-clock" />
-              {secondsLeft > 0
-                ? `Forwards to the province in ${secondsLeft}s if not sent on`
-                : "Forwarding to the province now"}
+            <div className={`mba-countdown${alreadyForwarded || secondsLeft === 0 ? " is-elapsed" : ""}`} role="status">
+              <i className={`fa-solid ${alreadyForwarded ? "fa-tower-broadcast" : "fa-clock"}`} />
+              {alreadyForwarded
+                ? "Already escalated to the province. Your crew still needs an answer."
+                : secondsLeft > 0
+                  ? `Forwards to the province in ${secondsLeft}s if not sent on`
+                  : "Forwarding to the province now"}
             </div>
 
             {error && <div className="mba-err">{error}</div>}
@@ -405,16 +417,18 @@ export function MunicipalBackupAlarm() {
             >
               Acknowledge
             </button>
-            <button
-              type="button"
-              className="mba-btn primary"
-              disabled={busy}
-              onClick={() => void act(active.id, "FORWARD")}
-              autoFocus
-            >
-              <i className="fa-solid fa-arrow-up-right-from-square" />
-              {busy ? "Working..." : "Forward to Provincial"}
-            </button>
+            {!alreadyForwarded && (
+              <button
+                type="button"
+                className="mba-btn primary"
+                disabled={busy}
+                onClick={() => void act(active.id, "FORWARD")}
+                autoFocus
+              >
+                <i className="fa-solid fa-arrow-up-right-from-square" />
+                {busy ? "Working..." : "Forward to Provincial"}
+              </button>
+            )}
           </div>
         </div>
       </div>

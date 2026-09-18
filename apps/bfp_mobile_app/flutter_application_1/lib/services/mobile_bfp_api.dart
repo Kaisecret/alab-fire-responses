@@ -175,6 +175,10 @@ class MobileBfpApi {
   static const loginPath = '/api/mobile-bfp/login';
   static const _requestTimeout = Duration(seconds: 15);
 
+  /// Uploads carry photographs from a fireground, so they are given longer
+  /// than a plain JSON call before they are called lost.
+  static const _uploadTimeout = Duration(seconds: 60);
+
   final http.Client _client;
   final String _baseUrl;
 
@@ -401,8 +405,25 @@ class MobileBfpApi {
       ));
     }
 
-    final streamed = await request.send().timeout(_requestTimeout);
-    final response = await http.Response.fromStream(streamed);
+    // Photographs go up over whatever signal the scene has, which is rarely
+    // the signal the office has. The plain request timeout is too short for
+    // three of them, and an upload that overran it surfaced as a raw
+    // TimeoutException: the responder was told "error sending backup" with
+    // nothing to act on. It now fails the way every other call does.
+    final http.Response response;
+    try {
+      final streamed = await request.send().timeout(_uploadTimeout);
+      response = await http.Response.fromStream(streamed).timeout(_uploadTimeout);
+    } on TimeoutException {
+      throw const MobileBfpApiException(
+        'The photos are taking too long to upload. Send the request without them, '
+        'or try again where the signal is better.',
+      );
+    } on http.ClientException {
+      throw const MobileBfpApiException(
+        'Unable to reach the ALAB server. Check your internet connection.',
+      );
+    }
     _successJson(response);
   }
 

@@ -129,39 +129,50 @@ export async function requestBackup(input: {
 
   const { fireReportId, municipalityId, dispatchId } = assignment.rows[0];
 
-  const existing = await db.query<{ id: string }>(
-    `select id from public.incident_backup_requests
-      where fire_report_id = $1 and status in ('PENDING_MUNICIPAL','FORWARDED_PROVINCIAL')
-      limit 1`,
-    [fireReportId],
-  );
-
   /*
-   * One open request per incident. A second call is refused rather than
-   * silently joined: the responder is told help is already coming, instead of
-   * being shown a fresh confirmation that raises nothing.
+   * One open request per incident. Two responders on the same fire tap the
+   * button within moments of each other, so the guard cannot be a separate
+   * read: both calls would pass it and the second would strike the partial
+   * unique index as a raw constraint error. The insert asks the index itself,
+   * and an empty result means somebody else got there first.
    */
-  if (existing.rowCount && existing.rows[0]) {
-    throw new Error("BACKUP_ALREADY_REQUESTED");
+  let inserted;
+  try {
+    inserted = await db.query<{ id: string }>(
+      `insert into public.incident_backup_requests
+         (fire_report_id, municipality_id, requested_by_user_id, dispatch_id,
+          reason, requested_firetrucks, requested_personnel, auto_forward_at)
+       select $1, $2, $3, $4, $5, $6, $7, now() + ($8 || ' seconds')::interval
+        where not exists (
+          select 1 from public.incident_backup_requests
+           where fire_report_id = $1
+             and status in ('PENDING_MUNICIPAL','FORWARDED_PROVINCIAL')
+        )
+       returning id`,
+      [
+        fireReportId,
+        municipalityId,
+        input.responderUserId,
+        dispatchId,
+        input.reason?.trim() || null,
+        clampResource(input.requestedFiretrucks),
+        clampResource(input.requestedPersonnel),
+        String(AUTO_FORWARD_SECONDS),
+      ],
+    );
+  } catch (cause) {
+    // Two inserts can still cross inside the same instant, before either is
+    // visible to the other. The index settles it, and the loser is told the
+    // truth: help is already on its way.
+    if ((cause as { code?: string })?.code === "23505") {
+      throw new Error("BACKUP_ALREADY_REQUESTED");
+    }
+    throw cause;
   }
 
-  const inserted = await db.query<{ id: string }>(
-    `insert into public.incident_backup_requests
-       (fire_report_id, municipality_id, requested_by_user_id, dispatch_id,
-        reason, requested_firetrucks, requested_personnel, auto_forward_at)
-     values ($1, $2, $3, $4, $5, $6, $7, now() + ($8 || ' seconds')::interval)
-     returning id`,
-    [
-      fireReportId,
-      municipalityId,
-      input.responderUserId,
-      dispatchId,
-      input.reason?.trim() || null,
-      clampResource(input.requestedFiretrucks),
-      clampResource(input.requestedPersonnel),
-      String(AUTO_FORWARD_SECONDS),
-    ],
-  );
+  if (inserted.rowCount === 0 || !inserted.rows[0]) {
+    throw new Error("BACKUP_ALREADY_REQUESTED");
+  }
 
   const created = await getBackupRequest(inserted.rows[0].id);
   if (!created) throw new Error("BACKUP_REQUEST_CREATE_FAILED");
@@ -293,11 +304,15 @@ export async function listProvincialBackupRequests(): Promise<BackupRequest[]> {
  */
 export async function acknowledgeBackupRequest(id: string, userId: string): Promise<BackupRequest | null> {
   await getDatabase().query(
+    // A request that has already escalated can still be acknowledged: the
+    // municipality whose responder called for help is not done with it just
+    // because the province has been brought in. Scoping this to
+    // PENDING_MUNICIPAL left the municipal alarm with no way to be silenced.
     `update public.incident_backup_requests
         set acknowledged_by_user_id = $2,
             acknowledged_at = coalesce(acknowledged_at, now()),
             updated_at = now()
-      where id = $1 and status = 'PENDING_MUNICIPAL'`,
+      where id = $1 and status in ('PENDING_MUNICIPAL','FORWARDED_PROVINCIAL')`,
     [id, userId],
   );
   return getBackupRequest(id);
