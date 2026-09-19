@@ -34,10 +34,8 @@ test("resident API routes enforce provincial authentication and methods", () => 
   assert.match(detailRoute, /export async function PATCH/);
 });
 
-test("residents page renders provincial resident directory with distinct status filters", () => {
+test("residents page redirects to resident applications review queue", () => {
   const page = source("app/provincial-bfp/residents/page.tsx");
-  const component = source("app/_components/provincial-resident-directory.tsx");
-  assert.match(page, /ProvincialResidentDirectory/);
-  assert.match(component, /latestApplicationStatus/);
-  assert.match(component, /accountStatus/);
+  assert.match(page, /redirect/);
+  assert.match(page, /resident-applications/);
 });

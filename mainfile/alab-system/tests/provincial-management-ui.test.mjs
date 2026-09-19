@@ -6,12 +6,12 @@ import { join } from "node:path";
 const root = process.cwd();
 const source = (path) => readFileSync(join(root, path), "utf8");
 
-test("provincial navigation layout includes reports, applications, and resident entries without static badge counts", () => {
+test("provincial navigation layout includes reports and applications without static badge counts or deprecated resident tab", () => {
   const layout = source("app/_components/provincial-bfp-layout.tsx");
 
   assert.match(layout, /\/provincial-bfp\/incident-reports/);
   assert.match(layout, /\/provincial-bfp\/resident-applications/);
-  assert.match(layout, /\/provincial-bfp\/residents/);
+  assert.doesNotMatch(layout, /\/provincial-bfp\/residents/);
   assert.match(layout, /\/provincial-bfp\/incidents/);
   assert.match(layout, /\/provincial-bfp\/reports/);
 

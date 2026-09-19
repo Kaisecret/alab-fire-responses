@@ -896,8 +896,8 @@ export function ProvincialBfpDashboard() {
             </div>
           </Link>
 
-          {/* Card 4: Registered Residents & Applications */}
-          <Link href="/provincial-bfp/residents" className="pbfp-kpi-box purple">
+          {/* Card 4: Resident Applications */}
+          <Link href="/provincial-bfp/resident-applications" className="pbfp-kpi-box purple">
             <div className="pbfp-kpi-header">
               <div className="pbfp-kpi-badge-icon purple">
                 <i className="fa-solid fa-id-card" />
@@ -907,13 +907,13 @@ export function ProvincialBfpDashboard() {
               </span>
             </div>
             <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-label">Registered Residents</span>
+              <span className="pbfp-kpi-label">Resident Applications</span>
               <span className="pbfp-kpi-number">
                 {summary ? <FastNumber value={summary.totalResidents} /> : '—'}
               </span>
             </div>
             <div className="pbfp-kpi-footer">
-              <span className="pbfp-kpi-footer-subtext">Resident Directory</span>
+              <span className="pbfp-kpi-footer-subtext">Verification Queue</span>
               <i className="fa-solid fa-arrow-right" />
             </div>
           </Link>

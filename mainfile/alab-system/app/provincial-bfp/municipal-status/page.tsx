@@ -1223,17 +1223,6 @@ export default function MunicipalStatusPage() {
                   <i className="fa-solid fa-arrow-right" />
                 </Link>
                 <Link
-                  href={`/provincial-bfp/residents?municipalityId=${selectedMunicipality.id}`}
-                  className="pbfp-modal-link-btn"
-                >
-                  <span className="pbfp-link-icon green"><i className="fa-solid fa-users" /></span>
-                  <span className="pbfp-link-text">
-                    <span>Registered Residents</span>
-                    <span className="pbfp-link-count">{selectedMunicipality.residentCount} registered</span>
-                  </span>
-                  <i className="fa-solid fa-arrow-right" />
-                </Link>
-                <Link
                   href={`/provincial-bfp/resident-applications?municipalityId=${selectedMunicipality.id}`}
                   className="pbfp-modal-link-btn"
                 >

@@ -100,11 +100,6 @@ const navigationGroups: NavGroup[] = [
         href: '/provincial-bfp/resident-applications',
         icon: 'fa-solid fa-user-check',
       },
-      {
-        label: 'Registered Residents',
-        href: '/provincial-bfp/residents',
-        icon: 'fa-solid fa-address-book',
-      },
     ],
   },
   {
