@@ -1037,7 +1037,11 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                     <div className="pid-card">
                       <div className="pid-card-header">
                         <h3 className="pid-card-title">
-                          <i className="fa-solid fa-map-location-dot" />
+                          <img
+                            src="/images/fire logo.webp"
+                            alt="Fire Logo"
+                            style={{ width: 20, height: 20, objectFit: 'contain' }}
+                          />
                           <span>Tactical Ground Reconnaissance Map</span>
                         </h3>
                         <span className="pid-count-chip">120m Safety Perimeter</span>

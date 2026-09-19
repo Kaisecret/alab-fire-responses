@@ -20,13 +20,11 @@ export function ProvincialIncidentMiniMap({
   longitude,
   label,
   landmark,
-  icon = "fa-solid fa-map-location-dot",
 }: {
   latitude: number;
   longitude: number;
   label: string;
   landmark?: string | null;
-  icon?: string;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [satellite, setSatellite] = useState(false);
@@ -55,13 +53,17 @@ export function ProvincialIncidentMiniMap({
           .tileLayer(satellite ? SATELLITE_TILE_URL : OSM_TILE_URL, { maxZoom: 19 })
           .addTo(map);
 
-        // Custom incident marker with tactical icon and pulse beacon
+        // Custom incident marker with the official ALAB fire logo and radiant pulse beacon
         const incidentIcon = leaflet.divIcon({
           className: "pmm-marker-wrap",
           html: `
             <div class="pmm-marker-pulse" aria-hidden="true"></div>
             <div class="pmm-marker-pin" aria-hidden="true">
-              <i class="${icon}"></i>
+              <img
+                src="/images/fire logo.webp"
+                alt="Fire Incident Location"
+                class="pmm-marker-fire-img"
+              />
             </div>
           `,
           iconSize: [44, 44],
@@ -98,12 +100,16 @@ export function ProvincialIncidentMiniMap({
       cancelled = true;
       map?.remove();
     };
-  }, [latitude, longitude, label, landmark, satellite, icon]);
+  }, [latitude, longitude, label, landmark, satellite]);
 
   if (failed) {
     return (
       <div className="pmm-fallback">
-        <i className={icon} />
+        <img
+          src="/images/fire logo.webp"
+          alt="Fire"
+          style={{ width: 28, height: 28, objectFit: "contain" }}
+        />
         <span>The map could not load. The coordinates are below.</span>
       </div>
     );
@@ -189,7 +195,7 @@ export const provincialMiniMapStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.65rem;
     height: 140px;
     border-radius: 12px;
     border: 1px dashed #CBD5E1;
@@ -198,7 +204,7 @@ export const provincialMiniMapStyles = `
     font-size: 0.8rem;
   }
 
-  /* Custom Incident Map Marker with Icon and Radar Pulse */
+  /* Custom Incident Map Marker with Official Fire Logo and Radar Pulse */
   .leaflet-div-icon.pmm-marker-wrap {
     background: transparent !important;
     border: none !important;
@@ -208,50 +214,63 @@ export const provincialMiniMapStyles = `
   }
   .pmm-marker-pulse {
     position: absolute;
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    background: rgba(220, 38, 38, 0.24);
-    border: 1.5px solid rgba(220, 38, 38, 0.6);
-    animation: pmmPulseRing 2s infinite cubic-bezier(0.24, 0, 0.38, 1);
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, rgba(220, 38, 38, 0.12) 65%, transparent 100%);
+    border: 1.5px solid rgba(220, 38, 38, 0.7);
+    animation: pmmPulseRing 2.2s infinite cubic-bezier(0.24, 0, 0.38, 1);
     pointer-events: none;
   }
   @keyframes pmmPulseRing {
     0% {
-      transform: scale(0.6);
+      transform: scale(0.5);
       opacity: 1;
     }
     70% {
-      transform: scale(1.65);
-      opacity: 0.15;
+      transform: scale(1.7);
+      opacity: 0.2;
     }
     100% {
-      transform: scale(1.9);
+      transform: scale(2.1);
       opacity: 0;
     }
   }
   .pmm-marker-pin {
     position: relative;
-    width: 34px;
-    height: 34px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-    border: 2.5px solid #FFFFFF;
-    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.55), 0 2px 5px rgba(0, 0, 0, 0.25);
-    display: grid;
-    place-items: center;
-    color: #FFFFFF;
+    background: #FFFFFF;
+    border: 2.5px solid #DC2626;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.55), 0 2px 6px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: transform 0.18s ease;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
     z-index: 2;
   }
   .pmm-marker-pin:hover {
-    transform: scale(1.15);
+    transform: scale(1.18);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.75), 0 2px 8px rgba(0, 0, 0, 0.35);
   }
-  .pmm-marker-pin i {
-    color: #FFFFFF;
-    font-size: 0.95rem;
-    line-height: 1;
+  .pmm-marker-fire-img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
     display: block;
+    filter: drop-shadow(0 2px 4px rgba(220, 38, 38, 0.45));
+    animation: pmmFlameBreathe 1.8s ease-in-out infinite alternate;
+  }
+  @keyframes pmmFlameBreathe {
+    0% {
+      transform: scale(0.95);
+      filter: drop-shadow(0 1px 3px rgba(220, 38, 38, 0.4));
+    }
+    100% {
+      transform: scale(1.08);
+      filter: drop-shadow(0 3px 8px rgba(239, 68, 68, 0.75));
+    }
   }
 `;
