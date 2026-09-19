@@ -1,4 +1,5 @@
 {
+  "buildCommand": "node scripts/apply-command-migration.mjs && npm run build",
   "crons": [
     { "path": "/api/cron/resident-correction-deliveries", "schedule": "0 0 * * *" },
     { "path": "/api/cron/backup-escalations", "schedule": "1 0 * * *" }
