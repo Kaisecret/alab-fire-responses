@@ -1306,6 +1306,11 @@ export function MunicipalReportDirectory() {
                         <div style={{ fontFamily: "monospace", fontWeight: 700, color: "#0F172A", fontSize: "0.84rem" }}>
                           {r.referenceNumber}
                         </div>
+                        {r.recordRole === "ASSISTING" && (
+                          <div style={{ display: "inline-flex", marginTop: 4, padding: "2px 7px", borderRadius: 999, background: "#FFF7ED", color: "#C2410C", fontSize: "0.66rem", fontWeight: 850, letterSpacing: "0.05em" }}>
+                            ASSISTING
+                          </div>
+                        )}
                         {r.reporterName && (
                           <div style={{ fontSize: "0.71rem", color: "#64748B", fontWeight: 500, marginTop: 2, display: "flex", alignItems: "center", gap: 3 }}>
                             <i className="fa-regular fa-user" style={{ fontSize: "0.68rem", color: "#94A3B8" }} />

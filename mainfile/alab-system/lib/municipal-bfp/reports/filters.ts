@@ -289,7 +289,17 @@ export function municipalReportWhere(
   municipalityId: string,
   filters: MunicipalReportFilters,
 ): { clauses: string[]; values: unknown[] } {
-  const clauses: string[] = ["fr.municipality_id = $1"];
+  const clauses: string[] = [`(
+    fr.municipality_id = $1
+    or exists (
+      select 1
+        from intermunicipal_assistance_requests assistance
+       where assistance.fire_report_id = fr.id
+         and assistance.recipient_municipality_id = $1
+         and assistance.is_provincial_command
+         and assistance.status in ('ACCEPTED','PARTIALLY_ACCEPTED','COMPLETED')
+    )
+  )`];
   const values: unknown[] = [municipalityId];
 
   for (const [value, column] of [
@@ -325,7 +335,9 @@ export function municipalReportWhere(
     values.push(`%${filters.search}%`);
     const param = `$${values.length}`;
     clauses.push(
-      `(fr.reference_number ilike ${param} or fr.description ilike ${param} or coalesce(b.name, fr.address_label) ilike ${param})`,
+      `(fr.reference_number ilike ${param}
+        or b.name ilike ${param}
+        or (fr.municipality_id = $1 and (fr.description ilike ${param} or fr.address_label ilike ${param})))`,
     );
   }
 

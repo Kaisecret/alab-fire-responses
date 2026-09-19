@@ -66,6 +66,7 @@ export async function listMunicipalReports(
 
   const rowsResult = await db.query<{
     id: string;
+    recordRole: "OWNER" | "ASSISTING";
     referenceNumber: string;
     municipalityId: string;
     municipalityName: string;
@@ -81,13 +82,14 @@ export async function listMunicipalReports(
     recordedArrivalAt: Date | null;
     resolvedAt: Date | null;
     latestDispatchSummary: string | null;
-    description?: string;
+    description?: string | null;
     addressLabel?: string | null;
     nearestLandmark?: string | null;
     reporterName?: string;
   }>(
     `select fr.id,
             fr.reference_number as "referenceNumber",
+            case when fr.municipality_id = $1 then 'OWNER' else 'ASSISTING' end as "recordRole",
             fr.municipality_id as "municipalityId",
             m.name as "municipalityName",
             coalesce(b.name, 'Unknown Barangay') as "barangay",
@@ -98,24 +100,36 @@ export async function listMunicipalReports(
             fr.latitude,
             fr.longitude,
             fr.submitted_at as "submittedAt",
-            fr.description,
-            fr.address_label as "addressLabel",
-            fr.nearest_landmark as "nearestLandmark",
-            coalesce(fr.caller_name, fr.reporter_name_snapshot) as "reporterName",
+            case when fr.municipality_id = $1 then fr.description else null end as description,
+            case when fr.municipality_id = $1 then fr.address_label else null end as "addressLabel",
+            case when fr.municipality_id = $1 then fr.nearest_landmark else null end as "nearestLandmark",
+            case when fr.municipality_id = $1
+              then coalesce(fr.caller_name, fr.reporter_name_snapshot)
+              else null
+            end as "reporterName",
             fr.response_started_at as "responseStartedAt",
-            (
+            (case when fr.municipality_id = $1 then (
               select min(arrival_time) from (
                 select min(r.on_scene_at) as arrival_time
                   from incident_dispatch_recipients r
                   join incident_dispatches d on d.id = r.dispatch_id
                  where d.fire_report_id = fr.id and r.on_scene_at >= fr.submitted_at
               ) arrivals
-            ) as "recordedArrivalAt",
+            ) else (
+              select min(r.on_scene_at)
+                from incident_dispatch_recipients r
+                join incident_dispatch_stations ds on ds.id = r.dispatch_station_id
+                join municipal_bfp_stations station on station.id = ds.station_id
+                join incident_dispatches d on d.id = r.dispatch_id
+               where d.fire_report_id = fr.id
+                 and station.municipality_id = $1
+                 and r.on_scene_at >= fr.submitted_at
+            ) end) as "recordedArrivalAt",
             (case when fr.status in ('CLOSED', 'RESOLVED') then (
               select max(h.created_at) from fire_report_status_history h
               where h.fire_report_id = fr.id and h.next_status in ('CLOSED', 'RESOLVED')
             ) end) as "resolvedAt",
-            (
+            (case when fr.municipality_id = $1 then (
               select concat(
                 'Dispatch ', d.status, ' (',
                 (select count(*) from incident_dispatch_stations where dispatch_id = d.id), ' stations, ',
@@ -125,7 +139,21 @@ export async function listMunicipalReports(
                where d.fire_report_id = fr.id
                order by d.dispatched_at desc
                limit 1
-            ) as "latestDispatchSummary"
+            ) else (
+              select concat(
+                'Assistance ', d.status, ' (',
+                count(distinct ds.id), ' stations, ',
+                count(distinct recipient.id), ' responders)'
+              )
+                from incident_dispatches d
+                join incident_dispatch_stations ds on ds.dispatch_id = d.id
+                join municipal_bfp_stations station on station.id = ds.station_id
+                left join incident_dispatch_recipients recipient on recipient.dispatch_station_id = ds.id
+               where d.fire_report_id = fr.id and station.municipality_id = $1
+               group by d.id, d.status, d.dispatched_at
+               order by d.dispatched_at desc
+               limit 1
+            ) end) as "latestDispatchSummary"
        from fire_reports fr
        join municipalities m on m.id = fr.municipality_id
        left join barangays b on b.id = fr.barangay_id
@@ -143,6 +171,7 @@ export async function listMunicipalReports(
 
     return {
       id: row.id,
+      recordRole: row.recordRole,
       referenceNumber: row.referenceNumber,
       municipalityId: row.municipalityId,
       municipalityName: row.municipalityName,
@@ -161,10 +190,10 @@ export async function listMunicipalReports(
       timeToResponseMinutes: calculateDurationMinutes(submittedAtIso, responseStartedAtIso),
       timeToArrivalMinutes: calculateDurationMinutes(submittedAtIso, recordedArrivalAtIso),
       timeToResolutionMinutes: calculateDurationMinutes(submittedAtIso, resolvedAtIso),
-      description: row.description,
-      addressLabel: row.addressLabel,
+      description: row.description ?? undefined,
+      addressLabel: row.addressLabel ?? null,
       nearestLandmark: row.nearestLandmark,
-      reporterName: row.reporterName,
+      reporterName: row.reporterName ?? undefined,
     };
   });
 
@@ -187,6 +216,7 @@ export async function getMunicipalReportDetail(
 
   const reportRes = await db.query<{
     id: string;
+    recordRole: "OWNER" | "ASSISTING";
     referenceNumber: string;
     municipalityId: string;
     municipalityName: string;
@@ -198,7 +228,7 @@ export async function getMunicipalReportDetail(
     latitude: string | number;
     longitude: string | number;
     submittedAt: Date;
-    description: string;
+    description: string | null;
     addressLabel: string | null;
     nearestLandmark: string | null;
     locationMethod: string | null;
@@ -212,6 +242,7 @@ export async function getMunicipalReportDetail(
   }>(
     `select fr.id,
             fr.reference_number as "referenceNumber",
+            case when fr.municipality_id = $2 then 'OWNER' else 'ASSISTING' end as "recordRole",
             fr.municipality_id as "municipalityId",
             m.name as "municipalityName",
             coalesce(b.name, 'Unknown Barangay') as "barangay",
@@ -222,27 +253,42 @@ export async function getMunicipalReportDetail(
             fr.latitude,
             fr.longitude,
             fr.submitted_at as "submittedAt",
-            fr.description,
-            fr.address_label as "addressLabel",
-            fr.nearest_landmark as "nearestLandmark",
-            fr.location_method as "locationMethod",
-            fr.location_accuracy_meters as "locationAccuracyMeters",
-            coalesce(fr.caller_name, fr.reporter_name_snapshot) as "reporterName",
-            coalesce(fr.caller_phone, u.phone) as "reporterPhone",
+            case when fr.municipality_id = $2 then fr.description else null end as description,
+            case when fr.municipality_id = $2 then fr.address_label else null end as "addressLabel",
+            case when fr.municipality_id = $2 then fr.nearest_landmark else null end as "nearestLandmark",
+            case when fr.municipality_id = $2 then fr.location_method else null end as "locationMethod",
+            case when fr.municipality_id = $2 then fr.location_accuracy_meters else null end as "locationAccuracyMeters",
+            case when fr.municipality_id = $2
+              then coalesce(fr.caller_name, fr.reporter_name_snapshot)
+              else null
+            end as "reporterName",
+            case when fr.municipality_id = $2
+              then coalesce(fr.caller_phone, u.phone)
+              else null
+            end as "reporterPhone",
             fr.response_started_at as "responseStartedAt",
-            (
+            (case when fr.municipality_id = $2 then (
               select min(arrival_time) from (
                 select min(r.on_scene_at) as arrival_time
                   from incident_dispatch_recipients r
                   join incident_dispatches d on d.id = r.dispatch_id
                  where d.fire_report_id = fr.id and r.on_scene_at >= fr.submitted_at
               ) arrivals
-            ) as "recordedArrivalAt",
+            ) else (
+              select min(r.on_scene_at)
+                from incident_dispatch_recipients r
+                join incident_dispatch_stations ds on ds.id = r.dispatch_station_id
+                join municipal_bfp_stations station on station.id = ds.station_id
+                join incident_dispatches d on d.id = r.dispatch_id
+               where d.fire_report_id = fr.id
+                 and station.municipality_id = $2
+                 and r.on_scene_at >= fr.submitted_at
+            ) end) as "recordedArrivalAt",
             (case when fr.status in ('CLOSED', 'RESOLVED') then (
               select max(h.created_at) from fire_report_status_history h
               where h.fire_report_id = fr.id and h.next_status in ('CLOSED', 'RESOLVED')
             ) end) as "resolvedAt",
-            (
+            (case when fr.municipality_id = $2 then (
               select concat(
                 'Dispatch ', d.status, ' (',
                 (select count(*) from incident_dispatch_stations where dispatch_id = d.id), ' stations, ',
@@ -252,14 +298,38 @@ export async function getMunicipalReportDetail(
                where d.fire_report_id = fr.id
                order by d.dispatched_at desc
                limit 1
-            ) as "latestDispatchSummary"
+            ) else (
+              select concat(
+                'Assistance ', d.status, ' (',
+                count(distinct ds.id), ' stations, ',
+                count(distinct recipient.id), ' responders)'
+              )
+                from incident_dispatches d
+                join incident_dispatch_stations ds on ds.dispatch_id = d.id
+                join municipal_bfp_stations station on station.id = ds.station_id
+                left join incident_dispatch_recipients recipient on recipient.dispatch_station_id = ds.id
+               where d.fire_report_id = fr.id and station.municipality_id = $2
+               group by d.id, d.status, d.dispatched_at
+               order by d.dispatched_at desc
+               limit 1
+            ) end) as "latestDispatchSummary"
        from fire_reports fr
        join municipalities m on m.id = fr.municipality_id
        left join barangays b on b.id = fr.barangay_id
        left join resident_profiles rp on rp.id = fr.resident_profile_id
        left join users u on u.id = rp.user_id
       where (fr.id::text = $1 or fr.reference_number = $1)
-        and fr.municipality_id = $2
+        and (
+          fr.municipality_id = $2
+          or exists (
+            select 1
+              from intermunicipal_assistance_requests assistance
+             where assistance.fire_report_id = fr.id
+               and assistance.recipient_municipality_id = $2
+               and assistance.is_provincial_command
+               and assistance.status in ('ACCEPTED','PARTIALLY_ACCEPTED','COMPLETED')
+          )
+        )
       limit 1`,
     [reportId, actor.municipalityId],
   );
@@ -284,14 +354,16 @@ export async function getMunicipalReportDetail(
   const timeline: MunicipalTimelineEvent[] = historyRes.rows.map((h) => ({
     stage: h.stage,
     timestamp: h.timestamp ? new Date(h.timestamp).toISOString() : new Date().toISOString(),
-    notes: h.notes,
+    notes: rep.recordRole === "OWNER" ? h.notes : null,
   }));
 
   // Photos: get signed URLs safely
-  const photosRes = await db.query<{ storage_key: string }>(
-    `select storage_key from fire_report_photos where fire_report_id = $1`,
-    [rep.id],
-  );
+  const photosRes = rep.recordRole === "OWNER"
+    ? await db.query<{ storage_key: string }>(
+        `select storage_key from fire_report_photos where fire_report_id = $1`,
+        [rep.id],
+      )
+    : { rows: [] as { storage_key: string }[] };
 
   const signedPhotos = await Promise.all(
     photosRes.rows.map(async (p) => {
@@ -318,12 +390,15 @@ export async function getMunicipalReportDetail(
 
   const dispatches: MunicipalDispatchRecord[] = await Promise.all(
     dispatchesRes.rows.map(async (d) => {
+      const assistingOnly = rep.recordRole === "ASSISTING";
       const [stationsRes, recipientsRes] = await Promise.all([
         db.query<{ stationName: string }>(
           `select station_name_snapshot as "stationName"
-             from incident_dispatch_stations
-            where dispatch_id = $1`,
-          [d.id],
+             from incident_dispatch_stations ds
+             join municipal_bfp_stations station on station.id = ds.station_id
+            where ds.dispatch_id = $1
+              and ($2::boolean = false or station.municipality_id = $3)`,
+          [d.id, assistingOnly, actor.municipalityId],
         ),
         db.query<{
           userId: string;
@@ -343,9 +418,12 @@ export async function getMunicipalReportDetail(
                   en_route_at as "enRouteAt",
                   on_scene_at as "onSceneAt",
                   completed_at as "completedAt"
-             from incident_dispatch_recipients
-            where dispatch_id = $1`,
-          [d.id],
+             from incident_dispatch_recipients recipient
+             join incident_dispatch_stations ds on ds.id = recipient.dispatch_station_id
+             join municipal_bfp_stations station on station.id = ds.station_id
+            where recipient.dispatch_id = $1
+              and ($2::boolean = false or station.municipality_id = $3)`,
+          [d.id, assistingOnly, actor.municipalityId],
         ),
       ]);
 
@@ -372,6 +450,7 @@ export async function getMunicipalReportDetail(
 
   return {
     id: rep.id,
+    recordRole: rep.recordRole,
     referenceNumber: rep.referenceNumber,
     municipalityId: rep.municipalityId,
     municipalityName: rep.municipalityName,
@@ -390,7 +469,7 @@ export async function getMunicipalReportDetail(
     timeToResponseMinutes: calculateDurationMinutes(submittedAtIso, responseStartedAtIso),
     timeToArrivalMinutes: calculateDurationMinutes(submittedAtIso, recordedArrivalAtIso),
     timeToResolutionMinutes: calculateDurationMinutes(submittedAtIso, resolvedAtIso),
-    description: rep.description,
+    description: rep.description ?? undefined,
     addressLabel: rep.addressLabel,
     nearestLandmark: rep.nearestLandmark ?? null,
     locationMethod: rep.locationMethod ?? null,
@@ -527,8 +606,12 @@ export async function getMunicipalReportSummary(
          select min(arr.arrival_time) as arrival_time from (
            select min(r.on_scene_at) as arrival_time
              from incident_dispatch_recipients r
+             join incident_dispatch_stations ds on ds.id = r.dispatch_station_id
+             join municipal_bfp_stations station on station.id = ds.station_id
              join incident_dispatches d on d.id = r.dispatch_id
-            where d.fire_report_id = fr.id and r.on_scene_at >= fr.submitted_at
+            where d.fire_report_id = fr.id
+              and (fr.municipality_id = $1 or station.municipality_id = $1)
+              and r.on_scene_at >= fr.submitted_at
          ) arr
          having min(arr.arrival_time) >= fr.submitted_at
        ) arrival_data on true
@@ -580,8 +663,12 @@ export async function getMunicipalReportSummary(
          select min(arr.arrival_time) as arrival_time from (
            select min(r.on_scene_at) as arrival_time
              from incident_dispatch_recipients r
+             join incident_dispatch_stations ds on ds.id = r.dispatch_station_id
+             join municipal_bfp_stations station on station.id = ds.station_id
              join incident_dispatches d on d.id = r.dispatch_id
-            where d.fire_report_id = fr.id and r.on_scene_at >= fr.submitted_at
+            where d.fire_report_id = fr.id
+              and (fr.municipality_id = $1 or station.municipality_id = $1)
+              and r.on_scene_at >= fr.submitted_at
          ) arr
          having min(arr.arrival_time) >= fr.submitted_at
        ) arr_lat on true

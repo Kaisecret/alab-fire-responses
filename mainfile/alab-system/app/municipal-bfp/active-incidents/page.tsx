@@ -970,8 +970,10 @@ function ActiveIncidentsContent() {
                             <div className={`mbfp-nearby-row-badge${inc.assistanceStatus ? " is-assistance" : ""}`}>
                               <i className={`fa-solid ${inc.assistanceStatus ? "fa-hands-helping" : "fa-satellite-dish"}`} />
                               <span>
-                                {inc.assistanceStatus
-                                  ? `Assistance requested · ${inc.originMunicipality || "Adjacent Municipality"}`
+                                {inc.assistanceStatus === "ACCEPTED" || inc.assistanceStatus === "PARTIALLY_ACCEPTED"
+                                  ? `ASSISTING · ${inc.originMunicipality || "Adjacent Municipality"}`
+                                  : inc.assistanceStatus
+                                  ? `ASSISTANCE REQUIRED · ${inc.originMunicipality || "Adjacent Municipality"}`
                                   : `Nearby incident · ${inc.originMunicipality || "Adjacent Municipality"}`}
                               </span>
                             </div>

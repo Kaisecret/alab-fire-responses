@@ -34,7 +34,11 @@ export function validateAssistanceTransition(
   requestedPersonnel: number,
   offeredFiretrucks: number,
   offeredPersonnel: number,
+  isProvincialCommand = false,
 ) {
+  if (isProvincialCommand && action !== "ACCEPT") {
+    throw new Error("PROVINCIAL_COMMAND_REQUIRES_FULL_ACCEPTANCE");
+  }
   if (currentStatus !== "REQUESTED") {
     throw new Error("ASSISTANCE_STATE_CONFLICT");
   }

@@ -81,6 +81,12 @@ export async function PATCH(
     if (error?.message === "ASSISTANCE_STATE_CONFLICT") {
       return NextResponse.json({ error: "Assistance request is no longer in an actionable state." }, { status: 409 });
     }
+    if (error?.message === "PROVINCIAL_COMMAND_REQUIRES_FULL_ACCEPTANCE") {
+      return NextResponse.json(
+        { error: "Provincial alarm commands require full acceptance and cannot be cancelled or declined." },
+        { status: 409 },
+      );
+    }
 
     console.error("Assistance transition failed for request", requestId, error);
     return NextResponse.json({ error: "Unable to update assistance request." }, { status: 500 });

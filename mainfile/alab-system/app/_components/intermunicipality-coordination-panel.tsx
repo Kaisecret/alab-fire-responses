@@ -723,7 +723,7 @@ export function IntermunicipalityCoordinationPanel({
                         </div>
                       )}
                     </div>
-                    {req.status === "REQUESTED" && (
+                    {req.status === "REQUESTED" && !req.isProvincialCommand && (
                       <button
                         type="button"
                         onClick={() => handleCancelRequest(req.id)}
@@ -796,7 +796,9 @@ export function IntermunicipalityCoordinationPanel({
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <i className="fa-solid fa-triangle-exclamation" style={{ color: "#EA580C", fontSize: "1.1rem" }} />
                   <h4 style={{ margin: 0, fontSize: "0.92rem", fontWeight: 850, color: "#9A3412" }}>
-                    Backup Requested by Incident Commander
+                    {observerPendingRequest.isProvincialCommand
+                      ? "Mandatory Provincial Alarm Command"
+                      : "Backup Requested by Incident Commander"}
                   </h4>
                 </div>
                 <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#EA580C", letterSpacing: "0.04em" }}>
@@ -809,6 +811,11 @@ export function IntermunicipalityCoordinationPanel({
                 <strong style={{ color: "#0F172A" }}>{observerPendingRequest.requestedFiretrucks} Firetruck(s)</strong> and{" "}
                 <strong style={{ color: "#0F172A" }}>{observerPendingRequest.requestedPersonnel} Personnel</strong>.
               </p>
+              {observerPendingRequest.isProvincialCommand && (
+                <p style={{ fontSize: "0.78rem", color: "#9A3412", fontWeight: 750, margin: "0.35rem 0" }}>
+                  Full assistance is required. This Provincial command cannot be declined, reduced, or cancelled.
+                </p>
+              )}
               {observerPendingRequest.requestNote && (
                 <p style={{ fontSize: "0.76rem", fontStyle: "italic", color: "#64748B", margin: "0.25rem 0" }}>
                   Note: &ldquo;{observerPendingRequest.requestNote}&rdquo;
@@ -837,9 +844,9 @@ export function IntermunicipalityCoordinationPanel({
                       cursor: "pointer",
                     }}
                   >
-                    Accept
+                    {observerPendingRequest.isProvincialCommand ? "Acknowledge & Accept Full Command" : "Accept"}
                   </button>
-                  <button
+                  {!observerPendingRequest.isProvincialCommand && <button
                     type="button"
                     onClick={() => {
                       setRespondingToRequestId(observerPendingRequest.id);
@@ -860,8 +867,8 @@ export function IntermunicipalityCoordinationPanel({
                     }}
                   >
                     Partially Accept
-                  </button>
-                  <button
+                  </button>}
+                  {!observerPendingRequest.isProvincialCommand && <button
                     type="button"
                     onClick={() => {
                       setRespondingToRequestId(observerPendingRequest.id);
@@ -882,7 +889,7 @@ export function IntermunicipalityCoordinationPanel({
                     }}
                   >
                     Decline
-                  </button>
+                  </button>}
                 </div>
               ) : (
                 <form onSubmit={handleRespondToRequest} style={{ marginTop: "0.85rem", borderTop: "1px solid #FED7AA", paddingTop: "0.85rem" }}>

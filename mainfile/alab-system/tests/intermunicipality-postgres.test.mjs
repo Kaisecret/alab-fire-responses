@@ -15,8 +15,9 @@ const report = '44444444-4444-4444-8444-444444444444';
 const dispatch = '55555555-5555-4555-8555-555555555555';
 const observer = '66666666-6666-4666-8666-666666666666';
 const station = '77777777-7777-4777-8777-777777777777';
+const commandRequest = '88888888-8888-4888-8888-888888888888';
 
-async function database() {
+async function database(applyCommandMigration = true) {
   const db = new PGlite();
   await db.exec("set timezone = 'UTC'");
   await db.exec(readMigration('20260811125353_create_alab_resident_schema').replace('create extension if not exists pgcrypto;', ''));
@@ -48,6 +49,10 @@ async function database() {
       values ('${dispatch}','${report}','${origin}','${user}');`);
   await db.exec(readMigration('20260907090000_add_intermunicipality_coordination'));
   await db.exec(readMigration('20260910121800_harden_intermunicipality_coordination'));
+  await db.exec(readMigration('20260919120000_record_alarm_level_summons'));
+  if (applyCommandMigration) {
+    await db.exec(readMigration('20260920130000_enforce_provincial_assistance_commands'));
+  }
   await db.exec(`insert into incident_municipal_observers(id,fire_report_id,dispatch_id,origin_municipality_id,
     observer_municipality_id,nearest_station_id,station_latitude_snapshot,station_longitude_snapshot,distance_meters,status,selected_at)
     values ('${observer}','${report}','${dispatch}','${origin}','${recipient}','${station}',10.71,122,1110,'ACTIVE',now());
@@ -117,5 +122,92 @@ test('cancellation service commits once with real constraints and immutable audi
     await assert.rejects(db.exec('delete from intermunicipal_coordination_events'), /immutable/);
     const grants = await db.query(`select has_table_privilege('anon', 'incident_municipal_observers', 'SELECT') as readable`);
     assert.equal(grants.rows[0].readable, false);
+  } finally { await db.close(); }
+});
+
+test('a durable Provincial command rejects cancel and partial states and remains pending at resolution', async () => {
+  const db = await database();
+  try {
+    await db.exec(`insert into intermunicipal_assistance_requests(
+      id,fire_report_id,dispatch_id,observer_id,requester_municipality_id,
+      recipient_municipality_id,requested_by_user_id,requested_firetrucks,
+      requested_personnel,status,requested_at,updated_at,is_provincial_command
+    ) values ('${commandRequest}','${report}','${dispatch}','${observer}','${origin}',
+      '${recipient}','${user}',1,4,'REQUESTED',now(),now(),true);`);
+    await assert.rejects(
+      db.exec(`update intermunicipal_assistance_requests
+        set status = 'CANCELLED' where id = '${commandRequest}'`),
+      error => error.code === '23514',
+    );
+    await assert.rejects(
+      db.exec(`update intermunicipal_assistance_requests
+        set status = 'PARTIALLY_ACCEPTED', offered_firetrucks = 0, offered_personnel = 2,
+            responded_by_user_id = '${user}', responded_at = now() where id = '${commandRequest}'`),
+      error => error.code === '23514',
+    );
+
+    const api = loadServerModule('lib/intermunicipality/assistance.ts', {
+      '../db': { withTransaction: work => db.transaction(work) },
+      './assistance-state': state,
+      './audit': loadServerModule('lib/intermunicipality/audit.ts', {}),
+      '../notifications/service': {
+        listMunicipalNotificationRecipients: async () => [],
+        listProvincialNotificationRecipients: async () => [],
+        createAccountNotifications: async () => {},
+      },
+    });
+    await assert.rejects(
+      api.transitionAssistanceRequest({ requestId: commandRequest, actorMunicipalityId: origin,
+        actorUserId: user, action: 'CANCEL', offeredFiretrucks: 0, offeredPersonnel: 0 }),
+      /PROVINCIAL_COMMAND_REQUIRES_FULL_ACCEPTANCE/,
+    );
+    await api.closeIncidentAssistance(db, {
+      fireReportId: report, dispatchId: dispatch, originMunicipalityId: origin,
+      actorUserId: user, closedAt: new Date('2026-09-04T00:00:00Z'),
+    });
+    const request = await db.query(`select status, is_provincial_command
+      from intermunicipal_assistance_requests where id = $1`, [commandRequest]);
+    assert.equal(request.rows[0].status, 'REQUESTED');
+    assert.equal(request.rows[0].is_provincial_command, true);
+    await assert.rejects(
+      db.exec(`update intermunicipal_assistance_requests
+        set is_provincial_command = false where id = '${commandRequest}'`),
+      /immutable/,
+    );
+    await assert.rejects(
+      db.exec(`update intermunicipal_assistance_requests
+        set is_provincial_command = true where id = '${observer}'`),
+      /immutable/,
+    );
+  } finally { await db.close(); }
+});
+
+test('command migration reopens a legacy terminal summons beside an ordinary open request', async () => {
+  const db = await database(false);
+  try {
+    await db.exec(`update intermunicipal_assistance_requests
+      set status = 'REJECTED', offered_firetrucks = 0, offered_personnel = 0,
+          responded_by_user_id = '${user}', responded_at = now(), completed_at = null
+      where id = '${observer}';
+      insert into incident_alarm_summons(
+        fire_report_id, alarm_level, summoned_municipality_id,
+        assistance_request_id, distance_meters
+      ) values ('${report}',2,'${recipient}','${observer}',1110);
+      insert into intermunicipal_assistance_requests(
+        id,fire_report_id,dispatch_id,observer_id,requester_municipality_id,
+        recipient_municipality_id,requested_by_user_id,requested_firetrucks,
+        requested_personnel,status,requested_at,updated_at
+      ) values ('${commandRequest}','${report}','${dispatch}','${observer}','${origin}',
+        '${recipient}','${user}',1,4,'REQUESTED',now(),now());`);
+
+    await db.exec(readMigration('20260920130000_enforce_provincial_assistance_commands'));
+    const rows = await db.query(`select id, status, is_provincial_command
+      from intermunicipal_assistance_requests order by id`);
+    const legacyCommand = rows.rows.find(row => row.id === observer);
+    const ordinary = rows.rows.find(row => row.id === commandRequest);
+    assert.equal(legacyCommand.status, 'REQUESTED');
+    assert.equal(legacyCommand.is_provincial_command, true);
+    assert.equal(ordinary.status, 'REQUESTED');
+    assert.equal(ordinary.is_provincial_command, false);
   } finally { await db.close(); }
 });

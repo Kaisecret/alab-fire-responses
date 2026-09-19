@@ -383,6 +383,7 @@ export async function getIncidentCoordinationContext(
         requested_at: string;
         responded_at: string | null;
         completed_at: string | null;
+        is_provincial_command: boolean;
       }>(
         `select r.id,
                 r.recipient_municipality_id,
@@ -396,7 +397,8 @@ export async function getIncidentCoordinationContext(
                 r.status,
                 r.requested_at,
                 r.responded_at,
-                r.completed_at
+                r.completed_at,
+                r.is_provincial_command
            from intermunicipal_assistance_requests r
            join municipalities m on m.id = r.recipient_municipality_id
           where r.fire_report_id = $1
@@ -409,6 +411,7 @@ export async function getIncidentCoordinationContext(
     const allAssistance: AssistanceRequestSummary[] = assistanceResult.rows.map((row) => {
       const summary: AssistanceRequestSummary = {
         id: row.id,
+        isProvincialCommand: row.is_provincial_command,
         recipientMunicipalityId: row.recipient_municipality_id,
         recipientMunicipalityName: row.recipient_municipality_name,
         requestedFiretrucks: row.requested_firetrucks,

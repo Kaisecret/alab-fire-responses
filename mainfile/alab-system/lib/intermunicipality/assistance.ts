@@ -49,6 +49,7 @@ export type CreateAssistanceRequestsInput = {
    * apply to it.
    */
   allowProvincialReach?: boolean;
+  isProvincialCommand?: boolean;
 };
 
 export type TransitionAssistanceRequestInput = {
@@ -149,9 +150,10 @@ export async function createAssistanceRequests(
         `insert into intermunicipal_assistance_requests (
            id, fire_report_id, dispatch_id, observer_id, requester_municipality_id,
            recipient_municipality_id, requested_by_user_id, requested_firetrucks,
-           requested_personnel, request_note, status, requested_at, updated_at
-         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'REQUESTED',$11,$11)
-         on conflict (dispatch_id, recipient_municipality_id)
+           requested_personnel, request_note, status, requested_at, updated_at,
+           is_provincial_command
+         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'REQUESTED',$11,$11,$12)
+         on conflict (dispatch_id, recipient_municipality_id, is_provincial_command)
            where status in ('REQUESTED','ACCEPTED','PARTIALLY_ACCEPTED')
            do nothing
          returning id`,
@@ -167,6 +169,7 @@ export async function createAssistanceRequests(
           requestedPersonnel,
           note,
           now,
+          input.isProvincialCommand === true,
         ],
       );
 
@@ -187,6 +190,7 @@ export async function createAssistanceRequests(
           requested_at: string;
           responded_at: string | null;
           completed_at: string | null;
+          is_provincial_command: boolean;
         }>(
           `select r.id,
                   r.recipient_municipality_id,
@@ -200,14 +204,21 @@ export async function createAssistanceRequests(
                   r.status,
                   r.requested_at,
                   r.responded_at,
-                  r.completed_at
+                  r.completed_at,
+                  r.is_provincial_command
              from intermunicipal_assistance_requests r
              join municipalities m on m.id = r.recipient_municipality_id
             where r.dispatch_id = $1
               and r.requester_municipality_id = $2
               and r.recipient_municipality_id = $3
+              and r.is_provincial_command = $4
               and r.status in ('REQUESTED','ACCEPTED','PARTIALLY_ACCEPTED')`,
-          [report.dispatch_id, input.requesterMunicipalityId, observer.observer_municipality_id],
+          [
+            report.dispatch_id,
+            input.requesterMunicipalityId,
+            observer.observer_municipality_id,
+            input.isProvincialCommand === true,
+          ],
         );
 
         const openRow = existingResult.rows[0];
@@ -219,6 +230,7 @@ export async function createAssistanceRequests(
         if (openRow) {
           summaries.push({
             id: openRow.id,
+            isProvincialCommand: openRow.is_provincial_command,
             recipientMunicipalityId: openRow.recipient_municipality_id,
             recipientMunicipalityName: openRow.recipient_municipality_name,
             requestedFiretrucks: openRow.requested_firetrucks,
@@ -290,6 +302,7 @@ export async function createAssistanceRequests(
 
       summaries.push({
         id: actualRequestId,
+        isProvincialCommand: input.isProvincialCommand === true,
         recipientMunicipalityId: observer.observer_municipality_id,
         recipientMunicipalityName: observer.observer_municipality_name,
         requestedFiretrucks,
@@ -352,6 +365,7 @@ export async function transitionAssistanceRequest(
       report_status: string;
       dispatch_status: string;
       observer_status: string;
+      is_provincial_command: boolean;
     }>(
       `select r.*,
               req_m.name as requester_municipality_name,
@@ -359,7 +373,8 @@ export async function transitionAssistanceRequest(
               fr.reference_number,
               fr.status as report_status,
               d.status as dispatch_status,
-              o.status as observer_status
+              o.status as observer_status,
+              r.is_provincial_command
          from intermunicipal_assistance_requests r
          join municipalities req_m on req_m.id = r.requester_municipality_id
          join municipalities rec_m on rec_m.id = r.recipient_municipality_id
@@ -385,6 +400,10 @@ export async function transitionAssistanceRequest(
       if (row.recipient_municipality_id !== input.actorMunicipalityId) {
         throw new Error("FORBIDDEN_NOT_RECIPIENT");
       }
+    }
+
+    if (row.is_provincial_command && input.action !== "ACCEPT") {
+      throw new Error("PROVINCIAL_COMMAND_REQUIRES_FULL_ACCEPTANCE");
     }
 
     // Idempotent retry check
@@ -415,6 +434,7 @@ export async function transitionAssistanceRequest(
           || input.offeredFiretrucks === 0 && input.offeredPersonnel === 0)) {
         return {
           id: row.id,
+          isProvincialCommand: row.is_provincial_command,
           recipientMunicipalityId: row.recipient_municipality_id,
           recipientMunicipalityName: row.recipient_municipality_name,
           requestedFiretrucks: row.requested_firetrucks,
@@ -445,6 +465,7 @@ export async function transitionAssistanceRequest(
       row.requested_personnel,
       input.offeredFiretrucks,
       input.offeredPersonnel,
+      row.is_provincial_command,
     );
 
     const now = new Date();
@@ -567,6 +588,7 @@ export async function transitionAssistanceRequest(
 
     return {
       id: row.id,
+      isProvincialCommand: row.is_provincial_command,
       recipientMunicipalityId: row.recipient_municipality_id,
       recipientMunicipalityName: row.recipient_municipality_name,
       requestedFiretrucks: row.requested_firetrucks,
@@ -600,13 +622,15 @@ export async function closeIncidentAssistance(
     reference_number: string;
     requester_municipality_name: string;
     recipient_municipality_name: string;
+    is_provincial_command: boolean;
   }>(
     `select r.id,
             r.recipient_municipality_id,
             r.status,
             fr.reference_number,
             req_m.name as requester_municipality_name,
-            rec_m.name as recipient_municipality_name
+            rec_m.name as recipient_municipality_name,
+            r.is_provincial_command
        from intermunicipal_assistance_requests r
        join fire_reports fr on fr.id = r.fire_report_id
        join municipalities req_m on req_m.id = r.requester_municipality_id
@@ -628,12 +652,19 @@ export async function closeIncidentAssistance(
   const provincialRecipients = await listProvincialNotificationRecipients(client);
 
   for (const row of openRequests.rows) {
-    const isAccepted = row.status === "ACCEPTED" || row.status === "PARTIALLY_ACCEPTED";
-    const nextStatus: AssistanceStatus = isAccepted ? "COMPLETED" : "CANCELLED";
-    const eventType = isAccepted ? "ASSISTANCE_COMPLETED" : "ASSISTANCE_CANCELLED";
-    const dedupeSuffix = isAccepted ? "completed" : "cancelled";
+    // A Provincial command is never silently converted into a cancellation.
+    // If it was not yet acknowledged, keep the command pending as an honest
+    // audit record rather than claiming resources were supplied.
+    if (row.is_provincial_command && row.status === "REQUESTED") {
+      continue;
+    }
 
-    if (isAccepted) {
+    const isCompleted = row.status === "ACCEPTED" || row.status === "PARTIALLY_ACCEPTED";
+    const nextStatus: AssistanceStatus = isCompleted ? "COMPLETED" : "CANCELLED";
+    const eventType = isCompleted ? "ASSISTANCE_COMPLETED" : "ASSISTANCE_CANCELLED";
+    const dedupeSuffix = isCompleted ? "completed" : "cancelled";
+
+    if (isCompleted) {
       await client.query(
         `update intermunicipal_assistance_requests
             set status = 'COMPLETED',
@@ -671,8 +702,8 @@ export async function closeIncidentAssistance(
     );
     const allRecipients = [...new Set([...originRecipients, ...recipientRecipients])];
 
-    const title = isAccepted ? "Backup Assistance Completed" : "Unanswered Backup Cancelled";
-    const summary = isAccepted
+    const title = isCompleted ? "Backup Assistance Completed" : "Unanswered Backup Cancelled";
+    const summary = isCompleted
       ? `Inter-municipality backup for incident ${row.reference_number} concluded upon incident resolution.`
       : `Pending backup request for incident ${row.reference_number} cancelled as incident was resolved.`;
 

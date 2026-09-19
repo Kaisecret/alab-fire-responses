@@ -147,17 +147,27 @@ export async function exportMunicipalDataset(
           throw new Error("NO_SELECTION: No reports were selected for export.");
         }
 
-        // Validate all selected IDs belong strictly to actor's municipality
-        const checkRes = await db.query<{ id: string; municipality_id: string }>(
-          `select id, municipality_id from fire_reports where id = any($1::uuid[])`,
-          [selectedIds],
+        // Validate all selected IDs are visible as owned or Provincial-command assistance records.
+        const checkRes = await db.query<{ id: string; allowed: boolean }>(
+          `select fr.id,
+                  (fr.municipality_id = $2 or exists (
+                    select 1
+                      from intermunicipal_assistance_requests assistance
+                     where assistance.fire_report_id = fr.id
+                       and assistance.recipient_municipality_id = $2
+                       and assistance.is_provincial_command
+                       and assistance.status in ('ACCEPTED','PARTIALLY_ACCEPTED','COMPLETED')
+                  )) as allowed
+             from fire_reports fr
+            where fr.id = any($1::uuid[])`,
+          [selectedIds, actor.municipalityId],
         );
 
         if (checkRes.rows.length !== selectedIds.length) {
           throw new Error("INVALID_SELECTION: Some selected reports were not found.");
         }
 
-        const crossMuni = checkRes.rows.some((r) => r.municipality_id !== actor.municipalityId);
+        const crossMuni = checkRes.rows.some((r) => !r.allowed);
         if (crossMuni) {
           throw new Error("CROSS_MUNICIPALITY_FORBIDDEN: Cannot export records from other municipalities.");
         }
@@ -219,6 +229,7 @@ export async function exportMunicipalDataset(
       rowCount = records.length;
       const headers = [
         "Reference Number",
+        "Record Role",
         "Municipality",
         "Barangay",
         "Report Source",
@@ -236,6 +247,7 @@ export async function exportMunicipalDataset(
 
       const rows = records.map((r) => [
         r.referenceNumber,
+        r.recordRole,
         r.municipalityName,
         r.barangay,
         r.reportSource,

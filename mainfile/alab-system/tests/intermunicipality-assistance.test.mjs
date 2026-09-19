@@ -44,6 +44,23 @@ test("transition validation enforces accepted, partial, rejected, and cancel qua
   );
 });
 
+test("a provincial command requires full acceptance and can never be rejected or cancelled", () => {
+  assert.equal(
+    validateAssistanceTransition("REQUESTED", "ACCEPT", 1, 4, 1, 4, true).nextStatus,
+    "ACCEPTED",
+  );
+  for (const [action, firetrucks, personnel] of [
+    ["PARTIAL_ACCEPT", 0, 2],
+    ["REJECT", 0, 0],
+    ["CANCEL", 0, 0],
+  ]) {
+    assert.throws(
+      () => validateAssistanceTransition("REQUESTED", action, 1, 4, firetrucks, personnel, true),
+      /PROVINCIAL_COMMAND_REQUIRES_FULL_ACCEPTANCE/,
+    );
+  }
+});
+
 test("assistance service locks rows, scopes actors, audits, and deduplicates notifications", () => {
   const service = source("lib/intermunicipality/assistance.ts");
   assert.match(service, /for update/i);

@@ -39,6 +39,7 @@ function toReportRow(row: ProvincialReportRow): MunicipalReportRow {
 
   return {
     id: row.id,
+    recordRole: "OWNER",
     referenceNumber: row.referenceNumber,
     municipalityId: row.municipalityId,
     municipalityName: row.municipalityName,

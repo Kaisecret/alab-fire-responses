@@ -300,6 +300,11 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
                 <>
                   {getStatusBadge(report.status)}
                   {getSeverityBadge(report.severity)}
+                  {report.recordRole === "ASSISTING" && (
+                    <span style={{ background: "#FFF7ED", color: "#C2410C", padding: "3px 8px", borderRadius: 999, fontSize: "0.72rem", fontWeight: 850, letterSpacing: "0.05em" }}>
+                      ASSISTING
+                    </span>
+                  )}
                   <span
                     style={{
                       background: "#F1F5F9",
@@ -467,7 +472,7 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
               </div>
 
               {/* Reporting Citizen & Intake Information Card */}
-              <div style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "1rem", background: "linear-gradient(180deg, #FAF5FF, #FFFFFF)", borderColor: "#E9D5FF" }}>
+              {report.recordRole === "OWNER" ? <div style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "1rem", background: "linear-gradient(180deg, #FAF5FF, #FFFFFF)", borderColor: "#E9D5FF" }}>
                 <h3 style={{ margin: "0 0 0.6rem", fontSize: "0.85rem", fontWeight: 800, color: "#6B21A8", textTransform: "uppercase", letterSpacing: "0.03em", display: "flex", alignItems: "center", gap: "0.4rem" }}>
                   <i className="fa-solid fa-user-shield" style={{ color: "#9333EA" }} />
                   Reporting Citizen & Intake Details
@@ -507,7 +512,12 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
                     <strong>Nearest Landmark:</strong> {report.nearestLandmark}
                   </div>
                 )}
-              </div>
+              </div> : (
+                <div style={{ border: "1px solid #FED7AA", borderRadius: 8, padding: "1rem", background: "#FFF7ED", color: "#9A3412", fontSize: "0.82rem", fontWeight: 650 }}>
+                  <i className="fa-solid fa-shield-halved" style={{ marginRight: 7 }} />
+                  ASSISTING record. Caller identity and resident-submitted details are protected from the assisting municipality.
+                </div>
+              )}
 
               {/* Location & Details Card */}
               <div style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: "1rem" }}>

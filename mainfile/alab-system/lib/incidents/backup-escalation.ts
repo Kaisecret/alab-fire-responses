@@ -633,6 +633,7 @@ async function summonForAlarmLevel(input: {
       requestedPersonnel: 0,
       requestNote: `${ALARM_DOCTRINE[input.alarmLevel].label} declared by the province. Send what you can spare.`,
       allowProvincialReach: true,
+      isProvincialCommand: true,
     });
   } catch (error) {
     /*

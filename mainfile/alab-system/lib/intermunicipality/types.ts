@@ -40,6 +40,7 @@ export type NearbyObserver = {
 
 export type AssistanceRequestSummary = {
   id: string;
+  isProvincialCommand?: boolean;
   recipientMunicipalityId: string;
   recipientMunicipalityName: string;
   requestedFiretrucks: number;

@@ -1,5 +1,6 @@
 export type MunicipalReportRow = {
   id: string;
+  recordRole: "OWNER" | "ASSISTING";
   referenceNumber: string;
   municipalityId: string;
   municipalityName: string;
@@ -55,7 +56,7 @@ export type MunicipalDispatchRecord = {
 };
 
 export type MunicipalReportDetail = MunicipalReportRow & {
-  description: string;
+  description?: string;
   addressLabel: string | null;
   photos: string[];
   timeline: MunicipalTimelineEvent[];
