@@ -273,13 +273,14 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
   const dispatch = await withTransaction(async (client) => {
     const current = await client.query<{
       status: FireReportStatus;
+      municipality_id: string;
       reference_number: string;
       resident_user_id: string | null;
       barangay: string | null;
       latitude: number;
       longitude: number;
     }>(
-      `select fr.status, fr.reference_number, resident.user_id as resident_user_id,
+      `select fr.status, fr.municipality_id, fr.reference_number, resident.user_id as resident_user_id,
               coalesce(report_barangay.name, resident_barangay.name, nullif(trim(split_part(fr.address_label, ',', 1)), '')) as barangay,
               fr.latitude::float as latitude,
               fr.longitude::float as longitude
@@ -288,12 +289,38 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
          left join barangays report_barangay on report_barangay.id = fr.barangay_id
          left join resident_addresses ra on ra.resident_profile_id = resident.id and ra.is_primary = true
          left join barangays resident_barangay on resident_barangay.id = ra.barangay_id
-        where fr.id = $1 and fr.municipality_id = $2
+        where fr.id = $1
+          and (
+            fr.municipality_id = $2
+            or exists (
+              /*
+               * A municipality called for mutual aid sends its own crews to
+               * another town's fire. Requiring ownership meant a summoned
+               * station could see the fire, see the road to it and accept the
+               * request, and then be refused when it tried to assign anyone:
+               * the call for help reached them and stopped there. Being
+               * summoned is the authority, and without it this stays refused.
+               */
+              select 1 from incident_municipal_observers observer
+               where observer.fire_report_id = fr.id
+                 and observer.observer_municipality_id = $2
+                 and observer.status = 'ACTIVE'
+            )
+          )
         for update of fr`,
       [input.fireReportId, input.municipalityId],
     );
     if (!current.rowCount) throw new Error("NOT_FOUND");
-    if (!canTransitionReportStatus(current.rows[0].status, "RESPONDING")) throw new Error("INVALID_STATUS");
+
+    /*
+     * Mutual aid joins a response already under way. The incident moves to
+     * RESPONDING once, when its own municipality turns out; a summoned town
+     * dispatching afterwards is adding crews, not starting the response, and
+     * holding it to that transition would refuse every alarm it was called by.
+     */
+    const isOriginDispatch = current.rows[0].municipality_id === input.municipalityId;
+    const alreadyResponding = !canTransitionReportStatus(current.rows[0].status, "RESPONDING");
+    if (isOriginDispatch && alreadyResponding) throw new Error("INVALID_STATUS");
 
     const activeStations = await queryDispatchableStations(client, input.municipalityId);
     const stationIds = input.selectAllStations
