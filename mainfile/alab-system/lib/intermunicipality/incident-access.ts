@@ -8,6 +8,8 @@ import type {
 
 export type ScopedMunicipalIncident = {
   id: string;
+  /** Set when this municipality was asked to send help to another's fire. */
+  assistanceStatus?: "REQUESTED" | "ACCEPTED" | "PARTIALLY_ACCEPTED" | null;
   referenceNumber: string;
   reportSource: "ALAB_APP" | "PHONE_CALL";
   residentName: string | null;
@@ -146,7 +148,17 @@ export async function listScopedMunicipalIncidents(
              fr.building_density_building_count as "buildingDensityBuildingCount",
              fr.building_density_minimum_gap_meters::float as "buildingDensityMinimumGapMeters",
              'OBSERVER'::text as "accessScope",
-             origin.name as "originMunicipality"
+             origin.name as "originMunicipality",
+             -- Whether this municipality was asked to send help, rather than
+             -- only being told a fire is burning nearby. The two read very
+             -- differently on a board: one is awareness, the other is a task.
+             (select r.status
+                from intermunicipal_assistance_requests r
+               where r.fire_report_id = fr.id
+                 and r.recipient_municipality_id = $1
+                 and r.status in ('REQUESTED','ACCEPTED','PARTIALLY_ACCEPTED')
+               order by r.requested_at desc
+               limit 1) as "assistanceStatus"
         from incident_municipal_observers observer
         join fire_reports fr on fr.id = observer.fire_report_id
         join municipalities origin on origin.id = observer.origin_municipality_id

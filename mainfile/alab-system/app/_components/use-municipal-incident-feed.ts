@@ -25,6 +25,8 @@ export interface MunicipalIncident {
   buildingDensityMinimumGapMeters?: number | null;
   accessScope: "ORIGIN" | "OBSERVER";
   originMunicipality: string;
+  /** Set when this municipality was asked to send help, not merely told. */
+  assistanceStatus?: "REQUESTED" | "ACCEPTED" | "PARTIALLY_ACCEPTED" | null;
 }
 
 interface MunicipalIncidentResponse {
@@ -61,6 +63,7 @@ function getCachedFeed(key: string): IncidentFeedCache | null {
             ...inc,
             accessScope: inc.accessScope === "OBSERVER" ? "OBSERVER" : "ORIGIN",
             originMunicipality: inc.originMunicipality || parsed.municipality || "",
+            assistanceStatus: inc.assistanceStatus ?? null,
           }));
           const normalizedCache: IncidentFeedCache = {
             ...parsed,

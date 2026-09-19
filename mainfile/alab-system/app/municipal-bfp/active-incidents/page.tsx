@@ -386,6 +386,13 @@ const activeIncidentsStyles = `
     margin-top: 0.25rem;
     white-space: nowrap;
   }
+  /* A request for help is amber, the colour this console already uses for
+     something waiting on a decision, so it does not read as mere awareness. */
+  .mbfp-nearby-row-badge.is-assistance {
+    color: #B45309;
+    background: #FFFBEB;
+    border-color: #FDE68A;
+  }
 
   .mbfp-caller-name {
     font-weight: 700;
@@ -956,9 +963,16 @@ function ActiveIncidentsContent() {
                           </div>
                           {inc.reportSource === "PHONE_CALL" && <div className="mbfp-ref-time">From Phone Caller</div>}
                           {inc.accessScope === "OBSERVER" && (
-                            <div className="mbfp-nearby-row-badge">
-                              <i className="fa-solid fa-satellite-dish" />
-                              <span>Nearby incident · {inc.originMunicipality || "Adjacent Municipality"}</span>
+                            /* Being asked to send help is a task; watching a
+                               neighbour's fire is only awareness. The badge
+                               says which of the two this is. */
+                            <div className={`mbfp-nearby-row-badge${inc.assistanceStatus ? " is-assistance" : ""}`}>
+                              <i className={`fa-solid ${inc.assistanceStatus ? "fa-hands-helping" : "fa-satellite-dish"}`} />
+                              <span>
+                                {inc.assistanceStatus
+                                  ? `Assistance requested · ${inc.originMunicipality || "Adjacent Municipality"}`
+                                  : `Nearby incident · ${inc.originMunicipality || "Adjacent Municipality"}`}
+                              </span>
                             </div>
                           )}
                           <div className="mbfp-ref-time">

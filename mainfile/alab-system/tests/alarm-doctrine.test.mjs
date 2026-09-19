@@ -151,3 +151,60 @@ test("a fire without usable coordinates is refused rather than guessed at", () =
     /INVALID_INCIDENT_COORDINATES/,
   );
 });
+
+test("a Hamtic fire reaches the towns around it, station or no station", () => {
+  /*
+   * The real geography, and the case that was reported broken: a second alarm
+   * in Hamtic did not reach San Jose, and a third did not reach Dao. San Jose
+   * had no station on file, so it had no position and could never be ranked;
+   * Dao sat at 25.9 km, just outside the old 25 km reach.
+   *
+   * Positions here are municipal seats, which is what the system now falls
+   * back to when a municipality has registered no station.
+   */
+  const antique = [
+    { stationId: "m-tobias", municipalityId: "m-tobias", municipalityName: "Tobias Fornier", stationName: "Tobias Fornier", latitude: 10.5178, longitude: 121.9331 },
+    { stationId: "m-sanjose", municipalityId: "m-sanjose", municipalityName: "San Jose de Buenavista", stationName: "San Jose", latitude: 10.7431, longitude: 121.9394 },
+    { stationId: "m-sibalom", municipalityId: "m-sibalom", municipalityName: "Sibalom", stationName: "Sibalom", latitude: 10.7922, longitude: 122.0103 },
+    { stationId: "m-aniniy", municipalityId: "m-aniniy", municipalityName: "Anini-y", stationName: "Anini-y", latitude: 10.4331, longitude: 121.9128 },
+    { stationId: "m-belison", municipalityId: "m-belison", municipalityName: "Belison", stationName: "Belison", latitude: 10.8306, longitude: 121.9631 },
+    { stationId: "m-dao", municipalityId: "m-dao", municipalityName: "Dao", stationName: "Dao", latitude: 10.8461, longitude: 121.9986 },
+    { stationId: "m-caluya", municipalityId: "m-caluya", municipalityName: "Caluya", stationName: "Caluya", latitude: 11.9431, longitude: 121.4722 },
+  ];
+  const fire = { latitude: 10.614859, longitude: 121.971306, originMunicipalityId: "m-hamtic" };
+
+  // Second alarm: the one nearest the fire.
+  const second = doctrine.resolveAlarmSummons({ level: 2, ...fire, stations: antique });
+  assert.equal(second.length, 1);
+  assert.equal(second[0].municipalityName, "Tobias Fornier", "the closest town answers first");
+
+  // Third alarm: the ring of towns around Hamtic, San Jose and Dao among them.
+  const third = doctrine.resolveAlarmSummons({ level: 3, ...fire, stations: antique });
+  const called = third.map((entry) => entry.municipalityName);
+  for (const town of ["San Jose de Buenavista", "Sibalom", "Dao", "Anini-y"]) {
+    assert.ok(called.includes(town), `${town} is called at the third alarm`);
+  }
+  assert.ok(!called.includes("Caluya"), "the far northern island is not");
+});
+
+test("a municipality without a station is still reachable", () => {
+  /*
+   * The station list was the only source of position, so a municipality that
+   * had registered none was invisible to every alarm. Standing in its seat is
+   * what makes it reachable at all.
+   */
+  const seatOnly = [
+    { stationId: "m-sanjose", municipalityId: "m-sanjose", municipalityName: "San Jose de Buenavista", stationName: "San Jose de Buenavista", latitude: 10.7431, longitude: 121.9394 },
+  ];
+  const summoned = doctrine.resolveAlarmSummons({
+    level: 2,
+    latitude: 10.614859,
+    longitude: 121.971306,
+    originMunicipalityId: "m-hamtic",
+    stations: seatOnly,
+  });
+
+  assert.equal(summoned.length, 1);
+  assert.equal(summoned[0].municipalityId, "m-sanjose");
+  assert.ok(summoned[0].distanceMeters < 20_000, "it is ranked by a real distance");
+});

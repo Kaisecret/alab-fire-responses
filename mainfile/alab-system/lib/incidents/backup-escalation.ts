@@ -504,28 +504,41 @@ async function summonForAlarmLevel(input: {
   if (!origin || origin.latitude === null || origin.longitude === null) return [];
   if (!isDeclarableAlarmLevel(input.alarmLevel)) return [];
 
-  // Active stations of every municipality that has someone to send.
+  /*
+   * Every municipality but the origin, positioned by its nearest active
+   * station where it has one and by its seat where it does not.
+   *
+   * Requiring a registered station and assigned personnel meant most of the
+   * province could not be reached at all: a second alarm in Hamtic skipped San
+   * Jose, and a third skipped Dao, not because they were far but because
+   * nobody had entered a station for them. An alarm is a call to a
+   * municipality, and a municipality that has not finished filling in its
+   * stations is still there to answer it.
+   */
   const stations = await db.query<StationCandidate>(
-    `select station.id as "stationId",
-            station.station_name as "stationName",
-            station.municipality_id as "municipalityId",
+    `select coalesce(nearest.station_id, municipality.id) as "stationId",
+            coalesce(nearest.station_name, municipality.name) as "stationName",
+            municipality.id as "municipalityId",
             municipality.name as "municipalityName",
-            station.latitude::float as latitude,
-            station.longitude::float as longitude
-       from public.municipal_bfp_stations station
-       join public.municipalities municipality on municipality.id = station.municipality_id
-      where station.status = 'ACTIVE'
-        and station.municipality_id <> $1
-        and exists (
-          select 1
-            from public.users u
-            join public.bfp_personnel_profiles p on p.user_id = u.id
-            join public.bfp_municipality_assignments a
-              on a.personnel_profile_id = p.id and a.status = 'ACTIVE'
-           where a.municipality_id = station.municipality_id
-             and u.role = 'MUNICIPAL_BFP'
-             and u.account_status = 'ACTIVE'
-        )`,
+            coalesce(nearest.latitude, municipality.latitude)::float as latitude,
+            coalesce(nearest.longitude, municipality.longitude)::float as longitude
+       from public.municipalities municipality
+       left join lateral (
+         select station.id as station_id,
+                station.station_name,
+                station.latitude,
+                station.longitude
+           from public.municipal_bfp_stations station
+          where station.municipality_id = municipality.id
+            and station.status = 'ACTIVE'
+            and station.latitude is not null
+            and station.longitude is not null
+          order by station.created_at asc
+          limit 1
+       ) nearest on true
+      where municipality.id <> $1
+        and coalesce(nearest.latitude, municipality.latitude) is not null
+        and coalesce(nearest.longitude, municipality.longitude) is not null`,
     [origin.municipalityId],
   );
 
@@ -588,7 +601,10 @@ async function summonForAlarmLevel(input: {
         dispatchId,
         origin.municipalityId,
         candidate.municipalityId,
-        candidate.stationId,
+        // A municipality positioned by its seat rather than a station has no
+        // station to name, and the column says so rather than pointing at one
+        // that does not exist.
+        candidate.stationId === candidate.municipalityId ? null : candidate.stationId,
         candidate.latitude,
         candidate.longitude,
         candidate.distanceMeters,

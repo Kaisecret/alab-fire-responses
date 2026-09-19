@@ -29,7 +29,7 @@ export const FIRST_DECLARABLE_ALARM_LEVEL = 2;
  * distance rather than a boundary: Antique's municipalities are long and thin,
  * so a neighbour's nearest station can be further than a non-neighbour's.
  */
-export const NEARBY_RADIUS_METERS = 25_000;
+export const NEARBY_RADIUS_METERS = 35_000;
 
 export type AlarmLevel = 1 | 2 | 3 | 4;
 
