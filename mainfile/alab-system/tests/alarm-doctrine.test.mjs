@@ -59,15 +59,25 @@ test("the province's alarms stop at the fourth", () => {
   );
 });
 
-test("a second alarm calls whoever is nearest the fire, not the nearest on the map", () => {
+test("a second alarm calls the nearest towns to the fire, not to the map", () => {
+  /*
+   * Two rather than one: a first call for mutual aid that rests on a single
+   * town fails quietly when that town is already committed. Which two is
+   * decided by the fire's position, never by a standing pairing, so the rule
+   * serves every municipality without a list to keep.
+   */
   const north = doctrine.resolveAlarmSummons({ level: 2, ...NEAR_SAN_JOSE, stations });
-  assert.equal(north.length, 1);
-  assert.equal(north[0].municipalityId, "m-sanjose");
+  assert.equal(north.length, doctrine.SECOND_ALARM_MUNICIPALITIES);
+  assert.equal(north[0].municipalityId, "m-sanjose", "the closest answers first");
 
   // The same municipality, burning at its southern end, calls the other side.
   const south = doctrine.resolveAlarmSummons({ level: 2, ...NEAR_TOBIAS, stations });
-  assert.equal(south.length, 1);
   assert.equal(south[0].municipalityId, "m-tobias");
+  assert.notDeepEqual(
+    north.map((entry) => entry.municipalityId),
+    south.map((entry) => entry.municipalityId),
+    "where the fire is decides who is called",
+  );
 });
 
 test("a third alarm calls everyone within the radius and no one beyond it", () => {
@@ -173,10 +183,14 @@ test("a Hamtic fire reaches the towns around it, station or no station", () => {
   ];
   const fire = { latitude: 10.614859, longitude: 121.971306, originMunicipalityId: "m-hamtic" };
 
-  // Second alarm: the one nearest the fire.
+  // Second alarm: the two nearest the fire.
   const second = doctrine.resolveAlarmSummons({ level: 2, ...fire, stations: antique });
-  assert.equal(second.length, 1);
-  assert.equal(second[0].municipalityName, "Tobias Fornier", "the closest town answers first");
+  assert.equal(second.length, 2);
+  assert.deepEqual(
+    second.map((entry) => entry.municipalityName),
+    ["Tobias Fornier", "San Jose de Buenavista"],
+    "the two closest towns answer first",
+  );
 
   // Third alarm: the ring of towns around Hamtic, San Jose and Dao among them.
   const third = doctrine.resolveAlarmSummons({ level: 3, ...fire, stations: antique });
@@ -204,7 +218,64 @@ test("a municipality without a station is still reachable", () => {
     stations: seatOnly,
   });
 
-  assert.equal(summoned.length, 1);
+  assert.equal(summoned.length, 1, "it is the only candidate there is");
   assert.equal(summoned[0].municipalityId, "m-sanjose");
   assert.ok(summoned[0].distanceMeters < 20_000, "it is ranked by a real distance");
+});
+
+test("the four levels widen without ever asking the same town twice", () => {
+  /*
+   * The whole escalation, as it is meant to run: the municipality answers its
+   * own report, then each level reaches further than the last, and a town
+   * already called stays on the incident rather than being asked again.
+   * Caluya is the test of the fourth: an island the earlier levels cannot
+   * justify and the province-wide call must still reach.
+   */
+  const antique = [
+    { stationId: "m-tobias", municipalityId: "m-tobias", municipalityName: "Tobias Fornier", stationName: "Tobias Fornier", latitude: 10.5178, longitude: 121.9331 },
+    { stationId: "m-sanjose", municipalityId: "m-sanjose", municipalityName: "San Jose", stationName: "San Jose", latitude: 10.7431, longitude: 121.9394 },
+    { stationId: "m-sibalom", municipalityId: "m-sibalom", municipalityName: "Sibalom", stationName: "Sibalom", latitude: 10.7922, longitude: 122.0103 },
+    { stationId: "m-aniniy", municipalityId: "m-aniniy", municipalityName: "Anini-y", stationName: "Anini-y", latitude: 10.4331, longitude: 121.9128 },
+    { stationId: "m-belison", municipalityId: "m-belison", municipalityName: "Belison", stationName: "Belison", latitude: 10.8306, longitude: 121.9631 },
+    { stationId: "m-dao", municipalityId: "m-dao", municipalityName: "Dao", stationName: "Dao", latitude: 10.8461, longitude: 121.9986 },
+    { stationId: "m-patnongon", municipalityId: "m-patnongon", municipalityName: "Patnongon", stationName: "Patnongon", latitude: 10.9106, longitude: 121.9781 },
+    { stationId: "m-caluya", municipalityId: "m-caluya", municipalityName: "Caluya", stationName: "Caluya", latitude: 11.9431, longitude: 121.4722 },
+  ];
+  const fire = { latitude: 10.614859, longitude: 121.971306, originMunicipalityId: "m-hamtic" };
+
+  const called = [];
+  const run = (level) => {
+    const summoned = doctrine.resolveAlarmSummons({
+      level,
+      ...fire,
+      stations: antique,
+      alreadySummonedMunicipalityIds: [...called],
+    });
+    called.push(...summoned.map((entry) => entry.municipalityId));
+    return summoned.map((entry) => entry.municipalityId);
+  };
+
+  // First: the origin's own crews, nobody else.
+  assert.deepEqual(run(1), []);
+
+  // Second: the two nearest.
+  assert.deepEqual(run(2), ["m-tobias", "m-sanjose"]);
+
+  // Third: the ring around the fire, minus the two already coming.
+  const third = run(3);
+  assert.ok(!third.includes("m-tobias") && !third.includes("m-sanjose"), "nobody is asked twice");
+  for (const id of ["m-sibalom", "m-aniniy", "m-belison", "m-dao", "m-patnongon"]) {
+    // Patnongon sits at 32.9 km, inside the third's reach: the radius is a
+    // distance, not a count, so it takes in whoever is close enough.
+    assert.ok(third.includes(id), `${id} is called at the third alarm`);
+  }
+  assert.ok(!third.includes("m-caluya"), "the island is beyond the third");
+
+  // Fourth: everyone still unasked, the island included.
+  const fourth = run(4);
+  assert.deepEqual(fourth, ["m-caluya"], "a province-wide call reaches the island the rest could not");
+
+  // Every municipality has been called exactly once across the escalation.
+  assert.equal(new Set(called).size, called.length, "no municipality is summoned twice");
+  assert.equal(called.length, antique.length, "and the fourth alarm leaves nobody out");
 });

@@ -29,8 +29,8 @@ const POLL_INTERVAL_MS = 5_000;
  * belongs to Region VI, which is outside this system.
  */
 const DECLARABLE_LEVELS: Array<{ level: number; label: string; summons: string }> = [
-  { level: 2, label: "2nd", summons: "The municipality nearest the fire" },
-  { level: 3, label: "3rd", summons: "Every municipality within 25 km" },
+  { level: 2, label: "2nd", summons: "The 2 municipalities nearest the fire" },
+  { level: 3, label: "3rd", summons: "Every municipality within 35 km" },
   { level: 4, label: "4th", summons: "Every municipality in the province" },
 ];
 

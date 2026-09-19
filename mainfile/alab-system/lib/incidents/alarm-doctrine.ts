@@ -31,6 +31,17 @@ export const FIRST_DECLARABLE_ALARM_LEVEL = 2;
  */
 export const NEARBY_RADIUS_METERS = 35_000;
 
+/**
+ * How many municipalities a second alarm calls.
+ *
+ * Two rather than one: the nearest station may already be committed, out of
+ * water, or on the wrong side of a river, and a first call for mutual aid that
+ * rests on a single town can fail quietly. Which two depends on where the fire
+ * is, never on a standing pairing, so every municipality is served by the same
+ * rule without a list to keep.
+ */
+export const SECOND_ALARM_MUNICIPALITIES = 2;
+
 export type AlarmLevel = 1 | 2 | 3 | 4;
 
 export type AlarmReach =
@@ -61,7 +72,7 @@ export const ALARM_DOCTRINE: Record<AlarmLevel, AlarmLevelDefinition> = {
     level: 2,
     reach: "NEAREST_MUNICIPALITY",
     label: "2nd alarm",
-    summary: "The municipality nearest the fire.",
+    summary: `The ${SECOND_ALARM_MUNICIPALITIES} municipalities nearest the fire.`,
     declarable: true,
   },
   3: {
@@ -178,7 +189,7 @@ export function resolveAlarmSummons(input: ResolveAlarmSummonsInput): AlarmCandi
 
   switch (definition.reach) {
     case "NEAREST_MUNICIPALITY":
-      return ranked.slice(0, 1);
+      return ranked.slice(0, SECOND_ALARM_MUNICIPALITIES);
     case "MUNICIPALITIES_WITHIN_RADIUS":
       return ranked.filter((candidate) => candidate.distanceMeters <= NEARBY_RADIUS_METERS);
     case "WHOLE_PROVINCE":
