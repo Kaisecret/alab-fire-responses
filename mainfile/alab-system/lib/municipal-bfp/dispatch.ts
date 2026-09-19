@@ -376,18 +376,44 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
     }
 
     const stationLabel = stations.length === 1 ? stations[0].station_name : `${stations.length} BFP stations`;
-    await client.query(
-      `update fire_reports
-          set status = 'RESPONDING', responding_bfp_user_id = null, responding_station_name = $1,
-              response_started_at = $2, updated_at = $2
-        where id = $3`,
-      [stationLabel, now, input.fireReportId],
-    );
-    await client.query(
-      `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)
-       values ($1,$2,'RESPONDING',$3,'BFP station teams have been assigned to your fire report.',$4)`,
-      [input.fireReportId, current.rows[0].status, input.actorUserId, now],
-    );
+
+    if (isOriginDispatch) {
+      await client.query(
+        `update fire_reports
+            set status = 'RESPONDING', responding_bfp_user_id = null, responding_station_name = $1,
+                response_started_at = $2, updated_at = $2
+          where id = $3`,
+        [stationLabel, now, input.fireReportId],
+      );
+      await client.query(
+        `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)
+         values ($1,$2,'RESPONDING',$3,'BFP station teams have been assigned to your fire report.',$4)`,
+        [input.fireReportId, current.rows[0].status, input.actorUserId, now],
+      );
+    } else {
+      /*
+       * Mutual aid adds crews to a response that is already running. Forcing
+       * the incident back to RESPONDING would rewind a fire whose own teams
+       * had already arrived, and overwrite the station the owning municipality
+       * has on the record. The arriving help is noted in the history instead,
+       * and the incident keeps the state its own responders put it in.
+       */
+      await client.query(
+        `update fire_reports set updated_at = $1 where id = $2`,
+        [now, input.fireReportId],
+      );
+      await client.query(
+        `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)
+         values ($1,$2,$2,$3,$4,$5)`,
+        [
+          input.fireReportId,
+          current.rows[0].status,
+          input.actorUserId,
+          `Mutual aid: ${input.municipalityName} has assigned ${stationLabel}.`,
+          now,
+        ],
+      );
+    }
 
     const recipientUserIds = recipientResult.rows.map((recipient) => recipient.user_id);
     const report = current.rows[0];
