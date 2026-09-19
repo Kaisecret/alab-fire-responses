@@ -20,11 +20,13 @@ export function ProvincialIncidentMiniMap({
   longitude,
   label,
   landmark,
+  icon = "fa-solid fa-map-location-dot",
 }: {
   latitude: number;
   longitude: number;
   label: string;
   landmark?: string | null;
+  icon?: string;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [satellite, setSatellite] = useState(false);
@@ -53,17 +55,22 @@ export function ProvincialIncidentMiniMap({
           .tileLayer(satellite ? SATELLITE_TILE_URL : OSM_TILE_URL, { maxZoom: 19 })
           .addTo(map);
 
-        // A plain circle marker, so no icon asset has to resolve for the pin
-        // to appear: a report that cannot show its own location is worse than
-        // one drawn plainly.
+        // Custom incident marker with tactical icon and pulse beacon
+        const incidentIcon = leaflet.divIcon({
+          className: "pmm-marker-wrap",
+          html: `
+            <div class="pmm-marker-pulse" aria-hidden="true"></div>
+            <div class="pmm-marker-pin" aria-hidden="true">
+              <i class="${icon}"></i>
+            </div>
+          `,
+          iconSize: [44, 44],
+          iconAnchor: [22, 22],
+          popupAnchor: [0, -22],
+        });
+
         leaflet
-          .circleMarker([latitude, longitude], {
-            radius: 10,
-            color: "#FFFFFF",
-            weight: 3,
-            fillColor: "#DC2626",
-            fillOpacity: 1,
-          })
+          .marker([latitude, longitude], { icon: incidentIcon })
           .addTo(map)
           .bindPopup(`<strong>${label}</strong>${landmark ? `<br/>${landmark}` : ""}`);
 
@@ -73,7 +80,7 @@ export function ProvincialIncidentMiniMap({
           .circle([latitude, longitude], {
             radius: 120,
             color: "#DC2626",
-            weight: 1,
+            weight: 1.5,
             fillColor: "#DC2626",
             fillOpacity: 0.08,
           })
@@ -91,12 +98,12 @@ export function ProvincialIncidentMiniMap({
       cancelled = true;
       map?.remove();
     };
-  }, [latitude, longitude, label, landmark, satellite]);
+  }, [latitude, longitude, label, landmark, satellite, icon]);
 
   if (failed) {
     return (
       <div className="pmm-fallback">
-        <i className="fa-solid fa-map-location-dot" />
+        <i className={icon} />
         <span>The map could not load. The coordinates are below.</span>
       </div>
     );
@@ -189,5 +196,62 @@ export const provincialMiniMapStyles = `
     background: #F8FAFC;
     color: #64748B;
     font-size: 0.8rem;
+  }
+
+  /* Custom Incident Map Marker with Icon and Radar Pulse */
+  .leaflet-div-icon.pmm-marker-wrap {
+    background: transparent !important;
+    border: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .pmm-marker-pulse {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(220, 38, 38, 0.24);
+    border: 1.5px solid rgba(220, 38, 38, 0.6);
+    animation: pmmPulseRing 2s infinite cubic-bezier(0.24, 0, 0.38, 1);
+    pointer-events: none;
+  }
+  @keyframes pmmPulseRing {
+    0% {
+      transform: scale(0.6);
+      opacity: 1;
+    }
+    70% {
+      transform: scale(1.65);
+      opacity: 0.15;
+    }
+    100% {
+      transform: scale(1.9);
+      opacity: 0;
+    }
+  }
+  .pmm-marker-pin {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    border: 2.5px solid #FFFFFF;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.55), 0 2px 5px rgba(0, 0, 0, 0.25);
+    display: grid;
+    place-items: center;
+    color: #FFFFFF;
+    cursor: pointer;
+    transition: transform 0.18s ease;
+    z-index: 2;
+  }
+  .pmm-marker-pin:hover {
+    transform: scale(1.15);
+  }
+  .pmm-marker-pin i {
+    color: #FFFFFF;
+    font-size: 0.95rem;
+    line-height: 1;
+    display: block;
   }
 `;
