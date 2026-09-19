@@ -10,6 +10,8 @@ import { createAccountNotifications, listProvincialNotificationRecipients } from
 import { sendDispatchPush } from "../notifications/fcm";
 import { closeIncidentAssistance } from "../intermunicipality/assistance";
 import { createNearbyIncidentObservers, endIncidentObservers } from "../intermunicipality/observers";
+import type { CreateNearbyObserversResult } from "../intermunicipality/observers";
+import { findMutualAidDispatchId } from "./mutual-aid-dispatch-query.mjs";
 
 type Queryable = Pick<PoolClient, "query">;
 
@@ -301,7 +303,14 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
                * the call for help reached them and stopped there. Being
                * summoned is the authority, and without it this stays refused.
                */
-              select 1 from incident_municipal_observers observer
+              select 1
+                from incident_municipal_observers observer
+                join intermunicipal_assistance_requests assistance
+                  on assistance.observer_id = observer.id
+                 and assistance.dispatch_id = observer.dispatch_id
+                 and assistance.fire_report_id = observer.fire_report_id
+                 and assistance.recipient_municipality_id = observer.observer_municipality_id
+                 and assistance.status in ('ACCEPTED', 'PARTIALLY_ACCEPTED')
                where observer.fire_report_id = fr.id
                  and observer.observer_municipality_id = $2
                  and observer.status = 'ACTIVE'
@@ -347,16 +356,44 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
     if (stations.some((station) => !coveredStations.has(station.id))) throw new Error("STATION_HAS_NO_ACTIVE_PERSONNEL");
 
     const now = new Date();
-    const dispatchId = randomUUID();
-    await client.query(
-      `insert into incident_dispatches (id, fire_report_id, municipality_id, dispatched_by_user_id, status, dispatched_at, created_at, updated_at)
-       values ($1,$2,$3,$4,'ACTIVE',$5,$5,$5)`,
-      [dispatchId, input.fireReportId, input.municipalityId, input.actorUserId, now],
-    );
+    let dispatchId: string;
+    if (isOriginDispatch) {
+      dispatchId = randomUUID();
+      await client.query(
+        `insert into incident_dispatches (id, fire_report_id, municipality_id, dispatched_by_user_id, status, dispatched_at, created_at, updated_at)
+         values ($1,$2,$3,$4,'ACTIVE',$5,$5,$5)`,
+        [dispatchId, input.fireReportId, input.municipalityId, input.actorUserId, now],
+      );
+    } else {
+      /*
+       * The schema deliberately has one active dispatch per incident. Mutual
+       * aid joins that dispatch with its own stations and personnel instead of
+       * creating a competing command record that the unique index rejects.
+       */
+      const activeDispatchId = await findMutualAidDispatchId(
+        client,
+        input.fireReportId,
+        input.municipalityId,
+      );
+      if (!activeDispatchId) throw new Error("NOT_FOUND");
+      dispatchId = activeDispatchId;
+    }
 
     const dispatchStationIds = new Map<string, string>();
     for (const station of stations) {
-      const dispatchStationId = randomUUID();
+      let dispatchStationId: string = randomUUID();
+      if (!isOriginDispatch) {
+        const existingStation = await client.query<{ id: string }>(
+          `select id from incident_dispatch_stations
+            where dispatch_id = $1 and station_id = $2`,
+          [dispatchId, station.id],
+        );
+        if (existingStation.rows[0]) {
+          dispatchStationId = existingStation.rows[0].id;
+          dispatchStationIds.set(station.id, dispatchStationId);
+          continue;
+        }
+      }
       dispatchStationIds.set(station.id, dispatchStationId);
       await client.query(
         `insert into incident_dispatch_stations (
@@ -366,13 +403,17 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
       );
     }
 
+    const newlyAssignedRecipientIds: string[] = [];
     for (const recipient of recipientResult.rows) {
-      await client.query(
+      const inserted = await client.query<{ recipient_user_id: string }>(
         `insert into incident_dispatch_recipients (
            id, dispatch_id, dispatch_station_id, recipient_user_id, recipient_name_snapshot, status, assigned_at, created_at, updated_at
-         ) values ($1,$2,$3,$4,$5,'ASSIGNED',$6,$6,$6)`,
+         ) values ($1,$2,$3,$4,$5,'ASSIGNED',$6,$6,$6)
+         on conflict (dispatch_id, recipient_user_id) do nothing
+         returning recipient_user_id`,
         [randomUUID(), dispatchId, dispatchStationIds.get(recipient.station_id), recipient.user_id, recipient.display_name, now],
       );
+      if (inserted.rows[0]) newlyAssignedRecipientIds.push(recipient.user_id);
     }
 
     const stationLabel = stations.length === 1 ? stations[0].station_name : `${stations.length} BFP stations`;
@@ -390,7 +431,7 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
          values ($1,$2,'RESPONDING',$3,'BFP station teams have been assigned to your fire report.',$4)`,
         [input.fireReportId, current.rows[0].status, input.actorUserId, now],
       );
-    } else {
+    } else if (newlyAssignedRecipientIds.length > 0) {
       /*
        * Mutual aid adds crews to a response that is already running. Forcing
        * the incident back to RESPONDING would rewind a fire whose own teams
@@ -415,7 +456,9 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
       );
     }
 
-    const recipientUserIds = recipientResult.rows.map((recipient) => recipient.user_id);
+    const recipientUserIds = isOriginDispatch
+      ? recipientResult.rows.map((recipient) => recipient.user_id)
+      : newlyAssignedRecipientIds;
     const report = current.rows[0];
 
     /*
@@ -425,28 +468,31 @@ export async function dispatchIncidentToStations(input: DispatchInput) {
      * Higher levels are the province's to declare, and each widens the call for
      * mutual aid.
      */
-    await client.query(
-      `insert into incident_alarm_levels (fire_report_id, alarm_level, declared_by_user_id, note)
-       select $1, 1, $2, 'Raised automatically when the municipality dispatched.'
-        where not exists (
-          select 1 from incident_alarm_levels
-           where fire_report_id = $1 and alarm_level = 1
-        )`,
-      [input.fireReportId, input.actorUserId],
-    );
+    let nearbySelection: CreateNearbyObserversResult = { observers: [], degraded: false };
+    if (isOriginDispatch) {
+      await client.query(
+        `insert into incident_alarm_levels (fire_report_id, alarm_level, declared_by_user_id, note)
+         select $1, 1, $2, 'Raised automatically when the municipality dispatched.'
+          where not exists (
+            select 1 from incident_alarm_levels
+             where fire_report_id = $1 and alarm_level = 1
+          )`,
+        [input.fireReportId, input.actorUserId],
+      );
 
-    const nearbySelection = await createNearbyIncidentObservers(client, {
-      fireReportId: input.fireReportId,
-      dispatchId,
-      originMunicipalityId: input.municipalityId,
-      originMunicipalityName: input.municipalityName,
-      actorUserId: input.actorUserId,
-      referenceNumber: report.reference_number,
-      barangay: report.barangay,
-      latitude: report.latitude,
-      longitude: report.longitude,
-      createdAt: now,
-    });
+      nearbySelection = await createNearbyIncidentObservers(client, {
+        fireReportId: input.fireReportId,
+        dispatchId,
+        originMunicipalityId: input.municipalityId,
+        originMunicipalityName: input.municipalityName,
+        actorUserId: input.actorUserId,
+        referenceNumber: report.reference_number,
+        barangay: report.barangay,
+        latitude: report.latitude,
+        longitude: report.longitude,
+        createdAt: now,
+      });
+    }
 
     await createAccountNotifications(client, {
       recipientUserIds,

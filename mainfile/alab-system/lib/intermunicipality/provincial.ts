@@ -67,8 +67,8 @@ type DbObserverRow = {
   id: string;
   observer_municipality_id: string;
   observer_municipality_name: string;
-  observer_station_id: string;
-  observer_station_name: string;
+  observer_station_id: string | null;
+  observer_station_name: string | null;
   distance_meters: number | string;
   status: "ACTIVE" | "ENDED";
   acknowledged_at: Date | string | null;
@@ -120,7 +120,7 @@ function mapObserverRow(row: DbObserverRow): NearbyObserver {
     municipalityId: row.observer_municipality_id,
     municipalityName: row.observer_municipality_name,
     stationId: row.observer_station_id,
-    stationName: row.observer_station_name,
+    stationName: row.observer_station_name ?? `${row.observer_municipality_name} Municipal BFP`,
     distanceMeters: Number(row.distance_meters),
     status: row.status,
     acknowledgedAt: row.acknowledged_at ? new Date(row.acknowledged_at).toISOString() : null,
@@ -235,7 +235,7 @@ export async function listProvincialCoordinationIncidents(
        ) as assistance_status
      from incident_municipal_observers imo
      join municipalities obs_m on obs_m.id = imo.observer_municipality_id
-     join municipal_bfp_stations st on st.id = imo.nearest_station_id
+     left join municipal_bfp_stations st on st.id = imo.nearest_station_id
      left join users ack_u on ack_u.id = imo.acknowledged_by_user_id
      left join bfp_personnel_profiles ack_p on ack_p.user_id = ack_u.id
      where imo.fire_report_id = any($1::uuid[])
@@ -349,7 +349,7 @@ export async function getProvincialCoordinationIncident(
        ) as assistance_status
      from incident_municipal_observers imo
      join municipalities obs_m on obs_m.id = imo.observer_municipality_id
-     join municipal_bfp_stations st on st.id = imo.nearest_station_id
+     left join municipal_bfp_stations st on st.id = imo.nearest_station_id
      left join users ack_u on ack_u.id = imo.acknowledged_by_user_id
      left join bfp_personnel_profiles ack_p on ack_p.user_id = ack_u.id
      where imo.fire_report_id = $1

@@ -32,6 +32,10 @@ test('open incident detail polls visible tabs, retains data on refresh failure, 
       './bfp-data-loader': { BfpDataLoader() {} }, './municipal-incident-map': { MunicipalIncidentMap() {} },
       '../../lib/fire-reports/validation': { canMunicipalResolveReport: () => false },
       '../../lib/fire-reports/types': { fireReportStatusLabels: {} },
+      '../../lib/municipal-bfp/alarm-alert.mjs': {
+        shouldShowMutualAidBoard: () => false,
+        shouldShowStationAssignment: () => false,
+      },
       './intermunicipality-coordination-panel': { IntermunicipalityCoordinationPanel() {} },
       './incident-mutual-aid-board': { IncidentMutualAidBoard() {} },
     });

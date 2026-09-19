@@ -10,6 +10,7 @@ import {
   listProvincialNotificationRecipients,
 } from "../notifications/service";
 import { recordCoordinationEvent } from "./audit";
+import { findObserverForAcknowledgment } from "./observer-acknowledgment-query.mjs";
 import { rankNearbyMunicipalities } from "./proximity";
 import type {
   NearbyObserver,
@@ -217,34 +218,20 @@ export async function acknowledgeNearbyIncident(input: {
   acknowledgedAt: Date;
 }): Promise<NearbyObserver> {
   return withTransaction(async (client) => {
-    const existing = await client.query<{
+    const row = await findObserverForAcknowledgment(client, input.fireReportId, input.observerMunicipalityId) as {
       id: string;
       fire_report_id: string;
       dispatch_id: string;
       origin_municipality_id: string;
       observer_municipality_id: string;
       observer_municipality_name: string;
-      nearest_station_id: string;
+      nearest_station_id: string | null;
       station_name: string;
       distance_meters: string;
       status: "ACTIVE" | "ENDED";
       acknowledged_by_user_id: string | null;
       acknowledged_at: string | null;
-    }>(
-      `select o.id, o.fire_report_id, o.dispatch_id, o.origin_municipality_id,
-              o.observer_municipality_id, m.name as observer_municipality_name,
-              o.nearest_station_id, s.station_name, o.distance_meters,
-              o.status, o.acknowledged_by_user_id, o.acknowledged_at
-         from incident_municipal_observers o
-         join municipalities m on m.id = o.observer_municipality_id
-         join municipal_bfp_stations s on s.id = o.nearest_station_id
-        where o.fire_report_id = $1
-          and o.observer_municipality_id = $2
-        for update`,
-      [input.fireReportId, input.observerMunicipalityId],
-    );
-
-    const row = existing.rows[0];
+    } | null;
     if (!row) {
       throw new Error("INCIDENT_NOT_FOUND");
     }

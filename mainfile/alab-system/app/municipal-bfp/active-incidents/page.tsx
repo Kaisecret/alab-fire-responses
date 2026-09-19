@@ -716,6 +716,7 @@ function ActiveIncidentsContent() {
     return (
       <MunicipalIncidentDetail
         incidentId={selected}
+        autoOpenAssignment={searchParams.get("assign") === "1"}
         onBack={() => setSelected(null)}
         onResponded={() => refresh()}
       />

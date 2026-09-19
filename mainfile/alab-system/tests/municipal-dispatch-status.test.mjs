@@ -13,7 +13,8 @@ test("the dispatch modal shows status instead of the picker once responding", ()
 
   // The defect: an already-dispatched incident still opened the selection UI,
   // so the button promised status and delivered a form.
-  assert.match(detail, /isResponding \? \(\s*<DispatchStatusBoard/);
+  assert.match(detail, /localDispatchUnderway \? \(\s*<DispatchStatusBoard/);
+  assert.match(detail, /const localDispatchUnderway = incident\.accessScope === "ORIGIN" && isResponding/);
   assert.match(detail, /function DispatchStatusBoard/);
   assert.match(detail, /dispatch-status/);
   // The board reads the real per-responder stages.
@@ -158,6 +159,6 @@ test("an incident whose crews are committed does not ask to be acknowledged", ()
   assert.doesNotMatch(detail, /const isResponding = incident\.status === "RESPONDING";/);
 
   // Those stages show the board instead, which is what the button then means.
-  assert.match(detail, /isResponding \? \(\s*<DispatchStatusBoard/);
-  assert.match(detail, /aria-label=\{isResponding \? "View active BFP dispatch status"/);
+  assert.match(detail, /localDispatchUnderway \? \(\s*<DispatchStatusBoard/);
+  assert.match(detail, /aria-label=\{localDispatchUnderway \? "View active BFP dispatch status"/);
 });

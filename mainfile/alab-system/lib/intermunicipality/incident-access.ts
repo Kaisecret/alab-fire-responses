@@ -55,6 +55,7 @@ export type ObserverIncidentDetail = {
   stationLatitude: number | null;
   stationLongitude: number | null;
   distanceMeters: number | null;
+  localDispatchAssigned: boolean;
   accessScope: "OBSERVER";
 };
 
@@ -276,6 +277,14 @@ select fr.id,
        observer.station_latitude_snapshot::float as "stationLatitude",
        observer.station_longitude_snapshot::float as "stationLongitude",
        observer.distance_meters::float as "distanceMeters",
+       exists (
+         select 1
+           from incident_dispatch_stations assigned_station
+           join municipal_bfp_stations municipal_station
+             on municipal_station.id = assigned_station.station_id
+          where assigned_station.dispatch_id = observer.dispatch_id
+            and municipal_station.municipality_id = $2
+       ) as "localDispatchAssigned",
        'OBSERVER'::text as "accessScope"
   from incident_municipal_observers observer
   join fire_reports fr on fr.id = observer.fire_report_id
@@ -303,7 +312,7 @@ select o.id as "observerId",
        o.acknowledged_at as "acknowledgedAt"
   from incident_municipal_observers o
   join municipalities m on m.id = o.observer_municipality_id
-  join municipal_bfp_stations s on s.id = o.nearest_station_id
+  left join municipal_bfp_stations s on s.id = o.nearest_station_id
   left join users u on u.id = o.acknowledged_by_user_id
   left join bfp_personnel_profiles p on p.user_id = u.id
  where o.fire_report_id = $1
@@ -346,8 +355,8 @@ export async function getIncidentCoordinationContext(
         originMunicipalityId: string;
         observerMunicipalityId: string;
         observerMunicipalityName: string;
-        stationId: string;
-        stationName: string;
+        stationId: string | null;
+        stationName: string | null;
         distanceMeters: number;
         status: "ACTIVE" | "ENDED";
         acknowledgedByUserId: string | null;
@@ -433,7 +442,7 @@ export async function getIncidentCoordinationContext(
         municipalityId: row.observerMunicipalityId,
         municipalityName: row.observerMunicipalityName,
         stationId: row.stationId,
-        stationName: row.stationName,
+        stationName: row.stationName ?? `${row.observerMunicipalityName} Municipal BFP`,
         distanceMeters: Number(row.distanceMeters),
         status: row.status,
         acknowledgedByUserId: row.acknowledgedByUserId,

@@ -22,7 +22,8 @@ test("observer service persists ranked snapshots and emits scoped notifications"
 });
 
 test("observer acknowledgment is scoped, idempotent, and audited", () => {
-  const service = source("lib/intermunicipality/observers.ts");
+  const service = source("lib/intermunicipality/observers.ts")
+    + source("lib/intermunicipality/observer-acknowledgment-query.mjs");
   assert.match(service, /export async function acknowledgeNearbyIncident/);
   assert.match(service, /observer_municipality_id = \$2/i);
   assert.match(service, /acknowledged_at = coalesce/i);

@@ -27,7 +27,7 @@ export type NearbyObserver = {
   observerId: string;
   municipalityId: string;
   municipalityName: string;
-  stationId: string;
+  stationId: string | null;
   stationName: string;
   distanceMeters: number;
   status: "ACTIVE" | "ENDED";

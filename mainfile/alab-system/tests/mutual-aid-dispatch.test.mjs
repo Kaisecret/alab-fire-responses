@@ -16,7 +16,9 @@ test("a summoned municipality may dispatch to the fire it was called to", () => 
    * the request, then be refused when it tried to assign anyone: the call for
    * help reached them and stopped there.
    */
-  assert.match(dispatch, /select 1 from incident_municipal_observers observer/);
+  assert.match(dispatch, /from incident_municipal_observers observer/);
+  assert.match(dispatch, /join intermunicipal_assistance_requests assistance/);
+  assert.match(dispatch, /assistance\.status in \('ACCEPTED', 'PARTIALLY_ACCEPTED'\)/);
   assert.match(dispatch, /observer\.observer_municipality_id = \$2/);
   assert.match(dispatch, /observer\.status = 'ACTIVE'/);
   // Resolving another municipality's incident is still theirs alone.
@@ -50,7 +52,7 @@ test("a responder's app is given the fire, whoever they work for", () => {
   );
 });
 
-test("the observer row is what authorises the dispatch", async () => {
+test("accepted assistance, not passive observation, authorises the dispatch", async () => {
   const db = new PGlite();
   try {
     await db.exec(`
@@ -63,7 +65,15 @@ test("the observer row is what authorises the dispatch", async () => {
       create table incident_municipal_observers(
         id uuid primary key default gen_random_uuid(),
         fire_report_id uuid not null,
+        dispatch_id uuid not null,
         observer_municipality_id uuid not null,
+        status text not null
+      );
+      create table intermunicipal_assistance_requests(
+        observer_id uuid not null,
+        fire_report_id uuid not null,
+        dispatch_id uuid not null,
+        recipient_municipality_id uuid not null,
         status text not null
       );
     `);
@@ -74,11 +84,12 @@ test("the observer row is what authorises the dispatch", async () => {
     const fire = (await db.query(`insert into fire_reports(municipality_id) values ($1) returning id`, [hamtic])).rows[0].id;
 
     // San Jose was summoned; Culasi was not.
-    await db.query(
-      `insert into incident_municipal_observers(fire_report_id, observer_municipality_id, status)
-       values ($1, $2, 'ACTIVE')`,
-      [fire, sanJose],
-    );
+    const dispatchId = "00000000-0000-4000-8000-000000000201";
+    const observer = (await db.query(
+      `insert into incident_municipal_observers(fire_report_id, dispatch_id, observer_municipality_id, status)
+       values ($1, $2, $3, 'ACTIVE') returning id`,
+      [fire, dispatchId, sanJose],
+    )).rows[0];
 
     const permitted = (municipalityId) =>
       db.query(
@@ -87,7 +98,14 @@ test("the observer row is what authorises the dispatch", async () => {
             and (
               fr.municipality_id = $2
               or exists (
-                select 1 from incident_municipal_observers observer
+                select 1
+                  from incident_municipal_observers observer
+                  join intermunicipal_assistance_requests assistance
+                    on assistance.observer_id = observer.id
+                   and assistance.dispatch_id = observer.dispatch_id
+                   and assistance.fire_report_id = observer.fire_report_id
+                   and assistance.recipient_municipality_id = observer.observer_municipality_id
+                   and assistance.status in ('ACCEPTED', 'PARTIALLY_ACCEPTED')
                  where observer.fire_report_id = fr.id
                    and observer.observer_municipality_id = $2
                    and observer.status = 'ACTIVE'
@@ -97,7 +115,13 @@ test("the observer row is what authorises the dispatch", async () => {
       );
 
     assert.equal((await permitted(hamtic)).rows.length, 1, "the owning municipality may dispatch");
-    assert.equal((await permitted(sanJose)).rows.length, 1, "so may the one it called for help");
+    assert.equal((await permitted(sanJose)).rows.length, 0, "passive monitoring grants no dispatch authority");
+    await db.query(
+      `insert into intermunicipal_assistance_requests
+       values ($1,$2,$3,$4,'ACCEPTED')`,
+      [observer.id, fire, dispatchId, sanJose],
+    );
+    assert.equal((await permitted(sanJose)).rows.length, 1, "an accepted call for help grants authority");
     assert.equal((await permitted(culasi)).rows.length, 0, "a municipality nobody called may not");
 
     // Once monitoring ends, so does the authority it carried.

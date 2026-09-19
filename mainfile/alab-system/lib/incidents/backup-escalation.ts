@@ -6,6 +6,7 @@ import { getDatabase } from "../db";
 import { createAssistanceRequests } from "../intermunicipality/assistance";
 import type { StationCandidate } from "../intermunicipality/types";
 import { createAccountNotifications } from "../notifications/service";
+import { buildAlarmNotificationContext } from "../municipal-bfp/alarm-alert.mjs";
 import { getFireReportPhotoUrl, uploadBackupRequestPhoto } from "../supabase/server-storage";
 import {
   ALARM_DOCTRINE,
@@ -469,6 +470,9 @@ export type AlarmSummonSummary = {
   municipalityId: string;
   municipalityName: string;
   distanceMeters: number;
+  assistanceRequestId: string;
+  requestedFiretrucks: number;
+  requestedPersonnel: number;
 };
 
 /**
@@ -645,7 +649,7 @@ async function summonForAlarmLevel(input: {
   }
 
   const requestByMunicipality = new Map(
-    requests.map((request) => [request.recipientMunicipalityId, request.id]),
+    requests.map((request) => [request.recipientMunicipalityId, request]),
   );
 
   for (const candidate of candidates) {
@@ -658,17 +662,24 @@ async function summonForAlarmLevel(input: {
         input.fireReportId,
         input.alarmLevel,
         candidate.municipalityId,
-        requestByMunicipality.get(candidate.municipalityId) ?? null,
+        requestByMunicipality.get(candidate.municipalityId)?.id ?? null,
         Math.round(candidate.distanceMeters),
       ],
     );
   }
 
-  return candidates.map((candidate) => ({
-    municipalityId: candidate.municipalityId,
-    municipalityName: candidate.municipalityName,
-    distanceMeters: Math.round(candidate.distanceMeters),
-  }));
+  return candidates.flatMap((candidate) => {
+    const request = requestByMunicipality.get(candidate.municipalityId);
+    if (!request) return [];
+    return [{
+      municipalityId: candidate.municipalityId,
+      municipalityName: candidate.municipalityName,
+      distanceMeters: Math.round(candidate.distanceMeters),
+      assistanceRequestId: request.id,
+      requestedFiretrucks: request.requestedFiretrucks,
+      requestedPersonnel: request.requestedPersonnel,
+    }];
+  });
 }
 
 async function notifyMunicipality(request: BackupRequest): Promise<void> {
@@ -794,6 +805,16 @@ async function notifyAlarmDeclaration(
         actionHref: `/municipal-bfp/active-incidents?incident=${fireReportId}`,
         entityType: "FIRE_REPORT",
         entityId: fireReportId,
+        context: buildAlarmNotificationContext({
+          audience: "SUMMONED",
+          alarmLevel,
+          fireReportId,
+          referenceNumber,
+          location: where,
+          assistanceRequestId: municipality.assistanceRequestId,
+          requestedFiretrucks: municipality.requestedFiretrucks,
+          requestedPersonnel: municipality.requestedPersonnel,
+        }),
         dedupeKey: `alarm-summoned:${fireReportId}:${alarmLevel}:${municipality.municipalityId}`,
       });
     }
@@ -817,6 +838,14 @@ async function notifyAlarmDeclaration(
         actionHref: `/municipal-bfp/active-incidents?incident=${fireReportId}`,
         entityType: "FIRE_REPORT",
         entityId: fireReportId,
+        context: buildAlarmNotificationContext({
+          audience: "ORIGIN",
+          alarmLevel,
+          fireReportId,
+          referenceNumber,
+          location: where,
+          summonedMunicipalities: names,
+        }),
         dedupeKey: `alarm-origin:${fireReportId}:${alarmLevel}`,
       });
     }

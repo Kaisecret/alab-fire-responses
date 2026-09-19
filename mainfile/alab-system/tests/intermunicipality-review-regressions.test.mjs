@@ -136,6 +136,7 @@ test('degraded monitoring links each role to its portal and ending monitoring no
   const notifications = [];
   const api = load('lib/intermunicipality/observers.ts', {
     '../db': {}, './proximity': { rankNearbyMunicipalities }, './audit': { recordCoordinationEvent: async () => {} },
+    './observer-acknowledgment-query.mjs': { findObserverForAcknowledgment: async () => null },
     '../notifications/service': {
       listMunicipalNotificationRecipients: async (_client, municipality) => [municipality],
       listProvincialNotificationRecipients: async () => ['province'],

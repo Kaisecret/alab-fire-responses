@@ -11,6 +11,7 @@ import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-re
 import { IntermunicipalityCoordinationPanel } from "./intermunicipality-coordination-panel";
 import { IncidentMutualAidBoard, type IncidentAlarmStatus } from "./incident-mutual-aid-board";
 import type { NearbyObserver, AssistanceRequestSummary } from "../../lib/intermunicipality/types";
+import { shouldShowMutualAidBoard, shouldShowStationAssignment } from "../../lib/municipal-bfp/alarm-alert.mjs";
 
 type Incident = {
   id: string;
@@ -18,6 +19,7 @@ type Incident = {
   reportSource: "ALAB_APP" | "PHONE_CALL";
   status: FireReportStatus;
   accessScope?: "ORIGIN" | "OBSERVER";
+  localDispatchAssigned?: boolean;
   originMunicipality?: string;
   nearbyObservers?: NearbyObserver[];
   assistanceRequests?: AssistanceRequestSummary[];
@@ -1803,10 +1805,12 @@ export function MunicipalIncidentDetail({
   incidentId,
   onBack,
   onResponded,
+  autoOpenAssignment = false,
 }: {
   incidentId: string;
   onBack?: () => void;
   onResponded?: () => void;
+  autoOpenAssignment?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   const [incident, setIncident] = useState<Incident | null>(null);
@@ -1825,6 +1829,7 @@ export function MunicipalIncidentDetail({
   const [progressLoading, setProgressLoading] = useState(false);
   const [progressAt, setProgressAt] = useState<number | null>(null);
   const pendingLoad = useRef<AbortController | null>(null);
+  const assignmentOpened = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -1919,7 +1924,7 @@ export function MunicipalIncidentDetail({
     };
   }, [load]);
 
-  const openDispatch = async () => {
+  const openDispatch = useCallback(async () => {
     setDispatchOpen(true);
     setDispatchError("");
     setSelectedStationIds([]);
@@ -1934,7 +1939,22 @@ export function MunicipalIncidentDetail({
     } finally {
       setStationsLoading(false);
     }
-  };
+  }, [incidentId]);
+
+  useEffect(() => {
+    if (!autoOpenAssignment || !incident || assignmentOpened.current) return;
+    const assistanceStatus = incident.assistanceRequests?.find(
+      (request) => request.status === "ACCEPTED" || request.status === "PARTIALLY_ACCEPTED",
+    )?.status ?? null;
+    if (!shouldShowStationAssignment(
+      incident.accessScope ?? "ORIGIN",
+      assistanceStatus,
+      incident.localDispatchAssigned === true,
+    )) return;
+    assignmentOpened.current = true;
+    const opener = window.setTimeout(() => void openDispatch(), 0);
+    return () => window.clearTimeout(opener);
+  }, [autoOpenAssignment, incident, openDispatch]);
 
   const toggleStation = (stationId: string) => {
     setSelectedStationIds((current) => current.includes(stationId)
@@ -2050,6 +2070,17 @@ export function MunicipalIncidentDetail({
    */
   const isResponding = ["RESPONDING", "FIRETRUCK_DISPATCHED", "RESPONDER_ARRIVED", "UNDER_CONTROL"]
     .includes(incident.status);
+  const observerAssistanceStatus = incident.assistanceRequests?.find(
+    (request) => request.status === "ACCEPTED" || request.status === "PARTIALLY_ACCEPTED",
+  )?.status ?? null;
+  const canAssignStations = shouldShowStationAssignment(
+    incident.accessScope ?? "ORIGIN",
+    observerAssistanceStatus,
+    incident.localDispatchAssigned === true,
+  );
+  // The incident's overall status describes its owner's response. A summoned
+  // municipality still needs the station picker even while that response runs.
+  const localDispatchUnderway = incident.accessScope === "ORIGIN" && isResponding;
   const canResolve = incident.accessScope === "ORIGIN" && canMunicipalResolveReport(incident.status);
   const isTerminal = ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(incident.status);
   const validPhotos = (incident.photos ?? []).filter((p): p is { url: string } => Boolean(p && p.url));
@@ -2106,19 +2137,19 @@ export function MunicipalIncidentDetail({
             </div>
           </div>
 
-          {!isTerminal && incident.accessScope === "ORIGIN" && <div className="mbfp-hero-actions">
+          {!isTerminal && canAssignStations && <div className="mbfp-hero-actions">
             <button
-              className={`mbfp-respond-btn ${isResponding ? "active-responding" : ""}`}
+              className={`mbfp-respond-btn ${localDispatchUnderway ? "active-responding" : ""}`}
               disabled={sending}
               onClick={() => void openDispatch()}
-              aria-label={isResponding ? "View active BFP dispatch status" : "Choose station teams for BFP response"}
+              aria-label={localDispatchUnderway ? "View active BFP dispatch status" : "Choose station teams for BFP response"}
             >
               {sending ? (
                 <>
                   <i className="fa-solid fa-arrows-rotate spin" />
                   <span>Dispatching Response…</span>
                 </>
-              ) : isResponding ? (
+              ) : localDispatchUnderway ? (
                 <>
                   <i className="fa-solid fa-truck-fast" />
                   <span>VIEW DISPATCH STATUS</span>
@@ -2126,7 +2157,7 @@ export function MunicipalIncidentDetail({
               ) : (
                 <>
                   <i className="fa-solid fa-bell" />
-                  <span>ACKNOWLEDGE &amp; RESPOND</span>
+                  <span>{incident.accessScope === "OBSERVER" ? "ASSIGN BFP STATIONS" : "ACKNOWLEDGE &amp; RESPOND"}</span>
                 </>
               )}
             </button>
@@ -2152,7 +2183,9 @@ export function MunicipalIncidentDetail({
         {/* What the province declared, and who is actually coming. The
             municipality that asked raised the request themselves, so this is
             here to be read rather than to interrupt them. */}
-        <IncidentMutualAidBoard alarmStatus={incident.alarmStatus} />
+        {shouldShowMutualAidBoard(incident.accessScope ?? "ORIGIN", incident.alarmStatus?.level) && (
+          <IncidentMutualAidBoard alarmStatus={incident.alarmStatus} />
+        )}
 
         {/* Inter-municipality Live Coordination */}
         <IntermunicipalityCoordinationPanel
@@ -2587,10 +2620,10 @@ export function MunicipalIncidentDetail({
                 </div>
                 <div>
                   <h2 id="mbfp-dispatch-title" className="mbfp-dispatch-title">
-                    <span>{isResponding ? "Dispatch status" : "Select station teams"}</span>
+                    <span>{localDispatchUnderway ? "Dispatch status" : "Select station teams"}</span>
                   </h2>
                   <p className="mbfp-dispatch-subtitle">
-                    {isResponding
+                    {localDispatchUnderway
                       ? `${incident.referenceNumber} · updates every few seconds`
                       : "Alert available stations to dispatch responders."}
                   </p>
@@ -2608,7 +2641,7 @@ export function MunicipalIncidentDetail({
             </header>
 
             <div className="mbfp-dispatch-body">
-              {isResponding ? (
+              {localDispatchUnderway ? (
                 <DispatchStatusBoard
                   dispatches={dispatchProgress}
                   loading={progressLoading}
@@ -2689,9 +2722,9 @@ export function MunicipalIncidentDetail({
 
             <footer className="mbfp-dispatch-footer">
               <button className="mbfp-dispatch-cancel" type="button" onClick={() => setDispatchOpen(false)} disabled={sending}>
-                {isResponding ? "Close" : "Cancel"}
+                {localDispatchUnderway ? "Close" : "Cancel"}
               </button>
-              {!isResponding && (
+              {!localDispatchUnderway && (
                 <button
                   className="mbfp-dispatch-confirm"
                   type="button"
