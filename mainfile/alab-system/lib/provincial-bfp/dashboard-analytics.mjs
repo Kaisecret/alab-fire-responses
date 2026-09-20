@@ -32,6 +32,55 @@ export function getNextMonth(month) {
   return monthNumber === 12 ? formatMonth(year + 1, 1) : formatMonth(year, monthNumber + 1);
 }
 
+export function getSameMonthLastYear(month) {
+  const { year, monthNumber } = parseMonth(month);
+  return formatMonth(year - 1, monthNumber);
+}
+
+export function calculateComparisonChange(current, baseline) {
+  const currentValue = Math.max(0, Number(current) || 0);
+  const baselineValue = Math.max(0, Number(baseline) || 0);
+  if (baselineValue === 0) {
+    return currentValue === 0
+      ? { kind: 'unchanged', value: 0 }
+      : { kind: 'new', value: currentValue };
+  }
+  return {
+    kind: 'percent',
+    value: Math.round(((currentValue - baselineValue) / baselineValue) * 100),
+  };
+}
+
+export function alignComparisonSeries(current, previous, lastYear, metric = 'total') {
+  const series = [current, previous, lastYear].map((items) => Array.isArray(items) ? items : []);
+  const currentDate = series[0][0]?.date;
+  const currentMonthMatch = /^(\d{4})-(\d{2})-\d{2}$/.exec(String(currentDate ?? ''));
+  const calendarLength = currentMonthMatch
+    ? new Date(Date.UTC(Number(currentMonthMatch[1]), Number(currentMonthMatch[2]), 0)).getUTCDate()
+    : 0;
+  const length = Math.max(calendarLength, ...series.map((items) => items.length));
+  return Array.from({ length }, (_, index) => {
+    const currentPoint = series[0][index] ?? null;
+    const previousPoint = series[1][index] ?? null;
+    const lastYearPoint = series[2][index] ?? null;
+    return {
+      day: index + 1,
+      currentDate: currentPoint?.date ?? null,
+      previousDate: previousPoint?.date ?? null,
+      lastYearDate: lastYearPoint?.date ?? null,
+      current: currentPoint ? Math.max(0, Number(currentPoint[metric]) || 0) : null,
+      previous: previousPoint ? Math.max(0, Number(previousPoint[metric]) || 0) : null,
+      lastYear: lastYearPoint ? Math.max(0, Number(lastYearPoint[metric]) || 0) : null,
+      breakdown: currentPoint ? {
+        active: Math.max(0, Number(currentPoint.active) || 0),
+        resolved: Math.max(0, Number(currentPoint.resolved) || 0),
+        verification: Math.max(0, Number(currentPoint.verification) || 0),
+        administrative: Math.max(0, Number(currentPoint.administrative) || 0),
+      } : null,
+    };
+  });
+}
+
 export function buildAnalyticsQuery(month, municipalityId = '') {
   const range = getManilaMonthRange(month);
   const params = new URLSearchParams(range);
