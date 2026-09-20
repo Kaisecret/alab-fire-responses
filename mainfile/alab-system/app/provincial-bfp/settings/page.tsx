@@ -117,6 +117,7 @@ const styles = `
   .cmd-tick::before{content:'';display:block;width:1px;height:7px;margin:0 auto 3px;background:#B6C7DC}
   .cmd-tick span{color:var(--muted);font-size:.68rem;font-weight:800;letter-spacing:.05em;font-variant-numeric:tabular-nums}
   .cmd-tick--end{transform:translateX(-100%)}
+  .cmd-tick--end::before{margin-right:0}
 
   .cmd-reach-foot{margin:1.1rem 0 0;padding-top:.95rem;border-top:1px solid var(--line);
     max-width:68ch;color:var(--muted);font-size:.8rem;line-height:1.6}
@@ -159,6 +160,7 @@ const styles = `
     .cmd-id,.cmd-reach,.cmd-strip{padding-left:1.15rem;padding-right:1.15rem}
     .cmd-strip{grid-template-columns:1fr;gap:1.4rem}
     .cmd-level,.cmd-axis-foot{grid-template-columns:2.4rem minmax(0,1fr)}
+    .cmd-level-no{grid-row:span 4}
     .cmd-who{grid-column:2;justify-self:start}
   }
   @media(prefers-reduced-motion:reduce){.cmd *,.cmd *::before{animation-duration:.01ms!important;transition-duration:.01ms!important}}
