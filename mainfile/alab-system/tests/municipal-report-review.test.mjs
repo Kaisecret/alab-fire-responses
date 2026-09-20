@@ -55,33 +55,49 @@ test('real report SQL preserves missing response times and reconciles unknown ba
   const db = new PGlite();
   try {
     await db.exec(`
+      create table users(id uuid primary key, phone text);
+      create table resident_profiles(id uuid primary key, user_id uuid);
       create table municipalities(id uuid primary key, name text);
       create table barangays(id uuid primary key, municipality_id uuid, name text);
       create table fire_reports(id uuid primary key, municipality_id uuid, barangay_id uuid, reference_number text,
         report_source text, fire_type text, calculated_severity text, status text, latitude numeric, longitude numeric,
-        submitted_at timestamptz, response_started_at timestamptz, description text, address_label text, nearest_landmark text, reporter_name_snapshot text, caller_name text);
-      create table incident_dispatches(id uuid, fire_report_id uuid, status text, dispatched_at timestamptz);
-      create table municipal_bfp_stations(id uuid primary key, municipality_id uuid);
+        submitted_at timestamptz, response_started_at timestamptz, description text, address_label text, nearest_landmark text,
+        reporter_name_snapshot text, caller_name text, caller_phone text, resident_profile_id uuid,
+        location_method text, location_accuracy_meters numeric);
+      create table incident_dispatches(id uuid, fire_report_id uuid, status text, dispatched_at timestamptz,
+        completed_at timestamptz, cancelled_at timestamptz);
+      create table municipal_bfp_stations(id uuid primary key, municipality_id uuid, status text default 'ACTIVE');
       create table incident_dispatch_stations(id uuid primary key, dispatch_id uuid, station_id uuid, station_name_snapshot text);
-      create table incident_dispatch_recipients(id uuid, dispatch_id uuid, dispatch_station_id uuid, on_scene_at timestamptz, acknowledged_at timestamptz, en_route_at timestamptz);
-      create table fire_report_status_history(fire_report_id uuid, next_status text, created_at timestamptz);
+      create table incident_dispatch_recipients(id uuid, dispatch_id uuid, dispatch_station_id uuid,
+        recipient_user_id uuid default '${actor.userId}', recipient_name_snapshot text default 'Crew Member',
+        status text default 'ON_SCENE', assigned_at timestamptz default '2026-09-14T00:01:00Z',
+        on_scene_at timestamptz, acknowledged_at timestamptz, en_route_at timestamptz, completed_at timestamptz);
+      create table fire_report_status_history(id bigint generated always as identity, fire_report_id uuid, next_status text,
+        resident_message text, created_at timestamptz);
+      create table fire_report_photos(fire_report_id uuid, storage_key text);
       create table incident_municipal_observers(id uuid primary key, fire_report_id uuid, observer_municipality_id uuid);
       create table intermunicipal_assistance_requests(id uuid primary key, fire_report_id uuid, observer_id uuid, recipient_municipality_id uuid, status text, is_provincial_command boolean not null default false);
       create table incident_alarm_summons(assistance_request_id uuid);
       insert into municipalities values ('${actor.municipalityId}', 'Hamtic');
       insert into municipalities values ('66666666-6666-4666-8666-666666666666', 'San Jose de Buenavista');
       insert into barangays values ('33333333-3333-4333-8333-333333333333', '${actor.municipalityId}', 'Poblacion');
-      insert into fire_reports values ('44444444-4444-4444-8444-444444444444','${actor.municipalityId}',null,'TEST','ALAB_APP','GRASS','HIGH','RESOLVED',10,120,'2026-09-14T00:00:00Z',null,'Private narrative','Private home address');
-      insert into incident_dispatches values ('55555555-5555-4555-8555-555555555555','44444444-4444-4444-8444-444444444444','COMPLETED','2026-09-14T00:01:00Z');
-      insert into municipal_bfp_stations values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','${actor.municipalityId}');
+      insert into fire_reports(id,municipality_id,barangay_id,reference_number,report_source,fire_type,calculated_severity,
+        status,latitude,longitude,submitted_at,response_started_at,description,address_label)
+      values ('44444444-4444-4444-8444-444444444444','${actor.municipalityId}',null,'TEST','ALAB_APP','GRASS','HIGH','RESOLVED',10,120,'2026-09-14T00:00:00Z',null,'Private narrative','Private home address');
+      insert into incident_dispatches(id,fire_report_id,status,dispatched_at)
+      values ('55555555-5555-4555-8555-555555555555','44444444-4444-4444-8444-444444444444','COMPLETED','2026-09-14T00:01:00Z');
+      insert into municipal_bfp_stations(id,municipality_id)
+      values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','${actor.municipalityId}');
       insert into incident_dispatch_stations values
         ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','55555555-5555-4555-8555-555555555555','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Hamtic Station');
       insert into incident_dispatch_recipients(id,dispatch_id,dispatch_station_id,on_scene_at,acknowledged_at,en_route_at) values
         ('cccccccc-cccc-4ccc-8ccc-cccccccccccc','55555555-5555-4555-8555-555555555555','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','2026-09-13T23:59:00Z','2026-09-14T00:01:00Z',null),
         ('dddddddd-dddd-4ddd-8ddd-dddddddddddd','55555555-5555-4555-8555-555555555555','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','2026-09-14T00:05:00Z','2026-09-14T00:01:00Z',null);
-      insert into fire_report_status_history values ('44444444-4444-4444-8444-444444444444','RESOLVED','2026-09-14T00:20:00Z');
-      insert into fire_reports values
-        ('77777777-7777-4777-8777-777777777777','66666666-6666-4666-8666-666666666666',null,'ASSIST-001','ALAB_APP','HOUSE_BUILDING','CRITICAL','RESOLVED',10.7,121.9,'2026-09-14T01:00:00Z',null,'Private assisting narrative','Private assisting address',null,'Protected Resident',null);
+      insert into fire_report_status_history(fire_report_id,next_status,created_at)
+      values ('44444444-4444-4444-8444-444444444444','RESOLVED','2026-09-14T00:20:00Z');
+      insert into fire_reports(id,municipality_id,barangay_id,reference_number,report_source,fire_type,calculated_severity,
+        status,latitude,longitude,submitted_at,response_started_at,description,address_label,nearest_landmark,reporter_name_snapshot,caller_name)
+      values ('77777777-7777-4777-8777-777777777777','66666666-6666-4666-8666-666666666666',null,'ASSIST-001','ALAB_APP','HOUSE_BUILDING','CRITICAL','RESOLVED',10.7,121.9,'2026-09-14T01:00:00Z',null,'Private assisting narrative','Private assisting address',null,'Protected Resident',null);
       insert into incident_municipal_observers values
         ('88888888-8888-4888-8888-888888888888','77777777-7777-4777-8777-777777777777','${actor.municipalityId}');
       insert into intermunicipal_assistance_requests values
@@ -124,5 +140,9 @@ test('real report SQL preserves missing response times and reconciles unknown ba
     assert.equal(summary.timingMetrics.avgArrivalMinutes, 5);
     assert.equal(summary.byBarangay.reduce((sum, item) => sum + item.total, 0), summary.totalReports);
     assert.equal(summary.byBarangay.find(item => item.barangayName === 'Poblacion').total, 0);
+    const detail = await service.getMunicipalReportDetail(actor, '44444444-4444-4444-8444-444444444444');
+    assert.equal(detail.referenceNumber, 'TEST');
+    assert.equal(detail.dispatches[0].stationName, 'Hamtic Station');
+    assert.equal(detail.dispatches[0].recipients[0].status, 'ON_SCENE');
   } finally { await db.close(); }
 });

@@ -410,14 +410,14 @@ export async function getMunicipalReportDetail(
           onSceneAt: Date | null;
           completedAt: Date | null;
         }>(
-          `select recipient_user_id as "userId",
-                  recipient_name_snapshot as "name",
-                  status,
-                  assigned_at as "assignedAt",
-                  acknowledged_at as "acknowledgedAt",
-                  en_route_at as "enRouteAt",
-                  on_scene_at as "onSceneAt",
-                  completed_at as "completedAt"
+          `select recipient.recipient_user_id as "userId",
+                  recipient.recipient_name_snapshot as "name",
+                  recipient.status,
+                  recipient.assigned_at as "assignedAt",
+                  recipient.acknowledged_at as "acknowledgedAt",
+                  recipient.en_route_at as "enRouteAt",
+                  recipient.on_scene_at as "onSceneAt",
+                  recipient.completed_at as "completedAt"
              from incident_dispatch_recipients recipient
              join incident_dispatch_stations ds on ds.id = recipient.dispatch_station_id
              join municipal_bfp_stations station on station.id = ds.station_id
