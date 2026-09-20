@@ -17,6 +17,8 @@ export type ProvincialIncidentSummary = {
   observers: NearbyObserver[];
   openAssistanceCount: number;
   nearbySelectionDegraded: boolean;
+  latitude?: number;
+  longitude?: number;
 };
 
 export type ProvincialIncidentDetail = ProvincialIncidentSummary & {
@@ -175,6 +177,8 @@ export async function listProvincialCoordinationIncidents(
       fr.status,
       fr.submitted_at,
       disp.dispatched_at,
+      fr.latitude,
+      fr.longitude,
       coalesce((
         select count(distinct ids.station_id)
         from incident_dispatch_stations ids
@@ -264,6 +268,8 @@ export async function listProvincialCoordinationIncidents(
     observers: observersByIncident.get(row.id) ?? [],
     openAssistanceCount: Number(row.open_assistance_count),
     nearbySelectionDegraded: Boolean(row.nearby_selection_degraded),
+    latitude: row.latitude !== undefined && row.latitude !== null ? Number(row.latitude) : undefined,
+    longitude: row.longitude !== undefined && row.longitude !== null ? Number(row.longitude) : undefined,
   }));
 }
 
