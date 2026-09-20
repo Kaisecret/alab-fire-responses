@@ -183,6 +183,12 @@ export type ProvincialReportDetail = ProvincialReportRow & {
   description: string;
   reporterNameSnapshot: string;
   reporterPhoneSnapshot: string;
+  /** Intake telemetry the official incident dossier prints. */
+  addressLabel: string | null;
+  nearestLandmark: string | null;
+  locationMethod: string | null;
+  locationAccuracyMeters: number | null;
+  recordedArrivalAt: string | null;
   photos: string[];
   dispatches: Array<{
     id: string;

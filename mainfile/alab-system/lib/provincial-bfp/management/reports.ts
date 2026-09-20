@@ -154,7 +154,12 @@ export async function getProvincialReport(
     reporterPhoneSnapshot: string | null;
     callerName: string | null;
     callerPhone: string | null;
+    addressLabel: string | null;
+    nearestLandmark: string | null;
+    locationMethod: string | null;
+    locationAccuracyMeters: string | number | null;
     responseStartedAt: Date | null;
+    recordedArrivalAt: Date | null;
     resolvedAt: Date | null;
     latestDispatchSummary: string | null;
   }>(
@@ -174,7 +179,17 @@ export async function getProvincialReport(
             fr.reporter_name_snapshot as "reporterNameSnapshot",
             fr.reporter_phone_snapshot as "reporterPhoneSnapshot",
             fr.caller_name as "callerName",
+            fr.address_label as "addressLabel",
+            fr.nearest_landmark as "nearestLandmark",
+            fr.location_method as "locationMethod",
+            fr.location_accuracy_meters as "locationAccuracyMeters",
             fr.caller_phone as "callerPhone",
+            (
+              select min(r.on_scene_at)
+                from incident_dispatch_recipients r
+                join incident_dispatches d on d.id = r.dispatch_id
+               where d.fire_report_id = fr.id and r.on_scene_at >= fr.submitted_at
+            ) as "recordedArrivalAt",
             coalesce(fr.response_started_at, (
               select min(coalesce(r.acknowledged_at, r.en_route_at))
                 from incident_dispatch_recipients r
@@ -310,8 +325,13 @@ export async function getProvincialReport(
     longitude: Number(rep.longitude),
     submittedAt: rep.submittedAt ? new Date(rep.submittedAt).toISOString() : new Date().toISOString(),
     responseStartedAt: rep.responseStartedAt ? new Date(rep.responseStartedAt).toISOString() : null,
+    recordedArrivalAt: rep.recordedArrivalAt ? new Date(rep.recordedArrivalAt).toISOString() : null,
     resolvedAt: rep.resolvedAt ? new Date(rep.resolvedAt).toISOString() : null,
     latestDispatchSummary: rep.latestDispatchSummary,
+    addressLabel: rep.addressLabel,
+    nearestLandmark: rep.nearestLandmark,
+    locationMethod: rep.locationMethod,
+    locationAccuracyMeters: rep.locationAccuracyMeters === null ? null : Number(rep.locationAccuracyMeters),
     description: rep.description,
     reporterNameSnapshot: rep.reportSource === "PHONE_CALL" ? (rep.callerName ?? "Phone Caller") : (rep.reporterNameSnapshot ?? "Resident"),
     reporterPhoneSnapshot: rep.reportSource === "PHONE_CALL" ? (rep.callerPhone ?? "N/A") : (rep.reporterPhoneSnapshot ?? "N/A"),

@@ -83,7 +83,9 @@ test('report SQL counts Manila day, honors search/severity, and excludes active 
     const empty = await mod.getProvincialReportSummary(actor, {...base,severity:'LOW'});
     assert.equal(empty.totalReports,0);
     await db.exec(`alter table fire_reports add column address_label text, add column latitude numeric default 11, add column longitude numeric default 122,
-      add column reporter_name_snapshot text, add column reporter_phone_snapshot text, add column caller_name text, add column caller_phone text;
+      add column reporter_name_snapshot text, add column reporter_phone_snapshot text, add column caller_name text, add column caller_phone text,
+      add column nearest_landmark text, add column location_method text, add column location_accuracy_meters numeric;
+      alter table incident_dispatch_recipients add column on_scene_at timestamptz;
       alter table fire_report_status_history add column id integer default 1, add column resident_message text;
       alter table incident_dispatches add column dispatched_at timestamptz default now(), add column cancelled_at timestamptz;
       create table incident_dispatch_stations(dispatch_id text,station_id text,station_name_snapshot text);
@@ -101,6 +103,11 @@ test('report SQL counts Manila day, honors search/severity, and excludes active 
     assert.equal(page.items.find(row => row.id === 'b').resolvedAt, null);
     const detail = await reports.getProvincialReport(actor,'a');
     assert.equal(detail.id, 'a');
+    // The dossier telemetry reads as null rather than throwing when unrecorded.
+    assert.equal(detail.nearestLandmark, null);
+    assert.equal(detail.locationMethod, null);
+    assert.equal(detail.locationAccuracyMeters, null);
+    assert.equal(detail.recordedArrivalAt, null);
     assert.deepEqual(detail.dispatches, []);
     assert.equal(detail.timeline[0].stage, 'RESOLVED');
     assert.equal(await reports.getProvincialReport(actor,'outside-report'), null);

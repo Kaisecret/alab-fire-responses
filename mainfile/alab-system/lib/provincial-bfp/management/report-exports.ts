@@ -1,14 +1,16 @@
 import "server-only";
 
 import { buildMunicipalReportExcel } from "../../municipal-bfp/reports/excel";
+import { formatPhilippineDateTime } from "../../municipal-bfp/reports/formatters";
 import { buildMunicipalReportPdf } from "../../municipal-bfp/reports/pdf";
 import type {
+  MunicipalReportDetail,
   MunicipalReportRow,
   MunicipalReportSummary,
 } from "../../municipal-bfp/reports/types";
-import { listProvincialReports } from "./reports";
+import { getProvincialReport, listProvincialReports } from "./reports";
 import { getProvincialReportSummary } from "./report-summaries";
-import type { ManagementActor, ProvincialReportRow, ReportFilters } from "./types";
+import type { ManagementActor, ProvincialReportDetail, ProvincialReportRow, ReportFilters } from "./types";
 
 /*
  * Provincial exports.
@@ -25,7 +27,8 @@ export type ProvincialReportFormat = "PDF" | "XLSX" | "CSV";
 export type ProvincialReportDataset =
   | "INCIDENT_REGISTER"
   | "PROVINCIAL_SUMMARY"
-  | "MUNICIPALITY_BREAKDOWN";
+  | "MUNICIPALITY_BREAKDOWN"
+  | "INCIDENT_DOSSIER";
 
 /** Which of the filtered records the register carries. Aggregates always cover all of them. */
 export type ProvincialReportScope = "ALL_MATCHING" | "SELECTED" | "CURRENT_PAGE";
@@ -117,6 +120,51 @@ function toReportSummary(
   };
 }
 
+function toReportDetail(detail: ProvincialReportDetail): MunicipalReportDetail {
+  const minutesBetween = (from: string | null, to: string | null) => {
+    if (!from || !to) return null;
+    const value = (new Date(to).getTime() - new Date(from).getTime()) / 60000;
+    return Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
+  };
+
+  return {
+    ...toReportRow(detail),
+    recordedArrivalAt: detail.recordedArrivalAt,
+    timeToArrivalMinutes: minutesBetween(detail.submittedAt, detail.recordedArrivalAt),
+    reporterName: detail.reporterNameSnapshot,
+    reporterPhone: detail.reporterPhoneSnapshot,
+    nearestLandmark: detail.nearestLandmark,
+    addressLabel: detail.addressLabel,
+    locationMethod: detail.locationMethod,
+    locationAccuracyMeters: detail.locationAccuracyMeters,
+    description: detail.description,
+    photos: detail.photos ?? [],
+    timeline: (detail.timeline ?? []).map((event) => ({
+      stage: event.stage,
+      timestamp: event.timestamp,
+      notes: event.notes,
+    })),
+    dispatches: (detail.dispatches ?? []).map((dispatch) => ({
+      id: dispatch.id,
+      status: dispatch.status,
+      dispatchedAt: dispatch.dispatchedAt,
+      completedAt: dispatch.completedAt ?? null,
+      cancelledAt: dispatch.cancelledAt ?? null,
+      stationName: dispatch.stationName ?? dispatch.stations?.[0]?.stationName ?? "Assigned Units",
+      recipients: (dispatch.recipients ?? []).map((recipient) => ({
+        userId: recipient.userId,
+        name: recipient.name,
+        status: recipient.status,
+        assignedAt: recipient.assignedAt,
+        acknowledgedAt: recipient.acknowledgedAt,
+        enRouteAt: recipient.enRouteAt,
+        onSceneAt: recipient.onSceneAt,
+        completedAt: recipient.completedAt,
+      })),
+    })),
+  };
+}
+
 function escapeCsv(value: unknown): string {
   if (value === null || value === undefined) return "";
   let text = String(value);
@@ -149,6 +197,8 @@ export async function buildProvincialReportExport(input: {
   scope?: ProvincialReportScope;
   /** Required by the SELECTED scope: the report rows the officer ticked. */
   selectedIds?: string[];
+  /** Required by the INCIDENT_DOSSIER dataset: the single report to render. */
+  reportId?: string;
 }): Promise<ProvincialReportExport> {
   const scope: ProvincialReportScope = input.scope ?? "ALL_MATCHING";
   if (!["ALL_MATCHING", "SELECTED", "CURRENT_PAGE"].includes(scope)) {
@@ -156,6 +206,34 @@ export async function buildProvincialReportExport(input: {
   }
   if (input.dataset !== "INCIDENT_REGISTER" && scope !== "ALL_MATCHING") {
     throw new Error("INVALID_SCOPE");
+  }
+
+  // One incident renders as a formatted dossier, which has no row or sheet shape.
+  if (input.dataset === "INCIDENT_DOSSIER") {
+    if (input.format !== "PDF") throw new Error("INVALID_FORMAT");
+    if (!input.reportId || !UUID.test(input.reportId)) throw new Error("INVALID_SELECTION");
+
+    const detail = await getProvincialReport(input.actor, input.reportId);
+    if (!detail) throw new Error("INVALID_SELECTION");
+
+    const pdf = await buildMunicipalReportPdf({
+      kind: "INCIDENT_DOSSIER",
+      // The dossier is one station's record, so the letterhead names that station.
+      municipalityName: detail.municipalityName,
+      preparedBy: input.preparedBy,
+      periodLabel: formatPhilippineDateTime(detail.submittedAt),
+      filterLabel: "Single incident record",
+      rows: [],
+      summary: null,
+      detail: toReportDetail(detail),
+    });
+
+    const slug = detail.referenceNumber.toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-");
+    return {
+      fileName: `alab-provincial-incident-${slug}.pdf`,
+      contentType: "application/pdf",
+      body: pdf,
+    };
   }
   if (scope === "SELECTED") {
     const ids = input.selectedIds;
@@ -221,11 +299,12 @@ export async function buildProvincialReportExport(input: {
 
   // The builders name their kinds in municipal terms; the province maps onto
   // them so one letterhead and one workbook layout serve both.
-  const kind = input.dataset === "INCIDENT_REGISTER"
-    ? "INCIDENT_REGISTER"
-    : input.dataset === "PROVINCIAL_SUMMARY"
-      ? "MUNICIPAL_SUMMARY"
-      : "BARANGAY_BREAKDOWN";
+  const kind: "INCIDENT_REGISTER" | "MUNICIPAL_SUMMARY" | "BARANGAY_BREAKDOWN" =
+    input.dataset === "INCIDENT_REGISTER"
+      ? "INCIDENT_REGISTER"
+      : input.dataset === "PROVINCIAL_SUMMARY"
+        ? "MUNICIPAL_SUMMARY"
+        : "BARANGAY_BREAKDOWN";
 
   if (input.format === "PDF") {
     const pdf = await buildMunicipalReportPdf({

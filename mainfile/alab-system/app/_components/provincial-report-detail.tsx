@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useManagementDialog } from './use-management-dialog';
 import { PhotoLightbox } from './photo-lightbox';
 import { ProvincialIncidentMiniMap, provincialMiniMapStyles } from './provincial-incident-mini-map';
@@ -142,6 +142,50 @@ const styles = `
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 700;
+  }
+
+  .pid-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .pid-pdf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid #FECACA;
+    border-radius: 10px;
+    background: #FEF2F2;
+    color: #D00F09;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  .pid-pdf-btn:hover:not(:disabled) {
+    background: #FEE2E2;
+    border-color: #FCA5A5;
+    transform: translateY(-1px);
+  }
+  .pid-pdf-btn:disabled { cursor: progress; opacity: 0.75; }
+
+  .pid-pdf-error {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #B91C1C;
+    font-size: 0.75rem;
+    font-weight: 700;
+    max-width: 220px;
+  }
+
+  @media (max-width: 640px) {
+    .pid-pdf-btn span { display: none; }
+    .pid-pdf-error { display: none; }
   }
 
   .pid-close-btn {
@@ -645,6 +689,51 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
   const [error, setError] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number; caption?: string } | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  /** Pulls the official one-incident dossier, the same document a station prints. */
+  const handleDownloadPdf = useCallback(async () => {
+    if (downloading) return;
+    setDownloading(true);
+    setDownloadError(null);
+
+    try {
+      const response = await fetch('/api/provincial-bfp/reports/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({
+          dataset: 'INCIDENT_DOSSIER',
+          format: 'PDF',
+          scope: 'ALL_MATCHING',
+          reportId,
+          filters: { page: 1, pageSize: 25 },
+        }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Unable to generate this incident report.');
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get('Content-Disposition');
+      const named = disposition ? /filename="?([^"]+)"?/.exec(disposition)?.[1] : undefined;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = named || 'alab-provincial-incident-report.pdf';
+      document.body.appendChild(link);
+      link.click();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      link.remove();
+    } catch (cause) {
+      setDownloadError(cause instanceof Error ? cause.message : 'Download failed. Please retry.');
+    } finally {
+      setDownloading(false);
+    }
+  }, [downloading, reportId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -908,15 +997,35 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                 </div>
               )}
             </div>
-            <button
-              type="button"
-              className="pid-close-btn"
-              aria-label="Close report"
-              onClick={onClose}
-              title="Close (Esc)"
-            >
-              <i className="fa-solid fa-xmark" />
-            </button>
+            <div className="pid-head-actions">
+              {downloadError && (
+                <span role="status" className="pid-pdf-error">
+                  <i className="fa-solid fa-circle-exclamation" />
+                  {downloadError}
+                </span>
+              )}
+              {report && (
+                <button
+                  type="button"
+                  className="pid-pdf-btn"
+                  onClick={handleDownloadPdf}
+                  disabled={downloading}
+                  title="Download the official incident dossier"
+                >
+                  <i className={`fa-solid ${downloading ? 'fa-circle-notch fa-spin' : 'fa-file-pdf'}`} />
+                  <span>{downloading ? 'Preparing…' : 'Download PDF'}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="pid-close-btn"
+                aria-label="Close report"
+                onClick={onClose}
+                title="Close (Esc)"
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+            </div>
           </div>
 
           {/* Body */}

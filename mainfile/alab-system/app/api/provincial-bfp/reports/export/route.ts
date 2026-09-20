@@ -16,6 +16,7 @@ const DATASETS = new Set<ProvincialReportDataset>([
   "INCIDENT_REGISTER",
   "PROVINCIAL_SUMMARY",
   "MUNICIPALITY_BREAKDOWN",
+  "INCIDENT_DOSSIER",
 ]);
 const FORMATS = new Set<ProvincialReportFormat>(["PDF", "XLSX", "CSV"]);
 const SCOPES = new Set<ProvincialReportScope>(["ALL_MATCHING", "SELECTED", "CURRENT_PAGE"]);
@@ -28,6 +29,7 @@ async function buildReport(
   formatInput: unknown,
   scopeInput: unknown,
   selectedIdsInput: unknown,
+  reportIdInput: unknown,
 ) {
   const actor = await getManagementActor(request);
   if (isProvincialAuthorizationResponse(actor)) return actor;
@@ -37,7 +39,7 @@ async function buildReport(
   const scope = String(scopeInput ?? "ALL_MATCHING").toUpperCase() as ProvincialReportScope;
 
   if (!DATASETS.has(dataset)) {
-    return NextResponse.json({ error: "Choose a register, a provincial summary, or a municipality breakdown." }, { status: 400 });
+    return NextResponse.json({ error: "Choose a register, a provincial summary, a municipality breakdown, or one incident dossier." }, { status: 400 });
   }
   if (!FORMATS.has(format)) {
     return NextResponse.json({ error: "Choose PDF, Excel or CSV." }, { status: 400 });
@@ -75,6 +77,7 @@ async function buildReport(
       municipalityName,
       scope,
       selectedIds,
+      reportId: typeof reportIdInput === "string" ? reportIdInput : undefined,
     });
 
     const body = typeof report.body === "string" ? report.body : new Uint8Array(report.body);
@@ -96,9 +99,12 @@ async function buildReport(
     }
     if (message === "INVALID_SELECTION") {
       return NextResponse.json(
-        { error: "Those ticked records no longer match the filters. Refresh the list and tick them again." },
+        { error: "That record could not be matched. Refresh the list and try again." },
         { status: 400 },
       );
+    }
+    if (message === "INVALID_FORMAT") {
+      return NextResponse.json({ error: "An incident dossier is available as PDF only." }, { status: 400 });
     }
     if (message === "INVALID_SCOPE") {
       return NextResponse.json({ error: "A summary or breakdown always covers every matching record." }, { status: 400 });
@@ -120,6 +126,7 @@ export async function GET(request: NextRequest) {
     params.get("format"),
     params.get("scope"),
     params.get("selectedIds"),
+    params.get("reportId"),
   );
 }
 
@@ -132,5 +139,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
   }
   const filters = (body.filters as Record<string, unknown>) ?? {};
-  return buildReport(request, filters, body.dataset, body.format, body.scope, body.selectedIds);
+  return buildReport(request, filters, body.dataset, body.format, body.scope, body.selectedIds, body.reportId);
 }
