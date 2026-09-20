@@ -81,6 +81,60 @@ export function alignComparisonSeries(current, previous, lastYear, metric = 'tot
   });
 }
 
+function formatChartNumber(value) {
+  return String(Number(Number(value).toFixed(2)));
+}
+
+export function buildSmoothChartPath(points) {
+  let path = '';
+  let previous = null;
+  for (const point of Array.isArray(points) ? points : []) {
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+      previous = null;
+      continue;
+    }
+    if (!previous) {
+      path += `${path ? ' ' : ''}M${formatChartNumber(point.x)} ${formatChartNumber(point.y)}`;
+    } else {
+      const middleX = (previous.x + point.x) / 2;
+      path += ` C${formatChartNumber(middleX)} ${formatChartNumber(previous.y)}, ${formatChartNumber(middleX)} ${formatChartNumber(point.y)}, ${formatChartNumber(point.x)} ${formatChartNumber(point.y)}`;
+    }
+    previous = point;
+  }
+  return path;
+}
+
+export function buildGroupedBarLayout(points, keys, geometry) {
+  const safePoints = Array.isArray(points) ? points : [];
+  const safeKeys = Array.isArray(keys) ? keys : [];
+  if (safePoints.length === 0 || safeKeys.length === 0) return [];
+  const slotWidth = geometry.plotWidth / safePoints.length;
+  const gap = safeKeys.length > 1 ? 2 : 0;
+  const availableWidth = Math.min(28, slotWidth * 0.7);
+  const barWidth = Math.max(2, Math.floor((availableWidth - gap * (safeKeys.length - 1)) / safeKeys.length));
+  const groupWidth = barWidth * safeKeys.length + gap * (safeKeys.length - 1);
+  const bars = [];
+  safePoints.forEach((point, dayIndex) => {
+    const groupStart = geometry.left + slotWidth * dayIndex + (slotWidth - groupWidth) / 2;
+    safeKeys.forEach((key, keyIndex) => {
+      const rawValue = point?.[key];
+      if (rawValue === null || rawValue === undefined) return;
+      const value = Math.max(0, Number(rawValue) || 0);
+      const height = geometry.maxValue > 0 ? (value / geometry.maxValue) * geometry.plotHeight : 0;
+      bars.push({
+        dayIndex,
+        key,
+        value,
+        x: Number((groupStart + keyIndex * (barWidth + gap)).toFixed(2)),
+        y: Number((geometry.baselineY - height).toFixed(2)),
+        width: barWidth,
+        height: Number(height.toFixed(2)),
+      });
+    });
+  });
+  return bars;
+}
+
 export function buildAnalyticsQuery(month, municipalityId = '') {
   const range = getManilaMonthRange(month);
   const params = new URLSearchParams(range);

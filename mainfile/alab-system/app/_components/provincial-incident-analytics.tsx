@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   alignComparisonSeries,
+  buildGroupedBarLayout,
   buildAnalyticsQuery,
+  buildSmoothChartPath,
   calculateComparisonChange,
   getNextMonth,
   getPreviousMonth,
@@ -16,6 +18,7 @@ import type { ProvincialReportSummary } from "../../lib/provincial-bfp/managemen
 type AnalyticsView = "TREND" | "MUNICIPALITIES" | "FIRE_TYPES";
 type ComparisonMode = "NONE" | "PREVIOUS" | "LAST_YEAR" | "BOTH";
 type TrendMetric = "total" | "active" | "resolved" | "verification" | "administrative";
+type TrendChartStyle = "LINE" | "BAR";
 type MunicipalityOption = { id: string; name: string };
 
 type ComparisonSummaries = {
@@ -32,6 +35,16 @@ type AlignedTrendPoint = {
   previous: number | null;
   lastYear: number | null;
   breakdown: { active: number; resolved: number; verification: number; administrative: number } | null;
+};
+
+type GroupedTrendBar = {
+  dayIndex: number;
+  key: "current" | "previous" | "lastYear";
+  value: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 const STATUS_COLORS = {
@@ -87,6 +100,10 @@ const styles = `
   .pia-chart-caption { display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; margin-bottom:.85rem; }
   .pia-chart-caption h3 { margin:0; color:#14233B; font-size:.9rem; font-weight:800; }
   .pia-chart-caption p { margin:.2rem 0 0; color:#7B889A; font-size:.68rem; }
+  .pia-chart-head-actions { display:flex; align-items:center; justify-content:flex-end; gap:.85rem; flex-wrap:wrap; }
+  .pia-view-switch { display:inline-flex; align-items:center; gap:.2rem; padding:.2rem; border:1px solid #DCE5EF; border-radius:10px; background:#F3F6FA; }
+  .pia-view-btn { display:inline-flex; align-items:center; justify-content:center; gap:.35rem; min-height:31px; border:0; border-radius:7px; background:transparent; color:#64748B; padding:.38rem .62rem; font-size:.65rem; font-weight:800; cursor:pointer; transition:background .18s ease,color .18s ease,box-shadow .18s ease; }
+  .pia-view-btn.active { background:#fff; color:#D92D20; box-shadow:0 5px 14px -9px rgba(20,35,59,.65); }
   .pia-legend { display:flex; align-items:center; justify-content:flex-end; gap:.75rem; flex-wrap:wrap; }
   .pia-legend span { display:inline-flex; align-items:center; gap:.35rem; color:#64748B; font-size:.64rem; font-weight:700; }
   .pia-legend i { width:8px; height:8px; border-radius:3px; }
@@ -120,7 +137,11 @@ const styles = `
   .pia-line-chart { position:relative; z-index:1; display:block; width:100%; height:auto; }
   .pia-chart-scroll { overflow-x:auto; padding-bottom:.15rem; scrollbar-width:thin; }
   .pia-current-area { animation:piaAreaIn .7s cubic-bezier(.16,1,.3,1) both; }
-  .pia-trend-line { fill:none; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; animation:piaLineIn .75s cubic-bezier(.16,1,.3,1) both; }
+  .pia-chart-series { transform-box:fill-box; transform-origin:center; animation:piaSeriesIn .42s cubic-bezier(.16,1,.3,1) both; }
+  .pia-trend-line { fill:none; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
+  .pia-line-marker { vector-effect:non-scaling-stroke; transition:r .16s ease,opacity .16s ease; }
+  .pia-trend-bar { transform-box:fill-box; transform-origin:center bottom; animation:piaBarRise .46s cubic-bezier(.16,1,.3,1) both; transition:opacity .16s ease; }
+  .pia-trend-bar:hover { opacity:1!important; }
   .pia-hover-point { vector-effect:non-scaling-stroke; filter:drop-shadow(0 3px 5px rgba(20,35,59,.2)); }
   .pia-hit-point:focus { outline:none; }
   .pia-crosshair { stroke:#94A3B8; stroke-width:1; stroke-dasharray:3 4; vector-effect:non-scaling-stroke; }
@@ -136,7 +157,8 @@ const styles = `
   .pia-insight-change { display:inline-flex!important; align-items:center; gap:.3rem; margin-top:.25rem!important; color:#64748B!important; font-size:.63rem!important; font-weight:750!important; text-transform:none!important; letter-spacing:0!important; }
   .pia-insight-change.up { color:#B42318!important; }
   .pia-insight-change.down { color:#087F5B!important; }
-  @keyframes piaLineIn { from { stroke-dasharray:1200; stroke-dashoffset:1200; opacity:.2; } to { stroke-dasharray:1200; stroke-dashoffset:0; opacity:1; } }
+  @keyframes piaSeriesIn { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes piaBarRise { from { transform:scaleY(0); opacity:.25; } to { transform:scaleY(1); } }
   @keyframes piaAreaIn { from { opacity:0; } to { opacity:1; } }
   .pia-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   @media (max-width:780px) {
@@ -154,6 +176,7 @@ const styles = `
     .pia-metric:nth-child(2) { border-right:0; }
     .pia-metric:nth-child(-n+2) { border-bottom:1px solid #EDF1F6; }
     .pia-chart-caption { align-items:flex-start; flex-direction:column; }
+    .pia-chart-head-actions { align-items:flex-start; justify-content:flex-start; }
     .pia-legend { justify-content:flex-start; }
     .pia-body { padding-inline:.8rem; }
     .pia-municipality-row { grid-template-columns:minmax(90px,125px) minmax(0,1fr) 28px; gap:.55rem; }
@@ -165,7 +188,7 @@ const styles = `
     .pia-metric-select { width:100%; }
     .pia-chart-stage { min-height:270px; }
   }
-  @media (prefers-reduced-motion:reduce) { .pia-stack-segment, .pia-fire-bar, .pia-current-area, .pia-trend-line { animation:none; } .pia-stack span, .pia-compare-btn { transition:none; } }
+  @media (prefers-reduced-motion:reduce) { .pia-stack-segment, .pia-fire-bar, .pia-current-area, .pia-chart-series, .pia-trend-bar { animation:none; } .pia-stack span, .pia-compare-btn, .pia-view-btn, .pia-line-marker, .pia-trend-bar { transition:none; } }
 `;
 
 function currentManilaMonth() {
@@ -235,8 +258,10 @@ function MonthlyTrend({
   lastYearSummary,
   month,
   comparisonMode,
+  chartStyle,
   metric,
   onComparisonMode,
+  onChartStyle,
   onMetric,
 }: {
   summary: ProvincialReportSummary;
@@ -244,8 +269,10 @@ function MonthlyTrend({
   lastYearSummary: ProvincialReportSummary | null;
   month: string;
   comparisonMode: ComparisonMode;
+  chartStyle: TrendChartStyle;
   metric: TrendMetric;
   onComparisonMode: (value: ComparisonMode) => void;
+  onChartStyle: (value: TrendChartStyle) => void;
   onMetric: (value: TrendMetric) => void;
 }) {
   const [activeDay, setActiveDay] = useState<number | null>(null);
@@ -272,11 +299,10 @@ function MonthlyTrend({
   const gridValues = [0, .25, .5, .75, 1].map((part) => Math.round(maxValue * part));
   const xFor = (index: number) => plot.left + (index / Math.max(points.length - 1, 1)) * plotWidth;
   const yFor = (value: number) => plot.top + plotHeight - (value / maxValue) * plotHeight;
-  const pathFor = (key: "current" | "previous" | "lastYear") => points.reduce((path, point, index) => {
+  const pathFor = (key: "current" | "previous" | "lastYear") => buildSmoothChartPath(points.map((point, index) => {
     const value = point[key];
-    if (value === null) return path;
-    return `${path}${path ? " L" : "M"}${xFor(index).toFixed(2)} ${yFor(value).toFixed(2)}`;
-  }, "");
+    return value === null ? null : { x: xFor(index), y: yFor(value) };
+  }));
   const currentPath = pathFor("current");
   const currentValues = points.filter((point) => point.current !== null);
   const areaPath = currentValues.length
@@ -289,12 +315,31 @@ function MonthlyTrend({
     { key: "previous" as const, dateKey: "previousDate" as const, label: monthLabel(getPreviousMonth(month)), color: PERIOD_COLORS.previous, dash: "8 7", visible: showPrevious },
     { key: "lastYear" as const, dateKey: "lastYearDate" as const, label: monthLabel(getSameMonthLastYear(month)), color: PERIOD_COLORS.lastYear, dash: "2 7", visible: showLastYear },
   ].filter((series) => series.visible);
+  const barSlotWidth = plotWidth / Math.max(points.length, 1);
+  const barXFor = (index: number) => plot.left + (index + .5) * barSlotWidth;
+  const bars = buildGroupedBarLayout(points, visibleKeys, {
+    left: plot.left,
+    plotWidth,
+    plotHeight,
+    baselineY: plot.top + plotHeight,
+    maxValue,
+  }) as GroupedTrendBar[];
+  const hoverXFor = (index: number) => chartStyle === "BAR" ? barXFor(index) : xFor(index);
 
   return <>
     <div className="pia-chart-caption">
       <div><h3>Incident trend comparison</h3><p>Compare the same daily measure across the selected month, previous month, and last year.</p></div>
-      <div className="pia-legend pia-period-legend" aria-label="Comparison period legend">
-        {periodSeries.map((series) => <span key={series.key}><i style={{ background: series.color }} />{series.label}</span>)}
+      <div className="pia-chart-head-actions">
+        <div className="pia-view-switch" role="group" aria-label="Select graph style">
+          {([[
+            "LINE", "fa-chart-line", "Smooth line",
+          ], [
+            "BAR", "fa-chart-simple", "Bar graph",
+          ]] as const).map(([value, icon, label]) => <button key={value} type="button" className={`pia-view-btn ${chartStyle === value ? "active" : ""}`} aria-pressed={chartStyle === value} onClick={() => onChartStyle(value)}><i className={`fa-solid ${icon}`} aria-hidden="true" />{label}</button>)}
+        </div>
+        <div className="pia-legend pia-period-legend" aria-label="Comparison period legend">
+          {periodSeries.map((series) => <span key={series.key}><i style={{ background: series.color }} />{series.label}</span>)}
+        </div>
       </div>
     </div>
     <div className="pia-trend-tools">
@@ -326,7 +371,9 @@ function MonthlyTrend({
           onPointerMove={(event) => {
             const rect = event.currentTarget.getBoundingClientRect();
             const viewX = ((event.clientX - rect.left) / rect.width) * width;
-            const index = Math.round(((viewX - plot.left) / plotWidth) * Math.max(points.length - 1, 1));
+            const index = chartStyle === "BAR"
+              ? Math.floor((viewX - plot.left) / barSlotWidth)
+              : Math.round(((viewX - plot.left) / plotWidth) * Math.max(points.length - 1, 1));
             setActiveDay(Math.min(points.length, Math.max(1, index + 1)));
           }}
           onPointerLeave={() => setActiveDay(null)}
@@ -342,10 +389,21 @@ function MonthlyTrend({
             const y = yFor(value);
             return <g key={value}><line className="pia-grid-line" x1={plot.left} x2={width - plot.right} y1={y} y2={y} /><text className="pia-axis-label" x={plot.left - 10} y={y + 4} textAnchor="end">{value}</text></g>;
           })}
-          {areaPath && <path className="pia-current-area" d={areaPath} fill="url(#pia-current-fill)" />}
-          {periodSeries.slice().reverse().map((series) => <path key={series.key} className="pia-trend-line" d={pathFor(series.key)} stroke={series.color} strokeWidth={series.key === "current" ? 3.5 : 2.25} strokeDasharray={series.dash} opacity={series.key === "current" ? 1 : .82} />)}
+          <g className="pia-chart-series" key={`${chartStyle}-${metric}-${comparisonMode}`}>
+            {chartStyle === "LINE" ? <>
+              {areaPath && <path className="pia-current-area" d={areaPath} fill="url(#pia-current-fill)" />}
+              {periodSeries.slice().reverse().map((series) => <path key={series.key} className="pia-trend-line" d={pathFor(series.key)} stroke={series.color} strokeWidth={series.key === "current" ? 3.5 : 2.25} strokeDasharray={series.dash} opacity={series.key === "current" ? 1 : .82} />)}
+              {periodSeries.flatMap((series) => points.map((point, index) => {
+                const value = point[series.key];
+                return value !== null && value > 0 ? <circle key={`${series.key}-${point.day}`} className="pia-line-marker" cx={xFor(index)} cy={yFor(value)} r="3.25" fill="#fff" stroke={series.color} strokeWidth="2" opacity={series.key === "current" ? 1 : .78} /> : null;
+              }))}
+            </> : bars.map((bar) => {
+              const color = PERIOD_COLORS[bar.key];
+              return <rect key={`${bar.key}-${bar.dayIndex}`} className="pia-trend-bar" x={bar.x} y={bar.y} width={bar.width} height={bar.height} rx={Math.min(4, bar.width / 2)} fill={color} opacity={bar.key === "current" ? .94 : .7} />;
+            })}
+          </g>
           {points.map((point, index) => {
-            const x = xFor(index);
+            const x = chartStyle === "BAR" ? barXFor(index) : xFor(index);
             const showLabel = point.day === 1 || point.day === points.length || point.day % 5 === 0;
             return <g key={point.day}>
               {showLabel && <text className="pia-axis-label" x={x} y={height - 14} textAnchor="middle">{point.day}</text>}
@@ -353,14 +411,14 @@ function MonthlyTrend({
             </g>;
           })}
           {activePoint && <>
-            <line className="pia-crosshair" x1={xFor(activeDay! - 1)} x2={xFor(activeDay! - 1)} y1={plot.top} y2={plot.top + plotHeight} />
+            <line className="pia-crosshair" x1={hoverXFor(activeDay! - 1)} x2={hoverXFor(activeDay! - 1)} y1={plot.top} y2={plot.top + plotHeight} />
             {periodSeries.map((series) => {
               const value = activePoint[series.key];
-              return value !== null ? <circle key={series.key} className="pia-hover-point" cx={xFor(activeDay! - 1)} cy={yFor(value)} r={series.key === "current" ? 5 : 4} fill="#fff" stroke={series.color} strokeWidth="3" /> : null;
+              return value !== null && chartStyle === "LINE" ? <circle key={series.key} className="pia-hover-point" cx={hoverXFor(activeDay! - 1)} cy={yFor(value)} r={series.key === "current" ? 5 : 4} fill="#fff" stroke={series.color} strokeWidth="3" /> : null;
             })}
           </>}
         </svg>
-        {activePoint && <div className="pia-tooltip" style={{ left: `${(xFor(activeDay! - 1) / width) * 100}%`, transform: activeDay! > points.length * .68 ? "translateX(-100%)" : activeDay! > points.length * .32 ? "translateX(-50%)" : "none" }}>
+        {activePoint && <div className="pia-tooltip" style={{ left: `${(hoverXFor(activeDay! - 1) / width) * 100}%`, transform: activeDay! > points.length * .68 ? "translateX(-100%)" : activeDay! > points.length * .32 ? "translateX(-50%)" : "none" }}>
           <div className="pia-tooltip-date">Day {activePoint.day} comparison</div>
           {periodSeries.map((series) => <div className="pia-tooltip-row" key={series.key}>
             <span><i style={{ background: series.color }} />{formatChartDate(activePoint[series.dateKey])}</span>
@@ -430,6 +488,7 @@ export function ProvincialIncidentAnalytics({ municipalities }: { municipalities
   const [municipalityId, setMunicipalityId] = useState("");
   const [view, setView] = useState<AnalyticsView>("TREND");
   const [comparisonMode, setComparisonMode] = useState<ComparisonMode>("BOTH");
+  const [trendChartStyle, setTrendChartStyle] = useState<TrendChartStyle>("LINE");
   const [trendMetric, setTrendMetric] = useState<TrendMetric>("total");
   const [summary, setSummary] = useState<ProvincialReportSummary | null>(null);
   const [comparisons, setComparisons] = useState<ComparisonSummaries>({ previous: null, lastYear: null });
@@ -543,7 +602,7 @@ export function ProvincialIncidentAnalytics({ municipalities }: { municipalities
       {error ? <div className="pia-error" role="alert"><i className="fa-solid fa-chart-simple" /><strong>Incident analytics could not be loaded</strong><span>{error}</span><button type="button" className="pia-retry" onClick={() => setRevision((value) => value + 1)}>Retry</button></div>
         : summary && ((view === "TREND" && !trendHasData) || (view !== "TREND" && summary.totalReports === 0)) ? <div className="pia-empty"><i className="fa-regular fa-calendar-check" /><strong>No incidents recorded for this selection</strong><span>Choose another month or municipality to review its activity.</span></div>
         : summary ? <>
-            {view === "TREND" && <MonthlyTrend summary={summary} previousSummary={comparisons.previous} lastYearSummary={comparisons.lastYear} month={month} comparisonMode={comparisonMode} metric={trendMetric} onComparisonMode={setComparisonMode} onMetric={setTrendMetric} />}
+            {view === "TREND" && <MonthlyTrend summary={summary} previousSummary={comparisons.previous} lastYearSummary={comparisons.lastYear} month={month} comparisonMode={comparisonMode} chartStyle={trendChartStyle} metric={trendMetric} onComparisonMode={setComparisonMode} onChartStyle={setTrendChartStyle} onMetric={setTrendMetric} />}
             {view === "MUNICIPALITIES" && <MunicipalityComparison summary={summary} onSelect={selectMunicipality} />}
             {view === "FIRE_TYPES" && <FireTypeChart summary={summary} />}
           </> : null}

@@ -9,6 +9,8 @@ import {
   getSameMonthLastYear,
   calculateComparisonChange,
   alignComparisonSeries,
+  buildSmoothChartPath,
+  buildGroupedBarLayout,
   normalizeAnalyticsSeries,
 } from '../lib/provincial-bfp/dashboard-analytics.mjs';
 
@@ -46,6 +48,29 @@ test('comparison series aligns different calendar months by day number', () => {
   });
   assert.equal(result.length, 31);
   assert.equal(result[28].previous, null);
+});
+
+test('smooth chart path uses bounded cubic curves instead of sharp line segments', () => {
+  assert.equal(
+    buildSmoothChartPath([{ x: 0, y: 30 }, { x: 10, y: 10 }, { x: 20, y: 20 }]),
+    'M0 30 C5 30, 5 10, 10 10 C15 10, 15 20, 20 20',
+  );
+  assert.equal(
+    buildSmoothChartPath([{ x: 0, y: 30 }, null, { x: 20, y: 20 }]),
+    'M0 30 M20 20',
+  );
+});
+
+test('grouped bar layout keeps comparison bars side by side within each day', () => {
+  const bars = buildGroupedBarLayout(
+    [{ current: 4, previous: 2, lastYear: null }],
+    ['current', 'previous'],
+    { left: 10, plotWidth: 30, plotHeight: 80, baselineY: 100, maxValue: 4 },
+  );
+  assert.deepEqual(bars, [
+    { dayIndex: 0, key: 'current', value: 4, x: 15, y: 20, width: 9, height: 80 },
+    { dayIndex: 0, key: 'previous', value: 2, x: 26, y: 60, width: 9, height: 40 },
+  ]);
 });
 
 test('analytics query personalizes the same month for one municipality', () => {
