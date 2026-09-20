@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -31,9 +31,12 @@ test("provincial management toolbar and hook provide shared filters and state ma
   assert.match(hook, /refresh/);
 });
 
-test("audit activity page loads real provincial audit logs from the database", () => {
-  const page = source("app/provincial-bfp/audit-activity/page.tsx");
-  assert.match(page, /api\/provincial-bfp\/audit-events/);
-  assert.doesNotMatch(page, /culasi\.bfp@antique\.gov\.ph/);
-  assert.doesNotMatch(page, /WS-ANT-003/);
+test("the audit activity tab is gone from the provincial portal", () => {
+  assert.equal(existsSync("app/provincial-bfp/audit-activity/page.tsx"), false);
+  assert.equal(existsSync("app/api/provincial-bfp/audit-events/route.ts"), false);
+  assert.equal(existsSync("lib/provincial-bfp/management/audit.ts"), false);
+
+  const layout = source("app/_components/provincial-bfp-layout.tsx");
+  assert.doesNotMatch(layout, /audit-activity/);
+  assert.doesNotMatch(layout, /Audit Activity/);
 });

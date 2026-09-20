@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -31,12 +31,14 @@ test("export API route enforces provincial actor and returns proper CSV attachme
   assert.match(route, /export async function GET/);
 });
 
-test("audit events API route enforces provincial actor and lists paginated logs", () => {
-  const route = source("app/api/provincial-bfp/audit-events/route.ts");
-  const service = source("lib/provincial-bfp/management/audit.ts");
-
-  assert.match(route, /getManagementActor/);
-  assert.match(route, /listProvincialAuditEvents/);
-  assert.match(service, /provincial_management_events/);
-  assert.match(service, /export async function listProvincialAuditEvents/);
+test("removing the audit tab leaves the immutable event trail recording", () => {
+  // Only the reader went. Every administrative action still writes its event.
+  assert.equal(existsSync("lib/provincial-bfp/management/audit.ts"), false);
+  for (const service of ["stations", "personnel", "residents", "applications", "exports"]) {
+    assert.match(source(`lib/provincial-bfp/management/${service}.ts`), /insert into provincial_management_events/);
+  }
+  assert.match(
+    source("supabase/migrations/20260910140000_provincial_management_support.sql"),
+    /create table if not exists public\.provincial_management_events/,
+  );
 });

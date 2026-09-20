@@ -246,6 +246,17 @@ export type ProvincialReportSummary = {
     confirmed: number;
     falseReport: number;
     resolved: number;
+    active: number;
+    verification: number;
+    administrative: number;
+  }>;
+  dailyTrend: Array<{
+    date: string;
+    total: number;
+    active: number;
+    resolved: number;
+    verification: number;
+    administrative: number;
   }>;
   byFireType: Record<string, number>;
   timingMetrics: {

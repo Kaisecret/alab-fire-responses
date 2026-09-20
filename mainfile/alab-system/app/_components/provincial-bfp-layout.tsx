@@ -126,11 +126,6 @@ const navigationGroups: NavGroup[] = [
         icon: 'fa-solid fa-id-card-clip',
       },
       {
-        label: 'Audit Activity',
-        href: '/provincial-bfp/audit-activity',
-        icon: 'fa-solid fa-clock-rotate-left',
-      },
-      {
         label: 'Settings',
         href: '/provincial-bfp/settings',
         icon: 'fa-solid fa-sliders',
@@ -874,8 +869,16 @@ const provincialLayoutStyles = `
     text-transform: uppercase;
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.55rem;
     white-space: nowrap;
+  }
+
+  .pbfp-topbar-emblem {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.12));
+    flex-shrink: 0;
   }
 
   .pbfp-topbar-right {
@@ -1483,7 +1486,12 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                 </button>
                 <div className="pbfp-topbar-title-group">
                   <span className="pbfp-topbar-kicker">
-                    <i className="fa-solid fa-shield-heart" /> Bureau of Fire Protection • Region VI
+                    <img
+                      src="/images/bfp logo.png"
+                      alt="Bureau of Fire Protection Emblem"
+                      className="pbfp-topbar-emblem"
+                    />
+                    <span>Bureau of Fire Protection • Region VI</span>
                   </span>
                 </div>
               </div>

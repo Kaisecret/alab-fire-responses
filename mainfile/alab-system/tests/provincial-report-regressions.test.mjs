@@ -77,7 +77,11 @@ test('report SQL counts Manila day, honors search/severity, and excludes active 
     const result = await mod.getProvincialReportSummary(actor, {...base,from:'2026-09-10',to:'2026-09-10',search:'MATCH',severity:'HIGH'});
     assert.equal(result.totalReports,2);
     assert.equal(result.byMunicipality.length,2);
+    assert.equal(result.byMunicipality[0].active,1);
     assert.equal(result.byMunicipality[0].resolved,1);
+    assert.equal(result.byMunicipality[0].verification,0);
+    assert.equal(result.byMunicipality[0].administrative,0);
+    assert.deepEqual(result.dailyTrend, [{ date: '2026-09-10', total: 2, active: 1, resolved: 1, verification: 0, administrative: 0 }]);
     assert.equal(result.timingMetrics.avgResolutionMinutes,60);
     assert.equal(result.timingMetrics.avgResponseMinutes,10);
     const empty = await mod.getProvincialReportSummary(actor, {...base,severity:'LOW'});

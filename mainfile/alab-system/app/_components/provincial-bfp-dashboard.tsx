@@ -10,6 +10,7 @@ import {
 } from '../../lib/provincial-bfp/municipality-overview.mjs';
 import { useProvincialIncidentFeed } from './use-provincial-incident-feed';
 import { useProvincialAssistanceFeed } from './use-provincial-assistance-feed';
+import { ProvincialIncidentAnalytics } from './provincial-incident-analytics';
 
 type ManagementSummaryData = {
   totalMunicipalities: number;
@@ -1393,6 +1394,7 @@ export function ProvincialBfpDashboard() {
             </div>
           </section>
         </div>
+        <ProvincialIncidentAnalytics municipalities={municipalities.map(({ id, name }) => ({ id, name }))} />
       </div>
     </>
   );

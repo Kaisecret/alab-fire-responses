@@ -90,6 +90,9 @@ export async function getProvincialReportSummary(
     confirmed: string;
     false_report: string;
     resolved: string;
+    active: string;
+    verification: string;
+    administrative: string;
   }>(
     `select m.id,
             m.name,
@@ -97,6 +100,9 @@ export async function getProvincialReportSummary(
             count(fr.id) filter (where fr.status in ('CONFIRMED', 'VERIFIED', 'RESPONDING', 'FIRETRUCK_DISPATCHED', 'RESPONDER_ARRIVED', 'UNDER_CONTROL', 'RESOLVED', 'CLOSED'))::text as confirmed,
             count(fr.id) filter (where fr.status in ('FALSE_REPORT', 'DUPLICATE', 'REJECTED'))::text as false_report,
             count(fr.id) filter (where fr.status in ('CLOSED', 'RESOLVED'))::text as resolved
+            ,count(fr.id) filter (where fr.status in ('CONFIRMED', 'VERIFIED', 'RESPONDING', 'FIRETRUCK_DISPATCHED', 'RESPONDER_ARRIVED', 'UNDER_CONTROL'))::text as active
+            ,count(fr.id) filter (where fr.status in ('SUBMITTED', 'PENDING_VERIFICATION', 'UNDER_VERIFICATION', 'NEEDS_MORE_INFO'))::text as verification
+            ,count(fr.id) filter (where fr.status in ('FALSE_REPORT', 'DUPLICATE', 'REJECTED'))::text as administrative
        from municipalities m
        left join fire_reports fr on fr.municipality_id = m.id ${muniWhereJoin}
       where m.province = 'Antique' ${muniFilterClause}
@@ -112,7 +118,54 @@ export async function getProvincialReportSummary(
     confirmed: Number.parseInt(row.confirmed, 10),
     falseReport: Number.parseInt(row.false_report, 10),
     resolved: Number.parseInt(row.resolved, 10),
+    active: Number.parseInt(row.active, 10),
+    verification: Number.parseInt(row.verification, 10),
+    administrative: Number.parseInt(row.administrative, 10),
   }));
+
+  const dailyRes = filters.from && filters.to
+    ? await db.query<{
+        date: string;
+        total: string;
+        active: string;
+        resolved: string;
+        verification: string;
+        administrative: string;
+      }>(
+        `select to_char(fr.submitted_at at time zone 'Asia/Manila', 'YYYY-MM-DD') as date,
+                count(*)::text as total,
+                count(*) filter (where fr.status in ('CONFIRMED', 'VERIFIED', 'RESPONDING', 'FIRETRUCK_DISPATCHED', 'RESPONDER_ARRIVED', 'UNDER_CONTROL'))::text as active,
+                count(*) filter (where fr.status in ('CLOSED', 'RESOLVED'))::text as resolved,
+                count(*) filter (where fr.status in ('SUBMITTED', 'PENDING_VERIFICATION', 'UNDER_VERIFICATION', 'NEEDS_MORE_INFO'))::text as verification,
+                count(*) filter (where fr.status in ('FALSE_REPORT', 'DUPLICATE', 'REJECTED'))::text as administrative
+           from fire_reports fr
+           join municipalities m on m.id = fr.municipality_id
+         ${whereSql}
+          group by 1
+          order by 1`,
+        values,
+      )
+    : { rows: [] };
+
+  const dailyCounts = new Map(dailyRes.rows.map((row) => [row.date, row]));
+  const dailyTrend: ProvincialReportSummary['dailyTrend'] = [];
+  if (filters.from && filters.to) {
+    const cursor = new Date(`${filters.from.slice(0, 10)}T00:00:00Z`);
+    const end = new Date(`${filters.to.slice(0, 10)}T00:00:00Z`);
+    while (cursor <= end) {
+      const date = cursor.toISOString().slice(0, 10);
+      const row = dailyCounts.get(date);
+      dailyTrend.push({
+        date,
+        total: Number.parseInt(row?.total ?? '0', 10),
+        active: Number.parseInt(row?.active ?? '0', 10),
+        resolved: Number.parseInt(row?.resolved ?? '0', 10),
+        verification: Number.parseInt(row?.verification ?? '0', 10),
+        administrative: Number.parseInt(row?.administrative ?? '0', 10),
+      });
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+  }
 
   // 3. Timing metrics: response time & resolution time
   const timingRes = await db.query<{
@@ -152,6 +205,7 @@ export async function getProvincialReportSummary(
     bySource,
     byFireType,
     byMunicipality,
+    dailyTrend,
     timingMetrics: {
       avgResponseMinutes: avgResp !== null && !Number.isNaN(avgResp) ? avgResp : null,
       avgResolutionMinutes: avgRes !== null && !Number.isNaN(avgRes) ? avgRes : null,
