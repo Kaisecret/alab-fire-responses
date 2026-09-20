@@ -91,27 +91,32 @@ const styles = `
   .cmd-reach h2{margin:0;color:var(--ink);font-size:1.12rem;font-weight:800;letter-spacing:-.02em}
   .cmd-reach-note{color:var(--muted);font-size:.78rem;font-weight:600}
 
-  .cmd-axis{position:relative;margin:1.45rem 0 .2rem;padding-bottom:1.5rem}
-  .cmd-axis-line{position:absolute;left:0;right:0;bottom:1.5rem;height:1px;background:var(--line)}
-  .cmd-tick{position:absolute;bottom:0;transform:translateX(-50%);text-align:center;white-space:nowrap}
-  .cmd-tick::before{content:'';display:block;width:1px;height:8px;margin:0 auto 4px;background:#B6C7DC}
-  .cmd-tick span{color:var(--muted);font-size:.68rem;font-weight:800;letter-spacing:.05em;font-variant-numeric:tabular-nums}
-
-  .cmd-level{display:grid;grid-template-columns:2.1rem minmax(7.5rem,auto) minmax(0,1fr) auto;
-    gap:.15rem .9rem;align-items:center;padding:.62rem 0}
+  /* Levels and the axis share one column template, so the 35 km tick lands
+     exactly where the third alarm's bar ends. */
+  .cmd-axis{margin:1.4rem 0 0}
+  .cmd-level,.cmd-axis-foot{display:grid;grid-template-columns:2.4rem minmax(0,1fr) 8.6rem;gap:.3rem .9rem}
+  .cmd-level{align-items:center;padding:.7rem 0}
   .cmd-level+.cmd-level{border-top:1px solid #F1F5F9}
-  .cmd-level-no{grid-row:span 2;width:2.1rem;height:2.1rem;display:grid;place-items:center;border-radius:8px;
-    background:#FEF2F2;color:var(--red);font-size:.9rem;font-weight:800;font-variant-numeric:tabular-nums}
-  .cmd-level-name{color:var(--ink);font-size:.92rem;font-weight:800;letter-spacing:-.01em}
-  .cmd-level-sub{grid-column:2;color:var(--muted);font-size:.76rem;line-height:1.35}
-  .cmd-bar{grid-row:span 2;position:relative;height:9px;border-radius:999px;background:#EEF3F9;overflow:hidden}
+  .cmd-level-no{grid-row:span 3;align-self:start;width:2.4rem;height:2.4rem;display:grid;place-items:center;
+    border-radius:9px;background:#FEF2F2;color:var(--red);font-size:.92rem;font-weight:800;font-variant-numeric:tabular-nums}
+  .cmd-level-name{margin:0;color:var(--ink);font-size:.95rem;font-weight:800;letter-spacing:-.015em}
+  .cmd-who{justify-self:end;color:var(--body);font-size:.67rem;font-weight:800;letter-spacing:.05em;
+    text-transform:uppercase;white-space:nowrap}
+  .cmd-who--auto{color:#0E7049}
+  .cmd-bar{grid-column:2/-1;position:relative;height:9px;border-radius:999px;background:#EEF3F9;overflow:hidden}
   .cmd-bar i{position:absolute;inset:0;transform-origin:left center;border-radius:999px;
     background:linear-gradient(90deg,#E23632,#B91C1C);animation:cmdReach .5s cubic-bezier(.2,.75,.3,1) both}
   .cmd-bar--auto i{background:linear-gradient(90deg,#16865A,#0E7049)}
   @keyframes cmdReach{from{transform:scaleX(0)}}
-  .cmd-who{grid-row:span 2;color:var(--body);font-size:.68rem;font-weight:800;letter-spacing:.05em;
-    text-transform:uppercase;white-space:nowrap}
-  .cmd-who--auto{color:#0E7049}
+  .cmd-level-sub{grid-column:2/-1;margin:0;color:var(--muted);font-size:.77rem;line-height:1.4}
+
+  .cmd-axis-foot{padding-top:.2rem}
+  .cmd-track{grid-column:2/-1;position:relative;height:1.7rem}
+  .cmd-track::before{content:'';position:absolute;left:0;right:0;top:0;height:1px;background:var(--line)}
+  .cmd-tick{position:absolute;top:0;transform:translateX(-50%);text-align:center;white-space:nowrap}
+  .cmd-tick::before{content:'';display:block;width:1px;height:7px;margin:0 auto 3px;background:#B6C7DC}
+  .cmd-tick span{color:var(--muted);font-size:.68rem;font-weight:800;letter-spacing:.05em;font-variant-numeric:tabular-nums}
+  .cmd-tick--end{transform:translateX(-100%)}
 
   .cmd-reach-foot{margin:1.1rem 0 0;padding-top:.95rem;border-top:1px solid var(--line);
     max-width:68ch;color:var(--muted);font-size:.8rem;line-height:1.6}
@@ -120,7 +125,7 @@ const styles = `
   /* 3 — Status. Quiet, and the last thing read. */
   .cmd-strip{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1.25rem;
     padding:1.3rem 1.9rem;border:1px solid var(--line);border-radius:16px;background:#FBFDFF}
-  .cmd-strip h3{margin:0 0 .75rem;color:var(--muted);font-size:.68rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+  .cmd-strip h2{margin:0 0 .75rem;color:var(--muted);font-size:.68rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
 
   .cmd-alerts{display:flex;flex-direction:column;gap:.5rem;min-width:0}
   .cmd-alert{display:flex;align-items:baseline;justify-content:space-between;gap:.85rem;min-width:0}
@@ -153,9 +158,8 @@ const styles = `
   @media(max-width:760px){
     .cmd-id,.cmd-reach,.cmd-strip{padding-left:1.15rem;padding-right:1.15rem}
     .cmd-strip{grid-template-columns:1fr;gap:1.4rem}
-    .cmd-level{grid-template-columns:2.1rem minmax(0,1fr);row-gap:.35rem}
-    .cmd-bar,.cmd-who{grid-row:auto;grid-column:2}
-    .cmd-who{justify-self:start}
+    .cmd-level,.cmd-axis-foot{grid-template-columns:2.4rem minmax(0,1fr)}
+    .cmd-who{grid-column:2;justify-self:start}
   }
   @media(prefers-reduced-motion:reduce){.cmd *,.cmd *::before{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 `;
@@ -313,8 +317,6 @@ export default function ProvincialSettingsPage() {
         </div>
 
         <div className="cmd-axis">
-          <div className="cmd-axis-line" aria-hidden="true" />
-
           {ALARM_LEVELS.map((level) => {
             const definition = ALARM_DOCTRINE[level];
             const automatic = !definition.declarable;
@@ -322,20 +324,24 @@ export default function ProvincialSettingsPage() {
               <article className="cmd-level" key={level}>
                 <span className="cmd-level-no" aria-hidden="true">{level}</span>
                 <h3 className="cmd-level-name">{definition.label}</h3>
-                <div className={`cmd-bar${automatic ? ' cmd-bar--auto' : ''}`} aria-hidden="true">
-                  <i style={{ transform: `scaleX(${REACH_EXTENT[level] / 100})`, animationDelay: `${level * 70}ms` }} />
-                </div>
                 <span className={`cmd-who${automatic ? ' cmd-who--auto' : ''}`}>
                   {automatic ? 'Automatic' : 'Province declares'}
                 </span>
+                <div className={`cmd-bar${automatic ? ' cmd-bar--auto' : ''}`} aria-hidden="true">
+                  <i style={{ transform: `scaleX(${REACH_EXTENT[level] / 100})`, animationDelay: `${level * 70}ms` }} />
+                </div>
                 <p className="cmd-level-sub">{reachLabel(level)} — {definition.summary}</p>
               </article>
             );
           })}
 
-          <span className="cmd-tick" style={{ left: `${REACH_TICK}%` }} aria-hidden="true">
-            <span>{RADIUS_KM} km</span>
-          </span>
+          <div className="cmd-axis-foot" aria-hidden="true">
+            <span />
+            <div className="cmd-track">
+              <span className="cmd-tick" style={{ left: `${REACH_TICK}%` }}><span>{RADIUS_KM} km</span></span>
+              <span className="cmd-tick cmd-tick--end" style={{ left: '100%' }}><span>Province edge</span></span>
+            </div>
+          </div>
         </div>
 
         <p className="cmd-reach-foot">
@@ -348,7 +354,7 @@ export default function ProvincialSettingsPage() {
 
       <section className="cmd-strip" aria-label="Status">
         <div className="cmd-alerts">
-          <h3>Notifications{unread > 0 ? ` · ${counter.format(unread)} unread` : ''}</h3>
+          <h2>Notifications{unread > 0 ? ` · ${counter.format(unread)} unread` : ''}</h2>
 
           {loading && !feed ? (
             <div aria-hidden="true">{[0, 1, 2].map((row) => <div className="cmd-skel" key={row} />)}</div>
@@ -379,7 +385,7 @@ export default function ProvincialSettingsPage() {
         </div>
 
         <div>
-          <h3>Province{counts ? ` · ${timeFormat.format(new Date(counts.updatedAt))}` : ''}</h3>
+          <h2>Province{counts ? ` · ${timeFormat.format(new Date(counts.updatedAt))}` : ''}</h2>
 
           {loading && !counts ? (
             <div aria-hidden="true">{[0, 1].map((row) => <div className="cmd-skel" key={row} />)}</div>
