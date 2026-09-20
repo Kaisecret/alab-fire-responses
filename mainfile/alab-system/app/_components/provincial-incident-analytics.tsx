@@ -227,7 +227,7 @@ function FireTypeChart({ summary }: { summary: ProvincialReportSummary }) {
 }
 
 export function ProvincialIncidentAnalytics({ municipalities }: { municipalities: MunicipalityOption[] }) {
-  const currentMonth = useMemo(currentManilaMonth, []);
+  const [currentMonth] = useState(currentManilaMonth);
   const [month, setMonth] = useState(currentMonth);
   const [municipalityId, setMunicipalityId] = useState("");
   const [view, setView] = useState<AnalyticsView>("TREND");
@@ -242,8 +242,12 @@ export function ProvincialIncidentAnalytics({ municipalities }: { municipalities
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
-    setError(null);
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) {
+        setLoading(true);
+        setError(null);
+      }
+    });
     fetch(`/api/provincial-bfp/report-summaries?${buildAnalyticsQuery(month, effectiveMunicipality)}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const body = await response.json().catch(() => ({}));
