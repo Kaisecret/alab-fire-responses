@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ALARM_DOCTRINE,
@@ -17,10 +17,8 @@ type ProvincialIdentity = {
   mustChangePassword: boolean;
 };
 
-type NotificationFeed = {
-  unreadCount: number;
-  notifications: Array<{ id: string; title: string; createdAt: string; readAt: string | null }>;
-};
+type NotificationItem = { id: string; title: string; createdAt: string; readAt: string | null };
+type NotificationFeed = { unreadCount: number; notifications: NotificationItem[] };
 
 type ProvinceCounts = {
   totalMunicipalities: number;
@@ -32,90 +30,152 @@ type ProvinceCounts = {
 };
 
 const ALARM_LEVELS: AlarmLevel[] = [1, 2, 3, 4];
+const RADIUS_KM = NEARBY_RADIUS_METERS / 1000;
+
+/*
+ * Where each level's bar ends on the shared axis.
+ *
+ * The axis reads "distance from the fire", so the third alarm's edge is the
+ * 35 km tick and the fourth runs to the province edge. The first two have no
+ * distance of their own — they are counted in municipalities — so they sit
+ * proportionally inside the radius rather than claiming a measurement.
+ */
+const REACH_TICK = 64;
+const REACH_EXTENT: Record<AlarmLevel, number> = { 1: 9, 2: 30, 3: REACH_TICK, 4: 100 };
 
 const styles = `
-  .pset{--ink:#0F172A;--body:#334155;--muted:#5B7089;--line:#E2E8F0;--red:#D00F09;display:flex;flex-direction:column;gap:1.1rem;font-family:inherit;color:var(--body)}
-  .pset ::selection{background:#FEE2E2;color:#7F1D1D}
-  .pset :is(button,a,input,select):focus-visible{outline:3px solid rgba(208,15,9,.24);outline-offset:2px}
+  .cmd{--ink:#081A3A;--navy:#10234A;--body:#33506F;--muted:#5B7089;--line:#DCE6F2;--red:#D00F09;
+    display:flex;flex-direction:column;gap:1.25rem;max-width:1080px;margin:0 auto;color:var(--body);font-family:inherit}
+  .cmd ::selection{background:#FEE2E2;color:#7F1D1D}
+  .cmd :is(a,button):focus-visible{outline:3px solid rgba(208,15,9,.28);outline-offset:3px;border-radius:8px}
 
-  .pset-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-  .pset-head h1{margin:0;display:flex;align-items:center;gap:.55rem;color:var(--ink);font-size:1.45rem;font-weight:800;letter-spacing:-.02em}
-  .pset-head h1 i{color:var(--red)}
-  .pset-head p{margin:4px 0 0;color:var(--muted);font-size:.85rem}
+  .cmd-util{display:flex;align-items:baseline;justify-content:space-between;gap:1rem}
+  .cmd-util h1{margin:0;color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+  .cmd-refresh{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .2rem;border:0;background:none;
+    color:var(--muted);font:inherit;font-size:.75rem;font-weight:700;cursor:pointer;transition:color .15s ease}
+  .cmd-refresh:hover:not(:disabled){color:var(--red)}
+  .cmd-refresh:disabled{cursor:progress;opacity:.65}
 
-  .pset-btn{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;min-height:38px;padding:.45rem .95rem;border:1px solid #CBD5E1;border-radius:8px;background:#FFF;color:#334155;font:inherit;font-size:.8rem;font-weight:700;cursor:pointer;text-decoration:none;transition:background .15s ease,border-color .15s ease,transform .15s ease}
-  .pset-btn:hover:not(:disabled){background:#F8FAFC;border-color:#94A3B8;transform:translateY(-1px)}
-  .pset-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
-  .pset-btn--primary{border-color:var(--red);background:linear-gradient(135deg,#D00F09,#DC2626);color:#FFF;box-shadow:0 2px 6px rgba(208,15,9,.3)}
-  .pset-btn--primary:hover:not(:disabled){background:linear-gradient(135deg,#B91C1C,#C81E1E)}
+  /* 1 — Identity. The officer, at the weight the page opens on. */
+  .cmd-id{position:relative;padding:1.75rem 1.9rem;border-radius:16px;overflow:hidden;
+    background:radial-gradient(120% 140% at 88% 0%,#1B3765 0%,#0B1C38 58%,#081428 100%);
+    box-shadow:0 18px 40px -26px rgba(8,26,58,.75)}
+  .cmd-id-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1.5rem;flex-wrap:wrap}
+  .cmd-id h2{margin:0;color:#FFF;font-size:clamp(1.6rem,3.4vw,2.15rem);font-weight:800;letter-spacing:-.035em;line-height:1.08}
+  .cmd-id-meta{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .7rem;margin:.6rem 0 0;
+    color:#A9C0DE;font-size:.86rem;font-weight:500}
+  .cmd-id-meta b{color:#E2ECF9;font-weight:700}
+  .cmd-id-sep{color:#48648C}
+  .cmd-id-skel{height:34px;width:min(340px,70%);border-radius:8px;background:rgba(255,255,255,.14)}
 
-  .pset-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:1.1rem;align-items:start}
-  .pset-col{display:flex;flex-direction:column;gap:1.1rem;min-width:0}
+  .cmd-pw{display:inline-flex;align-items:center;gap:.45rem;padding:.62rem 1.05rem;border:1px solid rgba(255,255,255,.22);
+    border-radius:10px;background:rgba(255,255,255,.08);color:#FFF;font:inherit;font-size:.82rem;font-weight:700;
+    text-decoration:none;white-space:nowrap;transition:background .16s ease,border-color .16s ease,transform .16s ease}
+  .cmd-pw:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4);transform:translateY(-1px)}
+  .cmd-pw--due{border-color:#FCA5A5;background:var(--red)}
+  .cmd-pw--due:hover{background:#B91C1C;border-color:#FCA5A5}
 
-  .pset-card{background:#FFF;border:1px solid var(--line);border-radius:12px;box-shadow:0 2px 8px rgba(15,23,42,.04);overflow:hidden}
-  .pset-card-head{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.9rem 1.15rem;border-bottom:1px solid var(--line);background:#F8FAFC}
-  .pset-card-head h2{margin:0;display:flex;align-items:center;gap:.5rem;color:var(--ink);font-size:.82rem;font-weight:800;letter-spacing:.045em;text-transform:uppercase}
-  .pset-card-head h2 i{color:var(--red);font-size:.85rem}
-  .pset-tag{padding:.2rem .5rem;border-radius:999px;background:#EEF2F7;color:#42566F;font-size:.66rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
-  .pset-tag--live{background:#DCFCE7;color:#15803D}
-  .pset-tag--fixed{background:#EEF2F7;color:#42566F}
+  .cmd-warn{display:flex;align-items:center;gap:.5rem;margin:1.15rem 0 0;padding:.6rem .85rem;
+    border:1px solid rgba(252,165,165,.45);border-radius:10px;background:rgba(220,38,38,.16);
+    color:#FFD9D9;font-size:.8rem;font-weight:600;line-height:1.45}
 
-  .pset-rows{display:flex;flex-direction:column}
-  .pset-row{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding:.72rem 1.15rem;border-bottom:1px solid #F1F5F9}
-  .pset-row:last-child{border-bottom:0}
-  .pset-row dt{color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
-  .pset-row dd{margin:0;color:var(--ink);font-size:.86rem;font-weight:700;text-align:right;word-break:break-word}
+  .cmd-error{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.8rem 1.1rem;
+    border:1px solid #FECACA;border-radius:12px;background:#FEF2F2;color:#991B1B;font-size:.82rem;font-weight:600}
+  .cmd-error button{padding:.3rem .7rem;border:1px solid #FCA5A5;border-radius:7px;background:#FFF;
+    color:#B91C1C;font:inherit;font-size:.76rem;font-weight:800;cursor:pointer}
 
-  .pset-actions{display:flex;flex-wrap:wrap;gap:.55rem;padding:.9rem 1.15rem;border-top:1px solid var(--line);background:#FCFDFE}
+  /* 2 — Doctrine. The centrepiece: one axis, four reaches. */
+  .cmd-reach{padding:1.5rem 1.9rem 1.65rem;border:1px solid var(--line);border-radius:16px;background:#FFF;
+    box-shadow:0 2px 10px rgba(15,23,42,.045)}
+  .cmd-reach-top{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+  .cmd-reach h2{margin:0;color:var(--ink);font-size:1.12rem;font-weight:800;letter-spacing:-.02em}
+  .cmd-reach-note{color:var(--muted);font-size:.78rem;font-weight:600}
 
-  .pset-alert{display:flex;align-items:center;gap:.55rem;padding:.7rem 1.15rem;background:#FFFBEB;border-bottom:1px solid #FDE68A;color:#92400E;font-size:.8rem;font-weight:700}
-  .pset-alert--error{background:#FEF2F2;border-bottom-color:#FECACA;color:#991B1B;justify-content:space-between}
+  .cmd-axis{position:relative;margin:1.45rem 0 .2rem;padding-bottom:1.5rem}
+  .cmd-axis-line{position:absolute;left:0;right:0;bottom:1.5rem;height:1px;background:var(--line)}
+  .cmd-tick{position:absolute;bottom:0;transform:translateX(-50%);text-align:center;white-space:nowrap}
+  .cmd-tick::before{content:'';display:block;width:1px;height:8px;margin:0 auto 4px;background:#B6C7DC}
+  .cmd-tick span{color:var(--muted);font-size:.68rem;font-weight:800;letter-spacing:.05em;font-variant-numeric:tabular-nums}
 
-  .pset-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
-  .pset-stat{padding:.95rem 1.15rem;border-right:1px solid #F1F5F9;border-bottom:1px solid #F1F5F9}
-  .pset-stat:nth-child(2n){border-right:0}
-  .pset-stat-value{color:var(--ink);font-size:1.5rem;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
-  .pset-stat-label{margin-top:.15rem;color:var(--muted);font-size:.68rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
-  .pset-stat--wide{grid-column:1/-1;border-right:0;border-bottom:0}
+  .cmd-level{display:grid;grid-template-columns:2.1rem minmax(7.5rem,auto) minmax(0,1fr) auto;
+    gap:.15rem .9rem;align-items:center;padding:.62rem 0}
+  .cmd-level+.cmd-level{border-top:1px solid #F1F5F9}
+  .cmd-level-no{grid-row:span 2;width:2.1rem;height:2.1rem;display:grid;place-items:center;border-radius:8px;
+    background:#FEF2F2;color:var(--red);font-size:.9rem;font-weight:800;font-variant-numeric:tabular-nums}
+  .cmd-level-name{color:var(--ink);font-size:.92rem;font-weight:800;letter-spacing:-.01em}
+  .cmd-level-sub{grid-column:2;color:var(--muted);font-size:.76rem;line-height:1.35}
+  .cmd-bar{grid-row:span 2;position:relative;height:9px;border-radius:999px;background:#EEF3F9;overflow:hidden}
+  .cmd-bar i{position:absolute;inset:0;transform-origin:left center;border-radius:999px;
+    background:linear-gradient(90deg,#E23632,#B91C1C);animation:cmdReach .5s cubic-bezier(.2,.75,.3,1) both}
+  .cmd-bar--auto i{background:linear-gradient(90deg,#16865A,#0E7049)}
+  @keyframes cmdReach{from{transform:scaleX(0)}}
+  .cmd-who{grid-row:span 2;color:var(--body);font-size:.68rem;font-weight:800;letter-spacing:.05em;
+    text-transform:uppercase;white-space:nowrap}
+  .cmd-who--auto{color:#0E7049}
 
-  .pset-doctrine{display:flex;flex-direction:column}
-  .pset-level{display:grid;grid-template-columns:auto 1fr auto;gap:.3rem .85rem;align-items:center;padding:.8rem 1.15rem;border-bottom:1px solid #F1F5F9}
-  .pset-level:last-child{border-bottom:0}
-  .pset-level-badge{grid-row:span 2;width:34px;height:34px;display:grid;place-items:center;border-radius:9px;background:#FEF2F2;border:1px solid #FECACA;color:var(--red);font-size:.86rem;font-weight:800;font-variant-numeric:tabular-nums}
-  .pset-level-name{color:var(--ink);font-size:.86rem;font-weight:800}
-  .pset-level-summary{grid-column:2;color:var(--muted);font-size:.78rem;line-height:1.4}
-  .pset-level-who{grid-row:span 2;color:#42566F;font-size:.68rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
-  .pset-level-who--auto{color:#15803D}
+  .cmd-reach-foot{margin:1.1rem 0 0;padding-top:.95rem;border-top:1px solid var(--line);
+    max-width:68ch;color:var(--muted);font-size:.8rem;line-height:1.6}
+  .cmd-reach-foot b{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
 
-  .pset-note{padding:.75rem 1.15rem;border-top:1px solid var(--line);background:#FCFDFE;color:var(--muted);font-size:.75rem;line-height:1.5}
-  .pset-note strong{color:var(--ink);font-variant-numeric:tabular-nums}
+  /* 3 — Status. Quiet, and the last thing read. */
+  .cmd-strip{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1.25rem;
+    padding:1.3rem 1.9rem;border:1px solid var(--line);border-radius:16px;background:#FBFDFF}
+  .cmd-strip h3{margin:0 0 .75rem;color:var(--muted);font-size:.68rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
 
-  .pset-feed{display:flex;flex-direction:column}
-  .pset-feed-item{display:flex;align-items:baseline;justify-content:space-between;gap:.85rem;padding:.7rem 1.15rem;border-bottom:1px solid #F1F5F9}
-  .pset-feed-item:last-child{border-bottom:0}
-  .pset-feed-title{color:var(--ink);font-size:.81rem;font-weight:700}
-  .pset-feed-title.unread::before{content:'';display:inline-block;width:6px;height:6px;margin-right:.45rem;border-radius:50%;background:var(--red);vertical-align:middle}
-  .pset-feed-time{color:var(--muted);font-size:.72rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cmd-alerts{display:flex;flex-direction:column;gap:.5rem;min-width:0}
+  .cmd-alert{display:flex;align-items:baseline;justify-content:space-between;gap:.85rem;min-width:0}
+  .cmd-alert-name{display:flex;align-items:baseline;gap:.45rem;min-width:0;color:var(--ink);font-size:.83rem;font-weight:700}
+  .cmd-alert-name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmd-dot{flex:0 0 auto;width:6px;height:6px;border-radius:50%;background:var(--red);transform:translateY(-1px)}
+  .cmd-xn{flex:0 0 auto;padding:.05rem .32rem;border-radius:5px;background:#FEF2F2;color:#B91C1C;
+    font-size:.68rem;font-weight:800;font-variant-numeric:tabular-nums}
+  .cmd-alert-time{flex:0 0 auto;color:var(--muted);font-size:.73rem;font-variant-numeric:tabular-nums}
 
-  .pset-empty{padding:1.6rem 1.15rem;text-align:center;color:var(--muted);font-size:.8rem}
-  .pset-skeleton{height:12px;margin:.85rem 1.15rem;border-radius:999px;background:linear-gradient(90deg,#EDF2F7 20%,#F8FAFC 50%,#EDF2F7 80%);background-size:220% 100%;animation:psetShimmer 1.35s infinite linear}
-  @keyframes psetShimmer{to{background-position:-220% 0}}
+  .cmd-tally{display:flex;flex-wrap:wrap;gap:.35rem 1.5rem;min-width:0}
+  .cmd-tally div{min-width:0}
+  .cmd-tally dt{color:var(--muted);font-size:.68rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+  .cmd-tally dd{margin:.1rem 0 0;color:var(--ink);font-size:1.05rem;font-weight:800;font-variant-numeric:tabular-nums}
+  .cmd-tally dd.due{color:#B45309}
 
-  @media(max-width:1080px){.pset-grid{grid-template-columns:1fr}}
-  @media(max-width:560px){
-    .pset-row,.pset-feed-item{flex-direction:column;align-items:flex-start;gap:.2rem}
-    .pset-row dd{text-align:left}
-    .pset-stats{grid-template-columns:1fr}
-    .pset-stat{border-right:0}
-    .pset-level{grid-template-columns:auto 1fr}
-    .pset-level-who{grid-row:auto;grid-column:2}
-    .pset-actions .pset-btn{flex:1 1 auto}
+  .cmd-links{display:flex;flex-wrap:wrap;gap:.45rem 1.1rem;margin-top:.95rem}
+  .cmd-link{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem 0;border:0;background:none;
+    color:var(--red);font:inherit;font-size:.79rem;font-weight:800;text-decoration:none;cursor:pointer;
+    transition:opacity .15s ease}
+  .cmd-link:hover:not(:disabled){opacity:.7}
+  .cmd-link:disabled{color:var(--muted);cursor:default;opacity:.8}
+
+  .cmd-quiet{color:var(--muted);font-size:.8rem}
+  .cmd-skel{height:11px;border-radius:999px;background:linear-gradient(90deg,#EDF2F7 20%,#F8FAFC 50%,#EDF2F7 80%);
+    background-size:220% 100%;animation:cmdShimmer 1.4s infinite linear}
+  .cmd-skel+.cmd-skel{margin-top:.6rem}
+  @keyframes cmdShimmer{to{background-position:-220% 0}}
+
+  @media(max-width:760px){
+    .cmd-id,.cmd-reach,.cmd-strip{padding-left:1.15rem;padding-right:1.15rem}
+    .cmd-strip{grid-template-columns:1fr;gap:1.4rem}
+    .cmd-level{grid-template-columns:2.1rem minmax(0,1fr);row-gap:.35rem}
+    .cmd-bar,.cmd-who{grid-row:auto;grid-column:2}
+    .cmd-who{justify-self:start}
   }
-  @media(prefers-reduced-motion:reduce){.pset *,.pset *::before{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  @media(prefers-reduced-motion:reduce){.cmd *,.cmd *::before{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 `;
 
 const timeFormat = new Intl.DateTimeFormat('en-PH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Manila' });
 const counter = new Intl.NumberFormat('en-PH');
+
+/** Five identical alerts are one event repeated, so they are shown that way. */
+function groupRepeats(items: NotificationItem[]) {
+  const grouped: Array<NotificationItem & { repeats: number }> = [];
+  for (const item of items) {
+    const previous = grouped[grouped.length - 1];
+    if (previous && previous.title === item.title && Boolean(previous.readAt) === Boolean(item.readAt)) {
+      previous.repeats += 1;
+      continue;
+    }
+    grouped.push({ ...item, repeats: 1 });
+  }
+  return grouped;
+}
 
 export default function ProvincialSettingsPage() {
   const [identity, setIdentity] = useState<ProvincialIdentity | null>(null);
@@ -135,7 +195,7 @@ export default function ProvincialSettingsPage() {
       try {
         const [meResponse, feedResponse, countsResponse] = await Promise.all([
           fetch('/api/provincial-bfp/me', options),
-          fetch('/api/provincial-bfp/notifications?limit=5', options),
+          fetch('/api/provincial-bfp/notifications?limit=12', options),
           fetch('/api/provincial-bfp/management-summary', options),
         ]);
 
@@ -181,171 +241,172 @@ export default function ProvincialSettingsPage() {
     }
   }, [marking]);
 
-  const skeleton = <div aria-hidden="true">{[0, 1, 2].map((row) => <div className="pset-skeleton" key={row} />)}</div>;
+  const alerts = useMemo(() => groupRepeats(feed?.notifications ?? []).slice(0, 4), [feed]);
   const unread = feed?.unreadCount ?? 0;
+  const municipalities = counts?.totalMunicipalities ?? 18;
+
+  const reachLabel = (level: AlarmLevel) => {
+    if (level === 1) return 'Own stations';
+    if (level === 2) return `${SECOND_ALARM_MUNICIPALITIES} nearest`;
+    if (level === 3) return `Within ${RADIUS_KM} km`;
+    return `All ${municipalities}`;
+  };
 
   return (
-    <div className="pset" style={{ padding: '1.25rem 1.5rem 2.5rem', maxWidth: 1400, margin: '0 auto' }}>
+    <div className="cmd" style={{ padding: '1.25rem 1.5rem 3rem' }}>
       <style>{styles}</style>
 
-      <header className="pset-head">
-        <div>
-          <h1><i className="fa-solid fa-sliders" />Settings</h1>
-          <p>Antique BFP Provincial Headquarters</p>
-        </div>
-        <button type="button" className="pset-btn" onClick={() => setRevision((value) => value + 1)} disabled={loading}>
-          <i className={`fa-solid ${loading ? 'fa-circle-notch fa-spin' : 'fa-rotate'}`} />
-          {loading ? 'Refreshing…' : 'Refresh'}
+      <div className="cmd-util">
+        <h1>Settings</h1>
+        <button type="button" className="cmd-refresh" onClick={() => setRevision((value) => value + 1)} disabled={loading}>
+          <i className={`fa-solid ${loading ? 'fa-circle-notch fa-spin' : 'fa-rotate'}`} aria-hidden="true" />
+          {loading ? 'Refreshing' : 'Refresh'}
         </button>
-      </header>
-
-      <div className="pset-grid">
-        <div className="pset-col">
-          <section className="pset-card" aria-label="Account">
-            <div className="pset-card-head">
-              <h2><i className="fa-solid fa-user-shield" />Account</h2>
-              <span className="pset-tag pset-tag--live">Signed in</span>
-            </div>
-
-            {identity?.mustChangePassword && (
-              <p className="pset-alert">
-                <i className="fa-solid fa-triangle-exclamation" />
-                Your temporary password is still active. Change it to keep official exports available.
-              </p>
-            )}
-
-            {error && (
-              <div className="pset-alert pset-alert--error" role="alert">
-                <span><i className="fa-solid fa-circle-exclamation" /> {error}</span>
-                <button type="button" className="pset-btn" onClick={() => setRevision((value) => value + 1)}>Retry</button>
-              </div>
-            )}
-
-            {loading && !identity ? skeleton : identity ? (
-              <dl className="pset-rows">
-                <div className="pset-row"><dt>Name</dt><dd>{identity.displayName}</dd></div>
-                <div className="pset-row"><dt>Rank</dt><dd>{identity.rankOrPosition}</dd></div>
-                <div className="pset-row"><dt>Email</dt><dd>{identity.email}</dd></div>
-                <div className="pset-row"><dt>Jurisdiction</dt><dd>Province of {identity.province}</dd></div>
-              </dl>
-            ) : !error ? (
-              <p className="pset-empty">Sign in again to load your account.</p>
-            ) : null}
-
-            <div className="pset-actions">
-              <Link href="/provincial-bfp/change-password" className="pset-btn pset-btn--primary">
-                <i className="fa-solid fa-key" /> Change password
-              </Link>
-            </div>
-          </section>
-
-          <section className="pset-card" aria-label="Alarm doctrine">
-            <div className="pset-card-head">
-              <h2><i className="fa-solid fa-tower-broadcast" />Alarm doctrine</h2>
-              <span className="pset-tag pset-tag--fixed">Standing order</span>
-            </div>
-
-            <div className="pset-doctrine">
-              {ALARM_LEVELS.map((level) => {
-                const definition = ALARM_DOCTRINE[level];
-                return (
-                  <article className="pset-level" key={level}>
-                    <span className="pset-level-badge" aria-hidden="true">{level}</span>
-                    <h3 className="pset-level-name">{definition.label}</h3>
-                    <span className={`pset-level-who${definition.declarable ? '' : ' pset-level-who--auto'}`}>
-                      {definition.declarable ? 'Province declares' : 'Automatic'}
-                    </span>
-                    <p className="pset-level-summary">{definition.summary}</p>
-                  </article>
-                );
-              })}
-            </div>
-
-            <p className="pset-note">
-              Reach is measured from the fire, not the municipal hall. A 2nd alarm calls the{' '}
-              <strong>{SECOND_ALARM_MUNICIPALITIES}</strong> nearest municipalities; a 3rd reaches{' '}
-              <strong>{NEARBY_RADIUS_METERS / 1000} km</strong>. These are fixed province-wide so every municipality is
-              served by the same rule.
-            </p>
-          </section>
-        </div>
-
-        <div className="pset-col">
-          <section className="pset-card" aria-label="Notifications">
-            <div className="pset-card-head">
-              <h2><i className="fa-solid fa-bell" />Notifications</h2>
-              <span className={`pset-tag${unread > 0 ? '' : ' pset-tag--live'}`} aria-live="polite">
-                {unread > 0 ? `${counter.format(unread)} unread` : 'All read'}
-              </span>
-            </div>
-
-            {loading && !feed ? skeleton : feed && feed.notifications.length > 0 ? (
-              <div className="pset-feed">
-                {feed.notifications.slice(0, 5).map((item) => (
-                  <div className="pset-feed-item" key={item.id}>
-                    <span className={`pset-feed-title${item.readAt ? '' : ' unread'}`}>{item.title}</span>
-                    <span className="pset-feed-time">{timeFormat.format(new Date(item.createdAt))}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="pset-empty">No notifications yet.</p>
-            )}
-
-            <div className="pset-actions">
-              <button type="button" className="pset-btn" onClick={markAllRead} disabled={marking || unread === 0}>
-                <i className={`fa-solid ${marking ? 'fa-circle-notch fa-spin' : 'fa-check-double'}`} />
-                {marking ? 'Marking…' : 'Mark all read'}
-              </button>
-              <Link href="/provincial-bfp/notifications" className="pset-btn">
-                <i className="fa-solid fa-arrow-right" /> Open all
-              </Link>
-            </div>
-          </section>
-
-          <section className="pset-card" aria-label="Province at a glance">
-            <div className="pset-card-head">
-              <h2><i className="fa-solid fa-map-location-dot" />Province</h2>
-              {counts && <span className="pset-tag">{timeFormat.format(new Date(counts.updatedAt))}</span>}
-            </div>
-
-            {loading && !counts ? skeleton : counts ? (
-              <div className="pset-stats">
-                <div className="pset-stat">
-                  <div className="pset-stat-value">{counter.format(counts.totalMunicipalities)}</div>
-                  <div className="pset-stat-label">Municipalities</div>
-                </div>
-                <div className="pset-stat">
-                  <div className="pset-stat-value">{counter.format(counts.totalStations)}</div>
-                  <div className="pset-stat-label">Stations</div>
-                </div>
-                <div className="pset-stat">
-                  <div className="pset-stat-value">{counter.format(counts.totalPersonnel)}</div>
-                  <div className="pset-stat-label">Personnel</div>
-                </div>
-                <div className="pset-stat">
-                  <div className="pset-stat-value">{counter.format(counts.totalResidents)}</div>
-                  <div className="pset-stat-label">Residents</div>
-                </div>
-                <div className="pset-stat pset-stat--wide">
-                  <div className="pset-stat-value" style={counts.pendingApplications > 0 ? { color: '#B45309' } : undefined}>
-                    {counter.format(counts.pendingApplications)}
-                  </div>
-                  <div className="pset-stat-label">Applications awaiting review</div>
-                </div>
-              </div>
-            ) : (
-              <p className="pset-empty">Province totals unavailable.</p>
-            )}
-
-            <div className="pset-actions">
-              <Link href="/provincial-bfp/resident-applications" className="pset-btn">
-                <i className="fa-solid fa-user-check" /> Review applications
-              </Link>
-            </div>
-          </section>
-        </div>
       </div>
+
+      {error && (
+        <div className="cmd-error" role="alert">
+          <span><i className="fa-solid fa-circle-exclamation" aria-hidden="true" /> {error}</span>
+          <button type="button" onClick={() => setRevision((value) => value + 1)}>Retry</button>
+        </div>
+      )}
+
+      <section className="cmd-id" aria-label="Account">
+        <div className="cmd-id-top">
+          <div style={{ minWidth: 0 }}>
+            {loading && !identity ? (
+              <div className="cmd-id-skel" aria-hidden="true" />
+            ) : (
+              <>
+                <h2>{identity?.displayName ?? 'Provincial Administrator'}</h2>
+                <p className="cmd-id-meta">
+                  <b>{identity?.rankOrPosition ?? 'Provincial Fire Marshal'}</b>
+                  <span className="cmd-id-sep" aria-hidden="true">·</span>
+                  <span>{identity?.email ?? 'Sign in again to load your account'}</span>
+                  <span className="cmd-id-sep" aria-hidden="true">·</span>
+                  <span>Province of {identity?.province ?? 'Antique'}</span>
+                </p>
+              </>
+            )}
+          </div>
+
+          <Link
+            href="/provincial-bfp/change-password"
+            className={`cmd-pw${identity?.mustChangePassword ? ' cmd-pw--due' : ''}`}
+          >
+            <i className="fa-solid fa-key" aria-hidden="true" /> Change password
+          </Link>
+        </div>
+
+        {identity?.mustChangePassword && (
+          <p className="cmd-warn">
+            <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+            Your temporary password is still active. Change it to keep official exports available.
+          </p>
+        )}
+      </section>
+
+      <section className="cmd-reach" aria-label="Alarm reach">
+        <div className="cmd-reach-top">
+          <h2>Alarm reach</h2>
+          <span className="cmd-reach-note">Standing order · not configurable</span>
+        </div>
+
+        <div className="cmd-axis">
+          <div className="cmd-axis-line" aria-hidden="true" />
+
+          {ALARM_LEVELS.map((level) => {
+            const definition = ALARM_DOCTRINE[level];
+            const automatic = !definition.declarable;
+            return (
+              <article className="cmd-level" key={level}>
+                <span className="cmd-level-no" aria-hidden="true">{level}</span>
+                <h3 className="cmd-level-name">{definition.label}</h3>
+                <div className={`cmd-bar${automatic ? ' cmd-bar--auto' : ''}`} aria-hidden="true">
+                  <i style={{ transform: `scaleX(${REACH_EXTENT[level] / 100})`, animationDelay: `${level * 70}ms` }} />
+                </div>
+                <span className={`cmd-who${automatic ? ' cmd-who--auto' : ''}`}>
+                  {automatic ? 'Automatic' : 'Province declares'}
+                </span>
+                <p className="cmd-level-sub">{reachLabel(level)} — {definition.summary}</p>
+              </article>
+            );
+          })}
+
+          <span className="cmd-tick" style={{ left: `${REACH_TICK}%` }} aria-hidden="true">
+            <span>{RADIUS_KM} km</span>
+          </span>
+        </div>
+
+        <p className="cmd-reach-foot">
+          Reach is measured from the fire, not the municipal hall — a fire near a boundary is often closer to the
+          neighbour&rsquo;s station than to its own. A 2nd alarm calls the <b>{SECOND_ALARM_MUNICIPALITIES}</b> nearest
+          municipalities, a 3rd everything within <b>{RADIUS_KM} km</b>, a 4th all <b>{municipalities}</b>. Fixed
+          province-wide so every municipality is served by the same rule.
+        </p>
+      </section>
+
+      <section className="cmd-strip" aria-label="Status">
+        <div className="cmd-alerts">
+          <h3>Notifications{unread > 0 ? ` · ${counter.format(unread)} unread` : ''}</h3>
+
+          {loading && !feed ? (
+            <div aria-hidden="true">{[0, 1, 2].map((row) => <div className="cmd-skel" key={row} />)}</div>
+          ) : alerts.length > 0 ? (
+            alerts.map((item) => (
+              <div className="cmd-alert" key={item.id}>
+                <span className="cmd-alert-name">
+                  {!item.readAt && <i className="cmd-dot" aria-hidden="true" />}
+                  <span>{item.title}</span>
+                  {item.repeats > 1 && <b className="cmd-xn">×{item.repeats}</b>}
+                </span>
+                <span className="cmd-alert-time">{timeFormat.format(new Date(item.createdAt))}</span>
+              </div>
+            ))
+          ) : (
+            <p className="cmd-quiet">Nothing new.</p>
+          )}
+
+          <div className="cmd-links">
+            <button type="button" className="cmd-link" onClick={markAllRead} disabled={marking || unread === 0}>
+              <i className={`fa-solid ${marking ? 'fa-circle-notch fa-spin' : 'fa-check-double'}`} aria-hidden="true" />
+              {marking ? 'Marking' : 'Mark all read'}
+            </button>
+            <Link href="/provincial-bfp/notifications" className="cmd-link">
+              Open all <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+
+        <div>
+          <h3>Province{counts ? ` · ${timeFormat.format(new Date(counts.updatedAt))}` : ''}</h3>
+
+          {loading && !counts ? (
+            <div aria-hidden="true">{[0, 1].map((row) => <div className="cmd-skel" key={row} />)}</div>
+          ) : counts ? (
+            <dl className="cmd-tally">
+              <div><dt>Municipalities</dt><dd>{counter.format(counts.totalMunicipalities)}</dd></div>
+              <div><dt>Stations</dt><dd>{counter.format(counts.totalStations)}</dd></div>
+              <div><dt>Personnel</dt><dd>{counter.format(counts.totalPersonnel)}</dd></div>
+              <div><dt>Residents</dt><dd>{counter.format(counts.totalResidents)}</dd></div>
+              <div>
+                <dt>Awaiting review</dt>
+                <dd className={counts.pendingApplications > 0 ? 'due' : undefined}>
+                  {counter.format(counts.pendingApplications)}
+                </dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="cmd-quiet">Province totals unavailable.</p>
+          )}
+
+          <div className="cmd-links">
+            <Link href="/provincial-bfp/resident-applications" className="cmd-link">
+              Review applications <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
