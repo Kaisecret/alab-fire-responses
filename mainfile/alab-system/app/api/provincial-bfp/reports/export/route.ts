@@ -6,6 +6,7 @@ import {
   buildProvincialReportExport,
   type ProvincialReportDataset,
   type ProvincialReportFormat,
+  type ProvincialReportScope,
 } from "../../../../../lib/provincial-bfp/management/report-exports";
 import { getDatabase } from "../../../../../lib/db";
 
@@ -17,21 +18,39 @@ const DATASETS = new Set<ProvincialReportDataset>([
   "MUNICIPALITY_BREAKDOWN",
 ]);
 const FORMATS = new Set<ProvincialReportFormat>(["PDF", "XLSX", "CSV"]);
+const SCOPES = new Set<ProvincialReportScope>(["ALL_MATCHING", "SELECTED", "CURRENT_PAGE"]);
 
 /** An official provincial report, in the format the officer asked for. */
-export async function GET(request: NextRequest) {
+async function buildReport(
+  request: NextRequest,
+  params: URLSearchParams | Record<string, unknown>,
+  datasetInput: unknown,
+  formatInput: unknown,
+  scopeInput: unknown,
+  selectedIdsInput: unknown,
+) {
   const actor = await getManagementActor(request);
   if (isProvincialAuthorizationResponse(actor)) return actor;
 
-  const params = request.nextUrl.searchParams;
-  const dataset = (params.get("dataset") ?? "PROVINCIAL_SUMMARY").toUpperCase() as ProvincialReportDataset;
-  const format = (params.get("format") ?? "PDF").toUpperCase() as ProvincialReportFormat;
+  const dataset = String(datasetInput ?? "PROVINCIAL_SUMMARY").toUpperCase() as ProvincialReportDataset;
+  const format = String(formatInput ?? "PDF").toUpperCase() as ProvincialReportFormat;
+  const scope = String(scopeInput ?? "ALL_MATCHING").toUpperCase() as ProvincialReportScope;
 
   if (!DATASETS.has(dataset)) {
     return NextResponse.json({ error: "Choose a register, a provincial summary, or a municipality breakdown." }, { status: 400 });
   }
   if (!FORMATS.has(format)) {
     return NextResponse.json({ error: "Choose PDF, Excel or CSV." }, { status: 400 });
+  }
+  if (!SCOPES.has(scope)) {
+    return NextResponse.json({ error: "Choose all matching records, the ticked records, or the current page." }, { status: 400 });
+  }
+
+  let selectedIds: string[] | undefined;
+  if (Array.isArray(selectedIdsInput)) {
+    selectedIds = selectedIdsInput.map(String).filter(Boolean);
+  } else if (typeof selectedIdsInput === "string" && selectedIdsInput.trim()) {
+    selectedIds = selectedIdsInput.split(",").map((id) => id.trim()).filter(Boolean);
   }
 
   try {
@@ -54,6 +73,8 @@ export async function GET(request: NextRequest) {
       format,
       preparedBy: "Provincial BFP",
       municipalityName,
+      scope,
+      selectedIds,
     });
 
     const body = typeof report.body === "string" ? report.body : new Uint8Array(report.body);
@@ -73,10 +94,43 @@ export async function GET(request: NextRequest) {
         { status: 400 },
       );
     }
+    if (message === "INVALID_SELECTION") {
+      return NextResponse.json(
+        { error: "Those ticked records no longer match the filters. Refresh the list and tick them again." },
+        { status: 400 },
+      );
+    }
+    if (message === "INVALID_SCOPE") {
+      return NextResponse.json({ error: "A summary or breakdown always covers every matching record." }, { status: 400 });
+    }
     if (message.startsWith("INVALID_")) {
       return NextResponse.json({ error: "Those filters are not valid." }, { status: 400 });
     }
     console.error("Provincial report export failed", error);
     return NextResponse.json({ error: "That report could not be generated. Please try again." }, { status: 500 });
   }
+}
+
+export async function GET(request: NextRequest) {
+  const params = request.nextUrl.searchParams;
+  return buildReport(
+    request,
+    params,
+    params.get("dataset"),
+    params.get("format"),
+    params.get("scope"),
+    params.get("selectedIds"),
+  );
+}
+
+/** A long list of ticked record IDs does not fit a query string. */
+export async function POST(request: NextRequest) {
+  let body: Record<string, unknown> = {};
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
+  }
+  const filters = (body.filters as Record<string, unknown>) ?? {};
+  return buildReport(request, filters, body.dataset, body.format, body.scope, body.selectedIds);
 }

@@ -27,6 +27,11 @@ export type ProvincialReportDataset =
   | "PROVINCIAL_SUMMARY"
   | "MUNICIPALITY_BREAKDOWN";
 
+/** Which of the filtered records the register carries. Aggregates always cover all of them. */
+export type ProvincialReportScope = "ALL_MATCHING" | "SELECTED" | "CURRENT_PAGE";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const MAX_EXPORT_ROWS = 10_000;
 
 /** The municipal builders speak in rows of this shape, so the province does too. */
@@ -140,7 +145,24 @@ export async function buildProvincialReportExport(input: {
   preparedBy: string;
   /** Set when the officer narrowed the report to one municipality. */
   municipalityName?: string | null;
+  /** Defaults to every filtered record; only the register honours the others. */
+  scope?: ProvincialReportScope;
+  /** Required by the SELECTED scope: the report rows the officer ticked. */
+  selectedIds?: string[];
 }): Promise<ProvincialReportExport> {
+  const scope: ProvincialReportScope = input.scope ?? "ALL_MATCHING";
+  if (!["ALL_MATCHING", "SELECTED", "CURRENT_PAGE"].includes(scope)) {
+    throw new Error("INVALID_SCOPE");
+  }
+  if (input.dataset !== "INCIDENT_REGISTER" && scope !== "ALL_MATCHING") {
+    throw new Error("INVALID_SCOPE");
+  }
+  if (scope === "SELECTED") {
+    const ids = input.selectedIds;
+    if (!ids?.length || ids.length > MAX_EXPORT_ROWS || new Set(ids).size !== ids.length || ids.some((id) => !UUID.test(id))) {
+      throw new Error("INVALID_SELECTION");
+    }
+  }
   const scopeName = input.municipalityName?.trim()
     ? `${input.municipalityName.trim()}, Antique`
     : "Province of Antique";
@@ -150,16 +172,32 @@ export async function buildProvincialReportExport(input: {
 
   let rows: MunicipalReportRow[] = [];
   if (input.dataset === "INCIDENT_REGISTER") {
-    const first = await listProvincialReports(input.actor, { ...input.filters, page: 1, pageSize: 100 });
-    if (first.total > MAX_EXPORT_ROWS) {
-      throw new Error("ROW_LIMIT_EXCEEDED");
+    if (scope === "CURRENT_PAGE") {
+      // The officer is exporting exactly the page in front of them.
+      const current = await listProvincialReports(input.actor, input.filters);
+      rows = current.items.map(toReportRow);
+    } else {
+      const first = await listProvincialReports(input.actor, { ...input.filters, page: 1, pageSize: 100 });
+      if (first.total > MAX_EXPORT_ROWS) {
+        throw new Error("ROW_LIMIT_EXCEEDED");
+      }
+      const collected = [...first.items];
+      for (let page = 2; page <= Math.ceil(first.total / 100); page += 1) {
+        const next = await listProvincialReports(input.actor, { ...input.filters, page, pageSize: 100 });
+        collected.push(...next.items);
+      }
+
+      if (scope === "SELECTED") {
+        // A tick only survives while the record still matches the filters, so a
+        // stale selection fails loudly instead of exporting a shorter register.
+        const wanted = new Set(input.selectedIds);
+        const matched = collected.filter((row) => wanted.has(row.id));
+        if (matched.length !== wanted.size) throw new Error("INVALID_SELECTION");
+        rows = matched.map(toReportRow);
+      } else {
+        rows = collected.map(toReportRow);
+      }
     }
-    const collected = [...first.items];
-    for (let page = 2; page <= Math.ceil(first.total / 100); page += 1) {
-      const next = await listProvincialReports(input.actor, { ...input.filters, page, pageSize: 100 });
-      collected.push(...next.items);
-    }
-    rows = collected.map(toReportRow);
   }
 
   const period = summary.dateBoundaries.from || summary.dateBoundaries.to
