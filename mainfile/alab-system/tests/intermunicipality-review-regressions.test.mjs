@@ -52,6 +52,57 @@ test('cancellation preserves the database null-offer shape and informs the recip
   assert.ok(api.notifications.some(n => n.recipientUserIds.includes(recipient)), 'recipient must learn that origin cancelled');
 });
 
+test('ordinary assistance writes actionable popup context for the recipient municipality', async () => {
+  const api = service(async sql => {
+    if (sql.includes('from fire_reports fr')) {
+      return { rows: [{
+        fire_report_id: reportId,
+        dispatch_id: '66666666-6666-4666-8666-666666666666',
+        municipality_id: origin,
+        reference_number: 'ALAB-2026-001',
+        barangay_name: 'Poblacion',
+        municipality_name: 'Hamtic',
+        report_status: 'RESPONDING',
+      }] };
+    }
+    if (sql.includes('from incident_municipal_observers')) {
+      return { rows: [{
+        id: '77777777-7777-4777-8777-777777777777',
+        observer_municipality_id: recipient,
+        observer_municipality_name: 'San Jose de Buenavista',
+      }] };
+    }
+    if (sql.includes('insert into intermunicipal_assistance_requests')) return { rows: [{ id: requestId }] };
+    return { rows: [] };
+  });
+
+  await api.createAssistanceRequests({
+    fireReportId: reportId,
+    requesterMunicipalityId: origin,
+    actorUserId: actor,
+    recipientMunicipalityIds: [recipient],
+    requestedFiretrucks: 1,
+    requestedPersonnel: 4,
+    requestNote: 'Immediate structural-fire backup',
+  });
+
+  const recipientNotice = api.notifications.find(notification =>
+    notification.eventType === 'ASSISTANCE_REQUESTED'
+      && notification.recipientUserIds.includes(recipient));
+  assert.deepEqual(recipientNotice.context, {
+    audience: 'ASSISTANCE',
+    fireReportId: reportId,
+    assistanceRequestId: requestId,
+    referenceNumber: 'ALAB-2026-001',
+    location: 'Poblacion, Hamtic',
+    requesterMunicipalityName: 'Hamtic',
+    requestedFiretrucks: 1,
+    requestedPersonnel: 4,
+    requestNote: 'Immediate structural-fire backup',
+    isProvincialCommand: false,
+  });
+});
+
 for (const change of [{ requestedFiretrucks: 2 }, { requestNote: 'Different request' }]) {
   test(`conflicting creation retry is rejected: ${JSON.stringify(change)}`, async () => {
     const api = service(async sql => {

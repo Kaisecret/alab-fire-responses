@@ -283,6 +283,18 @@ export async function createAssistanceRequests(
         actionHref: `/municipal-bfp/active-incidents?incident=${report.fire_report_id}`,
         entityType: "assistance_request",
         entityId: actualRequestId,
+        context: {
+          audience: "ASSISTANCE",
+          fireReportId: report.fire_report_id,
+          assistanceRequestId: actualRequestId,
+          referenceNumber: report.reference_number,
+          location: locationDesc,
+          requesterMunicipalityName: report.municipality_name,
+          requestedFiretrucks,
+          requestedPersonnel,
+          requestNote: note,
+          isProvincialCommand: input.isProvincialCommand === true,
+        },
         dedupeKey: `assistance:${actualRequestId}:requested`,
         createdAt: now,
       });

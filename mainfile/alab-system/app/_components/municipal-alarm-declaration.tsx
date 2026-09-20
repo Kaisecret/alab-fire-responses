@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
 import type { AccountNotification } from "../../lib/notifications/types";
-import { getMunicipalAlarmAction, selectPendingMunicipalAlarm } from "../../lib/municipal-bfp/alarm-alert.mjs";
+import { ensureAlertTone, getMunicipalAlarmAction, selectPendingMunicipalAlarm } from "../../lib/municipal-bfp/alarm-alert.mjs";
 
 const POLL_INTERVAL_MS = 5_000;
 const ORDINAL: Record<number, string> = { 2: "Second", 3: "Third", 4: "Fourth" };
@@ -63,9 +63,8 @@ const styles = `
 `;
 
 /**
- * A provincial declaration needs an operational response, not only a bell in
- * the notification list. Summoned municipalities accept and go straight to
- * station assignment; the origin sees who was called and opens its aid board.
+ * A provincial declaration or direct inter-municipality assistance request
+ * needs an operational response, not only a bell in the notification list.
  */
 export function MunicipalAlarmDeclaration() {
   const [notifications, setNotifications] = useState<AccountNotification[]>([]);
@@ -80,7 +79,12 @@ export function MunicipalAlarmDeclaration() {
     [notifications],
   );
   const context = active?.context as Record<string, unknown> | undefined;
-  const audience = context?.audience === "SUMMONED" ? "SUMMONED" : "ORIGIN";
+  const audience = context?.audience === "SUMMONED"
+    ? "SUMMONED"
+    : context?.audience === "ASSISTANCE"
+      ? "ASSISTANCE"
+      : "ORIGIN";
+  const isAssistance = audience === "ASSISTANCE";
   const alarmLevel = Number(context?.alarmLevel ?? 0);
 
   const load = useCallback(async () => {
@@ -122,10 +126,19 @@ export function MunicipalAlarmDeclaration() {
         const AudioCtor = window.AudioContext ?? (window as AudioWindow).webkitAudioContext;
         if (!AudioCtor) return setAudioBlocked(true);
         contextRef.current ??= new AudioCtor();
-        if (contextRef.current.state === "suspended") await contextRef.current.resume();
-        if (contextRef.current.state !== "running" || cancelled) return setAudioBlocked(true);
+        const startedTone = await ensureAlertTone(
+          contextRef.current,
+          Boolean(stopToneRef.current),
+          startAlarmTone,
+          () => cancelled,
+        );
+        if (cancelled) {
+          startedTone?.();
+          return;
+        }
+        if (!startedTone) return setAudioBlocked(true);
         setAudioBlocked(false);
-        stopToneRef.current = startAlarmTone(contextRef.current);
+        stopToneRef.current = startedTone;
       } catch {
         setAudioBlocked(true);
       }
@@ -135,10 +148,29 @@ export function MunicipalAlarmDeclaration() {
 
   useEffect(() => {
     if (!audioBlocked || !active) return;
-    const enable = () => void contextRef.current?.resume().then(() => setAudioBlocked(false)).catch(() => undefined);
+    let cancelled = false;
+    const enable = () => void (async () => {
+      try {
+        const startedTone = await ensureAlertTone(
+          contextRef.current,
+          Boolean(stopToneRef.current),
+          startAlarmTone,
+          () => cancelled,
+        );
+        if (cancelled) {
+          startedTone?.();
+          return;
+        }
+        if (startedTone) stopToneRef.current = startedTone;
+        setAudioBlocked(!stopToneRef.current);
+      } catch {
+        setAudioBlocked(true);
+      }
+    })();
     window.addEventListener("pointerdown", enable, { once: true });
     window.addEventListener("keydown", enable, { once: true });
     return () => {
+      cancelled = true;
       window.removeEventListener("pointerdown", enable);
       window.removeEventListener("keydown", enable);
     };
@@ -181,11 +213,11 @@ export function MunicipalAlarmDeclaration() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notificationId: active.id }),
       });
-      if (!marked.ok) throw new Error("The alarm was accepted, but its notification could not be cleared.");
+      if (!marked.ok) throw new Error("The alert was acknowledged, but its notification could not be cleared.");
       stopTone();
       window.location.assign(action.destination);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to acknowledge this alarm.");
+      setError(cause instanceof Error ? cause.message : "Unable to acknowledge this alert.");
     } finally {
       setBusy(false);
     }
@@ -205,10 +237,14 @@ export function MunicipalAlarmDeclaration() {
             <span className="mad-icon" aria-hidden="true"><i className="fa-solid fa-tower-broadcast" /></span>
             <div>
               <div className="mad-title" id="mad-title">
-                {ORDINAL[alarmLevel] ?? alarmLevel} alarm declared
+                {isAssistance ? "Backup assistance requested" : `${ORDINAL[alarmLevel] ?? alarmLevel} alarm declared`}
               </div>
               <div className="mad-sub">
-                {audience === "SUMMONED" ? "Provincial BFP is calling your municipality" : "Provincial BFP has acted on your backup request"}
+                {isAssistance
+                  ? `${String(context.requesterMunicipalityName ?? "A nearby municipality")} is calling your municipality`
+                  : audience === "SUMMONED"
+                    ? "Provincial BFP is calling your municipality"
+                    : "Provincial BFP has acted on your backup request"}
               </div>
             </div>
           </header>
@@ -217,14 +253,18 @@ export function MunicipalAlarmDeclaration() {
             <div className="mad-ref">{String(context.referenceNumber ?? "Incident")}</div>
             <div className="mad-grid">
               <div><span className="mad-key">Incident location</span><div className="mad-value">{String(context.location ?? "Not specified")}</div></div>
-              <div><span className="mad-key">Alarm level</span><div className="mad-value">{ORDINAL[alarmLevel] ?? alarmLevel} alarm</div></div>
-              {audience === "SUMMONED" && Number(context.requestedFiretrucks) > 0 && (
+              {!isAssistance && <div><span className="mad-key">Alarm level</span><div className="mad-value">{ORDINAL[alarmLevel] ?? alarmLevel} alarm</div></div>}
+              {(audience === "SUMMONED" || isAssistance) && Number(context.requestedFiretrucks) > 0 && (
                 <div><span className="mad-key">Firetrucks requested</span><div className="mad-value">{Number(context.requestedFiretrucks)}</div></div>
               )}
-              {audience === "SUMMONED" && Number(context.requestedPersonnel) > 0 && (
+              {(audience === "SUMMONED" || isAssistance) && Number(context.requestedPersonnel) > 0 && (
                 <div><span className="mad-key">Personnel requested</span><div className="mad-value">{Number(context.requestedPersonnel)}</div></div>
               )}
             </div>
+
+            {isAssistance && typeof context.requestNote === "string" && context.requestNote.trim() && (
+              <div className="mad-called"><strong>Request note:</strong> {context.requestNote}</div>
+            )}
 
             {audience === "ORIGIN" && (
               <div className="mad-called">
@@ -238,8 +278,14 @@ export function MunicipalAlarmDeclaration() {
 
           <footer className="mad-foot">
             <button type="button" className="mad-action" disabled={busy} onClick={() => void acknowledge()} autoFocus>
-              <i className={`fa-solid ${audience === "SUMMONED" ? "fa-truck-fast" : "fa-list-check"}`} aria-hidden="true" />{" "}
-              {busy ? "Working…" : audience === "SUMMONED" ? "Acknowledge & Assign BFP" : "Acknowledge & View Status"}
+              <i className={`fa-solid ${audience === "SUMMONED" || isAssistance ? "fa-truck-fast" : "fa-list-check"}`} aria-hidden="true" />{" "}
+              {busy
+                ? "Working…"
+                : audience === "SUMMONED"
+                  ? "Acknowledge & Assign BFP"
+                  : isAssistance
+                    ? "Acknowledge & Respond"
+                    : "Acknowledge & View Status"}
             </button>
           </footer>
         </section>

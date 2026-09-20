@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
+import * as alarmAlert from "../lib/municipal-bfp/alarm-alert.mjs";
+
+const {
   buildAlarmNotificationContext,
   getMunicipalAlarmAction,
   selectPendingMunicipalAlarm,
   shouldShowMutualAidBoard,
   shouldShowStationAssignment,
-} from "../lib/municipal-bfp/alarm-alert.mjs";
+} = alarmAlert;
 
 const baseNotification = {
   id: "00000000-0000-4000-8000-000000000010",
@@ -48,6 +50,111 @@ test("an unread summoned alarm becomes a station-assignment alert", () => {
     },
     destination: `/municipal-bfp/active-incidents?incident=${baseNotification.entityId}&assign=1`,
   });
+});
+
+test("an unread inter-municipality assistance request becomes a response alert", () => {
+  const notification = {
+    ...baseNotification,
+    eventType: "ASSISTANCE_REQUESTED",
+    category: "INCIDENT",
+    entityType: "assistance_request",
+    entityId: "00000000-0000-4000-8000-000000000030",
+    context: {
+      audience: "ASSISTANCE",
+      fireReportId: baseNotification.entityId,
+      assistanceRequestId: "00000000-0000-4000-8000-000000000030",
+      referenceNumber: "ALAB-2026-001",
+      location: "Hamtic, Antique",
+      requesterMunicipalityName: "Hamtic",
+      requestedFiretrucks: 1,
+      requestedPersonnel: 4,
+      requestNote: "Immediate structural-fire backup",
+      isProvincialCommand: false,
+    },
+  };
+
+  assert.equal(selectPendingMunicipalAlarm([notification])?.id, notification.id);
+  assert.deepEqual(getMunicipalAlarmAction(notification), {
+    audience: "ASSISTANCE",
+    incidentId: baseNotification.entityId,
+    assistanceRequestId: notification.entityId,
+    destination: `/municipal-bfp/active-incidents?incident=${baseNotification.entityId}`,
+  });
+});
+
+test("a user gesture starts the repeating tone after browser autoplay suspension", async () => {
+  assert.equal(typeof alarmAlert.ensureAlertTone, "function");
+  let starts = 0;
+  const stop = () => undefined;
+  const context = {
+    state: "suspended",
+    async resume() { this.state = "running"; },
+  };
+
+  const result = await alarmAlert.ensureAlertTone(context, false, receivedContext => {
+    assert.equal(receivedContext, context);
+    starts += 1;
+    return stop;
+  });
+
+  assert.equal(starts, 1);
+  assert.equal(result, stop);
+  assert.equal(await alarmAlert.ensureAlertTone(context, true, () => { starts += 1; }), null);
+  assert.equal(starts, 1, "an active tone must not be duplicated");
+});
+
+test("audio recovery cannot start a stale tone after its alert is cancelled", async () => {
+  let finishResume;
+  let cancelled = false;
+  let starts = 0;
+  const context = {
+    state: "suspended",
+    resume() {
+      return new Promise(resolve => {
+        finishResume = () => {
+          this.state = "running";
+          resolve();
+        };
+      });
+    },
+  };
+
+  const pending = alarmAlert.ensureAlertTone(
+    context,
+    false,
+    () => {
+      starts += 1;
+      return () => undefined;
+    },
+    () => cancelled,
+  );
+  cancelled = true;
+  finishResume();
+
+  assert.equal(await pending, null);
+  assert.equal(starts, 0);
+});
+
+test("a provincial command assistance notice does not duplicate its alarm declaration popup", () => {
+  const notification = {
+    ...baseNotification,
+    eventType: "ASSISTANCE_REQUESTED",
+    category: "INCIDENT",
+    context: {
+      audience: "ASSISTANCE",
+      fireReportId: baseNotification.entityId,
+      assistanceRequestId: "00000000-0000-4000-8000-000000000030",
+      referenceNumber: "ALAB-2026-001",
+      location: "Hamtic, Antique",
+      requesterMunicipalityName: "Hamtic",
+      requestedFiretrucks: 1,
+      requestedPersonnel: 4,
+      requestNote: null,
+      isProvincialCommand: true,
+    },
+  };
+
+  assert.equal(selectPendingMunicipalAlarm([notification]), null);
 });
 
 test("the requesting municipality gets confirmation, not a station-assignment action", () => {

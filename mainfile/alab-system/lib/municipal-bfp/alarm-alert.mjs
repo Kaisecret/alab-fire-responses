@@ -5,6 +5,19 @@ function validUuid(value) {
   return typeof value === "string" && UUID.test(value);
 }
 
+/** Resume browser audio when needed and create exactly one active alert tone. */
+export async function ensureAlertTone(context, toneIsActive, startTone, isCancelled = () => false) {
+  if (!context || toneIsActive || typeof startTone !== "function") return null;
+  if (context.state === "suspended") await context.resume();
+  if (context.state !== "running" || isCancelled()) return null;
+  const stopTone = startTone(context);
+  if (isCancelled()) {
+    stopTone?.();
+    return null;
+  }
+  return stopTone;
+}
+
 /** A stable payload shared by the notification writer and alarm client. */
 export function buildAlarmNotificationContext(input) {
   const base = {
@@ -39,20 +52,38 @@ function isAlarmContext(value) {
   return Array.isArray(value.summonedMunicipalities);
 }
 
-/** The newest unread provincial declaration that needs this officer's action. */
+function isAssistanceContext(value) {
+  return Boolean(value)
+    && typeof value === "object"
+    && value.audience === "ASSISTANCE"
+    && validUuid(value.fireReportId)
+    && validUuid(value.assistanceRequestId)
+    && typeof value.referenceNumber === "string"
+    && typeof value.location === "string"
+    && typeof value.requesterMunicipalityName === "string"
+    && Number.isInteger(value.requestedFiretrucks)
+    && Number.isInteger(value.requestedPersonnel)
+    && (value.requestNote === null || typeof value.requestNote === "string")
+    && value.isProvincialCommand === false;
+}
+
+/** The newest unread alarm or assistance call that needs this officer's action. */
 export function selectPendingMunicipalAlarm(notifications) {
   if (!Array.isArray(notifications)) return null;
   const newestFirst = notifications
-    .filter((notification) =>
-      notification?.eventType === "ALARM_DECLARED"
-        && isAlarmContext(notification.context),
-    )
+    .filter((notification) => {
+      if (notification?.eventType === "ALARM_DECLARED") return isAlarmContext(notification.context);
+      if (notification?.eventType === "ASSISTANCE_REQUESTED") return isAssistanceContext(notification.context);
+      return false;
+    })
     .sort((left, right) => Date.parse(right.createdAt ?? 0) - Date.parse(left.createdAt ?? 0));
-  const seenIncidents = new Set();
+  const seenAlerts = new Set();
   for (const notification of newestFirst) {
-    const incidentId = notification.context.fireReportId;
-    if (seenIncidents.has(incidentId)) continue;
-    seenIncidents.add(incidentId);
+    const alertKey = notification.eventType === "ALARM_DECLARED"
+      ? `alarm:${notification.context.fireReportId}`
+      : `assistance:${notification.context.assistanceRequestId}`;
+    if (seenAlerts.has(alertKey)) continue;
+    seenAlerts.add(alertKey);
     if (notification.readAt === null) return notification;
   }
   return null;
@@ -60,7 +91,15 @@ export function selectPendingMunicipalAlarm(notifications) {
 
 /** Requests the client must make after the officer presses the primary action. */
 export function getMunicipalAlarmAction(notification) {
-  if (!notification || !isAlarmContext(notification.context)) return null;
+  if (notification?.eventType === "ASSISTANCE_REQUESTED" && isAssistanceContext(notification.context)) {
+    return {
+      audience: "ASSISTANCE",
+      incidentId: notification.context.fireReportId,
+      assistanceRequestId: notification.context.assistanceRequestId,
+      destination: `/municipal-bfp/active-incidents?incident=${notification.context.fireReportId}`,
+    };
+  }
+  if (!notification || notification.eventType !== "ALARM_DECLARED" || !isAlarmContext(notification.context)) return null;
   const context = notification.context;
   if (context.audience === "SUMMONED") {
     return {
