@@ -548,10 +548,10 @@ const pageStyles = `
     gap: 1rem;
   }
 
-  /* ========== MODAL DIALOGS ========== */
+  /* ========== EXPANDED & REFINED MODAL DIALOGS ========== */
   .pma-modal::backdrop {
-    background: rgba(15, 23, 42, 0.65);
-    backdrop-filter: blur(6px);
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(8px);
   }
 
   .pma-modal {
@@ -562,7 +562,7 @@ const pageStyles = `
     max-width: none;
     max-height: none;
     margin: 0;
-    padding: 1rem;
+    padding: 1.5rem;
     border: 0;
     background: transparent;
     box-sizing: border-box;
@@ -576,65 +576,100 @@ const pageStyles = `
   }
 
   .pma-dialog {
-    width: min(calc(100vw - 2rem), 38rem);
-    max-height: calc(100dvh - 3rem);
+    width: min(calc(100vw - 2.5rem), 52rem);
+    max-height: calc(100dvh - 3.5rem);
     margin: 0;
     box-sizing: border-box;
     min-height: 0;
     overscroll-behavior: contain;
     overflow-y: auto;
     background: #FFFFFF;
-    border-radius: 16px;
-    padding: 1.75rem 2rem;
-    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    border-radius: 20px;
+    padding: 2.25rem 2.5rem;
+    box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(15, 23, 42, 0.08);
     border: 1px solid #E2E8F0;
-    animation: pmaSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: pmaSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
   }
 
   @keyframes pmaSlideUp {
-    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    from { opacity: 0; transform: translateY(16px) scale(0.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .pma-dialog-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.18s ease;
+  }
+
+  .pma-dialog-close:hover:not(:disabled) {
+    background: #F1F5F9;
+    color: #0F172A;
+    border-color: #CBD5E1;
+  }
+
+  .pma-dialog-close:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   .pma-dialog-header {
     display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 1.25rem;
-    position: relative;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+    padding-right: 3rem;
   }
 
   .pma-dialog-emblem-wrap {
-    width: 52px;
-    height: 52px;
-    border-radius: 12px;
-    background: #FEF2F2;
-    border: 1px solid #FEE2E2;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
+    border: 1.5px solid #FECACA;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 4px 10px rgba(219, 27, 13, 0.08);
+    box-shadow: 0 6px 16px rgba(219, 27, 13, 0.12);
   }
 
   .pma-dialog-emblem-wrap.success {
-    background: #ECFDF5;
-    border-color: #D1FAE5;
+    background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+    border-color: #A7F3D0;
+    box-shadow: 0 6px 16px rgba(5, 150, 105, 0.12);
   }
 
   .pma-dialog-emblem {
-    width: 36px;
-    height: 36px;
+    width: 46px;
+    height: 46px;
     object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
   }
 
   .pma-dialog-kicker {
-    font-size: 0.7rem;
+    font-size: 0.74rem;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: #DB1B0D;
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
   }
 
   .pma-dialog-kicker.success {
@@ -642,16 +677,17 @@ const pageStyles = `
   }
 
   .pma-dialog-title {
-    margin: 0 0 0.25rem;
-    font-size: 1.28rem;
+    margin: 0 0 0.3rem;
+    font-size: 1.5rem;
     font-weight: 800;
     color: #0F172A;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
   }
 
   .pma-dialog-subtitle {
     color: #64748B;
-    font-size: 0.83rem;
+    font-size: 0.9rem;
     line-height: 1.45;
     margin: 0;
   }
@@ -659,90 +695,123 @@ const pageStyles = `
   .pma-dialog-notice {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 8px;
-    padding: 0.6rem 0.85rem;
-    font-size: 0.77rem;
-    color: #475569;
-    margin-bottom: 1.25rem;
+    gap: 0.75rem;
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-left: 4px solid #D97706;
+    border-radius: 10px;
+    padding: 0.85rem 1.15rem;
+    font-size: 0.85rem;
+    color: #92400E;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    line-height: 1.4;
   }
 
   .pma-dialog-notice i {
-    color: #DB1B0D;
-    font-size: 0.85rem;
+    color: #D97706;
+    font-size: 1rem;
+    flex-shrink: 0;
   }
 
   /* Form Layout */
   .pma-form {
     display: flex;
     flex-direction: column;
-    gap: 1.15rem;
+    gap: 1.35rem;
   }
 
   .pma-form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-
-  .pma-form-grid.full {
-    grid-template-columns: 1fr;
+    gap: 1.25rem;
   }
 
   .pma-field-label {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
-    font-size: 0.8rem;
+    gap: 0.45rem;
+    font-size: 0.84rem;
     font-weight: 700;
-    color: #334155;
+    color: #1E293B;
   }
 
   .pma-field-header {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.45rem;
   }
 
   .pma-field-header i {
-    color: #94A3B8;
-    font-size: 0.75rem;
+    color: #DB1B0D;
+    font-size: 0.82rem;
   }
 
   .pma-form input,
   .pma-form select {
-    padding: 0.65rem 0.85rem;
-    border: 1px solid #CBD5E1;
-    border-radius: 8px;
-    font-size: 0.84rem;
+    height: 48px;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 10px;
+    font-size: 0.92rem;
     color: #0F172A;
     outline: none;
     font-family: inherit;
     background: #FFFFFF;
-    transition: all 0.15s ease;
+    transition: all 0.18s ease;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .pma-form select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.15rem;
+    padding-right: 2.75rem;
+    cursor: pointer;
+  }
+
+  .pma-form input::placeholder {
+    color: #94A3B8;
+    font-size: 0.88rem;
   }
 
   .pma-form input:focus,
   .pma-form select:focus {
     border-color: #DB1B0D;
-    box-shadow: 0 0 0 3px rgba(219, 27, 13, 0.12);
+    box-shadow: 0 0 0 4px rgba(219, 27, 13, 0.12);
+  }
+
+  /* Prevent browser autofill from turning inputs blue/purple */
+  .pma-form input:-webkit-autofill,
+  .pma-form input:-webkit-autofill:hover,
+  .pma-form input:-webkit-autofill:focus,
+  .pma-form select:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+    -webkit-text-fill-color: #0F172A !important;
+    transition: background-color 5000s ease-in-out 0s;
   }
 
   .pma-form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 0.5rem;
-    padding-top: 1rem;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    padding-top: 1.35rem;
     border-top: 1px solid #F1F5F9;
   }
 
   .pma-btn-cancel {
     background: #FFFFFF;
-    border: 1px solid #CBD5E1;
+    border: 1.5px solid #CBD5E1;
     color: #475569;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
   }
 
   .pma-btn-cancel:hover:not(:disabled) {
@@ -751,24 +820,54 @@ const pageStyles = `
     border-color: #94A3B8;
   }
 
+  .pma-btn-submit {
+    background: linear-gradient(180deg, #E52E20 0%, #DB1B0D 100%);
+    color: #FFFFFF;
+    padding: 0.75rem 2rem;
+    border-radius: 10px;
+    font-size: 0.94rem;
+    font-weight: 800;
+    box-shadow: 0 4px 16px rgba(219, 27, 13, 0.32);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: inherit;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .pma-btn-submit:hover:not(:disabled) {
+    background: linear-gradient(180deg, #DB1B0D 0%, #C2160A 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(219, 27, 13, 0.42);
+  }
+
+  .pma-btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
   /* Issued Password Card */
   .pma-secret-container {
     background: #FFFBEB;
-    border: 1px solid #FDE68A;
-    border-radius: 12px;
-    padding: 1.15rem 1.25rem;
-    margin: 1.25rem 0;
+    border: 1.5px solid #FDE68A;
+    border-radius: 14px;
+    padding: 1.35rem 1.5rem;
+    margin: 1.35rem 0;
   }
 
   .pma-secret-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.6rem;
-    font-size: 0.72rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.76rem;
     font-weight: 800;
     color: #92400E;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 
@@ -776,49 +875,56 @@ const pageStyles = `
     background: #FFFFFF;
     border: 1px solid #FCD34D;
     color: #92400E;
-    padding: 0.25rem 0.65rem;
-    border-radius: 6px;
-    font-size: 0.74rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
     font-weight: 700;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
     font-family: inherit;
     transition: all 0.15s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
   .pma-copy-btn:hover {
     background: #FEF3C7;
+    border-color: #F59E0B;
   }
 
   .pma-secret-box {
     display: block;
-    padding: 0.85rem 1rem;
+    padding: 1rem 1.25rem;
     background: #FFFFFF;
-    border: 1px dashed #F59E0B;
-    border-radius: 8px;
+    border: 1.5px dashed #F59E0B;
+    border-radius: 10px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: 1.35rem;
+    font-weight: 800;
     word-break: break-all;
     color: #B45309;
     text-align: center;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
   }
 
   .pma-warning-note {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.65rem;
     color: #C2410C;
     font-weight: 600;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     background: #FFF7ED;
     border: 1px solid #FFEDD5;
-    padding: 0.65rem 0.85rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
+    padding: 0.8rem 1rem;
+    border-radius: 10px;
+    margin-bottom: 1.25rem;
+  }
+
+  .pma-warning-note i {
+    font-size: 1rem;
+    flex-shrink: 0;
   }
 
   /* Responsive Design */
@@ -859,12 +965,18 @@ const pageStyles = `
       width: 100%;
     }
 
-    .pma-form-grid {
-      grid-template-columns: 1fr;
+    .pma-dialog {
+      padding: 1.5rem 1.25rem;
+      width: calc(100vw - 1.5rem);
     }
 
-    .pma-dialog {
-      padding: 1.25rem;
+    .pma-dialog-header {
+      padding-right: 2rem;
+    }
+
+    .pma-form-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
     }
   }
 `;
@@ -1259,12 +1371,24 @@ export function ProvincialMunicipalAccounts() {
       {/* Issue Account Modal */}
       {open && (
         <ProvincialAccountDialog label="Issue municipal BFP account" onClose={() => setOpen(false)} dismissible={!saving}>
+          <button
+            type="button"
+            className="pma-dialog-close"
+            onClick={() => setOpen(false)}
+            disabled={saving}
+            aria-label="Close dialog"
+          >
+            <i className="fa-solid fa-xmark" />
+          </button>
+
           <div className="pma-dialog-header">
             <div className="pma-dialog-emblem-wrap">
               <img src="/images/bfp logo.png" alt="BFP Seal" className="pma-dialog-emblem" />
             </div>
             <div>
-              <div className="pma-dialog-kicker">OFFICIAL PROVISIONING</div>
+              <div className="pma-dialog-kicker">
+                <i className="fa-solid fa-shield-halved" /> OFFICIAL PROVISIONING
+              </div>
               <h2 className="pma-dialog-title">Issue Municipal BFP Account</h2>
               <p className="pma-dialog-subtitle">
                 Assign administrative or operational credentials to a municipal fire station.
@@ -1273,7 +1397,7 @@ export function ProvincialMunicipalAccounts() {
           </div>
 
           <div className="pma-dialog-notice">
-            <i className="fa-solid fa-shield-halved" />
+            <i className="fa-solid fa-triangle-exclamation" />
             <span>The temporary password will only be displayed once upon submission.</span>
           </div>
 
@@ -1398,7 +1522,7 @@ export function ProvincialMunicipalAccounts() {
                 Cancel
               </button>
               <button
-                className="pma-btn pma-btn-primary"
+                className="pma-btn pma-btn-primary pma-btn-submit"
                 disabled={saving}
                 type="submit"
               >
@@ -1427,7 +1551,9 @@ export function ProvincialMunicipalAccounts() {
               <img src="/images/bfp logo.png" alt="BFP Seal" className="pma-dialog-emblem" />
             </div>
             <div>
-              <div className="pma-dialog-kicker success">PROVISIONING COMPLETE</div>
+              <div className="pma-dialog-kicker success">
+                <i className="fa-solid fa-circle-check" /> PROVISIONING COMPLETE
+              </div>
               <h2 className="pma-dialog-title" style={{ color: '#059669' }}>
                 Account Successfully Provisioned
               </h2>
@@ -1458,9 +1584,9 @@ export function ProvincialMunicipalAccounts() {
 
           <div className="pma-form-actions">
             <button
-              className="pma-btn pma-btn-primary"
+              className="pma-btn pma-btn-primary pma-btn-submit"
               type="button"
-              style={{ width: '100%' }}
+              style={{ width: '100%', justifyContent: 'center' }}
               onClick={() => setIssued(null)}
             >
               <i className="fa-solid fa-shield-check" />
