@@ -5,6 +5,10 @@ import "leaflet/dist/leaflet.css";
 
 import { useProvincialIncidentFeed } from "./use-provincial-incident-feed";
 import type { ProvincialIncidentSummary } from "../../lib/intermunicipality/provincial";
+import type {
+  ProvincialWaterSourceRegistry,
+  WaterSource,
+} from "../../lib/water-sources/types";
 
 const DEFAULT_PROVINCE_CENTER: [number, number] = [11.18, 122.05];
 const TERMINAL_STATUSES = new Set(["RESOLVED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "CLOSED"]);
@@ -48,8 +52,36 @@ type StationMarker = {
 };
 
 type MapView = "ALL" | "ACTIVE" | "HISTORY";
+type MapContentMode = "INCIDENTS" | "WATER_SOURCES";
+
+type FetchLike = (
+  input: string,
+  init?: RequestInit,
+) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
 
 const STATION_COVERAGE_METERS = 3_000;
+
+export function resolveProvincialMapMode(searchParams: URLSearchParams): MapContentMode {
+  return searchParams.get("layer") === "water-sources" || Boolean(searchParams.get("waterSource"))
+    ? "WATER_SOURCES"
+    : "INCIDENTS";
+}
+
+export async function fetchProvincialWaterSources(
+  fetcher: FetchLike = fetch,
+  signal?: AbortSignal,
+): Promise<ProvincialWaterSourceRegistry> {
+  const response = await fetcher("/api/provincial-bfp/water-sources", {
+    cache: "no-store",
+    signal,
+  });
+  if (!response.ok) throw new Error("Unable to load the provincial water-source layer.");
+  const body = await response.json() as Partial<ProvincialWaterSourceRegistry>;
+  return {
+    municipalities: Array.isArray(body.municipalities) ? body.municipalities : [],
+    sources: Array.isArray(body.sources) ? body.sources : [],
+  };
+}
 
 function resolveIncidentCoordinates(incident: ProvincialIncidentSummary): [number, number] | null {
   if (
@@ -331,6 +363,40 @@ const styles = `
     outline: 2px solid #dc2626;
     outline-offset: 2px;
   }
+  .mbfp-ops-mode-switch {
+    display: inline-flex;
+    gap: 0.2rem;
+    padding: 0.28rem;
+    border: 1px solid #cbd9e8;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 5px 14px rgba(15, 23, 42, 0.06);
+  }
+  .mbfp-ops-mode-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.48rem;
+    min-height: 2.55rem;
+    padding: 0.55rem 1rem;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #52627a;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .mbfp-ops-mode-button.is-on {
+    background: #0f766e;
+    color: #ffffff;
+    box-shadow: 0 5px 12px rgba(15, 118, 110, 0.2);
+  }
+  .mbfp-ops-mode-button:focus-visible {
+    outline: 2px solid #0f766e;
+    outline-offset: 2px;
+  }
 
   .pbfp-controls-right {
     display: flex;
@@ -472,6 +538,21 @@ const styles = `
     font-size: 0.84rem;
     transform: rotate(45deg);
   }
+  .mbfp-ops-water-pin {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    border: 3px solid #ffffff;
+    border-radius: 50% 50% 50% 0;
+    background: #0f766e;
+    color: #ffffff;
+    font-size: 1rem;
+    box-shadow: 0 8px 20px rgba(15, 118, 110, 0.42), 0 0 0 6px rgba(15, 118, 110, 0.13);
+    transform: rotate(-45deg);
+  }
+  .mbfp-ops-water-pin i { transform: rotate(45deg); }
+  .mbfp-ops-water-pin.is-source { background: #0891b2; }
   .mbfp-ops-marker-count {
     position: absolute;
     right: -1px;
@@ -544,6 +625,9 @@ const styles = `
   }
   .mbfp-ops-key.key-station {
     background: #2563eb;
+  }
+  .mbfp-ops-key.key-water-source {
+    background: #0f766e;
   }
 
   /* Empty state */
@@ -801,6 +885,55 @@ const styles = `
     font-size: 0.85rem;
     line-height: 1.35;
   }
+  .pbfp-water-modal { width: min(100%, 660px); }
+  .pbfp-water-modal .pbfp-gis-modal-kicker { color: #0f766e; }
+  .pbfp-water-modal__hero {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.9rem;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #bfe4dd;
+    border-radius: 15px;
+    background: #f0fdfa;
+  }
+  .pbfp-water-modal__icon {
+    display: grid;
+    width: 52px;
+    height: 52px;
+    place-items: center;
+    border-radius: 16px;
+    background: #0f766e;
+    color: #ffffff;
+    font-size: 1.25rem;
+    box-shadow: 0 10px 22px rgba(15, 118, 110, 0.22);
+  }
+  .pbfp-water-modal__kind {
+    margin: 0 0 0.18rem;
+    color: #0f766e;
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .pbfp-water-modal__location {
+    margin: 0;
+    color: #132238;
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+  .pbfp-water-modal__origin {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 1rem;
+    padding: 0.5rem 0.65rem;
+    border-radius: 9px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
   .pbfp-gis-modal-actions {
     display: flex;
     justify-content: flex-end;
@@ -926,6 +1059,46 @@ function drawStations(
   });
 }
 
+function drawWaterSources(
+  L: typeof import("leaflet"),
+  map: import("leaflet").Map,
+  layer: import("leaflet").LayerGroup,
+  sources: WaterSource[],
+  waterSourceId: string,
+  onSelectSource: (source: WaterSource) => void,
+) {
+  layer.clearLayers();
+  const points: [number, number][] = [];
+  sources.forEach((source) => {
+    if (!Number.isFinite(source.latitude) || !Number.isFinite(source.longitude)) return;
+    const point: [number, number] = [source.latitude, source.longitude];
+    points.push(point);
+    const isHydrant = source.sourceKind === "FIRE_HYDRANT";
+    const marker = L.marker(point, {
+      icon: L.divIcon({
+        className: "mbfp-ops-marker-wrapper",
+        html: `<span class="mbfp-ops-water-pin ${isHydrant ? "" : "is-source"}"><i class="fa-solid ${isHydrant ? "fa-fire-extinguisher" : "fa-droplet"}" aria-hidden="true"></i></span>`,
+        iconSize: [52, 52],
+        iconAnchor: [26, 48],
+      }),
+    });
+    marker.on("click", () => onSelectSource(source));
+    marker.addTo(layer);
+    if (source.id === waterSourceId) {
+      map.setView(point, 17, { animate: false });
+      onSelectSource(source);
+    }
+  });
+
+  if (!waterSourceId && points.length === 1) {
+    map.setView(points[0], 16, { animate: false });
+  } else if (!waterSourceId && points.length > 1) {
+    map.fitBounds(L.latLngBounds(points), { padding: [72, 72], maxZoom: 15, animate: false });
+  } else if (points.length === 0) {
+    map.setView(DEFAULT_PROVINCE_CENTER, 9, { animate: false });
+  }
+}
+
 function drawIncidents(
   L: typeof import("leaflet"),
   map: import("leaflet").Map,
@@ -972,6 +1145,11 @@ function drawIncidents(
 }
 
 export function ProvincialGisOperationsMap() {
+  const searchParams = useMemo(
+    () => new URLSearchParams(typeof window === "undefined" ? "" : window.location.search),
+    [],
+  );
+  const waterSourceId = searchParams.get("waterSource") ?? "";
   const { incidents, loading, checking, error, refresh } = useProvincialIncidentFeed({
     includeHistory: true,
   });
@@ -981,6 +1159,7 @@ export function ProvincialGisOperationsMap() {
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const layerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const stationLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
+  const waterSourceLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const clustersRef = useRef(clusters);
 
@@ -988,10 +1167,16 @@ export function ProvincialGisOperationsMap() {
   const [selectedIncidentId, setSelectedIncidentId] = useState("");
   const [mapReady, setMapReady] = useState(false);
   const [stations, setStations] = useState<StationMarker[]>([]);
+  const [waterSources, setWaterSources] = useState<WaterSource[]>([]);
+  const [waterSourcesLoading, setWaterSourcesLoading] = useState(true);
+  const [waterSourcesError, setWaterSourcesError] = useState("");
+  const [selectedWaterSource, setSelectedWaterSource] = useState<WaterSource | null>(null);
   const [view, setView] = useState<MapView>("ALL");
   const [showStations, setShowStations] = useState(true);
+  const [mapMode, setMapMode] = useState<MapContentMode>(() => resolveProvincialMapMode(searchParams));
 
   const viewRef = useRef<MapView>(view);
+  const mapModeRef = useRef<MapContentMode>(mapMode);
   const onSelectRef = useRef<(cluster: IncidentCluster) => void>((cluster) => {
     setSelectedCluster(cluster);
     setSelectedIncidentId(cluster.incidents[0]?.id ?? "");
@@ -1000,17 +1185,23 @@ export function ProvincialGisOperationsMap() {
   useEffect(() => {
     clustersRef.current = clusters;
     viewRef.current = view;
+    mapModeRef.current = mapMode;
     if (leafletRef.current && mapRef.current && layerRef.current) {
-      drawIncidents(
-        leafletRef.current,
-        mapRef.current,
-        layerRef.current,
-        clusters,
-        (c) => onSelectRef.current(c),
-        view,
-      );
+      if (mapMode === "INCIDENTS") {
+        drawIncidents(
+          leafletRef.current,
+          mapRef.current,
+          layerRef.current,
+          clusters,
+          (c) => onSelectRef.current(c),
+          view,
+        );
+        if (!mapRef.current.hasLayer(layerRef.current)) layerRef.current.addTo(mapRef.current);
+      } else {
+        mapRef.current.removeLayer(layerRef.current);
+      }
     }
-  }, [clusters, view]);
+  }, [clusters, mapMode, view]);
 
   // Load Antique BFP fire stations across all municipalities
   useEffect(() => {
@@ -1061,6 +1252,26 @@ export function ProvincialGisOperationsMap() {
     return () => controller.abort();
   }, []);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchProvincialWaterSources(fetch, controller.signal)
+      .then((registry) => {
+        if (controller.signal.aborted) return;
+        setWaterSources(registry.sources);
+        setWaterSourcesError("");
+      })
+      .catch((loadError) => {
+        if (controller.signal.aborted) return;
+        setWaterSourcesError(
+          loadError instanceof Error ? loadError.message : "Unable to load the provincial water-source layer.",
+        );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setWaterSourcesLoading(false);
+      });
+    return () => controller.abort();
+  }, []);
+
   // Sync station coverage markers
   useEffect(() => {
     const L = leafletRef.current;
@@ -1068,13 +1279,33 @@ export function ProvincialGisOperationsMap() {
     if (!L || !map || !mapReady) return;
     if (!stationLayerRef.current) stationLayerRef.current = L.layerGroup().addTo(map);
 
-    if (showStations) {
+    if (mapMode === "INCIDENTS" && showStations) {
       drawStations(L, stationLayerRef.current, stations);
       if (!map.hasLayer(stationLayerRef.current)) stationLayerRef.current.addTo(map);
     } else {
       map.removeLayer(stationLayerRef.current);
     }
-  }, [stations, showStations, mapReady]);
+  }, [stations, showStations, mapMode, mapReady]);
+
+  useEffect(() => {
+    const L = leafletRef.current;
+    const map = mapRef.current;
+    if (!L || !map || !mapReady) return;
+    if (!waterSourceLayerRef.current) waterSourceLayerRef.current = L.layerGroup().addTo(map);
+    if (mapMode === "WATER_SOURCES") {
+      drawWaterSources(
+        L,
+        map,
+        waterSourceLayerRef.current,
+        waterSources,
+        waterSourceId,
+        setSelectedWaterSource,
+      );
+      if (!map.hasLayer(waterSourceLayerRef.current)) waterSourceLayerRef.current.addTo(map);
+    } else {
+      map.removeLayer(waterSourceLayerRef.current);
+    }
+  }, [mapMode, mapReady, waterSourceId, waterSources]);
 
   // Mount Leaflet map with clean OpenStreetMap tiles
   useEffect(() => {
@@ -1096,19 +1327,22 @@ export function ProvincialGisOperationsMap() {
         maxZoom: 19,
       }).addTo(map);
 
-      const incidentLayer = L.layerGroup().addTo(map);
+      const incidentLayer = L.layerGroup();
       leafletRef.current = L;
       mapRef.current = map;
       layerRef.current = incidentLayer;
 
-      drawIncidents(
-        L,
-        map,
-        incidentLayer,
-        clustersRef.current,
-        (c) => onSelectRef.current(c),
-        viewRef.current,
-      );
+      if (mapModeRef.current === "INCIDENTS") {
+        incidentLayer.addTo(map);
+        drawIncidents(
+          L,
+          map,
+          incidentLayer,
+          clustersRef.current,
+          (c) => onSelectRef.current(c),
+          viewRef.current,
+        );
+      }
       setMapReady(true);
     })();
 
@@ -1116,6 +1350,7 @@ export function ProvincialGisOperationsMap() {
       disposed = true;
       layerRef.current = null;
       stationLayerRef.current = null;
+      waterSourceLayerRef.current = null;
       leafletRef.current = null;
       mapRef.current = null;
       map?.remove();
@@ -1133,6 +1368,25 @@ export function ProvincialGisOperationsMap() {
   function handleResetView() {
     if (!mapRef.current) return;
     mapRef.current.flyTo(DEFAULT_PROVINCE_CENTER, 9, { duration: 1.2 });
+  }
+
+  async function handleRefresh() {
+    if (mapMode === "INCIDENTS") {
+      await refresh(true);
+      return;
+    }
+    setWaterSourcesLoading(true);
+    try {
+      const registry = await fetchProvincialWaterSources();
+      setWaterSources(registry.sources);
+      setWaterSourcesError("");
+    } catch (loadError) {
+      setWaterSourcesError(
+        loadError instanceof Error ? loadError.message : "Unable to load the provincial water-source layer.",
+      );
+    } finally {
+      setWaterSourcesLoading(false);
+    }
   }
 
   const activeCount = useMemo(
@@ -1154,6 +1408,20 @@ export function ProvincialGisOperationsMap() {
     );
   }, [selectedCluster, selectedIncidentId]);
 
+  useEffect(() => {
+    if (!selectedWaterSource) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedWaterSource(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [selectedWaterSource]);
+
   return (
     <main className="mbfp-ops-root">
       <style>{styles}</style>
@@ -1162,17 +1430,19 @@ export function ProvincialGisOperationsMap() {
         <header className="mbfp-ops-toolbar">
           <div className="pbfp-title-group">
             <p className="mbfp-ops-eyebrow">Provincial fire operations</p>
-            <h1 id="provincial-gis-heading" className="mbfp-ops-title">GIS incident map</h1>
+            <h1 id="provincial-gis-heading" className="mbfp-ops-title">
+              {mapMode === "INCIDENTS" ? "GIS incident map" : "GIS water source map"}
+            </h1>
           </div>
           <div className="mbfp-ops-tools">
             <button
               className="mbfp-ops-refresh"
               type="button"
-              onClick={() => void refresh(true)}
-              disabled={checking}
+              onClick={() => void handleRefresh()}
+              disabled={mapMode === "INCIDENTS" ? checking : waterSourcesLoading}
             >
-              <i className={`fa-solid fa-rotate-right ${checking ? "fa-spin" : ""}`} aria-hidden="true" />
-              <span>{checking ? "Refreshing map" : "Live refresh"}</span>
+              <i className={`fa-solid fa-rotate-right ${(mapMode === "INCIDENTS" ? checking : waterSourcesLoading) ? "fa-spin" : ""}`} aria-hidden="true" />
+              <span>{(mapMode === "INCIDENTS" ? checking : waterSourcesLoading) ? "Refreshing map" : "Live refresh"}</span>
             </button>
           </div>
         </header>
@@ -1211,37 +1481,54 @@ export function ProvincialGisOperationsMap() {
 
           <article className="mbfp-ops-stat is-sites">
             <div className="pbfp-stat-header">
-              <span className="mbfp-ops-stat-label">Mapped sites</span>
+              <span className="mbfp-ops-stat-label">Water sources</span>
               <span className="pbfp-stat-icon-badge">
                 <i className="fa-solid fa-location-dot" aria-hidden="true" />
               </span>
             </div>
-            <span className="mbfp-ops-stat-num">{clusters.length}</span>
+            <span className="mbfp-ops-stat-num">{waterSourcesLoading ? "--" : waterSources.length}</span>
           </article>
         </div>
 
         {/* Operational Filter Pills, Municipality Jump, and Coverage Toggle */}
         <div className="mbfp-ops-controls">
           <div className="pbfp-controls-left">
-            <div className="mbfp-ops-segmented" role="group" aria-label="Which incidents to show">
-              {(
-                [
-                  ["ALL", "All"],
-                  ["ACTIVE", "Active"],
-                  ["HISTORY", "History"],
-                ] as Array<[MapView, string]>
-              ).map(([key, label]) => (
+            <div className="mbfp-ops-mode-switch" role="group" aria-label="Choose map content">
+              {([
+                ["INCIDENTS", "Incidents", "fa-fire"],
+                ["WATER_SOURCES", "Water sources", "fa-droplet"],
+              ] as Array<[MapContentMode, string, string]>).map(([key, label, icon]) => (
                 <button
                   key={key}
                   type="button"
-                  className={`mbfp-ops-segment${view === key ? " is-on" : ""}`}
-                  onClick={() => setView(key)}
-                  aria-pressed={view === key}
+                  className={`mbfp-ops-mode-button${mapMode === key ? " is-on" : ""}`}
+                  onClick={() => {
+                    setMapMode(key);
+                    setSelectedWaterSource(null);
+                    if (key === "WATER_SOURCES") setSelectedCluster(null);
+                  }}
+                  aria-pressed={mapMode === key}
                 >
+                  <i className={`fa-solid ${icon}`} aria-hidden="true" />
                   {label}
                 </button>
               ))}
             </div>
+            {mapMode === "INCIDENTS" && (
+              <div className="mbfp-ops-segmented" role="group" aria-label="Which incidents to show">
+                {(["ALL", "ACTIVE", "HISTORY"] as MapView[]).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`mbfp-ops-segment${view === key ? " is-on" : ""}`}
+                    onClick={() => setView(key)}
+                    aria-pressed={view === key}
+                  >
+                    {key === "ALL" ? "All" : key === "ACTIVE" ? "Active" : "History"}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="pbfp-controls-right">
@@ -1276,7 +1563,7 @@ export function ProvincialGisOperationsMap() {
               <span>Full Province</span>
             </button>
 
-            <label className="mbfp-ops-layer-toggle">
+            {mapMode === "INCIDENTS" && <label className="mbfp-ops-layer-toggle">
               <input
                 type="checkbox"
                 checked={showStations}
@@ -1284,51 +1571,62 @@ export function ProvincialGisOperationsMap() {
               />
               <i className="fa-solid fa-truck-fast" aria-hidden="true" />
               Stations and coverage
-            </label>
+            </label>}
           </div>
         </div>
 
         {/* Leaflet Map Canvas */}
         <div className="mbfp-ops-map-shell">
-          <div ref={mapElement} className="mbfp-ops-map" aria-label="Provincial incident map" />
+          <div ref={mapElement} className="mbfp-ops-map" aria-label={mapMode === "INCIDENTS" ? "Provincial incident map" : "Provincial water source map"} />
           {!mapReady && (
-            <div className="mbfp-ops-map-loading" aria-label="Loading provincial incident map" />
+            <div className="mbfp-ops-map-loading" aria-label="Loading provincial operations map" />
           )}
 
           <aside className="mbfp-ops-legend" aria-label="What the map symbols mean">
-            <span className="mbfp-ops-legend-row">
+            {mapMode === "INCIDENTS" && <span className="mbfp-ops-legend-row">
               <i className="mbfp-ops-key key-active" aria-hidden="true" />
               Active incident
-            </span>
-            <span className="mbfp-ops-legend-row">
+            </span>}
+            {mapMode === "INCIDENTS" && <span className="mbfp-ops-legend-row">
               <i className="mbfp-ops-key key-history" aria-hidden="true" />
               Resolved or closed
-            </span>
-            {showStations && (
+            </span>}
+            {mapMode === "INCIDENTS" && showStations && (
               <span className="mbfp-ops-legend-row">
                 <i className="mbfp-ops-key key-station" aria-hidden="true" />
                 Station · {STATION_COVERAGE_METERS / 1000} km reach
               </span>
             )}
+            {mapMode === "WATER_SOURCES" && <span className="mbfp-ops-legend-row">
+              <i className="mbfp-ops-key key-water-source" aria-hidden="true" />
+              Hydrant or water source
+            </span>}
           </aside>
 
-          {!loading && !error && incidents.length === 0 && (
+          {mapMode === "INCIDENTS" && !loading && !error && incidents.length === 0 && (
             <div className="mbfp-ops-empty" role="status">
               <strong>No incidents have been reported across Antique province</strong>
               <p>The map monitors all 18 municipalities. New emergency alerts appear automatically.</p>
             </div>
           )}
 
-          {!loading && !error && incidents.length > 0 && view === "ACTIVE" && activeCount === 0 && (
+          {mapMode === "INCIDENTS" && !loading && !error && incidents.length > 0 && view === "ACTIVE" && activeCount === 0 && (
             <div className="mbfp-ops-empty" role="status">
               <strong>Nothing is burning right now</strong>
               <p>Every incident across Antique province is resolved or closed. Switch to History to view previous responses.</p>
+            </div>
+          )}
+          {mapMode === "WATER_SOURCES" && !waterSourcesLoading && !waterSourcesError && waterSources.length === 0 && (
+            <div className="mbfp-ops-empty" role="status">
+              <strong>No mapped water sources are available</strong>
+              <p>The provincial registry does not currently contain a hydrant or other water source.</p>
             </div>
           )}
         </div>
 
         {/* Footnote */}
         <footer className="mbfp-ops-footnote">
+          {mapMode === "INCIDENTS" ? <>
           <span className="mbfp-ops-summary">
             <strong>{incidents.length}</strong>
             {incidents.length === 1 ? "province-wide report" : "province-wide reports"} across{" "}
@@ -1343,6 +1641,17 @@ export function ProvincialGisOperationsMap() {
               Open active incident queue
             </a>
           )}
+          </> : <>
+            <span className="mbfp-ops-summary">
+              <strong>{waterSources.length}</strong>
+              {waterSources.length === 1 ? "mapped water source" : "mapped water sources"} across Antique.
+            </span>
+            {waterSourcesError ? <span className="mbfp-ops-error" role="alert">{waterSourcesError}</span> : (
+              <a className="mbfp-ops-queue-link" href="/provincial-bfp/water-sources">
+                Open provincial water-source registry
+              </a>
+            )}
+          </>}
         </footer>
       </section>
 
@@ -1473,6 +1782,60 @@ export function ProvincialGisOperationsMap() {
                   <i className="fa-solid fa-file-lines" aria-hidden="true" /> View Full Report
                 </a>
               </div>
+            </div>
+          </section>
+        </div>
+      )}
+      {selectedWaterSource && (
+        <div
+          className="pbfp-gis-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSelectedWaterSource(null);
+          }}
+        >
+          <section
+            className="pbfp-gis-modal pbfp-water-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="provincial-water-source-modal-title"
+          >
+            <header className="pbfp-gis-modal-header">
+              <div>
+                <p className="pbfp-gis-modal-kicker">Mapped provincial water network</p>
+                <h2 id="provincial-water-source-modal-title">Water source details</h2>
+              </div>
+              <button
+                className="pbfp-gis-modal-close"
+                type="button"
+                aria-label="Close water source details"
+                onClick={() => setSelectedWaterSource(null)}
+              >
+                <i className="fa-solid fa-xmark" aria-hidden="true" />
+              </button>
+            </header>
+            <div className="pbfp-gis-modal-body">
+              <section className="pbfp-water-modal__hero">
+                <span className="pbfp-water-modal__icon">
+                  <i className={`fa-solid ${selectedWaterSource.sourceKind === "FIRE_HYDRANT" ? "fa-fire-extinguisher" : "fa-droplet"}`} aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="pbfp-water-modal__kind">
+                    {selectedWaterSource.sourceKind === "FIRE_HYDRANT" ? "Fire hydrant" : "Water source"}
+                  </p>
+                  <h3 className="pbfp-water-modal__location">{selectedWaterSource.exactLocation}</h3>
+                </div>
+              </section>
+              <div className="pbfp-gis-facts">
+                <article><span>Municipality</span><strong>{selectedWaterSource.municipalityName}</strong></article>
+                <article><span>Type / color</span><strong>{selectedWaterSource.typeColor}</strong></article>
+                <article><span>Quantity</span><strong>{selectedWaterSource.quantity}</strong></article>
+                <article><span>Coordinates</span><strong>{selectedWaterSource.latitude.toFixed(7)}, {selectedWaterSource.longitude.toFixed(7)}</strong></article>
+              </div>
+              <span className="pbfp-water-modal__origin">
+                <i className="fa-solid fa-file-shield" aria-hidden="true" />
+                {selectedWaterSource.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}
+              </span>
             </div>
           </section>
         </div>

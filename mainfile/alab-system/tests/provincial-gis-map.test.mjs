@@ -31,7 +31,7 @@ test("Provincial GIS operations map matches the municipal operational design acr
   assert.match(comp, /Active now/);
   assert.match(comp, /Resolved/);
   assert.match(comp, /Active stations/);
-  assert.match(comp, /Mapped sites/);
+  assert.match(comp, /Water sources/);
 
   // Segmented filters
   assert.match(comp, /mbfp-ops-segmented/);
@@ -53,6 +53,12 @@ test("Provincial GIS operations map matches the municipal operational design acr
   // Provincial modal inspection
   assert.match(comp, /pbfp-gis-modal/);
   assert.match(comp, /\/provincial-bfp\/incident-reports\?report=/);
+
+  // Province-wide water-network mode
+  assert.match(comp, /Incidents/);
+  assert.match(comp, /Water sources/);
+  assert.match(comp, /Hydrant/);
+  assert.match(comp, /Water source details/);
 });
 
 test("Provincial incident service selects coordinates for live mapping", () => {
@@ -152,4 +158,54 @@ test("clusterProvincialIncidents groups coincident coordinates and counts active
   assert.ok(tibiaoCluster);
   assert.equal(tibiaoCluster.incidents.length, 1);
   assert.equal(tibiaoCluster.activeCount, 1);
+});
+
+test("provincial GIS loads the province-wide water-source registry and honors direct map links", async () => {
+  const mod = loadServerModule("app/_components/provincial-gis-operations-map.tsx", {
+    "react": {
+      useEffect() {},
+      useMemo(fn) { return fn(); },
+      useRef() { return { current: null }; },
+      useState(val) { return [val, () => {}]; },
+    },
+    "react/jsx-runtime": {
+      jsx: () => null,
+      jsxs: () => null,
+      Fragment: () => null,
+    },
+    "leaflet/dist/leaflet.css": {},
+    "./use-provincial-incident-feed": {
+      useProvincialIncidentFeed: () => ({ incidents: [], loading: false, checking: false, error: "", refresh: async () => {} }),
+    },
+  });
+
+  assert.equal(mod.resolveProvincialMapMode(new URLSearchParams("layer=water-sources")), "WATER_SOURCES");
+  assert.equal(mod.resolveProvincialMapMode(new URLSearchParams()), "INCIDENTS");
+
+  const calls = [];
+  const registry = {
+    municipalities: [],
+    sources: [{
+      id: "hydrant-1",
+      municipalityId: "hamtic-id",
+      municipalityName: "Hamtic",
+      sourceKind: "FIRE_HYDRANT",
+      quantity: 1,
+      exactLocation: "Poblacion 2, Hamtic",
+      latitude: 10.7011186,
+      longitude: 121.9817536,
+      typeColor: "Wet Barrel",
+      recordOrigin: "BFP_LOCATOR_CHART_2018",
+      createdAt: "2026-09-23T00:00:00.000Z",
+    }],
+  };
+  const result = await mod.fetchProvincialWaterSources(async (url, init) => {
+    calls.push({ url, init });
+    return { ok: true, json: async () => registry };
+  });
+
+  assert.deepEqual(result, registry);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "/api/provincial-bfp/water-sources");
+  assert.equal(calls[0].init.cache, "no-store");
 });
