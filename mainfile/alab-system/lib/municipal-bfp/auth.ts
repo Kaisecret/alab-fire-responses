@@ -6,6 +6,7 @@ import { bfpSessionCookieName, resolveMunicipalSession, verifyBfpSession } from 
 
 export type MunicipalAdminIdentity = BfpIdentity & {
   municipalityId: string;
+  role: "MUNICIPAL_BFP";
   assignmentRole: "MUNICIPAL_ADMIN";
 };
 

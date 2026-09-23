@@ -71,3 +71,15 @@ test("the counts are drawn from the same feed as the pins", () => {
   assert.match(component, /const resolvedCount = incidents\.length - activeCount/);
   assert.match(component, /stations\.filter\(\(station\) => station\.status === "ACTIVE"\)/);
 });
+
+test("municipal water sources are a classified map layer with focused popups", () => {
+  const component = map();
+
+  assert.match(component, /\/api\/municipal-bfp\/water-sources/);
+  assert.match(component, /function drawWaterSources/);
+  assert.match(component, /showWaterSources/);
+  assert.match(component, /waterSourceId/);
+  assert.match(component, /source\.sourceKind === "FIRE_HYDRANT"/);
+  assert.match(component, /Type \/ color/);
+  assert.match(component, /key-water-source/);
+});
