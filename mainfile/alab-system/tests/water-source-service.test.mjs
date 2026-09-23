@@ -187,7 +187,7 @@ test("municipal reads derive totals from only the scoped rows", async () => {
   });
 });
 
-test("municipal edits update only location and quantity inside the signed municipality", async () => {
+test("municipal edits update location, quantity, and type/color inside the signed municipality", async () => {
   const calls = [];
   const database = {
     query: async (sql, params) => {
@@ -201,15 +201,20 @@ test("municipal edits update only location and quantity inside the signed munici
   const service = loadService(database);
 
   const updated = await service.updateMunicipalWaterSource("actor-1", "hamtic-id", "source-1", {
-    exactLocation: " New location ", quantity: "3", latitude: 1, longitude: 2,
+    exactLocation: " New location ", quantity: "3", typeColor: " Wet Barrel / Blue ", latitude: 1, longitude: 2,
   });
 
   assert.equal(updated.exactLocation, "New location");
-  assert.match(calls[0].sql, /set exact_location = \$3,\s*quantity = \$4/i);
+  assert.match(calls[0].sql, /set exact_location = \$3,\s*quantity = \$4,\s*type_color = \$5/i);
   assert.match(calls[0].sql, /where ws\.id = \$1\s+and ws\.municipality_id = \$2/i);
   assert.doesNotMatch(calls[0].sql, /set[\s\S]*latitude\s*=/i);
-  assert.deepEqual(calls[0].params, ["source-1", "hamtic-id", "New location", 3]);
+  assert.deepEqual(calls[0].params, ["source-1", "hamtic-id", "New location", 3, "Wet Barrel / Blue"]);
   assert.equal(calls[1].params[3], "MUNICIPAL_UPDATED");
+  assert.deepEqual(JSON.parse(calls[1].params[4]), {
+    exactLocation: "New location",
+    quantity: 3,
+    typeColor: "Wet Barrel / Blue",
+  });
 });
 
 test("provincial edits update only coordinates for an Antique water source", async () => {

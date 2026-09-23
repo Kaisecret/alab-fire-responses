@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => fs.readFileSync(path, "utf8");
 
-test("municipal registry opens editable card details and retains a map action", () => {
+test("municipal registry opens a full-screen editable details dialog", () => {
   const source = read("app/_components/municipal-water-sources.tsx");
   assert.match(source, /api\/municipal-bfp\/water-sources/);
   assert.match(source, /method:\s*["']POST["']/);
@@ -16,7 +16,11 @@ test("municipal registry opens editable card details and retains a map action", 
   assert.match(source, />Retry</);
   assert.match(source, /selectedSource/);
   assert.match(source, /method:\s*["']PATCH["']/);
-  assert.match(source, /Edit location and quantity/);
+  assert.match(source, /Edit location, type\/color, and quantity/);
+  assert.match(source, /createPortal/);
+  assert.match(source, /document\.body/);
+  assert.match(source, /edit-water-type-color/);
+  assert.match(source, /typeColor:\s*editForm\.typeColor/);
   assert.match(source, /View on map/);
   assert.doesNotMatch(source, /<Link className="water-registry__card"/);
   assert.match(source, /dialogRef/);

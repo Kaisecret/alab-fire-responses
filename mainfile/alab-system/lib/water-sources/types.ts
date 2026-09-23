@@ -40,7 +40,7 @@ export type CreateWaterSourceInput = {
 
 export type UpdateMunicipalWaterSourceInput = Pick<
   CreateWaterSourceInput,
-  "exactLocation" | "quantity"
+  "exactLocation" | "quantity" | "typeColor"
 >;
 
 export type UpdateProvincialWaterSourceCoordinatesInput = Pick<

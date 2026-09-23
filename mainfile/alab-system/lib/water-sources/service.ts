@@ -98,14 +98,18 @@ export function validateMunicipalWaterSourceUpdate(
   const issues: ValidationIssues = {};
   const exactLocation = cleanText(raw.exactLocation, 500);
   const quantity = finiteNumber(raw.quantity);
+  const typeColor = cleanTypeColor(raw.typeColor);
   if (exactLocation.length < 2 || exactLocation.length > 500) {
     issues.exactLocation = "Enter a location between 2 and 500 characters.";
   }
   if (quantity === null || !Number.isInteger(quantity) || quantity < 1 || quantity > 999) {
     issues.quantity = "Quantity must be a whole number from 1 to 999.";
   }
+  if (typeColor.length < 2 || typeColor.length > 120) {
+    issues.typeColor = "Enter a type/color between 2 and 120 characters.";
+  }
   if (Object.keys(issues).length > 0) throw new WaterSourceValidationError(issues);
-  return { exactLocation, quantity: quantity as number };
+  return { exactLocation, quantity: quantity as number, typeColor };
 }
 
 export function validateProvincialCoordinateUpdate(
@@ -291,6 +295,7 @@ export async function updateMunicipalWaterSource(
          update water_sources ws
             set exact_location = $3,
                 quantity = $4,
+                type_color = $5,
                 updated_at = now()
           where ws.id = $1
             and ws.municipality_id = $2
@@ -309,7 +314,7 @@ export async function updateMunicipalWaterSource(
               updated.created_at as "createdAt"
          from updated
          join municipalities municipality on municipality.id = updated.municipality_id`,
-      [waterSourceId, municipalityId, input.exactLocation, input.quantity],
+      [waterSourceId, municipalityId, input.exactLocation, input.quantity, input.typeColor],
     );
     const source = updated.rows[0];
     if (!source) throw new WaterSourceNotFoundError();
