@@ -5,6 +5,7 @@ import test from "node:test";
 import { loadServerModule } from "./helpers/load-server-module.mjs";
 
 const root = process.cwd();
+const mapPositions = loadServerModule("lib/water-sources/map-positions.ts");
 
 test("Provincial GIS page renders the province-wide GIS operations map", () => {
   const page = readFileSync(join(root, "app", "provincial-bfp", "gis-map", "page.tsx"), "utf8");
@@ -84,6 +85,7 @@ test("clusterProvincialIncidents groups coincident coordinates and counts active
       Fragment: () => null,
     },
     "leaflet/dist/leaflet.css": {},
+    "../../lib/water-sources/map-positions": mapPositions,
     "./use-provincial-incident-feed": {
       useProvincialIncidentFeed: () => ({ incidents: [], loading: false, checking: false, error: "", refresh: async () => {} }),
     },
@@ -174,6 +176,7 @@ test("provincial GIS loads the province-wide water-source registry and honors di
       Fragment: () => null,
     },
     "leaflet/dist/leaflet.css": {},
+    "../../lib/water-sources/map-positions": mapPositions,
     "./use-provincial-incident-feed": {
       useProvincialIncidentFeed: () => ({ incidents: [], loading: false, checking: false, error: "", refresh: async () => {} }),
     },

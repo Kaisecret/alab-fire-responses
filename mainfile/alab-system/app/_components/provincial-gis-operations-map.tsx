@@ -9,6 +9,7 @@ import type {
   ProvincialWaterSourceRegistry,
   WaterSource,
 } from "../../lib/water-sources/types";
+import { groupWaterSourceMapMarkers, type WaterSourceMapGroup } from "../../lib/water-sources/map-positions";
 
 const DEFAULT_PROVINCE_CENTER: [number, number] = [11.18, 122.05];
 const TERMINAL_STATUSES = new Set(["RESOLVED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "CLOSED"]);
@@ -553,6 +554,24 @@ const styles = `
   }
   .mbfp-ops-water-pin i { transform: rotate(45deg); }
   .mbfp-ops-water-pin.is-source { background: #0891b2; }
+  .mbfp-ops-water-pin.is-approximate { background: #b45309; }
+  .mbfp-ops-water-count {
+    position: absolute;
+    right: -13px;
+    top: -8px;
+    display: grid;
+    min-width: 25px;
+    height: 25px;
+    place-items: center;
+    padding: 0 4px;
+    border: 2px solid #ffffff;
+    border-radius: 999px;
+    background: #92400e;
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    transform: rotate(45deg);
+  }
   .mbfp-ops-marker-count {
     position: absolute;
     right: -1px;
@@ -934,6 +953,26 @@ const styles = `
     font-size: 0.72rem;
     font-weight: 700;
   }
+  .pbfp-water-modal__warning {
+    margin: 0.8rem 0 0;
+    padding: 0.85rem 1rem;
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    background: #fffbeb;
+    color: #78350f;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  .pbfp-water-modal__select {
+    width: 100%;
+    margin-top: 0.8rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #d5dfeb;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #132238;
+    font: inherit;
+  }
   .pbfp-gis-modal-actions {
     display: flex;
     justify-content: flex-end;
@@ -1063,30 +1102,31 @@ function drawWaterSources(
   L: typeof import("leaflet"),
   map: import("leaflet").Map,
   layer: import("leaflet").LayerGroup,
-  sources: WaterSource[],
+  groups: WaterSourceMapGroup[],
   waterSourceId: string,
   onSelectSource: (source: WaterSource) => void,
 ) {
   layer.clearLayers();
   const points: [number, number][] = [];
-  sources.forEach((source) => {
-    if (!Number.isFinite(source.latitude) || !Number.isFinite(source.longitude)) return;
-    const point: [number, number] = [source.latitude, source.longitude];
+  groups.forEach((group) => {
+    const point = group.point;
     points.push(point);
+    const source = group.sources[0];
     const isHydrant = source.sourceKind === "FIRE_HYDRANT";
     const marker = L.marker(point, {
       icon: L.divIcon({
         className: "mbfp-ops-marker-wrapper",
-        html: `<span class="mbfp-ops-water-pin ${isHydrant ? "" : "is-source"}"><i class="fa-solid ${isHydrant ? "fa-fire-extinguisher" : "fa-droplet"}" aria-hidden="true"></i></span>`,
+        html: `<span class="mbfp-ops-water-pin ${isHydrant ? "" : "is-source"} ${group.approximate ? "is-approximate" : ""}"><i class="fa-solid ${isHydrant ? "fa-fire-extinguisher" : "fa-droplet"}" aria-hidden="true"></i>${group.approximate ? `<b class="mbfp-ops-water-count">${group.sources.length}</b>` : ""}</span>`,
         iconSize: [52, 52],
         iconAnchor: [26, 48],
       }),
     });
-    marker.on("click", () => onSelectSource(source));
+    marker.on("click", () => onSelectSource(group.sources.find((item) => item.id === waterSourceId) ?? source));
     marker.addTo(layer);
-    if (source.id === waterSourceId) {
-      map.setView(point, 17, { animate: false });
-      onSelectSource(source);
+    const focusedSource = group.sources.find((item) => item.id === waterSourceId);
+    if (focusedSource) {
+      map.setView(point, group.approximate ? 13 : 17, { animate: false });
+      onSelectSource(focusedSource);
     }
   });
 
@@ -1168,6 +1208,7 @@ export function ProvincialGisOperationsMap() {
   const [mapReady, setMapReady] = useState(false);
   const [stations, setStations] = useState<StationMarker[]>([]);
   const [waterSources, setWaterSources] = useState<WaterSource[]>([]);
+  const waterSourceMapGroups = useMemo(() => groupWaterSourceMapMarkers(waterSources, MUNICIPAL_CENTERS), [waterSources]);
   const [waterSourcesLoading, setWaterSourcesLoading] = useState(true);
   const [waterSourcesError, setWaterSourcesError] = useState("");
   const [selectedWaterSource, setSelectedWaterSource] = useState<WaterSource | null>(null);
@@ -1297,7 +1338,7 @@ export function ProvincialGisOperationsMap() {
         L,
         map,
         waterSourceLayerRef.current,
-        waterSources,
+        waterSourceMapGroups,
         waterSourceId,
         setSelectedWaterSource,
       );
@@ -1305,7 +1346,7 @@ export function ProvincialGisOperationsMap() {
     } else {
       map.removeLayer(waterSourceLayerRef.current);
     }
-  }, [mapMode, mapReady, waterSourceId, waterSources]);
+  }, [mapMode, mapReady, waterSourceId, waterSourceMapGroups]);
 
   // Mount Leaflet map with clean OpenStreetMap tiles
   useEffect(() => {
@@ -1322,9 +1363,12 @@ export function ProvincialGisOperationsMap() {
       }).setView(DEFAULT_PROVINCE_CENTER, 9);
 
       L.control.zoom({ position: "bottomright" }).addTo(map);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
+      L.tileLayer("https://tile.openstreetmap.de/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
         maxZoom: 19,
+        keepBuffer: 4,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
       }).addTo(map);
 
       const incidentLayer = L.layerGroup();
@@ -1407,6 +1451,10 @@ export function ProvincialGisOperationsMap() {
       null
     );
   }, [selectedCluster, selectedIncidentId]);
+
+  const selectedWaterSourceGroup = selectedWaterSource
+    ? waterSourceMapGroups.find((group) => group.sources.some((source) => source.id === selectedWaterSource.id))
+    : undefined;
 
   useEffect(() => {
     if (!selectedWaterSource) return;
@@ -1767,7 +1815,6 @@ export function ProvincialGisOperationsMap() {
                   <strong>{selectedIncident.observers?.length ?? 0} Nearby BFP</strong>
                 </article>
               </div>
-
               <div className="pbfp-gis-modal-actions">
                 <a
                   href={`/provincial-bfp/incidents?incident=${encodeURIComponent(selectedIncident.id)}`}
@@ -1832,6 +1879,23 @@ export function ProvincialGisOperationsMap() {
                 <article><span>Quantity</span><strong>{selectedWaterSource.quantity}</strong></article>
                 <article><span>Coordinates</span><strong>{selectedWaterSource.latitude.toFixed(7)}, {selectedWaterSource.longitude.toFixed(7)}</strong></article>
               </div>
+              {selectedWaterSourceGroup?.approximate && (
+                <div className="pbfp-water-modal__warning" role="note">
+                  The recorded coordinates appear far outside {selectedWaterSource.municipalityName}. This marker shows the approximate municipality center only; the source’s exact location needs field verification by Provincial BFP.
+                  {selectedWaterSourceGroup.sources.length > 1 && (
+                    <select
+                      className="pbfp-water-modal__select"
+                      aria-label="Choose a hydrant needing coordinate verification"
+                      value={selectedWaterSource.id}
+                      onChange={(event) => setSelectedWaterSource(selectedWaterSourceGroup.sources.find((source) => source.id === event.target.value) ?? null)}
+                    >
+                      {selectedWaterSourceGroup.sources.map((source) => (
+                        <option key={source.id} value={source.id}>{source.exactLocation}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
               <span className="pbfp-water-modal__origin">
                 <i className="fa-solid fa-file-shield" aria-hidden="true" />
                 {selectedWaterSource.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}

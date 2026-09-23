@@ -11,6 +11,7 @@ import { MunicipalGisIncidentModal, type DensityEvidencePayload } from "./munici
 import { MunicipalIncident, useMunicipalIncidentFeed } from "./use-municipal-incident-feed";
 import { densityRiskClass } from "../../lib/fire-reports/building-density-presentation";
 import type { WaterSource } from "../../lib/water-sources/types";
+import { groupWaterSourceMapMarkers, type WaterSourceMapGroup } from "../../lib/water-sources/map-positions";
 
 const DEFAULT_MAP_CENTER: [number, number] = [10.75, 121.94];
 const TERMINAL_STATUSES = new Set(["RESOLVED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "CLOSED"]);
@@ -86,9 +87,13 @@ const styles = `
   .mbfp-ops-water-pin{display:grid;width:46px;height:46px;place-items:center;border:3px solid #fff;border-radius:50% 50% 50% 0;background:#0f766e;color:#fff;font-size:1rem;box-shadow:0 8px 20px rgba(15,118,110,.42),0 0 0 6px rgba(15,118,110,.13);transform:rotate(-45deg)}
   .mbfp-ops-water-pin i{transform:rotate(45deg)}
   .mbfp-ops-water-pin.is-source{background:#0891b2}
+  .mbfp-ops-water-pin.is-approximate{background:#b45309}
+  .mbfp-ops-water-count{position:absolute;right:-13px;top:-8px;display:grid;min-width:25px;height:25px;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#92400e;color:#fff;font-size:.7rem;font-weight:800;transform:rotate(45deg)}
   .mbfp-ops-mode-switch{display:inline-flex;padding:.28rem;border:1px solid #cbd9e8;border-radius:12px;background:#fff;box-shadow:0 5px 14px rgba(15,23,42,.06)}
   .mbfp-ops-mode-button{display:inline-flex;align-items:center;justify-content:center;gap:.48rem;min-height:2.55rem;padding:.55rem 1rem;border:0;border-radius:9px;background:transparent;color:#52627a;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer}.mbfp-ops-mode-button.is-on{background:#0f766e;color:#fff;box-shadow:0 5px 12px rgba(15,118,110,.2)}.mbfp-ops-mode-button:focus-visible{outline:2px solid #0f766e;outline-offset:2px}
   .mbfp-water-modal{width:min(100%,660px)}.mbfp-water-modal .mbfp-gis-modal-kicker{color:#0f766e}.mbfp-water-modal__hero{display:grid;grid-template-columns:auto 1fr;gap:.9rem;align-items:center;padding:1rem;border:1px solid #bfe4dd;border-radius:15px;background:#f0fdfa}.mbfp-water-modal__icon{display:grid;width:52px;height:52px;place-items:center;border-radius:16px;background:#0f766e;color:#fff;font-size:1.25rem;box-shadow:0 10px 22px rgba(15,118,110,.22)}.mbfp-water-modal__kind{margin:0 0 .18rem;color:#0f766e;font-size:.7rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase}.mbfp-water-modal__location{margin:0;color:#132238;font-size:1rem;line-height:1.45}.mbfp-water-modal__origin{display:inline-flex;align-items:center;gap:.4rem;margin-top:1rem;padding:.5rem .65rem;border-radius:9px;background:#f1f5f9;color:#64748b;font-size:.72rem;font-weight:700}
+  .mbfp-water-modal__warning{margin:.8rem 0 0;padding:.85rem 1rem;border:1px solid #fcd34d;border-radius:12px;background:#fffbeb;color:#78350f;font-size:.82rem;line-height:1.5}
+  .mbfp-water-modal__select{width:100%;margin-top:.8rem;padding:.65rem .75rem;border:1px solid #d5dfeb;border-radius:10px;background:#fff;color:#132238;font:inherit}
 
   /* The key stays up: marker colours meant nothing until an incident was opened. */
   .mbfp-ops-legend{position:absolute;z-index:420;left:1rem;bottom:1rem;display:grid;gap:.34rem;max-width:250px;padding:.7rem .8rem;border:1px solid rgba(255,255,255,.85);border-radius:10px;background:rgba(255,255,255,.94);color:#334155;font-size:.72rem;line-height:1.3;box-shadow:0 8px 22px rgba(15,23,42,.16)}
@@ -153,30 +158,31 @@ function drawWaterSources(
   L: typeof import("leaflet"),
   map: import("leaflet").Map,
   layer: import("leaflet").LayerGroup,
-  sources: WaterSource[],
+  groups: WaterSourceMapGroup[],
   waterSourceId: string,
   onSelectSource: (source: WaterSource) => void,
 ) {
   layer.clearLayers();
   const points: [number, number][] = [];
-  sources.forEach((source) => {
-    if (!Number.isFinite(source.latitude) || !Number.isFinite(source.longitude)) return;
-    const point: [number, number] = [source.latitude, source.longitude];
+  groups.forEach((group) => {
+    const source = group.sources[0];
+    const point = group.point;
     points.push(point);
     const isHydrant = source.sourceKind === "FIRE_HYDRANT";
     const marker = L.marker(point, {
       icon: L.divIcon({
         className: "mbfp-ops-marker-wrapper",
-        html: `<span class="mbfp-ops-water-pin ${isHydrant ? "" : "is-source"}"><i class="fa-solid ${isHydrant ? "fa-fire-extinguisher" : "fa-droplet"}" aria-hidden="true"></i></span>`,
+        html: `<span class="mbfp-ops-water-pin ${isHydrant ? "" : "is-source"} ${group.approximate ? "is-approximate" : ""}"><i class="fa-solid ${isHydrant ? "fa-fire-extinguisher" : "fa-droplet"}" aria-hidden="true"></i>${group.approximate ? `<b class="mbfp-ops-water-count">${group.sources.length}</b>` : ""}</span>`,
         iconSize: [52, 52],
         iconAnchor: [26, 48],
       }),
     });
-    marker.on("click", () => onSelectSource(source));
+    marker.on("click", () => onSelectSource(group.sources.find((item) => item.id === waterSourceId) ?? source));
     marker.addTo(layer);
-    if (source.id === waterSourceId) {
-      map.setView(point, 17, { animate: false });
-      onSelectSource(source);
+    const focusedSource = group.sources.find((item) => item.id === waterSourceId);
+    if (focusedSource) {
+      map.setView(point, group.approximate ? 13 : 17, { animate: false });
+      onSelectSource(focusedSource);
     }
   });
   if (!waterSourceId && points.length === 1) map.setView(points[0], 16, { animate: false });
@@ -226,6 +232,7 @@ export function MunicipalGisOperationsMap() {
   const [mapReady, setMapReady] = useState(false);
   const [stations, setStations] = useState<StationMarker[]>([]);
   const [waterSources, setWaterSources] = useState<WaterSource[]>([]);
+  const waterSourceMapGroups = useMemo(() => groupWaterSourceMapMarkers(waterSources, MUNICIPAL_CENTERS), [waterSources]);
   const [selectedWaterSource, setSelectedWaterSource] = useState<WaterSource | null>(null);
   const [view, setView] = useState<MapView>("ALL");
   const [showStations, setShowStations] = useState(true);
@@ -317,12 +324,12 @@ export function MunicipalGisOperationsMap() {
     if (!L || !map || !mapReady) return;
     if (!waterSourceLayerRef.current) waterSourceLayerRef.current = L.layerGroup().addTo(map);
     if (showWaterSources) {
-      drawWaterSources(L, map, waterSourceLayerRef.current, waterSources, waterSourceId, setSelectedWaterSource);
+      drawWaterSources(L, map, waterSourceLayerRef.current, waterSourceMapGroups, waterSourceId, setSelectedWaterSource);
       if (!map.hasLayer(waterSourceLayerRef.current)) waterSourceLayerRef.current.addTo(map);
     } else {
       map.removeLayer(waterSourceLayerRef.current);
     }
-  }, [mapReady, showWaterSources, waterSourceId, waterSources]);
+  }, [mapReady, showWaterSources, waterSourceId, waterSourceMapGroups]);
 
   useEffect(() => {
     let disposed = false;
@@ -332,7 +339,13 @@ export function MunicipalGisOperationsMap() {
       if (disposed || !mapElement.current) return;
       map = L.map(mapElement.current, { zoomControl: false, attributionControl: true }).setView(DEFAULT_MAP_CENTER, 10);
       L.control.zoom({ position: "bottomright" }).addTo(map);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
+      L.tileLayer("https://tile.openstreetmap.de/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+        maxZoom: 19,
+        keepBuffer: 4,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+      }).addTo(map);
       const incidentLayer = L.layerGroup();
       leafletRef.current = L; mapRef.current = map; layerRef.current = incidentLayer;
       if (mapModeRef.current === "INCIDENTS") {
@@ -403,6 +416,9 @@ export function MunicipalGisOperationsMap() {
     [incidents],
   );
   const resolvedCount = incidents.length - activeCount;
+  const selectedWaterSourceGroup = selectedWaterSource
+    ? waterSourceMapGroups.find((group) => group.sources.some((source) => source.id === selectedWaterSource.id))
+    : undefined;
   const activeStationCount = useMemo(
     () => stations.filter((station) => station.status === "ACTIVE").length,
     [stations],
@@ -476,6 +492,47 @@ export function MunicipalGisOperationsMap() {
       {mapMode === "WATER_SOURCES" && waterSources.length === 0 && <div className="mbfp-ops-empty" role="status"><strong>No mapped water sources yet</strong><p>Add a hydrant or water source from the municipal water-source registry.</p></div>}</div>
     <footer className="mbfp-ops-footnote">{mapMode === "INCIDENTS" ? <><span className="mbfp-ops-summary"><strong>{incidents.length}</strong>{incidents.length === 1 ? "municipality-scoped report" : "municipality-scoped reports"} across {clusters.length} reported {clusters.length === 1 ? "location" : "locations"} for {stationName}.</span>{error ? <span className="mbfp-ops-error" role="alert">{error}</span> : <a className="mbfp-ops-queue-link" href="/municipal-bfp/active-incidents">Open active incident queue</a>}</> : <><span className="mbfp-ops-summary"><strong>{waterSources.length}</strong>{waterSources.length === 1 ? "mapped water source" : "mapped water sources"} for {stationName}.</span><a className="mbfp-ops-queue-link" href="/municipal-bfp/water-sources">Open water-source registry</a></>}</footer>
   </section>{selectedIncidents && <MunicipalGisIncidentModal incidents={selectedIncidents} onClose={closeIncident} onSelectedIncidentChange={setSelectedIncidentId} densityEvidence={densityEvidence} densityLoading={densityLoading} densityError={densityError} />}
-  {selectedWaterSource && createPortal(<div className="mbfp-gis-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedWaterSource(null); }}><section className="mbfp-gis-modal mbfp-water-modal" role="dialog" aria-modal="true" aria-labelledby="water-source-modal-title"><header className="mbfp-gis-modal-header"><div><p className="mbfp-gis-modal-kicker">Mapped municipal water network</p><h2 id="water-source-modal-title">Water source details</h2></div><button className="mbfp-gis-modal-close" type="button" aria-label="Close water source details" onClick={() => setSelectedWaterSource(null)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button></header><div className="mbfp-gis-modal-body"><section className="mbfp-water-modal__hero"><span className="mbfp-water-modal__icon"><i className={`fa-solid ${selectedWaterSource.sourceKind === "FIRE_HYDRANT" ? "fa-fire-extinguisher" : "fa-droplet"}`} aria-hidden="true" /></span><div><p className="mbfp-water-modal__kind">{selectedWaterSource.sourceKind === "FIRE_HYDRANT" ? "Fire hydrant" : "Water source"}</p><h3 className="mbfp-water-modal__location">{selectedWaterSource.exactLocation}</h3></div></section><div className="mbfp-gis-facts"><article><span>Type / color</span><strong>{selectedWaterSource.typeColor}</strong></article><article><span>Quantity</span><strong>{selectedWaterSource.quantity}</strong></article><article><span>Latitude</span><strong>{selectedWaterSource.latitude.toFixed(7)}</strong></article><article><span>Longitude</span><strong>{selectedWaterSource.longitude.toFixed(7)}</strong></article></div><span className="mbfp-water-modal__origin"><i className="fa-solid fa-file-shield" aria-hidden="true" />{selectedWaterSource.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</span></div></section></div>, document.body)}
+  {selectedWaterSource && createPortal(
+    <div
+      className="mbfp-gis-modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedWaterSource(null); }}
+    >
+      <section className="mbfp-gis-modal mbfp-water-modal" role="dialog" aria-modal="true" aria-labelledby="water-source-modal-title">
+        <header className="mbfp-gis-modal-header">
+          <div><p className="mbfp-gis-modal-kicker">Mapped municipal water network</p><h2 id="water-source-modal-title">Water source details</h2></div>
+          <button className="mbfp-gis-modal-close" type="button" aria-label="Close water source details" onClick={() => setSelectedWaterSource(null)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+        </header>
+        <div className="mbfp-gis-modal-body">
+          <section className="mbfp-water-modal__hero">
+            <span className="mbfp-water-modal__icon"><i className={`fa-solid ${selectedWaterSource.sourceKind === "FIRE_HYDRANT" ? "fa-fire-extinguisher" : "fa-droplet"}`} aria-hidden="true" /></span>
+            <div><p className="mbfp-water-modal__kind">{selectedWaterSource.sourceKind === "FIRE_HYDRANT" ? "Fire hydrant" : "Water source"}</p><h3 className="mbfp-water-modal__location">{selectedWaterSource.exactLocation}</h3></div>
+          </section>
+          <div className="mbfp-gis-facts">
+            <article><span>Type / color</span><strong>{selectedWaterSource.typeColor}</strong></article>
+            <article><span>Quantity</span><strong>{selectedWaterSource.quantity}</strong></article>
+            <article><span>Latitude</span><strong>{selectedWaterSource.latitude.toFixed(7)}</strong></article>
+            <article><span>Longitude</span><strong>{selectedWaterSource.longitude.toFixed(7)}</strong></article>
+          </div>
+          {selectedWaterSourceGroup?.approximate && (
+            <div className="mbfp-water-modal__warning" role="note">
+              The recorded coordinates appear far outside {selectedWaterSource.municipalityName}. This marker shows the approximate municipality center only; the source’s exact location needs field verification by Provincial BFP.
+              {selectedWaterSourceGroup.sources.length > 1 && (
+                <select
+                  className="mbfp-water-modal__select"
+                  aria-label="Choose a hydrant needing coordinate verification"
+                  value={selectedWaterSource.id}
+                  onChange={(event) => setSelectedWaterSource(selectedWaterSourceGroup.sources.find((source) => source.id === event.target.value) ?? null)}
+                >
+                  {selectedWaterSourceGroup.sources.map((source) => <option key={source.id} value={source.id}>{source.exactLocation}</option>)}
+                </select>
+              )}
+            </div>
+          )}
+          <span className="mbfp-water-modal__origin"><i className="fa-solid fa-file-shield" aria-hidden="true" />{selectedWaterSource.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</span>
+        </div>
+      </section>
+    </div>, document.body,
+  )}
   </main>;
 }
