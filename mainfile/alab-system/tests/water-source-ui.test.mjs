@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => fs.readFileSync(path, "utf8");
 
-test("municipal registry loads real data, adds records, and deep-links cards to the map", () => {
+test("municipal registry opens editable card details and retains a map action", () => {
   const source = read("app/_components/municipal-water-sources.tsx");
   assert.match(source, /api\/municipal-bfp\/water-sources/);
   assert.match(source, /method:\s*["']POST["']/);
@@ -14,6 +14,15 @@ test("municipal registry loads real data, adds records, and deep-links cards to 
   assert.match(source, /aria-modal=["']true["']/);
   assert.match(source, /step="0\.0000001"/);
   assert.match(source, />Retry</);
+  assert.match(source, /selectedSource/);
+  assert.match(source, /method:\s*["']PATCH["']/);
+  assert.match(source, /Edit location and quantity/);
+  assert.match(source, /View on map/);
+  assert.doesNotMatch(source, /<Link className="water-registry__card"/);
+  assert.match(source, /dialogRef/);
+  assert.match(source, /openerRef/);
+  assert.match(source, /event\.key === "Escape"/);
+  assert.match(source, /setAttribute\("inert"/);
 });
 
 test("municipal water source route renders the registry component instead of sample data", () => {
@@ -30,6 +39,14 @@ test("provincial registry groups real records by municipality with a details pan
   assert.match(source, /148 records from the BFP locator chart/);
   assert.match(source, /aria-pressed=/);
   assert.match(source, /All municipalities/);
+  assert.match(source, /selectedSource/);
+  assert.match(source, /method:\s*["']PATCH["']/);
+  assert.match(source, /Edit coordinates/);
+  assert.match(source, /View on map/);
+  assert.match(source, /dialogRef/);
+  assert.match(source, /openerRef/);
+  assert.match(source, /event\.key === "Escape"/);
+  assert.match(source, /setAttribute\("inert"/);
 });
 
 test("provincial water source route renders the grouped registry instead of sample data", () => {

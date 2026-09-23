@@ -74,3 +74,14 @@ test("paper import stores Hamtic hydrant type without pipe-size symbols", () => 
   assert.doesNotMatch(sql, /Wet Barrel \/ 2\\"/);
   assert.match(sql, /\('Hamtic',[^\n]+Wet Barrel'/);
 });
+
+test("water-source audit events support role-specific immutable updates", () => {
+  const sql = readdirSync(migrations)
+    .filter((file) => file.endsWith(".sql"))
+    .map((file) => readFileSync(join(migrations, file), "utf8"))
+    .join("\n");
+
+  assert.match(sql, /MUNICIPAL_UPDATED/);
+  assert.match(sql, /PROVINCIAL_COORDINATES_UPDATED/);
+  assert.match(sql, /prevent_water_source_event_mutation/i);
+});

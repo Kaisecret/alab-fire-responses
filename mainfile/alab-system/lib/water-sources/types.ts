@@ -38,6 +38,16 @@ export type CreateWaterSourceInput = {
   typeColor: string;
 };
 
+export type UpdateMunicipalWaterSourceInput = Pick<
+  CreateWaterSourceInput,
+  "exactLocation" | "quantity"
+>;
+
+export type UpdateProvincialWaterSourceCoordinatesInput = Pick<
+  CreateWaterSourceInput,
+  "latitude" | "longitude"
+>;
+
 export type MunicipalWaterSourceRegistry = {
   municipality: { id: string; name: string };
   summary: WaterSourceSummary;

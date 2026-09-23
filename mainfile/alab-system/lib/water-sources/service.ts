@@ -4,6 +4,8 @@ import type {
   MunicipalWaterSourceRegistry,
   MunicipalityWaterSourceSummary,
   ProvincialWaterSourceRegistry,
+  UpdateMunicipalWaterSourceInput,
+  UpdateProvincialWaterSourceCoordinatesInput,
   WaterSource,
   WaterSourceSummary,
 } from "./types";
@@ -21,6 +23,15 @@ export class WaterSourceValidationError extends Error {
   }
 }
 
+export class WaterSourceNotFoundError extends Error {
+  readonly code = "WATER_SOURCE_NOT_FOUND";
+
+  constructor() {
+    super("Water source not found.");
+    this.name = "WaterSourceNotFoundError";
+  }
+}
+
 function cleanText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength + 1) : "";
 }
@@ -29,6 +40,10 @@ function cleanTypeColor(value: unknown) {
   return cleanText(value, 120)
     .replace(/\s*\/\s*\d+(?:\.\d+|\s+\d+\/\d+)?\s*(?:"|in(?:ch(?:es)?)?)?\s*$/i, "")
     .trim();
+}
+
+function normalizeWaterSource(source: WaterSource): WaterSource {
+  return { ...source, typeColor: cleanTypeColor(source.typeColor) };
 }
 
 function finiteNumber(value: unknown) {
@@ -77,6 +92,38 @@ export function validateWaterSourceInput(raw: Record<string, unknown>): CreateWa
   };
 }
 
+export function validateMunicipalWaterSourceUpdate(
+  raw: Record<string, unknown>,
+): UpdateMunicipalWaterSourceInput {
+  const issues: ValidationIssues = {};
+  const exactLocation = cleanText(raw.exactLocation, 500);
+  const quantity = finiteNumber(raw.quantity);
+  if (exactLocation.length < 2 || exactLocation.length > 500) {
+    issues.exactLocation = "Enter a location between 2 and 500 characters.";
+  }
+  if (quantity === null || !Number.isInteger(quantity) || quantity < 1 || quantity > 999) {
+    issues.quantity = "Quantity must be a whole number from 1 to 999.";
+  }
+  if (Object.keys(issues).length > 0) throw new WaterSourceValidationError(issues);
+  return { exactLocation, quantity: quantity as number };
+}
+
+export function validateProvincialCoordinateUpdate(
+  raw: Record<string, unknown>,
+): UpdateProvincialWaterSourceCoordinatesInput {
+  const issues: ValidationIssues = {};
+  const latitude = finiteNumber(raw.latitude);
+  const longitude = finiteNumber(raw.longitude);
+  if (latitude === null || latitude < 4 || latitude > 22) {
+    issues.latitude = "Latitude must be between 4 and 22.";
+  }
+  if (longitude === null || longitude < 116 || longitude > 127) {
+    issues.longitude = "Longitude must be between 116 and 127.";
+  }
+  if (Object.keys(issues).length > 0) throw new WaterSourceValidationError(issues);
+  return { latitude: latitude as number, longitude: longitude as number };
+}
+
 export function summarizeWaterSources(sources: WaterSource[]): WaterSourceSummary {
   return sources.reduce<WaterSourceSummary>(
     (summary, source) => {
@@ -123,7 +170,7 @@ export async function listMunicipalWaterSources(
      order by lower(ws.exact_location), ws.id`,
     [municipalityId],
   );
-  const sources = result.rows;
+  const sources = result.rows.map(normalizeWaterSource);
   return {
     municipality: {
       id: municipalityId,
@@ -162,7 +209,7 @@ export async function listProvincialWaterSources(filters?: {
      order by lower(municipality.name), lower(ws.exact_location), ws.id`,
     [municipalityId],
   );
-  return { municipalities: municipalityResult.rows, sources: sourceResult.rows };
+  return { municipalities: municipalityResult.rows, sources: sourceResult.rows.map(normalizeWaterSource) };
 }
 
 export async function createMunicipalWaterSource(
@@ -226,6 +273,100 @@ export async function createMunicipalWaterSource(
         }),
       ],
     );
-    return source;
+    return normalizeWaterSource(source);
+  });
+}
+
+
+export async function updateMunicipalWaterSource(
+  actorUserId: string,
+  municipalityId: string,
+  waterSourceId: string,
+  raw: Record<string, unknown>,
+): Promise<WaterSource> {
+  const input = validateMunicipalWaterSourceUpdate(raw);
+  return withTransaction(async (client) => {
+    const updated = await client.query<WaterSource>(
+      `with updated as (
+         update water_sources ws
+            set exact_location = $3,
+                quantity = $4,
+                updated_at = now()
+          where ws.id = $1
+            and ws.municipality_id = $2
+         returning ws.*
+       )
+       select updated.id,
+              updated.municipality_id as "municipalityId",
+              municipality.name as "municipalityName",
+              updated.source_kind as "sourceKind",
+              updated.quantity,
+              updated.exact_location as "exactLocation",
+              updated.latitude::float as latitude,
+              updated.longitude::float as longitude,
+              updated.type_color as "typeColor",
+              updated.record_origin as "recordOrigin",
+              updated.created_at as "createdAt"
+         from updated
+         join municipalities municipality on municipality.id = updated.municipality_id`,
+      [waterSourceId, municipalityId, input.exactLocation, input.quantity],
+    );
+    const source = updated.rows[0];
+    if (!source) throw new WaterSourceNotFoundError();
+    await client.query(
+      `insert into water_source_events (
+         water_source_id, municipality_id, actor_user_id, action, metadata
+       ) values ($1, $2, $3, $4, $5::jsonb)`,
+      [source.id, source.municipalityId, actorUserId, "MUNICIPAL_UPDATED", JSON.stringify(input)],
+    );
+    return normalizeWaterSource(source);
+  });
+}
+
+export async function updateProvincialWaterSourceCoordinates(
+  actorUserId: string,
+  waterSourceId: string,
+  raw: Record<string, unknown>,
+): Promise<WaterSource> {
+  const input = validateProvincialCoordinateUpdate(raw);
+  return withTransaction(async (client) => {
+    const updated = await client.query<WaterSource>(
+      `with updated as (
+         update water_sources ws
+            set latitude = $2,
+                longitude = $3,
+                updated_at = now()
+          where ws.id = $1
+            and exists (
+              select 1 from municipalities municipality
+               where municipality.id = ws.municipality_id
+                 and municipality.province = 'Antique'
+            )
+         returning ws.*
+       )
+       select updated.id,
+              updated.municipality_id as "municipalityId",
+              municipality.name as "municipalityName",
+              updated.source_kind as "sourceKind",
+              updated.quantity,
+              updated.exact_location as "exactLocation",
+              updated.latitude::float as latitude,
+              updated.longitude::float as longitude,
+              updated.type_color as "typeColor",
+              updated.record_origin as "recordOrigin",
+              updated.created_at as "createdAt"
+         from updated
+         join municipalities municipality on municipality.id = updated.municipality_id`,
+      [waterSourceId, input.latitude, input.longitude],
+    );
+    const source = updated.rows[0];
+    if (!source) throw new WaterSourceNotFoundError();
+    await client.query(
+      `insert into water_source_events (
+         water_source_id, municipality_id, actor_user_id, action, metadata
+       ) values ($1, $2, $3, $4, $5::jsonb)`,
+      [source.id, source.municipalityId, actorUserId, "PROVINCIAL_COORDINATES_UPDATED", JSON.stringify(input)],
+    );
+    return normalizeWaterSource(source);
   });
 }

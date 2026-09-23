@@ -159,3 +159,73 @@ test("provincial GET passes only a validated optional municipality filter", asyn
   assert.deepEqual(filters, { municipalityId: "a4ba607b-8863-4f0f-bcaf-a86beb0acb29" });
   assert.equal(response.body.municipalities[0].municipalityName, "Hamtic");
 });
+
+test("municipal PATCH scopes edits to the signed municipal admin", async () => {
+  let update;
+  const route = loadServerModule("app/api/municipal-bfp/water-sources/route.ts", {
+    "next/server": nextServer,
+    "../../../../lib/municipal-bfp/auth": {
+      requireMunicipalBfp: async () => ({}),
+      requireMunicipalAdmin: async () => ({ userId: "admin-1", municipalityId: "hamtic-id" }),
+      isAuthorizationResponse: () => false,
+    },
+    "../../../../lib/water-sources/service": {
+      listMunicipalWaterSources: async () => ({ sources: [] }),
+      createMunicipalWaterSource: async () => ({}),
+      updateMunicipalWaterSource: async (...args) => { update = args; return { id: args[2] }; },
+      WaterSourceValidationError: class extends Error {},
+      WaterSourceNotFoundError: class extends Error {},
+    },
+  });
+
+  const response = await route.PATCH({ json: async () => ({ id: "source-1", exactLocation: "Poblacion 2", quantity: 2, latitude: 1 }) });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(update.slice(0, 3), ["admin-1", "hamtic-id", "source-1"]);
+});
+
+test("provincial PATCH sends only an authenticated provincial coordinate edit", async () => {
+  let update;
+  const route = loadServerModule("app/api/provincial-bfp/water-sources/route.ts", {
+    "next/server": nextServer,
+    "../../../../lib/provincial-bfp/auth": {
+      requireProvincialBfp: async () => ({ userId: "province-1" }),
+      isProvincialAuthorizationResponse: () => false,
+    },
+    "../../../../lib/water-sources/service": {
+      listProvincialWaterSources: async () => ({ municipalities: [], sources: [] }),
+      updateProvincialWaterSourceCoordinates: async (...args) => { update = args; return { id: args[1] }; },
+      WaterSourceValidationError: class extends Error {},
+      WaterSourceNotFoundError: class extends Error {},
+    },
+  });
+
+  const response = await route.PATCH({ json: async () => ({ id: "source-1", latitude: 10.7, longitude: 121.98, exactLocation: "Forbidden" }) });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(update.slice(0, 2), ["province-1", "source-1"]);
+});
+
+test("provincial PATCH maps a coordinate collision to a safe conflict", async () => {
+  const route = loadServerModule("app/api/provincial-bfp/water-sources/route.ts", {
+    "next/server": nextServer,
+    "../../../../lib/provincial-bfp/auth": {
+      requireProvincialBfp: async () => ({ userId: "province-1" }),
+      isProvincialAuthorizationResponse: () => false,
+    },
+    "../../../../lib/water-sources/service": {
+      listProvincialWaterSources: async () => ({ municipalities: [], sources: [] }),
+      updateProvincialWaterSourceCoordinates: async () => {
+        throw Object.assign(new Error("private SQL"), { code: "23505" });
+      },
+      WaterSourceValidationError: class extends Error {},
+      WaterSourceNotFoundError: class extends Error {},
+    },
+  });
+
+  const response = await route.PATCH({ json: async () => ({ id: "source-1", latitude: 10.7, longitude: 121.98 }) });
+
+  assert.equal(response.status, 409);
+  assert.equal(response.body.error, "Another water source already uses this location and coordinates.");
+  assert.equal(JSON.stringify(response.body).includes("private SQL"), false);
+});

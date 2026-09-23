@@ -48,6 +48,11 @@ test("water-source migration executes and imports the paper registry safely", as
       "utf8",
     );
     await db.exec(normalization);
+    const updateEvents = readFileSync(
+      "supabase/migrations/20260923142210_allow_water_source_update_events.sql",
+      "utf8",
+    );
+    await db.exec(updateEvents);
     const normalized = await db.query(
       `select type_color from public.water_sources
        where exact_location like 'Poblacion 2, Hamtic%'`,
@@ -57,6 +62,39 @@ test("water-source migration executes and imports the paper registry safely", as
       `select count(*)::int as count from public.water_sources where type_color = 'Wet Barrel/Red'`,
     );
     assert.equal(colored.rows[0].count, 5);
+
+    const source = await db.query(
+      `select source.id, source.municipality_id
+         from public.water_sources source
+         join public.municipalities municipality on municipality.id = source.municipality_id
+        where municipality.name = 'Hamtic'
+        limit 1`,
+    );
+    const actorId = crypto.randomUUID();
+    await db.query("insert into public.users (id) values ($1)", [actorId]);
+    await db.query(
+      `insert into public.water_source_events
+        (water_source_id, municipality_id, actor_user_id, action)
+       values ($1, $2, $3, 'MUNICIPAL_UPDATED'),
+              ($1, $2, $3, 'PROVINCIAL_COORDINATES_UPDATED')`,
+      [source.rows[0].id, source.rows[0].municipality_id, actorId],
+    );
+    const eventCount = await db.query(
+      "select count(*)::int as count from public.water_source_events",
+    );
+    assert.equal(eventCount.rows[0].count, 2);
+    await assert.rejects(
+      db.query("update public.water_source_events set metadata = '{\"changed\":true}'::jsonb"),
+      /audit events are immutable/i,
+    );
+    await assert.rejects(
+      db.query("delete from public.water_source_events"),
+      /audit events are immutable/i,
+    );
+    const immutableCount = await db.query(
+      "select count(*)::int as count from public.water_source_events",
+    );
+    assert.equal(immutableCount.rows[0].count, 2);
 
     await assert.rejects(
       db.query(`insert into public.water_sources

@@ -176,6 +176,7 @@ test("municipal reads derive totals from only the scoped rows", async () => {
 
   assert.equal(registry.municipality.name, "Hamtic");
   assert.equal(registry.sources.length, 2);
+  assert.ok(registry.sources.every((source) => source.typeColor === "Wet Barrel"));
   assert.deepEqual(registry.summary, {
     sourceCount: 2,
     totalQuantity: 2,
@@ -184,6 +185,56 @@ test("municipal reads derive totals from only the scoped rows", async () => {
     importedCount: 2,
     manualCount: 0,
   });
+});
+
+test("municipal edits update only location and quantity inside the signed municipality", async () => {
+  const calls = [];
+  const database = {
+    query: async (sql, params) => {
+      calls.push({ sql, params });
+      if (/update water_sources/i.test(sql)) {
+        return { rows: [{ id: "source-1", municipalityId: "hamtic-id", municipalityName: "Hamtic", sourceKind: "FIRE_HYDRANT", quantity: 3, exactLocation: "New location", latitude: 10.7, longitude: 121.98, typeColor: "Wet Barrel", recordOrigin: "BFP_LOCATOR_CHART_2018", createdAt: new Date() }] };
+      }
+      return { rows: [] };
+    },
+  };
+  const service = loadService(database);
+
+  const updated = await service.updateMunicipalWaterSource("actor-1", "hamtic-id", "source-1", {
+    exactLocation: " New location ", quantity: "3", latitude: 1, longitude: 2,
+  });
+
+  assert.equal(updated.exactLocation, "New location");
+  assert.match(calls[0].sql, /set exact_location = \$3,\s*quantity = \$4/i);
+  assert.match(calls[0].sql, /where ws\.id = \$1\s+and ws\.municipality_id = \$2/i);
+  assert.doesNotMatch(calls[0].sql, /set[\s\S]*latitude\s*=/i);
+  assert.deepEqual(calls[0].params, ["source-1", "hamtic-id", "New location", 3]);
+  assert.equal(calls[1].params[3], "MUNICIPAL_UPDATED");
+});
+
+test("provincial edits update only coordinates for an Antique water source", async () => {
+  const calls = [];
+  const database = {
+    query: async (sql, params) => {
+      calls.push({ sql, params });
+      if (/update water_sources/i.test(sql)) {
+        return { rows: [{ id: "source-1", municipalityId: "hamtic-id", municipalityName: "Hamtic", sourceKind: "FIRE_HYDRANT", quantity: 1, exactLocation: "Poblacion 2", latitude: 10.7012, longitude: 121.9818, typeColor: 'Wet Barrel / 2"', recordOrigin: "BFP_LOCATOR_CHART_2018", createdAt: new Date() }] };
+      }
+      return { rows: [] };
+    },
+  };
+  const service = loadService(database);
+
+  const updated = await service.updateProvincialWaterSourceCoordinates("province-1", "source-1", {
+    latitude: "10.7012", longitude: "121.9818", exactLocation: "Forbidden",
+  });
+
+  assert.equal(updated.typeColor, "Wet Barrel");
+  assert.match(calls[0].sql, /set latitude = \$2,\s*longitude = \$3/i);
+  assert.match(calls[0].sql, /municipality\.province = 'Antique'/i);
+  assert.doesNotMatch(calls[0].sql, /set[\s\S]*exact_location\s*=/i);
+  assert.deepEqual(calls[0].params, ["source-1", 10.7012, 121.9818]);
+  assert.equal(calls[1].params[3], "PROVINCIAL_COORDINATES_UPDATED");
 });
 
 test("provincial reads include zero-count municipalities and honor the filter", async () => {
