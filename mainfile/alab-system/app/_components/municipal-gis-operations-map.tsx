@@ -89,6 +89,7 @@ const styles = `
   .mbfp-ops-water-pin.is-source{background:#0891b2}
   .mbfp-ops-water-pin.is-approximate{background:#b45309}
   .mbfp-ops-water-count{position:absolute;right:-13px;top:-8px;display:grid;min-width:25px;height:25px;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#92400e;color:#fff;font-size:.7rem;font-weight:800;transform:rotate(45deg)}
+  .mbfp-ops-water-count.is-test{right:-21px;min-width:40px;font-size:.55rem;letter-spacing:.02em}
   .mbfp-ops-mode-switch{display:inline-flex;padding:.28rem;border:1px solid #cbd9e8;border-radius:12px;background:#fff;box-shadow:0 5px 14px rgba(15,23,42,.06)}
   .mbfp-ops-mode-button{display:inline-flex;align-items:center;justify-content:center;gap:.48rem;min-height:2.55rem;padding:.55rem 1rem;border:0;border-radius:9px;background:transparent;color:#52627a;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer}.mbfp-ops-mode-button.is-on{background:#0f766e;color:#fff;box-shadow:0 5px 12px rgba(15,118,110,.2)}.mbfp-ops-mode-button:focus-visible{outline:2px solid #0f766e;outline-offset:2px}
   .mbfp-water-modal{width:min(100%,660px)}.mbfp-water-modal .mbfp-gis-modal-kicker{color:#0f766e}.mbfp-water-modal__hero{display:grid;grid-template-columns:auto 1fr;gap:.9rem;align-items:center;padding:1rem;border:1px solid #bfe4dd;border-radius:15px;background:#f0fdfa}.mbfp-water-modal__icon{display:grid;width:52px;height:52px;place-items:center;border-radius:16px;background:#0f766e;color:#fff;font-size:1.25rem;box-shadow:0 10px 22px rgba(15,118,110,.22)}.mbfp-water-modal__kind{margin:0 0 .18rem;color:#0f766e;font-size:.7rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase}.mbfp-water-modal__location{margin:0;color:#132238;font-size:1rem;line-height:1.45}.mbfp-water-modal__origin{display:inline-flex;align-items:center;gap:.4rem;margin-top:1rem;padding:.5rem .65rem;border-radius:9px;background:#f1f5f9;color:#64748b;font-size:.72rem;font-weight:700}
@@ -103,6 +104,7 @@ const styles = `
   .mbfp-ops-key.key-history{background:#64748b}
   .mbfp-ops-key.key-station{background:#2563eb}
   .mbfp-ops-key.key-water-source{background:#0f766e}
+  .mbfp-ops-key.key-water-test{background:#b45309}
   .mbfp-ops-key.key-density{background:#ef4444;opacity:.45;border:1px solid #b91c1c}
 
   @media(max-width:720px){.mbfp-ops-controls{align-items:stretch;flex-direction:column}.mbfp-ops-segmented{justify-content:stretch}.mbfp-ops-segment{flex:1}.mbfp-ops-legend{left:.6rem;bottom:.6rem;font-size:.68rem}}
@@ -172,7 +174,7 @@ function drawWaterSources(
     const marker = L.marker(point, {
       icon: L.divIcon({
         className: "mbfp-ops-marker-wrapper",
-        html: `<span class="mbfp-ops-water-pin ${isHydrant ? "" : "is-source"} ${group.approximate ? "is-approximate" : ""}"><i class="fa-solid ${isHydrant ? "fa-fire-extinguisher" : "fa-droplet"}" aria-hidden="true"></i>${group.approximate ? `<b class="mbfp-ops-water-count">${group.sources.length}</b>` : ""}</span>`,
+        html: `<span class="mbfp-ops-water-pin ${isHydrant ? "" : "is-source"} ${group.approximate ? "is-approximate" : ""}"><i class="fa-solid ${isHydrant ? "fa-fire-extinguisher" : "fa-droplet"}" aria-hidden="true"></i>${group.testOnly ? '<b class="mbfp-ops-water-count is-test">TEST</b>' : group.approximate ? `<b class="mbfp-ops-water-count">${group.sources.length}</b>` : ""}</span>`,
         iconSize: [52, 52],
         iconAnchor: [26, 48],
       }),
@@ -181,7 +183,7 @@ function drawWaterSources(
     marker.addTo(layer);
     const focusedSource = group.sources.find((item) => item.id === waterSourceId);
     if (focusedSource) {
-      map.setView(point, group.approximate ? 13 : 17, { animate: false });
+      map.setView(point, group.testOnly ? 16 : group.approximate ? 13 : 17, { animate: false });
       onSelectSource(focusedSource);
     }
   });
@@ -486,6 +488,7 @@ export function MunicipalGisOperationsMap() {
       <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-history" aria-hidden="true" />Resolved or closed</span></>}
       {mapMode === "INCIDENTS" && showStations && <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-station" aria-hidden="true" />Station · {STATION_COVERAGE_METERS / 1000} km reach</span>}
       {mapMode === "WATER_SOURCES" && <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-water-source" aria-hidden="true" />Hydrant or water source</span>}
+      {mapMode === "WATER_SOURCES" && waterSourceMapGroups.some((group) => group.testOnly) && <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-water-test" aria-hidden="true" />TEST only · location not verified</span>}
       {densityEvidence && <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-density" aria-hidden="true" />Mapped structures near the fire</span>}
     </aside>{mapMode === "INCIDENTS" && !loading && !error && incidents.length === 0 && <div className="mbfp-ops-empty" role="status"><strong>No incidents have been reported in your assigned municipality</strong><p>The map is centered on {stationName}. New resident alerts appear automatically.</p></div>}
       {mapMode === "INCIDENTS" && !loading && !error && incidents.length > 0 && view === "ACTIVE" && activeCount === 0 && <div className="mbfp-ops-empty" role="status"><strong>Nothing is burning right now</strong><p>Every incident in {stationName} is resolved or closed. Switch to History to see them.</p></div>}
@@ -511,12 +514,14 @@ export function MunicipalGisOperationsMap() {
           <div className="mbfp-gis-facts">
             <article><span>Type / color</span><strong>{selectedWaterSource.typeColor}</strong></article>
             <article><span>Quantity</span><strong>{selectedWaterSource.quantity}</strong></article>
-            <article><span>Latitude</span><strong>{selectedWaterSource.latitude.toFixed(7)}</strong></article>
-            <article><span>Longitude</span><strong>{selectedWaterSource.longitude.toFixed(7)}</strong></article>
+            <article><span>Recorded latitude</span><strong>{selectedWaterSource.latitude.toFixed(7)}</strong></article>
+            <article><span>Recorded longitude</span><strong>{selectedWaterSource.longitude.toFixed(7)}</strong></article>
           </div>
           {selectedWaterSourceGroup?.approximate && (
             <div className="mbfp-water-modal__warning" role="note">
-              The recorded coordinates appear far outside {selectedWaterSource.municipalityName}. This marker shows the approximate municipality center only; the source’s exact location needs field verification by Provincial BFP.
+              {selectedWaterSourceGroup.testOnly
+                ? "TEST POSITION ONLY: This marker is artificially placed near Belison for map testing. It is not the hydrant’s verified location. The recorded coordinates above remain unchanged and need field verification."
+                : `The recorded coordinates appear far outside ${selectedWaterSource.municipalityName}. This marker shows the approximate municipality center only; the source’s exact location needs field verification by Provincial BFP.`}
               {selectedWaterSourceGroup.sources.length > 1 && (
                 <select
                   className="mbfp-water-modal__select"

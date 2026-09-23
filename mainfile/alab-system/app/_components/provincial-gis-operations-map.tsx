@@ -572,6 +572,12 @@ const styles = `
     font-weight: 800;
     transform: rotate(45deg);
   }
+  .mbfp-ops-water-count.is-test {
+    right: -21px;
+    min-width: 40px;
+    font-size: 0.55rem;
+    letter-spacing: 0.02em;
+  }
   .mbfp-ops-marker-count {
     position: absolute;
     right: -1px;
@@ -647,6 +653,9 @@ const styles = `
   }
   .mbfp-ops-key.key-water-source {
     background: #0f766e;
+  }
+  .mbfp-ops-key.key-water-test {
+    background: #b45309;
   }
 
   /* Empty state */
@@ -1116,7 +1125,7 @@ function drawWaterSources(
     const marker = L.marker(point, {
       icon: L.divIcon({
         className: "mbfp-ops-marker-wrapper",
-        html: `<span class="mbfp-ops-water-pin ${isHydrant ? "" : "is-source"} ${group.approximate ? "is-approximate" : ""}"><i class="fa-solid ${isHydrant ? "fa-fire-extinguisher" : "fa-droplet"}" aria-hidden="true"></i>${group.approximate ? `<b class="mbfp-ops-water-count">${group.sources.length}</b>` : ""}</span>`,
+        html: `<span class="mbfp-ops-water-pin ${isHydrant ? "" : "is-source"} ${group.approximate ? "is-approximate" : ""}"><i class="fa-solid ${isHydrant ? "fa-fire-extinguisher" : "fa-droplet"}" aria-hidden="true"></i>${group.testOnly ? '<b class="mbfp-ops-water-count is-test">TEST</b>' : group.approximate ? `<b class="mbfp-ops-water-count">${group.sources.length}</b>` : ""}</span>`,
         iconSize: [52, 52],
         iconAnchor: [26, 48],
       }),
@@ -1125,7 +1134,7 @@ function drawWaterSources(
     marker.addTo(layer);
     const focusedSource = group.sources.find((item) => item.id === waterSourceId);
     if (focusedSource) {
-      map.setView(point, group.approximate ? 13 : 17, { animate: false });
+      map.setView(point, group.testOnly ? 16 : group.approximate ? 13 : 17, { animate: false });
       onSelectSource(focusedSource);
     }
   });
@@ -1649,6 +1658,10 @@ export function ProvincialGisOperationsMap() {
               <i className="mbfp-ops-key key-water-source" aria-hidden="true" />
               Hydrant or water source
             </span>}
+            {mapMode === "WATER_SOURCES" && waterSourceMapGroups.some((group) => group.testOnly) && <span className="mbfp-ops-legend-row">
+              <i className="mbfp-ops-key key-water-test" aria-hidden="true" />
+              TEST only · location not verified
+            </span>}
           </aside>
 
           {mapMode === "INCIDENTS" && !loading && !error && incidents.length === 0 && (
@@ -1877,11 +1890,13 @@ export function ProvincialGisOperationsMap() {
                 <article><span>Municipality</span><strong>{selectedWaterSource.municipalityName}</strong></article>
                 <article><span>Type / color</span><strong>{selectedWaterSource.typeColor}</strong></article>
                 <article><span>Quantity</span><strong>{selectedWaterSource.quantity}</strong></article>
-                <article><span>Coordinates</span><strong>{selectedWaterSource.latitude.toFixed(7)}, {selectedWaterSource.longitude.toFixed(7)}</strong></article>
+                <article><span>Recorded coordinates</span><strong>{selectedWaterSource.latitude.toFixed(7)}, {selectedWaterSource.longitude.toFixed(7)}</strong></article>
               </div>
               {selectedWaterSourceGroup?.approximate && (
                 <div className="pbfp-water-modal__warning" role="note">
-                  The recorded coordinates appear far outside {selectedWaterSource.municipalityName}. This marker shows the approximate municipality center only; the source’s exact location needs field verification by Provincial BFP.
+                  {selectedWaterSourceGroup.testOnly
+                    ? "TEST POSITION ONLY: This marker is artificially placed near Belison for map testing. It is not the hydrant’s verified location. The recorded coordinates above remain unchanged and need field verification."
+                    : `The recorded coordinates appear far outside ${selectedWaterSource.municipalityName}. This marker shows the approximate municipality center only; the source’s exact location needs field verification by Provincial BFP.`}
                   {selectedWaterSourceGroup.sources.length > 1 && (
                     <select
                       className="pbfp-water-modal__select"
