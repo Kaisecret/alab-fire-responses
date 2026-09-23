@@ -49,7 +49,7 @@ const styles = `
 
 export function ProvincialWaterSources() {
   const [registry, setRegistry] = useState<ProvincialWaterSourceRegistry | null>(null);
-  const [selectedMunicipality, setSelectedMunicipality] = useState("");
+  const [selectedMunicipality, setSelectedMunicipality] = useState("ALL");
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
 
@@ -57,18 +57,19 @@ export function ProvincialWaterSources() {
     const controller = new AbortController();
     fetch("/api/provincial-bfp/water-sources", { cache: "no-store", signal: controller.signal })
       .then(async (response) => { if (!response.ok) throw new Error("Unable to load the provincial registry."); return response.json(); })
-      .then((data: ProvincialWaterSourceRegistry) => { setRegistry(data); setSelectedMunicipality(data.municipalities[0]?.municipalityId ?? ""); })
+      .then((data: ProvincialWaterSourceRegistry) => { setRegistry(data); })
       .catch((reason) => { if (reason?.name !== "AbortError") setError(reason instanceof Error ? reason.message : "Unable to load the provincial registry."); });
     return () => controller.abort();
   }, []);
 
-  const selected = registry?.municipalities.find((item) => item.municipalityId === selectedMunicipality);
-  const records = useMemo(() => {
-    const value = query.trim().toLowerCase();
-    return (registry?.sources ?? []).filter((source) => source.municipalityId === selectedMunicipality && (!value || `${source.exactLocation} ${source.typeColor}`.toLowerCase().includes(value)));
-  }, [query, registry, selectedMunicipality]);
   const totalLocations = registry?.municipalities.reduce((sum, item) => sum + item.sourceCount, 0) ?? 0;
   const totalHydrants = registry?.municipalities.reduce((sum, item) => sum + item.fireHydrantCount, 0) ?? 0;
+  const selected = registry?.municipalities.find((item) => item.municipalityId === selectedMunicipality);
+  const allSelected = selectedMunicipality === "ALL";
+  const records = useMemo(() => {
+    const value = query.trim().toLowerCase();
+    return (registry?.sources ?? []).filter((source) => (selectedMunicipality === "ALL" || source.municipalityId === selectedMunicipality) && (!value || `${source.exactLocation} ${source.typeColor} ${source.municipalityName}`.toLowerCase().includes(value)));
+  }, [query, registry, selectedMunicipality]);
 
   return <>
     <style>{styles}</style>
@@ -76,8 +77,8 @@ export function ProvincialWaterSources() {
       <header className="prov-water__header"><div><p className="prov-water__eyebrow">Antique provincial overview</p><h1>Water sources by municipality</h1><p className="prov-water__subtitle">A municipality-level view of 148 records from the BFP locator chart, with exact coordinates, source type, color, and locally added records.</p></div><span className="prov-water__badge"><i className="fa-solid fa-file-shield" /> BFP source register</span></header>
       <section className="prov-water__summary" aria-label="Provincial totals"><div><strong>{registry?.municipalities.length ?? 0}</strong><span>Municipalities</span></div><div><strong>{totalLocations}</strong><span>Mapped locations</span></div><div><strong>{totalHydrants}</strong><span>Fire hydrants</span></div></section>
       {error ? <div className="prov-water__panel prov-water__empty">{error}</div> : !registry ? <div className="prov-water__panel prov-water__empty">Loading the province-wide registry…</div> : <div className="prov-water__layout">
-        <section className="prov-water__panel"><header className="prov-water__panel-head"><h2>Municipal registry</h2><span>Select a municipality</span></header><div className="prov-water__municipalities">{registry.municipalities.map((municipality) => <button type="button" key={municipality.municipalityId} className={`prov-water__municipality ${municipality.municipalityId === selectedMunicipality ? "is-active" : ""}`} onClick={() => { setSelectedMunicipality(municipality.municipalityId); setQuery(""); }}><strong>{municipality.municipalityName}</strong><span>{municipality.fireHydrantCount} hydrants · {municipality.waterSourceCount} other sources</span><b>{municipality.sourceCount}</b></button>)}</div></section>
-        <section className="prov-water__panel prov-water__detail"><header className="prov-water__panel-head"><div><h2>{selected?.municipalityName || "Municipality"}</h2><span>{selected?.sourceCount ?? 0} mapped locations</span></div><input className="prov-water__search" aria-label="Search selected municipality" placeholder="Search location or type" value={query} onChange={(event) => setQuery(event.target.value)} /></header>{records.length === 0 ? <div className="prov-water__empty">No water-source records found for this municipality.</div> : <div className="prov-water__records">{records.map((source) => <Link key={source.id} className="prov-water__record" href={`/provincial-bfp/gis-map?municipalityId=${source.municipalityId}&waterSource=${source.id}`}><span className="prov-water__record-icon"><i className={source.sourceKind === "FIRE_HYDRANT" ? "fa-solid fa-fire-extinguisher" : "fa-solid fa-droplet"} /></span><div><h3>{source.exactLocation}</h3><p>{source.typeColor} · {source.latitude.toFixed(6)}, {source.longitude.toFixed(6)}</p></div><div className="prov-water__record-meta"><strong>Qty. {source.quantity}</strong><span>View on map →</span></div></Link>)}</div>}</section>
+        <section className="prov-water__panel"><header className="prov-water__panel-head"><h2>Municipal registry</h2><span>Select a municipality</span></header><div className="prov-water__municipalities"><button type="button" className={`prov-water__municipality ${allSelected ? "is-active" : ""}`} aria-pressed={allSelected} onClick={() => { setSelectedMunicipality("ALL"); setQuery(""); }}><strong>All municipalities</strong><span>Province-wide water-source registry</span><b>{totalLocations}</b></button>{registry.municipalities.map((municipality) => <button type="button" key={municipality.municipalityId} className={`prov-water__municipality ${municipality.municipalityId === selectedMunicipality ? "is-active" : ""}`} aria-pressed={municipality.municipalityId === selectedMunicipality} onClick={() => { setSelectedMunicipality(municipality.municipalityId); setQuery(""); }}><strong>{municipality.municipalityName}</strong><span>{municipality.fireHydrantCount} hydrants · {municipality.waterSourceCount} other sources</span><b>{municipality.sourceCount}</b></button>)}</div></section>
+        <section className="prov-water__panel prov-water__detail"><header className="prov-water__panel-head"><div><h2>{allSelected ? "All municipalities" : selected?.municipalityName || "Municipality"}</h2><span>{allSelected ? totalLocations : selected?.sourceCount ?? 0} mapped locations</span></div><input className="prov-water__search" aria-label="Search selected municipality" placeholder="Search location or type" value={query} onChange={(event) => setQuery(event.target.value)} /></header>{records.length === 0 ? <div className="prov-water__empty">No water-source records found for this municipality.</div> : <div className="prov-water__records">{records.map((source) => <Link key={source.id} className="prov-water__record" href={`/provincial-bfp/gis-map?municipalityId=${source.municipalityId}&waterSource=${source.id}`}><span className="prov-water__record-icon"><i className={source.sourceKind === "FIRE_HYDRANT" ? "fa-solid fa-fire-extinguisher" : "fa-solid fa-droplet"} /></span><div><h3>{source.exactLocation}</h3><p>{source.municipalityName} · {source.typeColor} · {source.latitude.toFixed(7)}, {source.longitude.toFixed(7)}</p></div><div className="prov-water__record-meta"><strong>Qty. {source.quantity}</strong><span>View on map →</span></div></Link>)}</div>}</section>
       </div>}
     </main>
   </>;

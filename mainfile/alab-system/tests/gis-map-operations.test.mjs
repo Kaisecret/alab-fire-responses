@@ -78,6 +78,7 @@ test("municipal water sources are a classified map layer with focused popups", (
   assert.match(component, /\/api\/municipal-bfp\/water-sources/);
   assert.match(component, /function drawWaterSources/);
   assert.match(component, /showWaterSources/);
+  assert.match(component, /useSearchParams/);
   assert.match(component, /waterSourceId/);
   assert.match(component, /source\.sourceKind === "FIRE_HYDRANT"/);
   assert.match(component, /Type \/ color/);

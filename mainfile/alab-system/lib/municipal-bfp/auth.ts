@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getBfpIdentity, type BfpIdentity } from "../auth/bfp-accounts";
 import { isLocalUiPreviewEnabled } from "../auth/local-ui-preview";
-import { bfpSessionCookieName, resolveMunicipalSession, verifyBfpSession } from "../auth/session";
+import { resolveMunicipalSession } from "../auth/session";
 
 export type MunicipalAdminIdentity = BfpIdentity & {
   municipalityId: string;

@@ -1,6 +1,7 @@
 "use client";
 
 import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
+import { useSearchParams } from "next/navigation";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
@@ -173,7 +174,7 @@ function drawWaterSources(
         iconAnchor: [18, 31],
       }),
     }).bindPopup(
-      `<section class="mbfp-water-popup"><span class="mbfp-water-popup__kind">${isHydrant ? "Fire hydrant" : "Water source"}</span><strong>${escapeHtml(source.exactLocation)}</strong><dl><dt>Type / color</dt><dd>${escapeHtml(source.typeColor)}</dd><dt>Quantity</dt><dd>${escapeHtml(source.quantity)}</dd><dt>Coordinates</dt><dd>${source.latitude.toFixed(6)}, ${source.longitude.toFixed(6)}</dd></dl><p class="mbfp-water-popup__origin">${source.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</p></section>`,
+      `<section class="mbfp-water-popup"><span class="mbfp-water-popup__kind">${isHydrant ? "Fire hydrant" : "Water source"}</span><strong>${escapeHtml(source.exactLocation)}</strong><dl><dt>Type / color</dt><dd>${escapeHtml(source.typeColor)}</dd><dt>Quantity</dt><dd>${escapeHtml(source.quantity)}</dd><dt>Coordinates</dt><dd>${source.latitude.toFixed(7)}, ${source.longitude.toFixed(7)}</dd></dl><p class="mbfp-water-popup__origin">${source.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</p></section>`,
       { maxWidth: 300 },
     );
     marker.addTo(layer);
@@ -206,6 +207,8 @@ function drawIncidents(L: typeof import("leaflet"), map: import("leaflet").Map, 
 }
 
 export function MunicipalGisOperationsMap() {
+  const searchParams = useSearchParams();
+  const waterSourceId = searchParams.get("waterSource") ?? "";
   const { municipality, incidents, loading, refreshing, error, refresh } = useMunicipalIncidentFeed({ includeHistory: true });
   const clusters = useMemo(() => clusterIncidents(incidents), [incidents]);
   const mapElement = useRef<HTMLDivElement | null>(null);
@@ -223,10 +226,9 @@ export function MunicipalGisOperationsMap() {
   const [mapReady, setMapReady] = useState(false);
   const [stations, setStations] = useState<StationMarker[]>([]);
   const [waterSources, setWaterSources] = useState<WaterSource[]>([]);
-  const [waterSourceId] = useState(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("waterSource") ?? "");
   const [view, setView] = useState<MapView>("ALL");
   const [showStations, setShowStations] = useState(true);
-  const [showWaterSources, setShowWaterSources] = useState(true);
+  const [showWaterSources, setShowWaterSources] = useState(() => searchParams.get("layer") === "water-sources" || Boolean(waterSourceId));
   const stationLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const waterSourceLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const viewRef = useRef<MapView>(view);

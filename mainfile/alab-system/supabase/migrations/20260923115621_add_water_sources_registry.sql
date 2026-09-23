@@ -12,6 +12,11 @@ create table public.water_sources (
     check (char_length(btrim(type_color)) between 2 and 120),
   record_origin text not null constraint water_sources_record_origin_check
     check (record_origin in ('BFP_LOCATOR_CHART_2018', 'MUNICIPAL_ENTRY')),
+  import_sequence integer constraint water_sources_import_sequence_check
+    check (
+      (record_origin = 'BFP_LOCATOR_CHART_2018' and import_sequence is not null)
+      or (record_origin = 'MUNICIPAL_ENTRY' and import_sequence is null)
+    ),
   created_by_user_id uuid references public.users(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -30,7 +35,11 @@ create unique index water_sources_unique_site_idx
     latitude,
     longitude,
     source_kind
-  );
+  ) where record_origin = 'MUNICIPAL_ENTRY';
+
+create unique index water_sources_unique_import_sequence_idx
+  on public.water_sources (record_origin, import_sequence)
+  where record_origin = 'BFP_LOCATOR_CHART_2018';
 
 alter table public.water_sources enable row level security;
 revoke all on table public.water_sources from public, anon, authenticated;
@@ -66,6 +75,7 @@ alter table public.water_source_events enable row level security;
 revoke all on table public.water_source_events from public, anon, authenticated;
 
 create temporary table water_source_import (
+  import_sequence integer generated always as identity,
   municipality_name text not null,
   source_kind text not null,
   quantity integer not null,
@@ -255,7 +265,8 @@ insert into public.water_sources (
   latitude,
   longitude,
   type_color,
-  record_origin
+  record_origin,
+  import_sequence
 )
 select
   municipality.id,
@@ -265,7 +276,8 @@ select
   imported.latitude,
   imported.longitude,
   imported.type_color,
-  'BFP_LOCATOR_CHART_2018'
+  'BFP_LOCATOR_CHART_2018',
+  imported.import_sequence
 from water_source_import imported
 join public.municipalities municipality
   on lower(municipality.name) = lower(imported.municipality_name)
