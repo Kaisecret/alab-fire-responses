@@ -67,3 +67,10 @@ test("paper import contains exactly the approved municipality totals", () => {
   }
   assert.doesNotMatch(sql, /\('Laua-an',\s*'FIRE_HYDRANT'/);
 });
+
+test("paper import stores Hamtic hydrant type without pipe-size symbols", () => {
+  const sql = readFileSync(migrationPath(), "utf8");
+
+  assert.doesNotMatch(sql, /Wet Barrel \/ 2\\"/);
+  assert.match(sql, /\('Hamtic',[^\n]+Wet Barrel'/);
+});

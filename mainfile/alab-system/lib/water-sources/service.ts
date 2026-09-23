@@ -25,6 +25,12 @@ function cleanText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength + 1) : "";
 }
 
+function cleanTypeColor(value: unknown) {
+  return cleanText(value, 120)
+    .replace(/\s*\/\s*\d+(?:\.\d+|\s+\d+\/\d+)?\s*(?:"|in(?:ch(?:es)?)?)?\s*$/i, "")
+    .trim();
+}
+
 function finiteNumber(value: unknown) {
   if (value === "" || value === null || value === undefined) return null;
   const parsed = typeof value === "number" ? value : Number(value);
@@ -38,7 +44,7 @@ export function validateWaterSourceInput(raw: Record<string, unknown>): CreateWa
   const exactLocation = cleanText(raw.exactLocation, 500);
   const latitude = finiteNumber(raw.latitude);
   const longitude = finiteNumber(raw.longitude);
-  const typeColor = cleanText(raw.typeColor, 120);
+  const typeColor = cleanTypeColor(raw.typeColor);
 
   if (sourceKind !== "FIRE_HYDRANT" && sourceKind !== "WATER_SOURCE") {
     issues.sourceKind = "Choose fire hydrant or other water source.";

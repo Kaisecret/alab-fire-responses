@@ -38,6 +38,26 @@ test("water-source migration executes and imports the paper registry safely", as
       where municipality.name = 'Hamtic'`);
     assert.equal(hamtic.rows[0].count, 2);
 
+    await db.query(
+      `update public.water_sources
+       set type_color = 'Wet Barrel / 2"'
+       where exact_location like 'Poblacion 2, Hamtic%'`,
+    );
+    const normalization = readFileSync(
+      "supabase/migrations/20260923134241_normalize_water_source_type_labels.sql",
+      "utf8",
+    );
+    await db.exec(normalization);
+    const normalized = await db.query(
+      `select type_color from public.water_sources
+       where exact_location like 'Poblacion 2, Hamtic%'`,
+    );
+    assert.equal(normalized.rows[0].type_color, "Wet Barrel");
+    const colored = await db.query(
+      `select count(*)::int as count from public.water_sources where type_color = 'Wet Barrel/Red'`,
+    );
+    assert.equal(colored.rows[0].count, 5);
+
     await assert.rejects(
       db.query(`insert into public.water_sources
         (municipality_id, source_kind, quantity, exact_location, latitude, longitude, type_color, record_origin)

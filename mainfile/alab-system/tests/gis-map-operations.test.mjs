@@ -84,3 +84,26 @@ test("municipal water sources are a classified map layer with focused popups", (
   assert.match(component, /Type \/ color/);
   assert.match(component, /key-water-source/);
 });
+
+test("water-source mode hides incident layers and opens source details in a map modal", () => {
+  const component = map();
+
+  assert.match(component, /type MapContentMode = "INCIDENTS" \| "WATER_SOURCES"/);
+  assert.match(component, /Incident Map/);
+  assert.match(component, /Water Source Map/);
+  assert.match(component, /mapMode === "INCIDENTS"/);
+  assert.match(component, /mapMode === "WATER_SOURCES"/);
+  assert.match(component, /setSelectedWaterSource/);
+  assert.match(component, /aria-labelledby="water-source-modal-title"/);
+  assert.match(component, /Close water source details/);
+  assert.match(component, /iconSize: \[52, 52\]/);
+  assert.doesNotMatch(component, /\.bindPopup\(/);
+});
+
+test("water-source mode frames every municipal source when no card requested focus", () => {
+  const component = map();
+
+  assert.match(component, /if \(!waterSourceId && points\.length === 1\)/);
+  assert.match(component, /else if \(!waterSourceId && points\.length > 1\)/);
+  assert.match(component, /map\.fitBounds\(L\.latLngBounds\(points\)/);
+});

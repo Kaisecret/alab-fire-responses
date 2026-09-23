@@ -27,17 +27,9 @@ type StationMarker = {
   status: string;
 };
 
-function escapeHtml(value: string | number) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 /** What the map is showing: everything, only what is live, or only the archive. */
 type MapView = "ALL" | "ACTIVE" | "HISTORY";
+type MapContentMode = "INCIDENTS" | "WATER_SOURCES";
 
 /**
  * How far a station is drawn as covering.
@@ -90,10 +82,12 @@ const styles = `
   /* A station and the ground it can reach. */
   .mbfp-ops-station-pin{display:grid;width:30px;height:30px;place-items:center;border:2px solid #fff;border-radius:9px;background:#2563eb;color:#fff;font-size:.72rem;box-shadow:0 4px 10px rgba(37,99,235,.42)}
   .mbfp-ops-station-pin.is-inactive{background:#94a3b8;box-shadow:0 4px 10px rgba(100,116,139,.32)}
-  .mbfp-ops-water-pin{display:grid;width:32px;height:32px;place-items:center;border:2px solid #fff;border-radius:50% 50% 50% 0;background:#0f766e;color:#fff;font-size:.73rem;box-shadow:0 5px 12px rgba(15,118,110,.38);transform:rotate(-45deg)}
+  .mbfp-ops-water-pin{display:grid;width:46px;height:46px;place-items:center;border:3px solid #fff;border-radius:50% 50% 50% 0;background:#0f766e;color:#fff;font-size:1rem;box-shadow:0 8px 20px rgba(15,118,110,.42),0 0 0 6px rgba(15,118,110,.13);transform:rotate(-45deg)}
   .mbfp-ops-water-pin i{transform:rotate(45deg)}
   .mbfp-ops-water-pin.is-source{background:#0891b2}
-  .mbfp-water-popup{min-width:220px;color:#26354f;font:13px/1.45 'Plus Jakarta Sans',sans-serif}.mbfp-water-popup__kind{display:block;margin-bottom:4px;color:#0f766e;font-size:10px;font-weight:850;letter-spacing:.07em;text-transform:uppercase}.mbfp-water-popup strong{display:block;margin-bottom:7px;color:#0f172a;font-size:13px}.mbfp-water-popup dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:0}.mbfp-water-popup dt{color:#64748b}.mbfp-water-popup dd{margin:0;text-align:right;font-weight:700}.mbfp-water-popup__origin{margin:8px 0 0;padding-top:7px;border-top:1px solid #e2e8f0;color:#64748b;font-size:10px}
+  .mbfp-ops-mode-switch{display:inline-flex;padding:.28rem;border:1px solid #cbd9e8;border-radius:12px;background:#fff;box-shadow:0 5px 14px rgba(15,23,42,.06)}
+  .mbfp-ops-mode-button{display:inline-flex;align-items:center;justify-content:center;gap:.48rem;min-height:2.55rem;padding:.55rem 1rem;border:0;border-radius:9px;background:transparent;color:#52627a;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer}.mbfp-ops-mode-button.is-on{background:#0f766e;color:#fff;box-shadow:0 5px 12px rgba(15,118,110,.2)}.mbfp-ops-mode-button:focus-visible{outline:2px solid #0f766e;outline-offset:2px}
+  .mbfp-water-modal{width:min(100%,660px)}.mbfp-water-modal .mbfp-gis-modal-kicker{color:#0f766e}.mbfp-water-modal__hero{display:grid;grid-template-columns:auto 1fr;gap:.9rem;align-items:center;padding:1rem;border:1px solid #bfe4dd;border-radius:15px;background:#f0fdfa}.mbfp-water-modal__icon{display:grid;width:52px;height:52px;place-items:center;border-radius:16px;background:#0f766e;color:#fff;font-size:1.25rem;box-shadow:0 10px 22px rgba(15,118,110,.22)}.mbfp-water-modal__kind{margin:0 0 .18rem;color:#0f766e;font-size:.7rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase}.mbfp-water-modal__location{margin:0;color:#132238;font-size:1rem;line-height:1.45}.mbfp-water-modal__origin{display:inline-flex;align-items:center;gap:.4rem;margin-top:1rem;padding:.5rem .65rem;border-radius:9px;background:#f1f5f9;color:#64748b;font-size:.72rem;font-weight:700}
 
   /* The key stays up: marker colours meant nothing until an incident was opened. */
   .mbfp-ops-legend{position:absolute;z-index:420;left:1rem;bottom:1rem;display:grid;gap:.34rem;max-width:250px;padding:.7rem .8rem;border:1px solid rgba(255,255,255,.85);border-radius:10px;background:rgba(255,255,255,.94);color:#334155;font-size:.72rem;line-height:1.3;box-shadow:0 8px 22px rgba(15,23,42,.16)}
@@ -160,29 +154,34 @@ function drawWaterSources(
   layer: import("leaflet").LayerGroup,
   sources: WaterSource[],
   waterSourceId: string,
+  onSelectSource: (source: WaterSource) => void,
 ) {
   layer.clearLayers();
+  const points: [number, number][] = [];
   sources.forEach((source) => {
     if (!Number.isFinite(source.latitude) || !Number.isFinite(source.longitude)) return;
     const point: [number, number] = [source.latitude, source.longitude];
+    points.push(point);
     const isHydrant = source.sourceKind === "FIRE_HYDRANT";
     const marker = L.marker(point, {
       icon: L.divIcon({
         className: "mbfp-ops-marker-wrapper",
         html: `<span class="mbfp-ops-water-pin ${isHydrant ? "" : "is-source"}"><i class="fa-solid ${isHydrant ? "fa-fire-extinguisher" : "fa-droplet"}" aria-hidden="true"></i></span>`,
-        iconSize: [36, 36],
-        iconAnchor: [18, 31],
+        iconSize: [52, 52],
+        iconAnchor: [26, 48],
       }),
-    }).bindPopup(
-      `<section class="mbfp-water-popup"><span class="mbfp-water-popup__kind">${isHydrant ? "Fire hydrant" : "Water source"}</span><strong>${escapeHtml(source.exactLocation)}</strong><dl><dt>Type / color</dt><dd>${escapeHtml(source.typeColor)}</dd><dt>Quantity</dt><dd>${escapeHtml(source.quantity)}</dd><dt>Coordinates</dt><dd>${source.latitude.toFixed(7)}, ${source.longitude.toFixed(7)}</dd></dl><p class="mbfp-water-popup__origin">${source.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</p></section>`,
-      { maxWidth: 300 },
-    );
+    });
+    marker.on("click", () => onSelectSource(source));
     marker.addTo(layer);
     if (source.id === waterSourceId) {
       map.setView(point, 17, { animate: false });
-      marker.openPopup();
+      onSelectSource(source);
     }
   });
+  if (!waterSourceId && points.length === 1) map.setView(points[0], 16, { animate: false });
+  else if (!waterSourceId && points.length > 1) {
+    map.fitBounds(L.latLngBounds(points), { padding: [72, 72], maxZoom: 16, animate: false });
+  }
 }
 
 function drawIncidents(L: typeof import("leaflet"), map: import("leaflet").Map, layer: import("leaflet").LayerGroup, clusters: IncidentCluster[], municipality: string, onSelectIncident: (incidents: MunicipalIncident[]) => void, view: MapView = "ALL") {
@@ -226,12 +225,19 @@ export function MunicipalGisOperationsMap() {
   const [mapReady, setMapReady] = useState(false);
   const [stations, setStations] = useState<StationMarker[]>([]);
   const [waterSources, setWaterSources] = useState<WaterSource[]>([]);
+  const [selectedWaterSource, setSelectedWaterSource] = useState<WaterSource | null>(null);
   const [view, setView] = useState<MapView>("ALL");
   const [showStations, setShowStations] = useState(true);
-  const [showWaterSources, setShowWaterSources] = useState(() => searchParams.get("layer") === "water-sources" || Boolean(waterSourceId));
+  const [mapMode, setMapMode] = useState<MapContentMode>(() =>
+    searchParams.get("layer") === "water-sources" || Boolean(waterSourceId)
+      ? "WATER_SOURCES"
+      : "INCIDENTS",
+  );
+  const showWaterSources = mapMode === "WATER_SOURCES";
   const stationLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const waterSourceLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const viewRef = useRef<MapView>(view);
+  const mapModeRef = useRef<MapContentMode>(mapMode);
   const onSelectRef = useRef<(clusterReports: MunicipalIncident[]) => void>((clusterReports) => {
     setSelectedIncidents(clusterReports);
     setSelectedIncidentId(clusterReports[0]?.id ?? "");
@@ -241,8 +247,18 @@ export function MunicipalGisOperationsMap() {
     clustersRef.current = clusters;
     municipalityRef.current = municipality;
     viewRef.current = view;
-    if (leafletRef.current && mapRef.current && layerRef.current) drawIncidents(leafletRef.current, mapRef.current, layerRef.current, clusters, municipality, (clusterReports) => onSelectRef.current(clusterReports), view);
-  }, [clusters, municipality, view]);
+    mapModeRef.current = mapMode;
+    const L = leafletRef.current;
+    const map = mapRef.current;
+    const layer = layerRef.current;
+    if (!L || !map || !layer) return;
+    if (mapMode === "INCIDENTS") {
+      drawIncidents(L, map, layer, clusters, municipality, (clusterReports) => onSelectRef.current(clusterReports), view);
+      if (!map.hasLayer(layer)) layer.addTo(map);
+    } else {
+      map.removeLayer(layer);
+    }
+  }, [clusters, mapMode, municipality, view]);
 
   // The stations this municipality can send. They change rarely, so this is
   // read once rather than polled alongside the incidents.
@@ -275,13 +291,13 @@ export function MunicipalGisOperationsMap() {
     const map = mapRef.current;
     if (!L || !map || !mapReady) return;
     if (!stationLayerRef.current) stationLayerRef.current = L.layerGroup().addTo(map);
-    if (showStations) {
+    if (mapMode === "INCIDENTS" && showStations) {
       drawStations(L, stationLayerRef.current, stations);
       if (!map.hasLayer(stationLayerRef.current)) stationLayerRef.current.addTo(map);
     } else {
       map.removeLayer(stationLayerRef.current);
     }
-  }, [stations, showStations, mapReady]);
+  }, [stations, showStations, mapMode, mapReady]);
 
   useEffect(() => {
     const L = leafletRef.current;
@@ -289,7 +305,7 @@ export function MunicipalGisOperationsMap() {
     if (!L || !map || !mapReady) return;
     if (!waterSourceLayerRef.current) waterSourceLayerRef.current = L.layerGroup().addTo(map);
     if (showWaterSources) {
-      drawWaterSources(L, map, waterSourceLayerRef.current, waterSources, waterSourceId);
+      drawWaterSources(L, map, waterSourceLayerRef.current, waterSources, waterSourceId, setSelectedWaterSource);
       if (!map.hasLayer(waterSourceLayerRef.current)) waterSourceLayerRef.current.addTo(map);
     } else {
       map.removeLayer(waterSourceLayerRef.current);
@@ -305,9 +321,12 @@ export function MunicipalGisOperationsMap() {
       map = L.map(mapElement.current, { zoomControl: false, attributionControl: true }).setView(DEFAULT_MAP_CENTER, 10);
       L.control.zoom({ position: "bottomright" }).addTo(map);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
-      const incidentLayer = L.layerGroup().addTo(map);
+      const incidentLayer = L.layerGroup();
       leafletRef.current = L; mapRef.current = map; layerRef.current = incidentLayer;
-      drawIncidents(L, map, incidentLayer, clustersRef.current, municipalityRef.current, (clusterReports) => onSelectRef.current(clusterReports));
+      if (mapModeRef.current === "INCIDENTS") {
+        incidentLayer.addTo(map);
+        drawIncidents(L, map, incidentLayer, clustersRef.current, municipalityRef.current, (clusterReports) => onSelectRef.current(clusterReports));
+      }
       setMapReady(true);
     })();
     return () => { disposed = true; layerRef.current = null; densityLayerRef.current = null; stationLayerRef.current = null; waterSourceLayerRef.current = null; leafletRef.current = null; mapRef.current = null; map?.remove(); };
@@ -381,7 +400,7 @@ export function MunicipalGisOperationsMap() {
     <header className="mbfp-ops-toolbar">
       <div>
         <p className="mbfp-ops-eyebrow">Municipal fire operations</p>
-        <h1 id="municipal-gis-heading" className="mbfp-ops-title">GIS incident map</h1>
+        <h1 id="municipal-gis-heading" className="mbfp-ops-title">{mapMode === "INCIDENTS" ? "GIS incident map" : "GIS water source map"}</h1>
       </div>
       <div className="mbfp-ops-tools">
         <button className="mbfp-ops-refresh" type="button" onClick={() => void refresh(true)} disabled={refreshing}>
@@ -412,32 +431,39 @@ export function MunicipalGisOperationsMap() {
     </div>
 
     <div className="mbfp-ops-controls">
-      <div className="mbfp-ops-segmented" role="group" aria-label="Which incidents to show">
-        {([["ALL", "All"], ["ACTIVE", "Active"], ["HISTORY", "History"]] as Array<[MapView, string]>).map(([key, label]) => (
+      <div className="mbfp-ops-mode-switch" role="group" aria-label="Choose map content">
+        {([["INCIDENTS", "Incident Map", "fa-fire"], ["WATER_SOURCES", "Water Source Map", "fa-droplet"]] as Array<[MapContentMode, string, string]>).map(([key, label, icon]) => (
           <button
             key={key}
             type="button"
-            className={`mbfp-ops-segment${view === key ? " is-on" : ""}`}
-            onClick={() => setView(key)}
-            aria-pressed={view === key}
+            className={`mbfp-ops-mode-button${mapMode === key ? " is-on" : ""}`}
+            onClick={() => { setMapMode(key); setSelectedWaterSource(null); if (key === "WATER_SOURCES") closeIncident(); }}
+            aria-pressed={mapMode === key}
           >
-            {label}
+            <i className={`fa-solid ${icon}`} aria-hidden="true" />{label}
           </button>
         ))}
       </div>
-      <div className="mbfp-ops-tools">
-        <label className="mbfp-ops-layer-toggle"><input type="checkbox" checked={showWaterSources} onChange={(event) => setShowWaterSources(event.target.checked)} /><i className="fa-solid fa-droplet" aria-hidden="true" />Water sources</label>
+      {mapMode === "INCIDENTS" && <div className="mbfp-ops-tools">
+        <div className="mbfp-ops-segmented" role="group" aria-label="Which incidents to show">
+          {([["ALL", "All"], ["ACTIVE", "Active"], ["HISTORY", "History"]] as Array<[MapView, string]>).map(([key, label]) => (
+            <button key={key} type="button" className={`mbfp-ops-segment${view === key ? " is-on" : ""}`} onClick={() => setView(key)} aria-pressed={view === key}>{label}</button>
+          ))}
+        </div>
         <label className="mbfp-ops-layer-toggle"><input type="checkbox" checked={showStations} onChange={(event) => setShowStations(event.target.checked)} /><i className="fa-solid fa-truck-fast" aria-hidden="true" />Stations and coverage</label>
-      </div>
+      </div>}
     </div>
-    <div className="mbfp-ops-map-shell"><div ref={mapElement} className="mbfp-ops-map" aria-label="Municipal incident map" />{!mapReady && <div className="mbfp-ops-map-loading" aria-label="Loading municipal incident map" />}<aside className="mbfp-ops-legend" aria-label="What the map symbols mean">
-      <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-active" aria-hidden="true" />Active incident</span>
-      <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-history" aria-hidden="true" />Resolved or closed</span>
-      {showStations && <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-station" aria-hidden="true" />Station · {STATION_COVERAGE_METERS / 1000} km reach</span>}
-      {showWaterSources && <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-water-source" aria-hidden="true" />Hydrant or water source</span>}
+    <div className="mbfp-ops-map-shell"><div ref={mapElement} className="mbfp-ops-map" aria-label={mapMode === "INCIDENTS" ? "Municipal incident map" : "Municipal water source map"} />{!mapReady && <div className="mbfp-ops-map-loading" aria-label="Loading municipal operations map" />}<aside className="mbfp-ops-legend" aria-label="What the map symbols mean">
+      {mapMode === "INCIDENTS" && <><span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-active" aria-hidden="true" />Active incident</span>
+      <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-history" aria-hidden="true" />Resolved or closed</span></>}
+      {mapMode === "INCIDENTS" && showStations && <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-station" aria-hidden="true" />Station · {STATION_COVERAGE_METERS / 1000} km reach</span>}
+      {mapMode === "WATER_SOURCES" && <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-water-source" aria-hidden="true" />Hydrant or water source</span>}
       {densityEvidence && <span className="mbfp-ops-legend-row"><i className="mbfp-ops-key key-density" aria-hidden="true" />Mapped structures near the fire</span>}
-    </aside>{!loading && !error && incidents.length === 0 && (!showWaterSources || waterSources.length === 0) && <div className="mbfp-ops-empty" role="status"><strong>No incidents have been reported in your assigned municipality</strong><p>The map is centered on {stationName}. New resident alerts appear automatically.</p></div>}
-      {!loading && !error && incidents.length > 0 && view === "ACTIVE" && activeCount === 0 && <div className="mbfp-ops-empty" role="status"><strong>Nothing is burning right now</strong><p>Every incident in {stationName} is resolved or closed. Switch to History to see them.</p></div>}</div>
-    <footer className="mbfp-ops-footnote"><span className="mbfp-ops-summary"><strong>{incidents.length}</strong>{incidents.length === 1 ? "municipality-scoped report" : "municipality-scoped reports"} across {clusters.length} reported {clusters.length === 1 ? "location" : "locations"} for {stationName}.</span>{error ? <span className="mbfp-ops-error" role="alert">{error}</span> : <a className="mbfp-ops-queue-link" href="/municipal-bfp/active-incidents">Open active incident queue</a>}</footer>
-  </section>{selectedIncidents && <MunicipalGisIncidentModal incidents={selectedIncidents} onClose={closeIncident} onSelectedIncidentChange={setSelectedIncidentId} densityEvidence={densityEvidence} densityLoading={densityLoading} densityError={densityError} />}</main>;
+    </aside>{mapMode === "INCIDENTS" && !loading && !error && incidents.length === 0 && <div className="mbfp-ops-empty" role="status"><strong>No incidents have been reported in your assigned municipality</strong><p>The map is centered on {stationName}. New resident alerts appear automatically.</p></div>}
+      {mapMode === "INCIDENTS" && !loading && !error && incidents.length > 0 && view === "ACTIVE" && activeCount === 0 && <div className="mbfp-ops-empty" role="status"><strong>Nothing is burning right now</strong><p>Every incident in {stationName} is resolved or closed. Switch to History to see them.</p></div>}
+      {mapMode === "WATER_SOURCES" && waterSources.length === 0 && <div className="mbfp-ops-empty" role="status"><strong>No mapped water sources yet</strong><p>Add a hydrant or water source from the municipal water-source registry.</p></div>}</div>
+    <footer className="mbfp-ops-footnote">{mapMode === "INCIDENTS" ? <><span className="mbfp-ops-summary"><strong>{incidents.length}</strong>{incidents.length === 1 ? "municipality-scoped report" : "municipality-scoped reports"} across {clusters.length} reported {clusters.length === 1 ? "location" : "locations"} for {stationName}.</span>{error ? <span className="mbfp-ops-error" role="alert">{error}</span> : <a className="mbfp-ops-queue-link" href="/municipal-bfp/active-incidents">Open active incident queue</a>}</> : <><span className="mbfp-ops-summary"><strong>{waterSources.length}</strong>{waterSources.length === 1 ? "mapped water source" : "mapped water sources"} for {stationName}.</span><a className="mbfp-ops-queue-link" href="/municipal-bfp/water-sources">Open water-source registry</a></>}</footer>
+  </section>{selectedIncidents && <MunicipalGisIncidentModal incidents={selectedIncidents} onClose={closeIncident} onSelectedIncidentChange={setSelectedIncidentId} densityEvidence={densityEvidence} densityLoading={densityLoading} densityError={densityError} />}
+  {selectedWaterSource && <div className="mbfp-gis-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedWaterSource(null); }}><section className="mbfp-gis-modal mbfp-water-modal" role="dialog" aria-modal="true" aria-labelledby="water-source-modal-title"><header className="mbfp-gis-modal-header"><div><p className="mbfp-gis-modal-kicker">Mapped municipal water network</p><h2 id="water-source-modal-title">Water source details</h2></div><button className="mbfp-gis-modal-close" type="button" aria-label="Close water source details" onClick={() => setSelectedWaterSource(null)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button></header><div className="mbfp-gis-modal-body"><section className="mbfp-water-modal__hero"><span className="mbfp-water-modal__icon"><i className={`fa-solid ${selectedWaterSource.sourceKind === "FIRE_HYDRANT" ? "fa-fire-extinguisher" : "fa-droplet"}`} aria-hidden="true" /></span><div><p className="mbfp-water-modal__kind">{selectedWaterSource.sourceKind === "FIRE_HYDRANT" ? "Fire hydrant" : "Water source"}</p><h3 className="mbfp-water-modal__location">{selectedWaterSource.exactLocation}</h3></div></section><div className="mbfp-gis-facts"><article><span>Type / color</span><strong>{selectedWaterSource.typeColor}</strong></article><article><span>Quantity</span><strong>{selectedWaterSource.quantity}</strong></article><article><span>Latitude</span><strong>{selectedWaterSource.latitude.toFixed(7)}</strong></article><article><span>Longitude</span><strong>{selectedWaterSource.longitude.toFixed(7)}</strong></article></div><span className="mbfp-water-modal__origin"><i className="fa-solid fa-file-shield" aria-hidden="true" />{selectedWaterSource.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</span></div></section></div>}
+  </main>;
 }

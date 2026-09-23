@@ -33,6 +33,23 @@ test("water-source validation preserves coordinate precision and normalizes fiel
   });
 });
 
+test("water-source validation removes trailing hydrant-size notation without removing color", () => {
+  const service = loadService({ query: async () => ({ rows: [] }) });
+  const common = {
+    sourceKind: "FIRE_HYDRANT",
+    quantity: 1,
+    exactLocation: "Poblacion 2",
+    latitude: 10.7011186,
+    longitude: 121.9817536,
+  };
+
+  const sized = service.validateWaterSourceInput({ ...common, typeColor: 'Wet Barrel / 2"' });
+  const colored = service.validateWaterSourceInput({ ...common, typeColor: "Wet Barrel/Red" });
+
+  assert.equal(sized.typeColor, "Wet Barrel");
+  assert.equal(colored.typeColor, "Wet Barrel/Red");
+});
+
 test("water-source validation rejects blank, out-of-range, and unsupported values", () => {
   const service = loadService({ query: async () => ({ rows: [] }) });
 
