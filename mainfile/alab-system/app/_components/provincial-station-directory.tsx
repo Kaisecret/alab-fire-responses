@@ -250,11 +250,6 @@ const pageStyles = `
   .psd-stat-card.purple:hover { border-color: #B79BFB; box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2); }
   .psd-stat-card.red:hover { border-color: #F87171; box-shadow: 0 10px 22px -4px rgba(220, 38, 38, 0.2); }
 
-  .psd-stat-card.active {
-    box-shadow: 0 0 0 2.5px #1E293B, 0 8px 20px -2px rgba(15, 23, 42, 0.15);
-    border-color: #1E293B;
-  }
-
   .psd-stat-header {
     display: flex;
     align-items: center;
@@ -1352,7 +1347,7 @@ export function ProvincialStationDirectory() {
       <div className="psd-stats-grid" role="region" aria-label="Station metrics">
         {/* Card 1: Total Stations (Blue) */}
         <div
-          className={`psd-stat-card blue ${!status ? 'active' : ''}`}
+          className="psd-stat-card blue"
           onClick={() => { setStatus(''); setPage(1); }}
           role="button"
           tabIndex={0}
@@ -1378,7 +1373,7 @@ export function ProvincialStationDirectory() {
 
         {/* Card 2: Active Operational (Emerald) */}
         <div
-          className={`psd-stat-card emerald ${status === 'ACTIVE' ? 'active' : ''}`}
+          className="psd-stat-card emerald"
           onClick={() => { setStatus('ACTIVE'); setPage(1); }}
           role="button"
           tabIndex={0}

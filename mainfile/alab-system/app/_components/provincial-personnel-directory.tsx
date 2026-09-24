@@ -223,11 +223,6 @@ const directoryStyles = `
   .ppd-stat-card--admins:hover { border-color: #FFCF70; box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2); }
   .ppd-stat-card--active:hover { border-color: #6EE7B7; box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2); }
 
-  .ppd-stat-card.active {
-    box-shadow: 0 0 0 2.5px #1E293B, 0 8px 20px -2px rgba(15, 23, 42, 0.15);
-    border-color: #1E293B;
-  }
-
   .ppd-stat-header {
     display: flex;
     align-items: center;
@@ -1329,7 +1324,7 @@ export function ProvincialPersonnelDirectory() {
       {/* KPI Stats Bar */}
       <div className="ppd-stats-grid" role="region" aria-label="Personnel registry metrics">
         <div
-          className={`ppd-stat-card ppd-stat-card--all ${!status && !municipalityId && !stationId ? 'active' : ''}`}
+          className="ppd-stat-card ppd-stat-card--all"
           onClick={clearAllFilters}
           role="button"
           tabIndex={0}
@@ -1398,7 +1393,7 @@ export function ProvincialPersonnelDirectory() {
         </div>
 
         <div
-          className={`ppd-stat-card ppd-stat-card--active ${status === 'ACTIVE' ? 'active' : ''}`}
+          className="ppd-stat-card ppd-stat-card--active"
           onClick={() => {
             setStatus('ACTIVE');
             setPage(1);
