@@ -48,7 +48,6 @@ const directoryStyles = `
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
     gap: 1.25rem;
     box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
   }
@@ -118,32 +117,7 @@ const directoryStyles = `
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .ppd-btn-refresh {
-    min-height: 42px;
-    padding: 0.65rem 1.15rem;
-    border-radius: 10px;
-    border: 1px solid #CBD5E1;
-    background: #FFFFFF;
-    color: var(--navy-800);
-    font: inherit;
-    font-size: 0.825rem;
-    font-weight: 700;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
-    transition: all 0.15s ease;
-  }
-
-  .ppd-btn-refresh:hover:not(:disabled) {
-    background: var(--slate-50);
-    border-color: #94A3B8;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+    flex-shrink: 0;
   }
 
   .ppd-header-actions .no-print button {
@@ -1245,23 +1219,10 @@ export function ProvincialPersonnelDirectory() {
               <span>BUREAU OF FIRE PROTECTION • REGION VI</span>
             </div>
             <h1 className="ppd-title">Municipal BFP Personnel Registry</h1>
-            <p className="ppd-subtitle">
-              Authoritative roster of all municipal BFP administrators, station firefighters, and operational personnel across Antique.
-            </p>
           </div>
         </div>
 
         <div className="ppd-header-actions">
-          <button
-            type="button"
-            className="ppd-btn-refresh"
-            onClick={fetchPersonnel}
-            disabled={loading}
-            aria-label="Refresh Roster"
-          >
-            <i className={`fa-solid fa-arrows-rotate${loading ? ' fa-spin' : ''}`} aria-hidden="true" />
-            {loading ? 'Refreshing…' : '↻ Refresh Roster'}
-          </button>
           <ProvincialManagementToolbar exportOnly dataset="PERSONNEL" filters={filters} onFilterChange={() => {}} />
           <button
             type="button"
