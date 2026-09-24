@@ -32,10 +32,6 @@ const styles = `
   .prov-trucks__select { min-height:44px; min-width:240px; padding:.65rem 2.2rem .65rem .85rem; border:1px solid #d0d5dd; border-radius:9px; background:#fff; color:#172033; font:inherit; font-size:.82rem; font-weight:650; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E"); background-position:right .75rem center; background-repeat:no-repeat; background-size:1.15rem; }
   .prov-trucks__badge { display:inline-flex; align-items:center; gap:.45rem; min-height:44px; padding:.55rem .85rem; border:1px solid #d0d5dd; border-radius:9px; background:#fff; color:#475467; font-size:.76rem; font-weight:800; white-space:nowrap; }
   .prov-trucks__search:focus-visible, .prov-trucks__select:focus-visible, .prov-trucks__button:focus-visible, .prov-trucks__secondary:focus-visible { outline:3px solid rgba(37,99,235,.35); outline-offset:2px; }
-  .prov-trucks__group { margin-top:1.25rem; }
-  .prov-trucks__group-head { display:flex; align-items:baseline; justify-content:space-between; gap:.75rem; margin:0 0 .65rem; padding-bottom:.35rem; border-bottom:1px solid #f1f5f9; }
-  .prov-trucks__group-head h2 { margin:0; font-size:.95rem; font-weight:850; letter-spacing:-.01em; color:#0f172a; }
-  .prov-trucks__group-head span { color:#667085; font-size:.74rem; font-weight:700; }
   .prov-trucks__state { padding:3.5rem 1rem; border:1px dashed #d0d5dd; border-radius:12px; background:#fff; color:#667085; text-align:center; font-size:.85rem; }
   .prov-trucks__form { padding:1.15rem 1.35rem 1.35rem; }
   .prov-trucks__form-grid { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; }
@@ -133,7 +129,6 @@ export function ProvincialFireTrucks({ initialMunicipalityId = "" }: { initialMu
   }
 
   const allSelected = selectedMunicipality === "ALL";
-  const selected = registry?.municipalities.find((item) => item.municipalityId === selectedMunicipality);
   const totals = useMemo(() => (registry?.municipalities ?? []).reduce(
     (sum, item) => ({
       trucks: sum.trucks + item.truckCount,
@@ -144,22 +139,15 @@ export function ProvincialFireTrucks({ initialMunicipalityId = "" }: { initialMu
     { trucks: 0, serviceable: 0, down: 0, stations: 0 },
   ), [registry]);
 
-  const groups = useMemo(() => {
+  const visibleTrucks = useMemo(() => {
     const value = query.trim().toLowerCase();
-    const visible = (registry?.trucks ?? []).filter((truck) =>
+    return (registry?.trucks ?? []).filter((truck) =>
       (allSelected || truck.municipalityId === selectedMunicipality) &&
       (!value || `${truck.make} ${truck.stationName} ${truck.municipalityName} ${truck.remarks ?? ""}`.toLowerCase().includes(value)),
     );
-    const byStation = new Map<string, { id: string; name: string; municipalityName: string; trucks: FireTruck[] }>();
-    for (const truck of visible) {
-      const group = byStation.get(truck.stationId) ?? { id: truck.stationId, name: truck.stationName, municipalityName: truck.municipalityName, trucks: [] };
-      group.trucks.push(truck);
-      byStation.set(truck.stationId, group);
-    }
-    return Array.from(byStation.values());
   }, [allSelected, query, registry, selectedMunicipality]);
 
-  const visibleCount = groups.reduce((sum, group) => sum + group.trucks.length, 0);
+  const visibleCount = visibleTrucks.length;
   const formStations = useMemo(
     () => (registry?.stations ?? []).filter((station) => station.municipalityId === form.municipalityId),
     [form.municipalityId, registry],
@@ -280,24 +268,16 @@ export function ProvincialFireTrucks({ initialMunicipalityId = "" }: { initialMu
               {query ? "No fire trucks match your search." : "No fire trucks are recorded for this municipality yet."}
             </div>
           ) : (
-            groups.map((group) => (
-              <section key={group.id} className="prov-trucks__group" aria-label={group.name}>
-                <header className="prov-trucks__group-head">
-                  <h2>{allSelected ? `${group.name} · ${group.municipalityName}` : group.name}</h2>
-                  <span>{group.trucks.length} {group.trucks.length === 1 ? "truck" : "trucks"}</span>
-                </header>
-                <div className="truck-grid">
-                  {group.trucks.map((truck) => (
-                    <FireTruckCard
-                      key={truck.id}
-                      truck={truck}
-                      onOpen={setSelectedTruck}
-                      showMunicipality={allSelected}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))
+            <div className="truck-grid">
+              {visibleTrucks.map((truck) => (
+                <FireTruckCard
+                  key={truck.id}
+                  truck={truck}
+                  onOpen={setSelectedTruck}
+                  showMunicipality={true}
+                />
+              ))}
+            </div>
           )}
         </>
       )}
