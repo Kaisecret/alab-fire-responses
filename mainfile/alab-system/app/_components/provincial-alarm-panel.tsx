@@ -382,7 +382,7 @@ const styles = `
   .pap-levels {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.45rem;
+    gap: 0.55rem;
   }
   @media (max-width: 600px) {
     .pap-levels { grid-template-columns: 1fr; }
@@ -395,31 +395,31 @@ const styles = `
     gap: 0.35rem;
     width: 100%;
     text-align: left;
-    padding: 0.65rem 0.75rem;
+    padding: 0.72rem 0.85rem;
     border-radius: 10px;
-    border: 1px solid #E2E8F0;
-    background: #FAFAFA;
-    color: #334155;
+    border: 1.5px solid #E2E8F0;
+    background: #FFFFFF;
+    color: #1E293B;
     cursor: pointer;
-    transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   }
   .pap-level-top-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    gap: 0.3rem;
+    gap: 0.4rem;
   }
   .pap-level-ord {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     font-weight: 850;
     color: #0F172A;
     letter-spacing: -0.01em;
   }
   .pap-level-go {
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     color: #94A3B8;
     flex-shrink: 0;
     transition: transform 0.15s ease, color 0.15s ease;
@@ -427,22 +427,35 @@ const styles = `
 
   /* Standing level immediately visible with emerald highlight */
   .pap-level.standing {
-    background: #ECFDF5;
-    border: 1.5px solid #10B981;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
+    background: linear-gradient(145deg, #ECFDF5 0%, #D1FAE5 100%) !important;
+    border: 1.5px solid #10B981 !important;
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.18) !important;
     cursor: default;
+    opacity: 1 !important;
   }
   .pap-level.standing .pap-level-ord {
-    color: #065F46;
+    color: #065F46 !important;
     font-weight: 850;
+  }
+
+  /* Passed / superseded alarm level */
+  .pap-level.passed {
+    background: #F8FAFC !important;
+    border: 1.5px solid #E2E8F0 !important;
+    cursor: default;
+    opacity: 1 !important;
+  }
+  .pap-level.passed .pap-level-ord {
+    color: #64748B !important;
+    font-weight: 750;
   }
 
   /* Future escalation options hover state */
   .pap-level:hover:not(:disabled) {
     border-color: #DC2626;
-    background: #FFFDFD;
-    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.12);
-    transform: translateY(-1.5px);
+    background: #FFF7F7;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.14);
+    transform: translateY(-2px);
   }
   .pap-level:hover:not(:disabled) .pap-level-ord { color: #DC2626; }
   .pap-level:hover:not(:disabled) .pap-level-go { color: #DC2626; transform: translateX(2px); }
@@ -450,25 +463,40 @@ const styles = `
   .pap-level:disabled {
     cursor: default;
   }
-  .pap-level:disabled:not(.standing) {
-    opacity: 0.55;
+  .pap-level:disabled:not(.standing):not(.passed) {
+    opacity: 0.65;
     background: #F8FAFC;
     border-color: #E2E8F0;
   }
   .pap-level:disabled .pap-level-go { visibility: hidden; }
   .pap-level:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
 
+  /* Premium High-Contrast DECLARED Status Badge */
   .pap-level-done {
-    font-size: 0.58rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.32rem;
+    font-size: 0.66rem;
     font-weight: 850;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #065F46;
-    background: #D1FAE5;
-    border: 1px solid #A7F3D0;
-    padding: 0.1rem 0.45rem;
-    border-radius: 999px;
+    color: #FFFFFF;
+    background: #10B981;
+    border: 1px solid #059669;
+    padding: 0.22rem 0.58rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(16, 185, 129, 0.32);
     flex-shrink: 0;
+  }
+  .pap-level-done.is-passed {
+    color: #475569;
+    background: #F1F5F9;
+    border: 1px solid #CBD5E1;
+    box-shadow: none;
+    font-weight: 800;
+  }
+  .pap-level-done i {
+    font-size: 0.68rem;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -751,24 +779,34 @@ export function ProvincialAlarmPanel() {
               </div>
               <div className="pap-levels">
                 {DECLARABLE_LEVELS.map((entry) => {
-                  const passed = entry.level <= (request.alarmLevel ?? 0);
-                  const isCurrent = entry.level === (request.alarmLevel ?? 0);
+                  const currentAlarm = Number(request.alarmLevel ?? 0);
+                  const isCurrent = entry.level === currentAlarm;
+                  const isPassed = entry.level < currentAlarm;
+                  const passed = entry.level <= currentAlarm;
+                  const isBusy = busyId === request.id;
+
                   return (
                     <button
                       key={entry.level}
                       type="button"
-                      className={`pap-level ${isCurrent ? 'standing' : ''}`}
-                      disabled={busyId === request.id || passed}
+                      className={`pap-level ${isCurrent ? "standing" : isPassed ? "passed" : ""}`}
+                      disabled={isBusy || passed}
                       onClick={() => void declare(request, entry.level)}
                       title={entry.summons}
                     >
                       <div className="pap-level-top-row">
                         <span className="pap-level-ord">{entry.label} Alarm</span>
                         {isCurrent ? (
-                          <i className="fa-solid fa-check pap-level-standing-check" aria-hidden="true" />
-                        ) : passed ? (
-                          <span className="pap-level-done">DECLARED</span>
-                        ) : busyId === request.id ? (
+                          <span className="pap-level-done">
+                            <i className="fa-solid fa-circle-check" aria-hidden="true" />
+                            DECLARED
+                          </span>
+                        ) : isPassed ? (
+                          <span className="pap-level-done is-passed">
+                            <i className="fa-solid fa-check" aria-hidden="true" />
+                            DECLARED
+                          </span>
+                        ) : isBusy ? (
                           <i className="fa-solid fa-circle-notch fa-spin pap-level-go" />
                         ) : (
                           <i className="fa-solid fa-arrow-right pap-level-go" />
