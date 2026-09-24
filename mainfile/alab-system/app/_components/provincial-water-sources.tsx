@@ -171,6 +171,8 @@ const styles = `
   .water-card { appearance: none; width: 100%; padding: 0; text-align: left; font: inherit; display: flex; flex-direction: column; min-height: 250px; color: inherit; background: #fff; border: 1px solid #e4e7ec; border-radius: 12px; overflow: hidden; transition: border-color .18s, transform .18s, box-shadow .18s; position: relative; }
   .water-card:hover { border-color: #84c7c3; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(15,23,42,.08); }
   .water-card:focus-visible { outline: 3px solid rgba(37,99,235,.35); outline-offset: 2px; }
+  .water-card__main { display: flex; flex: 1; flex-direction: column; color: inherit; text-decoration: none; }
+  .water-card__main:focus-visible { outline: 3px solid rgba(37,99,235,.35); outline-offset: -3px; }
 
   .water-card__head { display: flex; align-items: center; gap: .75rem; padding: 1rem; background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%); color: #fff; cursor: pointer; }
   .water-card.is-other .water-card__head { background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%); }
@@ -585,20 +587,13 @@ export function ProvincialWaterSources() {
                     key={source.id}
                     className={`water-card ${source.sourceKind !== "FIRE_HYDRANT" ? "is-other" : ""}`}
                   >
-                    {/* Head */}
-                    <div
-                      className="water-card__head"
-                      onClick={() => openDetails(source)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          openDetails(source);
-                        }
-                      }}
-                      aria-label={`Open details for ${source.exactLocation}`}
+                    <Link
+                      className="water-card__main"
+                      href={`/provincial-bfp/gis-map?layer=water-sources&municipalityId=${source.municipalityId}&waterSource=${source.id}`}
+                      aria-label={`View ${source.exactLocation} on map`}
                     >
+                    {/* Head */}
+                    <div className="water-card__head">
                       <span className="water-card__icon" aria-hidden="true">
                         <i className={source.sourceKind === "FIRE_HYDRANT" ? "fa-solid fa-fire-extinguisher" : "fa-solid fa-droplet"} />
                       </span>
@@ -613,18 +608,7 @@ export function ProvincialWaterSources() {
                     </div>
 
                     {/* Body */}
-                    <div
-                      className="water-card__body"
-                      onClick={() => openDetails(source)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          openDetails(source);
-                        }
-                      }}
-                    >
+                    <div className="water-card__body">
                       <div className="water-card__row">
                         <span>Type / color</span>
                         <strong>{source.typeColor}</strong>
@@ -641,6 +625,7 @@ export function ProvincialWaterSources() {
                         {source.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}
                       </span>
                     </div>
+                    </Link>
 
                     {/* 2 Clickable Icons in Card Footer: 1st Go to map, 2nd Edit coordinates */}
                     <div className="water-card__footer">

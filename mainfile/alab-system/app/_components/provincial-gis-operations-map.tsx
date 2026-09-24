@@ -1181,7 +1181,6 @@ function drawWaterSources(
     const focusedSource = group.sources.find((item) => item.id === waterSourceId);
     if (focusedSource) {
       map.setView(point, group.approximate ? 13 : 17, { animate: false });
-      onSelectSource(focusedSource);
     }
   });
 
