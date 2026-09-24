@@ -11,7 +11,6 @@ const styles = `
   .prov-water__header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 1.25rem; }
   .prov-water__eyebrow { margin: 0 0 .4rem; color: #b42318; font-size: .7rem; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
   .prov-water h1 { margin: 0; font-size: clamp(1.45rem, 2vw, 2rem); letter-spacing: -.035em; }
-  .prov-water__subtitle { max-width: 760px; margin: .45rem 0 0; color: #667085; font-size: .87rem; line-height: 1.55; }
   .prov-water__badge { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: .55rem .75rem; border: 1px solid #d0d5dd; border-radius: 9px; background: #fff; color: #475467; font-size: .75rem; font-weight: 800; white-space: nowrap; }
 
   /* ========== 4 PASTEL KPI METRIC CARDS (DASHBOARD STYLE - COMPACT) ========== */
@@ -158,14 +157,6 @@ const styles = `
   .prov-water__filter-label { display: inline-flex; align-items: center; gap: .35rem; color: #475467; font-size: .78rem; font-weight: 750; }
   .prov-water__select { min-height: 44px; min-width: 240px; padding: .65rem 2.2rem .65rem .85rem; border: 1px solid #d0d5dd; border-radius: 9px; background: #fff; color: #172033; font: inherit; font-size: .82rem; font-weight: 650; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E"); background-position: right .75rem center; background-repeat: no-repeat; background-size: 1.15rem; }
   .prov-water__count-badge { display: inline-flex; align-items: center; gap: .45rem; min-height: 44px; padding: .55rem .85rem; border: 1px solid #d0d5dd; border-radius: 9px; background: #fff; color: #475467; font-size: .76rem; font-weight: 800; white-space: nowrap; }
-
-  /* Horizontal Municipality Pills */
-  .prov-water__pill-strip { display: flex; gap: .45rem; overflow-x: auto; padding-bottom: .45rem; margin-bottom: 1.15rem; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
-  .prov-water__pill { appearance: none; border: 1px solid #e2e8f0; background: #fff; color: #475569; padding: .4rem .75rem; border-radius: 999px; font: inherit; font-size: .74rem; font-weight: 700; white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: .35rem; transition: all .16s ease; }
-  .prov-water__pill:hover { background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; }
-  .prov-water__pill.is-active { background: #0f766e; border-color: #0f766e; color: #fff; box-shadow: 0 2px 6px rgba(15,118,110,.25); }
-  .prov-water__pill b { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.08); font-size: .65rem; font-weight: 800; }
-  .prov-water__pill.is-active b { background: rgba(255,255,255,.25); color: #fff; }
 
   /* Water Cards Grid */
   .water-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(285px, 1fr)); gap: calc(.75rem + 5px); }
@@ -379,9 +370,7 @@ export function ProvincialWaterSources() {
           <div>
             <p className="prov-water__eyebrow">Antique provincial overview</p>
             <h1>Water sources by municipality</h1>
-            <p className="prov-water__subtitle">
-              A municipality-level view of 148 records from the BFP locator chart, with exact coordinates, source type, color, and locally added records.
-            </p>
+            {/* 148 records from the BFP locator chart */}
           </div>
           <span className="prov-water__badge">
             <i className="fa-solid fa-file-shield" aria-hidden="true" /> BFP source register
@@ -399,6 +388,7 @@ export function ProvincialWaterSources() {
             }}
             role="button"
             tabIndex={0}
+            aria-pressed={allSelected}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 setSelectedMunicipality("ALL");
@@ -571,34 +561,7 @@ export function ProvincialWaterSources() {
               </div>
             </div>
 
-            {/* Quick 1-Click Municipality Filter Pill Strip */}
-            <div className="prov-water__pill-strip" role="group" aria-label="Filter by municipality">
-              <button
-                type="button"
-                className={`prov-water__pill ${allSelected ? "is-active" : ""}`}
-                aria-pressed={allSelected}
-                onClick={() => {
-                  setSelectedMunicipality("ALL");
-                  setQuery("");
-                }}
-              >
-                All municipalities <b>{totalLocations}</b>
-              </button>
-              {registry.municipalities.map((municipality) => (
-                <button
-                  type="button"
-                  key={municipality.municipalityId}
-                  className={`prov-water__pill ${municipality.municipalityId === selectedMunicipality ? "is-active" : ""}`}
-                  aria-pressed={municipality.municipalityId === selectedMunicipality}
-                  onClick={() => {
-                    setSelectedMunicipality(municipality.municipalityId);
-                    setQuery("");
-                  }}
-                >
-                  {municipality.municipalityName} <b>{municipality.sourceCount}</b>
-                </button>
-              ))}
-            </div>
+            {/* Cards Grid like in Municipal & Provincial Fire Trucks */}
 
             {/* Cards Grid like in Municipal & Provincial Fire Trucks */}
             {records.length === 0 ? (
