@@ -5,7 +5,7 @@ import type { FireTruck } from "../../lib/fire-trucks/types";
 import { FireTruckStatusPill } from "./fire-truck-details-dialog";
 
 export const fireTruckCardStyles = `
-  .truck-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:.75rem; }
+  .truck-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:calc(.75rem + 5px); }
   .truck-card { appearance:none; width:100%; padding:0; text-align:left; font:inherit; cursor:pointer; display:flex; flex-direction:column; min-height:238px; color:inherit; background:#fff; border:1px solid #e4e7ec; border-radius:12px; overflow:hidden; transition:border-color .18s, transform .18s, box-shadow .18s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
   .truck-card:hover { border-color:#fca5a5; transform:translateY(-2px); box-shadow:0 10px 28px rgba(15,23,42,.08); }
   .truck-card:focus-visible { outline:3px solid rgba(37,99,235,.35); outline-offset:2px; }

@@ -12,10 +12,7 @@ import { useDialogFocus } from "./use-dialog-focus";
 const styles = `
   .prov-trucks { padding:1.5rem clamp(1rem,2vw,2rem) 3rem; color:#172033; font-family:'Plus Jakarta Sans',sans-serif; }
   .prov-trucks * { box-sizing:border-box; }
-  .prov-trucks__top-row { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.1rem; flex-wrap:wrap; }
-  .prov-trucks__header { margin-bottom:1.25rem; }
-  .prov-trucks__eyebrow { margin:0 0 .4rem; color:#b42318; font-size:.72rem; font-weight:850; letter-spacing:.11em; text-transform:uppercase; }
-  .prov-trucks h1 { margin:0; font-size:clamp(1.45rem,2vw,2rem); letter-spacing:-.035em; }
+  .prov-trucks__top-row { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
   .prov-trucks__button { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.7rem 1.15rem; border:0; border-radius:9px; background:#b42318; color:#fff; font:inherit; font-size:.82rem; font-weight:800; cursor:pointer; white-space:nowrap; box-shadow:0 2px 8px rgba(180,35,24,.2); transition:background .15s, transform .15s; }
   .prov-trucks__button:hover { background:#912018; transform:translateY(-1px); }
   .prov-trucks__button:disabled { opacity:.6; cursor:wait; transform:none; }
@@ -24,6 +21,7 @@ const styles = `
   .prov-trucks__summary div:last-child { border-right:0; }
   .prov-trucks__summary strong { display:block; font-size:1.35rem; letter-spacing:-.03em; }
   .prov-trucks__summary span { color:#667085; font-size:.74rem; font-weight:700; }
+  .prov-trucks .truck-grid { gap:calc(.75rem + 5px); }
   .prov-trucks__toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem; margin:1.25rem 0; }
   .prov-trucks__search-box { position:relative; width:min(380px,100%); display:flex; align-items:center; }
   .prov-trucks__search-icon { position:absolute; left:.9rem; color:#98a2b3; font-size:.82rem; pointer-events:none; }
@@ -217,12 +215,6 @@ export function ProvincialFireTrucks({
           <i className="fa-solid fa-plus" aria-hidden="true" /> Add fire truck
         </button>
       </div>
-      <header className="prov-trucks__header">
-        <div>
-          <p className="prov-trucks__eyebrow">Antique provincial fleet</p>
-          <h1>Fire trucks by municipality</h1>
-        </div>
-      </header>
       <section className="prov-trucks__summary" aria-label="Provincial fleet totals">
         <div><strong>{totals.trucks}</strong><span>Fire trucks</span></div>
         <div><strong>{totals.serviceable}</strong><span>Serviceable</span></div>
