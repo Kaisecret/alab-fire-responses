@@ -17,7 +17,7 @@ const styles = `
   .prov-trucks__button { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.7rem 1.15rem; border:0; border-radius:9px; background:#b42318; color:#fff; font:inherit; font-size:.82rem; font-weight:800; cursor:pointer; white-space:nowrap; box-shadow:0 2px 8px rgba(180,35,24,.2); transition:background .15s, transform .15s; }
   .prov-trucks__button:hover { background:#912018; transform:translateY(-1px); }
   .prov-trucks__button:disabled { opacity:.6; cursor:wait; transform:none; }
-  /* ========== 4 PASTEL KPI METRIC CARDS (DASHBOARD STYLE - COMPACT) ========== */
+  /* ========== 4 CLEAN BFP KPI METRIC CARDS (GIS MAP STYLE) ========== */
   .pbfp-kpi-row {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -25,132 +25,90 @@ const styles = `
     margin-bottom: 1.25rem;
   }
   .pbfp-kpi-box {
-    position: relative;
-    border-radius: 11px;
-    padding: 0.72rem 0.95rem 0.62rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    gap: 0.25rem;
+    padding: 0.85rem 1.05rem;
+    border: 1px solid #d7e3f1;
+    border-left-width: 4px;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
     cursor: pointer;
-    overflow: hidden;
     text-decoration: none;
     color: inherit;
     min-height: 98px;
   }
-  .pbfp-kpi-box.red {
-    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
-    border: 1.5px solid #FFBEBE;
-    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
+  .pbfp-kpi-box:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.07);
   }
-  .pbfp-kpi-box.amber {
-    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
-    border: 1.5px solid #FFDC99;
-    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+  .pbfp-kpi-box.is-red, .pbfp-kpi-box.red {
+    border-left-color: #dc2626;
   }
-  .pbfp-kpi-box.blue {
-    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
-    border: 1.5px solid #B8D3FD;
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  .pbfp-kpi-box.is-teal, .pbfp-kpi-box.amber {
+    border-left-color: #0f766e;
   }
-  .pbfp-kpi-box.purple {
-    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
-    border: 1.5px solid #D0BCFD;
-    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
+  .pbfp-kpi-box.is-slate, .pbfp-kpi-box.blue {
+    border-left-color: #64748b;
   }
-  .pbfp-kpi-box:hover { transform: translateY(-2.5px); }
-  .pbfp-kpi-box.red:hover { border-color: #FFA3A3; box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2); }
-  .pbfp-kpi-box.amber:hover { border-color: #FFCF70; box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2); }
-  .pbfp-kpi-box.blue:hover { border-color: #91B8FA; box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2); }
-  .pbfp-kpi-box.purple:hover { border-color: #B79BFB; box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2); }
+  .pbfp-kpi-box.is-blue, .pbfp-kpi-box.purple {
+    border-left-color: #2563eb;
+  }
 
   .pbfp-kpi-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.35rem;
-    margin-bottom: 0.25rem;
+    width: 100%;
+  }
+  .pbfp-kpi-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #64748b;
   }
   .pbfp-kpi-badge-icon {
-    width: 1.95rem;
-    height: 1.95rem;
+    width: 28px;
+    height: 28px;
     border-radius: 8px;
-    background: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.95);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.88rem;
+    font-size: 0.82rem;
     flex-shrink: 0;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .pbfp-kpi-box:hover .pbfp-kpi-badge-icon { transform: scale(1.06); }
-  .pbfp-kpi-badge-icon.red { color: #E23632; }
-  .pbfp-kpi-badge-icon.amber { color: #D97706; }
-  .pbfp-kpi-badge-icon.blue { color: #2563EB; }
-  .pbfp-kpi-badge-icon.purple { color: #7C3AED; }
+  .pbfp-kpi-box.is-red .pbfp-kpi-badge-icon, .pbfp-kpi-box.red .pbfp-kpi-badge-icon {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  .pbfp-kpi-box.is-teal .pbfp-kpi-badge-icon, .pbfp-kpi-box.amber .pbfp-kpi-badge-icon {
+    background: #ccfbf1;
+    color: #0f766e;
+  }
+  .pbfp-kpi-box.is-slate .pbfp-kpi-badge-icon, .pbfp-kpi-box.blue .pbfp-kpi-badge-icon {
+    background: #f1f5f9;
+    color: #64748b;
+  }
+  .pbfp-kpi-box.is-blue .pbfp-kpi-badge-icon, .pbfp-kpi-box.purple .pbfp-kpi-badge-icon {
+    background: #dbeafe;
+    color: #2563eb;
+  }
 
-  .pbfp-kpi-trend-tag {
-    font-size: 0.58rem;
-    font-weight: 800;
-    padding: 0.14rem 0.42rem;
-    border-radius: 5px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.22rem;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-  .pbfp-kpi-trend-tag.red { color: #991B1B; background: #FDE8E8; }
-  .pbfp-kpi-trend-tag.amber { color: #92400E; background: #FEF3C7; }
-  .pbfp-kpi-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
-  .pbfp-kpi-trend-tag.purple { color: #5B21B6; background: #EDE9FE; }
-
-  .pbfp-kpi-body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.08rem;
-    margin: 0.08rem 0;
-  }
-  .pbfp-kpi-label {
-    order: 2;
-    font-size: 0.63rem;
-    font-weight: 750;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   .pbfp-kpi-number {
-    order: 1;
-    font-size: 1.45rem;
-    font-weight: 850;
-    color: #0F172A;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    font-size: 1.85rem;
+    font-weight: 900;
+    line-height: 1;
+    color: #0f172a;
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    margin-top: 0.2rem;
   }
-  .pbfp-kpi-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 0.35rem;
-    padding-top: 0.32rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-    font-size: 0.65rem;
-    font-weight: 600;
-  }
-  .pbfp-kpi-box.red .pbfp-kpi-footer { color: #DC2626; border-top-color: #FED7D7; }
-  .pbfp-kpi-box.amber .pbfp-kpi-footer { color: #D97706; border-top-color: #FEEBC8; }
-  .pbfp-kpi-box.blue .pbfp-kpi-footer { color: #2563EB; border-top-color: #DCE7FC; }
-  .pbfp-kpi-box.purple .pbfp-kpi-footer { color: #7C3AED; border-top-color: #E9D8FD; }
-
-  .pbfp-kpi-footer-subtext {
-    font-weight: 600;
-    opacity: 0.9;
+  .pbfp-kpi-box.is-red .pbfp-kpi-number, .pbfp-kpi-box.red .pbfp-kpi-number {
+    color: #dc2626;
   }
   .pbfp-kpi-footer i {
     font-size: 0.64rem;
@@ -352,90 +310,54 @@ export function ProvincialFireTrucks({
         </button>
       </div>
       <section className="pbfp-kpi-row" aria-label="Provincial fleet totals">
-        {/* Card 1: Red */}
+        {/* Card 1: Fire Trucks */}
         <div
-          className="pbfp-kpi-box red"
+          className="pbfp-kpi-box is-red"
           onClick={() => setSelectedMunicipality("ALL")}
           role="button"
           tabIndex={0}
           title="Click to view all fire trucks"
         >
           <div className="pbfp-kpi-header">
-            <div className="pbfp-kpi-badge-icon red">
-              <i className="fa-solid fa-truck-moving" />
-            </div>
-            <span className="pbfp-kpi-trend-tag red">
-              <i className="fa-solid fa-fire" /> Total Fleet
-            </span>
-          </div>
-          <div className="pbfp-kpi-body">
             <span className="pbfp-kpi-label">Fire Trucks</span>
-            <span className="pbfp-kpi-number">{totals.trucks}</span>
-          </div>
-          <div className="pbfp-kpi-footer">
-            <span className="pbfp-kpi-footer-subtext">Provincial Fleet Inventory</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
-
-        {/* Card 2: Amber */}
-        <div className="pbfp-kpi-box amber">
-          <div className="pbfp-kpi-header">
-            <div className="pbfp-kpi-badge-icon amber">
-              <i className="fa-solid fa-circle-check" />
-            </div>
-            <span className="pbfp-kpi-trend-tag amber">
-              <i className="fa-solid fa-circle-check" /> Ready
+            <span className="pbfp-kpi-badge-icon">
+              <i className="fa-solid fa-truck-moving" aria-hidden="true" />
             </span>
           </div>
-          <div className="pbfp-kpi-body">
+          <span className="pbfp-kpi-number">{totals.trucks}</span>
+        </div>
+
+        {/* Card 2: Serviceable */}
+        <div className="pbfp-kpi-box is-teal">
+          <div className="pbfp-kpi-header">
             <span className="pbfp-kpi-label">Serviceable</span>
-            <span className="pbfp-kpi-number">{totals.serviceable}</span>
-          </div>
-          <div className="pbfp-kpi-footer">
-            <span className="pbfp-kpi-footer-subtext">Operational & Deployable</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
-
-        {/* Card 3: Blue */}
-        <div className="pbfp-kpi-box blue">
-          <div className="pbfp-kpi-header">
-            <div className="pbfp-kpi-badge-icon blue">
-              <i className="fa-solid fa-wrench" />
-            </div>
-            <span className="pbfp-kpi-trend-tag blue">
-              <i className="fa-solid fa-triangle-exclamation" /> Attention
+            <span className="pbfp-kpi-badge-icon">
+              <i className="fa-solid fa-circle-check" aria-hidden="true" />
             </span>
           </div>
-          <div className="pbfp-kpi-body">
+          <span className="pbfp-kpi-number">{totals.serviceable}</span>
+        </div>
+
+        {/* Card 3: Out of Service */}
+        <div className="pbfp-kpi-box is-slate">
+          <div className="pbfp-kpi-header">
             <span className="pbfp-kpi-label">Out of Service</span>
-            <span className="pbfp-kpi-number">{totals.down}</span>
-          </div>
-          <div className="pbfp-kpi-footer">
-            <span className="pbfp-kpi-footer-subtext">Maintenance / For BER</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
-
-        {/* Card 4: Purple */}
-        <Link href="/provincial-bfp/firetrucks-stations?view=stations" className="pbfp-kpi-box purple">
-          <div className="pbfp-kpi-header">
-            <div className="pbfp-kpi-badge-icon purple">
-              <i className="fa-solid fa-building-shield" />
-            </div>
-            <span className="pbfp-kpi-trend-tag purple">
-              <i className="fa-solid fa-shield-halved" /> Antique
+            <span className="pbfp-kpi-badge-icon">
+              <i className="fa-solid fa-wrench" aria-hidden="true" />
             </span>
           </div>
-          <div className="pbfp-kpi-body">
+          <span className="pbfp-kpi-number">{totals.down}</span>
+        </div>
+
+        {/* Card 4: Active Stations */}
+        <Link href="/provincial-bfp/firetrucks-stations?view=stations" className="pbfp-kpi-box is-blue">
+          <div className="pbfp-kpi-header">
             <span className="pbfp-kpi-label">Active Stations</span>
-            <span className="pbfp-kpi-number">{totals.stations}</span>
+            <span className="pbfp-kpi-badge-icon">
+              <i className="fa-solid fa-building-shield" aria-hidden="true" />
+            </span>
           </div>
-          <div className="pbfp-kpi-footer">
-            <span className="pbfp-kpi-footer-subtext">Station Directory</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
+          <span className="pbfp-kpi-number">{totals.stations}</span>
         </Link>
       </section>
       {loadError ? (

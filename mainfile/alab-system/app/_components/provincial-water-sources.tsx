@@ -13,7 +13,7 @@ const styles = `
   .prov-water h1 { margin: 0; font-size: clamp(1.45rem, 2vw, 2rem); letter-spacing: -.035em; }
   .prov-water__badge { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: .55rem .75rem; border: 1px solid #d0d5dd; border-radius: 9px; background: #fff; color: #475467; font-size: .75rem; font-weight: 800; white-space: nowrap; }
 
-  /* ========== 4 PASTEL KPI METRIC CARDS (DASHBOARD STYLE - COMPACT) ========== */
+  /* ========== 4 CLEAN BFP KPI METRIC CARDS (GIS MAP STYLE) ========== */
   .pbfp-kpi-row {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -21,132 +21,91 @@ const styles = `
     margin-bottom: 1.25rem;
   }
   .pbfp-kpi-box {
-    position: relative;
-    border-radius: 11px;
-    padding: 0.72rem 0.95rem 0.62rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    gap: 0.25rem;
+    padding: 0.85rem 1.05rem;
+    border: 1px solid #d7e3f1;
+    border-left-width: 4px;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
     cursor: pointer;
-    overflow: hidden;
     text-decoration: none;
     color: inherit;
     min-height: 98px;
   }
-  .pbfp-kpi-box.blue {
-    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
-    border: 1.5px solid #B8D3FD;
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  .pbfp-kpi-box:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.07);
   }
-  .pbfp-kpi-box.emerald {
-    background: linear-gradient(145deg, #E6FBF0 0%, #D1F7E2 100%);
-    border: 1.5px solid #A7F3D0;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
+  .pbfp-kpi-box.is-blue, .pbfp-kpi-box.blue {
+    border-left-color: #2563eb;
   }
-  .pbfp-kpi-box.amber {
-    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
-    border: 1.5px solid #FFDC99;
-    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+  .pbfp-kpi-box.is-teal, .pbfp-kpi-box.emerald {
+    border-left-color: #0f766e;
   }
-  .pbfp-kpi-box.purple {
-    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
-    border: 1.5px solid #D0BCFD;
-    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
+  .pbfp-kpi-box.is-red, .pbfp-kpi-box.amber {
+    border-left-color: #dc2626;
   }
-  .pbfp-kpi-box:hover { transform: translateY(-2.5px); }
-  .pbfp-kpi-box.blue:hover { border-color: #91B8FA; box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2); }
-  .pbfp-kpi-box.emerald:hover { border-color: #6EE7B7; box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2); }
-  .pbfp-kpi-box.amber:hover { border-color: #FFCF70; box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2); }
-  .pbfp-kpi-box.purple:hover { border-color: #B79BFB; box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2); }
+  .pbfp-kpi-box.is-slate, .pbfp-kpi-box.purple {
+    border-left-color: #64748b;
+  }
 
   .pbfp-kpi-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.35rem;
-    margin-bottom: 0.25rem;
+    width: 100%;
+  }
+  .pbfp-kpi-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #64748b;
   }
   .pbfp-kpi-badge-icon {
-    width: 1.95rem;
-    height: 1.95rem;
+    width: 28px;
+    height: 28px;
     border-radius: 8px;
-    background: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.95);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.88rem;
+    font-size: 0.82rem;
     flex-shrink: 0;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .pbfp-kpi-box:hover .pbfp-kpi-badge-icon { transform: scale(1.06); }
-  .pbfp-kpi-badge-icon.blue { color: #2563EB; }
-  .pbfp-kpi-badge-icon.emerald { color: #059669; }
-  .pbfp-kpi-badge-icon.amber { color: #D97706; }
-  .pbfp-kpi-badge-icon.purple { color: #7C3AED; }
+  .pbfp-kpi-box.is-blue .pbfp-kpi-badge-icon, .pbfp-kpi-box.blue .pbfp-kpi-badge-icon {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+  .pbfp-kpi-box.is-teal .pbfp-kpi-badge-icon, .pbfp-kpi-box.emerald .pbfp-kpi-badge-icon {
+    background: #ccfbf1;
+    color: #0f766e;
+  }
+  .pbfp-kpi-box.is-red .pbfp-kpi-badge-icon, .pbfp-kpi-box.amber .pbfp-kpi-badge-icon {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  .pbfp-kpi-box.is-slate .pbfp-kpi-badge-icon, .pbfp-kpi-box.purple .pbfp-kpi-badge-icon {
+    background: #f1f5f9;
+    color: #64748b;
+  }
 
-  .pbfp-kpi-trend-tag {
-    font-size: 0.58rem;
-    font-weight: 800;
-    padding: 0.14rem 0.42rem;
-    border-radius: 5px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.22rem;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-  .pbfp-kpi-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
-  .pbfp-kpi-trend-tag.emerald { color: #065F46; background: #D1FAE5; }
-  .pbfp-kpi-trend-tag.amber { color: #92400E; background: #FEF3C7; }
-  .pbfp-kpi-trend-tag.purple { color: #5B21B6; background: #EDE9FE; }
-
-  .pbfp-kpi-body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.08rem;
-    margin: 0.08rem 0;
-  }
-  .pbfp-kpi-label {
-    order: 2;
-    font-size: 0.63rem;
-    font-weight: 750;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   .pbfp-kpi-number {
-    order: 1;
-    font-size: 1.45rem;
-    font-weight: 850;
-    color: #0F172A;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    font-size: 1.85rem;
+    font-weight: 900;
+    line-height: 1;
+    color: #0f172a;
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    margin-top: 0.2rem;
   }
-  .pbfp-kpi-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 0.35rem;
-    padding-top: 0.32rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-    font-size: 0.65rem;
-    font-weight: 600;
+  .pbfp-kpi-box.is-red .pbfp-kpi-number {
+    color: #dc2626;
   }
-  .pbfp-kpi-box.blue .pbfp-kpi-footer { color: #2563EB; border-top-color: #DCE7FC; }
-  .pbfp-kpi-box.emerald .pbfp-kpi-footer { color: #059669; border-top-color: #A7F3D0; }
-  .pbfp-kpi-box.amber .pbfp-kpi-footer { color: #D97706; border-top-color: #FEEBC8; }
-  .pbfp-kpi-box.purple .pbfp-kpi-footer { color: #7C3AED; border-top-color: #E9D8FD; }
-
-  .pbfp-kpi-footer-subtext { font-weight: 600; opacity: 0.9; }
-  .pbfp-kpi-footer i { font-size: 0.64rem; transition: transform 0.2s ease; }
-  .pbfp-kpi-box:hover .pbfp-kpi-footer i { transform: translateX(3px); }
 
   /* Toolbar */
   .prov-water__toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin: 1.25rem 0 .85rem; }
@@ -379,9 +338,9 @@ export function ProvincialWaterSources() {
 
         {/* 4 Pastel KPI Summary Cards (Compact Style) */}
         <section className="pbfp-kpi-row" aria-label="Provincial totals">
-          {/* Card 1: Blue */}
+          {/* Card 1: Municipalities */}
           <div
-            className="pbfp-kpi-box blue"
+            className="pbfp-kpi-box is-blue"
             onClick={() => {
               setSelectedMunicipality("ALL");
               setQuery("");
@@ -397,26 +356,17 @@ export function ProvincialWaterSources() {
             }}
           >
             <div className="pbfp-kpi-header">
-              <div className="pbfp-kpi-badge-icon blue">
-                <i className="fa-solid fa-city" aria-hidden="true" />
-              </div>
-              <span className="pbfp-kpi-trend-tag blue">
-                <i className="fa-solid fa-layer-group" aria-hidden="true" /> Coverage
-              </span>
-            </div>
-            <div className="pbfp-kpi-body">
               <span className="pbfp-kpi-label">Municipalities</span>
-              <span className="pbfp-kpi-number">{registry?.municipalities.length ?? 0}</span>
+              <span className="pbfp-kpi-badge-icon">
+                <i className="fa-solid fa-city" aria-hidden="true" />
+              </span>
             </div>
-            <div className="pbfp-kpi-footer">
-              <span className="pbfp-kpi-footer-subtext">Province-wide water network</span>
-              <i className="fa-solid fa-arrow-right" aria-hidden="true" />
-            </div>
+            <span className="pbfp-kpi-number">{registry?.municipalities.length ?? 0}</span>
           </div>
 
-          {/* Card 2: Emerald */}
+          {/* Card 2: Mapped Locations */}
           <div
-            className="pbfp-kpi-box emerald"
+            className="pbfp-kpi-box is-teal"
             onClick={() => {
               setSelectedMunicipality("ALL");
               setQuery("");
@@ -431,26 +381,17 @@ export function ProvincialWaterSources() {
             }}
           >
             <div className="pbfp-kpi-header">
-              <div className="pbfp-kpi-badge-icon emerald">
-                <i className="fa-solid fa-location-dot" aria-hidden="true" />
-              </div>
-              <span className="pbfp-kpi-trend-tag emerald">
-                <i className="fa-solid fa-check" aria-hidden="true" /> Verified
-              </span>
-            </div>
-            <div className="pbfp-kpi-body">
               <span className="pbfp-kpi-label">Mapped Locations</span>
-              <span className="pbfp-kpi-number">{totalLocations}</span>
+              <span className="pbfp-kpi-badge-icon">
+                <i className="fa-solid fa-location-dot" aria-hidden="true" />
+              </span>
             </div>
-            <div className="pbfp-kpi-footer">
-              <span className="pbfp-kpi-footer-subtext">Exact GPS coordinates</span>
-              <i className="fa-solid fa-arrow-right" aria-hidden="true" />
-            </div>
+            <span className="pbfp-kpi-number">{totalLocations}</span>
           </div>
 
-          {/* Card 3: Amber */}
+          {/* Card 3: Fire Hydrants */}
           <div
-            className="pbfp-kpi-box amber"
+            className="pbfp-kpi-box is-red"
             onClick={() => {
               setSelectedMunicipality("ALL");
               setQuery("");
@@ -465,26 +406,17 @@ export function ProvincialWaterSources() {
             }}
           >
             <div className="pbfp-kpi-header">
-              <div className="pbfp-kpi-badge-icon amber">
-                <i className="fa-solid fa-fire-extinguisher" aria-hidden="true" />
-              </div>
-              <span className="pbfp-kpi-trend-tag amber">
-                <i className="fa-solid fa-faucet-drip" aria-hidden="true" /> Pressurized
-              </span>
-            </div>
-            <div className="pbfp-kpi-body">
               <span className="pbfp-kpi-label">Fire Hydrants</span>
-              <span className="pbfp-kpi-number">{totalHydrants}</span>
+              <span className="pbfp-kpi-badge-icon">
+                <i className="fa-solid fa-fire-extinguisher" aria-hidden="true" />
+              </span>
             </div>
-            <div className="pbfp-kpi-footer">
-              <span className="pbfp-kpi-footer-subtext">Active municipal hydrants</span>
-              <i className="fa-solid fa-arrow-right" aria-hidden="true" />
-            </div>
+            <span className="pbfp-kpi-number">{totalHydrants}</span>
           </div>
 
-          {/* Card 4: Purple */}
+          {/* Card 4: Other Water Sources */}
           <div
-            className="pbfp-kpi-box purple"
+            className="pbfp-kpi-box is-slate"
             onClick={() => {
               setSelectedMunicipality("ALL");
               setQuery("");
@@ -499,21 +431,12 @@ export function ProvincialWaterSources() {
             }}
           >
             <div className="pbfp-kpi-header">
-              <div className="pbfp-kpi-badge-icon purple">
+              <span className="pbfp-kpi-label">Other Sources</span>
+              <span className="pbfp-kpi-badge-icon">
                 <i className="fa-solid fa-droplet" aria-hidden="true" />
-              </div>
-              <span className="pbfp-kpi-trend-tag purple">
-                <i className="fa-solid fa-water" aria-hidden="true" /> Reserve
               </span>
             </div>
-            <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-label">Other Water Sources</span>
-              <span className="pbfp-kpi-number">{totalOtherSources}</span>
-            </div>
-            <div className="pbfp-kpi-footer">
-              <span className="pbfp-kpi-footer-subtext">Natural & open supply points</span>
-              <i className="fa-solid fa-arrow-right" aria-hidden="true" />
-            </div>
+            <span className="pbfp-kpi-number">{totalOtherSources}</span>
           </div>
         </section>
 
