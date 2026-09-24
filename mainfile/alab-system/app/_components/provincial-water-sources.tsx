@@ -6,66 +6,236 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { ProvincialWaterSourceRegistry, WaterSource } from "../../lib/water-sources/types";
 
 const styles = `
-  .prov-water { padding:1.5rem clamp(1rem,2vw,2rem) 3rem; color:#172033; font-family:'Plus Jakarta Sans',sans-serif; }
-  .prov-water * { box-sizing:border-box; }
-  .prov-water__header { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; margin-bottom:1.25rem; }
-  .prov-water__eyebrow { margin:0 0 .4rem; color:#b42318; font-size:.7rem; font-weight:850; letter-spacing:.11em; text-transform:uppercase; }
-  .prov-water h1 { margin:0; font-size:clamp(1.45rem,2vw,2rem); letter-spacing:-.035em; }
-  .prov-water__subtitle { max-width:760px; margin:.45rem 0 0; color:#667085; font-size:.87rem; line-height:1.55; }
-  .prov-water__badge { display:inline-flex; align-items:center; gap:.45rem; min-height:40px; padding:.55rem .75rem; border:1px solid #d0d5dd; border-radius:9px; background:#fff; color:#475467; font-size:.75rem; font-weight:800; white-space:nowrap; }
-  .prov-water__summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); border:1px solid #e4e7ec; border-radius:12px; background:#fff; margin-bottom:1rem; }
-  .prov-water__summary div { padding:1rem 1.15rem; border-right:1px solid #e4e7ec; }
-  .prov-water__summary div:last-child { border-right:0; }
-  .prov-water__summary strong { display:block; font-size:1.35rem; }
-  .prov-water__summary span { color:#667085; font-size:.74rem; font-weight:700; }
-  .prov-water__layout { display:grid; grid-template-columns:minmax(300px, .82fr) minmax(420px,1.5fr); gap:1rem; align-items:start; }
-  .prov-water__panel { border:1px solid #e4e7ec; border-radius:12px; background:#fff; overflow:hidden; }
-  .prov-water__panel-head { padding:1rem 1.1rem; border-bottom:1px solid #e4e7ec; display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
-  .prov-water__panel-head h2 { margin:0; font-size:.92rem; }
-  .prov-water__panel-head span { color:#667085; font-size:.7rem; font-weight:700; }
-  .prov-water__municipalities { display:grid; max-height:650px; overflow:auto; }
-  .prov-water__municipality { appearance:none; width:100%; border:0; border-bottom:1px solid #f0f1f3; background:#fff; padding:.9rem 1.1rem; text-align:left; cursor:pointer; display:grid; grid-template-columns:1fr auto; gap:.3rem .8rem; color:#344054; }
-  .prov-water__municipality:hover { background:#f8fafc; }
-  .prov-water__municipality.is-active { background:#f0fdfa; box-shadow:inset 3px 0 #0f766e; }
-  .prov-water__municipality:focus-visible, .prov-water a:focus-visible, .prov-water input:focus-visible { outline:3px solid rgba(37,99,235,.35); outline-offset:-3px; }
-  .prov-water__municipality strong { font-size:.8rem; }
-  .prov-water__municipality span { color:#667085; font-size:.7rem; }
-  .prov-water__municipality b { grid-row:1 / 3; grid-column:2; align-self:center; display:grid; place-items:center; min-width:34px; height:28px; border-radius:999px; background:#f2f4f7; color:#344054; font-size:.74rem; }
-  .prov-water__detail { min-height:520px; }
-  .prov-water__search { min-height:40px; width:min(260px,100%); padding:.55rem .7rem; border:1px solid #d0d5dd; border-radius:8px; font:inherit; font-size:.76rem; }
-  .prov-water__records { display:grid; gap:.6rem; padding:.75rem; }
-  .prov-water__record { appearance:none; width:100%; cursor:pointer; text-align:left; font:inherit; background:#fff; display:grid; grid-template-columns:42px 1fr auto; gap:.75rem; align-items:center; color:inherit; text-decoration:none; padding:.85rem; border:1px solid #e4e7ec; border-radius:9px; transition:border-color .18s,background .18s; }
-  .prov-water__record:hover { border-color:#84c7c3; background:#f8fffe; }
-  .prov-water__record-icon { width:42px; height:42px; display:grid; place-items:center; border-radius:8px; background:#e8f7f5; color:#0f766e; }
-  .prov-water__record h3 { margin:0; font-size:.78rem; line-height:1.4; }
-  .prov-water__record p { margin:.25rem 0 0; color:#667085; font-size:.68rem; }
-  .prov-water__record-meta { text-align:right; }
-  .prov-water__record-meta strong { display:block; font-size:.7rem; }
-  .prov-water__record-meta span { color:#0f766e; font-size:.66rem; font-weight:800; }
-  .prov-water__empty { padding:3rem 1rem; text-align:center; color:#667085; font-size:.82rem; }
-  .prov-water__backdrop { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:1rem; background:rgba(15,23,42,.62); }
-  .prov-water__dialog { width:min(620px,100%); max-height:calc(100vh - 2rem); overflow:auto; border:1px solid #e4e7ec; border-radius:14px; background:#fff; box-shadow:0 28px 90px rgba(15,23,42,.3); }
-  .prov-water__dialog-head { display:flex; justify-content:space-between; gap:1rem; padding:1.2rem 1.25rem; border-bottom:1px solid #e4e7ec; }
-  .prov-water__dialog-head h2 { margin:.2rem 0 0; font-size:1.05rem; line-height:1.4; }
-  .prov-water__dialog-head p { margin:0; color:#0f766e; font-size:.7rem; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }
-  .prov-water__close { width:44px; height:44px; flex:0 0 44px; border:0; border-radius:9px; background:#f2f4f7; color:#344054; cursor:pointer; }
-  .prov-water__facts { display:grid; grid-template-columns:repeat(3,1fr); gap:.65rem; padding:1rem 1.25rem; border-bottom:1px solid #e4e7ec; }
-  .prov-water__fact { padding:.75rem; border-radius:9px; background:#f8fafc; }
-  .prov-water__fact span { display:block; margin-bottom:.25rem; color:#667085; font-size:.66rem; font-weight:700; }
-  .prov-water__fact strong { display:block; font-size:.76rem; line-height:1.4; word-break:break-word; }
-  .prov-water__dialog form { padding:1.2rem 1.25rem; }
-  .prov-water__form-grid { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; }
-  .prov-water__field { display:grid; gap:.35rem; }
-  .prov-water__field label { color:#344054; font-size:.73rem; font-weight:800; }
-  .prov-water__field input { min-height:44px; border:1px solid #d0d5dd; border-radius:8px; padding:.65rem .75rem; font:inherit; font-size:.82rem; }
-  .prov-water__help { margin:.75rem 0 0; color:#667085; font-size:.72rem; line-height:1.5; }
-  .prov-water__error { margin:.75rem 0 0; color:#b42318; font-size:.76rem; font-weight:750; }
-  .prov-water__actions { display:flex; justify-content:flex-end; gap:.6rem; margin-top:1rem; }
-  .prov-water__action { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:.45rem; border:1px solid #d0d5dd; border-radius:9px; padding:.65rem 1rem; background:#fff; color:#344054; text-decoration:none; font:inherit; font-size:.78rem; font-weight:800; cursor:pointer; }
-  .prov-water__action--primary { border-color:#0f766e; background:#0f766e; color:#fff; }
-  .prov-water__action:disabled { opacity:.6; cursor:wait; }
-  @media(max-width:900px){ .prov-water__layout{grid-template-columns:1fr;} .prov-water__municipalities{max-height:340px;} }
-  @media(max-width:600px){ .prov-water__header{flex-direction:column;} .prov-water__summary{grid-template-columns:1fr;} .prov-water__summary div{border-right:0;border-bottom:1px solid #e4e7ec;} .prov-water__summary div:last-child{border-bottom:0;} .prov-water__panel-head{align-items:flex-start;flex-direction:column;} .prov-water__search{width:100%;} .prov-water__record{grid-template-columns:38px 1fr;} .prov-water__record-meta{grid-column:2;text-align:left;} .prov-water__facts,.prov-water__form-grid{grid-template-columns:1fr;} .prov-water__actions{flex-direction:column-reverse;} .prov-water__action{width:100%;} }
+  .prov-water { padding: 1.5rem clamp(1rem, 2vw, 2rem) 3rem; color: #172033; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .prov-water * { box-sizing: border-box; }
+  .prov-water__header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 1.25rem; }
+  .prov-water__eyebrow { margin: 0 0 .4rem; color: #b42318; font-size: .7rem; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+  .prov-water h1 { margin: 0; font-size: clamp(1.45rem, 2vw, 2rem); letter-spacing: -.035em; }
+  .prov-water__subtitle { max-width: 760px; margin: .45rem 0 0; color: #667085; font-size: .87rem; line-height: 1.55; }
+  .prov-water__badge { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: .55rem .75rem; border: 1px solid #d0d5dd; border-radius: 9px; background: #fff; color: #475467; font-size: .75rem; font-weight: 800; white-space: nowrap; }
+
+  /* ========== 4 PASTEL KPI METRIC CARDS (DASHBOARD STYLE - COMPACT) ========== */
+  .pbfp-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .pbfp-kpi-box {
+    position: relative;
+    border-radius: 11px;
+    padding: 0.72rem 0.95rem 0.62rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    min-height: 98px;
+  }
+  .pbfp-kpi-box.blue {
+    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
+    border: 1.5px solid #B8D3FD;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  }
+  .pbfp-kpi-box.emerald {
+    background: linear-gradient(145deg, #E6FBF0 0%, #D1F7E2 100%);
+    border: 1.5px solid #A7F3D0;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
+  }
+  .pbfp-kpi-box.amber {
+    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
+    border: 1.5px solid #FFDC99;
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+  }
+  .pbfp-kpi-box.purple {
+    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
+    border: 1.5px solid #D0BCFD;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
+  }
+  .pbfp-kpi-box:hover { transform: translateY(-2.5px); }
+  .pbfp-kpi-box.blue:hover { border-color: #91B8FA; box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2); }
+  .pbfp-kpi-box.emerald:hover { border-color: #6EE7B7; box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2); }
+  .pbfp-kpi-box.amber:hover { border-color: #FFCF70; box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2); }
+  .pbfp-kpi-box.purple:hover { border-color: #B79BFB; box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2); }
+
+  .pbfp-kpi-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    margin-bottom: 0.25rem;
+  }
+  .pbfp-kpi-badge-icon {
+    width: 1.95rem;
+    height: 1.95rem;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pbfp-kpi-box:hover .pbfp-kpi-badge-icon { transform: scale(1.06); }
+  .pbfp-kpi-badge-icon.blue { color: #2563EB; }
+  .pbfp-kpi-badge-icon.emerald { color: #059669; }
+  .pbfp-kpi-badge-icon.amber { color: #D97706; }
+  .pbfp-kpi-badge-icon.purple { color: #7C3AED; }
+
+  .pbfp-kpi-trend-tag {
+    font-size: 0.58rem;
+    font-weight: 800;
+    padding: 0.14rem 0.42rem;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .pbfp-kpi-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
+  .pbfp-kpi-trend-tag.emerald { color: #065F46; background: #D1FAE5; }
+  .pbfp-kpi-trend-tag.amber { color: #92400E; background: #FEF3C7; }
+  .pbfp-kpi-trend-tag.purple { color: #5B21B6; background: #EDE9FE; }
+
+  .pbfp-kpi-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.08rem;
+    margin: 0.08rem 0;
+  }
+  .pbfp-kpi-label {
+    order: 2;
+    font-size: 0.63rem;
+    font-weight: 750;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pbfp-kpi-number {
+    order: 1;
+    font-size: 1.45rem;
+    font-weight: 850;
+    color: #0F172A;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .pbfp-kpi-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.35rem;
+    padding-top: 0.32rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.65rem;
+    font-weight: 600;
+  }
+  .pbfp-kpi-box.blue .pbfp-kpi-footer { color: #2563EB; border-top-color: #DCE7FC; }
+  .pbfp-kpi-box.emerald .pbfp-kpi-footer { color: #059669; border-top-color: #A7F3D0; }
+  .pbfp-kpi-box.amber .pbfp-kpi-footer { color: #D97706; border-top-color: #FEEBC8; }
+  .pbfp-kpi-box.purple .pbfp-kpi-footer { color: #7C3AED; border-top-color: #E9D8FD; }
+
+  .pbfp-kpi-footer-subtext { font-weight: 600; opacity: 0.9; }
+  .pbfp-kpi-footer i { font-size: 0.64rem; transition: transform 0.2s ease; }
+  .pbfp-kpi-box:hover .pbfp-kpi-footer i { transform: translateX(3px); }
+
+  /* Toolbar */
+  .prov-water__toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin: 1.25rem 0 .85rem; }
+  .prov-water__search-box { position: relative; width: min(380px, 100%); display: flex; align-items: center; }
+  .prov-water__search-icon { position: absolute; left: .9rem; color: #98a2b3; font-size: .82rem; pointer-events: none; }
+  .prov-water__search { min-height: 44px; width: 100%; padding: .7rem .85rem .7rem 2.35rem; border: 1px solid #d0d5dd; border-radius: 9px; background: #fff; color: #172033; font: inherit; font-size: .82rem; }
+  .prov-water__filter-group { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
+  .prov-water__filter-label { display: inline-flex; align-items: center; gap: .35rem; color: #475467; font-size: .78rem; font-weight: 750; }
+  .prov-water__select { min-height: 44px; min-width: 240px; padding: .65rem 2.2rem .65rem .85rem; border: 1px solid #d0d5dd; border-radius: 9px; background: #fff; color: #172033; font: inherit; font-size: .82rem; font-weight: 650; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E"); background-position: right .75rem center; background-repeat: no-repeat; background-size: 1.15rem; }
+  .prov-water__count-badge { display: inline-flex; align-items: center; gap: .45rem; min-height: 44px; padding: .55rem .85rem; border: 1px solid #d0d5dd; border-radius: 9px; background: #fff; color: #475467; font-size: .76rem; font-weight: 800; white-space: nowrap; }
+
+  /* Horizontal Municipality Pills */
+  .prov-water__pill-strip { display: flex; gap: .45rem; overflow-x: auto; padding-bottom: .45rem; margin-bottom: 1.15rem; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+  .prov-water__pill { appearance: none; border: 1px solid #e2e8f0; background: #fff; color: #475569; padding: .4rem .75rem; border-radius: 999px; font: inherit; font-size: .74rem; font-weight: 700; white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: .35rem; transition: all .16s ease; }
+  .prov-water__pill:hover { background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; }
+  .prov-water__pill.is-active { background: #0f766e; border-color: #0f766e; color: #fff; box-shadow: 0 2px 6px rgba(15,118,110,.25); }
+  .prov-water__pill b { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.08); font-size: .65rem; font-weight: 800; }
+  .prov-water__pill.is-active b { background: rgba(255,255,255,.25); color: #fff; }
+
+  /* Water Cards Grid */
+  .water-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(285px, 1fr)); gap: calc(.75rem + 5px); }
+  .water-card { appearance: none; width: 100%; padding: 0; text-align: left; font: inherit; display: flex; flex-direction: column; min-height: 250px; color: inherit; background: #fff; border: 1px solid #e4e7ec; border-radius: 12px; overflow: hidden; transition: border-color .18s, transform .18s, box-shadow .18s; position: relative; }
+  .water-card:hover { border-color: #84c7c3; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(15,23,42,.08); }
+  .water-card:focus-visible { outline: 3px solid rgba(37,99,235,.35); outline-offset: 2px; }
+
+  .water-card__head { display: flex; align-items: center; gap: .75rem; padding: 1rem; background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%); color: #fff; cursor: pointer; }
+  .water-card.is-other .water-card__head { background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%); }
+  .water-card__icon { width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center; border-radius: 10px; background: rgba(255,255,255,.18); font-size: 1.15rem; }
+  .water-card__head-info { min-width: 0; flex: 1; }
+  .water-card__title { margin: 0; font-size: .88rem; font-weight: 800; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+  .water-card__station { margin: .18rem 0 0; font-size: .7rem; opacity: .9; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .water-card__body { display: grid; gap: .55rem; padding: 1rem; flex: 1; cursor: pointer; }
+  .water-card__row { display: flex; justify-content: space-between; gap: .75rem; font-size: .76rem; }
+  .water-card__row span { color: #667085; }
+  .water-card__row strong { text-align: right; font-weight: 750; color: #1e293b; }
+  .water-card__origin { display: inline-flex; width: max-content; border-radius: 999px; background: #f1f5f9; color: #475569; padding: .22rem .55rem; font-size: .65rem; font-weight: 750; margin-top: .15rem; }
+
+  /* 2 Action Buttons in Footer: 1st Go to map, 2nd Edit coordinates */
+  .water-card__footer { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; padding: .65rem .85rem; background: #fafbfd; border-top: 1px solid #f1f5f9; }
+  .water-card__btn { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: .42rem; border-radius: 8px; font: inherit; font-size: .74rem; font-weight: 800; text-decoration: none; cursor: pointer; transition: all .18s; padding: .4rem .65rem; }
+  .water-card__btn--map { background: #f0fdf4; color: #15803d; border: 1.5px solid #bbf7d0; }
+  .water-card__btn--map:hover { background: #16a34a; color: #fff; border-color: #16a34a; transform: translateY(-1px); }
+  .water-card__btn--edit { background: #f0fdfa; color: #0f766e; border: 1.5px solid #99f6e4; }
+  .water-card__btn--edit:hover { background: #0f766e; color: #fff; border-color: #0f766e; transform: translateY(-1px); }
+
+  .prov-water__empty { padding: 3.5rem 1rem; border: 1px dashed #d0d5dd; border-radius: 12px; background: #fff; color: #667085; text-align: center; font-size: .85rem; }
+
+  /* Modal Dialog */
+  .prov-water__backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgba(15,23,42,.62); backdrop-filter: blur(2px); }
+  .prov-water__dialog { width: min(620px, 100%); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid #e4e7ec; border-radius: 14px; background: #fff; box-shadow: 0 28px 90px rgba(15,23,42,.3); }
+  .prov-water__dialog-head { display: flex; justify-content: space-between; gap: 1rem; padding: 1.2rem 1.25rem; border-bottom: 1px solid #e4e7ec; }
+  .prov-water__dialog-head h2 { margin: .2rem 0 0; font-size: 1.05rem; line-height: 1.4; }
+  .prov-water__dialog-head p { margin: 0; color: #0f766e; font-size: .7rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+  .prov-water__close { width: 44px; height: 44px; flex: 0 0 44px; border: 0; border-radius: 9px; background: #f2f4f7; color: #344054; cursor: pointer; }
+  .prov-water__facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: .65rem; padding: 1rem 1.25rem; border-bottom: 1px solid #e4e7ec; }
+  .prov-water__fact { padding: .75rem; border-radius: 9px; background: #f8fafc; }
+  .prov-water__fact span { display: block; margin-bottom: .25rem; color: #667085; font-size: .66rem; font-weight: 700; }
+  .prov-water__fact strong { display: block; font-size: .76rem; line-height: 1.4; word-break: break-word; }
+  .prov-water__dialog form { padding: 1.2rem 1.25rem; }
+  .prov-water__form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+  .prov-water__field { display: grid; gap: .35rem; }
+  .prov-water__field label { color: #344054; font-size: .73rem; font-weight: 800; }
+  .prov-water__field input { min-height: 44px; border: 1px solid #d0d5dd; border-radius: 8px; padding: .65rem .75rem; font: inherit; font-size: .82rem; }
+  .prov-water__help { margin: .75rem 0 0; color: #667085; font-size: .72rem; line-height: 1.5; }
+  .prov-water__error { margin: .75rem 0 0; color: #b42318; font-size: .76rem; font-weight: 750; }
+  .prov-water__actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }
+  .prov-water__action { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; border: 1px solid #d0d5dd; border-radius: 9px; padding: .65rem 1rem; background: #fff; color: #344054; text-decoration: none; font: inherit; font-size: .78rem; font-weight: 800; cursor: pointer; }
+  .prov-water__action--map { border-color: #bbf7d0; background: #f0fdf4; color: #15803d; }
+  .prov-water__action--map:hover { background: #16a34a; color: #fff; border-color: #16a34a; }
+  .prov-water__action--primary { border-color: #0f766e; background: #0f766e; color: #fff; }
+  .prov-water__action--primary:hover { background: #115e59; }
+  .prov-water__action:disabled { opacity: .6; cursor: wait; }
+
+  @media (max-width: 760px) {
+    .pbfp-kpi-row { grid-template-columns: 1fr 1fr; }
+    .prov-water__toolbar { flex-direction: column; align-items: stretch; }
+    .prov-water__search-box { width: 100%; }
+    .prov-water__filter-group { flex-direction: column; align-items: stretch; }
+    .prov-water__select { width: 100%; min-width: 0; }
+    .prov-water__actions { flex-direction: column-reverse; }
+    .prov-water__action { width: 100%; }
+  }
+  @media (max-width: 540px) {
+    .pbfp-kpi-row { grid-template-columns: 1fr; }
+    .prov-water__facts, .prov-water__form-grid { grid-template-columns: 1fr; }
+    .water-card__footer { grid-template-columns: 1fr; }
+  }
 `;
 
 export function ProvincialWaterSources() {
@@ -83,9 +253,18 @@ export function ProvincialWaterSources() {
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/provincial-bfp/water-sources", { cache: "no-store", signal: controller.signal })
-      .then(async (response) => { if (!response.ok) throw new Error("Unable to load the provincial registry."); return response.json(); })
-      .then((data: ProvincialWaterSourceRegistry) => { setRegistry(data); })
-      .catch((reason) => { if (reason?.name !== "AbortError") setError(reason instanceof Error ? reason.message : "Unable to load the provincial registry."); });
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Unable to load the provincial registry.");
+        return response.json();
+      })
+      .then((data: ProvincialWaterSourceRegistry) => {
+        setRegistry(data);
+      })
+      .catch((reason) => {
+        if (reason?.name !== "AbortError") {
+          setError(reason instanceof Error ? reason.message : "Unable to load the provincial registry.");
+        }
+      });
     return () => controller.abort();
   }, []);
 
@@ -98,7 +277,8 @@ export function ProvincialWaterSources() {
     page?.setAttribute("inert", "");
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusableSelector =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
     const focusFirst = window.requestAnimationFrame(() => {
       dialog?.querySelector<HTMLElement>(focusableSelector)?.focus();
     });
@@ -136,11 +316,17 @@ export function ProvincialWaterSources() {
 
   const totalLocations = registry?.municipalities.reduce((sum, item) => sum + item.sourceCount, 0) ?? 0;
   const totalHydrants = registry?.municipalities.reduce((sum, item) => sum + item.fireHydrantCount, 0) ?? 0;
-  const selected = registry?.municipalities.find((item) => item.municipalityId === selectedMunicipality);
+  const totalOtherSources = registry?.municipalities.reduce((sum, item) => sum + item.waterSourceCount, 0) ?? 0;
   const allSelected = selectedMunicipality === "ALL";
+
   const records = useMemo(() => {
     const value = query.trim().toLowerCase();
-    return (registry?.sources ?? []).filter((source) => (selectedMunicipality === "ALL" || source.municipalityId === selectedMunicipality) && (!value || `${source.exactLocation} ${source.typeColor} ${source.municipalityName}`.toLowerCase().includes(value)));
+    return (registry?.sources ?? []).filter(
+      (source) =>
+        (selectedMunicipality === "ALL" || source.municipalityId === selectedMunicipality) &&
+        (!value ||
+          `${source.exactLocation} ${source.typeColor} ${source.municipalityName}`.toLowerCase().includes(value))
+    );
   }, [query, registry, selectedMunicipality]);
 
   function openDetails(source: WaterSource) {
@@ -159,12 +345,23 @@ export function ProvincialWaterSources() {
       const response = await fetch("/api/provincial-bfp/water-sources", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id: selectedSource.id, latitude: Number(coordinateForm.latitude), longitude: Number(coordinateForm.longitude) }),
+        body: JSON.stringify({
+          id: selectedSource.id,
+          latitude: Number(coordinateForm.latitude),
+          longitude: Number(coordinateForm.longitude),
+        }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to update the coordinates.");
       const updated = result.source as WaterSource;
-      setRegistry((current) => current ? { ...current, sources: current.sources.map((source) => source.id === updated.id ? updated : source) } : current);
+      setRegistry((current) =>
+        current
+          ? {
+              ...current,
+              sources: current.sources.map((source) => (source.id === updated.id ? updated : source)),
+            }
+          : current
+      );
       setSelectedSource(updated);
       setCoordinateForm({ latitude: updated.latitude.toFixed(7), longitude: updated.longitude.toFixed(7) });
     } catch (reason) {
@@ -174,16 +371,420 @@ export function ProvincialWaterSources() {
     }
   }
 
-  return <>
-    <style>{styles}</style>
-    <main className="prov-water">
-      <header className="prov-water__header"><div><p className="prov-water__eyebrow">Antique provincial overview</p><h1>Water sources by municipality</h1><p className="prov-water__subtitle">A municipality-level view of 148 records from the BFP locator chart, with exact coordinates, source type, color, and locally added records.</p></div><span className="prov-water__badge"><i className="fa-solid fa-file-shield" /> BFP source register</span></header>
-      <section className="prov-water__summary" aria-label="Provincial totals"><div><strong>{registry?.municipalities.length ?? 0}</strong><span>Municipalities</span></div><div><strong>{totalLocations}</strong><span>Mapped locations</span></div><div><strong>{totalHydrants}</strong><span>Fire hydrants</span></div></section>
-      {error ? <div className="prov-water__panel prov-water__empty">{error}</div> : !registry ? <div className="prov-water__panel prov-water__empty">Loading the province-wide registry…</div> : <div className="prov-water__layout">
-        <section className="prov-water__panel"><header className="prov-water__panel-head"><h2>Municipal registry</h2><span>Select a municipality</span></header><div className="prov-water__municipalities"><button type="button" className={`prov-water__municipality ${allSelected ? "is-active" : ""}`} aria-pressed={allSelected} onClick={() => { setSelectedMunicipality("ALL"); setQuery(""); }}><strong>All municipalities</strong><span>Province-wide water-source registry</span><b>{totalLocations}</b></button>{registry.municipalities.map((municipality) => <button type="button" key={municipality.municipalityId} className={`prov-water__municipality ${municipality.municipalityId === selectedMunicipality ? "is-active" : ""}`} aria-pressed={municipality.municipalityId === selectedMunicipality} onClick={() => { setSelectedMunicipality(municipality.municipalityId); setQuery(""); }}><strong>{municipality.municipalityName}</strong><span>{municipality.fireHydrantCount} hydrants · {municipality.waterSourceCount} other sources</span><b>{municipality.sourceCount}</b></button>)}</div></section>
-        <section className="prov-water__panel prov-water__detail"><header className="prov-water__panel-head"><div><h2>{allSelected ? "All municipalities" : selected?.municipalityName || "Municipality"}</h2><span>{allSelected ? totalLocations : selected?.sourceCount ?? 0} mapped locations</span></div><input className="prov-water__search" aria-label="Search selected municipality" placeholder="Search location or type" value={query} onChange={(event) => setQuery(event.target.value)} /></header>{records.length === 0 ? <div className="prov-water__empty">No water-source records found for this municipality.</div> : <div className="prov-water__records">{records.map((source) => <button type="button" key={source.id} className="prov-water__record" onClick={() => openDetails(source)} aria-label={`Open details for ${source.exactLocation}`}><span className="prov-water__record-icon"><i className={source.sourceKind === "FIRE_HYDRANT" ? "fa-solid fa-fire-extinguisher" : "fa-solid fa-droplet"} /></span><div><h3>{source.exactLocation}</h3><p>{source.municipalityName} · {source.typeColor} · {source.latitude.toFixed(7)}, {source.longitude.toFixed(7)}</p></div><div className="prov-water__record-meta"><strong>Qty. {source.quantity}</strong><span>Edit coordinates →</span></div></button>)}</div>}</section>
-      </div>}
-    </main>
-    {selectedSource && <div className="prov-water__backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setSelectedSource(null); }}><section className="prov-water__dialog" role="dialog" aria-modal="true" aria-labelledby="prov-water-edit-title"><header className="prov-water__dialog-head"><div><p>{selectedSource.sourceKind === "FIRE_HYDRANT" ? "Fire hydrant" : "Water source"} · {selectedSource.municipalityName}</p><h2 id="prov-water-edit-title">{selectedSource.exactLocation}</h2></div><button className="prov-water__close" type="button" aria-label="Close details" onClick={() => setSelectedSource(null)} disabled={saving}><i className="fa-solid fa-xmark" /></button></header><div className="prov-water__facts"><div className="prov-water__fact"><span>Type / color</span><strong>{selectedSource.typeColor}</strong></div><div className="prov-water__fact"><span>Quantity</span><strong>{selectedSource.quantity}</strong></div><div className="prov-water__fact"><span>Record source</span><strong>{selectedSource.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP chart · 2018" : "Municipal entry"}</strong></div></div><form onSubmit={submitCoordinates}><div className="prov-water__form-grid"><div className="prov-water__field"><label htmlFor="prov-water-latitude">Latitude</label><input id="prov-water-latitude" type="number" step="0.0000001" min="4" max="22" required value={coordinateForm.latitude} onChange={(event) => setCoordinateForm({ ...coordinateForm, latitude: event.target.value })} /></div><div className="prov-water__field"><label htmlFor="prov-water-longitude">Longitude</label><input id="prov-water-longitude" type="number" step="0.0000001" min="116" max="127" required value={coordinateForm.longitude} onChange={(event) => setCoordinateForm({ ...coordinateForm, longitude: event.target.value })} /></div></div><p className="prov-water__help">Edit coordinates only when the mapped point has been verified. Municipal users continue to control the location name and quantity.</p>{editError && <p className="prov-water__error" role="alert">{editError}</p>}<div className="prov-water__actions"><Link className="prov-water__action" href={`/provincial-bfp/gis-map?municipalityId=${selectedSource.municipalityId}&waterSource=${selectedSource.id}`}><i className="fa-solid fa-location-dot" /> View on map</Link><button className="prov-water__action prov-water__action--primary" type="submit" disabled={saving}>{saving ? "Saving…" : "Save coordinates"}</button></div></form></section></div>}
-  </>;
+  return (
+    <>
+      <style>{styles}</style>
+      <main className="prov-water">
+        <header className="prov-water__header">
+          <div>
+            <p className="prov-water__eyebrow">Antique provincial overview</p>
+            <h1>Water sources by municipality</h1>
+            <p className="prov-water__subtitle">
+              A municipality-level view of 148 records from the BFP locator chart, with exact coordinates, source type, color, and locally added records.
+            </p>
+          </div>
+          <span className="prov-water__badge">
+            <i className="fa-solid fa-file-shield" aria-hidden="true" /> BFP source register
+          </span>
+        </header>
+
+        {/* 4 Pastel KPI Summary Cards (Compact Style) */}
+        <section className="pbfp-kpi-row" aria-label="Provincial totals">
+          {/* Card 1: Blue */}
+          <div
+            className="pbfp-kpi-box blue"
+            onClick={() => {
+              setSelectedMunicipality("ALL");
+              setQuery("");
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                setSelectedMunicipality("ALL");
+                setQuery("");
+              }
+            }}
+          >
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon blue">
+                <i className="fa-solid fa-city" aria-hidden="true" />
+              </div>
+              <span className="pbfp-kpi-trend-tag blue">
+                <i className="fa-solid fa-layer-group" aria-hidden="true" /> Coverage
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">Municipalities</span>
+              <span className="pbfp-kpi-number">{registry?.municipalities.length ?? 0}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Province-wide water network</span>
+              <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+            </div>
+          </div>
+
+          {/* Card 2: Emerald */}
+          <div
+            className="pbfp-kpi-box emerald"
+            onClick={() => {
+              setSelectedMunicipality("ALL");
+              setQuery("");
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                setSelectedMunicipality("ALL");
+                setQuery("");
+              }
+            }}
+          >
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon emerald">
+                <i className="fa-solid fa-location-dot" aria-hidden="true" />
+              </div>
+              <span className="pbfp-kpi-trend-tag emerald">
+                <i className="fa-solid fa-check" aria-hidden="true" /> Verified
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">Mapped Locations</span>
+              <span className="pbfp-kpi-number">{totalLocations}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Exact GPS coordinates</span>
+              <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+            </div>
+          </div>
+
+          {/* Card 3: Amber */}
+          <div
+            className="pbfp-kpi-box amber"
+            onClick={() => {
+              setSelectedMunicipality("ALL");
+              setQuery("");
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                setSelectedMunicipality("ALL");
+                setQuery("");
+              }
+            }}
+          >
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon amber">
+                <i className="fa-solid fa-fire-extinguisher" aria-hidden="true" />
+              </div>
+              <span className="pbfp-kpi-trend-tag amber">
+                <i className="fa-solid fa-faucet-drip" aria-hidden="true" /> Pressurized
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">Fire Hydrants</span>
+              <span className="pbfp-kpi-number">{totalHydrants}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Active municipal hydrants</span>
+              <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+            </div>
+          </div>
+
+          {/* Card 4: Purple */}
+          <div
+            className="pbfp-kpi-box purple"
+            onClick={() => {
+              setSelectedMunicipality("ALL");
+              setQuery("");
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                setSelectedMunicipality("ALL");
+                setQuery("");
+              }
+            }}
+          >
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon purple">
+                <i className="fa-solid fa-droplet" aria-hidden="true" />
+              </div>
+              <span className="pbfp-kpi-trend-tag purple">
+                <i className="fa-solid fa-water" aria-hidden="true" /> Reserve
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">Other Water Sources</span>
+              <span className="pbfp-kpi-number">{totalOtherSources}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Natural & open supply points</span>
+              <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+            </div>
+          </div>
+        </section>
+
+        {error ? (
+          <div className="prov-water__empty">{error}</div>
+        ) : !registry ? (
+          <div className="prov-water__empty">Loading the province-wide registry…</div>
+        ) : (
+          <>
+            {/* Toolbar: Search input + Municipality Filter Select + Showing Badge */}
+            <div className="prov-water__toolbar">
+              <div className="prov-water__search-box">
+                <i className="fa-solid fa-magnifying-glass prov-water__search-icon" aria-hidden="true" />
+                <input
+                  className="prov-water__search"
+                  aria-label="Search selected municipality"
+                  placeholder="Search location, type, or municipality…"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </div>
+              <div className="prov-water__filter-group">
+                <label className="prov-water__filter-label" htmlFor="prov-water-muni-select">
+                  <i className="fa-solid fa-filter" aria-hidden="true" /> Municipality:
+                </label>
+                <select
+                  id="prov-water-muni-select"
+                  className="prov-water__select"
+                  value={selectedMunicipality}
+                  onChange={(event) => {
+                    setSelectedMunicipality(event.target.value);
+                    setQuery("");
+                  }}
+                >
+                  <option value="ALL">All municipalities ({totalLocations})</option>
+                  {registry.municipalities.map((municipality) => (
+                    <option key={municipality.municipalityId} value={municipality.municipalityId}>
+                      {municipality.municipalityName} ({municipality.sourceCount})
+                    </option>
+                  ))}
+                </select>
+                <span className="prov-water__count-badge">
+                  <i className="fa-solid fa-list-check" aria-hidden="true" /> Showing {records.length} location{records.length === 1 ? "" : "s"}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick 1-Click Municipality Filter Pill Strip */}
+            <div className="prov-water__pill-strip" role="group" aria-label="Filter by municipality">
+              <button
+                type="button"
+                className={`prov-water__pill ${allSelected ? "is-active" : ""}`}
+                aria-pressed={allSelected}
+                onClick={() => {
+                  setSelectedMunicipality("ALL");
+                  setQuery("");
+                }}
+              >
+                All municipalities <b>{totalLocations}</b>
+              </button>
+              {registry.municipalities.map((municipality) => (
+                <button
+                  type="button"
+                  key={municipality.municipalityId}
+                  className={`prov-water__pill ${municipality.municipalityId === selectedMunicipality ? "is-active" : ""}`}
+                  aria-pressed={municipality.municipalityId === selectedMunicipality}
+                  onClick={() => {
+                    setSelectedMunicipality(municipality.municipalityId);
+                    setQuery("");
+                  }}
+                >
+                  {municipality.municipalityName} <b>{municipality.sourceCount}</b>
+                </button>
+              ))}
+            </div>
+
+            {/* Cards Grid like in Municipal & Provincial Fire Trucks */}
+            {records.length === 0 ? (
+              <div className="prov-water__empty">No water-source records found for this filter.</div>
+            ) : (
+              <section className="water-grid" aria-label="Provincial water sources">
+                {records.map((source) => (
+                  <div
+                    key={source.id}
+                    className={`water-card ${source.sourceKind !== "FIRE_HYDRANT" ? "is-other" : ""}`}
+                  >
+                    {/* Head */}
+                    <div
+                      className="water-card__head"
+                      onClick={() => openDetails(source)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openDetails(source);
+                        }
+                      }}
+                      aria-label={`Open details for ${source.exactLocation}`}
+                    >
+                      <span className="water-card__icon" aria-hidden="true">
+                        <i className={source.sourceKind === "FIRE_HYDRANT" ? "fa-solid fa-fire-extinguisher" : "fa-solid fa-droplet"} />
+                      </span>
+                      <div className="water-card__head-info">
+                        <h3 className="water-card__title" title={source.exactLocation}>
+                          {source.exactLocation}
+                        </h3>
+                        <p className="water-card__station">
+                          {source.municipalityName} · {source.sourceKind === "FIRE_HYDRANT" ? "Fire Hydrant" : "Water Source"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Body */}
+                    <div
+                      className="water-card__body"
+                      onClick={() => openDetails(source)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openDetails(source);
+                        }
+                      }}
+                    >
+                      <div className="water-card__row">
+                        <span>Type / color</span>
+                        <strong>{source.typeColor}</strong>
+                      </div>
+                      <div className="water-card__row">
+                        <span>Quantity</span>
+                        <strong>{source.quantity} unit(s)</strong>
+                      </div>
+                      <div className="water-card__row">
+                        <span>Coordinates</span>
+                        <strong>{source.latitude.toFixed(7)}, {source.longitude.toFixed(7)}</strong>
+                      </div>
+                      <span className="water-card__origin">
+                        {source.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}
+                      </span>
+                    </div>
+
+                    {/* 2 Clickable Icons in Card Footer: 1st Go to map, 2nd Edit coordinates */}
+                    <div className="water-card__footer">
+                      <Link
+                        className="water-card__btn water-card__btn--map"
+                        href={`/provincial-bfp/gis-map?municipalityId=${source.municipalityId}&waterSource=${source.id}`}
+                        title="View on map"
+                        aria-label={`Go to map for ${source.exactLocation}`}
+                      >
+                        <i className="fa-solid fa-map-location-dot" aria-hidden="true" /> Go to map
+                      </Link>
+                      <button
+                        type="button"
+                        className="water-card__btn water-card__btn--edit"
+                        onClick={() => openDetails(source)}
+                        title="Edit coordinates"
+                        aria-label={`Edit coordinates for ${source.exactLocation}`}
+                      >
+                        <i className="fa-solid fa-pen-to-square" aria-hidden="true" /> Edit coordinates
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </section>
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Details & Coordinate Edit Dialog */}
+      {selectedSource && (
+        <div
+          className="prov-water__backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !saving) setSelectedSource(null);
+          }}
+        >
+          <section className="prov-water__dialog" role="dialog" aria-modal="true" aria-labelledby="prov-water-edit-title">
+            <header className="prov-water__dialog-head">
+              <div>
+                <p>
+                  {selectedSource.sourceKind === "FIRE_HYDRANT" ? "Fire hydrant" : "Water source"} · {selectedSource.municipalityName}
+                </p>
+                <h2 id="prov-water-edit-title">{selectedSource.exactLocation}</h2>
+              </div>
+              <button
+                className="prov-water__close"
+                type="button"
+                aria-label="Close details"
+                onClick={() => setSelectedSource(null)}
+                disabled={saving}
+              >
+                <i className="fa-solid fa-xmark" aria-hidden="true" />
+              </button>
+            </header>
+            <div className="prov-water__facts">
+              <div className="prov-water__fact">
+                <span>Type / color</span>
+                <strong>{selectedSource.typeColor}</strong>
+              </div>
+              <div className="prov-water__fact">
+                <span>Quantity</span>
+                <strong>{selectedSource.quantity}</strong>
+              </div>
+              <div className="prov-water__fact">
+                <span>Record source</span>
+                <strong>{selectedSource.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP chart · 2018" : "Municipal entry"}</strong>
+              </div>
+            </div>
+            <form onSubmit={submitCoordinates}>
+              <div className="prov-water__form-grid">
+                <div className="prov-water__field">
+                  <label htmlFor="prov-water-latitude">Latitude</label>
+                  <input
+                    id="prov-water-latitude"
+                    type="number"
+                    step="0.0000001"
+                    min="4"
+                    max="22"
+                    required
+                    value={coordinateForm.latitude}
+                    onChange={(event) => setCoordinateForm({ ...coordinateForm, latitude: event.target.value })}
+                  />
+                </div>
+                <div className="prov-water__field">
+                  <label htmlFor="prov-water-longitude">Longitude</label>
+                  <input
+                    id="prov-water-longitude"
+                    type="number"
+                    step="0.0000001"
+                    min="116"
+                    max="127"
+                    required
+                    value={coordinateForm.longitude}
+                    onChange={(event) => setCoordinateForm({ ...coordinateForm, longitude: event.target.value })}
+                  />
+                </div>
+              </div>
+              <p className="prov-water__help">
+                Edit coordinates only when the mapped point has been verified. Municipal users continue to control the location name and quantity.
+              </p>
+              {editError && <p className="prov-water__error" role="alert">{editError}</p>}
+              <div className="prov-water__actions">
+                <Link
+                  className="prov-water__action prov-water__action--map"
+                  href={`/provincial-bfp/gis-map?municipalityId=${selectedSource.municipalityId}&waterSource=${selectedSource.id}`}
+                  title="View on map"
+                >
+                  <i className="fa-solid fa-map-location-dot" aria-hidden="true" /> Go to map (View on map)
+                </Link>
+                <button className="prov-water__action prov-water__action--primary" type="submit" disabled={saving}>
+                  <i className="fa-solid fa-check" aria-hidden="true" /> {saving ? "Saving…" : "Save coordinates"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+    </>
+  );
 }
