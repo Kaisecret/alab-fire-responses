@@ -7,6 +7,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'locality_helper.dart';
+import 'water_source_store.dart';
 
 class MobileBfpIdentity {
   const MobileBfpIdentity({
@@ -308,6 +309,25 @@ class MobileBfpApi {
   Future<List<MobileDispatchAssignment>> listDispatchAssignments(String token) async {
     final payload = await fetchDispatchesPayload(token);
     return payload['assignments'] as List<MobileDispatchAssignment>;
+  }
+
+  Future<List<MobileWaterSource>> listWaterSources(String token) async {
+    final response = await _send(() => _client.get(
+      _uri('/api/mobile-bfp/water-sources'),
+      headers: _authorizationHeaders(token),
+    ));
+    final raw = _successJson(response)['sources'];
+    if (raw is! List) {
+      throw const MobileBfpApiException('The server returned an invalid water source list.');
+    }
+    try {
+      return raw.map((item) {
+        if (item is! Map<String, dynamic>) throw const FormatException();
+        return MobileWaterSource.fromJson(item);
+      }).toList();
+    } catch (_) {
+      throw const MobileBfpApiException('The server returned an invalid water source list.');
+    }
   }
 
   Future<List<MobileDispatchAssignment>> listResolvedAssignments(String token) async {

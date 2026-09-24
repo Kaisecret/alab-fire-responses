@@ -143,9 +143,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _replaceSession(MobileBfpSession session) async {
-    await (widget.saveToken ?? MobileBfpSessionStore().saveToken)(
-      session.token,
-    );
+    if (widget.saveToken != null) {
+      await widget.saveToken!(session.token);
+    } else {
+      await MobileBfpSessionStore().saveSession(session);
+    }
     if (!mounted) return;
     setState(() => _session = session);
     widget.onSessionChanged(session);
@@ -175,7 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           requireTemporaryPassword: false,
           popOnCompleted: true,
           onCompleted: (session) async {
-            await MobileBfpSessionStore().saveToken(session.token);
+            await MobileBfpSessionStore().saveSession(session);
           },
         ),
       ),

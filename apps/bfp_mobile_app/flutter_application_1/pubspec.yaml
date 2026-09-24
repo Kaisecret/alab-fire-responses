@@ -47,18 +47,22 @@ dependencies:
   latlong2: ^0.9.1
   geolocator: ^14.0.3
   flutter_compass: ^0.8.1
+  sqflite: ^2.4.4
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+  sqflite_common_ffi: ^2.4.3
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
+    - assets/data/antique-boundary.geojson
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

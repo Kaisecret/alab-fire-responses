@@ -13,6 +13,7 @@ import 'screens/home_dashboard_screen.dart';
 import 'screens/incidents_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/map_screen.dart';
+import 'widgets/map_layer_tabs.dart';
 import 'screens/reports_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/change_temporary_password_screen.dart';
@@ -113,13 +114,25 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
       }
 
       final session = await MobileBfpApi().restoreSession(token);
+      await store.saveSession(session);
       _showDestination(
         session.mustChangePassword
             ? ChangeTemporaryPasswordScreen(session: session)
             : MainNavigationShell(session: session),
       );
+    } on MobileBfpApiException catch (error) {
+      if (error.statusCode == null || error.statusCode! >= 500) {
+        final token = await store.readToken();
+        final cached = token == null ? null : await store.readCachedSession(token);
+        if (cached != null) {
+          _showDestination(MainNavigationShell(session: cached));
+          return;
+        }
+      } else if (error.statusCode == 401 || error.statusCode == 403) {
+        await store.clear();
+      }
+      _showDestination(LoginScreen());
     } catch (_) {
-      await store.clear();
       _showDestination(LoginScreen());
     }
   }
@@ -190,6 +203,8 @@ class MainNavigationShell extends StatefulWidget {
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int _currentTabIndex = 0;
+  int _mapRequestId = 0;
+  MapLayerMode _requestedMapMode = MapLayerMode.incidents;
   late MobileBfpSession _session;
   late MobileDispatchStore _dispatchStore;
   StreamSubscription<String>? _tokenRefresh;
@@ -201,12 +216,14 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     _session = widget.session;
     _dispatchStore = MobileDispatchStore(api: MobileBfpApi(), session: _session);
     unawaited(_dispatchStore.start());
-    unawaited(_registerDevice());
-    _tokenRefresh = FirebaseMessaging.instance.onTokenRefresh.listen((token) => _registerDevice(token));
-    _foregroundMessages = FirebaseMessaging.onMessage.listen((message) {
-      unawaited(DispatchNotificationService.showForegroundMessage(message));
-      unawaited(_dispatchStore.refresh());
-    });
+    if (Firebase.apps.isNotEmpty) {
+      unawaited(_registerDevice());
+      _tokenRefresh = FirebaseMessaging.instance.onTokenRefresh.listen((token) => _registerDevice(token));
+      _foregroundMessages = FirebaseMessaging.onMessage.listen((message) {
+        unawaited(DispatchNotificationService.showForegroundMessage(message));
+        unawaited(_dispatchStore.refresh());
+      });
+    }
   }
 
   Future<void> _registerDevice([String? token]) async {
@@ -231,7 +248,13 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   void _onTabSelected(int index) {
     setState(() {
-      _currentTabIndex = index;
+      if (index == 2 || index == 5) {
+        _requestedMapMode = index == 5 ? MapLayerMode.waterSources : MapLayerMode.incidents;
+        _mapRequestId++;
+        _currentTabIndex = 2;
+      } else {
+        _currentTabIndex = index;
+      }
     });
   }
 
@@ -288,7 +311,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               children: [
                 SafeArea(bottom: false, child: HomeDashboardScreen(session: _session, onNavigateTab: _onTabSelected, dispatchStore: _dispatchStore)),
                 SafeArea(bottom: false, child: IncidentsScreen(session: _session, dispatchStore: _dispatchStore, onNavigateTab: _onTabSelected)),
-                MapScreen(dispatchStore: _dispatchStore, onNavigateTab: _onTabSelected),
+                MapScreen(
+                  dispatchStore: _dispatchStore,
+                  onNavigateTab: _onTabSelected,
+                  requestedMode: _requestedMapMode,
+                  requestId: _mapRequestId,
+                ),
                 const SafeArea(bottom: false, child: ReportsScreen()),
                 SafeArea(
                   bottom: false,

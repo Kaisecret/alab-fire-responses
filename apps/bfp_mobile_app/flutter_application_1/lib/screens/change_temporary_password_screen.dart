@@ -86,9 +86,11 @@ class _ChangeTemporaryPasswordScreenState
         return;
       }
 
-      await (widget.saveToken ?? MobileBfpSessionStore().saveToken)(
-        session.token,
-      );
+      if (widget.saveToken != null) {
+        await widget.saveToken!(session.token);
+      } else {
+        await MobileBfpSessionStore().saveSession(session);
+      }
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(

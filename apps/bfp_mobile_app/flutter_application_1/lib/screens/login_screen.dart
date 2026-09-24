@@ -81,9 +81,11 @@ class _LoginScreenState extends State<LoginScreen>
         email: email,
         password: password,
       );
-      await (widget.saveToken ?? MobileBfpSessionStore().saveToken)(
-        session.token,
-      );
+      if (widget.saveToken != null) {
+        await widget.saveToken!(session.token);
+      } else {
+        await MobileBfpSessionStore().saveSession(session);
+      }
       if (!mounted) return;
 
       final destination = session.mustChangePassword

@@ -12,7 +12,6 @@ import '../widgets/quick_actions_grid.dart';
 import '../widgets/stat_metrics_row.dart';
 import 'notification_alerts_sheet.dart';
 import 'resolved_incidents_screen.dart';
-import 'water_sources_sheet.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({
@@ -164,7 +163,7 @@ class HomeDashboardScreen extends StatelessWidget {
                       QuickActionItem(
                         icon: Icons.water_drop_rounded,
                         label: 'Water Sources',
-                        onTap: () => WaterSourcesSheet.show(context),
+                        onTap: () => onNavigateTab?.call(5),
                       ),
                       QuickActionItem(
                         icon: Icons.alt_route_rounded,

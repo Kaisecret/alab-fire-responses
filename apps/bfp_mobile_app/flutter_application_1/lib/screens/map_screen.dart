@@ -14,22 +14,29 @@ import '../services/road_routing_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/liquid_glass.dart';
 import '../widgets/request_backup_button.dart';
+import '../widgets/map_layer_tabs.dart';
+import 'water_sources_map.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({
     super.key,
     required this.dispatchStore,
     this.onNavigateTab,
+    this.requestedMode = MapLayerMode.incidents,
+    this.requestId = 0,
   });
 
   final MobileDispatchStore dispatchStore;
   final void Function(int)? onNavigateTab;
+  final MapLayerMode requestedMode;
+  final int requestId;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
 }
 
 class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
+  late MapLayerMode _mapMode;
   final MapController _mapController = MapController();
   final RoadRoutingService _routingService = RoadRoutingService();
   Position? _responder;
@@ -67,6 +74,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _mapMode = widget.requestedMode;
     _movementController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -88,6 +96,14 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   @override
+  void didUpdateWidget(covariant MapScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.requestId != oldWidget.requestId) {
+      _mapMode = widget.requestedMode;
+    }
+  }
+
+  @override
   void dispose() {
     _movementController?.dispose();
     _compassStream?.cancel();
@@ -104,7 +120,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       _lastCenteredDispatchId = assignment.dispatchId;
       unawaited(_syncBackupState(assignment.dispatchId));
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
+        if (!mounted || _mapMode != MapLayerMode.incidents) return;
         _centerOn(LatLng(assignment.latitude, assignment.longitude), zoom: 15.5);
       });
     }
@@ -728,6 +744,23 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    if (_mapMode == MapLayerMode.waterSources) {
+      return Scaffold(
+        body: Stack(children: [
+          WaterSourcesMap(
+            api: widget.dispatchStore.api,
+            token: widget.dispatchStore.session.token,
+          ),
+          Positioned(
+            top: 92, left: 16, right: 16,
+            child: MapLayerTabs(
+              selected: _mapMode,
+              onChanged: (mode) => setState(() => _mapMode = mode),
+            ),
+          ),
+        ]),
+      );
+    }
     final assignment = widget.dispatchStore.activeAssignment;
     final incidentPoint = assignment != null
         ? LatLng(assignment.latitude, assignment.longitude)
@@ -934,11 +967,18 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             ),
 
             // 3. LOCATION PERMISSION / STATUS BANNER
+            Positioned(
+              top: 92, left: 16, right: 16,
+              child: MapLayerTabs(
+                selected: _mapMode,
+                onChanged: (mode) => setState(() => _mapMode = mode),
+              ),
+            ),
             if (_locationMessage != null)
               Positioned(
-                top: 86,
+                top: 164,
                 left: 16,
-                right: 16,
+                right: 75,
                 child: LiquidGlassContainer(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   borderRadius: 14,
@@ -965,7 +1005,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             // 4. FLOATING MAP CONTROLS (ZOOM, FIT, RECENTER)
             Positioned(
               right: 16,
-              top: 86,
+              top: 164,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
