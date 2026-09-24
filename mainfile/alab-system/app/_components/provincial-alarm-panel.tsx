@@ -417,12 +417,23 @@ const styles = `
     font-weight: 850;
     color: #0F172A;
     letter-spacing: -0.01em;
+    white-space: nowrap;
   }
   .pap-level-go {
     font-size: 0.72rem;
     color: #94A3B8;
     flex-shrink: 0;
     transition: transform 0.15s ease, color 0.15s ease;
+  }
+  .pap-level-check-current {
+    font-size: 0.95rem;
+    color: #059669;
+    flex-shrink: 0;
+  }
+  .pap-level-check-passed {
+    font-size: 0.82rem;
+    color: #94A3B8;
+    flex-shrink: 0;
   }
 
   /* Standing level immediately visible with emerald highlight */
@@ -797,19 +808,13 @@ export function ProvincialAlarmPanel() {
                       <div className="pap-level-top-row">
                         <span className="pap-level-ord">{entry.label} Alarm</span>
                         {isCurrent ? (
-                          <span className="pap-level-done">
-                            <i className="fa-solid fa-circle-check" aria-hidden="true" />
-                            DECLARED
-                          </span>
+                          <i className="fa-solid fa-circle-check pap-level-check-current" aria-hidden="true" />
                         ) : isPassed ? (
-                          <span className="pap-level-done is-passed">
-                            <i className="fa-solid fa-check" aria-hidden="true" />
-                            DECLARED
-                          </span>
+                          <i className="fa-solid fa-check pap-level-check-passed" aria-hidden="true" />
                         ) : isBusy ? (
-                          <i className="fa-solid fa-circle-notch fa-spin pap-level-go" />
+                          <i className="fa-solid fa-circle-notch fa-spin pap-level-go" aria-hidden="true" />
                         ) : (
-                          <i className="fa-solid fa-arrow-right pap-level-go" />
+                          <i className="fa-solid fa-arrow-right pap-level-go" aria-hidden="true" />
                         )}
                       </div>
                     </button>
