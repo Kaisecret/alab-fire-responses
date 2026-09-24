@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { formatGallons } from "../../lib/fire-trucks/presentation";
@@ -12,7 +12,8 @@ import { useDialogFocus } from "./use-dialog-focus";
 const styles = `
   .prov-trucks { padding:1.5rem clamp(1rem,2vw,2rem) 3rem; color:#172033; font-family:'Plus Jakarta Sans',sans-serif; }
   .prov-trucks * { box-sizing:border-box; }
-  .prov-trucks__header { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; margin-bottom:1.25rem; }
+  .prov-trucks__top-row { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.1rem; flex-wrap:wrap; }
+  .prov-trucks__header { margin-bottom:1.25rem; }
   .prov-trucks__eyebrow { margin:0 0 .4rem; color:#b42318; font-size:.72rem; font-weight:850; letter-spacing:.11em; text-transform:uppercase; }
   .prov-trucks h1 { margin:0; font-size:clamp(1.45rem,2vw,2rem); letter-spacing:-.035em; }
   .prov-trucks__button { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.7rem 1.15rem; border:0; border-radius:9px; background:#b42318; color:#fff; font:inherit; font-size:.82rem; font-weight:800; cursor:pointer; white-space:nowrap; box-shadow:0 2px 8px rgba(180,35,24,.2); transition:background .15s, transform .15s; }
@@ -95,7 +96,13 @@ async function fetchRegistry(signal?: AbortSignal): Promise<ProvincialFireTruckR
   return response.json();
 }
 
-export function ProvincialFireTrucks({ initialMunicipalityId = "" }: { initialMunicipalityId?: string }) {
+export function ProvincialFireTrucks({
+  initialMunicipalityId = "",
+  topTabs,
+}: {
+  initialMunicipalityId?: string;
+  topTabs?: ReactNode;
+}) {
   const [registry, setRegistry] = useState<ProvincialFireTruckRegistry | null>(null);
   const [loadError, setLoadError] = useState("");
   const [selectedMunicipality, setSelectedMunicipality] = useState(initialMunicipalityId || "ALL");
@@ -204,14 +211,17 @@ export function ProvincialFireTrucks({ initialMunicipalityId = "" }: { initialMu
   return <>
     <style>{styles}</style>
     <main className="prov-trucks">
+      <div className="prov-trucks__top-row">
+        {topTabs ? topTabs : <div />}
+        <button className="prov-trucks__button" type="button" onClick={openAdd} disabled={!registry}>
+          <i className="fa-solid fa-plus" aria-hidden="true" /> Add fire truck
+        </button>
+      </div>
       <header className="prov-trucks__header">
         <div>
           <p className="prov-trucks__eyebrow">Antique provincial fleet</p>
           <h1>Fire trucks by municipality</h1>
         </div>
-        <button className="prov-trucks__button" type="button" onClick={openAdd} disabled={!registry}>
-          <i className="fa-solid fa-plus" aria-hidden="true" /> Add fire truck
-        </button>
       </header>
       <section className="prov-trucks__summary" aria-label="Provincial fleet totals">
         <div><strong>{totals.trucks}</strong><span>Fire trucks</span></div>
