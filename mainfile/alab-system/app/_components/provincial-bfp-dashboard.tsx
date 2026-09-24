@@ -1063,7 +1063,7 @@ export function ProvincialBfpDashboard() {
           </Link>
 
           {/* Card 2: Municipal Stations */}
-          <Link href="/provincial-bfp/firetrucks-stations" className="pbfp-kpi-box amber">
+          <Link href="/provincial-bfp/firetrucks-stations?view=stations" className="pbfp-kpi-box amber">
             <div className="pbfp-kpi-header">
               <div className="pbfp-kpi-badge-icon amber">
                 <i className="fa-solid fa-building" />

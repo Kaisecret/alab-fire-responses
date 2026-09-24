@@ -39,6 +39,9 @@ test("station API routes enforce provincial authentication and methods", () => {
 
 test("firetrucks-stations page renders provincial station directory without sample fleet", () => {
   const page = source("app/provincial-bfp/firetrucks-stations/page.tsx");
-  assert.match(page, /ProvincialStationDirectory/);
+  const tabs = source("app/_components/provincial-firetrucks-stations.tsx");
+  assert.match(page, /ProvincialFiretrucksStations/);
+  assert.match(tabs, /ProvincialStationDirectory/);
+  assert.match(tabs, /ProvincialFireTrucks/);
   assert.doesNotMatch(page, /provincialFleet/);
 });

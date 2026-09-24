@@ -1201,7 +1201,7 @@ export default function MunicipalStatusPage() {
               <div className="pbfp-modal-links-section">
                 <span className="pbfp-modal-links-title">Provincial Management Modules</span>
                 <Link
-                  href={`/provincial-bfp/firetrucks-stations?municipalityId=${selectedMunicipality.id}`}
+                  href={`/provincial-bfp/firetrucks-stations?view=stations&municipalityId=${selectedMunicipality.id}`}
                   className="pbfp-modal-link-btn"
                 >
                   <span className="pbfp-link-icon red"><i className="fa-solid fa-truck-fast" /></span>
