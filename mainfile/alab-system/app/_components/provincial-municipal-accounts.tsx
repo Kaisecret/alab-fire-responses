@@ -183,79 +183,156 @@ const pageStyles = `
     outline-offset: 2px;
   }
 
-  /* ========== KPI STATS BAR ========== */
+  /* ========== KPI STATS BAR (Pastel Gradient System) ========== */
   .pma-stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+  @media (max-width: 1024px) {
+    .pma-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .pma-stats-grid { grid-template-columns: 1fr; }
   }
 
   .pma-stat-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
+    position: relative;
+    border-radius: 11px;
+    padding: 0.72rem 0.95rem 0.62rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    min-height: 98px;
+  }
+  .pma-stat-card.blue {
+    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
+    border: 1.5px solid #B8D3FD;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  }
+  .pma-stat-card.emerald {
+    background: linear-gradient(145deg, #E6FBF0 0%, #D1F7E2 100%);
+    border: 1.5px solid #A7F3D0;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
+  }
+  .pma-stat-card.amber {
+    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
+    border: 1.5px solid #FFDC99;
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+  }
+  .pma-stat-card.red {
+    background: linear-gradient(145deg, #FFF1F1 0%, #FEE2E2 100%);
+    border: 1.5px solid #FECACA;
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.06);
+  }
+
+  .pma-stat-card:hover { transform: translateY(-2.5px); }
+  .pma-stat-card.blue:hover { border-color: #91B8FA; box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2); }
+  .pma-stat-card.emerald:hover { border-color: #6EE7B7; box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2); }
+  .pma-stat-card.amber:hover { border-color: #FFCF70; box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2); }
+  .pma-stat-card.red:hover { border-color: #F87171; box-shadow: 0 10px 22px -4px rgba(220, 38, 38, 0.2); }
+
+  .pma-stat-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    justify-content: space-between;
+    gap: 0.35rem;
+    margin-bottom: 0.25rem;
   }
-
-  .pma-stat-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
-  }
-
-  .pma-stat-icon-wrap {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
+  .pma-stat-badge-icon {
+    width: 1.95rem;
+    height: 1.95rem;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 0.88rem;
     flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
+  .pma-stat-card:hover .pma-stat-badge-icon { transform: scale(1.06); }
+  .pma-stat-card.blue .pma-stat-badge-icon { color: #2563EB; }
+  .pma-stat-card.emerald .pma-stat-badge-icon { color: #059669; }
+  .pma-stat-card.amber .pma-stat-badge-icon { color: #D97706; }
+  .pma-stat-card.red .pma-stat-badge-icon { color: #DC2626; }
 
-  .pma-stat-icon-wrap.slate {
-    background: #F1F5F9;
-    color: #475569;
+  .pma-stat-trend-tag {
+    font-size: 0.58rem;
+    font-weight: 800;
+    padding: 0.14rem 0.42rem;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
+  .pma-stat-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
+  .pma-stat-trend-tag.emerald { color: #065F46; background: #D1FAE5; }
+  .pma-stat-trend-tag.amber { color: #92400E; background: #FEF3C7; }
+  .pma-stat-trend-tag.red { color: #991B1B; background: #FEE2E2; }
 
-  .pma-stat-icon-wrap.emerald {
-    background: #ECFDF5;
-    color: #059669;
-  }
-
-  .pma-stat-icon-wrap.amber {
-    background: #FFFBEB;
-    color: #D97706;
-  }
-
-  .pma-stat-icon-wrap.red {
-    background: #FEF2F2;
-    color: #DB1B0D;
-  }
-
-  .pma-stat-details {
+  .pma-stat-body {
     display: flex;
     flex-direction: column;
+    gap: 0.08rem;
+    margin: 0.08rem 0;
   }
-
-  .pma-stat-value {
-    font-size: 1.35rem;
-    font-weight: 800;
-    color: #0F172A;
-    line-height: 1.2;
-  }
-
   .pma-stat-label {
-    font-size: 0.74rem;
-    font-weight: 700;
-    color: #64748B;
+    order: 2;
+    font-size: 0.63rem;
+    font-weight: 750;
+    color: #475569;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pma-stat-value {
+    order: 1;
+    font-size: 1.45rem;
+    font-weight: 850;
+    color: #0F172A;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pma-stat-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.35rem;
+    padding-top: 0.32rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.65rem;
+    font-weight: 600;
+  }
+  .pma-stat-card.blue .pma-stat-footer { color: #2563EB; border-top-color: #DCE7FC; }
+  .pma-stat-card.emerald .pma-stat-footer { color: #059669; border-top-color: #A7F3D0; }
+  .pma-stat-card.amber .pma-stat-footer { color: #D97706; border-top-color: #FEEBC8; }
+  .pma-stat-card.red .pma-stat-footer { color: #DC2626; border-top-color: #FED7D7; }
+
+  .pma-stat-subtext {
+    font-weight: 600;
+    opacity: 0.9;
+  }
+  .pma-stat-footer i {
+    font-size: 0.64rem;
+    transition: transform 0.2s ease;
+  }
+  .pma-stat-card:hover .pma-stat-footer i {
+    transform: translateX(3px);
   }
 
   /* ========== CARD & TABLE ========== */
@@ -1163,44 +1240,105 @@ export function ProvincialMunicipalAccounts() {
       </div>
 
       {/* Quick KPI Stats Overview */}
-      <div className="pma-stats-grid">
-        <div className="pma-stat-card">
-          <div className="pma-stat-icon-wrap slate">
-            <i className="fa-solid fa-city" />
+      <div className="pma-stats-grid" role="region" aria-label="Municipal accounts metrics">
+        {/* Card 1: Municipalities (Blue) */}
+        <div
+          className="pma-stat-card blue"
+          onClick={() => setStatusFilter('ALL')}
+          role="button"
+          tabIndex={0}
+          title="Click to view all municipalities"
+        >
+          <div className="pma-stat-header">
+            <div className="pma-stat-badge-icon">
+              <i className="fa-solid fa-city" />
+            </div>
+            <span className="pma-stat-trend-tag blue">
+              <i className="fa-solid fa-map-location-dot" /> Antique
+            </span>
           </div>
-          <div className="pma-stat-details">
-            <span className="pma-stat-value">{loaded ? municipalities.length : '18'}</span>
+          <div className="pma-stat-body">
             <span className="pma-stat-label">Municipalities</span>
+            <span className="pma-stat-value">{loaded ? municipalities.length : '18'}</span>
+          </div>
+          <div className="pma-stat-footer">
+            <span className="pma-stat-subtext">Province of Antique</span>
+            <i className="fa-solid fa-arrow-right" />
           </div>
         </div>
 
-        <div className="pma-stat-card">
-          <div className="pma-stat-icon-wrap emerald">
-            <i className="fa-solid fa-circle-check" />
+        {/* Card 2: Provisioned (Emerald) */}
+        <div
+          className="pma-stat-card emerald"
+          onClick={() => setStatusFilter('PROVISIONED')}
+          role="button"
+          tabIndex={0}
+          title="Click to view provisioned accounts"
+        >
+          <div className="pma-stat-header">
+            <div className="pma-stat-badge-icon">
+              <i className="fa-solid fa-circle-check" />
+            </div>
+            <span className="pma-stat-trend-tag emerald">
+              <i className="fa-solid fa-check" /> Active
+            </span>
           </div>
-          <div className="pma-stat-details">
-            <span className="pma-stat-value">{loaded ? provisionedCount : '—'}</span>
+          <div className="pma-stat-body">
             <span className="pma-stat-label">Provisioned</span>
+            <span className="pma-stat-value">{loaded ? provisionedCount : '—'}</span>
+          </div>
+          <div className="pma-stat-footer">
+            <span className="pma-stat-subtext">Active municipal admins</span>
+            <i className="fa-solid fa-arrow-right" />
           </div>
         </div>
 
-        <div className="pma-stat-card">
-          <div className="pma-stat-icon-wrap amber">
-            <i className="fa-solid fa-clock" />
+        {/* Card 3: Pending Stations (Amber) */}
+        <div
+          className="pma-stat-card amber"
+          onClick={() => setStatusFilter('UNPROVISIONED')}
+          role="button"
+          tabIndex={0}
+          title="Click to view pending stations"
+        >
+          <div className="pma-stat-header">
+            <div className="pma-stat-badge-icon">
+              <i className="fa-solid fa-clock" />
+            </div>
+            <span className="pma-stat-trend-tag amber">
+              <i className="fa-solid fa-hourglass-half" /> Pending
+            </span>
           </div>
-          <div className="pma-stat-details">
-            <span className="pma-stat-value">{loaded ? unprovisionedCount : '—'}</span>
+          <div className="pma-stat-body">
             <span className="pma-stat-label">Pending Stations</span>
+            <span className="pma-stat-value">{loaded ? unprovisionedCount : '—'}</span>
+          </div>
+          <div className="pma-stat-footer">
+            <span className="pma-stat-subtext">Awaiting admin issuance</span>
+            <i className="fa-solid fa-arrow-right" />
           </div>
         </div>
 
-        <div className="pma-stat-card">
-          <div className="pma-stat-icon-wrap red">
-            <i className="fa-solid fa-user-shield" />
+        {/* Card 4: Active Officers (Red) */}
+        <div
+          className="pma-stat-card red"
+          title="Active assigned officers"
+        >
+          <div className="pma-stat-header">
+            <div className="pma-stat-badge-icon">
+              <i className="fa-solid fa-user-shield" />
+            </div>
+            <span className="pma-stat-trend-tag red">
+              <i className="fa-solid fa-shield-halved" /> Officers
+            </span>
           </div>
-          <div className="pma-stat-details">
-            <span className="pma-stat-value">{loaded ? totalActiveOfficers : '—'}</span>
+          <div className="pma-stat-body">
             <span className="pma-stat-label">Active Officers</span>
+            <span className="pma-stat-value">{loaded ? totalActiveOfficers : '—'}</span>
+          </div>
+          <div className="pma-stat-footer">
+            <span className="pma-stat-subtext">BFP commanding officers</span>
+            <i className="fa-solid fa-arrow-right" />
           </div>
         </div>
       </div>
