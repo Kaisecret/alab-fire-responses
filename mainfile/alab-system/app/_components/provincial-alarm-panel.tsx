@@ -2,8 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import {
+  getCachedPhotoOrOriginal,
+  preloadPhotos,
+  useCachedPhoto,
+} from "../_lib/local-photo-cache";
 import { PhotoLightbox } from "./photo-lightbox";
 import { ProvincialReportDetail } from "./provincial-report-detail";
+
 
 interface BackupRequest {
   id: string;
@@ -236,6 +242,54 @@ const styles = `
     color: #FFFFFF;
   }
 
+  /* Upper-right standing badge requested in emerald highlight with pulsing dot */
+  .pap-upper-standing {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #065F46;
+    background: #ECFDF5;
+    border: 1.5px solid #10B981;
+    padding: 0.22rem 0.62rem;
+    border-radius: 999px;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.15);
+    white-space: nowrap;
+  }
+  .pap-standing-pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10B981;
+    display: inline-block;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: papPulse 1.8s infinite;
+  }
+  @keyframes papPulse {
+    0% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
+    }
+    100% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+  }
+
+  .pap-level-standing-check {
+    color: #10B981;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+  }
+
+
   .pap-reason {
     margin-top: 0.45rem;
     border-left: 3px solid #DC2626;
@@ -461,14 +515,70 @@ const styles = `
   .pap-empty strong { display: block; color: #0F172A; font-size: 0.9rem; }
 `;
 
+const STORAGE_CACHE_KEY = "alab_provincial_backup_requests_cache";
+
+/**
+ * Thumbnail rendering with persistent local caching to prevent reloading or flickering on refresh.
+ */
+function ScenePhotoThumbnail({
+  photo,
+  index,
+  onClick,
+}: {
+  photo: string;
+  index: number;
+  onClick: () => void;
+}) {
+  const cachedUrl = useCachedPhoto(photo);
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <button
+      type="button"
+      className="pap-photo"
+      onClick={onClick}
+      title="View photo"
+    >
+      {cachedUrl && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={cachedUrl}
+          alt={`Scene photograph ${index + 1} from responder`}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
+      ) : null}
+      <div className="pap-photo-placeholder">
+        <i className="fa-solid fa-camera" />
+      </div>
+    </button>
+  );
+}
+
 /**
  * Backup requests that have reached the province, and the alarm level it can
  * declare on each. The level is what summons further municipalities, so it is
  * the province's decision alone.
  */
 export function ProvincialAlarmPanel() {
-  const [requests, setRequests] = useState<BackupRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [requests, setRequests] = useState<BackupRequest[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem(STORAGE_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          preloadPhotos(parsed.flatMap((r: BackupRequest) => r.photos || []));
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignore parse failure and fetch from network
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(() => requests.length === 0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [viewer, setViewer] = useState<{ requestId: string; index: number } | null>(null);
@@ -480,9 +590,16 @@ export function ProvincialAlarmPanel() {
       const res = await fetch("/api/provincial-bfp/backup-requests", { cache: "no-store" });
       if (!res.ok) return;
       const body = await res.json();
-      setRequests(Array.isArray(body.backupRequests) ? body.backupRequests : []);
+      const fresh: BackupRequest[] = Array.isArray(body.backupRequests) ? body.backupRequests : [];
+      setRequests(fresh);
+      try {
+        localStorage.setItem(STORAGE_CACHE_KEY, JSON.stringify(fresh));
+      } catch {
+        // Quota exceeded or disabled
+      }
+      preloadPhotos(fresh.flatMap((r) => r.photos || []));
     } catch {
-      // Keep whatever is already on screen.
+      // Keep whatever is already on screen or in local cache.
     } finally {
       setLoading(false);
     }
@@ -589,14 +706,15 @@ export function ProvincialAlarmPanel() {
                   </span>
                 </button>
                 <div className="pap-badges">
+                  {request.alarmLevel && (
+                    <span className="pap-upper-standing" title={`Current standing alarm: ${ORDINALS[request.alarmLevel]} Alarm`}>
+                      <span className="pap-standing-pulse" aria-hidden="true" />
+                      STANDING
+                    </span>
+                  )}
                   {request.forwardedAutomatically && (
                     <span className="pap-auto">
                       <i className="fa-regular fa-clock" /> Auto-escalated
-                    </span>
-                  )}
-                  {request.alarmLevel && (
-                    <span className={`pap-current level-${request.alarmLevel}`}>
-                      <i className="fa-solid fa-bell" /> {ORDINALS[request.alarmLevel]} alarm standing
                     </span>
                   )}
                 </div>
@@ -612,26 +730,12 @@ export function ProvincialAlarmPanel() {
                   </div>
                   <div className="pap-photos">
                     {request.photos.map((photo, index) => (
-                      <button
+                      <ScenePhotoThumbnail
                         key={photo || index}
-                        type="button"
-                        className="pap-photo"
+                        photo={photo}
+                        index={index}
                         onClick={() => setViewer({ requestId: request.id, index })}
-                        title="View photo"
-                      >
-                        {photo ? (
-                          <img
-                            src={photo}
-                            alt={`Scene photograph ${index + 1} from responder`}
-                            onError={(e) => {
-                              (e.currentTarget as HTMLElement).style.display = 'none';
-                            }}
-                          />
-                        ) : null}
-                        <div className="pap-photo-placeholder">
-                          <i className="fa-solid fa-camera" />
-                        </div>
-                      </button>
+                      />
                     ))}
                   </div>
                 </div>
@@ -660,8 +764,10 @@ export function ProvincialAlarmPanel() {
                     >
                       <div className="pap-level-top-row">
                         <span className="pap-level-ord">{entry.label} Alarm</span>
-                        {passed ? (
-                          <span className="pap-level-done">{isCurrent ? "STANDING" : "DECLARED"}</span>
+                        {isCurrent ? (
+                          <i className="fa-solid fa-check pap-level-standing-check" aria-hidden="true" />
+                        ) : passed ? (
+                          <span className="pap-level-done">DECLARED</span>
                         ) : busyId === request.id ? (
                           <i className="fa-solid fa-circle-notch fa-spin pap-level-go" />
                         ) : (
@@ -693,9 +799,10 @@ export function ProvincialAlarmPanel() {
       {viewer && (() => {
         const request = requests.find((item) => item.id === viewer.requestId);
         if (!request?.photos?.length) return null;
+        const cachedPhotos = request.photos.map(getCachedPhotoOrOriginal);
         return (
           <PhotoLightbox
-            photos={request.photos}
+            photos={cachedPhotos}
             index={viewer.index}
             onIndexChange={(index) => setViewer({ requestId: viewer.requestId, index })}
             onClose={() => setViewer(null)}

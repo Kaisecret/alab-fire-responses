@@ -2,6 +2,7 @@
 
 import { FormEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 
 import { formatGallons } from "../../lib/fire-trucks/presentation";
 import type { FireTruck, ProvincialFireTruckRegistry } from "../../lib/fire-trucks/types";
@@ -16,11 +17,149 @@ const styles = `
   .prov-trucks__button { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.7rem 1.15rem; border:0; border-radius:9px; background:#b42318; color:#fff; font:inherit; font-size:.82rem; font-weight:800; cursor:pointer; white-space:nowrap; box-shadow:0 2px 8px rgba(180,35,24,.2); transition:background .15s, transform .15s; }
   .prov-trucks__button:hover { background:#912018; transform:translateY(-1px); }
   .prov-trucks__button:disabled { opacity:.6; cursor:wait; transform:none; }
-  .prov-trucks__summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin-bottom:1.25rem; border:1px solid #e4e7ec; border-radius:12px; background:#fff; }
-  .prov-trucks__summary div { padding:1rem 1.15rem; border-right:1px solid #e4e7ec; }
-  .prov-trucks__summary div:last-child { border-right:0; }
-  .prov-trucks__summary strong { display:block; font-size:1.35rem; letter-spacing:-.03em; }
-  .prov-trucks__summary span { color:#667085; font-size:.74rem; font-weight:700; }
+  /* ========== 4 PASTEL KPI METRIC CARDS (DASHBOARD STYLE) ========== */
+  .pbfp-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .pbfp-kpi-box {
+    position: relative;
+    border-radius: 14px;
+    padding: 1rem 1.15rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    min-height: 128px;
+  }
+  .pbfp-kpi-box.red {
+    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
+    border: 1.5px solid #FFBEBE;
+    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
+  }
+  .pbfp-kpi-box.amber {
+    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
+    border: 1.5px solid #FFDC99;
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+  }
+  .pbfp-kpi-box.blue {
+    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
+    border: 1.5px solid #B8D3FD;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  }
+  .pbfp-kpi-box.purple {
+    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
+    border: 1.5px solid #D0BCFD;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
+  }
+  .pbfp-kpi-box:hover { transform: translateY(-3px); }
+  .pbfp-kpi-box.red:hover { border-color: #FFA3A3; box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2); }
+  .pbfp-kpi-box.amber:hover { border-color: #FFCF70; box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2); }
+  .pbfp-kpi-box.blue:hover { border-color: #91B8FA; box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2); }
+  .pbfp-kpi-box.purple:hover { border-color: #B79BFB; box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2); }
+
+  .pbfp-kpi-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    margin-bottom: 0.45rem;
+  }
+  .pbfp-kpi-badge-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 10px;
+    background: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pbfp-kpi-box:hover .pbfp-kpi-badge-icon { transform: scale(1.06); }
+  .pbfp-kpi-badge-icon.red { color: #E23632; }
+  .pbfp-kpi-badge-icon.amber { color: #D97706; }
+  .pbfp-kpi-badge-icon.blue { color: #2563EB; }
+  .pbfp-kpi-badge-icon.purple { color: #7C3AED; }
+
+  .pbfp-kpi-trend-tag {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .pbfp-kpi-trend-tag.red { color: #991B1B; background: #FDE8E8; }
+  .pbfp-kpi-trend-tag.amber { color: #92400E; background: #FEF3C7; }
+  .pbfp-kpi-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
+  .pbfp-kpi-trend-tag.purple { color: #5B21B6; background: #EDE9FE; }
+
+  .pbfp-kpi-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    margin: 0.15rem 0 0.1rem;
+  }
+  .pbfp-kpi-label {
+    order: 2;
+    font-size: 0.69rem;
+    font-weight: 750;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pbfp-kpi-number {
+    order: 1;
+    font-size: 1.85rem;
+    font-weight: 900;
+    color: #0F172A;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .pbfp-kpi-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.55rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .pbfp-kpi-box.red .pbfp-kpi-footer { color: #DC2626; border-top-color: #FED7D7; }
+  .pbfp-kpi-box.amber .pbfp-kpi-footer { color: #D97706; border-top-color: #FEEBC8; }
+  .pbfp-kpi-box.blue .pbfp-kpi-footer { color: #2563EB; border-top-color: #DCE7FC; }
+  .pbfp-kpi-box.purple .pbfp-kpi-footer { color: #7C3AED; border-top-color: #E9D8FD; }
+
+  .pbfp-kpi-footer-subtext {
+    font-weight: 600;
+    opacity: 0.9;
+  }
+  .pbfp-kpi-footer i {
+    font-size: 0.72rem;
+    transition: transform 0.2s ease;
+  }
+  .pbfp-kpi-box:hover .pbfp-kpi-footer i {
+    transform: translateX(3px);
+  }
+
   .prov-trucks .truck-grid { gap:calc(.75rem + 5px); }
   .prov-trucks__toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem; margin:1.25rem 0; }
   .prov-trucks__search-box { position:relative; width:min(380px,100%); display:flex; align-items:center; }
@@ -45,10 +184,7 @@ const styles = `
   .prov-trucks__actions { display:flex; justify-content:flex-end; gap:.6rem; margin-top:1.15rem; }
   .prov-trucks__secondary { min-height:44px; padding:.65rem 1rem; border:1px solid #d0d5dd; border-radius:9px; background:#fff; color:#344054; font:inherit; font-size:.8rem; font-weight:750; cursor:pointer; }
   @media (max-width:760px) {
-    .prov-trucks__header { flex-direction:column; }
-    .prov-trucks__summary { grid-template-columns:1fr 1fr; }
-    .prov-trucks__summary div:nth-child(2) { border-right:0; }
-    .prov-trucks__summary div:nth-child(-n+2) { border-bottom:1px solid #e4e7ec; }
+    .pbfp-kpi-row { grid-template-columns: 1fr 1fr; }
     .prov-trucks__toolbar { flex-direction:column; align-items:stretch; }
     .prov-trucks__search-box { width:100%; }
     .prov-trucks__filter-group { flex-direction:column; align-items:stretch; }
@@ -215,11 +351,92 @@ export function ProvincialFireTrucks({
           <i className="fa-solid fa-plus" aria-hidden="true" /> Add fire truck
         </button>
       </div>
-      <section className="prov-trucks__summary" aria-label="Provincial fleet totals">
-        <div><strong>{totals.trucks}</strong><span>Fire trucks</span></div>
-        <div><strong>{totals.serviceable}</strong><span>Serviceable</span></div>
-        <div><strong>{totals.down}</strong><span>Out of service</span></div>
-        <div><strong>{totals.stations}</strong><span>Active stations</span></div>
+      <section className="pbfp-kpi-row" aria-label="Provincial fleet totals">
+        {/* Card 1: Red */}
+        <div
+          className="pbfp-kpi-box red"
+          onClick={() => setSelectedMunicipality("ALL")}
+          role="button"
+          tabIndex={0}
+          title="Click to view all fire trucks"
+        >
+          <div className="pbfp-kpi-header">
+            <div className="pbfp-kpi-badge-icon red">
+              <i className="fa-solid fa-truck-moving" />
+            </div>
+            <span className="pbfp-kpi-trend-tag red">
+              <i className="fa-solid fa-fire" /> Total Fleet
+            </span>
+          </div>
+          <div className="pbfp-kpi-body">
+            <span className="pbfp-kpi-label">Fire Trucks</span>
+            <span className="pbfp-kpi-number">{totals.trucks}</span>
+          </div>
+          <div className="pbfp-kpi-footer">
+            <span className="pbfp-kpi-footer-subtext">Provincial Fleet Inventory</span>
+            <i className="fa-solid fa-arrow-right" />
+          </div>
+        </div>
+
+        {/* Card 2: Amber */}
+        <div className="pbfp-kpi-box amber">
+          <div className="pbfp-kpi-header">
+            <div className="pbfp-kpi-badge-icon amber">
+              <i className="fa-solid fa-circle-check" />
+            </div>
+            <span className="pbfp-kpi-trend-tag amber">
+              <i className="fa-solid fa-circle-check" /> Ready
+            </span>
+          </div>
+          <div className="pbfp-kpi-body">
+            <span className="pbfp-kpi-label">Serviceable</span>
+            <span className="pbfp-kpi-number">{totals.serviceable}</span>
+          </div>
+          <div className="pbfp-kpi-footer">
+            <span className="pbfp-kpi-footer-subtext">Operational & Deployable</span>
+            <i className="fa-solid fa-arrow-right" />
+          </div>
+        </div>
+
+        {/* Card 3: Blue */}
+        <div className="pbfp-kpi-box blue">
+          <div className="pbfp-kpi-header">
+            <div className="pbfp-kpi-badge-icon blue">
+              <i className="fa-solid fa-wrench" />
+            </div>
+            <span className="pbfp-kpi-trend-tag blue">
+              <i className="fa-solid fa-triangle-exclamation" /> Attention
+            </span>
+          </div>
+          <div className="pbfp-kpi-body">
+            <span className="pbfp-kpi-label">Out of Service</span>
+            <span className="pbfp-kpi-number">{totals.down}</span>
+          </div>
+          <div className="pbfp-kpi-footer">
+            <span className="pbfp-kpi-footer-subtext">Maintenance / For BER</span>
+            <i className="fa-solid fa-arrow-right" />
+          </div>
+        </div>
+
+        {/* Card 4: Purple */}
+        <Link href="/provincial-bfp/firetrucks-stations?view=stations" className="pbfp-kpi-box purple">
+          <div className="pbfp-kpi-header">
+            <div className="pbfp-kpi-badge-icon purple">
+              <i className="fa-solid fa-building-shield" />
+            </div>
+            <span className="pbfp-kpi-trend-tag purple">
+              <i className="fa-solid fa-shield-halved" /> Antique
+            </span>
+          </div>
+          <div className="pbfp-kpi-body">
+            <span className="pbfp-kpi-label">Active Stations</span>
+            <span className="pbfp-kpi-number">{totals.stations}</span>
+          </div>
+          <div className="pbfp-kpi-footer">
+            <span className="pbfp-kpi-footer-subtext">Station Directory</span>
+            <i className="fa-solid fa-arrow-right" />
+          </div>
+        </Link>
       </section>
       {loadError ? (
         <div className="prov-trucks__state">
