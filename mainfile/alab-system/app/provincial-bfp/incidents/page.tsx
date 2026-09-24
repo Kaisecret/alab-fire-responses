@@ -110,77 +110,149 @@ const pageStyles = `
     transform: translateY(-1px);
   }
 
-  /* 4 Tactical KPI Cards */
+  /* ========== 4 PASTEL KPI METRIC CARDS (DASHBOARD STYLE) ========== */
   .pbfp-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1rem;
+    margin-bottom: 0.5rem;
   }
-
-  .pbfp-kpi-card {
-    background: #FFFFFF;
-    border: 1px solid #E8EDF4;
+  .pbfp-kpi-box {
+    position: relative;
     border-radius: 14px;
-    padding: 1.15rem 1.25rem;
+    padding: 1rem 1.15rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    min-height: 128px;
+  }
+  .pbfp-kpi-box.red {
+    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
+    border: 1.5px solid #FFBEBE;
+    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
+  }
+  .pbfp-kpi-box.blue {
+    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
+    border: 1.5px solid #B8D3FD;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  }
+  .pbfp-kpi-box.purple {
+    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
+    border: 1.5px solid #D0BCFD;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
+  }
+  .pbfp-kpi-box.emerald {
+    background: linear-gradient(145deg, #E6FBF0 0%, #D1F7E2 100%);
+    border: 1.5px solid #A7F3D0;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
+  }
+  .pbfp-kpi-box:hover { transform: translateY(-3px); }
+  .pbfp-kpi-box.red:hover { border-color: #FFA3A3; box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2); }
+  .pbfp-kpi-box.blue:hover { border-color: #91B8FA; box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2); }
+  .pbfp-kpi-box.purple:hover { border-color: #B79BFB; box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2); }
+  .pbfp-kpi-box.emerald:hover { border-color: #6EE7B7; box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2); }
+
+  .pbfp-kpi-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+    justify-content: space-between;
+    gap: 0.4rem;
+    margin-bottom: 0.45rem;
   }
-
-  .pbfp-kpi-card:hover {
-    transform: translateY(-2px);
-    border-color: #CBD5E1;
-    box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.14);
-  }
-
-  .pbfp-kpi-badge {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
+  .pbfp-kpi-badge-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 10px;
+    background: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
+  .pbfp-kpi-box:hover .pbfp-kpi-badge-icon { transform: scale(1.06); }
+  .pbfp-kpi-badge-icon.red { color: #E23632; }
+  .pbfp-kpi-badge-icon.blue { color: #2563EB; }
+  .pbfp-kpi-badge-icon.purple { color: #7C3AED; }
+  .pbfp-kpi-badge-icon.emerald { color: #059669; }
 
-  .pbfp-kpi-badge.red { background: #FFF1F2; border: 1px solid #FFE4E6; color: #DC2626; }
-  .pbfp-kpi-badge.blue { background: #EFF6FF; border: 1px solid #DBEAFE; color: #2563EB; }
-  .pbfp-kpi-badge.purple { background: #F5F3FF; border: 1px solid #DDD6FE; color: #7C3AED; }
-  .pbfp-kpi-badge.emerald { background: #ECFDF5; border: 1px solid #D1FAE5; color: #059669; }
+  .pbfp-kpi-trend-tag {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .pbfp-kpi-trend-tag.red { color: #991B1B; background: #FDE8E8; }
+  .pbfp-kpi-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
+  .pbfp-kpi-trend-tag.purple { color: #5B21B6; background: #EDE9FE; }
+  .pbfp-kpi-trend-tag.emerald { color: #065F46; background: #D1FAE5; }
 
   .pbfp-kpi-body {
     display: flex;
     flex-direction: column;
-    min-width: 0;
+    gap: 0.1rem;
+    margin: 0.15rem 0 0.1rem;
   }
-
-  .pbfp-kpi-lbl {
-    font-size: 0.68rem;
-    font-weight: 800;
-    color: #64748B;
+  .pbfp-kpi-label {
+    order: 2;
+    font-size: 0.69rem;
+    font-weight: 750;
+    color: #475569;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .pbfp-kpi-val {
-    font-size: 1.4rem;
-    font-weight: 850;
-    color: #0F172A;
-    line-height: 1.15;
-    margin: 0.1rem 0;
-  }
-
-  .pbfp-kpi-sub {
-    font-size: 0.72rem;
-    color: #64748B;
-    font-weight: 600;
+    letter-spacing: 0.03em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .pbfp-kpi-number {
+    order: 1;
+    font-size: 1.85rem;
+    font-weight: 900;
+    color: #0F172A;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .pbfp-kpi-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.55rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .pbfp-kpi-box.red .pbfp-kpi-footer { color: #DC2626; border-top-color: #FED7D7; }
+  .pbfp-kpi-box.blue .pbfp-kpi-footer { color: #2563EB; border-top-color: #DCE7FC; }
+  .pbfp-kpi-box.purple .pbfp-kpi-footer { color: #7C3AED; border-top-color: #E9D8FD; }
+  .pbfp-kpi-box.emerald .pbfp-kpi-footer { color: #059669; border-top-color: #A7F3D0; }
+
+  .pbfp-kpi-footer-subtext {
+    font-weight: 600;
+    opacity: 0.9;
+  }
+  .pbfp-kpi-footer i {
+    font-size: 0.72rem;
+    transition: transform 0.2s ease;
+  }
+  .pbfp-kpi-box:hover .pbfp-kpi-footer i {
+    transform: translateX(3px);
+  }
+
 
   /* Table Card */
   .pbfp-table-card {
@@ -722,52 +794,95 @@ function ProvincialIncidentsContent() {
           </div>
         )}
 
-        {/* 4 Tactical KPI Stat Cards */}
+        {/* 4 Tactical KPI Stat Cards (Dashboard Style) */}
         <div className="pbfp-kpi-grid">
-          <div className="pbfp-kpi-card">
-            <div className="pbfp-kpi-badge red">
-              <i className="fa-solid fa-fire-flame-curved" />
+          {/* Card 1: Red */}
+          <div
+            className="pbfp-kpi-box red"
+            onClick={() => setFilter('ACTIVE')}
+            role="button"
+            tabIndex={0}
+            title="Filter by Active Incidents"
+          >
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon red">
+                <i className="fa-solid fa-fire-flame-curved" />
+              </div>
+              <span className="pbfp-kpi-trend-tag red">
+                <i className="fa-solid fa-triangle-exclamation" /> Priority
+              </span>
             </div>
             <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-lbl">Active Incidents</span>
-              <span className="pbfp-kpi-val">{loading ? '--' : activeCount}</span>
-              <span className="pbfp-kpi-sub">Ongoing operations</span>
+              <span className="pbfp-kpi-label">Active Incidents</span>
+              <span className="pbfp-kpi-number">{loading ? '--' : activeCount}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Ongoing operations</span>
+              <i className="fa-solid fa-arrow-right" />
             </div>
           </div>
 
-          <div className="pbfp-kpi-card">
-            <div className="pbfp-kpi-badge blue">
-              <i className="fa-solid fa-truck-fast" />
+          {/* Card 2: Blue */}
+          <div className="pbfp-kpi-box blue">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon blue">
+                <i className="fa-solid fa-truck-fast" />
+              </div>
+              <span className="pbfp-kpi-trend-tag blue">
+                <i className="fa-solid fa-truck-moving" /> On-Scene
+              </span>
             </div>
             <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-lbl">Responding Now</span>
-              <span className="pbfp-kpi-val">{loading ? '--' : respondingCount}</span>
-              <span className="pbfp-kpi-sub">BFP Station Units on-scene</span>
+              <span className="pbfp-kpi-label">Responding Now</span>
+              <span className="pbfp-kpi-number">{loading ? '--' : respondingCount}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">BFP Station Units on-scene</span>
+              <i className="fa-solid fa-arrow-right" />
             </div>
           </div>
 
-          <div className="pbfp-kpi-card">
-            <div className="pbfp-kpi-badge purple">
-              <i className="fa-solid fa-handshake-angle" />
+          {/* Card 3: Purple */}
+          <div className="pbfp-kpi-box purple">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon purple">
+                <i className="fa-solid fa-handshake-angle" />
+              </div>
+              <span className="pbfp-kpi-trend-tag purple">
+                <i className="fa-solid fa-shield-halved" /> Mutual Aid
+              </span>
             </div>
             <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-lbl">Mutual Aid Requested</span>
-              <span className="pbfp-kpi-val">{loading ? '--' : assistanceCount}</span>
-              <span className="pbfp-kpi-sub">Inter-municipality backup</span>
+              <span className="pbfp-kpi-label">Mutual Aid Requested</span>
+              <span className="pbfp-kpi-number">{loading ? '--' : assistanceCount}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Inter-municipality backup</span>
+              <i className="fa-solid fa-arrow-right" />
             </div>
           </div>
 
-          <div className="pbfp-kpi-card">
-            <div className="pbfp-kpi-badge emerald">
-              <i className="fa-solid fa-satellite-dish" />
+          {/* Card 4: Emerald */}
+          <div className="pbfp-kpi-box emerald">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon emerald">
+                <i className="fa-solid fa-satellite-dish" />
+              </div>
+              <span className="pbfp-kpi-trend-tag emerald">
+                <i className="fa-solid fa-tower-broadcast" /> Monitored
+              </span>
             </div>
             <div className="pbfp-kpi-body">
-              <span className="pbfp-kpi-lbl">Under Observation</span>
-              <span className="pbfp-kpi-val">{loading ? '--' : monitoredCount}</span>
-              <span className="pbfp-kpi-sub">Nearest stations tracking</span>
+              <span className="pbfp-kpi-label">Under Observation</span>
+              <span className="pbfp-kpi-number">{loading ? '--' : monitoredCount}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Nearest stations tracking</span>
+              <i className="fa-solid fa-arrow-right" />
             </div>
           </div>
         </div>
+
 
         {/* Main Incident Command Table Card */}
         <div className="pbfp-table-card">
