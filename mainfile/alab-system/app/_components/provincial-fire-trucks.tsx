@@ -13,39 +13,30 @@ const styles = `
   .prov-trucks { padding:1.5rem clamp(1rem,2vw,2rem) 3rem; color:#172033; font-family:'Plus Jakarta Sans',sans-serif; }
   .prov-trucks * { box-sizing:border-box; }
   .prov-trucks__header { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; margin-bottom:1.25rem; }
-  .prov-trucks__eyebrow { margin:0 0 .4rem; color:#b42318; font-size:.7rem; font-weight:850; letter-spacing:.11em; text-transform:uppercase; }
+  .prov-trucks__eyebrow { margin:0 0 .4rem; color:#b42318; font-size:.72rem; font-weight:850; letter-spacing:.11em; text-transform:uppercase; }
   .prov-trucks h1 { margin:0; font-size:clamp(1.45rem,2vw,2rem); letter-spacing:-.035em; }
-  .prov-trucks__subtitle { max-width:760px; margin:.45rem 0 0; color:#667085; font-size:.87rem; line-height:1.55; }
-  .prov-trucks__button { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.7rem 1rem; border:0; border-radius:9px; background:#b42318; color:#fff; font:inherit; font-size:.82rem; font-weight:800; cursor:pointer; white-space:nowrap; }
-  .prov-trucks__button:hover { background:#912018; }
-  .prov-trucks__button:disabled { opacity:.6; cursor:wait; }
-  .prov-trucks__summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin-bottom:1rem; border:1px solid #e4e7ec; border-radius:12px; background:#fff; }
+  .prov-trucks__button { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.7rem 1.15rem; border:0; border-radius:9px; background:#b42318; color:#fff; font:inherit; font-size:.82rem; font-weight:800; cursor:pointer; white-space:nowrap; box-shadow:0 2px 8px rgba(180,35,24,.2); transition:background .15s, transform .15s; }
+  .prov-trucks__button:hover { background:#912018; transform:translateY(-1px); }
+  .prov-trucks__button:disabled { opacity:.6; cursor:wait; transform:none; }
+  .prov-trucks__summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin-bottom:1.25rem; border:1px solid #e4e7ec; border-radius:12px; background:#fff; }
   .prov-trucks__summary div { padding:1rem 1.15rem; border-right:1px solid #e4e7ec; }
   .prov-trucks__summary div:last-child { border-right:0; }
-  .prov-trucks__summary strong { display:block; font-size:1.35rem; }
+  .prov-trucks__summary strong { display:block; font-size:1.35rem; letter-spacing:-.03em; }
   .prov-trucks__summary span { color:#667085; font-size:.74rem; font-weight:700; }
-  .prov-trucks__layout { display:grid; grid-template-columns:minmax(280px,.72fr) minmax(420px,1.6fr); gap:1rem; align-items:start; }
-  .prov-trucks__panel { overflow:hidden; border:1px solid #e4e7ec; border-radius:12px; background:#fff; }
-  .prov-trucks__panel-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:1rem 1.1rem; border-bottom:1px solid #e4e7ec; }
-  .prov-trucks__panel-head h2 { margin:0; font-size:.92rem; }
-  .prov-trucks__panel-head span { color:#667085; font-size:.7rem; font-weight:700; }
-  .prov-trucks__municipalities { display:grid; max-height:680px; overflow:auto; }
-  .prov-trucks__municipality { appearance:none; display:grid; grid-template-columns:1fr auto; gap:.3rem .8rem; width:100%; padding:.9rem 1.1rem; border:0; border-bottom:1px solid #f0f1f3; background:#fff; color:#344054; text-align:left; font:inherit; cursor:pointer; }
-  .prov-trucks__municipality:hover { background:#f8fafc; }
-  .prov-trucks__municipality.is-active { background:#fef3f2; box-shadow:inset 3px 0 #b42318; }
-  .prov-trucks__municipality strong { font-size:.8rem; }
-  .prov-trucks__municipality span { color:#667085; font-size:.7rem; }
-  .prov-trucks__municipality b { grid-row:1 / 3; grid-column:2; align-self:center; display:grid; place-items:center; min-width:34px; height:28px; border-radius:999px; background:#f2f4f7; color:#344054; font-size:.74rem; }
-  .prov-trucks__municipality:focus-visible, .prov-trucks__search:focus-visible, .prov-trucks__button:focus-visible { outline:3px solid rgba(37,99,235,.35); outline-offset:-3px; }
-  .prov-trucks__detail { min-height:520px; }
-  .prov-trucks__tools { display:flex; gap:.5rem; align-items:center; }
-  .prov-trucks__search { min-height:40px; width:min(240px,100%); padding:.55rem .7rem; border:1px solid #d0d5dd; border-radius:8px; font:inherit; font-size:.76rem; }
-  .prov-trucks__records { padding:.85rem; }
-  .prov-trucks__group + .prov-trucks__group { margin-top:1rem; }
-  .prov-trucks__group-head { display:flex; justify-content:space-between; gap:.75rem; margin:0 0 .55rem; }
-  .prov-trucks__group-head h3 { margin:0; font-size:.82rem; }
-  .prov-trucks__group-head span { color:#667085; font-size:.7rem; font-weight:700; }
-  .prov-trucks__empty { padding:3rem 1rem; color:#667085; font-size:.82rem; text-align:center; }
+  .prov-trucks__toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem; margin:1.25rem 0; }
+  .prov-trucks__search-box { position:relative; width:min(380px,100%); display:flex; align-items:center; }
+  .prov-trucks__search-icon { position:absolute; left:.9rem; color:#98a2b3; font-size:.82rem; pointer-events:none; }
+  .prov-trucks__search { min-height:44px; width:100%; padding:.7rem .85rem .7rem 2.35rem; border:1px solid #d0d5dd; border-radius:9px; background:#fff; color:#172033; font:inherit; font-size:.82rem; }
+  .prov-trucks__filter-group { display:flex; flex-wrap:wrap; align-items:center; gap:.55rem; }
+  .prov-trucks__filter-label { display:inline-flex; align-items:center; gap:.35rem; color:#475467; font-size:.78rem; font-weight:750; }
+  .prov-trucks__select { min-height:44px; min-width:240px; padding:.65rem 2.2rem .65rem .85rem; border:1px solid #d0d5dd; border-radius:9px; background:#fff; color:#172033; font:inherit; font-size:.82rem; font-weight:650; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E"); background-position:right .75rem center; background-repeat:no-repeat; background-size:1.15rem; }
+  .prov-trucks__badge { display:inline-flex; align-items:center; gap:.45rem; min-height:44px; padding:.55rem .85rem; border:1px solid #d0d5dd; border-radius:9px; background:#fff; color:#475467; font-size:.76rem; font-weight:800; white-space:nowrap; }
+  .prov-trucks__search:focus-visible, .prov-trucks__select:focus-visible, .prov-trucks__button:focus-visible, .prov-trucks__secondary:focus-visible { outline:3px solid rgba(37,99,235,.35); outline-offset:2px; }
+  .prov-trucks__group { margin-top:1.25rem; }
+  .prov-trucks__group-head { display:flex; align-items:baseline; justify-content:space-between; gap:.75rem; margin:0 0 .65rem; padding-bottom:.35rem; border-bottom:1px solid #f1f5f9; }
+  .prov-trucks__group-head h2 { margin:0; font-size:.95rem; font-weight:850; letter-spacing:-.01em; color:#0f172a; }
+  .prov-trucks__group-head span { color:#667085; font-size:.74rem; font-weight:700; }
+  .prov-trucks__state { padding:3.5rem 1rem; border:1px dashed #d0d5dd; border-radius:12px; background:#fff; color:#667085; text-align:center; font-size:.85rem; }
   .prov-trucks__form { padding:1.15rem 1.35rem 1.35rem; }
   .prov-trucks__form-grid { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; }
   .prov-trucks__field { display:grid; gap:.35rem; }
@@ -58,8 +49,20 @@ const styles = `
   .prov-trucks__error { margin:.9rem 0 0; color:#b42318; font-size:.78rem; font-weight:700; }
   .prov-trucks__actions { display:flex; justify-content:flex-end; gap:.6rem; margin-top:1.15rem; }
   .prov-trucks__secondary { min-height:44px; padding:.65rem 1rem; border:1px solid #d0d5dd; border-radius:9px; background:#fff; color:#344054; font:inherit; font-size:.8rem; font-weight:750; cursor:pointer; }
-  @media (max-width:980px) { .prov-trucks__layout { grid-template-columns:1fr; } .prov-trucks__municipalities { max-height:320px; } }
-  @media (max-width:640px) { .prov-trucks__header { flex-direction:column; } .prov-trucks__header .prov-trucks__button { width:100%; } .prov-trucks__summary { grid-template-columns:1fr 1fr; } .prov-trucks__summary div:nth-child(2) { border-right:0; } .prov-trucks__summary div:nth-child(-n+2) { border-bottom:1px solid #e4e7ec; } .prov-trucks__panel-head { flex-direction:column; align-items:stretch; } .prov-trucks__search { width:100%; } .prov-trucks__form-grid { grid-template-columns:1fr; } .prov-trucks__field--wide { grid-column:auto; } .prov-trucks__actions { flex-direction:column-reverse; } .prov-trucks__actions button { width:100%; } }
+  @media (max-width:760px) {
+    .prov-trucks__header { flex-direction:column; }
+    .prov-trucks__summary { grid-template-columns:1fr 1fr; }
+    .prov-trucks__summary div:nth-child(2) { border-right:0; }
+    .prov-trucks__summary div:nth-child(-n+2) { border-bottom:1px solid #e4e7ec; }
+    .prov-trucks__toolbar { flex-direction:column; align-items:stretch; }
+    .prov-trucks__search-box { width:100%; }
+    .prov-trucks__filter-group { flex-direction:column; align-items:stretch; }
+    .prov-trucks__select { width:100%; min-width:0; }
+    .prov-trucks__form-grid { grid-template-columns:1fr; }
+    .prov-trucks__field--wide { grid-column:auto; }
+    .prov-trucks__actions { flex-direction:column-reverse; }
+    .prov-trucks__actions button { width:100%; }
+  }
   ${fireTruckCardStyles}
   ${fireTruckDialogStyles}
 `;
@@ -217,9 +220,10 @@ export function ProvincialFireTrucks({ initialMunicipalityId = "" }: { initialMu
         <div>
           <p className="prov-trucks__eyebrow">Antique provincial fleet</p>
           <h1>Fire trucks by municipality</h1>
-          <p className="prov-trucks__subtitle">Every fire truck on the provincial inventory, grouped by municipality and station. Only Provincial BFP can add trucks; municipal accounts see their own fleet.</p>
         </div>
-        <button className="prov-trucks__button" type="button" onClick={openAdd} disabled={!registry}><i className="fa-solid fa-plus" aria-hidden="true" /> Add fire truck</button>
+        <button className="prov-trucks__button" type="button" onClick={openAdd} disabled={!registry}>
+          <i className="fa-solid fa-plus" aria-hidden="true" /> Add fire truck
+        </button>
       </header>
       <section className="prov-trucks__summary" aria-label="Provincial fleet totals">
         <div><strong>{totals.trucks}</strong><span>Fire trucks</span></div>
@@ -227,34 +231,76 @@ export function ProvincialFireTrucks({ initialMunicipalityId = "" }: { initialMu
         <div><strong>{totals.down}</strong><span>Out of service</span></div>
         <div><strong>{totals.stations}</strong><span>Active stations</span></div>
       </section>
-      {loadError ? <div className="prov-trucks__panel prov-trucks__empty"><p>{loadError}</p><button className="prov-trucks__button" type="button" onClick={() => void load()}>Retry</button></div>
-        : !registry ? <div className="prov-trucks__panel prov-trucks__empty">Loading the provincial fire truck inventory…</div>
-        : <div className="prov-trucks__layout">
-          <section className="prov-trucks__panel">
-            <header className="prov-trucks__panel-head"><h2>Municipalities</h2><span>Select a municipality</span></header>
-            <div className="prov-trucks__municipalities">
-              <button type="button" className={`prov-trucks__municipality${allSelected ? " is-active" : ""}`} aria-pressed={allSelected} onClick={() => { setSelectedMunicipality("ALL"); setQuery(""); }}>
-                <strong>All municipalities</strong><span>{totals.stations} stations · {totals.down} out of service</span><b>{totals.trucks}</b>
-              </button>
-              {registry.municipalities.map((municipality) => <button type="button" key={municipality.municipalityId} className={`prov-trucks__municipality${municipality.municipalityId === selectedMunicipality ? " is-active" : ""}`} aria-pressed={municipality.municipalityId === selectedMunicipality} onClick={() => { setSelectedMunicipality(municipality.municipalityId); setQuery(""); }}>
-                <strong>{municipality.municipalityName}</strong>
-                <span>{municipality.incomeClass ? `${municipality.incomeClass} class · ` : ""}{municipality.stationCount} {municipality.stationCount === 1 ? "station" : "stations"} · {formatGallons(municipality.totalCapacityGallons)}</span>
-                <b>{municipality.truckCount}</b>
-              </button>)}
+      {loadError ? (
+        <div className="prov-trucks__state">
+          <p>{loadError}</p>
+          <button className="prov-trucks__button" type="button" onClick={() => void load()}>Retry</button>
+        </div>
+      ) : !registry ? (
+        <div className="prov-trucks__state">Loading the provincial fire truck inventory…</div>
+      ) : (
+        <>
+          <div className="prov-trucks__toolbar">
+            <div className="prov-trucks__search-box">
+              <i className="fa-solid fa-magnifying-glass prov-trucks__search-icon" aria-hidden="true" />
+              <input
+                className="prov-trucks__search"
+                aria-label="Search fire trucks"
+                placeholder="Search make, station, municipality, or remarks"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
             </div>
-          </section>
-          <section className="prov-trucks__panel prov-trucks__detail">
-            <header className="prov-trucks__panel-head">
-              <div><h2>{allSelected ? "All municipalities" : selected?.municipalityName || "Municipality"}</h2><span>{visibleCount} {visibleCount === 1 ? "fire truck" : "fire trucks"}</span></div>
-              <div className="prov-trucks__tools"><input className="prov-trucks__search" aria-label="Search fire trucks" placeholder="Search make, station, or remarks" value={query} onChange={(event) => setQuery(event.target.value)} /></div>
-            </header>
-            {visibleCount === 0 ? <div className="prov-trucks__empty">{query ? "No fire trucks match your search." : "No fire trucks are recorded for this municipality yet."}</div>
-              : <div className="prov-trucks__records">{groups.map((group) => <section key={group.id} className="prov-trucks__group" aria-label={group.name}>
-                  <header className="prov-trucks__group-head"><h3>{allSelected ? `${group.name} · ${group.municipalityName}` : group.name}</h3><span>{group.trucks.length} {group.trucks.length === 1 ? "truck" : "trucks"}</span></header>
-                  <div className="truck-grid">{group.trucks.map((truck) => <FireTruckCard key={truck.id} truck={truck} onOpen={setSelectedTruck} />)}</div>
-                </section>)}</div>}
-          </section>
-        </div>}
+            <div className="prov-trucks__filter-group">
+              <label htmlFor="prov-municipality-select" className="prov-trucks__filter-label">
+                <i className="fa-solid fa-location-dot" aria-hidden="true" />
+                Municipality:
+              </label>
+              <select
+                id="prov-municipality-select"
+                className="prov-trucks__select"
+                value={selectedMunicipality}
+                onChange={(event) => { setSelectedMunicipality(event.target.value); }}
+              >
+                <option value="ALL">All municipalities ({totals.trucks})</option>
+                {registry.municipalities.map((municipality) => (
+                  <option key={municipality.municipalityId} value={municipality.municipalityId}>
+                    {municipality.municipalityName} ({municipality.truckCount})
+                  </option>
+                ))}
+              </select>
+              <span className="prov-trucks__badge">
+                {visibleCount} {visibleCount === 1 ? "fire truck" : "fire trucks"}
+              </span>
+            </div>
+          </div>
+
+          {visibleCount === 0 ? (
+            <div className="prov-trucks__state">
+              {query ? "No fire trucks match your search." : "No fire trucks are recorded for this municipality yet."}
+            </div>
+          ) : (
+            groups.map((group) => (
+              <section key={group.id} className="prov-trucks__group" aria-label={group.name}>
+                <header className="prov-trucks__group-head">
+                  <h2>{allSelected ? `${group.name} · ${group.municipalityName}` : group.name}</h2>
+                  <span>{group.trucks.length} {group.trucks.length === 1 ? "truck" : "trucks"}</span>
+                </header>
+                <div className="truck-grid">
+                  {group.trucks.map((truck) => (
+                    <FireTruckCard
+                      key={truck.id}
+                      truck={truck}
+                      onOpen={setSelectedTruck}
+                      showMunicipality={allSelected}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
+        </>
+      )}
     </main>
     <FireTruckDetailsDialog truck={selectedTruck} onClose={closeDetails} pageSelector="main.prov-trucks" />
     {adding && registry && createPortal(<div className="truck-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeAdd(); }}>

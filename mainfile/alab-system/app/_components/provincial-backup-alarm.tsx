@@ -182,25 +182,23 @@ const styles = `
     margin-bottom: 0.5rem;
   }
   .pba-levels { display: flex; flex-direction: column; gap: 0.4rem; }
-  /* Each level says who it calls, because that is the decision being made. */
   .pba-level {
     display: flex;
-    align-items: baseline;
+    align-items: center;
+    justify-content: space-between;
     gap: 0.6rem;
-    padding: 0.55rem 0.8rem;
+    padding: 0.65rem 0.9rem;
     border-radius: 8px;
     border: 1px solid #CBD5E1;
     background: #FFFFFF;
     color: #334155;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 800;
     cursor: pointer;
     text-align: left;
     transition: all 0.15s ease;
   }
   .pba-level-ord { flex-shrink: 0; }
-  .pba-level-who { font-size: 0.72rem; font-weight: 600; color: #64748B; }
-  .pba-level:hover:not(:disabled) .pba-level-who { color: #991B1B; }
   .pba-level:hover:not(:disabled) { border-color: #DC2626; color: #991B1B; background: #FEF2F2; }
   .pba-level:disabled { opacity: 0.45; cursor: not-allowed; }
   .pba-level:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
@@ -647,8 +645,8 @@ export function ProvincialBackupAlarm() {
                     onClick={() => void declare(entry.level)}
                     title={entry.summons}
                   >
-                    <span className="pba-level-ord">{entry.label}</span>
-                    <span className="pba-level-who">{entry.summons}</span>
+                    <span className="pba-level-ord">{entry.label} Alarm</span>
+                    <i className="fa-solid fa-arrow-right" style={{ fontSize: "0.72rem", color: "#94A3B8" }} />
                   </button>
                 ))}
               </div>

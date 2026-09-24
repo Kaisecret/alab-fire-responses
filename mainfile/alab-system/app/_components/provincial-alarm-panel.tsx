@@ -336,12 +336,12 @@ const styles = `
 
   .pap-level {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: space-between;
     gap: 0.35rem;
     width: 100%;
     text-align: left;
-    padding: 0.55rem 0.65rem;
+    padding: 0.65rem 0.75rem;
     border-radius: 10px;
     border: 1px solid #E2E8F0;
     background: #FAFAFA;
@@ -359,16 +359,10 @@ const styles = `
     gap: 0.3rem;
   }
   .pap-level-ord {
-    font-size: 0.76rem;
+    font-size: 0.78rem;
     font-weight: 850;
     color: #0F172A;
     letter-spacing: -0.01em;
-  }
-  .pap-level-who {
-    font-size: 0.66rem;
-    font-weight: 550;
-    color: #64748B;
-    line-height: 1.35;
   }
   .pap-level-go {
     font-size: 0.68rem;
@@ -388,10 +382,6 @@ const styles = `
     color: #065F46;
     font-weight: 850;
   }
-  .pap-level.standing .pap-level-who {
-    color: #047857;
-    font-weight: 600;
-  }
 
   /* Future escalation options hover state */
   .pap-level:hover:not(:disabled) {
@@ -401,7 +391,6 @@ const styles = `
     transform: translateY(-1.5px);
   }
   .pap-level:hover:not(:disabled) .pap-level-ord { color: #DC2626; }
-  .pap-level:hover:not(:disabled) .pap-level-who { color: #0F172A; }
   .pap-level:hover:not(:disabled) .pap-level-go { color: #DC2626; transform: translateX(2px); }
 
   .pap-level:disabled {
@@ -679,7 +668,6 @@ export function ProvincialAlarmPanel() {
                           <i className="fa-solid fa-arrow-right pap-level-go" />
                         )}
                       </div>
-                      <span className="pap-level-who">{entry.summons}</span>
                     </button>
                   );
                 })}
