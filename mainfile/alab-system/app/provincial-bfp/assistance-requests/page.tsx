@@ -144,11 +144,11 @@ const pageStyles = `
     transform: translateY(-1px);
   }
 
-  /* ========== 4 PASTEL KPI METRIC CARDS (DASHBOARD STYLE) ========== */
+  /* ========== 4 PASTEL KPI METRIC CARDS (DASHBOARD STYLE - COMPACT) ========== */
   .pbfp-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1rem;
+    gap: 0.75rem;
     margin-bottom: 0.5rem;
   }
   @media (max-width: 1024px) {
@@ -160,8 +160,8 @@ const pageStyles = `
 
   .pbfp-kpi-box {
     position: relative;
-    border-radius: 14px;
-    padding: 1rem 1.15rem 0.85rem;
+    border-radius: 11px;
+    padding: 0.72rem 0.95rem 0.62rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -170,7 +170,7 @@ const pageStyles = `
     overflow: hidden;
     text-decoration: none;
     color: inherit;
-    min-height: 128px;
+    min-height: 98px;
   }
   .pbfp-kpi-box.blue {
     background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
@@ -193,7 +193,7 @@ const pageStyles = `
     box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
   }
 
-  .pbfp-kpi-box:hover { transform: translateY(-3px); }
+  .pbfp-kpi-box:hover { transform: translateY(-2.5px); }
   .pbfp-kpi-box.blue:hover { border-color: #91B8FA; box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2); }
   .pbfp-kpi-box.amber:hover { border-color: #FFCF70; box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2); }
   .pbfp-kpi-box.emerald:hover { border-color: #6EE7B7; box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2); }
@@ -203,20 +203,20 @@ const pageStyles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.4rem;
-    margin-bottom: 0.45rem;
+    gap: 0.35rem;
+    margin-bottom: 0.25rem;
   }
   .pbfp-kpi-badge-icon {
-    width: 2.35rem;
-    height: 2.35rem;
-    border-radius: 10px;
+    width: 1.95rem;
+    height: 1.95rem;
+    border-radius: 8px;
     background: #FFFFFF;
     border: 1px solid rgba(255, 255, 255, 0.95);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.05rem;
+    font-size: 0.88rem;
     flex-shrink: 0;
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -227,13 +227,13 @@ const pageStyles = `
   .pbfp-kpi-badge-icon.purple { color: #7C3AED; }
 
   .pbfp-kpi-trend-tag {
-    font-size: 0.65rem;
+    font-size: 0.58rem;
     font-weight: 800;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
+    padding: 0.14rem 0.42rem;
+    border-radius: 5px;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.22rem;
     letter-spacing: 0.02em;
     text-transform: uppercase;
   }
@@ -245,12 +245,12 @@ const pageStyles = `
   .pbfp-kpi-body {
     display: flex;
     flex-direction: column;
-    gap: 0.1rem;
-    margin: 0.15rem 0 0.1rem;
+    gap: 0.08rem;
+    margin: 0.08rem 0;
   }
   .pbfp-kpi-label {
     order: 2;
-    font-size: 0.69rem;
+    font-size: 0.63rem;
     font-weight: 750;
     color: #475569;
     text-transform: uppercase;
@@ -261,10 +261,10 @@ const pageStyles = `
   }
   .pbfp-kpi-number {
     order: 1;
-    font-size: 1.85rem;
-    font-weight: 900;
+    font-size: 1.45rem;
+    font-weight: 850;
     color: #0F172A;
-    line-height: 1.05;
+    line-height: 1.1;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
   }
@@ -272,10 +272,10 @@ const pageStyles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 0.55rem;
-    padding-top: 0.45rem;
+    margin-top: 0.35rem;
+    padding-top: 0.32rem;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 600;
   }
   .pbfp-kpi-box.blue .pbfp-kpi-footer { color: #2563EB; border-top-color: #DCE7FC; }
@@ -288,7 +288,7 @@ const pageStyles = `
     opacity: 0.9;
   }
   .pbfp-kpi-footer i {
-    font-size: 0.72rem;
+    font-size: 0.64rem;
     transition: transform 0.2s ease;
   }
   .pbfp-kpi-box:hover .pbfp-kpi-footer i {
