@@ -94,8 +94,8 @@ test("resident report markup contains 1-tap quick pills and hides weather from r
   assert.match(content, /hidden/);
   assert.match(content, /data-quick-density="PACKED_MAGKAKADIKIT"/);
   assert.match(content, /data-quick-route="INTERIOR_ALLEY_ESKINITA"/);
-  assert.match(content, /Dikit-dikit ang mga bahay/);
-  assert.match(content, /Eskinita \/ Makipot na daan/);
+  assert.match(content, /Houses are close together/);
+  assert.match(content, /Narrow alley or interior road/);
 });
 
 test("resident report status contains AHP severity badge and Phase 2 tactical enrichment", () => {
@@ -113,10 +113,10 @@ test("municipal incident detail displays the AHP severity badge and localized in
 
   assert.match(detail, /mbfp-severity-hero-badge/);
   assert.match(detail, /mbfp-tactical-severity-card/);
-  assert.match(detail, /House Density \(Agwat\)/);
-  assert.match(detail, /DIKIT-DIKIT/);
+  assert.match(detail, /Nearby Houses/);
+  assert.match(detail, /Houses are close together/);
   assert.match(detail, /Weather at Incident Site/);
-  assert.match(detail, /ESKINITA \/ LOOBAN/);
+  assert.match(detail, /Narrow alley \/ Restricted access/);
 });
 
 test("validateTacticalDetailsUpdate and validateFireReportInput normalize alias tactical values into canonical database enums", async () => {
@@ -152,9 +152,8 @@ test("resident report status contains canonical enums matching initial report su
   const status = read("app/_components/resident-report-status.tsx");
 
   assert.match(status, /PACKED_MAGKAKADIKIT/);
-  assert.match(status, /INTERIOR_ALLEY_ESKINITA/);
+  assert.match(status, /situationChoices\.route/);
   assert.match(status, /MIXED_SEMI_CONCRETE/);
   assert.match(status, /COMMERCIAL_STORAGE/);
   assert.match(status, /reported_house_density/);
 });
-

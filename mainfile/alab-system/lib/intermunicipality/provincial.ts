@@ -22,6 +22,8 @@ export type ProvincialIncidentSummary = {
 };
 
 export type ProvincialIncidentDetail = ProvincialIncidentSummary & {
+  severityScore: number | null;
+  severityFactors: string[] | null;
   latitude: number;
   longitude: number;
   landmark: string | null;
@@ -52,6 +54,8 @@ type DbIncidentRow = {
   barangay: string | null;
   fire_type: string;
   calculated_severity: string | null;
+  severity_score?: number | null;
+  severity_factors?: string[] | null;
   status: string;
   submitted_at: Date | string;
   dispatched_at: Date | string | null;
@@ -286,6 +290,8 @@ export async function getProvincialCoordinationIncident(
        b.name as barangay,
        fr.fire_type,
        fr.calculated_severity,
+       fr.severity_score,
+       fr.severity_factors,
        fr.status,
        fr.submitted_at,
        fr.latitude,
@@ -418,6 +424,8 @@ export async function getProvincialCoordinationIncident(
     barangay: row.barangay,
     fireType: row.fire_type,
     calculatedSeverity: row.calculated_severity,
+    severityScore: row.severity_score == null ? null : Number(row.severity_score),
+    severityFactors: Array.isArray(row.severity_factors) ? row.severity_factors : null,
     status: row.status,
     submittedAt: new Date(row.submitted_at).toISOString(),
     dispatchedAt: row.dispatched_at ? new Date(row.dispatched_at).toISOString() : null,

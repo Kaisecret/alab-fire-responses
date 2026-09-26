@@ -6,6 +6,7 @@ import type { Circle, Map as LeafletMap, Marker } from 'leaflet';
 import { ResidentFireLoader } from '../../_components/resident-fire-loader';
 import { reportFireMarkup, reportFireStyles } from '../../_content/resident-report-fire-content';
 import { getStoredLanguage, RESIDENT_TRANSLATIONS, type ResidentLanguage } from '../../_lib/resident-i18n';
+import { filterSituationForFireType, situationForFireType } from '../../../lib/fire-reports/fire-type-situation';
 import {
   REFINEMENT_WINDOW_MS,
   chooseBetterReading,
@@ -144,6 +145,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const typeButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-fire-type]'));
   const densityButton = root.querySelector<HTMLButtonElement>('[data-quick-density]');
   const routeButton = root.querySelector<HTMLButtonElement>('[data-quick-route]');
+  const quickSituationRow = root.querySelector<HTMLElement>('[data-quick-tactical-row]');
   const photoRequiredDialog = root.querySelector<HTMLElement>('[data-photo-required-dialog]');
   const photoReqTakeBtn = root.querySelector<HTMLButtonElement>('[data-photo-req-take]');
   const photoReqCloseBtn = root.querySelector<HTMLButtonElement>('[data-photo-req-close]');
@@ -162,6 +164,35 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   let selectedRoute: string | null = null;
   let submitting = false;
   let attachedPhotos: File[] = [];
+
+  const renderSituation = () => {
+    const options = situationForFireType(fireType);
+    const filtered = filterSituationForFireType(fireType, selectedDensity, selectedRoute);
+    selectedDensity = filtered.density;
+    selectedRoute = filtered.route;
+    if (quickSituationRow) quickSituationRow.hidden = !fireType;
+    if (densityButton) {
+      densityButton.hidden = !options.density;
+      densityButton.classList.toggle('is-active', Boolean(selectedDensity));
+      densityButton.setAttribute('aria-pressed', String(Boolean(selectedDensity)));
+    }
+    if (routeButton) {
+      routeButton.hidden = !options.route;
+      routeButton.dataset.quickRoute = options.route ?? '';
+      routeButton.classList.toggle('is-active', Boolean(selectedRoute));
+      routeButton.setAttribute('aria-pressed', String(Boolean(selectedRoute)));
+      const dict = RESIDENT_TRANSLATIONS.en;
+      const label = options.route === 'DEAD_END_OR_BLOCKED'
+        ? [dict.tacticalRemote, dict.tacticalRemoteSub]
+        : options.route === 'NARROW_STREET'
+          ? [dict.tacticalNarrowStreet, dict.tacticalNarrowStreetSub]
+          : [dict.tacticalAlley, dict.tacticalAlleySub];
+      const strong = routeButton.querySelector('strong');
+      const small = routeButton.querySelector('small');
+      if (strong) strong.textContent = label[0];
+      if (small) small.textContent = label[1];
+    }
+  };
 
   const handlePhotosUpdated = (event: Event) => {
     const detail = (event as CustomEvent<{ files?: File[] }>).detail;
@@ -324,19 +355,16 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     });
 
     const tacticalLabel = root.querySelector<HTMLElement>('.quick-tactical-label');
-    if (tacticalLabel) tacticalLabel.textContent = dict.tacticalSituation;
+    if (tacticalLabel) tacticalLabel.textContent = RESIDENT_TRANSLATIONS.en.tacticalSituation;
 
     if (densityButton) {
       const strong = densityButton.querySelector('strong');
       const small = densityButton.querySelector('small');
-      if (strong) strong.textContent = dict.tacticalPacked;
-      if (small) small.textContent = dict.tacticalPackedSub;
+      if (strong) strong.textContent = RESIDENT_TRANSLATIONS.en.tacticalPacked;
+      if (small) small.textContent = RESIDENT_TRANSLATIONS.en.tacticalPackedSub;
     }
     if (routeButton) {
-      const strong = routeButton.querySelector('strong');
-      const small = routeButton.querySelector('small');
-      if (strong) strong.textContent = dict.tacticalAlley;
-      if (small) small.textContent = dict.tacticalAlleySub;
+      renderSituation();
     }
 
     const step4Label = root.querySelector<HTMLElement>('.photo-field .field-label');
@@ -424,7 +452,11 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   typeButtons.forEach((button) => {
     const handler = () => {
       fireType = button.dataset.fireType ?? null;
-      typeButtons.forEach((item) => item.classList.toggle('selected', item === button));
+      typeButtons.forEach((item) => {
+        item.classList.toggle('selected', item === button);
+        item.setAttribute('aria-pressed', String(item === button));
+      });
+      renderSituation();
       if (fireTypeHint) fireTypeHint.style.display = 'none';
     };
     typeHandlers.set(button, handler);
@@ -468,8 +500,9 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     form.set('barangay', locationBarangay);
     form.set('landmark', landmarkInput.value.trim());
     form.set('description', '');
-    if (selectedDensity) form.set('houseDensity', selectedDensity);
-    if (selectedRoute) form.set('routeAccessibility', selectedRoute);
+    const situation = filterSituationForFireType(fireType, selectedDensity, selectedRoute);
+    if (situation.density) form.set('houseDensity', situation.density);
+    if (situation.route) form.set('routeAccessibility', situation.route);
     if (locationCard.dataset.weatherTemperature) form.set('weatherTemperature', locationCard.dataset.weatherTemperature);
     if (locationCard.dataset.weatherHumidity) form.set('weatherHumidity', locationCard.dataset.weatherHumidity);
     if (locationCard.dataset.weatherWindSpeed) form.set('weatherWindSpeed', locationCard.dataset.weatherWindSpeed);

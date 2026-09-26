@@ -18,11 +18,10 @@ import {
 import { fetchLiveWeather } from "../weather/service";
 import {
   assessBuildingDensity,
-  prepareDensitySeverityContext,
   type BuildingDensityConfidence,
   type BuildingDensityStatus,
 } from "./building-density";
-import { calculateFireSeverity } from "./severity";
+import { assessReportDanger } from "./danger-assessment";
 
 export type PhotoMetadata = { storageKey: string; originalFileName: string; mimeType: string; fileSizeBytes: number };
 
@@ -79,7 +78,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
     }
 
     const densityAssessment = await assessBuildingDensity(client, input.latitude, input.longitude);
-    const densityContext = prepareDensitySeverityContext({
+    const { densityContext, assessment: severityAssessment } = await assessReportDanger(client, {
       fireType: input.fireType,
       structureMaterial: input.structureMaterial,
       houseDensity: input.houseDensity,
@@ -88,12 +87,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
       windDirectionDeg: weatherWindDirection ?? undefined,
       temperatureC: weatherTemperature ?? undefined,
       relativeHumidity: weatherHumidity ?? undefined,
-    }, densityAssessment);
-    const baseSeverityAssessment = calculateFireSeverity(densityContext.severityInput);
-    const severityAssessment = {
-      ...baseSeverityAssessment,
-      factors: [...baseSeverityAssessment.factors, ...densityContext.densityFactors],
-    };
+    }, densityAssessment, input.latitude, input.longitude);
 
     const reportId = randomUUID();
     const reference = referenceNumber();
@@ -204,6 +198,7 @@ export async function updateResidentReportTacticalDetails(
   return withTransaction(async (client) => {
     const current = await client.query<{
       id: string; fire_type: string; structure_material: string | null; house_density: string | null;
+      latitude: string; longitude: string;
       reported_house_density: string | null; detected_building_density: BuildingDensityStatus;
       building_density_confidence: BuildingDensityConfidence; building_density_building_count: number | null;
       building_density_minimum_gap_meters: string | null; building_density_source: string | null;
@@ -212,6 +207,7 @@ export async function updateResidentReportTacticalDetails(
       weather_temperature: string | null; weather_humidity: string | null;
     }>(
       `select fr.id, fr.fire_type, fr.structure_material, fr.reported_house_density, fr.house_density,
+              fr.latitude, fr.longitude,
               fr.detected_building_density, fr.building_density_confidence, fr.building_density_building_count,
               fr.building_density_minimum_gap_meters, fr.building_density_source, fr.building_density_assessed_at,
               fr.route_accessibility,
@@ -242,7 +238,7 @@ export async function updateResidentReportTacticalDetails(
       assessedAt: row.building_density_assessed_at ? new Date(row.building_density_assessed_at) : new Date(),
       evidence: [],
     };
-    const densityContext = prepareDensitySeverityContext({
+    const { densityContext, assessment: reassessment } = await assessReportDanger(client, {
       fireType: row.fire_type,
       structureMaterial: newMaterial,
       houseDensity: reportedDensity,
@@ -251,12 +247,7 @@ export async function updateResidentReportTacticalDetails(
       windDirectionDeg: row.weather_wind_direction != null ? Number(row.weather_wind_direction) : undefined,
       temperatureC: row.weather_temperature != null ? Number(row.weather_temperature) : undefined,
       relativeHumidity: row.weather_humidity != null ? Number(row.weather_humidity) : undefined,
-    }, densityAssessment);
-    const baseReassessment = calculateFireSeverity(densityContext.severityInput);
-    const reassessment = {
-      ...baseReassessment,
-      factors: [...baseReassessment.factors, ...densityContext.densityFactors],
-    };
+    }, densityAssessment, Number(row.latitude), Number(row.longitude));
 
     await client.query(
       `update fire_reports

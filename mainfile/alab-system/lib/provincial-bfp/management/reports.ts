@@ -145,6 +145,8 @@ export async function getProvincialReport(
     reportSource: "ALAB_APP" | "PHONE_CALL";
     fireType: string;
     severity: string | null;
+    severityScore: number | null;
+    severityFactors: string[] | null;
     status: string;
     latitude: string | number;
     longitude: string | number;
@@ -171,6 +173,8 @@ export async function getProvincialReport(
             fr.report_source as "reportSource",
             fr.fire_type as "fireType",
             coalesce(fr.calculated_severity, 'UNKNOWN') as "severity",
+            fr.severity_score as "severityScore",
+            fr.severity_factors as "severityFactors",
             fr.status,
             fr.latitude,
             fr.longitude,
@@ -320,6 +324,8 @@ export async function getProvincialReport(
     reportSource: rep.reportSource,
     fireType: rep.fireType,
     severity: rep.severity ?? "UNKNOWN",
+    severityScore: rep.severityScore == null ? null : Number(rep.severityScore),
+    severityFactors: Array.isArray(rep.severityFactors) ? rep.severityFactors : null,
     status: rep.status,
     latitude: Number(rep.latitude),
     longitude: Number(rep.longitude),

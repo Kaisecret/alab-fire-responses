@@ -984,6 +984,8 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                 <div className="pid-badges">
                   {getStatusBadge(report.status)}
                   {getSeverityBadge(report.severity)}
+                  <span className="pid-source-pill">{report.fireType === 'VEHICLE' || report.fireType === 'OTHER'
+                    ? 'Rule-based' : report.severityScore == null ? 'Score unavailable' : `${report.severityScore}/100`}</span>
                   <span className="pid-source-pill">
                     <i
                       className={
@@ -1137,6 +1139,13 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                     </div>
                   </div>
                 </div>
+
+                {report.severityFactors && report.severityFactors.length > 0 && (
+                  <section className="pid-card" aria-label="Level of Danger factors">
+                    <div className="pid-card-header"><h3 className="pid-card-title">Why this Level of Danger</h3></div>
+                    <ul>{report.severityFactors.map((factor, index) => <li key={`${index}-${factor}`}>{factor}</li>)}</ul>
+                  </section>
+                )}
 
                 {/* Ground Reconnaissance Mini-Map */}
                 {typeof report.latitude === 'number' &&

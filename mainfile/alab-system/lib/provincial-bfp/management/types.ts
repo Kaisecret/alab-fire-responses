@@ -180,6 +180,8 @@ export type ProvincialReportRow = {
 };
 
 export type ProvincialReportDetail = ProvincialReportRow & {
+  severityScore: number | null;
+  severityFactors: string[] | null;
   description: string;
   reporterNameSnapshot: string;
   reporterPhoneSnapshot: string;

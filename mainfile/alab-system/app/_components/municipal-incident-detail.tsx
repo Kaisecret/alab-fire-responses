@@ -2118,12 +2118,13 @@ export function MunicipalIncidentDetail({
               {isPhoneReport && <span className="mbfp-hero-ref-tag">From Phone Caller</span>}
               <span className="mbfp-hero-firetype-pill">
                 <i className="fa-solid fa-fire" />
-                <span>{incident.fireType.replaceAll("_", " ")}</span>
+                <span>{incident.fireType === "OTHER" ? "Rubbish Fire" : incident.fireType.replaceAll("_", " ")}</span>
               </span>
               {incident.calculatedSeverity && (
                 <span className={`mbfp-severity-hero-badge ${incident.calculatedSeverity}`}>
                   <i className="fa-solid fa-triangle-exclamation" />
-                  <span>{incident.calculatedSeverity} DANGER LEVEL ({incident.severityScore ?? '--'}/100)</span>
+                  <span>{incident.calculatedSeverity} DANGER LEVEL {incident.fireType === "VEHICLE" || incident.fireType === "OTHER"
+                    ? "(Rule-based)" : `(${incident.severityScore ?? "--"}/100)`}</span>
                 </span>
               )}
             </div>
@@ -2207,28 +2208,29 @@ export function MunicipalIncidentDetail({
               <div className="mbfp-card-header">
                 <h2 id="mbfp-severity-heading" className="mbfp-card-title">
                   <i className="fa-solid fa-shield-halved" style={{ color: "#DC2626" }} />
-                  <span>Level of Danger &amp; Conflagration Assessment</span>
+                  <span>Level of Danger Assessment</span>
                 </h2>
-                <span className={`mbfp-severity-tag ${incident.calculatedSeverity || "MODERATE"}`}>
-                  {incident.calculatedSeverity || "MODERATE"} ({incident.severityScore ?? 45}/100)
+                <span className={`mbfp-severity-tag ${incident.calculatedSeverity || "UNASSESSED"}`}>
+                  {incident.calculatedSeverity || "UNASSESSED"} {incident.fireType === "VEHICLE" || incident.fireType === "OTHER"
+                    ? "(Rule-based)" : `(${incident.severityScore ?? "--"}/100)`}
                 </span>
               </div>
 
               <div className="mbfp-tactical-metrics-grid">
-                {/* House Density */}
-                <div className={`mbfp-metric-item ${incident.houseDensity === "PACKED_MAGKAKADIKIT" ? "alert-conflagration" : ""}`}>
+                {/* House proximity is relevant to structural, vehicle, and rubbish fires. */}
+                {["HOUSE_BUILDING", "VEHICLE", "OTHER"].includes(incident.fireType) && <div className={`mbfp-metric-item ${incident.houseDensity === "PACKED_MAGKAKADIKIT" ? "alert-conflagration" : ""}`}>
                   <div className="mbfp-metric-label">
                     <i className="fa-solid fa-people-roof" />
-                    <span>House Density (Agwat)</span>
+                    <span>Nearby Houses</span>
                   </div>
                   <strong className="mbfp-metric-val">
                     {incident.houseDensity === "PACKED_MAGKAKADIKIT"
-                      ? "DIKIT-DIKIT (< 2m Conflagration Hazard)"
+                      ? "Houses are close together"
                       : incident.houseDensity === "ISOLATED_FAR" || incident.houseDensity === "MODERATE_SPACING"
-                        ? "Magkakalayo na Bahay (> 15m spacing)"
-                        : "Standard Residential"}
+                        ? "Houses are farther apart"
+                        : "Not reported"}
                   </strong>
-                </div>
+                </div>}
 
                 {/* Wind & Weather Telemetry */}
                 <div className={`mbfp-metric-item ${(Number(incident.weatherWindSpeed) || 0) >= 25 ? "alert-wind" : ""}`}>
@@ -2238,13 +2240,13 @@ export function MunicipalIncidentDetail({
                   </div>
                   <strong className="mbfp-metric-val">
                     {incident.weatherWindSpeed != null
-                      ? `${incident.weatherWindSpeed} km/h (${incident.weatherWindCondition || "Normal"}) · ${incident.weatherTemperature ?? 29}°C (${incident.weatherHumidity ?? 70}% RH)`
-                      : "12 km/h Moderate Breeze · 29°C"}
+                      ? `${incident.weatherWindSpeed} km/h (${incident.weatherWindCondition || "Condition unavailable"}) · ${incident.weatherTemperature ?? "--"}°C (${incident.weatherHumidity ?? "--"}% RH)`
+                      : "Weather data unavailable"}
                   </strong>
                 </div>
 
-                {/* Structure Fuel */}
-                <div className="mbfp-metric-item">
+                {/* Structure material is scored only for building fires. */}
+                {incident.fireType === "HOUSE_BUILDING" && <div className="mbfp-metric-item">
                   <div className="mbfp-metric-label">
                     <i className="fa-solid fa-cubes-stacked" />
                     <span>Structure Material</span>
@@ -2258,26 +2260,28 @@ export function MunicipalIncidentDetail({
                           ? "Semi-Concrete"
                           : incident.structureMaterial === "CONCRETE"
                             ? "Concrete / Semento"
-                            : "Residential Standard"}
+                            : "Not reported"}
                   </strong>
-                </div>
+                </div>}
 
-                {/* Route Accessibility */}
-                <div className={`mbfp-metric-item ${incident.routeAccessibility === "INTERIOR_ALLEY_ESKINITA" ? "alert-route" : ""}`}>
+                {/* Road access is not part of the rubbish-fire rule. */}
+                {incident.fireType !== "OTHER" && <div className={`mbfp-metric-item ${incident.routeAccessibility === "INTERIOR_ALLEY_ESKINITA" ? "alert-route" : ""}`}>
                   <div className="mbfp-metric-label">
                     <i className="fa-solid fa-road-barrier" />
-                    <span>Road &amp; Alley Access</span>
+                    <span>Road Access</span>
                   </div>
                   <strong className="mbfp-metric-val">
                     {incident.routeAccessibility === "INTERIOR_ALLEY_ESKINITA"
-                      ? "ESKINITA / LOOBAN (Restricted: Prepare Long Hose)"
+                      ? "Narrow alley / Restricted access"
                       : incident.routeAccessibility === "NARROW_STREET"
-                        ? "Makipot na Kalsada (1-Lane)"
+                        ? "Narrow street (one lane)"
+                        : incident.routeAccessibility === "DEAD_END_OR_BLOCKED"
+                          ? "Dead end or blocked road"
                         : incident.routeAccessibility === "WIDE_ROAD"
-                          ? "Malapad na Daan (Direct Access)"
-                          : "Standard Municipal Access"}
+                          ? "Wide road (direct access)"
+                          : "Not reported"}
                   </strong>
-                </div>
+                </div>}
               </div>
 
               {/* Active Risk Factors */}

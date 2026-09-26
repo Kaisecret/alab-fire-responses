@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 import { useResidentLanguage, getLocalizedStatusLabel, type ResidentLanguage } from "../_lib/resident-i18n";
+import { situationForFireType } from "../../lib/fire-reports/fire-type-situation";
 
 type Report = {
   id: string;
@@ -870,7 +871,8 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   const currentPhoto = photos[activePhotoIndex] ?? photos[0];
   const photoUrl = currentPhoto?.url || "";
   const windSpeed = Number(report.weather_wind_speed) || 0;
-  const severity = report.calculated_severity || "MODERATE";
+  const severity = report.calculated_severity || "UNASSESSED";
+  const situationChoices = situationForFireType(report.fire_type);
   const hasPhotos = photos.length > 0;
 
   return (
@@ -894,6 +896,17 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
           <span className="resident-status-pill">{getLocalizedStatusLabel(report.status, lang)}</span>
         </div>
       </section>
+
+      {report.calculated_severity && (
+        <section className="resident-detail-card" aria-label="Level of Danger details">
+          <h2>Level of Danger {report.fire_type === "VEHICLE" || report.fire_type === "OTHER"
+            ? "(Rule-based)" : report.severity_score == null ? "" : `(${report.severity_score}/100)`}</h2>
+          <p>This level describes conditions that could affect spread or access. BFP will assess the fire size at the scene.</p>
+          {Array.isArray(report.severity_factors) && report.severity_factors.length > 0 && (
+            <ul>{report.severity_factors.map((factor, index) => <li key={`${index}-${factor}`}>{factor}</li>)}</ul>
+          )}
+        </section>
+      )}
 
       {windSpeed >= 25 && (
         <section className="wind-hazard-banner" role="alert">
@@ -955,9 +968,9 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
               </div>
             )}
 
-            <div className="tactical-group">
+            {report.fire_type === "HOUSE_BUILDING" && <div className="tactical-group">
               <div className="tactical-group-header">
-                <span className="tactical-label">Materyales (Fuel):</span>
+                <span className="tactical-label">Building material:</span>
                 <span className={`tactical-select-guide ${report.structure_material ? "is-done" : ""}`}>
                   {report.structure_material ? "✓ Napili" : "Pumili ng 1"}
                 </span>
@@ -970,7 +983,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   aria-pressed={report.structure_material === "LIGHT_MATERIALS" || report.structure_material === "LIGHT_WOOD"}
                 >
                   <span className="tactical-btn-icon icon-wood"><i className="fa-solid fa-tree" /></span>
-                  <span className="tactical-btn-text">Kahoy / Light</span>
+                  <span className="tactical-btn-text">Wood / Light materials</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
                 <button
@@ -980,7 +993,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   aria-pressed={report.structure_material === "MIXED_SEMI_CONCRETE" || report.structure_material === "CONCRETE_MIXED" || report.structure_material === "CONCRETE"}
                 >
                   <span className="tactical-btn-icon icon-semi"><i className="fa-solid fa-house-chimney" /></span>
-                  <span className="tactical-btn-text">Semento / Halos</span>
+                  <span className="tactical-btn-text">Mixed / Semi-concrete</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
                 <button
@@ -990,15 +1003,15 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   aria-pressed={report.structure_material === "COMMERCIAL_STORAGE" || report.structure_material === "COMMERCIAL_STEEL"}
                 >
                   <span className="tactical-btn-icon icon-concrete"><i className="fa-solid fa-building" /></span>
-                  <span className="tactical-btn-text">Bakal / Warehouse</span>
+                  <span className="tactical-btn-text">Storage / Flammable goods</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
               </div>
-            </div>
+            </div>}
 
-            <div className="tactical-group">
+            {situationChoices.density && <div className="tactical-group">
               <div className="tactical-group-header">
-                <span className="tactical-label">Dikit-dikit ng Kabahayan:</span>
+                <span className="tactical-label">Nearby houses:</span>
                 <span className={`tactical-select-guide ${report.house_density || report.reported_house_density ? "is-done" : ""}`}>
                   {report.house_density || report.reported_house_density ? "✓ Napili" : "Pumili ng 1"}
                 </span>
@@ -1011,7 +1024,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   aria-pressed={report.house_density === "ISOLATED_FAR" || report.reported_house_density === "ISOLATED_FAR" || report.house_density === "ISOLATED"}
                 >
                   <span className="tactical-btn-icon icon-spaced"><i className="fa-solid fa-house" /></span>
-                  <span className="tactical-btn-text">Malayo (Hiwalay)</span>
+                  <span className="tactical-btn-text">Far apart</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
                 <button
@@ -1021,7 +1034,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   aria-pressed={report.house_density === "MODERATE_SPACING" || report.reported_house_density === "MODERATE_SPACING" || report.house_density === "MODERATE"}
                 >
                   <span className="tactical-btn-icon icon-semi"><i className="fa-solid fa-house-chimney-window" /></span>
-                  <span className="tactical-btn-text">Katamtaman</span>
+                  <span className="tactical-btn-text">Some spacing</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
                 <button
@@ -1031,15 +1044,15 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   aria-pressed={report.house_density === "PACKED_MAGKAKADIKIT" || report.reported_house_density === "PACKED_MAGKAKADIKIT" || report.house_density === "HIGH_DENSITY"}
                 >
                   <span className="tactical-btn-icon icon-packed"><i className="fa-solid fa-city" /></span>
-                  <span className="tactical-btn-text">Dikit-dikit (Kumpul-kumpol)</span>
+                  <span className="tactical-btn-text">Houses are close together</span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
               </div>
-            </div>
+            </div>}
 
-            <div className="tactical-group">
+            {situationChoices.route && <div className="tactical-group">
               <div className="tactical-group-header">
-                <span className="tactical-label">Luwang ng Daanan (Truck Access):</span>
+                <span className="tactical-label">Road access for fire trucks:</span>
                 <span className={`tactical-select-guide ${report.route_accessibility ? "is-done" : ""}`}>
                   {report.route_accessibility ? "✓ Napili" : "Pumili ng 1"}
                 </span>
@@ -1053,26 +1066,26 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 >
                   <span className="tactical-btn-icon icon-truck"><i className="fa-solid fa-truck-fast" /></span>
                   <span className="tactical-btn-content">
-                    <strong>Malapad na Kalsada</strong>
-                    <small>Kasya ang malalaking firetruck</small>
+                    <strong>Wide road</strong>
+                    <small>Fire truck can pass</small>
                   </span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
-                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "INTERIOR_ALLEY_ESKINITA" || report.route_accessibility === "NARROW_ALLEY" || report.route_accessibility === "NARROW_STREET" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("routeAccessibility", "INTERIOR_ALLEY_ESKINITA")}
-                  aria-pressed={report.route_accessibility === "INTERIOR_ALLEY_ESKINITA" || report.route_accessibility === "NARROW_ALLEY" || report.route_accessibility === "NARROW_STREET"}
+                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === situationChoices.route ? "is-selected" : ""}`}
+                  onClick={() => updateTacticalDetail("routeAccessibility", situationChoices.route!)}
+                  aria-pressed={report.route_accessibility === situationChoices.route}
                 >
                   <span className="tactical-btn-icon icon-alley"><i className="fa-solid fa-person-walking" /></span>
                   <span className="tactical-btn-content">
-                    <strong>Makipot / Eskenita</strong>
-                    <small>Maaaring mahirapan o kailangan ng hose extension</small>
+                    <strong>{report.fire_type === "VEHICLE" ? "Narrow street" : report.fire_type === "HOUSE_BUILDING" ? "Narrow alley" : "Difficult road access"}</strong>
+                    <small>{report.fire_type === "VEHICLE" ? "Fire trucks may have difficulty passing" : report.fire_type === "HOUSE_BUILDING" ? "A fire truck may not fit" : "Road is blocked or ends before the fire"}</small>
                   </span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
               </div>
-            </div>
+            </div>}
 
             {savedFeedback && <span className="tactical-saved-pill">{savedFeedback}</span>}
           </section>
@@ -1388,7 +1401,7 @@ function formatFireType(value: string) {
       GRASS: "Grass Fire",
       FOREST: "Forest Fire",
       VEHICLE: "Vehicle Fire",
-      OTHER: "Other",
+      OTHER: "Rubbish Fire",
     } as Record<string, string>)[value] || "Fire incident"
   );
 }

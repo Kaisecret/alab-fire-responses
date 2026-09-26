@@ -1114,13 +1114,21 @@ function ProvincialIncidentsContent() {
                   <div className="pbfp-modal-grid">
                     <div className="pbfp-modal-field">
                       <label>Classification & Level of Danger</label>
-                      <p>{incidentDetail.fireType.replaceAll('_', ' ')} · {incidentDetail.calculatedSeverity || 'MODERATE'}</p>
+                      <p>{incidentDetail.fireType === 'OTHER' ? 'Rubbish Fire' : incidentDetail.fireType.replaceAll('_', ' ')} · {incidentDetail.calculatedSeverity || 'UNASSESSED'} {incidentDetail.fireType === 'VEHICLE' || incidentDetail.fireType === 'OTHER'
+                        ? '(Rule-based)' : incidentDetail.severityScore == null ? '' : `(${incidentDetail.severityScore}/100)`}</p>
                     </div>
                     <div className="pbfp-modal-field">
                       <label>Reported Timestamp</label>
                       <p>{new Date(incidentDetail.submittedAt).toLocaleString()}</p>
                     </div>
                   </div>
+
+                  {incidentDetail.severityFactors && incidentDetail.severityFactors.length > 0 && (
+                    <section aria-label="Level of Danger factors" className="pbfp-modal-field">
+                      <label>Why this Level of Danger</label>
+                      <ul>{incidentDetail.severityFactors.map((factor, index) => <li key={`${index}-${factor}`}>{factor}</li>)}</ul>
+                    </section>
+                  )}
 
                   <div className="pbfp-modal-grid">
                     <div className="pbfp-modal-field">

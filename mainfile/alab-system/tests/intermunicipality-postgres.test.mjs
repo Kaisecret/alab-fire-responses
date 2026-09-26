@@ -35,6 +35,8 @@ async function database(applyCommandMigration = true) {
   await db.exec(`create role anon; create role authenticated;
     create table account_notifications (event_type text);
     alter table fire_reports add column calculated_severity text;
+    alter table fire_reports add column severity_score integer;
+    alter table fire_reports add column severity_factors jsonb;
     alter table fire_reports drop constraint fire_reports_status_check;
     insert into municipalities(id, name) values ('${origin}', 'Origin'), ('${recipient}', 'Recipient');
     insert into users(id, email, username, password_hash, phone, terms_accepted_at)
@@ -43,6 +45,8 @@ async function database(applyCommandMigration = true) {
     insert into fire_reports(id,reference_number,resident_profile_id,reporter_name_snapshot,reporter_phone_snapshot,
       fire_type,description,status,latitude,longitude,location_method,is_within_antique,municipality_id)
       values ('${report}','TEST','${user}','Private Name','09123456789','HOUSE_BUILDING','Private note','RESPONDING',10.7,122,'GPS',true,'${origin}');
+    update fire_reports set calculated_severity = 'HIGH', severity_score = 61,
+      severity_factors = '["Close houses", "Narrow road"]'::jsonb where id = '${report}';
     insert into municipal_bfp_stations(id,municipality_id,station_name,latitude,longitude)
       values ('${station}','${recipient}','Test station',10.71,122);
     insert into incident_dispatches(id,fire_report_id,municipality_id,dispatched_by_user_id)
@@ -73,6 +77,8 @@ test('provincial list and detail execute against coordination migration schema',
     assert.equal(items[0].observers[0].stationName, 'Test station');
     const detail = await api.getProvincialCoordinationIncident(report);
     assert.equal(detail.id, report);
+    assert.equal(detail.severityScore, 61);
+    assert.deepEqual(detail.severityFactors, ['Close houses', 'Narrow road']);
     assert.equal(detail.assistanceRequests[0].completedAt, '2026-09-03T00:00:00.000Z');
     const requests = await api.listProvincialAssistanceRequests(true);
     assert.equal(requests[0].completedAt, '2026-09-03T00:00:00.000Z');

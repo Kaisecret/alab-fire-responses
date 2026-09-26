@@ -33,7 +33,7 @@ test("resident localization module provides comprehensive Hiligaynon, Tagalog, a
   // 4. English translations presence
   assert.match(i18nSource, /fullName:\s*"Full Name"/);
   assert.match(i18nSource, /typeHouse:\s*"House \/ Building"/);
-  assert.match(i18nSource, /tacticalPacked:\s*"Packed Houses \/ Dense"/);
+  assert.match(i18nSource, /tacticalPacked:\s*"Houses are close together"/);
   assert.match(i18nSource, /falseAlarmWarningText:\s*"Filing a false fire alarm is strictly prohibited/);
 
   // 5. Storage and Event functions
@@ -179,5 +179,4 @@ test("resident guide page dynamically translates categories, hero emergency step
   assert.match(guideSource, /t\("guideReadFull"\)/);
   assert.match(guideSource, /t\("guidePopularSection"\)/);
 });
-
 

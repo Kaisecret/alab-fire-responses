@@ -223,6 +223,7 @@ export const reportFireStyles = `
     border-radius: 1rem;
     background: #F8FAFC;
   }
+  .quick-tactical-row[hidden], .quick-pill-toggle[hidden] { display: none !important; }
   .quick-tactical-label {
     display: block;
     font-size: 0.68rem;
@@ -948,25 +949,25 @@ export const reportFireMarkup = `
           <button type="button" class="type-btn" data-fire-type="GRASS" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8M8 20v-5M16 20v-6M4 20v-3M20 20v-4"/></svg>Grass Fire</button>
           <button type="button" class="type-btn" data-fire-type="FOREST" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 19 14 15 14 18 22 6 22 9 14 5 14 12 2"/></svg>Forest Fire</button>
           <button type="button" class="type-btn" data-fire-type="VEHICLE" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H9.3a2 2 0 0 0-1.6.8L5 11l-5.16.86a1 1 0 0 0-.84.99V16h3m10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0m-10 0a2 2 0 1 1-4 0m4 0a2 2 0 1 0-4 0"/></svg>Vehicle Fire</button>
-          <button type="button" class="type-btn" data-fire-type="OTHER" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>Other</button>
+          <button type="button" class="type-btn" data-fire-type="OTHER" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Rubbish</button>
         </div>
 
-        <div class="quick-tactical-row" data-quick-tactical-row>
-          <span class="quick-tactical-label">SITWASYON SA LUGAR (OPTIONAL):</span>
+        <div class="quick-tactical-row" data-quick-tactical-row hidden>
+          <span class="quick-tactical-label">SITUATION AT THE SCENE (OPTIONAL):</span>
           <div class="quick-pills-container">
             <button type="button" class="quick-pill-toggle" data-quick-density="PACKED_MAGKAKADIKIT" aria-pressed="false">
               <span class="quick-pill-icon" aria-hidden="true">🏘️</span>
               <span class="quick-pill-body">
-                <strong>Dikit-dikit ang mga bahay</strong>
-                <small>High conflagration hazard (&lt; 2m)</small>
+                <strong>Houses are close together</strong>
+                <small>Flames may spread between nearby houses</small>
               </span>
               <span class="quick-pill-check" aria-hidden="true">✓</span>
             </button>
             <button type="button" class="quick-pill-toggle" data-quick-route="INTERIOR_ALLEY_ESKINITA" aria-pressed="false">
               <span class="quick-pill-icon" aria-hidden="true">🚶</span>
               <span class="quick-pill-body">
-                <strong>Eskinita / Makipot na daan</strong>
-                <small>Hindi mapasok ng truck · Needs long hose</small>
+                <strong>Narrow alley or interior road</strong>
+                <small>A fire truck may not fit</small>
               </span>
               <span class="quick-pill-check" aria-hidden="true">✓</span>
             </button>
