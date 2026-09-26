@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 test("AHP Multi-Criteria decision weights sum to 1.0", async () => {
@@ -8,6 +9,73 @@ test("AHP Multi-Criteria decision weights sum to 1.0", async () => {
   assert.ok(Math.abs(Object.values(VEGETATION_AHP_WEIGHTS).reduce((acc, w) => acc + w, 0) - 1) < 1e-10);
   assert.ok(STRUCTURAL_AHP_RESULT.cr <= 0.10);
   assert.ok(VEGETATION_AHP_RESULT.cr <= 0.10);
+});
+
+test("prototype danger weights match synthetic questionnaire aggregation values", async () => {
+  const { AHP_WEIGHTS, VEGETATION_AHP_WEIGHTS, STRUCTURAL_AHP_RESULT, VEGETATION_AHP_RESULT } = await import("../lib/fire-reports/severity.ts");
+  const structural = {
+    density: 0.2579,
+    wind: 0.2011,
+    structure: 0.2657,
+    route: 0.1889,
+    weather: 0.0864,
+  };
+  const vegetation = {
+    wind: 0.3193,
+    weather: 0.1873,
+    distance: 0.2921,
+    route: 0.2013,
+  };
+  for (const [key, value] of Object.entries(structural)) {
+    assert.ok(Math.abs(AHP_WEIGHTS[key] - value) < 5e-5, `Structural ${key} differs`);
+  }
+  for (const [key, value] of Object.entries(vegetation)) {
+    assert.ok(Math.abs(VEGETATION_AHP_WEIGHTS[key] - value) < 5e-5, `Vegetation ${key} differs`);
+  }
+  assert.ok(STRUCTURAL_AHP_RESULT.cr > 0);
+  assert.ok(VEGETATION_AHP_RESULT.cr > 0);
+  const { calculateFireSeverity } = await import("../lib/fire-reports/severity.ts");
+  const grass = calculateFireSeverity({
+    fireType: "GRASS", windSpeedKph: 2.7, temperatureC: 25,
+    relativeHumidity: 95, routeAccessibility: "DEAD_END_OR_BLOCKED",
+  });
+  assert.equal(grass.score, 32);
+  assert.equal(grass.level, "MODERATE");
+});
+
+test("committed synthetic comparisons reproduce the provisional AHP matrices", async () => {
+  const data = JSON.parse(readFileSync(new URL("../docs/ahp-synthetic-comparisons.json", import.meta.url), "utf8"));
+  assert.equal(data.responses.length, 12);
+  assert.match(data.source, /SYNTHETIC TEST DATA/);
+  const { aggregateMatrices } = await import("../lib/fire-reports/ahp.ts");
+  const { STRUCTURAL_AHP_MATRIX, VEGETATION_AHP_MATRIX } = await import("../lib/fire-reports/severity.ts");
+  for (const [type, criteria, actual] of [
+    ["structural", data.structural_criteria, STRUCTURAL_AHP_MATRIX],
+    ["vegetation", data.vegetation_criteria, VEGETATION_AHP_MATRIX],
+  ]) {
+    const matrices = data.responses.map((response) => {
+      const size = criteria.length;
+      const matrix = Array.from({ length: size }, (_, row) =>
+        Array.from({ length: size }, (_, column) => row === column ? 1 : 0));
+      let index = 0;
+      for (let row = 0; row < size; row++) {
+        for (let column = row + 1; column < size; column++) {
+          const encoded = response[type][index++];
+          const ratio = encoded > 0 ? encoded : 1 / Math.abs(encoded);
+          matrix[row][column] = ratio;
+          matrix[column][row] = 1 / ratio;
+        }
+      }
+      assert.equal(index, response[type].length);
+      return matrix;
+    });
+    const expected = aggregateMatrices(matrices);
+    for (let row = 0; row < criteria.length; row++) {
+      for (let column = 0; column < criteria.length; column++) {
+        assert.ok(Math.abs(actual[row][column] - expected[row][column]) < 1e-12);
+      }
+    }
+  }
 });
 
 test("conflagration scenario: magkakadikit + light materials + strong wind produces CRITICAL severity", async () => {

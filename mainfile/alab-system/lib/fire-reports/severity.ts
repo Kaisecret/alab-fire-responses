@@ -25,14 +25,23 @@ export type SeverityAssessment = {
   weights: Record<string, number>;
 };
 
-// PROVISIONAL: replace with geometric-mean BFP respondent matrices once supplied.
-// Structural ratios reproduce previous weights; no BFP responses are claimed.
-const structuralReference = [0.30, 0.25, 0.20, 0.15, 0.10];
-const vegetationReference = [0.35, 0.20, 0.30, 0.15];
-const ratioMatrix = (weights: number[]) => weights.map((weight) => weights.map((other) => weight / other));
-
-export const STRUCTURAL_AHP_MATRIX = ratioMatrix(structuralReference);
-export const VEGETATION_AHP_MATRIX = ratioMatrix(vegetationReference);
+// PROVISIONAL: geometric-mean aggregates of 12 synthetic questionnaire examples.
+// These are test data, not responses from BFP personnel; replace with actual BFP matrices.
+// Criterion order: density, wind, structure, route, weather.
+export const STRUCTURAL_AHP_MATRIX = [
+  [1, 1.25992104989487, 0.943874312681694, 1.41421356237309, 3.01305733376207],
+  [0.7937005259841, 1, 0.7937005259841, 1, 2.32207334474799],
+  [1.0594630943593, 1.25992104989487, 1, 1.46281454322389, 3.01305733376207],
+  [0.707106781186548, 1, 0.683613657406019, 1, 2.21336383940064],
+  [0.331888805697371, 0.430649618480733, 0.331888805697371, 0.451801001804922, 1],
+];
+// Criterion order: wind, weather, nearest mapped-building distance, route.
+export const VEGETATION_AHP_MATRIX = [
+  [1, 1.68179283050743, 1.12246204830937, 1.56508458007329],
+  [0.594603557501361, 1, 0.645245371023925, 0.912514754760494],
+  [0.890898718140339, 1.54979802243776, 1, 1.49830707687668],
+  [0.638943104246272, 1.09587269113524, 0.667419927085017, 1],
+];
 export const STRUCTURAL_AHP_RESULT = computeAhpWeights(STRUCTURAL_AHP_MATRIX);
 export const VEGETATION_AHP_RESULT = computeAhpWeights(VEGETATION_AHP_MATRIX);
 

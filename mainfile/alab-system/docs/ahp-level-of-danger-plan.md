@@ -1,14 +1,14 @@
 # Level of Danger (AHP): current code and planned changes
 
-## Implementation note (2026-09-26)
+## Implementation note (2026-09-27)
 
-The application now dispatches by fire type through a shared assessment used on report submission and tactical reassessment. It includes a geometric-mean AHP helper with consistency ratio validation, separate structural and vegetation scoring, a nearest mapped-building lookup, vehicle and rubbish rules, and fire-type-specific factor text. Rule-based levels store representative scores (Low 15, Moderate 40, High 60); the municipal detail view labels these as rule-based.
+The application now dispatches by fire type through a shared assessment used on report submission and tactical reassessment. It includes a geometric-mean AHP helper with consistency ratio validation, separate structural and vegetation scoring, a nearest mapped-building lookup, vehicle and rubbish rules, and fire-type-specific factor text. Rule-based levels store representative scores (Low 15, Moderate 40, High 60); the municipal detail view labels these as rule-based. The current structural weights are density 25.79%, wind 20.11%, material 26.57%, route 18.89%, and weather 8.64%. The current vegetation weights are wind 31.93%, weather 18.73%, nearest mapped-building distance 29.21%, and route 20.13% (rounded to two decimals).
 
-**BFP validation is still required.** The matrices currently in `lib/fire-reports/severity.ts` are explicitly provisional. The structural matrix reproduces the previous weights; the vegetation matrix uses provisional weights. Neither is represented as a BFP response. Replace both matrices with the element-wise geometric mean of actual BFP questionnaires, record respondent count and positions for Chapter 3, and verify CR <= 0.10 before claiming the thesis method is implemented with BFP data. The vegetation distance bands and vehicle/rubbish rules also await BFP confirmation. Google Open Buildings supplies mapped building footprints, not verified house occupancy; vegetation factors state that limitation.
+**BFP validation is still required.** The matrices currently in `lib/fire-reports/severity.ts` are element-wise geometric-mean aggregates of 12 *synthetic* questionnaires created for testing. Their pairwise ratings are recorded in `docs/ahp-synthetic-comparisons.json`; the Word examples are in the local `tests/Simulated BFP AHP Responses/` directory. These responses were not supplied by BFP personnel and must never be presented as real survey results or BFP-approved weights. Their low consistency ratios show that the examples are mathematically coherent; they do not validate the fire-risk model. Replace both matrices with the element-wise geometric mean of actual BFP questionnaires, record respondent count and positions for Chapter 3, and verify CR <= 0.10 before claiming the thesis method is implemented with BFP data. The vegetation distance bands and vehicle/rubbish rules also await BFP confirmation. Google Open Buildings supplies mapped building footprints, not verified house occupancy; vegetation factors state that limitation.
 
 The sections below preserve the original design brief and describe the pre-update state where marked "current".
 
-Status as of 2026-09-26. Chapter 1 of the thesis (`tests/CHAPTER1.docx`) already describes the **planned** design below. The code still runs the **current** design. Use this file as the brief (or paste the prompt at the end) when updating the code, so the demo matches the paper.
+The historical sections below describe the pre-update system and the original implementation brief; use the implementation note above for the current model and provenance.
 
 ## 1. What the paper now says (target)
 

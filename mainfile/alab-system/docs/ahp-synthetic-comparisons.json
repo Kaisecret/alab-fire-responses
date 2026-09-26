@@ -1,0 +1,295 @@
+{
+  "source": "SYNTHETIC TEST DATA ? generated examples, not real BFP responses",
+  "method": "Each array lists upper-triangle pairwise ratios in the criterion order shown. Each matrix lower triangle is the reciprocal; aggregate matching entries with their geometric mean.",
+  "structural_criteria": [
+    "density",
+    "wind",
+    "structure",
+    "route",
+    "weather"
+  ],
+  "vegetation_criteria": [
+    "wind",
+    "weather",
+    "distance",
+    "route"
+  ],
+  "responses": [
+    {
+      "id": "01",
+      "structural": [
+        2,
+        1,
+        2,
+        4,
+        -2,
+        1,
+        2,
+        2,
+        3,
+        2
+      ],
+      "vegetation": [
+        2,
+        1,
+        2,
+        -2,
+        1,
+        2
+      ]
+    },
+    {
+      "id": "02",
+      "structural": [
+        1,
+        1,
+        2,
+        3,
+        1,
+        2,
+        4,
+        2,
+        3,
+        2
+      ],
+      "vegetation": [
+        2,
+        2,
+        3,
+        1,
+        1,
+        2
+      ]
+    },
+    {
+      "id": "03",
+      "structural": [
+        1,
+        1,
+        1,
+        3,
+        1,
+        -2,
+        2,
+        1,
+        3,
+        4
+      ],
+      "vegetation": [
+        2,
+        1,
+        1,
+        -2,
+        -2,
+        1
+      ]
+    },
+    {
+      "id": "04",
+      "structural": [
+        1,
+        -2,
+        2,
+        3,
+        -2,
+        1,
+        2,
+        3,
+        4,
+        2
+      ],
+      "vegetation": [
+        2,
+        1,
+        2,
+        1,
+        1,
+        2
+      ]
+    },
+    {
+      "id": "05",
+      "structural": [
+        2,
+        1,
+        1,
+        4,
+        1,
+        -2,
+        2,
+        1,
+        3,
+        3
+      ],
+      "vegetation": [
+        2,
+        1,
+        1,
+        -2,
+        -2,
+        1
+      ]
+    },
+    {
+      "id": "06",
+      "structural": [
+        1,
+        1,
+        2,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "vegetation": [
+        1,
+        2,
+        3,
+        1,
+        2,
+        2
+      ]
+    },
+    {
+      "id": "07",
+      "structural": [
+        1,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        3,
+        3
+      ],
+      "vegetation": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "08",
+      "structural": [
+        2,
+        1,
+        2,
+        4,
+        -2,
+        1,
+        2,
+        2,
+        4,
+        2
+      ],
+      "vegetation": [
+        2,
+        1,
+        2,
+        -3,
+        1,
+        2
+      ]
+    },
+    {
+      "id": "09",
+      "structural": [
+        1,
+        1,
+        -2,
+        3,
+        -2,
+        -2,
+        2,
+        1,
+        3,
+        4
+      ],
+      "vegetation": [
+        2,
+        1,
+        -2,
+        -2,
+        -3,
+        1
+      ]
+    },
+    {
+      "id": "10",
+      "structural": [
+        1,
+        1,
+        2,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "vegetation": [
+        1,
+        1,
+        2,
+        1,
+        2,
+        2
+      ]
+    },
+    {
+      "id": "11",
+      "structural": [
+        1,
+        1,
+        2,
+        3,
+        2,
+        2,
+        4,
+        1,
+        3,
+        2
+      ],
+      "vegetation": [
+        2,
+        1,
+        3,
+        -2,
+        1,
+        2
+      ]
+    },
+    {
+      "id": "12",
+      "structural": [
+        2,
+        1,
+        1,
+        3,
+        -2,
+        -2,
+        2,
+        1,
+        4,
+        3
+      ],
+      "vegetation": [
+        2,
+        1,
+        1,
+        -2,
+        1,
+        1
+      ]
+    }
+  ]
+}
