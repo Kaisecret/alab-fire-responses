@@ -25,22 +25,25 @@ export type SeverityAssessment = {
   weights: Record<string, number>;
 };
 
-// PROVISIONAL: geometric-mean aggregates of 12 synthetic questionnaire examples.
-// These are test data, not responses from BFP personnel; replace with actual BFP matrices.
+// Element-wise geometric mean of the pairwise comparisons of 12 municipal fire marshals,
+// BFP Antique, September 2026 (.agents/BFP_AHP_Questionnaire_12_Respondents_Named.docx).
+// Resulting weights: structural density 31.2%, structure 28.8%, route 19.9%, wind 13.3%,
+// weather 6.8%; vegetation wind 37.6%, distance 30.8%, weather 15.9%, route 15.7%.
+// Lower-triangle entries are exact reciprocals so the matrices pass the 1e-6 reciprocal check.
 // Criterion order: density, wind, structure, route, weather.
 export const STRUCTURAL_AHP_MATRIX = [
-  [1, 1.25992104989487, 0.943874312681694, 1.41421356237309, 3.01305733376207],
-  [0.7937005259841, 1, 0.7937005259841, 1, 2.32207334474799],
-  [1.0594630943593, 1.25992104989487, 1, 1.46281454322389, 3.01305733376207],
-  [0.707106781186548, 1, 0.683613657406019, 1, 2.21336383940064],
-  [0.331888805697371, 0.430649618480733, 0.331888805697371, 0.451801001804922, 1],
+  [1, 2.556013, 1.034366, 1.603059, 4.297575],
+  [1 / 2.556013, 1, 1 / 2.201492, 1 / 1.428163, 2.089137],
+  [1 / 1.034366, 2.201492, 1, 1.394332, 4.163010],
+  [1 / 1.603059, 1.428163, 1 / 1.394332, 1, 3.003997],
+  [1 / 4.297575, 1 / 2.089137, 1 / 4.163010, 1 / 3.003997, 1],
 ];
 // Criterion order: wind, weather, nearest mapped-building distance, route.
 export const VEGETATION_AHP_MATRIX = [
-  [1, 1.68179283050743, 1.12246204830937, 1.56508458007329],
-  [0.594603557501361, 1, 0.645245371023925, 0.912514754760494],
-  [0.890898718140339, 1.54979802243776, 1, 1.49830707687668],
-  [0.638943104246272, 1.09587269113524, 0.667419927085017, 1],
+  [1, 2.312010, 1.259921, 2.368107],
+  [1 / 2.312010, 1, 1 / 2.008894, 1.034366],
+  [1 / 1.259921, 2.008894, 1, 1.952623],
+  [1 / 2.368107, 1 / 1.034366, 1 / 1.952623, 1],
 ];
 export const STRUCTURAL_AHP_RESULT = computeAhpWeights(STRUCTURAL_AHP_MATRIX);
 export const VEGETATION_AHP_RESULT = computeAhpWeights(VEGETATION_AHP_MATRIX);
