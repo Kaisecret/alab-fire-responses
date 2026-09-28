@@ -44,11 +44,14 @@ dependencies:
   firebase_messaging: ^16.6.0
   flutter_local_notifications: ^19.5.0
   flutter_map: ^8.3.2
-  latlong2: ^0.9.1
+  latlong2: 0.10.1
   geolocator: ^14.0.3
   flutter_compass: ^0.8.1
   sqflite: ^2.4.4
   path: ^1.9.1
+  flutter_map_vector_tiles: 2.9.0
+  pmtiles: 2.2.0
+  path_provider: 2.1.5
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +66,7 @@ flutter:
   assets:
     - assets/images/
     - assets/data/antique-boundary.geojson
+    - assets/data/antique-basemap-z15.pmtiles
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

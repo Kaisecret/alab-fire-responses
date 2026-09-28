@@ -15,6 +15,7 @@ import '../theme/app_colors.dart';
 import '../theme/liquid_glass.dart';
 import '../widgets/request_backup_button.dart';
 import '../widgets/map_layer_tabs.dart';
+import '../widgets/offline_basemap_layer.dart';
 import 'water_sources_map.dart';
 
 class MapScreen extends StatefulWidget {
@@ -837,12 +838,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'Alab.BFP101',
-                    maxZoom: 19,
-                    minZoom: 3,
-                  ),
+                  const OfflineBasemapLayer(),
                   if (polylines.isNotEmpty) PolylineLayer(polylines: polylines),
                   if (assignment != null)
                     CircleLayer(

@@ -9,6 +9,7 @@ import 'package:latlong2/latlong.dart';
 import '../services/mobile_bfp_api.dart';
 import '../services/water_source_store.dart';
 import '../theme/app_colors.dart';
+import '../widgets/offline_basemap_layer.dart';
 
 class WaterSourcesMap extends StatefulWidget {
   const WaterSourcesMap({super.key, required this.api, required this.token});
@@ -168,22 +169,18 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
             },
           ),
           children: [
+            const OfflineBasemapLayer(),
             if (_boundary.isNotEmpty)
               PolygonLayer(
                 polygons: [
                   Polygon(
                     points: _boundary,
-                    color: const Color(0xFFDDF3E8),
+                    color: const Color(0x22DDF3E8),
                     borderColor: const Color(0xFF0F766E),
                     borderStrokeWidth: 2,
                   ),
                 ],
               ),
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'Alab.BFP101',
-              maxZoom: 19,
-            ),
             MarkerLayer(
               markers: _sources
                   .map(
