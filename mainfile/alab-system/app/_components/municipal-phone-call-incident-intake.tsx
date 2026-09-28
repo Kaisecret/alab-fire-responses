@@ -18,7 +18,7 @@ const fireTypes = [
   ["VEHICLE", "Vehicle fire"],
   ["GRASS", "Grass fire"],
   ["FOREST", "Forest fire"],
-  ["OTHER", "Other emergency"],
+  ["OTHER", "Rubbish fire"],
 ] as const;
 
 const phonePattern = /^\+?[0-9]{10,15}$/;

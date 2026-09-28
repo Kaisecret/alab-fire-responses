@@ -59,7 +59,7 @@ const FIRE_TYPES = [
   ["GRASS", "Grass"],
   ["FOREST", "Forest"],
   ["VEHICLE", "Vehicle"],
-  ["OTHER", "Other"],
+  ["OTHER", "Rubbish"],
 ] as const;
 
 const styles = `

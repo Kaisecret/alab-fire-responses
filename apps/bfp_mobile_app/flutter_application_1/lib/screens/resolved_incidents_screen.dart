@@ -302,7 +302,7 @@ class _ResolvedIncidentsScreenState extends State<ResolvedIncidentsScreen> {
 
                       // Fire Type Title
                       Text(
-                        assignment.fireType.replaceAll('_', ' '),
+                        assignment.fireTypeLabel,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,

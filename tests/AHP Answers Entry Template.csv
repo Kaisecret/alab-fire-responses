@@ -1,0 +1,14 @@
+﻿Respondent,Municipality,Position,Date,A1 choice (House density vs Wind speed),A1 rating,A2 choice (House density vs Structure material),A2 rating,A3 choice (House density vs Route accessibility),A3 rating,A4 choice (House density vs Weather),A4 rating,A5 choice (Wind speed vs Structure material),A5 rating,A6 choice (Wind speed vs Route accessibility),A6 rating,A7 choice (Wind speed vs Weather),A7 rating,A8 choice (Structure material vs Route accessibility),A8 rating,A9 choice (Structure material vs Weather),A9 rating,A10 choice (Route accessibility vs Weather),A10 rating,B1 choice (Wind speed vs Weather),B1 rating,B2 choice (Wind speed vs Distance to houses),B2 rating,B3 choice (Wind speed vs Route accessibility),B3 rating,B4 choice (Weather vs Distance to houses),B4 rating,B5 choice (Weather vs Route accessibility),B5 rating,B6 choice (Distance to houses vs Route accessibility),B6 rating
+Example,San Jose,Municipal Fire Marshal,2026-09-28,A,3,A,3,A,3,A,3,A,3,A,3,A,3,A,3,A,3,A,3,Equal,1,Equal,1,Equal,1,Equal,1,Equal,1,Equal,1
+1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+3,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+4,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+5,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+6,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+7,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+8,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+9,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+10,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+11,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+12,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,

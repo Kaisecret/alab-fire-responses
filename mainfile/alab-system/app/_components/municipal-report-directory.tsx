@@ -1002,7 +1002,7 @@ export function MunicipalReportDirectory() {
               <option value="GRASS">Grass Fire</option>
               <option value="FOREST">Forest Fire</option>
               <option value="VEHICLE">Vehicle Fire</option>
-              <option value="OTHER">Other Fire</option>
+              <option value="OTHER">Rubbish Fire</option>
             </select>
 
             <select

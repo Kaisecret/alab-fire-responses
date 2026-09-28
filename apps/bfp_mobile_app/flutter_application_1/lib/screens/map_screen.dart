@@ -1172,7 +1172,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                                       children: [
                                         Expanded(
                                           child: Text(
-                                            assignment.fireType.replaceAll('_', ' '),
+                                            assignment.fireTypeLabel,
                                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.textDark),
                                             overflow: TextOverflow.ellipsis,
                                           ),

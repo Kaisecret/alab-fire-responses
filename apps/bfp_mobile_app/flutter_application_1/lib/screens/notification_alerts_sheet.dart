@@ -601,7 +601,7 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
 
   Widget _buildDispatchCard(MobileDispatchAssignment item) {
     final isRead = _readAlertIds.contains(item.dispatchId);
-    final fireTypeName = item.fireType.replaceAll('_', ' ');
+    final fireTypeName = item.fireTypeLabel;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

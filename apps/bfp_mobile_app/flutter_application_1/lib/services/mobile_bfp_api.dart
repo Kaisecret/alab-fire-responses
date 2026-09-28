@@ -144,6 +144,10 @@ class MobileDispatchAssignment {
     longitude: longitude,
   );
 
+  /// Display name of the fire type. OTHER is shown as a rubbish fire.
+  String get fireTypeLabel =>
+      fireType == 'OTHER' ? 'RUBBISH FIRE' : fireType.replaceAll('_', ' ');
+
   factory MobileDispatchAssignment.fromJson(Map<String, dynamic> json) =>
       MobileDispatchAssignment(
         dispatchId: json['dispatchId'] as String? ?? '',

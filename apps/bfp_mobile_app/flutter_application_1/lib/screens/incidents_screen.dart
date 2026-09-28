@@ -98,7 +98,7 @@ class _IncidentsScreenState extends State<IncidentsScreen> {
               ),
               child: Column(
                 children: [
-                  Text(assignment.fireType.replaceAll('_', ' '), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: AppColors.textDark)),
+                  Text(assignment.fireTypeLabel, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: AppColors.textDark)),
                   const SizedBox(height: 3),
                   Text(assignment.referenceNumber, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
                   const SizedBox(height: 3),
@@ -224,7 +224,7 @@ class _IncidentsScreenState extends State<IncidentsScreen> {
                     ),
                   ]),
                   const SizedBox(height: 8),
-                  Text(assignment.fireType.replaceAll('_', ' '), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textDark)),
+                  Text(assignment.fireTypeLabel, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textDark)),
                   const SizedBox(height: 4),
                   Text(assignment.referenceNumber, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
                   const SizedBox(height: 8),

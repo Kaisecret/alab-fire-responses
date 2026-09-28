@@ -2,7 +2,7 @@
 
 ## Project Title
 
-**GIS-Based Provincial Fire Response and Decision Support System with Smart Dispatch and Inter-Municipality Coordination for BFP in Antique**
+**GIS-Based Provincial Fire Response and Decision Support System with Inter-Municipality Coordination for BFP in Antique**
 
 ## 1. Application Overview
 

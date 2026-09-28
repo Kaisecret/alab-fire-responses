@@ -750,7 +750,7 @@ export function ProvincialReportConsole() {
               <option value="GRASS">Grass Fire</option>
               <option value="FOREST">Forest Fire</option>
               <option value="VEHICLE">Vehicle Fire</option>
-              <option value="OTHER">Other Fire</option>
+              <option value="OTHER">Rubbish Fire</option>
             </select>
 
             <select aria-label="Level of danger" value={severity} onChange={(event) => { setSeverity(event.target.value); setPage(1); }} style={extraSelectStyle}>

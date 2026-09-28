@@ -47,7 +47,7 @@ class IncidentDetailSheet extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => IncidentDetailSheet(
-        title: title ?? (assignment != null ? assignment.fireType.replaceAll('_', ' ') : 'Structure Fire'),
+        title: title ?? (assignment != null ? assignment.fireTypeLabel : 'Structure Fire'),
         location: location ?? (assignment != null ? assignment.locationSummary : 'Brgy. San Isidro, City of San Jose'),
         severity: severity ?? (assignment != null ? assignment.reportStatus : 'HIGH'),
         eta: eta ?? '08:12',

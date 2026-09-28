@@ -67,7 +67,7 @@ export function getFireTypeLabel(fireType: string): string {
     case "VEHICLE":
       return "Vehicle Fire";
     case "OTHER":
-      return "Other Fire";
+      return "Rubbish Fire";
     default:
       return fireType || "Unspecified";
   }

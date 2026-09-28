@@ -80,7 +80,7 @@ class HomeDashboardScreen extends StatelessWidget {
                         }
 
                         return IncidentHeroCard(
-                          title: assignment.fireType.replaceAll('_', ' '),
+                          title: assignment.fireTypeLabel,
                           location: assignment.locationSummary,
                           severity: assignment.recipientStatus.replaceAll('_', ' '),
                           eta: actualEta,

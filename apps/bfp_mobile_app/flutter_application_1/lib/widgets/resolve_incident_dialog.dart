@@ -142,7 +142,7 @@ class ResolveIncidentDialog extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          assignment.fireType.replaceAll('_', ' '),
+                          assignment.fireTypeLabel,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w900,
