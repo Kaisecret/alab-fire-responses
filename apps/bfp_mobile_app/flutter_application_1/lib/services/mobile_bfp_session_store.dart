@@ -47,6 +47,8 @@ class MobileBfpSessionStore {
           'municipalityId': session.identity.municipalityId,
           'municipalityName': session.identity.municipalityName,
           'stationName': session.identity.stationName,
+          'stationLatitude': session.identity.stationLatitude,
+          'stationLongitude': session.identity.stationLongitude,
           'profilePhotoUrl': session.identity.profilePhotoUrl,
           'assignmentRole': session.identity.assignmentRole,
         },

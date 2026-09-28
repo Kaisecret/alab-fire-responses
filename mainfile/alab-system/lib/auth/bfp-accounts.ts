@@ -20,6 +20,8 @@ export type BfpIdentity = {
   displayName: string;
   rankOrPosition: string | null;
   stationName: string | null;
+  stationLatitude: number | null;
+  stationLongitude: number | null;
   role: BfpRole;
   accountStatus: "ACTIVE" | "SUSPENDED";
   mustChangePassword: boolean;
@@ -45,13 +47,14 @@ export async function getBfpIdentity(userId: string): Promise<BfpIdentity | null
     `select u.id as "userId", u.email, p.display_name as "displayName", p.rank_or_position as "rankOrPosition",
             u.role, u.account_status as "accountStatus", p.must_change_password as "mustChangePassword",
             a.municipality_id as "municipalityId", m.name as "municipalityName", a.assignment_role as "assignmentRole",
-            s.station_name as "stationName"
+            s.station_name as "stationName", s.latitude::float as "stationLatitude",
+            s.longitude::float as "stationLongitude"
        from users u
        join bfp_personnel_profiles p on p.user_id = u.id
        left join bfp_municipality_assignments a on a.personnel_profile_id = p.id and a.status = 'ACTIVE'
        left join municipalities m on m.id = a.municipality_id
        left join bfp_station_assignments sa on sa.personnel_profile_id = p.id and sa.status = 'ACTIVE'
-       left join municipal_bfp_stations s on s.id = sa.station_id and s.status = 'ACTIVE'
+       left join municipal_bfp_stations s on s.id = sa.station_id and s.municipality_id = a.municipality_id and s.status = 'ACTIVE'
       where u.id = $1 and u.role in ('PROVINCIAL_BFP', 'MUNICIPAL_BFP')
       limit 1`,
     [userId],
@@ -196,4 +199,3 @@ export async function updateBfpProfile(
   const updated = await getDatabase().query<{ userId: string }>(query, params);
   if (!updated.rowCount) throw new Error("PROFILE_NOT_FOUND");
 }
-

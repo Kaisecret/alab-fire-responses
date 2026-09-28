@@ -21,6 +21,8 @@ const previewIdentity: MunicipalAdminIdentity = {
   displayName: "Municipal BFP Preview",
   rankOrPosition: "Municipal Fire Marshal",
   stationName: "San Jose Main Fire Station",
+  stationLatitude: null,
+  stationLongitude: null,
   role: "MUNICIPAL_BFP",
   accountStatus: "ACTIVE",
   mustChangePassword: false,

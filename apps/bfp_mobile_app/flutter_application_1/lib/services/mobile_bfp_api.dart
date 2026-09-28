@@ -18,6 +18,8 @@ class MobileBfpIdentity {
     required this.municipalityId,
     required this.municipalityName,
     this.stationName,
+    this.stationLatitude,
+    this.stationLongitude,
     this.profilePhotoUrl,
     required this.assignmentRole,
   });
@@ -29,6 +31,8 @@ class MobileBfpIdentity {
   final String? municipalityId;
   final String? municipalityName;
   final String? stationName;
+  final double? stationLatitude;
+  final double? stationLongitude;
   final String? profilePhotoUrl;
   final String? assignmentRole;
 
@@ -46,6 +50,8 @@ class MobileBfpIdentity {
       municipalityId: nullableString(json['municipalityId']),
       municipalityName: nullableString(json['municipalityName']),
       stationName: nullableString(json['stationName']),
+      stationLatitude: (json['stationLatitude'] as num?)?.toDouble(),
+      stationLongitude: (json['stationLongitude'] as num?)?.toDouble(),
       profilePhotoUrl: nullableString(json['profilePhotoUrl']),
       assignmentRole: nullableString(json['assignmentRole']),
     );

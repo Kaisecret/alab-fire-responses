@@ -7,15 +7,29 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../services/mobile_bfp_api.dart';
+import '../services/municipality_map_view.dart';
+import '../services/road_routing_service.dart';
 import '../services/water_source_store.dart';
 import '../theme/app_colors.dart';
 import '../widgets/offline_basemap_layer.dart';
 
 class WaterSourcesMap extends StatefulWidget {
-  const WaterSourcesMap({super.key, required this.api, required this.token});
+  const WaterSourcesMap({
+    super.key,
+    required this.api,
+    required this.token,
+    required this.municipalityName,
+    this.stationPosition,
+    this.responderPosition,
+    this.onLocate,
+  });
 
   final MobileBfpApi api;
   final String token;
+  final String? municipalityName;
+  final LatLng? stationPosition;
+  final LatLng? responderPosition;
+  final VoidCallback? onLocate;
 
   @override
   State<WaterSourcesMap> createState() => _WaterSourcesMapState();
@@ -24,16 +38,39 @@ class WaterSourcesMap extends StatefulWidget {
 class _WaterSourcesMapState extends State<WaterSourcesMap>
     with WidgetsBindingObserver {
   final MapController _controller = MapController();
+  final RoadRoutingService _routingService = RoadRoutingService();
   late final WaterSourceStore _store;
   List<MobileWaterSource> _sources = const [];
   List<LatLng> _boundary = const [];
   MobileWaterSource? _selected;
+  RoadRouteOption? _selectedRoute;
+  LatLng? _routeOrigin;
+  String? _routeMessage;
+  bool _routing = false;
+  int _routeRequestId = 0;
   Timer? _refreshTimer;
   bool _mapReady = false;
   bool _didFit = false;
   bool _loading = true;
   bool _syncing = false;
   String? _message;
+
+  LatLng? get _origin => widget.stationPosition ?? widget.responderPosition;
+
+  @override
+  void didUpdateWidget(covariant WaterSourcesMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final previousOrigin =
+        oldWidget.stationPosition ?? oldWidget.responderPosition;
+    final origin = _origin;
+    if (_selected != null &&
+        origin != null &&
+        (previousOrigin == null ||
+            const Distance().as(LengthUnit.Meter, previousOrigin, origin) >
+                50)) {
+      unawaited(_showRoadRoute(_selected!));
+    }
+  }
 
   @override
   void initState() {
@@ -102,6 +139,12 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
         if (_selected != null) {
           final matches = fresh.where((source) => source.id == _selected!.id);
           _selected = matches.isEmpty ? null : matches.first;
+          if (_selected == null) {
+            _routeRequestId++;
+            _selectedRoute = null;
+            _routeMessage = null;
+            _routing = false;
+          }
         }
       });
       _fitSources();
@@ -119,19 +162,84 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
   }
 
   void _fitSources() {
-    if (!_mapReady || _didFit || _sources.isEmpty) return;
+    if (!_mapReady || _didFit || _loading) return;
     _didFit = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final points = _sources
-          .map((source) => LatLng(source.latitude, source.longitude))
-          .toList();
+      final points = municipalityMapPoints(widget.municipalityName, _sources);
+      if (points.length <= 1) {
+        _controller.move(
+          points.isEmpty
+              ? (_origin ?? const LatLng(10.7431, 121.9394))
+              : points.first,
+          12.5,
+        );
+      } else {
+        _controller.fitCamera(
+          CameraFit.bounds(
+            bounds: LatLngBounds.fromPoints(points),
+            maxZoom: 13.5,
+            minZoom: 10.5,
+            padding: const EdgeInsets.only(
+              top: 170,
+              bottom: 140,
+              left: 35,
+              right: 35,
+            ),
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> _showRoadRoute(MobileWaterSource source) async {
+    final requestId = ++_routeRequestId;
+    final origin = _origin;
+    setState(() {
+      _selected = source;
+      _selectedRoute = null;
+      _routeOrigin = origin;
+      _routing = origin != null;
+      _routeMessage = origin == null
+          ? 'Assign a BFP station or enable phone GPS to calculate a route.'
+          : null;
+    });
+    if (origin == null) {
+      widget.onLocate?.call();
+      _controller.move(LatLng(source.latitude, source.longitude), 14);
+      return;
+    }
+
+    final routes = await _routingService.fetchRoadRoutes(
+      from: origin,
+      to: LatLng(source.latitude, source.longitude),
+      includeAlternatives: false,
+    );
+    if (!mounted || requestId != _routeRequestId) return;
+    if (routes.isEmpty) {
+      setState(() {
+        _routing = false;
+        _routeMessage =
+            'Driving route unavailable. Connect to the internet and tap the source again.';
+      });
+      _controller.move(LatLng(source.latitude, source.longitude), 14);
+      return;
+    }
+    final route = routes.first;
+    setState(() {
+      _routing = false;
+      _selectedRoute = route;
+      _routeMessage = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || requestId != _routeRequestId) return;
       _controller.fitCamera(
         CameraFit.bounds(
-          bounds: LatLngBounds.fromPoints(points),
+          bounds: LatLngBounds.fromPoints(route.polylinePoints),
+          maxZoom: 15,
           padding: const EdgeInsets.only(
-            top: 165,
-            bottom: 165,
+            top: 225,
+            bottom: 245,
             left: 32,
             right: 32,
           ),
@@ -147,6 +255,7 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
 
   @override
   void dispose() {
+    _routeRequestId++;
     WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     _controller.dispose();
@@ -161,8 +270,12 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
         child: FlutterMap(
           mapController: _controller,
           options: MapOptions(
-            initialCenter: const LatLng(11.25, 121.98),
-            initialZoom: 9,
+            initialCenter:
+                widget.stationPosition ??
+                municipalityCenter(widget.municipalityName) ??
+                widget.responderPosition ??
+                const LatLng(10.7431, 121.9394),
+            initialZoom: 12.5,
             onMapReady: () {
               _mapReady = true;
               _fitSources();
@@ -181,42 +294,67 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
                   ),
                 ],
               ),
+            if (_selectedRoute != null)
+              PolylineLayer(
+                polylines: [
+                  Polyline(
+                    points: _selectedRoute!.polylinePoints,
+                    strokeWidth: 8,
+                    color: const Color(0x550F766E),
+                  ),
+                  Polyline(
+                    points: _selectedRoute!.polylinePoints,
+                    strokeWidth: 5,
+                    color: const Color(0xFF0F766E),
+                  ),
+                ],
+              ),
             MarkerLayer(
-              markers: _sources
-                  .map(
-                    (source) => Marker(
-                      point: LatLng(source.latitude, source.longitude),
-                      width: 42,
-                      height: 42,
-                      child: Tooltip(
-                        message:
-                            '${source.exactLocation}, ${source.municipalityName}',
-                        child: IconButton.filled(
-                          tooltip: source.exactLocation,
-                          style: IconButton.styleFrom(
-                            backgroundColor: source.sourceKind == 'FIRE_HYDRANT'
-                                ? const Color(0xFF0F766E)
-                                : const Color(0xFF0284C7),
-                          ),
-                          icon: Icon(
-                            source.sourceKind == 'FIRE_HYDRANT'
-                                ? Icons.fire_hydrant_alt_rounded
-                                : Icons.water_drop_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            setState(() => _selected = source);
-                            _controller.move(
-                              LatLng(source.latitude, source.longitude),
-                              15,
-                            );
-                          },
-                        ),
+              markers: [
+                if (_selected != null && _routeOrigin != null)
+                  Marker(
+                    point: _routeOrigin!,
+                    width: 48,
+                    height: 48,
+                    child: Tooltip(
+                      message: widget.stationPosition != null
+                          ? 'BFP station'
+                          : 'BFP phone location',
+                      child: const Icon(
+                        Icons.local_fire_department_rounded,
+                        color: Color(0xFFDC2626),
+                        size: 36,
                       ),
                     ),
-                  )
-                  .toList(),
+                  ),
+                ..._sources.map(
+                  (source) => Marker(
+                    point: LatLng(source.latitude, source.longitude),
+                    width: 42,
+                    height: 42,
+                    child: Tooltip(
+                      message:
+                          '${source.exactLocation}, ${source.municipalityName}',
+                      child: IconButton.filled(
+                        tooltip: source.exactLocation,
+                        style: IconButton.styleFrom(
+                          backgroundColor: source.sourceKind == 'FIRE_HYDRANT'
+                              ? const Color(0xFF0F766E)
+                              : const Color(0xFF0284C7),
+                        ),
+                        icon: Icon(
+                          source.sourceKind == 'FIRE_HYDRANT'
+                              ? Icons.fire_hydrant_alt_rounded
+                              : Icons.water_drop_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: () => unawaited(_showRoadRoute(source)),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SimpleAttributionWidget(
               source: Text(
@@ -252,8 +390,10 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Antique water sources',
+                        Text(
+                          '${widget.municipalityName ?? 'Antique'} water sources',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             color: AppColors.textDark,
@@ -335,12 +475,55 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
                             color: AppColors.textMuted,
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        if (_routing)
+                          const Text(
+                            'Finding driving route…',
+                            style: TextStyle(fontSize: 12),
+                          )
+                        else if (_selectedRoute != null)
+                          Text(
+                            'Road route · ${_selectedRoute!.formattedDistance} · ${_selectedRoute!.formattedEta}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F766E),
+                            ),
+                          )
+                        else if (_routeMessage != null)
+                          Text(
+                            _routeMessage!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        if (!_routing && _selectedRoute == null)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: () =>
+                                  unawaited(_showRoadRoute(_selected!)),
+                              icon: const Icon(
+                                Icons.alt_route_rounded,
+                                size: 16,
+                              ),
+                              label: const Text('Retry road route'),
+                            ),
+                          ),
                       ],
                     ),
                   ),
                   IconButton(
                     tooltip: 'Close water source details',
-                    onPressed: () => setState(() => _selected = null),
+                    onPressed: () => setState(() {
+                      _routeRequestId++;
+                      _selected = null;
+                      _selectedRoute = null;
+                      _routeOrigin = null;
+                      _routeMessage = null;
+                      _routing = false;
+                    }),
                     icon: const Icon(Icons.close_rounded),
                   ),
                 ],

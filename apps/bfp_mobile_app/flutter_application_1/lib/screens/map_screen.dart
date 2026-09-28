@@ -10,6 +10,7 @@ import 'package:latlong2/latlong.dart' hide Path;
 
 import '../services/mobile_dispatch_store.dart';
 import '../services/mobile_bfp_api.dart';
+import '../services/municipality_map_view.dart';
 import '../services/road_routing_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/liquid_glass.dart';
@@ -69,8 +70,20 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   LatLng? _targetGpsPoint;
   AnimationController? _movementController;
 
-  // Default Antique province center (Hamtic / San Jose area)
-  static const LatLng _defaultCenter = LatLng(10.7432, 121.9841);
+  LatLng? get _stationPoint {
+    final identity = widget.dispatchStore.session.identity;
+    final latitude = identity.stationLatitude;
+    final longitude = identity.stationLongitude;
+    if (latitude == null || longitude == null ||
+        latitude < 4 || latitude > 22 || longitude < 116 || longitude > 127) {
+      return null;
+    }
+    return LatLng(latitude, longitude);
+  }
+
+  LatLng get _homeCenter => _stationPoint ??
+      municipalityCenter(widget.dispatchStore.session.identity.municipalityName) ??
+      const LatLng(10.7431, 121.9394);
 
   @override
   void initState() {
@@ -460,7 +473,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     }
 
     if (points.isEmpty) {
-      _centerOn(_defaultCenter, zoom: 12.0);
+      _centerOn(_homeCenter, zoom: 12.0);
       return;
     }
 
@@ -751,6 +764,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           WaterSourcesMap(
             api: widget.dispatchStore.api,
             token: widget.dispatchStore.session.token,
+            municipalityName: widget.dispatchStore.session.identity.municipalityName,
+            stationPosition: _stationPoint,
+            responderPosition: _responder == null ? null : LatLng(_responder!.latitude, _responder!.longitude),
+            onLocate: () => unawaited(_locate()),
           ),
           Positioned(
             top: 92, left: 16, right: 16,
@@ -765,7 +782,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     final assignment = widget.dispatchStore.activeAssignment;
     final incidentPoint = assignment != null
         ? LatLng(assignment.latitude, assignment.longitude)
-        : _defaultCenter;
+        : _homeCenter;
 
     final LatLng? responderPoint = _currentSmoothPoint ??
         (_responder != null

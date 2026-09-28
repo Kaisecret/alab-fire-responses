@@ -37,6 +37,7 @@ class RoadRoutingService {
   Future<List<RoadRouteOption>> fetchRoadRoutes({
     required LatLng from,
     required LatLng to,
+    bool includeAlternatives = true,
   }) async {
     final List<RoadRouteOption> routes = [];
 
@@ -45,7 +46,7 @@ class RoadRoutingService {
       final url = Uri.parse(
         'https://router.project-osrm.org/route/v1/driving/'
         '${from.longitude},${from.latitude};${to.longitude},${to.latitude}'
-        '?alternatives=true&overview=full&geometries=geojson',
+        '?alternatives=$includeAlternatives&overview=full&geometries=geojson',
       );
 
       final response = await _client.get(
@@ -101,7 +102,7 @@ class RoadRoutingService {
     }
 
     // 2. If OSRM only gave 1 route, generate a tactical alternative bypass route if distance > 1.5km
-    if (routes.length == 1 && routes.first.distanceKm > 1.5) {
+    if (includeAlternatives && routes.length == 1 && routes.first.distanceKm > 1.5) {
       try {
         // Compute an offset waypoint slightly perpendicular to the midpoint
         final midLat = (from.latitude + to.latitude) / 2;

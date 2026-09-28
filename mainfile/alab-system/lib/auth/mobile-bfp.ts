@@ -10,6 +10,8 @@ export type MobileBfpIdentity = {
   municipalityId: string | null;
   municipalityName: string | null;
   stationName: string | null;
+  stationLatitude: number | null;
+  stationLongitude: number | null;
   assignmentRole: "MUNICIPAL_ADMIN" | "MUNICIPAL_STAFF" | null;
 };
 
@@ -55,6 +57,8 @@ export function mobileBfpIdentity(input: MobileBfpIdentity) {
     municipalityId: input.municipalityId,
     municipalityName: input.municipalityName,
     stationName: input.stationName,
+    stationLatitude: input.stationLatitude,
+    stationLongitude: input.stationLongitude,
     assignmentRole: input.assignmentRole,
   };
 }
