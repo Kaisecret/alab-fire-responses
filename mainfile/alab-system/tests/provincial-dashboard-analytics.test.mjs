@@ -13,6 +13,7 @@ import {
   buildGroupedBarLayout,
   buildCumulativeSeries,
   buildFireTypeComparison,
+  buildMunicipalityRanking,
   hasRecordedActivity,
   normalizeAnalyticsSeries,
 } from '../lib/provincial-bfp/dashboard-analytics.mjs';
@@ -161,4 +162,24 @@ test('fire type comparison gives counts and shares per period and skips periods 
   assert.deepEqual(result.rows[2].current, { count: 0, share: 0 });
   assert.equal(result.max, 6);
   assert.deepEqual(result.totals, { current: 8, previous: 4, lastYear: null });
+});
+
+test('municipality ranking lists active towns first and folds quiet towns into one group', () => {
+  const row = (municipalityId, municipalityName, total, active = total) => ({
+    municipalityId, municipalityName, total, active, resolved: 0, verification: total - active, administrative: 0,
+  });
+  const result = buildMunicipalityRanking(
+    [row('b', 'Barbaza', 0), row('h', 'Hamtic', 14, 10), row('s', 'San Jose', 1), row('a', 'Anini-y', 0)],
+    [row('h', 'Hamtic', 4), row('s', 'San Jose', 1)],
+  );
+  assert.deepEqual(result.ranked.map((item) => [item.rank, item.name, item.total, item.share, item.delta]), [
+    [1, 'Hamtic', 14, 93, 10],
+    [2, 'San Jose', 1, 7, 0],
+  ]);
+  assert.deepEqual(result.ranked[0].segments, { active: 10, resolved: 0, verification: 4, administrative: 0 });
+  assert.deepEqual(result.quiet.map((item) => item.name), ['Anini-y', 'Barbaza']);
+  assert.equal(result.total, 15);
+  assert.equal(result.max, 14);
+  // Without last month's records there is nothing to compare against.
+  assert.equal(buildMunicipalityRanking([row('h', 'Hamtic', 2)], null).ranked[0].delta, null);
 });

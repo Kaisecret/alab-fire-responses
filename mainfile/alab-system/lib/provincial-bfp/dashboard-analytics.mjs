@@ -143,6 +143,41 @@ export function buildFireTypeComparison(fireTypes, periods) {
   return { rows, max, totals };
 }
 
+/*
+ * Ranks municipalities with reports and groups the rest. `previous` is null
+ * when last month has no records, so no change is claimed against it.
+ */
+export function buildMunicipalityRanking(current, previous) {
+  const rows = Array.isArray(current) ? current : [];
+  const previousTotals = Array.isArray(previous)
+    ? new Map(previous.map((row) => [row.municipalityId, Math.max(0, Number(row.total) || 0)]))
+    : null;
+  const total = rows.reduce((sum, row) => sum + Math.max(0, Number(row.total) || 0), 0);
+  const count = (value) => Math.max(0, Number(value) || 0);
+  const ranked = rows
+    .filter((row) => count(row.total) > 0)
+    .sort((a, b) => count(b.total) - count(a.total) || String(a.municipalityName).localeCompare(String(b.municipalityName)))
+    .map((row, index) => ({
+      rank: index + 1,
+      id: row.municipalityId,
+      name: row.municipalityName,
+      total: count(row.total),
+      share: total ? Math.round((count(row.total) / total) * 100) : 0,
+      segments: {
+        active: count(row.active),
+        resolved: count(row.resolved),
+        verification: count(row.verification),
+        administrative: count(row.administrative),
+      },
+      delta: previousTotals ? count(row.total) - (previousTotals.get(row.municipalityId) ?? 0) : null,
+    }));
+  const quiet = rows
+    .filter((row) => count(row.total) === 0)
+    .map((row) => ({ id: row.municipalityId, name: row.municipalityName }))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  return { ranked, quiet, total, max: Math.max(0, ...ranked.map((row) => row.total)) };
+}
+
 function formatChartNumber(value) {
   return String(Number(Number(value).toFixed(2)));
 }

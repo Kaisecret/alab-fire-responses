@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   alignComparisonSeries,
@@ -9,6 +9,7 @@ import {
   buildAnalyticsQuery,
   buildCumulativeSeries,
   buildFireTypeComparison,
+  buildMunicipalityRanking,
   buildSmoothChartPath,
   calculateComparisonChange,
   getNextMonth,
@@ -79,10 +80,29 @@ const styles = `
   .pia-field label { color:#52627A; font-size:.66rem; font-weight:750; }
   .pia-select, .pia-month { min-height:38px; border:1px solid #D5DFEB; border-radius:10px; background:#F8FAFC; color:#14233B; padding:.45rem .7rem; font:inherit; font-size:.76rem; font-weight:650; outline:none; }
   .pia-select { min-width:188px; }
-  .pia-select:focus-visible, .pia-month:focus-visible, .pia-tab:focus-visible, .pia-month-step:focus-visible, .pia-retry:focus-visible, .pia-municipality-row:focus-visible { outline:3px solid rgba(37,99,235,.23); outline-offset:2px; }
+  .pia-select:focus-visible, .pia-month:focus-visible, .pia-tab:focus-visible, .pia-month-step:focus-visible, .pia-retry:focus-visible { outline:3px solid rgba(37,99,235,.23); outline-offset:2px; }
   .pia-month-control { display:flex; align-items:center; gap:.3rem; }
   .pia-month-step { width:38px; height:38px; border:1px solid #D5DFEB; border-radius:10px; background:#fff; color:#52627A; cursor:pointer; }
   .pia-month-step:disabled { opacity:.4; cursor:not-allowed; }
+  .pia-month-picker { position:relative; }
+  button.pia-month { display:inline-flex; align-items:center; justify-content:space-between; gap:.6rem; min-width:158px; cursor:pointer; text-align:left; }
+  button.pia-month i { color:#64748B; }
+  button.pia-month[aria-expanded="true"] { border-color:#94A3B8; background:#fff; }
+  .pia-month-popover { position:absolute; z-index:20; top:calc(100% + 6px); right:0; width:276px; padding:.8rem; border:1px solid #DCE4EE; border-radius:14px; background:#fff; box-shadow:0 22px 44px -24px rgba(20,35,59,.5); }
+  .pia-month-popover-head { display:grid; grid-template-columns:34px minmax(0,1fr) 34px; gap:.4rem; align-items:center; margin-bottom:.7rem; }
+  .pia-year-step { height:34px; border:1px solid #DCE4EE; border-radius:9px; background:#fff; color:#52627A; cursor:pointer; }
+  .pia-year-step:disabled { opacity:.35; cursor:not-allowed; }
+  .pia-year-select { height:34px; border:1px solid #DCE4EE; border-radius:9px; background:#F8FAFC; color:#14233B; font:inherit; font-size:.82rem; font-weight:800; text-align:center; text-align-last:center; cursor:pointer; }
+  .pia-month-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.35rem; }
+  .pia-month-cell { min-height:38px; border:1px solid transparent; border-radius:9px; background:#F8FAFC; color:#14233B; font:inherit; font-size:.74rem; font-weight:750; cursor:pointer; transition:background .15s ease,color .15s ease; }
+  .pia-month-cell:hover:not(:disabled) { background:#EAF0F6; }
+  .pia-month-cell.current { border-color:#F3B4AE; color:#B42318; }
+  .pia-month-cell.selected { border-color:#14233B; background:#14233B; color:#fff; }
+  .pia-month-cell:disabled { background:transparent; color:#C3CBD5; cursor:not-allowed; }
+  .pia-month-popover-foot { display:flex; justify-content:space-between; gap:.5rem; margin-top:.7rem; padding-top:.6rem; border-top:1px solid #EDF1F6; }
+  .pia-month-link { border:0; background:transparent; color:#B42318; padding:.2rem 0; font:inherit; font-size:.7rem; font-weight:800; cursor:pointer; }
+  .pia-month-link:disabled { color:#C3CBD5; cursor:not-allowed; }
+  .pia-year-step:focus-visible, .pia-year-select:focus-visible, .pia-month-cell:focus-visible, .pia-month-link:focus-visible { outline:3px solid rgba(37,99,235,.23); outline-offset:2px; }
   .pia-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.75rem 1.35rem; background:#F8FAFC; border-bottom:1px solid #E7EDF4; }
   .pia-tabs { display:inline-flex; align-items:center; gap:.25rem; padding:.25rem; border-radius:11px; background:#EAF0F6; }
   .pia-tab { border:0; border-radius:8px; background:transparent; color:#5C6B80; padding:.55rem .85rem; font-size:.72rem; font-weight:750; cursor:pointer; }
@@ -115,13 +135,36 @@ const styles = `
   .pia-axis-label { fill:#8290A3; font-size:10px; font-weight:650; }
   .pia-stack-segment { transform-box:fill-box; transform-origin:center bottom; animation:piaBarIn .42s cubic-bezier(.16,1,.3,1) both; }
   @keyframes piaBarIn { from { transform:scaleY(0); opacity:.3; } to { transform:scaleY(1); opacity:1; } }
-  .pia-municipality-list { display:grid; gap:.55rem; max-height:430px; overflow:auto; padding-right:.35rem; }
-  .pia-municipality-row { display:grid; grid-template-columns:minmax(130px,180px) minmax(0,1fr) 34px; gap:.85rem; align-items:center; padding:.35rem .15rem; border-radius:9px; text-decoration:none; }
-  .pia-municipality-row:hover { background:#F8FAFC; }
-  .pia-municipality-name { color:#14233B; font-size:.72rem; font-weight:750; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .pia-stack { display:flex; height:18px; overflow:hidden; border-radius:6px; background:#EDF2F7; }
-  .pia-stack span { min-width:0; transition:width .35s ease; }
-  .pia-total { color:#14233B; font-size:.72rem; font-weight:850; text-align:right; font-variant-numeric:tabular-nums; }
+  .pia-rank-list { display:grid; gap:.45rem; margin:0; padding:0; list-style:none; }
+  .pia-rank-list li { position:relative; }
+  .pia-rank-row { display:grid; grid-template-columns:30px minmax(140px,210px) minmax(0,1fr) 38px 44px 104px 12px; grid-template-areas:"rank name bar total share delta go"; align-items:center; gap:.85rem; padding:.65rem .8rem; border:1px solid #EDF1F6; border-radius:12px; background:#fff; color:inherit; text-decoration:none; transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease; }
+  .pia-rank-row.no-delta { grid-template-columns:30px minmax(140px,210px) minmax(0,1fr) 38px 44px 12px; grid-template-areas:"rank name bar total share go"; }
+  .pia-rank-row:hover, .pia-rank-row.is-active { border-color:#D5DFEB; box-shadow:0 12px 26px -20px rgba(20,35,59,.5); transform:translateY(-1px); }
+  .pia-rank-row:focus-visible { outline:3px solid rgba(37,99,235,.23); outline-offset:2px; }
+  .pia-rank-badge { grid-area:rank; width:26px; height:26px; display:grid; place-items:center; border-radius:8px; background:#F1F5F9; color:#52627A; font-size:.7rem; font-weight:850; }
+  .pia-rank-badge.top { background:#FEF3F2; color:#B42318; }
+  .pia-rank-name { grid-area:name; min-width:0; color:#14233B; font-size:.76rem; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pia-rank-bar { grid-area:bar; display:block; height:12px; }
+  .pia-rank-fill { display:flex; gap:2px; height:100%; min-width:6px; transform-origin:left center; animation:piaGrowX .5s cubic-bezier(.16,1,.3,1) both; }
+  .pia-rank-fill span { min-width:3px; border-radius:3px; }
+  .pia-rank-fill span:first-child { border-top-left-radius:6px; border-bottom-left-radius:6px; }
+  .pia-rank-fill span:last-child { border-top-right-radius:6px; border-bottom-right-radius:6px; }
+  .pia-rank-total { grid-area:total; color:#14233B; font-size:.86rem; font-weight:850; text-align:right; font-variant-numeric:tabular-nums; }
+  .pia-rank-share { grid-area:share; color:#7B889A; font-size:.68rem; font-weight:750; text-align:right; font-variant-numeric:tabular-nums; }
+  .pia-rank-delta { grid-area:delta; justify-self:end; display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .5rem; border-radius:999px; background:#F1F5F9; color:#64748B; font-size:.62rem; font-weight:800; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .pia-rank-delta.up { background:#FEF3F2; color:#B42318; }
+  .pia-rank-delta.down { background:#ECFDF3; color:#087F5B; }
+  .pia-rank-go { grid-area:go; color:#C3CBD5; font-size:.62rem; }
+  .pia-rank-tooltip { position:absolute; z-index:4; top:calc(100% - 2px); left:250px; width:238px; padding:.7rem .8rem; border:1px solid rgba(210,220,232,.92); border-radius:12px; background:rgba(255,255,255,.97); box-shadow:0 18px 38px -20px rgba(20,35,59,.48); pointer-events:none; }
+  .pia-rank-tooltip-hint { color:#7B889A; font-size:.6rem; font-weight:700; }
+  .pia-quiet { margin-top:1rem; padding:.85rem 1rem; border:1px dashed #D5DFEB; border-radius:12px; background:#F8FAFC; }
+  .pia-quiet-title { display:flex; align-items:center; gap:.45rem; margin-bottom:.65rem; color:#52627A; font-size:.7rem; font-weight:800; }
+  .pia-quiet-title i { color:#087F5B; }
+  .pia-quiet-chips { display:flex; flex-wrap:wrap; gap:.4rem; }
+  .pia-quiet-chip { padding:.32rem .68rem; border:1px solid #E2E8F0; border-radius:999px; background:#fff; color:#52627A; font-size:.66rem; font-weight:700; text-decoration:none; transition:border-color .15s ease,color .15s ease; }
+  .pia-quiet-chip:hover { border-color:#CBD5E1; color:#14233B; }
+  .pia-quiet-chip:focus-visible { outline:3px solid rgba(37,99,235,.23); outline-offset:2px; }
+  @keyframes piaGrowX { from { transform:scaleX(0); } to { transform:scaleX(1); } }
   .pia-fire-chart { display:grid; grid-template-columns:repeat(5,minmax(65px,1fr)); align-items:end; gap:1rem; min-height:250px; padding:1.25rem .5rem 0; border-bottom:1px solid #DDE5EE; }
   .pia-fire-column { position:relative; display:grid; grid-template-rows:1fr auto; height:230px; gap:.65rem; text-align:center; border-radius:12px; outline:none; cursor:default; }
   .pia-fire-column:focus-visible { box-shadow:0 0 0 3px rgba(37,99,235,.23); }
@@ -200,7 +243,9 @@ const styles = `
     .pia-chart-head-actions { align-items:flex-start; justify-content:flex-start; }
     .pia-legend { justify-content:flex-start; }
     .pia-body { padding-inline:.8rem; }
-    .pia-municipality-row { grid-template-columns:minmax(90px,125px) minmax(0,1fr) 28px; gap:.55rem; }
+    .pia-rank-row, .pia-rank-row.no-delta { grid-template-columns:26px minmax(0,1fr) 34px auto; grid-template-areas:"rank name total delta" ". bar bar bar"; gap:.45rem .6rem; }
+    .pia-rank-share, .pia-rank-go { display:none; }
+    .pia-rank-tooltip { left:1rem; }
     .pia-fire-chart { gap:.4rem; padding-inline:0; }
     .pia-fire-label { font-size:.58rem; }
     .pia-trend-tools { align-items:stretch; flex-direction:column; }
@@ -209,7 +254,7 @@ const styles = `
     .pia-metric-select { width:100%; }
     .pia-chart-stage { min-height:270px; }
   }
-  @media (prefers-reduced-motion:reduce) { .pia-stack-segment, .pia-fire-bar, .pia-current-area, .pia-chart-series, .pia-trend-bar { animation:none; } .pia-stack span, .pia-compare-btn, .pia-view-btn, .pia-line-marker, .pia-trend-bar { transition:none; } }
+  @media (prefers-reduced-motion:reduce) { .pia-stack-segment, .pia-fire-bar, .pia-current-area, .pia-chart-series, .pia-trend-bar, .pia-rank-fill { animation:none; } .pia-rank-row, .pia-compare-btn, .pia-view-btn, .pia-line-marker, .pia-trend-bar { transition:none; } }
 `;
 
 function currentManilaMonth() {
@@ -275,6 +320,91 @@ function formatChartDate(date: string | null) {
   if (!date) return "Not in this month";
   return new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric", timeZone: "Asia/Manila" })
     .format(new Date(`${date}T00:00:00+08:00`));
+}
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const PICKER_YEARS_BACK = 5;
+
+// Replaces the browser month input, whose year list is hard to scroll back
+// through: arrows or the year list jump years, and months after `max` are off.
+function MonthPicker({ value, max, onChange }: { value: string; max: string; onChange: (month: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [viewYear, setViewYear] = useState(() => Number(value.slice(0, 4)));
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const maxYear = Number(max.slice(0, 4));
+  const minYear = maxYear - PICKER_YEARS_BACK;
+  const years = Array.from({ length: maxYear - minYear + 1 }, (_, index) => maxYear - index);
+  const lastYearMonth = getSameMonthLastYear(value);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const choose = (month: string) => {
+    onChange(month);
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  return <div className="pia-month-picker" ref={rootRef}>
+    <button
+      ref={triggerRef}
+      id="pia-month"
+      type="button"
+      className="pia-month"
+      aria-haspopup="dialog"
+      aria-expanded={open}
+      onClick={() => {
+        if (!open) setViewYear(Number(value.slice(0, 4)));
+        setOpen(!open);
+      }}
+    >
+      <span>{monthLabel(value)}</span>
+      <i className="fa-regular fa-calendar" aria-hidden="true" />
+    </button>
+    {open && <div className="pia-month-popover" role="dialog" aria-label="Choose incident month">
+      <div className="pia-month-popover-head">
+        <button type="button" className="pia-year-step" aria-label="Previous year" disabled={viewYear <= minYear} onClick={() => setViewYear(viewYear - 1)}><i className="fa-solid fa-chevron-left" /></button>
+        <select className="pia-year-select" aria-label="Year" value={viewYear} onChange={(event) => setViewYear(Number(event.target.value))}>
+          {years.map((year) => <option key={year} value={year}>{year}</option>)}
+        </select>
+        <button type="button" className="pia-year-step" aria-label="Next year" disabled={viewYear >= maxYear} onClick={() => setViewYear(viewYear + 1)}><i className="fa-solid fa-chevron-right" /></button>
+      </div>
+      <div className="pia-month-grid">
+        {MONTH_NAMES.map((name, index) => {
+          const month = `${viewYear}-${String(index + 1).padStart(2, "0")}`;
+          return <button
+            key={name}
+            type="button"
+            className={`pia-month-cell ${month === value ? "selected" : ""} ${month === max ? "current" : ""}`}
+            disabled={month > max}
+            aria-pressed={month === value}
+            aria-label={monthLabel(month)}
+            onClick={() => choose(month)}
+          >{name}</button>;
+        })}
+      </div>
+      <div className="pia-month-popover-foot">
+        <button type="button" className="pia-month-link" onClick={() => choose(max)}>This month</button>
+        <button type="button" className="pia-month-link" disabled={Number(lastYearMonth.slice(0, 4)) < minYear} onClick={() => choose(lastYearMonth)}>Same month last year</button>
+      </div>
+    </div>}
+  </div>;
 }
 
 function ComparisonSwitch({ value, onChange }: { value: ComparisonMode; onChange: (value: ComparisonMode) => void }) {
@@ -508,32 +638,94 @@ function MonthlyTrend({
   </>;
 }
 
-function MunicipalityComparison({ summary, onSelect }: { summary: ProvincialReportSummary; onSelect: (id: string) => void }) {
-  const rows = [...summary.byMunicipality].sort((a, b) => b.total - a.total || a.municipalityName.localeCompare(b.municipalityName));
-  const max = Math.max(1, ...rows.map((row) => row.total));
+const STATUS_KEYS = ["active", "resolved", "verification", "administrative"] as const;
+const STATUS_LABELS = { active: "Active", resolved: "Resolved", verification: "Verification", administrative: "Administrative" } as const;
+
+type RankedMunicipality = {
+  rank: number;
+  id: string;
+  name: string;
+  total: number;
+  share: number;
+  segments: Record<(typeof STATUS_KEYS)[number], number>;
+  delta: number | null;
+};
+
+function MunicipalityComparison({
+  summary,
+  previousSummary,
+  month,
+  onSelect,
+}: {
+  summary: ProvincialReportSummary;
+  previousSummary: ProvincialReportSummary | null;
+  month: string;
+  onSelect: (id: string) => void;
+}) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const previousHasRecords = hasRecordedActivity(previousSummary?.dailyTrend);
+  const ranking = buildMunicipalityRanking(
+    summary.byMunicipality,
+    previousHasRecords ? previousSummary?.byMunicipality ?? [] : null,
+  ) as { ranked: RankedMunicipality[]; quiet: Array<{ id: string; name: string }>; total: number; max: number };
+  const previousMonthName = monthLabel(getPreviousMonth(month)).split(" ")[0];
+  const leader = ranking.ranked[0];
+  const deltaText = (delta: number) => delta === 0 ? `Same as ${previousMonthName.slice(0, 3)}` : `${delta > 0 ? "+" : "−"}${Math.abs(delta)} vs ${previousMonthName.slice(0, 3)}`;
   return <>
     <div className="pia-chart-caption">
-      <div><h3>Incidents by municipality</h3><p>All 18 municipalities are ranked by submitted reports for the selected month.</p></div>
+      <div>
+        <h3>Incidents by municipality</h3>
+        <p>
+          {ranking.ranked.length} of {summary.byMunicipality.length} municipalities reported incidents in {monthLabel(month)}
+          {leader ? ` · ${leader.name} leads with ${leader.total} (${leader.share}%)` : ""}
+          {!previousHasRecords ? ` · no ${previousMonthName} records to compare` : ""}.
+        </p>
+      </div>
       <StatusLegend />
     </div>
-    <div className="pia-municipality-list">
-      {rows.map((row) => {
-        const values = (["active", "resolved", "verification", "administrative"] as const).map((key) => ({ key, value: row[key] }));
-        return <Link
-          key={row.municipalityId}
+    <ol className="pia-rank-list" onPointerLeave={() => setActiveId(null)}>
+      {ranking.ranked.map((row) => <li key={row.id}>
+        <Link
           href="#municipal-incident-analytics"
-          className="pia-municipality-row"
-          onClick={() => onSelect(row.municipalityId)}
-          aria-label={`Show ${row.municipalityName} analytics, ${row.total} reports`}
+          className={`pia-rank-row ${previousHasRecords ? "" : "no-delta"} ${activeId === row.id ? "is-active" : ""}`}
+          onClick={() => onSelect(row.id)}
+          onPointerEnter={() => setActiveId(row.id)}
+          onFocus={() => setActiveId(row.id)}
+          onBlur={() => setActiveId(null)}
+          aria-label={`Rank ${row.rank}, ${row.name}: ${row.total} reports, ${row.share}% of Antique${row.delta !== null ? `, ${deltaText(row.delta)}` : ""}. Show its trend.`}
         >
-          <span className="pia-municipality-name">{row.municipalityName}</span>
-          <span className="pia-stack" aria-hidden="true">
-            {values.map(({ key, value }) => <span key={key} style={{ width: `${(value / max) * 100}%`, background: STATUS_COLORS[key] }} />)}
+          <span className={`pia-rank-badge ${row.rank <= 3 ? "top" : ""}`}>{row.rank}</span>
+          <span className="pia-rank-name">{row.name}</span>
+          <span className="pia-rank-bar" aria-hidden="true">
+            <span className="pia-rank-fill" style={{ width: `${(row.total / Math.max(1, ranking.max)) * 100}%` }}>
+              {STATUS_KEYS.filter((key) => row.segments[key] > 0).map((key) => <span key={key} style={{ flex: `${row.segments[key]} 1 0`, background: STATUS_COLORS[key] }} />)}
+            </span>
           </span>
-          <span className="pia-total">{row.total}</span>
-        </Link>;
-      })}
-    </div>
+          <span className="pia-rank-total">{row.total}</span>
+          <span className="pia-rank-share">{row.share}%</span>
+          {row.delta !== null && <span className={`pia-rank-delta ${row.delta > 0 ? "up" : row.delta < 0 ? "down" : ""}`}>
+            {row.delta !== 0 && <i className={`fa-solid ${row.delta > 0 ? "fa-arrow-up" : "fa-arrow-down"}`} aria-hidden="true" />}
+            {deltaText(row.delta)}
+          </span>}
+          <i className="fa-solid fa-chevron-right pia-rank-go" aria-hidden="true" />
+        </Link>
+        {activeId === row.id && <div className="pia-rank-tooltip" role="tooltip">
+          <div className="pia-tooltip-date">{row.name} · {row.total} {row.total === 1 ? "report" : "reports"}</div>
+          {STATUS_KEYS.map((key) => <div className="pia-tooltip-row" key={key}>
+            <span><i style={{ background: STATUS_COLORS[key] }} />{STATUS_LABELS[key]}</span>
+            <strong>{row.segments[key]}</strong>
+          </div>)}
+          <div className="pia-tooltip-divider" />
+          <div className="pia-rank-tooltip-hint">Click to open its trend</div>
+        </div>}
+      </li>)}
+    </ol>
+    {ranking.quiet.length > 0 && <div className="pia-quiet">
+      <div className="pia-quiet-title"><i className="fa-regular fa-circle-check" aria-hidden="true" />No reports in {monthLabel(month)} · {ranking.quiet.length} {ranking.quiet.length === 1 ? "municipality" : "municipalities"}</div>
+      <div className="pia-quiet-chips">
+        {ranking.quiet.map((item) => <Link key={item.id} href="#municipal-incident-analytics" className="pia-quiet-chip" onClick={() => onSelect(item.id)}>{item.name}</Link>)}
+      </div>
+    </div>}
   </>;
 }
 
@@ -726,7 +918,7 @@ export function ProvincialIncidentAnalytics({ municipalities }: { municipalities
           <label htmlFor="pia-month">Incident month</label>
           <div className="pia-month-control">
             <button type="button" className="pia-month-step" aria-label="Previous month" onClick={() => setMonth(getPreviousMonth(month))}><i className="fa-solid fa-chevron-left" /></button>
-            <input id="pia-month" className="pia-month" type="month" value={month} max={currentMonth} onChange={(event) => event.target.value && setMonth(event.target.value)} />
+            <MonthPicker value={month} max={currentMonth} onChange={setMonth} />
             <button type="button" className="pia-month-step" aria-label="Next month" disabled={month >= currentMonth} onClick={() => setMonth(getNextMonth(month))}><i className="fa-solid fa-chevron-right" /></button>
           </div>
         </div>
@@ -753,7 +945,7 @@ export function ProvincialIncidentAnalytics({ municipalities }: { municipalities
         : summary && ((view === "TREND" && !trendHasData) || (view !== "TREND" && summary.totalReports === 0)) ? <div className="pia-empty"><i className="fa-regular fa-calendar-check" /><strong>No incidents recorded for this selection</strong><span>Choose another month or municipality to review its activity.</span></div>
         : summary ? <>
             {view === "TREND" && <MonthlyTrend summary={summary} previousSummary={comparisons.previous} lastYearSummary={comparisons.lastYear} month={month} comparisonMode={comparisonMode} chartStyle={trendChartStyle} metric={trendMetric} onComparisonMode={setComparisonMode} onChartStyle={setTrendChartStyle} onMetric={setTrendMetric} />}
-            {view === "MUNICIPALITIES" && <MunicipalityComparison summary={summary} onSelect={selectMunicipality} />}
+            {view === "MUNICIPALITIES" && <MunicipalityComparison summary={summary} previousSummary={comparisons.previous} month={month} onSelect={selectMunicipality} />}
             {view === "FIRE_TYPES" && <FireTypeChart summary={summary} previousSummary={comparisons.previous} lastYearSummary={comparisons.lastYear} month={month} comparisonMode={comparisonMode} onComparisonMode={setComparisonMode} />}
           </> : null}
     </div>
