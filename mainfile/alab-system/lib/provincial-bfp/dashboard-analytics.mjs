@@ -51,14 +51,31 @@ export function calculateComparisonChange(current, baseline) {
   };
 }
 
-export function alignComparisonSeries(current, previous, lastYear, metric = 'total') {
+export function hasRecordedActivity(trend) {
+  return Array.isArray(trend) && trend.some((day) => (Number(day?.total) || 0) > 0);
+}
+
+/*
+ * `through` (YYYY-MM-DD) ends the current month at today, and `omit` lists
+ * periods with no reports at all. Both become null so the chart leaves a gap
+ * instead of drawing a flat zero that reads as "no fires".
+ */
+export function alignComparisonSeries(current, previous, lastYear, metric = 'total', options = {}) {
   const series = [current, previous, lastYear].map((items) => Array.isArray(items) ? items : []);
+  const omit = new Set(Array.isArray(options.omit) ? options.omit : []);
+  const through = typeof options.through === 'string' ? options.through : null;
+  const valueOf = (key, point) => {
+    if (!point || omit.has(key)) return null;
+    if (key === 'current' && through && String(point.date) > through) return null;
+    return Math.max(0, Number(point[metric]) || 0);
+  };
   const currentDate = series[0][0]?.date;
   const currentMonthMatch = /^(\d{4})-(\d{2})-\d{2}$/.exec(String(currentDate ?? ''));
   const calendarLength = currentMonthMatch
     ? new Date(Date.UTC(Number(currentMonthMatch[1]), Number(currentMonthMatch[2]), 0)).getUTCDate()
     : 0;
-  const length = Math.max(calendarLength, ...series.map((items) => items.length));
+  const keys = ['current', 'previous', 'lastYear'];
+  const length = Math.max(calendarLength, ...series.map((items, index) => omit.has(keys[index]) ? 0 : items.length));
   return Array.from({ length }, (_, index) => {
     const currentPoint = series[0][index] ?? null;
     const previousPoint = series[1][index] ?? null;
@@ -68,10 +85,10 @@ export function alignComparisonSeries(current, previous, lastYear, metric = 'tot
       currentDate: currentPoint?.date ?? null,
       previousDate: previousPoint?.date ?? null,
       lastYearDate: lastYearPoint?.date ?? null,
-      current: currentPoint ? Math.max(0, Number(currentPoint[metric]) || 0) : null,
-      previous: previousPoint ? Math.max(0, Number(previousPoint[metric]) || 0) : null,
-      lastYear: lastYearPoint ? Math.max(0, Number(lastYearPoint[metric]) || 0) : null,
-      breakdown: currentPoint ? {
+      current: valueOf('current', currentPoint),
+      previous: valueOf('previous', previousPoint),
+      lastYear: valueOf('lastYear', lastYearPoint),
+      breakdown: valueOf('current', currentPoint) !== null ? {
         active: Math.max(0, Number(currentPoint.active) || 0),
         resolved: Math.max(0, Number(currentPoint.resolved) || 0),
         verification: Math.max(0, Number(currentPoint.verification) || 0),
@@ -79,6 +96,51 @@ export function alignComparisonSeries(current, previous, lastYear, metric = 'tot
       } : null,
     };
   });
+}
+
+export function buildCumulativeSeries(points, keys) {
+  const running = Object.fromEntries(keys.map((key) => [key, 0]));
+  return (Array.isArray(points) ? points : []).map((point) => {
+    const next = { ...point };
+    for (const key of keys) {
+      if (point[key] === null || point[key] === undefined) {
+        next[key] = null;
+        continue;
+      }
+      running[key] += Math.max(0, Number(point[key]) || 0);
+      next[key] = running[key];
+    }
+    return next;
+  });
+}
+
+/*
+ * Counts and shares of each fire type per period. A period passed as null
+ * (no records) stays null so the chart can say so instead of drawing zeros.
+ */
+export function buildFireTypeComparison(fireTypes, periods) {
+  const keys = ['current', 'previous', 'lastYear'];
+  const totals = {};
+  for (const key of keys) {
+    const counts = periods?.[key];
+    totals[key] = counts ? fireTypes.reduce((sum, [id]) => sum + Math.max(0, Number(counts[id]) || 0), 0) : null;
+  }
+  let max = 0;
+  const rows = fireTypes.map(([id, label]) => {
+    const row = { id, label };
+    for (const key of keys) {
+      const counts = periods?.[key];
+      if (!counts) {
+        row[key] = null;
+        continue;
+      }
+      const count = Math.max(0, Number(counts[id]) || 0);
+      max = Math.max(max, count);
+      row[key] = { count, share: totals[key] ? Math.round((count / totals[key]) * 100) : 0 };
+    }
+    return row;
+  });
+  return { rows, max, totals };
 }
 
 function formatChartNumber(value) {

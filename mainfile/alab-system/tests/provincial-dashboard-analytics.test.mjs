@@ -11,6 +11,9 @@ import {
   alignComparisonSeries,
   buildSmoothChartPath,
   buildGroupedBarLayout,
+  buildCumulativeSeries,
+  buildFireTypeComparison,
+  hasRecordedActivity,
   normalizeAnalyticsSeries,
 } from '../lib/provincial-bfp/dashboard-analytics.mjs';
 
@@ -90,4 +93,72 @@ test('analytics series keeps zero days and derives a stable chart ceiling', () =
   assert.equal(result.points.length, 2);
   assert.equal(result.points[0].total, 0);
   assert.equal(result.points[1].total, 9);
+});
+
+test('a comparison period with no reports is detected from every status, not one measure', () => {
+  assert.equal(hasRecordedActivity([]), false);
+  assert.equal(hasRecordedActivity(null), false);
+  assert.equal(hasRecordedActivity([{ date: '2025-09-01', total: 0, resolved: 0 }]), false);
+  // A month with reports still counts when the selected measure is zero.
+  assert.equal(hasRecordedActivity([{ date: '2026-08-01', total: 2, resolved: 0 }]), true);
+});
+
+test('periods without records and days after today are left out instead of drawn as zero', () => {
+  const current = [
+    { date: '2026-09-01', total: 3, active: 1, resolved: 2, verification: 0, administrative: 0 },
+    { date: '2026-09-02', total: 0, active: 0, resolved: 0, verification: 0, administrative: 0 },
+    { date: '2026-09-03', total: 0, active: 0, resolved: 0, verification: 0, administrative: 0 },
+  ];
+  const previous = [{ date: '2026-08-01', total: 0 }, { date: '2026-08-02', total: 0 }, { date: '2026-08-03', total: 0 }];
+  const result = alignComparisonSeries(current, previous, previous, 'total', {
+    through: '2026-09-02',
+    omit: ['previous', 'lastYear'],
+  });
+  const firstDays = result.slice(0, 3);
+  assert.deepEqual(firstDays.map((point) => point.current), [3, 0, null]);
+  assert.equal(result[2].breakdown, null);
+  assert.deepEqual(firstDays.map((point) => point.previous), [null, null, null]);
+  assert.deepEqual(firstDays.map((point) => point.lastYear), [null, null, null]);
+  // Dates stay so the tooltip can still name the day.
+  assert.equal(result[0].previousDate, '2026-08-01');
+});
+
+test('running totals accumulate each period and stop where the period stops', () => {
+  const points = [
+    { day: 1, current: 3, previous: 1, lastYear: null },
+    { day: 2, current: 0, previous: 2, lastYear: null },
+    { day: 3, current: null, previous: 0, lastYear: null },
+  ];
+  const result = buildCumulativeSeries(points, ['current', 'previous', 'lastYear']);
+  assert.deepEqual(result.map((point) => point.current), [3, 3, null]);
+  assert.deepEqual(result.map((point) => point.previous), [1, 3, 3]);
+  assert.deepEqual(result.map((point) => point.lastYear), [null, null, null]);
+  assert.equal(result[0].day, 1);
+  assert.equal(points[1].current, 0, 'input points are not mutated');
+});
+
+test('a hidden comparison period does not stretch the month', () => {
+  const september = Array.from({ length: 30 }, (_, index) => ({ date: `2026-09-${String(index + 1).padStart(2, '0')}`, total: 0 }));
+  const august = Array.from({ length: 31 }, (_, index) => ({ date: `2026-08-${String(index + 1).padStart(2, '0')}`, total: 0 }));
+  assert.equal(alignComparisonSeries(september, august, [], 'total', { omit: ['previous', 'lastYear'] }).length, 30);
+  assert.equal(alignComparisonSeries(september, august, [], 'total').length, 31);
+});
+
+test('fire type comparison gives counts and shares per period and skips periods without records', () => {
+  const types = [['HOUSE_BUILDING', 'House / building'], ['GRASS', 'Grass'], ['VEHICLE', 'Vehicle']];
+  const result = buildFireTypeComparison(types, {
+    current: { HOUSE_BUILDING: 6, GRASS: 2 },
+    previous: { HOUSE_BUILDING: 1, VEHICLE: 3 },
+    lastYear: null,
+  });
+  assert.deepEqual(result.rows[0], {
+    id: 'HOUSE_BUILDING',
+    label: 'House / building',
+    current: { count: 6, share: 75 },
+    previous: { count: 1, share: 25 },
+    lastYear: null,
+  });
+  assert.deepEqual(result.rows[2].current, { count: 0, share: 0 });
+  assert.equal(result.max, 6);
+  assert.deepEqual(result.totals, { current: 8, previous: 4, lastYear: null });
 });

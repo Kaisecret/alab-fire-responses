@@ -7,18 +7,21 @@ import {
   alignComparisonSeries,
   buildGroupedBarLayout,
   buildAnalyticsQuery,
+  buildCumulativeSeries,
+  buildFireTypeComparison,
   buildSmoothChartPath,
   calculateComparisonChange,
   getNextMonth,
   getPreviousMonth,
   getSameMonthLastYear,
+  hasRecordedActivity,
 } from "../../lib/provincial-bfp/dashboard-analytics.mjs";
 import type { ProvincialReportSummary } from "../../lib/provincial-bfp/management/types";
 
 type AnalyticsView = "TREND" | "MUNICIPALITIES" | "FIRE_TYPES";
 type ComparisonMode = "NONE" | "PREVIOUS" | "LAST_YEAR" | "BOTH";
 type TrendMetric = "total" | "active" | "resolved" | "verification" | "administrative";
-type TrendChartStyle = "LINE" | "BAR";
+type TrendChartStyle = "CUMULATIVE" | "LINE" | "BAR";
 type MunicipalityOption = { id: string; name: string };
 
 type ComparisonSummaries = {
@@ -120,11 +123,20 @@ const styles = `
   .pia-stack span { min-width:0; transition:width .35s ease; }
   .pia-total { color:#14233B; font-size:.72rem; font-weight:850; text-align:right; font-variant-numeric:tabular-nums; }
   .pia-fire-chart { display:grid; grid-template-columns:repeat(5,minmax(65px,1fr)); align-items:end; gap:1rem; min-height:250px; padding:1.25rem .5rem 0; border-bottom:1px solid #DDE5EE; }
-  .pia-fire-column { display:grid; grid-template-rows:1fr auto; height:230px; gap:.65rem; text-align:center; }
-  .pia-fire-bar-wrap { display:flex; align-items:end; justify-content:center; min-height:0; }
-  .pia-fire-bar { position:relative; width:min(62px,72%); min-height:3px; border-radius:9px 9px 3px 3px; background:#516985; animation:piaBarIn .42s cubic-bezier(.16,1,.3,1) both; }
-  .pia-fire-bar strong { position:absolute; left:50%; top:-1.35rem; transform:translateX(-50%); color:#14233B; font-size:.74rem; }
+  .pia-fire-column { position:relative; display:grid; grid-template-rows:1fr auto; height:230px; gap:.65rem; text-align:center; border-radius:12px; outline:none; cursor:default; }
+  .pia-fire-column:focus-visible { box-shadow:0 0 0 3px rgba(37,99,235,.23); }
+  .pia-fire-bar-wrap { display:flex; align-items:end; justify-content:center; gap:3px; min-height:0; }
+  .pia-fire-bar { position:relative; width:min(46px,42%); min-height:2px; border-radius:4px 4px 0 0; background:#516985; animation:piaBarIn .42s cubic-bezier(.16,1,.3,1) both; transition:opacity .16s ease; }
+  .pia-fire-bar.is-comparison { width:min(20px,18%); opacity:.82; }
+  /* filter, not opacity: the bar entrance animation holds opacity at 1 */
+  .pia-fire-chart:has(.is-active) .pia-fire-column:not(.is-active) .pia-fire-bar { filter:grayscale(.55) opacity(.45); }
+  .pia-fire-bar strong { position:absolute; left:50%; top:-1.35rem; transform:translateX(-50%); color:#14233B; font-size:.74rem; font-variant-numeric:tabular-nums; }
   .pia-fire-label { color:#65748A; font-size:.64rem; font-weight:700; line-height:1.25; }
+  .pia-fire-label small { display:block; margin-top:.12rem; color:#94A3B8; font-size:.58rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  .pia-trend-tools.pia-fire-tools { justify-content:flex-end; margin-top:0; }
+  .pia-fire-tooltip { position:absolute; z-index:4; top:8%; left:calc(50% + 36px); width:236px; padding:.7rem .8rem; border:1px solid rgba(210,220,232,.92); border-radius:12px; background:rgba(255,255,255,.97); box-shadow:0 18px 38px -20px rgba(20,35,59,.48); text-align:left; pointer-events:none; }
+  .pia-fire-column:nth-last-child(-n+2) .pia-fire-tooltip { left:auto; right:calc(50% + 36px); }
+  .pia-fire-tooltip .pia-tooltip-row strong { white-space:nowrap; }
   .pia-trend-tools { display:flex; align-items:end; justify-content:space-between; gap:1rem; margin:.2rem 0 1rem; }
   .pia-tool-group { display:grid; gap:.35rem; }
   .pia-tool-label { color:#7B889A; font-size:.62rem; font-weight:800; letter-spacing:.045em; text-transform:uppercase; }
@@ -154,6 +166,15 @@ const styles = `
   .pia-tooltip-divider { height:1px; margin:.62rem 0 .5rem; background:#E8EDF3; }
   .pia-tooltip-breakdown { display:grid; grid-template-columns:1fr 1fr; gap:.35rem .65rem; color:#7B889A; font-size:.59rem; font-weight:700; }
   .pia-period-legend i { display:block; width:20px; height:3px; border-radius:5px; }
+  .pia-period-legend .is-empty { color:#9AA6B6; }
+  .pia-period-legend .is-empty i { background:transparent!important; border-top:2px dashed #C3CCD8; height:0; }
+  .pia-period-legend em { font-style:normal; font-weight:650; }
+  .pia-axis-line { stroke:#C6D1DE; stroke-width:1.25; }
+  .pia-today-line { stroke:#94A3B8; stroke-width:1; stroke-dasharray:2 5; }
+  .pia-today-label { fill:#64748B; font-size:10px; font-weight:750; }
+  .pia-end-label { fill:#14233B; font-size:12px; font-weight:850; font-variant-numeric:tabular-nums; paint-order:stroke; stroke:#FCFDFE; stroke-width:4px; stroke-linejoin:round; }
+  .pia-no-records { display:flex; align-items:center; gap:.45rem; margin:-.35rem 0 .8rem; padding:.5rem .7rem; border:1px dashed #D5DFEB; border-radius:10px; background:#F8FAFC; color:#64748B; font-size:.66rem; font-weight:650; }
+  .pia-no-records i { color:#94A3B8; }
   .pia-insight-change { display:inline-flex!important; align-items:center; gap:.3rem; margin-top:.25rem!important; color:#64748B!important; font-size:.63rem!important; font-weight:750!important; text-transform:none!important; letter-spacing:0!important; }
   .pia-insight-change.up { color:#B42318!important; }
   .pia-insight-change.down { color:#087F5B!important; }
@@ -202,6 +223,10 @@ function currentManilaMonth() {
   return `${year}-${month}`;
 }
 
+function currentManilaDate() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+}
+
 function monthLabel(month: string) {
   return new Intl.DateTimeFormat("en-PH", { month: "long", year: "numeric", timeZone: "Asia/Manila" })
     .format(new Date(`${month}-01T00:00:00+08:00`));
@@ -234,8 +259,8 @@ function StatusLegend() {
 
 const PERIOD_COLORS = {
   current: "#D92D20",
-  previous: "#1F5F8B",
-  lastYear: "#7C5CFC",
+  previous: "#2563EB",
+  lastYear: "#0E9384",
 } as const;
 
 const TREND_METRICS: Array<{ value: TrendMetric; label: string }> = [
@@ -250,6 +275,20 @@ function formatChartDate(date: string | null) {
   if (!date) return "Not in this month";
   return new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric", timeZone: "Asia/Manila" })
     .format(new Date(`${date}T00:00:00+08:00`));
+}
+
+function ComparisonSwitch({ value, onChange }: { value: ComparisonMode; onChange: (value: ComparisonMode) => void }) {
+  return <div className="pia-tool-group">
+    <span className="pia-tool-label">Compare with</span>
+    <div className="pia-compare-switch" role="group" aria-label="Select comparison periods">
+      {([
+        ["NONE", "Current only"],
+        ["PREVIOUS", "Last month"],
+        ["LAST_YEAR", "Last year"],
+        ["BOTH", "Both"],
+      ] as const).map(([mode, label]) => <button key={mode} type="button" className={`pia-compare-btn ${value === mode ? "active" : ""}`} aria-pressed={value === mode} onClick={() => onChange(mode)}>{label}</button>)}
+    </div>
+  </div>;
 }
 
 function MonthlyTrend({
@@ -276,12 +315,25 @@ function MonthlyTrend({
   onMetric: (value: TrendMetric) => void;
 }) {
   const [activeDay, setActiveDay] = useState<number | null>(null);
-  const points = alignComparisonSeries(
+  const [today] = useState(currentManilaDate);
+  // A period with no reports at all is shown as "No records", never as a
+  // flat zero line, and the current month stops at today.
+  const previousHasRecords = hasRecordedActivity(previousSummary?.dailyTrend);
+  const lastYearHasRecords = hasRecordedActivity(lastYearSummary?.dailyTrend);
+  const dailyPoints = alignComparisonSeries(
     summary.dailyTrend,
     previousSummary?.dailyTrend ?? [],
     lastYearSummary?.dailyTrend ?? [],
     metric,
+    {
+      through: today,
+      omit: [...(previousHasRecords ? [] : ["previous"]), ...(lastYearHasRecords ? [] : ["lastYear"])],
+    },
   ) as AlignedTrendPoint[];
+  const cumulative = chartStyle === "CUMULATIVE";
+  const points = (cumulative
+    ? buildCumulativeSeries(dailyPoints, ["current", "previous", "lastYear"])
+    : dailyPoints) as AlignedTrendPoint[];
   const width = 1000;
   const height = 330;
   const plot = { left: 48, right: 22, top: 24, bottom: 42 };
@@ -291,8 +343,8 @@ function MonthlyTrend({
   const showLastYear = comparisonMode === "LAST_YEAR" || comparisonMode === "BOTH";
   const visibleKeys: Array<"current" | "previous" | "lastYear"> = [
     "current",
-    ...(showPrevious ? ["previous" as const] : []),
-    ...(showLastYear ? ["lastYear" as const] : []),
+    ...(showPrevious && previousHasRecords ? ["previous" as const] : []),
+    ...(showLastYear && lastYearHasRecords ? ["lastYear" as const] : []),
   ];
   const peak = Math.max(0, ...points.flatMap((point) => visibleKeys.map((key) => point[key] ?? 0)));
   const maxValue = peak <= 4 ? 4 : peak <= 8 ? 8 : peak <= 20 ? Math.ceil(peak / 4) * 4 : Math.ceil(peak / 20) * 20;
@@ -311,10 +363,17 @@ function MonthlyTrend({
   const activePoint = activeDay ? points[activeDay - 1] : null;
   const metricLabel = TREND_METRICS.find((item) => item.value === metric)?.label ?? "Incidents";
   const periodSeries = [
-    { key: "current" as const, dateKey: "currentDate" as const, label: monthLabel(month), color: PERIOD_COLORS.current, dash: undefined, visible: true },
-    { key: "previous" as const, dateKey: "previousDate" as const, label: monthLabel(getPreviousMonth(month)), color: PERIOD_COLORS.previous, dash: "8 7", visible: showPrevious },
-    { key: "lastYear" as const, dateKey: "lastYearDate" as const, label: monthLabel(getSameMonthLastYear(month)), color: PERIOD_COLORS.lastYear, dash: "2 7", visible: showLastYear },
+    { key: "current" as const, dateKey: "currentDate" as const, label: monthLabel(month), color: PERIOD_COLORS.current, dash: undefined, visible: true, hasRecords: true },
+    { key: "previous" as const, dateKey: "previousDate" as const, label: monthLabel(getPreviousMonth(month)), color: PERIOD_COLORS.previous, dash: "8 7", visible: showPrevious, hasRecords: previousHasRecords },
+    { key: "lastYear" as const, dateKey: "lastYearDate" as const, label: monthLabel(getSameMonthLastYear(month)), color: PERIOD_COLORS.lastYear, dash: "2 7", visible: showLastYear, hasRecords: lastYearHasRecords },
   ].filter((series) => series.visible);
+  const drawnSeries = periodSeries.filter((series) => series.hasRecords);
+  const emptySeries = periodSeries.filter((series) => !series.hasRecords);
+  const lastIndexOf = (key: "current" | "previous" | "lastYear") => {
+    for (let index = points.length - 1; index >= 0; index--) if (points[index][key] !== null) return index;
+    return -1;
+  };
+  const todayIndex = points.findIndex((point) => point.currentDate === today);
   const barSlotWidth = plotWidth / Math.max(points.length, 1);
   const barXFor = (index: number) => plot.left + (index + .5) * barSlotWidth;
   const bars = buildGroupedBarLayout(points, visibleKeys, {
@@ -328,17 +387,21 @@ function MonthlyTrend({
 
   return <>
     <div className="pia-chart-caption">
-      <div><h3>Incident trend comparison</h3><p>Compare the same daily measure across the selected month, previous month, and last year.</p></div>
+      <div><h3>Incident trend comparison</h3><p>{cumulative
+        ? "Running total of the selected measure by day of the month, compared with last month and last year."
+        : "Compare the same daily measure across the selected month, previous month, and last year."}</p></div>
       <div className="pia-chart-head-actions">
         <div className="pia-view-switch" role="group" aria-label="Select graph style">
           {([[
-            "LINE", "fa-chart-line", "Smooth line",
+            "CUMULATIVE", "fa-arrow-trend-up", "Running total",
           ], [
-            "BAR", "fa-chart-simple", "Bar graph",
+            "LINE", "fa-chart-line", "Daily line",
+          ], [
+            "BAR", "fa-chart-simple", "Daily bars",
           ]] as const).map(([value, icon, label]) => <button key={value} type="button" className={`pia-view-btn ${chartStyle === value ? "active" : ""}`} aria-pressed={chartStyle === value} onClick={() => onChartStyle(value)}><i className={`fa-solid ${icon}`} aria-hidden="true" />{label}</button>)}
         </div>
         <div className="pia-legend pia-period-legend" aria-label="Comparison period legend">
-          {periodSeries.map((series) => <span key={series.key}><i style={{ background: series.color }} />{series.label}</span>)}
+          {periodSeries.map((series) => <span key={series.key} className={series.hasRecords ? "" : "is-empty"}><i style={{ background: series.color }} />{series.label}{!series.hasRecords && <em>· no records</em>}</span>)}
         </div>
       </div>
     </div>
@@ -349,18 +412,11 @@ function MonthlyTrend({
           {TREND_METRICS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
         </select>
       </div>
-      <div className="pia-tool-group">
-        <span className="pia-tool-label">Compare with</span>
-        <div className="pia-compare-switch" role="group" aria-label="Select comparison periods">
-          {([
-            ["NONE", "Current only"],
-            ["PREVIOUS", "Last month"],
-            ["LAST_YEAR", "Last year"],
-            ["BOTH", "Both"],
-          ] as const).map(([value, label]) => <button key={value} type="button" className={`pia-compare-btn ${comparisonMode === value ? "active" : ""}`} aria-pressed={comparisonMode === value} onClick={() => onComparisonMode(value)}>{label}</button>)}
-        </div>
-      </div>
+      <ComparisonSwitch value={comparisonMode} onChange={onComparisonMode} />
     </div>
+    {emptySeries.length > 0 && <p className="pia-no-records"><i className="fa-regular fa-circle-question" aria-hidden="true" />
+      No reports were recorded in {emptySeries.map((series) => series.label).join(" or ")}, so {emptySeries.length > 1 ? "these periods are" : "this period is"} not drawn.
+    </p>}
     <div className="pia-chart-scroll">
       <div className="pia-chart-stage">
         <svg
@@ -389,14 +445,30 @@ function MonthlyTrend({
             const y = yFor(value);
             return <g key={value}><line className="pia-grid-line" x1={plot.left} x2={width - plot.right} y1={y} y2={y} /><text className="pia-axis-label" x={plot.left - 10} y={y + 4} textAnchor="end">{value}</text></g>;
           })}
+          <line className="pia-axis-line" x1={plot.left} x2={width - plot.right} y1={plot.top + plotHeight} y2={plot.top + plotHeight} />
+          {todayIndex >= 0 && todayIndex < points.length - 1 && <g>
+            <line className="pia-today-line" x1={hoverXFor(todayIndex)} x2={hoverXFor(todayIndex)} y1={plot.top} y2={plot.top + plotHeight} />
+            <text className="pia-today-label" x={hoverXFor(todayIndex) + 6} y={plot.top + 10}>Today</text>
+          </g>}
           <g className="pia-chart-series" key={`${chartStyle}-${metric}-${comparisonMode}`}>
-            {chartStyle === "LINE" ? <>
+            {chartStyle !== "BAR" ? <>
               {areaPath && <path className="pia-current-area" d={areaPath} fill="url(#pia-current-fill)" />}
-              {periodSeries.slice().reverse().map((series) => <path key={series.key} className="pia-trend-line" d={pathFor(series.key)} stroke={series.color} strokeWidth={series.key === "current" ? 3.5 : 2.25} strokeDasharray={series.dash} opacity={series.key === "current" ? 1 : .82} />)}
-              {periodSeries.flatMap((series) => points.map((point, index) => {
+              {drawnSeries.slice().reverse().map((series) => <path key={series.key} className="pia-trend-line" d={pathFor(series.key)} stroke={series.color} strokeWidth={series.key === "current" ? 3 : 2.25} strokeDasharray={series.dash} opacity={series.key === "current" ? 1 : .88} />)}
+              {!cumulative && drawnSeries.flatMap((series) => points.map((point, index) => {
                 const value = point[series.key];
-                return value !== null && value > 0 ? <circle key={`${series.key}-${point.day}`} className="pia-line-marker" cx={xFor(index)} cy={yFor(value)} r="3.25" fill="#fff" stroke={series.color} strokeWidth="2" opacity={series.key === "current" ? 1 : .78} /> : null;
+                return value !== null && value > 0 ? <circle key={`${series.key}-${point.day}`} className="pia-line-marker" cx={xFor(index)} cy={yFor(value)} r="4" fill="#fff" stroke={series.color} strokeWidth="2" opacity={series.key === "current" ? 1 : .85} /> : null;
               }))}
+              {cumulative && drawnSeries.map((series) => {
+                const index = lastIndexOf(series.key);
+                const value = index >= 0 ? points[index][series.key] : null;
+                if (value === null) return null;
+                const x = xFor(index);
+                const nearRight = x > width - plot.right - 40;
+                return <g key={`${series.key}-end`}>
+                  <circle className="pia-line-marker" cx={x} cy={yFor(value)} r="4.5" fill="#fff" stroke={series.color} strokeWidth="2.5" />
+                  <text className="pia-end-label" x={nearRight ? x - 9 : x + 9} y={yFor(value) - 8} textAnchor={nearRight ? "end" : "start"}>{value}</text>
+                </g>;
+              })}
             </> : bars.map((bar) => {
               const color = PERIOD_COLORS[bar.key];
               return <rect key={`${bar.key}-${bar.dayIndex}`} className="pia-trend-bar" x={bar.x} y={bar.y} width={bar.width} height={bar.height} rx={Math.min(4, bar.width / 2)} fill={color} opacity={bar.key === "current" ? .94 : .7} />;
@@ -412,17 +484,17 @@ function MonthlyTrend({
           })}
           {activePoint && <>
             <line className="pia-crosshair" x1={hoverXFor(activeDay! - 1)} x2={hoverXFor(activeDay! - 1)} y1={plot.top} y2={plot.top + plotHeight} />
-            {periodSeries.map((series) => {
+            {drawnSeries.map((series) => {
               const value = activePoint[series.key];
-              return value !== null && chartStyle === "LINE" ? <circle key={series.key} className="pia-hover-point" cx={hoverXFor(activeDay! - 1)} cy={yFor(value)} r={series.key === "current" ? 5 : 4} fill="#fff" stroke={series.color} strokeWidth="3" /> : null;
+              return value !== null && chartStyle !== "BAR" ? <circle key={series.key} className="pia-hover-point" cx={hoverXFor(activeDay! - 1)} cy={yFor(value)} r={series.key === "current" ? 5 : 4} fill="#fff" stroke={series.color} strokeWidth="3" /> : null;
             })}
           </>}
         </svg>
         {activePoint && <div className="pia-tooltip" style={{ left: `${(hoverXFor(activeDay! - 1) / width) * 100}%`, transform: activeDay! > points.length * .68 ? "translateX(-100%)" : activeDay! > points.length * .32 ? "translateX(-50%)" : "none" }}>
-          <div className="pia-tooltip-date">Day {activePoint.day} comparison</div>
+          <div className="pia-tooltip-date">Day {activePoint.day} {cumulative ? "running total" : "comparison"}</div>
           {periodSeries.map((series) => <div className="pia-tooltip-row" key={series.key}>
             <span><i style={{ background: series.color }} />{formatChartDate(activePoint[series.dateKey])}</span>
-            <strong>{activePoint[series.key] ?? "—"}</strong>
+            <strong>{!series.hasRecords ? "No records" : activePoint[series.key] ?? "—"}</strong>
           </div>)}
           {activePoint.breakdown && <><div className="pia-tooltip-divider" /><div className="pia-tooltip-breakdown">
             <span>Active {activePoint.breakdown.active}</span>
@@ -465,19 +537,97 @@ function MunicipalityComparison({ summary, onSelect }: { summary: ProvincialRepo
   </>;
 }
 
-function FireTypeChart({ summary }: { summary: ProvincialReportSummary }) {
-  const values = FIRE_TYPES.map(([id, label]) => ({ id, label, value: summary.byFireType[id] ?? 0 }));
-  const max = Math.max(1, ...values.map((item) => item.value));
+function FireTypeChart({
+  summary,
+  previousSummary,
+  lastYearSummary,
+  month,
+  comparisonMode,
+  onComparisonMode,
+}: {
+  summary: ProvincialReportSummary;
+  previousSummary: ProvincialReportSummary | null;
+  lastYearSummary: ProvincialReportSummary | null;
+  month: string;
+  comparisonMode: ComparisonMode;
+  onComparisonMode: (value: ComparisonMode) => void;
+}) {
+  const [activeType, setActiveType] = useState<string | null>(null);
+  const showPrevious = comparisonMode === "PREVIOUS" || comparisonMode === "BOTH";
+  const showLastYear = comparisonMode === "LAST_YEAR" || comparisonMode === "BOTH";
+  const previousHasRecords = hasRecordedActivity(previousSummary?.dailyTrend);
+  const lastYearHasRecords = hasRecordedActivity(lastYearSummary?.dailyTrend);
+  const periods = [
+    { key: "current" as const, label: monthLabel(month), color: PERIOD_COLORS.current, visible: true, hasRecords: true },
+    { key: "previous" as const, label: monthLabel(getPreviousMonth(month)), color: PERIOD_COLORS.previous, visible: showPrevious, hasRecords: previousHasRecords },
+    { key: "lastYear" as const, label: monthLabel(getSameMonthLastYear(month)), color: PERIOD_COLORS.lastYear, visible: showLastYear, hasRecords: lastYearHasRecords },
+  ].filter((period) => period.visible);
+  const drawn = periods.filter((period) => period.hasRecords);
+  const empty = periods.filter((period) => !period.hasRecords);
+  const comparison = buildFireTypeComparison(FIRE_TYPES, {
+    current: summary.byFireType,
+    previous: showPrevious && previousHasRecords ? previousSummary?.byFireType ?? {} : null,
+    lastYear: showLastYear && lastYearHasRecords ? lastYearSummary?.byFireType ?? {} : null,
+  }) as {
+    rows: Array<{ id: string; label: string } & Record<"current" | "previous" | "lastYear", { count: number; share: number } | null>>;
+    max: number;
+  };
+  const max = Math.max(1, comparison.max);
   return <>
     <div className="pia-chart-caption">
-      <div><h3>Incidents by fire type</h3><p>Fire classifications for the selected municipality and month.</p></div>
-      <div className="pia-legend"><span><i style={{ background: "#516985" }} />Submitted reports</span></div>
+      <div><h3>Incidents by fire type</h3><p>Fire classifications for the selected municipality and month{drawn.length > 1 ? ", beside the periods you compare with" : ""}. Hover a type for its share.</p></div>
+      <div className="pia-legend pia-period-legend" aria-label="Fire type period legend">
+        {periods.map((period) => <span key={period.key} className={period.hasRecords ? "" : "is-empty"}><i style={{ background: period.color }} />{period.label}{!period.hasRecords && <em>· no records</em>}</span>)}
+      </div>
     </div>
-    <div className="pia-fire-chart" role="img" aria-label="Incident totals grouped by fire type">
-      {values.map((item) => <div className="pia-fire-column" key={item.id} title={`${item.label}: ${item.value}`}>
-        <div className="pia-fire-bar-wrap"><div className="pia-fire-bar" style={{ height: `${Math.max(2, (item.value / max) * 100)}%` }}><strong>{item.value}</strong></div></div>
-        <span className="pia-fire-label">{item.label}</span>
-      </div>)}
+    <div className="pia-trend-tools pia-fire-tools">
+      <ComparisonSwitch value={comparisonMode} onChange={onComparisonMode} />
+    </div>
+    {empty.length > 0 && <p className="pia-no-records"><i className="fa-regular fa-circle-question" aria-hidden="true" />
+      No reports were recorded in {empty.map((period) => period.label).join(" or ")}, so {empty.length > 1 ? "these periods are" : "this period is"} not drawn.
+    </p>}
+    <div className="pia-fire-chart" role="group" aria-label="Incident totals grouped by fire type" onPointerLeave={() => setActiveType(null)}>
+      {comparison.rows.map((row) => {
+        const current = row.current ?? { count: 0, share: 0 };
+        const summaryText = periods.map((period) => {
+          const value = row[period.key];
+          return value ? `${value.count} in ${period.label}` : `no records in ${period.label}`;
+        }).join(", ");
+        return <div
+          key={row.id}
+          className={`pia-fire-column ${activeType === row.id ? "is-active" : ""}`}
+          tabIndex={0}
+          aria-label={`${row.label}: ${summaryText}`}
+          onPointerEnter={() => setActiveType(row.id)}
+          onFocus={() => setActiveType(row.id)}
+          onBlur={() => setActiveType(null)}
+        >
+          <div className="pia-fire-bar-wrap">
+            {drawn.map((period) => {
+              const value = row[period.key];
+              if (!value) return null;
+              return <div
+                key={period.key}
+                className={`pia-fire-bar ${period.key === "current" ? "" : "is-comparison"}`}
+                style={{ height: `${(value.count / max) * 100}%`, background: period.color }}
+              >
+                {period.key === "current" && <strong>{value.count}</strong>}
+              </div>;
+            })}
+          </div>
+          <span className="pia-fire-label">{row.label}<small>{current.share}% of {monthLabel(month).split(" ")[0]}</small></span>
+          {activeType === row.id && <div className="pia-fire-tooltip" role="tooltip">
+            <div className="pia-tooltip-date">{row.label}</div>
+            {periods.map((period) => {
+              const value = row[period.key];
+              return <div className="pia-tooltip-row" key={period.key}>
+                <span><i style={{ background: period.color }} />{period.label}</span>
+                <strong>{value ? `${value.count} · ${value.share}%` : "No records"}</strong>
+              </div>;
+            })}
+          </div>}
+        </div>;
+      })}
     </div>
   </>;
 }
@@ -488,7 +638,7 @@ export function ProvincialIncidentAnalytics({ municipalities }: { municipalities
   const [municipalityId, setMunicipalityId] = useState("");
   const [view, setView] = useState<AnalyticsView>("TREND");
   const [comparisonMode, setComparisonMode] = useState<ComparisonMode>("BOTH");
-  const [trendChartStyle, setTrendChartStyle] = useState<TrendChartStyle>("LINE");
+  const [trendChartStyle, setTrendChartStyle] = useState<TrendChartStyle>("CUMULATIVE");
   const [trendMetric, setTrendMetric] = useState<TrendMetric>("total");
   const [summary, setSummary] = useState<ProvincialReportSummary | null>(null);
   const [comparisons, setComparisons] = useState<ComparisonSummaries>({ previous: null, lastYear: null });
@@ -592,8 +742,8 @@ export function ProvincialIncidentAnalytics({ municipalities }: { municipalities
 
     <div className="pia-metrics" aria-label="Selected month comparison insights">
       <div className="pia-metric"><span>Incidents this month</span><strong>{currentStats.total}</strong><small className="pia-insight-change">{monthLabel(month)}</small></div>
-      <div className="pia-metric"><span>Compared with last month</span><strong>{previousChange.label}</strong><small className={`pia-insight-change ${previousChange.className}`}>{previousStats.total} in {monthLabel(getPreviousMonth(month))}</small></div>
-      <div className="pia-metric"><span>Compared with last year</span><strong>{lastYearChange.label}</strong><small className={`pia-insight-change ${lastYearChange.className}`}>{lastYearStats.total} in {monthLabel(getSameMonthLastYear(month))}</small></div>
+      <div className="pia-metric"><span>Compared with last month</span><strong>{previousChange.label}</strong><small className={`pia-insight-change ${previousChange.className}`}>{previousStats.total ? `${previousStats.total} in` : "No reports in"} {monthLabel(getPreviousMonth(month))}</small></div>
+      <div className="pia-metric"><span>Compared with last year</span><strong>{lastYearChange.label}</strong><small className={`pia-insight-change ${lastYearChange.className}`}>{lastYearStats.total ? `${lastYearStats.total} in` : "No reports in"} {monthLabel(getSameMonthLastYear(month))}</small></div>
       <div className="pia-metric"><span>Peak incident day</span><strong>{currentStats.peak.value}</strong><small className="pia-insight-change">{currentStats.peak.date ? formatChartDate(currentStats.peak.date) : "No activity"}</small></div>
     </div>
 
@@ -604,7 +754,7 @@ export function ProvincialIncidentAnalytics({ municipalities }: { municipalities
         : summary ? <>
             {view === "TREND" && <MonthlyTrend summary={summary} previousSummary={comparisons.previous} lastYearSummary={comparisons.lastYear} month={month} comparisonMode={comparisonMode} chartStyle={trendChartStyle} metric={trendMetric} onComparisonMode={setComparisonMode} onChartStyle={setTrendChartStyle} onMetric={setTrendMetric} />}
             {view === "MUNICIPALITIES" && <MunicipalityComparison summary={summary} onSelect={selectMunicipality} />}
-            {view === "FIRE_TYPES" && <FireTypeChart summary={summary} />}
+            {view === "FIRE_TYPES" && <FireTypeChart summary={summary} previousSummary={comparisons.previous} lastYearSummary={comparisons.lastYear} month={month} comparisonMode={comparisonMode} onComparisonMode={setComparisonMode} />}
           </> : null}
     </div>
     <p className="pia-sr" aria-live="polite">{loading ? "Loading incident analytics" : error ? error : `${totals.total} submitted reports loaded`}</p>
