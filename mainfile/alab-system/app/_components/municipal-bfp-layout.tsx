@@ -885,6 +885,86 @@ const layoutStyles = `
     }
   }
 
+  /* ===== Shell skeleton shown while this tab's login is checked ===== */
+  @keyframes mbfpShellShimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .mbfp-shell-skel {
+    display: inline-block;
+    height: 0.8rem;
+    border-radius: 6px;
+    vertical-align: middle;
+    background: linear-gradient(90deg, #E2E8F0 0%, #F8FAFC 50%, #E2E8F0 100%);
+    background-size: 200% 100%;
+    animation: mbfpShellShimmer 1.5s ease-in-out infinite;
+  }
+
+  .mbfp-shell-skel-dark {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0.18) 100%);
+    background-size: 200% 100%;
+  }
+
+  .mbfp-shell-skel-round {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+  }
+
+  .mbfp-sidebar-nav.is-checking {
+    opacity: 0.55;
+    cursor: progress;
+  }
+
+  .mbfp-profile-card:disabled {
+    cursor: progress;
+  }
+
+  .mbfp-shell-skeleton {
+    padding: 0.85rem 1.4rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  .mbfp-shell-skel-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.85rem;
+  }
+
+  .mbfp-shell-skel-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .mbfp-shell-skel-panels {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 0.85rem;
+  }
+
+  .mbfp-shell-skel-panel {
+    min-height: 260px;
+    gap: 0.9rem;
+  }
+
+  @media (max-width: 900px) {
+    .mbfp-shell-skel-panels { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mbfp-shell-skel { animation: none; }
+  }
+
   .mbfp-content {
     flex: 1;
     animation: mbfpContentEntrance 0.32s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1033,6 +1113,36 @@ type MunicipalUserIdentity = {
   photoUrl?: string | null;
 };
 
+function MunicipalShellSkeleton() {
+  return (
+    <div className="mbfp-shell-skeleton" role="status" aria-label="Loading your municipal dashboard">
+      <div className="mbfp-shell-skel-stats">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div key={index} className="mbfp-shell-skel-card">
+            <span className="mbfp-shell-skel" style={{ width: '2.25rem', height: '2.25rem', borderRadius: '10px' }} />
+            <span className="mbfp-shell-skel" style={{ width: '3rem', height: '1.6rem' }} />
+            <span className="mbfp-shell-skel" style={{ width: '60%' }} />
+          </div>
+        ))}
+      </div>
+      <div className="mbfp-shell-skel-panels">
+        <div className="mbfp-shell-skel-card mbfp-shell-skel-panel">
+          <span className="mbfp-shell-skel" style={{ width: '40%', height: '1rem' }} />
+          {Array.from({ length: 6 }, (_, index) => (
+            <span key={index} className="mbfp-shell-skel" style={{ width: `${92 - index * 6}%` }} />
+          ))}
+        </div>
+        <div className="mbfp-shell-skel-card mbfp-shell-skel-panel">
+          <span className="mbfp-shell-skel" style={{ width: '55%', height: '1rem' }} />
+          {Array.from({ length: 4 }, (_, index) => (
+            <span key={index} className="mbfp-shell-skel" style={{ width: `${85 - index * 8}%` }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   // The sidebar badge shows the real queue depth, not a fixed number.
@@ -1166,58 +1276,10 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
   };
 
   if (isAuthenticationPage) return <>{children}</>;
-  if (!identity) {
-    return (
-      <main
-        role="status"
-        aria-live="polite"
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#0B1329',
-          color: '#ffffff',
-          fontFamily: "'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-          padding: '2rem',
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem', textAlign: 'center' }}>
-          <div style={{ position: 'relative', width: '56px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                borderRadius: '50%',
-                border: '3px solid rgba(225, 29, 72, 0.2)',
-                borderTopColor: '#e11d48',
-                animation: 'mbfpCheckSpin 0.8s linear infinite',
-              }}
-            />
-            <img
-              src="/images/FAVICON.webp"
-              alt="ALAB Logo"
-              style={{ width: '30px', height: '30px', objectFit: 'contain' }}
-            />
-          </div>
-          <div>
-            <div style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', color: '#F1F5F9' }}>
-              ALAB Municipal Command
-            </div>
-            <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#94A3B8' }}>
-              Checking your municipal account…
-            </div>
-          </div>
-        </div>
-        <style>{`
-          @keyframes mbfpCheckSpin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </main>
-    );
-  }
+  // Until /me confirms this tab's login, show the real shell with its
+  // navigation disabled and a skeleton instead of the page. Private pages and
+  // alarms mount only after the check, so nothing loads for a signed-out tab.
+  const checking = !identity;
 
   return (
     <>
@@ -1233,7 +1295,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
           {/* Header Brand */}
           <div className="mbfp-sidebar-header">
             <div className="mbfp-brand-row">
-              <Link href="/municipal-bfp" prefetch={true} className="mbfp-brand-link" onClick={closeMobileNav}>
+              <Link href="/municipal-bfp" prefetch={true} className="mbfp-brand-link" onClick={closeMobileNav} inert={checking}>
                 <div className="mbfp-brand-logo-wrap">
                   <img
                     src="/images/FAVICON.webp"
@@ -1270,7 +1332,12 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
           </div>
 
           {/* Categorized Navigation Groups */}
-          <nav className="mbfp-sidebar-nav" aria-label="Municipal BFP Modules">
+          <nav
+            className={`mbfp-sidebar-nav ${checking ? 'is-checking' : ''}`}
+            aria-label="Municipal BFP Modules"
+            aria-busy={checking}
+            inert={checking}
+          >
             {navigationGroups.map((group) => (
               <div key={group.groupTitle} className="mbfp-nav-group">
                 <div className="mbfp-nav-group-title">{group.groupTitle}</div>
@@ -1323,6 +1390,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
               type="button"
               className="mbfp-profile-card"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
+              disabled={checking}
               title="Station Officer Profile"
               aria-expanded={isProfileOpen}
               aria-haspopup="menu"
@@ -1340,10 +1408,10 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
               </div>
               <div className="mbfp-profile-info">
                 <div className="mbfp-profile-name">
-                  {identity?.displayName || 'Officer on Duty'}
+                  {checking ? <span className="mbfp-shell-skel mbfp-shell-skel-dark" style={{ width: '7rem' }} /> : identity?.displayName || 'Officer on Duty'}
                 </div>
                 <div className="mbfp-profile-role">
-                  <span>{identity?.rankOrPosition || 'Municipal Commander'}</span>
+                  {checking ? <span className="mbfp-shell-skel mbfp-shell-skel-dark" style={{ width: '5rem' }} /> : <span>{identity?.rankOrPosition || 'Municipal Commander'}</span>}
                 </div>
               </div>
               <i
@@ -1425,26 +1493,36 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
               <div className="mbfp-header-right">
                 <div className="mbfp-header-location">
                   <i className="fa-solid fa-location-dot" />
-                  <span>{identity?.municipalityName ?? 'Antique BFP'}</span>
+                  {checking
+                    ? <span className="mbfp-shell-skel" style={{ width: '8rem' }} />
+                    : <span>{identity?.municipalityName ?? 'Antique BFP'}</span>}
                 </div>
 
-                <NotificationBell apiPath="/api/municipal-bfp/notifications" allHref="/municipal-bfp/notifications" />
+                {checking
+                  ? <span className="mbfp-shell-skel mbfp-shell-skel-round" aria-hidden="true" />
+                  : <NotificationBell apiPath="/api/municipal-bfp/notifications" allHref="/municipal-bfp/notifications" />}
               </div>
             </div>
           </header>
 
           {/* Content with route entrance animation */}
-          <main key={pathname} className="mbfp-content">{children}</main>
+          <main key={pathname} className="mbfp-content" aria-busy={checking}>
+            {checking ? <MunicipalShellSkeleton /> : children}
+          </main>
         </div>
       </div>
 
-      {/* Sounds on every municipal page until a duty officer acknowledges. */}
-      <MunicipalIncidentAlarm />
+      {!checking && (
+        <>
+          {/* Sounds on every municipal page until a duty officer acknowledges. */}
+          <MunicipalIncidentAlarm />
 
-      {/* Backup called for by a responder in the field. */}
-      <MunicipalBackupAlarm />
-      {/* Provincial alarm declarations require an explicit municipal response. */}
-      <MunicipalAlarmDeclaration />
+          {/* Backup called for by a responder in the field. */}
+          <MunicipalBackupAlarm />
+          {/* Provincial alarm declarations require an explicit municipal response. */}
+          <MunicipalAlarmDeclaration />
+        </>
+      )}
     </>
   );
 }

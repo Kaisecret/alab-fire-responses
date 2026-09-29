@@ -12,8 +12,9 @@ async function selectTab(): Promise<string> {
   window.addEventListener("pageshow", (event) => {
     if ((event as PageTransitionEvent).persisted) window.location.reload();
   });
-  let id = sessionStorage.getItem(TAB_KEY);
-  if (!id || !/^[a-f0-9-]{36}$/.test(id)) id = crypto.randomUUID();
+  const stored = sessionStorage.getItem(TAB_KEY);
+  const storedId = stored !== null && /^[a-f0-9-]{36}$/.test(stored);
+  let id = storedId ? stored : crypto.randomUUID();
   // Chrome can copy sessionStorage when duplicating a tab. A browser lock
   // distinguishes that copy from reloads without exposing the session token.
   if (navigator.locks) {
@@ -28,11 +29,16 @@ async function selectTab(): Promise<string> {
       }).catch(reject);
     });
     let claimed = await claim(id);
-    if (!claimed && typeof performance !== "undefined") {
+    if (!claimed && storedId && typeof performance !== "undefined") {
       const nav = performance.getEntriesByType?.("navigation")?.[0] as PerformanceNavigationTiming | undefined;
       if (nav?.type === "reload" || nav?.type === "navigate") {
-        await new Promise((r) => setTimeout(r, 60));
-        claimed = await claim(id);
+        // The server only accepts this tab's own login, so a reload must keep
+        // its id. The previous page can hold the lock briefly while unloading;
+        // a duplicated tab never gets it and falls through to a new id.
+        for (let attempt = 0; !claimed && attempt < 15; attempt++) {
+          await new Promise((r) => setTimeout(r, 60));
+          claimed = await claim(id);
+        }
       }
     }
     if (!claimed) {

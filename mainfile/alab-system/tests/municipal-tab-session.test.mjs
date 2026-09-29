@@ -95,7 +95,7 @@ test('municipal layout persists identity in sessionStorage across page refresh w
   assert.match(source, /sessionStorage\.removeItem\(MUNICIPAL_IDENTITY_KEY\)/);
 });
 
-test('resolveMunicipalSession resolves primary tab cookie or single municipal session fallback', async () => {
+test('resolveMunicipalSession only accepts the requesting tab cookie', async () => {
   const { resolveMunicipalSession, createBfpSession } = await import('../lib/auth/session.ts');
   const sessionToken = createBfpSession({
     userId: 'officer-1',
@@ -114,13 +114,52 @@ test('resolveMunicipalSession resolves primary tab cookie or single municipal se
   const resolved1 = resolveMunicipalSession(cookies1, tabHeaders);
   assert.equal(resolved1?.userId, 'officer-1');
 
-  // Test 2: fallback to single municipal session when tab ID drifted on refresh
+  // Test 2: a new tab never borrows a login made in another tab. Before, the
+  // page shell accepted it while the data APIs refused it, so a fresh tab
+  // showed the whole dashboard with no data.
+  const otherTabCookie = 'alab_municipal_bfp_session_33333333-3333-4333-a333-333333333333';
   const cookies2 = {
-    get: () => undefined,
-    getAll: () => [{ name: 'alab_municipal_bfp_session_old-tab', value: sessionToken }],
+    get: (name) => name === otherTabCookie ? { value: sessionToken } : undefined,
+    getAll: () => [{ name: otherTabCookie, value: sessionToken }],
   };
   const resolved2 = resolveMunicipalSession(cookies2, new Headers({ 'x-alab-municipal-tab': '22222222-2222-4222-a222-222222222222' }));
-  assert.equal(resolved2?.userId, 'officer-1');
+  assert.equal(resolved2, null);
+
+  // Test 3: the legacy browser-wide cookie is not a login either.
+  const cookies3 = {
+    get: (name) => name === 'alab_municipal_bfp_session' ? { value: sessionToken } : undefined,
+    getAll: () => [{ name: 'alab_municipal_bfp_session', value: sessionToken }],
+  };
+  assert.equal(resolveMunicipalSession(cookies3, new Headers({ 'x-alab-municipal-tab': '22222222-2222-4222-a222-222222222222' })), null);
+  assert.equal(resolveMunicipalSession(cookies3, new Headers()), null);
+});
+
+test('municipal login cookies end with the browser session; provincial keeps its lifetime', async () => {
+  const { bfpSessionCookieOptions } = await import('../lib/auth/session.ts');
+  assert.equal(bfpSessionCookieOptions('MUNICIPAL_BFP').maxAge, undefined);
+  assert.equal(bfpSessionCookieOptions('MUNICIPAL_BFP').httpOnly, true);
+  assert.ok(bfpSessionCookieOptions('PROVINCIAL_BFP').maxAge > 0);
+});
+
+test('every municipal API resolves the session from the requesting tab', async () => {
+  const { readFileSync, readdirSync, statSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const root = fileURLToPath(new URL('../app/api/municipal-bfp/', import.meta.url));
+  const files = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir)) {
+      const path = join(dir, entry);
+      if (statSync(path).isDirectory()) walk(path);
+      else if (entry === 'route.ts') files.push(path);
+    }
+  };
+  walk(root);
+  for (const file of files) {
+    const source = readFileSync(file, 'utf8');
+    // The bare cookie name (no request headers) is the browser-wide cookie.
+    assert.doesNotMatch(source, /bfpSessionCookieName\(\s*"MUNICIPAL_BFP"\s*\)/, file);
+  }
 });
 
 

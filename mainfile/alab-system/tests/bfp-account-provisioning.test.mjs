@@ -53,7 +53,8 @@ test("Provincial and Municipal BFP sessions use independent cookies", () => {
   assert.match(changePassword, /portal/);
   assert.match(changePassword, /bfpSessionCookieName\(session\.role, request\.headers\)/);
   assert.match(logout, /bfpSessionCookieName/);
-  assert.match(municipalMe, /bfpSessionCookieName\("MUNICIPAL_BFP", request\.headers\)/);
+  // resolveMunicipalSession verifies only the requesting tab's signed cookie.
+  assert.match(municipalMe, /resolveMunicipalSession\(request\.cookies, request\.headers\)/);
   assert.match(provincialMe, /bfpSessionCookieName\("PROVINCIAL_BFP"\)/);
   assert.match(proxy, /bfpSessionCookieName\(requiredRole\)/);
 });
@@ -97,7 +98,7 @@ test("BFP APIs provision individual staff, require a password change, and never 
   assert.match(provisioning, /must_change_password/);
   assert.match(login, /checkLoginRateLimit/);
   assert.match(login, /createBfpSession/);
-  assert.match(me, /verifyBfpSession/);
+  assert.match(me, /resolveMunicipalSession\(request\.cookies, request\.headers\)/);
   assert.doesNotMatch(me, /password_hash/);
 });
 

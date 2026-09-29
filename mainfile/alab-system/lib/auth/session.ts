@@ -145,33 +145,15 @@ export function verifyBfpSession(token: string | undefined): BfpSession | null {
 }
 
 export function resolveMunicipalSession(
-  cookies: { get: (name: string) => { value?: string } | undefined; getAll?: () => Array<{ name: string; value: string }> },
+  cookies: { get: (name: string) => { value?: string } | undefined },
   headers?: Headers,
 ): BfpSession | null {
-  const cookieName = bfpSessionCookieName("MUNICIPAL_BFP", headers);
-  const primaryValue = cookies.get(cookieName)?.value;
-  const primary = verifyBfpSession(primaryValue);
-  if (primary && primary.role === "MUNICIPAL_BFP") return primary;
-
-  // Fallback: base municipal cookie if present and valid
-  const baseValue = cookies.get(MUNICIPAL_BFP_SESSION_COOKIE)?.value;
-  if (baseValue) {
-    const base = verifyBfpSession(baseValue);
-    if (base && base.role === "MUNICIPAL_BFP") return base;
-  }
-
-  // Fallback: single active municipal cookie across tabs in this browser
-  if (cookies.getAll) {
-    const all = cookies.getAll().filter(
-      (c) => c.name.startsWith(MUNICIPAL_BFP_SESSION_COOKIE) && !c.name.endsWith("_unselected")
-    );
-    if (all.length === 1) {
-      const single = verifyBfpSession(all[0].value);
-      if (single && single.role === "MUNICIPAL_BFP") return single;
-    }
-  }
-
-  return null;
+  // Only the login made in the requesting tab counts. Borrowing another tab's
+  // cookie let a fresh tab show the dashboard while the data APIs, which read
+  // the tab cookie, refused it; a new tab now goes to the login page instead.
+  if (!headers) return null;
+  const session = verifyBfpSession(cookies.get(bfpSessionCookieName("MUNICIPAL_BFP", headers))?.value);
+  return session && session.role === "MUNICIPAL_BFP" ? session : null;
 }
 
 export const residentSessionCookie = {
@@ -190,3 +172,15 @@ export const residentApplicantCookie = {
 export const bfpSessionCookie = {
   ...residentSessionCookie,
 };
+
+// No maxAge: municipal logins are per tab and end when the browser closes.
+const municipalBfpSessionCookie = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+};
+
+export function bfpSessionCookieOptions(role: BfpRole) {
+  return role === "PROVINCIAL_BFP" ? bfpSessionCookie : municipalBfpSessionCookie;
+}

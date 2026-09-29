@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { changeBfpPassword, getBfpIdentity } from "../../../../../lib/auth/bfp-accounts";
-import { bfpSessionCookieName, bfpSessionCookie, createBfpSession, type BfpRole, verifyBfpSession } from "../../../../../lib/auth/session";
+import { bfpSessionCookieName, bfpSessionCookieOptions, createBfpSession, type BfpRole, verifyBfpSession } from "../../../../../lib/auth/session";
 
 export const runtime = "nodejs";
 
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       role: identity.role,
       municipalityId: identity.municipalityId,
       mustChangePassword: false,
-    }), bfpSessionCookie);
+    }), bfpSessionCookieOptions(identity.role));
     return response;
   } catch (error) {
     const message = error instanceof Error && error.message === "CURRENT_PASSWORD_INCORRECT"

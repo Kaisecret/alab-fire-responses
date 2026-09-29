@@ -7,7 +7,7 @@ import {
   recordLoginFailures,
   clearAllLoginFailures,
 } from "../../../../../lib/auth/login-rate-limit";
-import { bfpSessionCookieName, createBfpSession, bfpSessionCookie, type BfpRole } from "../../../../../lib/auth/session";
+import { bfpSessionCookieName, createBfpSession, bfpSessionCookieOptions, type BfpRole } from "../../../../../lib/auth/session";
 import { verifyBfpCredentials } from "../../../../../lib/auth/bfp-accounts";
 
 export const runtime = "nodejs";
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         ? `/${body.portal === "PROVINCIAL" ? "provincial-bfp" : "municipal-bfp"}/change-password`
         : `/${body.portal === "PROVINCIAL" ? "provincial-bfp" : "municipal-bfp"}`,
     });
-    response.cookies.set(bfpSessionCookieName(identity.role, request.headers), session, bfpSessionCookie);
+    response.cookies.set(bfpSessionCookieName(identity.role, request.headers), session, bfpSessionCookieOptions(identity.role));
     return response;
   } catch (error) {
     console.error("BFP login failed", error);
