@@ -15,7 +15,7 @@ import '../services/road_routing_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/liquid_glass.dart';
 import '../widgets/request_backup_button.dart';
-import '../widgets/map_layer_tabs.dart';
+import '../widgets/map_layer_toggle.dart';
 import '../widgets/offline_basemap_layer.dart';
 import 'water_sources_map.dart';
 
@@ -758,25 +758,23 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    // Map controls start just below the floating header card.
+    final controlsTop = MediaQuery.paddingOf(context).top + 72;
+    final layerToggle = MapLayerToggleButton(
+      selected: _mapMode,
+      onChanged: (mode) => setState(() => _mapMode = mode),
+    );
     if (_mapMode == MapLayerMode.waterSources) {
       return Scaffold(
-        body: Stack(children: [
-          WaterSourcesMap(
-            api: widget.dispatchStore.api,
-            token: widget.dispatchStore.session.token,
-            municipalityName: widget.dispatchStore.session.identity.municipalityName,
-            stationPosition: _stationPoint,
-            responderPosition: _responder == null ? null : LatLng(_responder!.latitude, _responder!.longitude),
-            onLocate: () => unawaited(_locate()),
-          ),
-          Positioned(
-            top: 92, left: 16, right: 16,
-            child: MapLayerTabs(
-              selected: _mapMode,
-              onChanged: (mode) => setState(() => _mapMode = mode),
-            ),
-          ),
-        ]),
+        body: WaterSourcesMap(
+          api: widget.dispatchStore.api,
+          token: widget.dispatchStore.session.token,
+          municipalityName: widget.dispatchStore.session.identity.municipalityName,
+          stationPosition: _stationPoint,
+          responderPosition: _responder == null ? null : LatLng(_responder!.latitude, _responder!.longitude),
+          onLocate: () => unawaited(_locate()),
+          layerControl: layerToggle,
+        ),
       );
     }
     final assignment = widget.dispatchStore.activeAssignment;
@@ -980,16 +978,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             ),
 
             // 3. LOCATION PERMISSION / STATUS BANNER
-            Positioned(
-              top: 92, left: 16, right: 16,
-              child: MapLayerTabs(
-                selected: _mapMode,
-                onChanged: (mode) => setState(() => _mapMode = mode),
-              ),
-            ),
             if (_locationMessage != null)
               Positioned(
-                top: 164,
+                top: controlsTop,
                 left: 16,
                 right: 75,
                 child: LiquidGlassContainer(
@@ -1018,7 +1009,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             // 4. FLOATING MAP CONTROLS (ZOOM, FIT, RECENTER)
             Positioned(
               right: 16,
-              top: 164,
+              top: controlsTop,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1075,6 +1066,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       onTap: () => _openBackupRequest(assignment),
                     ),
                   ],
+                  // Switches this map to the water source layer.
+                  const SizedBox(height: 8),
+                  layerToggle,
                 ],
               ),
             ),

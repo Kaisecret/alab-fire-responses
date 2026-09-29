@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_application_1/widgets/map_layer_tabs.dart';
+import 'package:flutter_application_1/widgets/map_layer_toggle.dart';
 
 void main() {
-  testWidgets('incident and water source tabs switch the selected map layer', (
+  testWidgets('layer toggle switches between incidents and water sources', (
     tester,
   ) async {
     var selected = MapLayerMode.incidents;
@@ -12,7 +12,7 @@ void main() {
         home: StatefulBuilder(
           builder: (context, setState) {
             return Scaffold(
-              body: MapLayerTabs(
+              body: MapLayerToggleButton(
                 selected: selected,
                 onChanged: (mode) => setState(() => selected = mode),
               ),
@@ -22,12 +22,15 @@ void main() {
       ),
     );
 
-    expect(find.text('Incidents'), findsOneWidget);
-    expect(find.text('Water Sources'), findsOneWidget);
-    await tester.tap(find.text('Water Sources'));
+    expect(find.byTooltip('Show water sources'), findsOneWidget);
+    expect(find.byIcon(Icons.water_drop_rounded), findsOneWidget);
+    await tester.tap(find.byType(MapLayerToggleButton));
     await tester.pump();
     expect(selected, MapLayerMode.waterSources);
-    await tester.tap(find.text('Incidents'));
+
+    expect(find.byTooltip('Show incidents'), findsOneWidget);
+    expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
+    await tester.tap(find.byType(MapLayerToggleButton));
     await tester.pump();
     expect(selected, MapLayerMode.incidents);
   });

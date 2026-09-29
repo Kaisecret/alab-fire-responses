@@ -28,206 +28,239 @@ class HomeDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: dispatchStore,
-    builder: (context, _) {
-      final assignment = dispatchStore.activeAssignment;
-      return SingleChildScrollView(
+    builder: (context, _) => LayoutBuilder(
+      builder: (context, constraints) => CustomScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 110),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppHeader(
-              onNotificationTap: () => _showAlerts(context),
-              onStatusTap: () {},
-              notificationCount: dispatchStore.assignments.length + 3,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+        slivers: [
+          SliverToBoxAdapter(
+            // The empty state grows with the screen so the page never looks bare.
+            child: _overview(context, (constraints.maxHeight * 0.24).clamp(190.0, 280.0)),
+          ),
+          // Quick actions stretch to fill the space above the bottom navigation bar.
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. ACTIVE INCIDENT HERO CARD (Balanced, clean, with real Barangay and Reference Number)
-                  if (assignment == null)
-                    _emptyState()
-                  else
-                    Builder(
-                      builder: (context) {
-                        String actualDistance = 'Calculating…';
-                        String actualEta = 'Calculating…';
-
-                        final activeRoute = dispatchStore.activeRoadRoute;
-                        if (activeRoute != null) {
-                          actualDistance = activeRoute.formattedDistance;
-                          actualEta = activeRoute.formattedEta;
-                        } else {
-                          // Trigger road route computation if not yet active
-                          dispatchStore.updateRoadRoute();
-                          final double distanceM = (assignment.stationLatitude != null && assignment.stationLongitude != null)
-                              ? Geolocator.distanceBetween(
-                                  assignment.stationLatitude!,
-                                  assignment.stationLongitude!,
-                                  assignment.latitude,
-                                  assignment.longitude,
-                                )
-                              : 0.0;
-                          if (distanceM > 0) {
-                            final roadEstM = distanceM * 1.35;
-                            actualDistance = roadEstM >= 1000
-                                ? '${(roadEstM / 1000).toStringAsFixed(1)} km'
-                                : '${roadEstM.round()} m';
-                            actualEta = '~${(roadEstM / (35 * 1000 / 60)).ceil()} mins';
-                          }
-                        }
-
-                        return IncidentHeroCard(
-                          title: assignment.fireTypeLabel,
-                          location: assignment.locationSummary,
-                          severity: assignment.recipientStatus.replaceAll('_', ' '),
-                          eta: actualEta,
-                          distance: actualDistance,
-                          unitsAssigned: 'BFP Unit',
-                          onViewIncident: () => onNavigateTab?.call(2),
-                        );
-                      },
-                    ),
-
-                  const SizedBox(height: 16),
-
-                  // 2. STAT METRICS ROW (NEW ALERTS, ASSIGNED, RESOLVED with Green styling)
-                  StatMetricsRow(
-                    metrics: [
-                      MetricItemData(
-                        icon: Icons.notifications_active_rounded,
-                        iconColor: AppColors.primaryRed,
-                        iconBgColor: const Color(0xFFFEF2F2),
-                        title: 'NEW ALERTS',
-                        count: '${dispatchStore.assignments.length}',
-                        actionLabel: 'View all',
-                        onTap: () => onNavigateTab?.call(1),
-                      ),
-                      MetricItemData(
-                        icon: Icons.assignment_rounded,
-                        iconColor: AppColors.primaryRed,
-                        iconBgColor: const Color(0xFFFEF2F2),
-                        title: 'ASSIGNED',
-                        count: '${dispatchStore.assignments.length}',
-                        actionLabel: 'View all',
-                        onTap: () => onNavigateTab?.call(1),
-                      ),
-                      MetricItemData(
-                        icon: Icons.check_circle_rounded,
-                        iconColor: const Color(0xFF16A34A), // Emerald Green
-                        iconBgColor: const Color(0xFFDCFCE7), // Soft Green
-                        title: 'RESOLVED',
-                        count: '${dispatchStore.resolvedCount}',
-                        actionLabel: 'View all',
-                        onTap: () {
-                          if (session != null) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ResolvedIncidentsScreen(
-                                  session: session!,
-                                  dispatchStore: dispatchStore,
-                                  onNavigateTab: onNavigateTab,
-                                ),
-                              ),
-                            );
-                          } else {
-                            onNavigateTab?.call(1);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // 3. QUICK ACTIONS GRID (Restored 2x3 Grid)
-                  QuickActionsGrid(
-                    actions: [
-                      QuickActionItem(
-                        icon: Icons.fact_check_rounded,
-                        label: 'Verify Report',
-                        onTap: () => onNavigateTab?.call(1),
-                      ),
-                      QuickActionItem(
-                        icon: Icons.location_on_rounded,
-                        label: 'Open Map',
-                        onTap: () => onNavigateTab?.call(2),
-                      ),
-                      QuickActionItem(
-                        icon: Icons.group_add_rounded,
-                        label: 'Request Backup',
-                        onTap: () => _showBackupDialog(context),
-                      ),
-                      QuickActionItem(
-                        icon: Icons.water_drop_rounded,
-                        label: 'Water Sources',
-                        onTap: () => onNavigateTab?.call(5),
-                      ),
-                      QuickActionItem(
-                        icon: Icons.alt_route_rounded,
-                        label: 'Route Plan',
-                        onTap: () => onNavigateTab?.call(2),
-                      ),
-                      QuickActionItem(
-                        icon: Icons.shield_rounded,
-                        label: 'Incident Command',
-                        onTap: () => _showIncidentCommandDialog(context),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 4. LIVE DISPATCH SYNC BANNER
-                  LiquidGlassContainer(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    borderRadius: 18,
-                    onTap: () => onNavigateTab?.call(1),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.sync_rounded, color: AppColors.primaryRed, size: 20),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            dispatchStore.error ?? 'Live dispatches refresh automatically while this app is open.',
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  Expanded(child: _quickActions(context)),
+                  const SizedBox(height: 6),
+                  _syncBanner(),
                 ],
               ),
             ),
-          ],
-        ),
-      );
-    },
+          ),
+        ],
+      ),
+    ),
   );
 
-  Widget _emptyState() => LiquidGlassContainer(
-    padding: const EdgeInsets.all(24),
-    borderRadius: 22,
-    child: Column(
+  Widget _overview(BuildContext context, double emptyStateHeight) {
+    final assignment = dispatchStore.activeAssignment;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.notifications_none_rounded, color: AppColors.textSubtle, size: 44),
-        const SizedBox(height: 10),
-        Text(
-          dispatchStore.isLoading ? 'Loading assigned incidents…' : 'No active station dispatches',
-          style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.textDark),
+        AppHeader(
+          onNotificationTap: () => _showAlerts(context),
+          onStatusTap: () {},
+          notificationCount: dispatchStore.assignments.length + 3,
         ),
-        const SizedBox(height: 6),
-        const Text(
-          'New assignments will appear here automatically.',
-          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. ACTIVE INCIDENT HERO CARD (Balanced, clean, with real Barangay and Reference Number)
+              if (assignment == null)
+                _emptyState(emptyStateHeight)
+              else
+                Builder(
+                  builder: (context) {
+                    String actualDistance = 'Calculating…';
+                    String actualEta = 'Calculating…';
+
+                    final activeRoute = dispatchStore.activeRoadRoute;
+                    if (activeRoute != null) {
+                      actualDistance = activeRoute.formattedDistance;
+                      actualEta = activeRoute.formattedEta;
+                    } else {
+                      // Trigger road route computation if not yet active
+                      dispatchStore.updateRoadRoute();
+                      final double distanceM = (assignment.stationLatitude != null && assignment.stationLongitude != null)
+                          ? Geolocator.distanceBetween(
+                              assignment.stationLatitude!,
+                              assignment.stationLongitude!,
+                              assignment.latitude,
+                              assignment.longitude,
+                            )
+                          : 0.0;
+                      if (distanceM > 0) {
+                        final roadEstM = distanceM * 1.35;
+                        actualDistance = roadEstM >= 1000
+                            ? '${(roadEstM / 1000).toStringAsFixed(1)} km'
+                            : '${roadEstM.round()} m';
+                        actualEta = '~${(roadEstM / (35 * 1000 / 60)).ceil()} mins';
+                      }
+                    }
+
+                    return IncidentHeroCard(
+                      title: assignment.fireTypeLabel,
+                      location: assignment.locationSummary,
+                      severity: assignment.recipientStatus.replaceAll('_', ' '),
+                      eta: actualEta,
+                      distance: actualDistance,
+                      unitsAssigned: 'BFP Unit',
+                      onViewIncident: () => onNavigateTab?.call(2),
+                    );
+                  },
+                ),
+
+              const SizedBox(height: 16),
+
+              // 2. STAT METRICS ROW (NEW ALERTS, ASSIGNED, RESOLVED with Green styling)
+              StatMetricsRow(
+                metrics: [
+                  MetricItemData(
+                    icon: Icons.notifications_active_rounded,
+                    iconColor: AppColors.primaryRed,
+                    iconBgColor: const Color(0xFFFEF2F2),
+                    title: 'NEW ALERTS',
+                    count: '${dispatchStore.assignments.length}',
+                    actionLabel: 'View all',
+                    onTap: () => onNavigateTab?.call(1),
+                  ),
+                  MetricItemData(
+                    icon: Icons.assignment_rounded,
+                    iconColor: AppColors.primaryRed,
+                    iconBgColor: const Color(0xFFFEF2F2),
+                    title: 'ASSIGNED',
+                    count: '${dispatchStore.assignments.length}',
+                    actionLabel: 'View all',
+                    onTap: () => onNavigateTab?.call(1),
+                  ),
+                  MetricItemData(
+                    icon: Icons.check_circle_rounded,
+                    iconColor: const Color(0xFF16A34A), // Emerald Green
+                    iconBgColor: const Color(0xFFDCFCE7), // Soft Green
+                    title: 'RESOLVED',
+                    count: '${dispatchStore.resolvedCount}',
+                    actionLabel: 'View all',
+                    onTap: () {
+                      if (session != null) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ResolvedIncidentsScreen(
+                              session: session!,
+                              dispatchStore: dispatchStore,
+                              onNavigateTab: onNavigateTab,
+                            ),
+                          ),
+                        );
+                      } else {
+                        onNavigateTab?.call(1);
+                      }
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ],
+    );
+  }
+
+  // 3. QUICK ACTIONS GRID (Restored 2x3 Grid)
+  Widget _quickActions(BuildContext context) => QuickActionsGrid(
+    fillHeight: true,
+    actions: [
+      QuickActionItem(
+        icon: Icons.fact_check_rounded,
+        label: 'Verify Report',
+        onTap: () => onNavigateTab?.call(1),
+      ),
+      QuickActionItem(
+        icon: Icons.location_on_rounded,
+        label: 'Open Map',
+        onTap: () => onNavigateTab?.call(2),
+      ),
+      QuickActionItem(
+        icon: Icons.group_add_rounded,
+        label: 'Request Backup',
+        onTap: () => _showBackupDialog(context),
+      ),
+      QuickActionItem(
+        icon: Icons.water_drop_rounded,
+        label: 'Water Sources',
+        onTap: () => onNavigateTab?.call(5),
+      ),
+      QuickActionItem(
+        icon: Icons.alt_route_rounded,
+        label: 'Route Plan',
+        onTap: () => onNavigateTab?.call(2),
+      ),
+      QuickActionItem(
+        icon: Icons.shield_rounded,
+        label: 'Incident Command',
+        onTap: () => _showIncidentCommandDialog(context),
+      ),
+    ],
+  );
+
+  // 4. LIVE DISPATCH SYNC BANNER
+  Widget _syncBanner() => LiquidGlassContainer(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    borderRadius: 18,
+    onTap: () => onNavigateTab?.call(1),
+    child: Row(
+      children: [
+        const Icon(Icons.sync_rounded, color: AppColors.primaryRed, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            dispatchStore.error ?? 'Live dispatches refresh automatically while this app is open.',
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  // A minimum height (not a fixed one) lets large text grow the card instead of overflowing.
+  Widget _emptyState(double minHeight) => ConstrainedBox(
+    constraints: BoxConstraints(minWidth: double.infinity, minHeight: minHeight),
+    child: LiquidGlassContainer(
+      padding: const EdgeInsets.all(24),
+      borderRadius: 24,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 84,
+            height: 84,
+            decoration: const BoxDecoration(color: Color(0xFFF1F5F9), shape: BoxShape.circle),
+            child: const Icon(Icons.notifications_none_rounded, color: AppColors.textSubtle, size: 46),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            dispatchStore.isLoading ? 'Loading assigned incidents…' : 'No active station dispatches',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textDark),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'New assignments will appear here automatically.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13.5, color: AppColors.textMuted),
+          ),
+        ],
+      ),
     ),
   );
 

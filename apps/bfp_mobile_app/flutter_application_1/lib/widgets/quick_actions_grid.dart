@@ -17,23 +17,47 @@ class QuickActionItem {
 class QuickActionsGrid extends StatelessWidget {
   final List<QuickActionItem> actions;
 
+  /// When true the rows grow to share the parent's height (up to
+  /// [maxRowHeight] each). The parent must then give the grid a bounded height.
+  final bool fillHeight;
+
+  static const double maxRowHeight = 96;
+
   const QuickActionsGrid({
     super.key,
     required this.actions,
+    this.fillHeight = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final rows = [
+      for (int i = 0; i < actions.length; i += 2)
+        Row(
+          crossAxisAlignment: fillHeight
+              ? CrossAxisAlignment.stretch
+              : CrossAxisAlignment.center,
+          children: [
+            Expanded(child: _buildActionCapsule(actions[i])),
+            const SizedBox(width: 10),
+            if (i + 1 < actions.length)
+              Expanded(child: _buildActionCapsule(actions[i + 1]))
+            else
+              const Expanded(child: SizedBox.shrink()),
+          ],
+        ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section Title
         const Padding(
-          padding: EdgeInsets.only(left: 4.0, bottom: 8.0),
+          padding: EdgeInsets.only(left: 4.0, bottom: 10.0),
           child: Text(
             'QUICK ACTIONS',
             style: TextStyle(
-              fontSize: 11.5,
+              fontSize: 12.5,
               fontWeight: FontWeight.w800,
               color: AppColors.textDark,
               letterSpacing: 0.8,
@@ -42,62 +66,65 @@ class QuickActionsGrid extends StatelessWidget {
         ),
 
         // 3 Rows x 2 Columns Grid
-        Column(
-          children: [
-            for (int i = 0; i < actions.length; i += 2)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildActionCapsule(actions[i]),
+        if (fillHeight)
+          Expanded(
+            child: Column(
+              children: [
+                for (final row in rows)
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxHeight: maxRowHeight,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 10.0),
+                        child: row,
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    if (i + 1 < actions.length)
-                      Expanded(
-                        child: _buildActionCapsule(actions[i + 1]),
-                      )
-                    else
-                      const Expanded(child: SizedBox.shrink()),
-                  ],
+                  ),
+              ],
+            ),
+          )
+        else
+          Column(
+            children: [
+              for (final row in rows)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10.0),
+                  child: row,
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
       ],
     );
   }
 
   Widget _buildActionCapsule(QuickActionItem action) {
     return LiquidGlassContainer(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      borderRadius: 16,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      borderRadius: 18,
       onTap: action.onTap,
       child: Row(
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              action.icon,
-              size: 16,
-              color: AppColors.primaryRed,
-            ),
+            child: Icon(action.icon, size: 22, color: AppColors.primaryRed),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               action.label,
               style: const TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
                 color: AppColors.textDark,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),

@@ -13,7 +13,7 @@ import 'screens/home_dashboard_screen.dart';
 import 'screens/incidents_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/map_screen.dart';
-import 'widgets/map_layer_tabs.dart';
+import 'widgets/map_layer_toggle.dart';
 import 'screens/reports_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/change_temporary_password_screen.dart';

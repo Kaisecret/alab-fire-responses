@@ -22,6 +22,7 @@ class WaterSourcesMap extends StatefulWidget {
     this.stationPosition,
     this.responderPosition,
     this.onLocate,
+    this.layerControl,
   });
 
   final MobileBfpApi api;
@@ -30,6 +31,9 @@ class WaterSourcesMap extends StatefulWidget {
   final LatLng? stationPosition;
   final LatLng? responderPosition;
   final VoidCallback? onLocate;
+
+  /// Optional map control shown below the header, such as the layer toggle.
+  final Widget? layerControl;
 
   @override
   State<WaterSourcesMap> createState() => _WaterSourcesMapState();
@@ -263,6 +267,9 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
     super.dispose();
   }
 
+  // Overlays start just below the header card.
+  double get _overlayTop => MediaQuery.paddingOf(context).top + 92;
+
   @override
   Widget build(BuildContext context) => Stack(
     children: [
@@ -428,11 +435,13 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
           ),
         ),
       ),
+      if (widget.layerControl != null)
+        Positioned(top: _overlayTop, right: 16, child: widget.layerControl!),
       if (_message != null)
         Positioned(
-          top: 151,
+          top: _overlayTop,
           left: 16,
-          right: 16,
+          right: widget.layerControl == null ? 16 : 72,
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(10),

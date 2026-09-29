@@ -2158,7 +2158,7 @@ export function MunicipalIncidentDetail({
               ) : (
                 <>
                   <i className="fa-solid fa-bell" />
-                  <span>{incident.accessScope === "OBSERVER" ? "ASSIGN BFP STATIONS" : "ACKNOWLEDGE &amp; RESPOND"}</span>
+                  <span>{incident.accessScope === "OBSERVER" ? "ASSIGN BFP STATIONS" : "ACKNOWLEDGE & RESPOND"}</span>
                 </>
               )}
             </button>
