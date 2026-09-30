@@ -38,6 +38,16 @@ const releaseMigrations = [
         and to_jsonb(source)->>'original_latitude' is not null
         and to_jsonb(source)->>'original_longitude' is not null`,
   },
+  {
+    version: "20260930030000",
+    name: "link_duplicate_fire_reports",
+    appliedCheck: `select exists(
+      select 1 from information_schema.columns
+       where table_schema = 'public'
+         and table_name = 'fire_reports'
+         and column_name = 'duplicate_of_report_id'
+    ) as applied`,
+  },
 ];
 
 const client = new pg.Client({

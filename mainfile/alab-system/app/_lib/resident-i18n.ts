@@ -757,6 +757,8 @@ export function getLocalizedStatusLabel(status: string, lang: ResidentLanguage):
       case "REJECTED":
       case "FALSE_REPORT":
         return "Rejected";
+      case "DUPLICATE":
+        return "Already reported";
       default:
         return status;
     }
@@ -769,6 +771,7 @@ export function getLocalizedStatusLabel(status: string, lang: ResidentLanguage):
     if (status === "UNDER_CONTROL") return "Kontrolado";
     if (["RESOLVED", "CLOSED"].includes(status)) return "Naresolba";
     if (["REJECTED", "FALSE_REPORT"].includes(status)) return "Ginpangindi";
+    if (status === "DUPLICATE") return "Naireport na";
     return status;
   }
   // Tagalog default
@@ -779,5 +782,6 @@ export function getLocalizedStatusLabel(status: string, lang: ResidentLanguage):
   if (status === "UNDER_CONTROL") return "Kontrolado na";
   if (["RESOLVED", "CLOSED"].includes(status)) return "Naresolba";
   if (["REJECTED", "FALSE_REPORT"].includes(status)) return "Tinanggihan";
+  if (status === "DUPLICATE") return "Naiulat na";
   return status;
 }

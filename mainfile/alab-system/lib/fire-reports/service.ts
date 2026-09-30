@@ -22,6 +22,7 @@ import {
   type BuildingDensityStatus,
 } from "./building-density";
 import { assessReportDanger } from "./danger-assessment";
+import { findOpenIncidentNear } from "./duplicates";
 
 export type PhotoMetadata = { storageKey: string; originalFileName: string; mimeType: string; fileSizeBytes: number };
 
@@ -93,6 +94,13 @@ export async function createResidentFireReport(userId: string, input: FireReport
     const reference = referenceNumber();
     const now = new Date();
 
+    // A second report within 50 m of an open fire joins that incident instead
+    // of raising another alarm. The lock makes simultaneous reports in one
+    // municipality take turns, so they cannot both become the first report.
+    await client.query("select pg_advisory_xact_lock(hashtext($1))", [`fire-report-area:${municipalityId}`]);
+    const linkedIncident = await findOpenIncidentNear(client, input.latitude, input.longitude);
+    const initialStatus = linkedIncident ? "DUPLICATE" : "PENDING_VERIFICATION";
+
     await client.query(
       `insert into fire_reports (
         id, reference_number, resident_profile_id, reporter_name_snapshot, reporter_phone_snapshot, fire_type, description,
@@ -102,8 +110,8 @@ export async function createResidentFireReport(userId: string, input: FireReport
         weather_wind_speed, weather_wind_direction, weather_wind_condition, calculated_severity, severity_score, severity_factors,
         detected_building_density, building_density_confidence, building_density_building_count,
         building_density_minimum_gap_meters, building_density_source, building_density_assessed_at,
-        submitted_at, updated_at
-      ) values ($1,$2,$3,$4,$5,$6,$7,'PENDING_VERIFICATION',$8,$9,$10,'GPS',$11,true,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$36)`,
+        submitted_at, updated_at, duplicate_of_report_id
+      ) values ($1,$2,$3,$4,$5,$6,$7,$37,$8,$9,$10,'GPS',$11,true,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$36,$38)`,
       [
         reportId, reference, resident.id, resident.name, resident.phone, input.fireType, input.description || "No description provided.",
         input.latitude, input.longitude, input.locationAccuracy,
@@ -114,7 +122,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
         weatherWindCondition || null, severityAssessment.level, severityAssessment.score, JSON.stringify(severityAssessment.factors),
         densityAssessment.status, densityAssessment.confidence, densityAssessment.buildingCount,
         densityAssessment.minimumGapMeters, densityAssessment.source, densityAssessment.assessedAt,
-        now
+        now, initialStatus, linkedIncident?.id ?? null,
       ],
     );
     for (const evidence of densityAssessment.evidence) {
@@ -133,8 +141,30 @@ export async function createResidentFireReport(userId: string, input: FireReport
     }
     await client.query(
       `insert into fire_report_status_history (fire_report_id, previous_status, next_status, actor_user_id, resident_message, created_at)
-       values ($1, null, 'PENDING_VERIFICATION', $2, 'Your fire report was submitted and is pending verification.', $3)`, [reportId, userId, now],
+       values ($1, null, $4, $2, $5, $3)`,
+      [
+        reportId, userId, now, initialStatus,
+        linkedIncident
+          ? `This fire was already reported (${linkedIncident.referenceNumber}). Your report and photos were added to it.`
+          : "Your fire report was submitted and is pending verification.",
+      ],
     );
+    if (linkedIncident) {
+      // BFP already has this fire open; the extra report shows on that
+      // incident without sounding a second alarm.
+      return {
+        id: reportId,
+        referenceNumber: reference,
+        status: "DUPLICATE" as const,
+        calculatedSeverity: severityAssessment.level,
+        severityScore: severityAssessment.score,
+        severityFactors: severityAssessment.factors,
+        detectedBuildingDensity: densityAssessment.status,
+        buildingDensityConfidence: densityAssessment.confidence,
+        buildingDensityBuildingCount: densityAssessment.buildingCount,
+        linkedTo: { id: linkedIncident.id, referenceNumber: linkedIncident.referenceNumber },
+      };
+    }
     const [municipalRecipients, provincialRecipients] = await Promise.all([
       listMunicipalNotificationRecipients(client, municipalityId),
       listProvincialNotificationRecipients(client),
@@ -178,6 +208,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
       detectedBuildingDensity: densityAssessment.status,
       buildingDensityConfidence: densityAssessment.confidence,
       buildingDensityBuildingCount: densityAssessment.buildingCount,
+      linkedTo: null,
     };
   });
 }
@@ -292,7 +323,8 @@ export async function findResidentReport(userId: string, reportId: string) {
     weather_temperature: string | null; weather_humidity: string | null; weather_wind_speed: string | null;
     weather_wind_direction: string | null; weather_wind_condition: string | null;
     calculated_severity: string | null; severity_score: number | null; severity_factors: string[] | null;
-  }>(`select fr.id, fr.reference_number, fr.status, fr.fire_type, fr.description, fr.nearest_landmark, fr.latitude, fr.longitude, fr.submitted_at,
+    duplicate_of_report_id: string | null;
+  }>(`select fr.id, fr.reference_number, fr.status, fr.duplicate_of_report_id, fr.fire_type, fr.description, fr.nearest_landmark, fr.latitude, fr.longitude, fr.submitted_at,
              m.name as municipality, b.name as barangay, fr.resident_profile_id,
              fr.structure_material, fr.reported_house_density, fr.house_density, fr.route_accessibility,
              fr.weather_temperature, fr.weather_humidity, fr.weather_wind_speed, fr.weather_wind_direction, fr.weather_wind_condition,

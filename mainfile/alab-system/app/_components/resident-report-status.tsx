@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 import { useResidentLanguage, getLocalizedStatusLabel, type ResidentLanguage } from "../_lib/resident-i18n";
 import { situationForFireType } from "../../lib/fire-reports/fire-type-situation";
+import { SharedIncidentCard, SharedIncidentPopup, type SharedIncident } from "./resident-shared-incident";
 
 type Report = {
   id: string;
@@ -31,6 +32,8 @@ type Report = {
   severity_factors?: string[] | null;
   history: Array<{ next_status: FireReportStatus; resident_message: string | null; created_at: string }>;
   photos: Array<{ url: string | null }>;
+  /** Present when other residents reported the same fire within 50 m. */
+  incident?: SharedIncident | null;
 };
 
 const detailStyles = `
@@ -763,7 +766,10 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
     };
   }, [reportId]);
 
-  const activeTimelineIndex = useMemo(() => (report ? timelineIndex(report.status) : 0), [report]);
+  const followsIncident = Boolean(report?.incident && !report.incident.viewerIsPrimary);
+  const timelineStatus = (followsIncident ? report!.incident!.status : report?.status) as FireReportStatus | undefined;
+  const timelineHistory = (followsIncident ? report!.incident!.history : report?.history ?? []) as Report["history"];
+  const activeTimelineIndex = useMemo(() => (timelineStatus ? timelineIndex(timelineStatus) : 0), [timelineStatus]);
 
   const photos = useMemo(() => {
     return (report?.photos ?? []).filter((p): p is { url: string } => Boolean(p && p.url));
@@ -896,6 +902,9 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
           <span className="resident-status-pill">{getLocalizedStatusLabel(report.status, lang)}</span>
         </div>
       </section>
+
+      {report.incident && <SharedIncidentCard incident={report.incident} lang={lang} />}
+      {report.incident && <SharedIncidentPopup reportId={report.id} incident={report.incident} lang={lang} />}
 
       {report.calculated_severity && (
         <section className="resident-detail-card" aria-label="Level of Danger details">
@@ -1098,7 +1107,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
               {timeline.map((item, index) => {
                 const isComplete = index < activeTimelineIndex;
                 const isCurrent = index === activeTimelineIndex;
-                const historyItem = report.history.find((entry) => entry.next_status === item.status);
+                const historyItem = timelineHistory.find((entry) => entry.next_status === item.status);
                 return (
                   <div
                     key={item.status}

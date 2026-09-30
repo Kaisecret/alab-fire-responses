@@ -240,9 +240,9 @@ const dashboardStyles = `
   /* ========== TWO COLUMN SECTION ========== */
   .pbfp-main-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 300px;
     gap: 10px;
-    align-items: stretch;
+    align-items: start;
   }
 
   /* LEFT CARD: MUNICIPAL READINESS TABLE */
@@ -619,145 +619,57 @@ const dashboardStyles = `
     font-weight: 750;
   }
 
-  /* RIGHT CARD: ACTIVE INCIDENTS */
+  /* RIGHT RAIL: COMPACT ACTIVE INCIDENTS (stays in view while scrolling) */
   .pbfp-incidents-card {
+    position: sticky;
+    top: 84px;
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
-    padding: 1.15rem 1.35rem;
+    border: 1px solid #DCE4EE;
+    border-radius: 18px;
+    box-shadow: 0 16px 36px -28px rgba(20, 35, 59, 0.42);
+    padding: 0.95rem;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
-    height: 100%;
+    gap: 0.7rem;
     animation: pbfpCardReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-
-  .pbfp-incidents-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: 0.2rem;
-  }
-
-  .pbfp-incidents-title {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    font-size: 1.05rem;
-    font-weight: 800;
-    color: #0F172A;
-  }
-
-  .pbfp-incidents-title i {
-    color: #E23632;
-    font-size: 1rem;
-  }
-
-  .pbfp-view-all-link {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: #E23632;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    transition: opacity 0.15s;
-  }
-
-  .pbfp-view-all-link:hover {
-    opacity: 0.8;
-  }
-
-  .pbfp-incidents-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    flex: 1;
-    justify-content: space-between;
-  }
-
+  .pbfp-incidents-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .pbfp-incidents-title { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 850; color: #14233B; }
+  .pbfp-incidents-title .pbfp-title-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: #FEF2F2; color: #DC2626; font-size: 0.8rem; }
+  .pbfp-incidents-count { min-width: 22px; height: 22px; padding: 0 0.4rem; display: grid; place-items: center; border-radius: 999px; background: #DC2626; color: #FFFFFF; font-size: 0.68rem; font-weight: 850; }
+  .pbfp-incidents-count.zero { background: #E2E8F0; color: #64748B; }
+  .pbfp-view-all-link { font-size: 0.72rem; font-weight: 800; color: #DC2626; text-decoration: none; white-space: nowrap; }
+  .pbfp-view-all-link:hover { opacity: 0.8; }
+  .pbfp-incidents-list { display: flex; flex-direction: column; gap: 0.4rem; }
   .pbfp-incident-box {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.65rem;
+    border: 1px solid #EDF1F6;
+    border-radius: 12px;
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 1.05rem 1.25rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.45rem;
-    flex: 1;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s;
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
   }
-
-  .pbfp-incident-box:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 26px rgba(15, 23, 42, 0.1), 0 2px 6px rgba(15, 23, 42, 0.06);
-    border-color: #CBD5E1;
-  }
-
-  .pbfp-incident-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-
-  .pbfp-incident-name {
-    font-size: 0.88rem;
-    font-weight: 800;
-    color: #0F172A;
-  }
-
-  .pbfp-alarm-pill {
-    color: #FFFFFF;
-    font-size: 0.68rem;
-    font-weight: 800;
-    padding: 0.2rem 0.65rem;
-    border-radius: 999px;
-    letter-spacing: 0.02em;
-  }
-
-  .pbfp-alarm-pill.red {
-    background: #E23632;
-  }
-
-  .pbfp-alarm-pill.orange {
-    background: #D97706;
-  }
-
-  .pbfp-incident-desc {
-    font-size: 0.78rem;
-    color: #475569;
-    font-weight: 500;
-    line-height: 1.45;
-  }
-
-  .pbfp-incident-bottom-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.73rem;
-    color: #64748B;
-    padding-top: 0.45rem;
-    border-top: 1px solid #F8FAFC;
-  }
-
-  .pbfp-meta-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-  }
-
-  .pbfp-meta-item i {
-    color: #94A3B8;
-    font-size: 0.75rem;
-  }
-
-  .pbfp-meta-item i.fa-location-dot {
-    color: #E23632;
-  }
+  .pbfp-incident-box:hover { border-color: #D5DFEB; box-shadow: 0 10px 22px -18px rgba(20, 35, 59, 0.5); transform: translateY(-1px); }
+  .pbfp-incident-box:focus-visible { outline: 3px solid rgba(37, 99, 235, 0.23); outline-offset: 2px; }
+  .pbfp-incident-dot { width: 10px; height: 10px; border-radius: 50%; background: #DC2626; box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.14); animation: pbfpDotPulse 1.8s ease-in-out infinite; }
+  .pbfp-incident-dot.orange { background: #D97706; box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.14); }
+  .pbfp-incident-main { min-width: 0; display: grid; gap: 0.12rem; }
+  .pbfp-incident-name { color: #14233B; font-size: 0.78rem; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pbfp-incident-meta { color: #7B889A; font-size: 0.64rem; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pbfp-alarm-pill { padding: 0.18rem 0.5rem; border-radius: 999px; font-size: 0.6rem; font-weight: 850; letter-spacing: 0.02em; white-space: nowrap; }
+  .pbfp-alarm-pill.red { background: #FEE4E2; color: #B42318; }
+  .pbfp-alarm-pill.orange { background: #FEF0C7; color: #B54708; }
+  .pbfp-incidents-empty { display: grid; justify-items: center; gap: 0.3rem; padding: 1.1rem 0.6rem; border: 1px dashed #D5DFEB; border-radius: 12px; background: #F8FAFC; text-align: center; }
+  .pbfp-incidents-empty i { color: #10A77A; font-size: 1.25rem; }
+  .pbfp-incidents-empty strong { color: #14233B; font-size: 0.8rem; }
+  .pbfp-incidents-empty span { color: #7B889A; font-size: 0.68rem; font-weight: 600; }
+  .pbfp-incidents-more { color: #64748B; font-size: 0.66rem; font-weight: 700; text-align: center; }
+  @keyframes pbfpDotPulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.14); } 50% { box-shadow: 0 0 0 7px rgba(220, 38, 38, 0.05); } }
 
   @media (max-width: 1200px) {
     .pbfp-kpi-row {
@@ -766,6 +678,7 @@ const dashboardStyles = `
     .pbfp-main-grid {
       grid-template-columns: 1fr;
     }
+    .pbfp-incidents-card { position: static; }
   }
 
   @container readiness-card (max-width: 760px) {
@@ -1129,9 +1042,68 @@ export function ProvincialBfpDashboard() {
           </Link>
         </section>
 
-        {/* ===== TWO-COLUMN MAIN SECTION ===== */}
+        {/* ===== ANALYTICS FIRST, WITH A COMPACT INCIDENTS RAIL ===== */}
         <div className="pbfp-main-grid">
-          {/* LEFT: Municipal Readiness Table (No Side Scroll + Page Size 8) */}
+          <ProvincialIncidentAnalytics municipalities={municipalities.map(({ id, name }) => ({ id, name }))} />
+          {/* RIGHT RAIL: compact active incidents */}
+          <section className="pbfp-incidents-card" aria-labelledby="pbfp-incidents-heading">
+            <div className="pbfp-incidents-header">
+              <div className="pbfp-incidents-title">
+                <span className="pbfp-title-icon" aria-hidden="true"><i className="fa-solid fa-fire" /></span>
+                <span id="pbfp-incidents-heading">Active Incidents</span>
+                <span className={`pbfp-incidents-count ${incidents.length === 0 ? 'zero' : ''}`}>{incidents.length}</span>
+              </div>
+              <Link href="/provincial-bfp/incidents" prefetch={true} className="pbfp-view-all-link">View all</Link>
+            </div>
+
+            <div className="pbfp-incidents-list">
+              {incidentFeedLoading && incidents.length === 0 ? (
+                <div className="pbfp-incidents-empty">
+                  <i className="fa-solid fa-spinner fa-spin" style={{ color: '#DC2626' }} aria-hidden="true" />
+                  <span>Loading incidents…</span>
+                </div>
+              ) : incidents.length === 0 ? (
+                <div className="pbfp-incidents-empty">
+                  <i className="fa-solid fa-shield-halved" aria-hidden="true" />
+                  <strong>All clear</strong>
+                  <span>No active incidents in Antique</span>
+                </div>
+              ) : (
+                <>
+                  {incidents.slice(0, 6).map((inc) => {
+                    const severe = ['ALARM_3', 'ALARM_2', 'CRITICAL', 'HIGH'].includes(inc.calculatedSeverity ?? '');
+                    const meta = [
+                      inc.referenceNumber,
+                      formatTimeAgo(inc.submittedAt),
+                      inc.assignedStationCount > 0 ? `${inc.assignedStationCount} station${inc.assignedStationCount === 1 ? '' : 's'}` : null,
+                      inc.openAssistanceCount > 0 ? `${inc.openAssistanceCount} aid` : null,
+                    ].filter(Boolean).join(' · ');
+                    return (
+                      <Link
+                        key={inc.id}
+                        href={`/provincial-bfp/incidents?incident=${encodeURIComponent(inc.id)}`}
+                        className="pbfp-incident-box"
+                        title={`${inc.barangay ? `Brgy. ${inc.barangay}, ` : ''}${inc.originMunicipality} · ${inc.fireType}`}
+                      >
+                        <span className={`pbfp-incident-dot ${severe ? '' : 'orange'}`} aria-hidden="true" />
+                        <span className="pbfp-incident-main">
+                          <span className="pbfp-incident-name">{inc.barangay ? `${inc.barangay}, ` : ''}{inc.originMunicipality}</span>
+                          <span className="pbfp-incident-meta">{meta}</span>
+                        </span>
+                        <span className={`pbfp-alarm-pill ${severe ? 'red' : 'orange'}`}>
+                          {inc.calculatedSeverity ? inc.calculatedSeverity.replace(/_/g, ' ') : inc.status.replace(/_/g, ' ')}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                  {incidents.length > 6 && <div className="pbfp-incidents-more">+{incidents.length - 6} more</div>}
+                </>
+              )}
+            </div>
+          </section>
+        </div>
+
+        {/* Municipal Readiness Table (No Side Scroll + Page Size 8) */}
           <section className="pbfp-table-card">
             <div className="pbfp-card-header">
               <div className="pbfp-card-header-left">
@@ -1313,88 +1285,6 @@ export function ProvincialBfpDashboard() {
             </div>
           </section>
 
-          {/* RIGHT: Active Incidents Card */}
-          <section className="pbfp-incidents-card">
-            <div className="pbfp-incidents-header">
-              <div className="pbfp-incidents-title">
-                <i className="fa-solid fa-triangle-exclamation" />
-                <span>Active Incidents</span>
-              </div>
-              <Link href="/provincial-bfp/incidents" prefetch={true} className="pbfp-view-all-link">
-                View All &rarr;
-              </Link>
-            </div>
-
-            <div className="pbfp-incidents-list">
-              {incidentFeedLoading && incidents.length === 0 ? (
-                <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748B', fontSize: '0.82rem' }}>
-                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '0.4rem', color: '#DC2626' }} />
-                  Loading active incidents...
-                </div>
-              ) : incidents.length === 0 ? (
-                <div
-                  style={{
-                    padding: '2.5rem 1.25rem',
-                    textAlign: 'center',
-                    color: '#64748B',
-                    background: '#FFFFFF',
-                    borderRadius: '14px',
-                    border: '1px dashed #CBD5E1',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.4rem',
-                    flex: 1,
-                  }}
-                >
-                  <i className="fa-solid fa-shield-halved" style={{ fontSize: '1.8rem', color: '#10B981', marginBottom: '0.25rem' }} />
-                  <div style={{ fontWeight: 800, color: '#1E293B', fontSize: '0.92rem' }}>No Active Incidents</div>
-                  <div style={{ fontSize: '0.78rem', color: '#64748B' }}>
-                    All municipal jurisdictions in Antique are currently all-clear.
-                  </div>
-                </div>
-              ) : (
-                incidents.slice(0, 3).map((inc) => (
-                  <Link
-                    key={inc.id}
-                    href={`/provincial-bfp/incidents?incident=${encodeURIComponent(inc.id)}`}
-                    className="pbfp-incident-box"
-                    style={{ textDecoration: 'none', color: 'inherit' }}
-                  >
-                    <div className="pbfp-incident-header">
-                      <span className="pbfp-incident-name">
-                        {inc.barangay ? `Brgy. ${inc.barangay}, ` : ''}{inc.originMunicipality}
-                      </span>
-                      <span
-                        className={`pbfp-alarm-pill ${
-                          inc.calculatedSeverity === 'ALARM_3' || inc.calculatedSeverity === 'ALARM_2' ? 'red' : 'orange'
-                        }`}
-                      >
-                        {inc.calculatedSeverity ? inc.calculatedSeverity.replace(/_/g, ' ') : inc.status.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                    <p className="pbfp-incident-desc">
-                      Ref #{inc.referenceNumber} • {inc.fireType}
-                      {inc.assignedStationCount > 0 && ` • ${inc.assignedStationCount} responding station${inc.assignedStationCount === 1 ? '' : 's'}`}
-                      {inc.observers.length > 0 && ` • ${inc.observers.length} observer${inc.observers.length === 1 ? '' : 's'}`}
-                      {inc.openAssistanceCount > 0 && ` • ${inc.openAssistanceCount} mutual aid`}
-                    </p>
-                    <div className="pbfp-incident-bottom-meta">
-                      <span className="pbfp-meta-item">
-                        <i className="fa-solid fa-location-dot" /> Origin: {inc.originMunicipality} BFP
-                      </span>
-                      <span className="pbfp-meta-item">
-                        <i className="fa-regular fa-clock" /> {formatTimeAgo(inc.submittedAt)}
-                      </span>
-                    </div>
-                  </Link>
-                ))
-              )}
-            </div>
-          </section>
-        </div>
-        <ProvincialIncidentAnalytics municipalities={municipalities.map(({ id, name }) => ({ id, name }))} />
       </div>
     </>
   );

@@ -54,7 +54,9 @@ type Incident = {
   calculatedSeverity?: "LOW" | "MODERATE" | "HIGH" | "CRITICAL" | null;
   severityScore?: number | null;
   severityFactors?: string[] | null;
-  photos: Array<{ url: string | null }>;
+  photos: Array<{ url: string | null; label?: string }>;
+  /** Residents who reported this fire, counting linked reports within 50 m. */
+  reporterCount?: number;
   history: Array<{ status: FireReportStatus; message: string | null; createdAt: string }>;
   previousReports: Array<{ id: string; referenceNumber: string; status: FireReportStatus; submittedAt: string }>;
 };
@@ -830,6 +832,7 @@ const detailStyles = `
     background: #FAFAFA;
     border: 1.5px dashed #CBD5E1;
   }
+  .mbfp-reporters-chip { display:inline-flex; align-items:center; gap:.35rem; padding:.2rem .6rem; border:1px solid #FECACA; border-radius:999px; background:#FEF2F2; color:#B42318; font-size:.72rem; font-weight:800; }
   .mbfp-no-photo-badge {
     font-size: 0.69rem;
     font-weight: 800;
@@ -2083,7 +2086,7 @@ export function MunicipalIncidentDetail({
   const localDispatchUnderway = incident.accessScope === "ORIGIN" && isResponding;
   const canResolve = incident.accessScope === "ORIGIN" && canMunicipalResolveReport(incident.status);
   const isTerminal = ["RESOLVED", "CLOSED", "REJECTED", "FALSE_REPORT", "DUPLICATE"].includes(incident.status);
-  const validPhotos = (incident.photos ?? []).filter((p): p is { url: string } => Boolean(p && p.url));
+  const validPhotos = (incident.photos ?? []).filter((p): p is { url: string; label?: string } => Boolean(p && p.url));
   const evidencePhoto = validPhotos[activePhotoIdx]?.url || validPhotos[0]?.url || null;
 
   return (
@@ -2472,8 +2475,13 @@ export function MunicipalIncidentDetail({
                       <i className="fa-solid fa-camera" />
                       <span>Attached Evidence Photo</span>
                     </h2>
-                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748B" }}>
-                      {validPhotos.length} {validPhotos.length === 1 ? "Photo Attached" : "Photos Attached"}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                      {(incident.reporterCount ?? 1) > 1 && <span className="mbfp-reporters-chip">
+                        <i className="fa-solid fa-users" aria-hidden="true" /> {incident.reporterCount} residents reported
+                      </span>}
+                      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748B" }}>
+                        {validPhotos.length} {validPhotos.length === 1 ? "Photo Attached" : "Photos Attached"}
+                      </span>
                     </span>
                   </div>
 
@@ -2512,7 +2520,7 @@ export function MunicipalIncidentDetail({
                           aria-label={`Select photo ${idx + 1}`}
                         >
                           <img src={p.url} alt={`Evidence thumb ${idx + 1}`} />
-                          <span>Photo {idx + 1}</span>
+                          <span>{p.label ?? `Photo ${idx + 1}`}</span>
                         </button>
                       ))}
                     </div>

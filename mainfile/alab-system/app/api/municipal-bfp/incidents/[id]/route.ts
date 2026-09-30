@@ -204,7 +204,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       getIncidentAlarmStatus(id),
     ]);
 
-    const photos = await Promise.all(
+    const photos: Array<{ url: string | null; label?: string }> = await Promise.all(
       (photoResult.rows || []).map(async (photo) => {
         try {
           return { url: await getFireReportPhotoUrl(photo.storage_key) };
@@ -213,6 +213,25 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         }
       }),
     );
+
+    // Residents who reported the same fire within 50 m were linked to this
+    // incident; their photos join the evidence gallery.
+    const linked = await database.query<{ id: string; referenceNumber: string; submittedAt: string; storageKeys: string[] | null }>(
+      `select fr.id, fr.reference_number as "referenceNumber", fr.submitted_at as "submittedAt",
+              array_remove(array_agg(photo.storage_key order by photo.uploaded_at), null) as "storageKeys"
+         from fire_reports fr
+         left join fire_report_photos photo on photo.fire_report_id = fr.id
+        where fr.duplicate_of_report_id = $1
+        group by fr.id
+        order by fr.submitted_at asc`,
+      [id],
+    ).catch(() => ({ rows: [] as Array<{ id: string; referenceNumber: string; submittedAt: string; storageKeys: string[] | null }> }));
+    for (const [index, report] of linked.rows.entries()) {
+      for (const key of report.storageKeys ?? []) {
+        const url = await getFireReportPhotoUrl(key).catch(() => null);
+        if (url) photos.push({ url, label: `Reporter ${index + 2}` });
+      }
+    }
 
     return NextResponse.json(
       {
@@ -223,6 +242,12 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
           assistanceRequests: coordination.assistanceRequests,
           alarmStatus,
           photos,
+          reporterCount: 1 + linked.rows.length,
+          linkedReports: linked.rows.map((report) => ({
+            referenceNumber: report.referenceNumber,
+            submittedAt: report.submittedAt,
+            photoCount: report.storageKeys?.length ?? 0,
+          })),
           history: historyResult.rows,
           previousReports: previousResult.rows,
         },

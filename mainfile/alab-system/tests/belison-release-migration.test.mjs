@@ -20,6 +20,13 @@ test("deployment build applies Belison coordinates before the app is built", asy
       );
       create table public.intermunicipal_assistance_requests (is_provincial_command boolean);
       create table public.fire_trucks (record_origin text not null);
+      create table public.fire_reports (
+        id uuid primary key default gen_random_uuid(),
+        status text not null,
+        latitude numeric(9, 6) not null,
+        longitude numeric(9, 6) not null,
+        submitted_at timestamptz not null default now()
+      );
       insert into public.fire_trucks
         select 'BFP_FIRETRUCK_INVENTORY' from generate_series(1, 29);
     `);
