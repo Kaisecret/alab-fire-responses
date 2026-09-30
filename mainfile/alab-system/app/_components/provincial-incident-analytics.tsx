@@ -517,9 +517,7 @@ function MonthlyTrend({
 
   return <>
     <div className="pia-chart-caption">
-      <div><h3>Incident trend comparison</h3><p>{cumulative
-        ? "Running total of the selected measure by day of the month, compared with last month and last year."
-        : "Compare the same daily measure across the selected month, previous month, and last year."}</p></div>
+      <div><h3>Incident trend comparison</h3></div>
       <div className="pia-chart-head-actions">
         <div className="pia-view-switch" role="group" aria-label="Select graph style">
           {([[
@@ -767,7 +765,7 @@ function FireTypeChart({
   const max = Math.max(1, comparison.max);
   return <>
     <div className="pia-chart-caption">
-      <div><h3>Incidents by fire type</h3><p>Fire classifications for the selected municipality and month{drawn.length > 1 ? ", beside the periods you compare with" : ""}. Hover a type for its share.</p></div>
+      <div><h3>Incidents by fire type</h3></div>
       <div className="pia-legend pia-period-legend" aria-label="Fire type period legend">
         {periods.map((period) => <span key={period.key} className={period.hasRecords ? "" : "is-empty"}><i style={{ background: period.color }} />{period.label}{!period.hasRecords && <em>· no records</em>}</span>)}
       </div>
