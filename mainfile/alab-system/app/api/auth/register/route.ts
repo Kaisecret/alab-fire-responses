@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { NextResponse } from "next/server";
 
@@ -13,6 +13,8 @@ import {
 import { getGoogleSignupPrefill, GOOGLE_SIGNUP_PREFILL_COOKIE } from "../../../../lib/auth/google-signup-prefill";
 import { removeIdentityEvidence, uploadIdentityEvidence } from "../../../../lib/resident-applications/evidence";
 import { createAccountNotifications, listMunicipalNotificationRecipients } from "../../../../lib/notifications/service";
+import { registeredNameKey } from "../../../../lib/resident-applications/id-name-match.mjs";
+import { readIdVerification } from "../../../../lib/resident-applications/id-verification-token.mjs";
 
 export const runtime = "nodejs";
 
@@ -82,6 +84,15 @@ export async function POST(request: Request) {
   let front: File; let selfie: File; let back: File | null;
   try { front = image(form, "frontId")!; back = image(form, "backId", false); selfie = image(form, "selfie")!; } catch {
     return NextResponse.json({ error: "Upload the front of your ID and take a clear selfie before submitting." }, { status: 400 });
+  }
+
+  // The ID must have passed the scan for this exact image and this name. The
+  // token is signed on the server, so the browser cannot skip the check, swap
+  // the photo afterwards, or change the name once verified.
+  const idProof = readIdVerification(clean(form.get("idVerificationToken"), 4000), process.env.AUTH_SECRET ?? "");
+  const frontSha256 = createHash("sha256").update(Buffer.from(await front.arrayBuffer())).digest("hex");
+  if (!idProof || idProof.sha256 !== frontSha256 || idProof.name !== registeredNameKey(firstName, lastName)) {
+    return NextResponse.json({ error: "Your ID must pass verification before you can register. Go back and upload your ID again.", code: "ID_NOT_VERIFIED" }, { status: 400 });
   }
 
   const duplicate = await getDatabase().query("select 1 from users where lower(email) = $1 or lower(username) = lower($2) or phone = $3 limit 1", [email, username, phone]);

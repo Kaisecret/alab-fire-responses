@@ -840,6 +840,157 @@ export const signupStyles = `
             display: none;
         }
 
+        /* ID verification status (front of ID) */
+        .id-scan {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.65rem;
+            margin-top: 0.7rem;
+            padding: 0.65rem 0.8rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fafbfc;
+        }
+
+        .id-scan[hidden] {
+            display: none;
+        }
+
+        .id-scan-icon {
+            width: 1.9rem;
+            height: 1.9rem;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            border-radius: 50%;
+        }
+
+        .id-scan-icon svg {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .id-scan-body {
+            flex: 1 1 11rem;
+            display: grid;
+            gap: 0.1rem;
+            min-width: 0;
+        }
+
+        .id-scan-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .id-scan-text {
+            font-size: 0.75rem;
+            font-weight: 500;
+            line-height: 1.4;
+            color: var(--text-muted);
+        }
+
+        .id-scan.scanning {
+            border-color: rgba(217, 27, 16, 0.25);
+            background: rgba(217, 27, 16, 0.03);
+        }
+
+        .id-scan.scanning .id-scan-icon {
+            background: rgba(217, 27, 16, 0.1);
+            color: var(--primary-red);
+        }
+
+        .id-scan.scanning .id-scan-icon svg {
+            animation: idScanSpin 0.9s linear infinite;
+        }
+
+        .id-scan.verified {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.06);
+        }
+
+        .id-scan.verified .id-scan-icon {
+            background: #22c55e;
+            color: #ffffff;
+        }
+
+        .id-scan.failed {
+            border-color: #fecaca;
+            background: #fef2f2;
+        }
+
+        .id-scan.failed .id-scan-icon {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .id-scan.failed .id-scan-title {
+            color: #b91c1c;
+        }
+
+        .id-scan-retry {
+            margin-left: auto;
+            flex-shrink: 0;
+            border: 0;
+            border-radius: 8px;
+            padding: 0.45rem 0.75rem;
+            background: var(--primary-red);
+            color: #ffffff;
+            font: inherit;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .id-scan-retry:focus-visible {
+            outline: 2px solid var(--primary-red);
+            outline-offset: 2px;
+        }
+
+        /* Until the scan passes, an uploaded ID is not shown as done. */
+        .upload-section.has-file.id-pending {
+            border-color: #e2e8f0;
+            background: transparent;
+        }
+
+        .upload-dropzone.has-file.id-pending {
+            border-color: #cbd5e1;
+            background: #fafbfc;
+        }
+
+        .upload-section.has-file.id-failed {
+            border-color: #fecaca;
+            background: rgba(254, 242, 242, 0.6);
+        }
+
+        .upload-dropzone.has-file.id-failed {
+            border-color: #fca5a5;
+            background: #ffffff;
+        }
+
+        .upload-dropzone.id-pending .file-preview {
+            color: var(--text-muted);
+        }
+
+        .upload-dropzone.id-failed .file-preview {
+            color: #b91c1c;
+        }
+
+        /* The tick means "verified", so it waits for the scan to pass. */
+        .upload-dropzone.id-pending .file-preview svg,
+        .upload-dropzone.id-failed .file-preview svg {
+            display: none;
+        }
+
+        @keyframes idScanSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .id-scan.scanning .id-scan-icon svg { animation: none; }
+        }
+
         /* Selfie / Camera section */
         .selfie-section {
             border: 1.5px solid #e2e8f0;
@@ -1394,9 +1545,10 @@ export const signupMarkup = `<main class="signup-container">
                                 <line x1="12" y1="3" x2="12" y2="15"/>
                             </svg>
                             <span class="upload-text"><strong>Click to upload</strong> or drag and drop</span>
-                            <span class="upload-hint">JPG, PNG, or PDF (Max. 5MB)</span>
-                            <input type="file" id="fileFront" accept="image/*,.pdf">
+                            <span class="upload-hint">JPG, PNG, or WebP (Max. 5MB)</span>
+                            <input type="file" id="fileFront" accept="image/jpeg,image/png,image/webp">
                         </label>
+                        <div class="id-scan" id="idScanStatus" role="status" aria-live="polite" hidden></div>
                     </div>
 
                     <!-- Upload Back of Valid ID -->
@@ -1419,8 +1571,8 @@ export const signupMarkup = `<main class="signup-container">
                             </svg>
                             <span class="upload-text"><strong>Click to upload</strong> or drag and drop</span>
                             <span class="upload-hint">Optional if your ID has no back details</span>
-                            <span class="upload-hint">JPG, PNG, or PDF (Max. 5MB)</span>
-                            <input type="file" id="fileBack" accept="image/*,.pdf">
+                            <span class="upload-hint">JPG, PNG, or WebP (Max. 5MB)</span>
+                            <input type="file" id="fileBack" accept="image/jpeg,image/png,image/webp">
                         </label>
                     </div>
 

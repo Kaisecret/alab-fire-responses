@@ -53,6 +53,12 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     let pendingSelfieBlob: Blob | null = null;
     let selfieFile: File | null = null;
 
+    // ID verification: the front of the ID is scanned on upload, and only a
+    // server-signed token for this exact file and name lets registration save.
+    let idVerificationToken: string | null = null;
+    let idScanState: "idle" | "scanning" | "verified" | "failed" = "idle";
+    let idScanController: AbortController | null = null;
+
     // Elements
     const form = root.querySelector<HTMLFormElement>("#signupForm");
     const stepIndicator = root.querySelector<HTMLElement>("#stepIndicator");
@@ -192,6 +198,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       if (progressFill) progressFill.style.width = `${(step / TOTAL_STEPS) * 100}%`;
       if (stepTitle) stepTitle.textContent = STEP_CONFIG[step - 1].title;
       if (stepSubtitle) stepSubtitle.textContent = STEP_CONFIG[step - 1].subtitle;
+      if (step === 3 && frontFile && !idVerificationToken && idScanState !== "scanning") void scanFrontId();
 
       // Populate review on step 5
       if (step === 5 && reviewContent) {
@@ -201,7 +208,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
           return el?.value ?? "";
         };
 
-        const idStatus = frontFile ? `✓ ${frontFile.name}` : "Not uploaded";
+        const idStatus = frontFile ? (idVerificationToken ? "✓ ID verified" : "Not verified") : "Not uploaded";
         const idBackStatus = backFile ? `✓ ${backFile.name}` : "Not provided";
         const selfieStatus = selfieTaken ? "✓ Captured" : "Not taken";
 
@@ -251,6 +258,133 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         `;
       }
     }
+
+    // --- ID verification ---
+    const idScanStatus = root.querySelector<HTMLElement>("#idScanStatus");
+    const nameValue = (id: string) => root.querySelector<HTMLInputElement>(`#${id}`)?.value.trim() ?? "";
+    const ID_SCAN_TITLES: Record<string, string> = {
+      NOT_AN_ID: "Not a valid ID",
+      UNREADABLE: "ID photo is not clear",
+      NAME_NOT_FOUND: "Name not found on ID",
+      NAME_MISMATCH: "Name does not match",
+      SERVICE_UNAVAILABLE: "ID check unavailable",
+      TOO_MANY_CHECKS: "Too many attempts",
+      INVALID_FILE: "Unsupported file",
+      NAME_REQUIRED: "Enter your name first",
+    };
+    const ID_SCAN_ICONS = {
+      scanning: '<path d="M21 12a9 9 0 1 1-6.22-8.56"/>',
+      verified: '<polyline points="20 6 9 17 4 12"/>',
+      failed: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12.5"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+    } as const;
+
+    function renderIdScan(state: "scanning" | "verified" | "failed", title: string, text: string, action?: { label: string; onClick: () => void }) {
+      if (!idScanStatus) return;
+      idScanStatus.hidden = false;
+      idScanStatus.className = `id-scan ${state}`;
+      idScanStatus.replaceChildren();
+      const icon = document.createElement("span");
+      icon.className = "id-scan-icon";
+      icon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ID_SCAN_ICONS[state]}</svg>`;
+      const body = document.createElement("span");
+      body.className = "id-scan-body";
+      const titleEl = document.createElement("span");
+      titleEl.className = "id-scan-title";
+      titleEl.textContent = title;
+      const textEl = document.createElement("span");
+      textEl.className = "id-scan-text";
+      textEl.textContent = text;
+      body.append(titleEl, textEl);
+      idScanStatus.append(icon, body);
+      if (action) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "id-scan-retry";
+        button.textContent = action.label;
+        button.addEventListener("click", (event) => { event.preventDefault(); action.onClick(); });
+        idScanStatus.append(button);
+      }
+      uploadFrontSection?.classList.toggle("id-pending", state === "scanning");
+      uploadFrontSection?.classList.toggle("id-failed", state === "failed");
+      dropzoneFront?.classList.toggle("id-pending", state === "scanning");
+      dropzoneFront?.classList.toggle("id-failed", state === "failed");
+    }
+
+    function resetIdVerification() {
+      idScanController?.abort();
+      idScanController = null;
+      idVerificationToken = null;
+      idScanState = "idle";
+      if (idScanStatus) {
+        idScanStatus.hidden = true;
+        idScanStatus.replaceChildren();
+      }
+      uploadFrontSection?.classList.remove("id-pending", "id-failed");
+      dropzoneFront?.classList.remove("id-pending", "id-failed");
+    }
+
+    const chooseAnotherId = () => fileFrontInput?.click();
+
+    async function scanFrontId() {
+      if (!frontFile) {
+        resetIdVerification();
+        return;
+      }
+      const firstName = nameValue("firstName");
+      const lastName = nameValue("lastName");
+      idScanController?.abort();
+      idVerificationToken = null;
+      if (!firstName || !lastName) {
+        idScanState = "failed";
+        renderIdScan("failed", ID_SCAN_TITLES.NAME_REQUIRED, "Go back to step 1 and enter your first and last name.");
+        return;
+      }
+      const controller = new AbortController();
+      idScanController = controller;
+      idScanState = "scanning";
+      renderIdScan("scanning", "Scanning your ID…", "Checking that it is a clear, valid ID with your name.");
+      const scannedFile = frontFile;
+      const body = new FormData();
+      body.set("frontId", scannedFile);
+      body.set("firstName", firstName);
+      body.set("lastName", lastName);
+      try {
+        const response = await fetch("/api/auth/register/id-check", { method: "POST", body, signal: controller.signal });
+        const result = await response.json().catch(() => ({})) as { verified?: boolean; token?: string; code?: string; message?: string; detectedName?: string | null };
+        // A newer file or name may have replaced this scan while it ran.
+        if (controller.signal.aborted || scannedFile !== frontFile) return;
+        if (response.ok && result.verified && result.token) {
+          idVerificationToken = result.token;
+          idScanState = "verified";
+          renderIdScan("verified", "ID verified", result.detectedName ? `Name on ID: ${result.detectedName}` : "Your ID matches your name.");
+          if (formStatus.textContent?.includes("ID")) formStatus.textContent = "";
+          return;
+        }
+        idScanState = "failed";
+        const code = result.code ?? "";
+        const retrySame = code === "SERVICE_UNAVAILABLE" || code === "TOO_MANY_CHECKS";
+        renderIdScan(
+          "failed",
+          ID_SCAN_TITLES[code] ?? "ID not verified",
+          result.message ?? "We could not verify this ID. Upload another photo.",
+          retrySame ? { label: "Try again", onClick: () => void scanFrontId() } : { label: "Upload another ID", onClick: chooseAnotherId },
+        );
+      } catch {
+        if (controller.signal.aborted) return;
+        idScanState = "failed";
+        renderIdScan("failed", "Could not check your ID", "Check your internet connection and try again.", { label: "Try again", onClick: () => void scanFrontId() });
+      }
+    }
+
+    // A verified ID belongs to the name it was checked against.
+    const handleNameChange = () => {
+      if (!frontFile || (!idVerificationToken && idScanState !== "failed")) return;
+      resetIdVerification();
+    };
+    const firstNameInput = root.querySelector<HTMLInputElement>("#firstName");
+    const lastNameInput = root.querySelector<HTMLInputElement>("#lastName");
+    firstNameInput?.addEventListener("input", handleNameChange);
+    lastNameInput?.addEventListener("input", handleNameChange);
 
     // --- File upload helpers ---
     function updateDropzoneUI(dropzone: HTMLElement | null, section: HTMLElement | null, file: File | null) {
@@ -357,6 +491,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
           frontFile = null;
           if (fileFrontInput) fileFrontInput.value = "";
           updateDropzoneUI(dropzoneFront, uploadFrontSection, null);
+          resetIdVerification();
         } else if (dropzone === dropzoneBack) {
           backFile = null;
           if (fileBackInput) fileBackInput.value = "";
@@ -371,12 +506,15 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
 
     // File input change handlers
     const handleFrontFileChange = (e: Event) => {
+      const previous = frontFile;
       handleFileSelect(
         e,
         (f) => { frontFile = f; },
         dropzoneFront,
         uploadFrontSection
       );
+      if (frontFile && frontFile !== previous) void scanFrontId();
+      else if (!frontFile) resetIdVerification();
     };
     const handleBackFileChange = (e: Event) => {
       handleFileSelect(
@@ -617,6 +755,14 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         formStatus.textContent = "Upload the front of your valid ID and capture a selfie before continuing.";
         return;
       }
+      if (!idVerificationToken) {
+        if (idScanState === "scanning") formStatus.textContent = "Please wait while we check your ID.";
+        else {
+          formStatus.textContent = "Your ID must be verified before you continue.";
+          if (idScanState !== "failed") void scanFrontId();
+        }
+        return;
+      }
       goToStep(4);
     };
     const handleToStep5 = () => {
@@ -654,6 +800,12 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         return false;
       }
 
+      if (!idVerificationToken) {
+        goToStep(3);
+        formStatus.textContent = "Your ID must be verified before you continue.";
+        return false;
+      }
+
       if (!passwordField || passwordField.value !== confirmField?.value) {
         goToStep(4);
         formStatus.textContent = "Passwords do not match.";
@@ -684,14 +836,22 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         status.textContent = "";
         try {
           if (!frontFile || !selfieFile) throw new Error("MISSING_EVIDENCE");
+          if (!idVerificationToken) {
+            completeButton.disabled = false;
+            completeButton.textContent = "Create my account";
+            status.textContent = "Your ID must be verified first. Go back to Identity Verification.";
+            return;
+          }
           const registration = new FormData();
           registration.set("verificationId", verificationId);
+          registration.set("idVerificationToken", idVerificationToken);
           registration.set("frontId", frontFile);
           if (backFile) registration.set("backId", backFile);
           registration.set("selfie", selfieFile);
           const register = await fetch("/api/auth/register", { method: "POST", body: registration });
           if (!register.ok) {
-            const failed = await register.json() as { error?: string };
+            const failed = await register.json() as { error?: string; code?: string };
+            if (failed.code === "ID_NOT_VERIFIED") resetIdVerification();
             completeButton.disabled = false;
             completeButton.textContent = "Create my account";
             status.textContent = failed.error ?? "Unable to create your account.";
@@ -854,6 +1014,9 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       googleBtn?.removeEventListener("click", handleGoogleSignup);
       formStatus.remove();
       fileFrontInput?.removeEventListener("change", handleFrontFileChange);
+      firstNameInput?.removeEventListener("input", handleNameChange);
+      lastNameInput?.removeEventListener("input", handleNameChange);
+      idScanController?.abort();
       fileBackInput?.removeEventListener("change", handleBackFileChange);
       dropzoneFront?.removeEventListener("click", handleDropzoneClick);
       dropzoneBack?.removeEventListener("click", handleDropzoneClick);
