@@ -16,6 +16,9 @@ export async function POST(request: Request) {
   const googlePrefill = await getGoogleSignupPrefill();
   const suppliedEmail = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
   if (googlePrefill && suppliedEmail !== googlePrefill.email) return NextResponse.json({ error: "Use the verified email address from your Google account." }, { status: 400 });
+  // Email is optional; when given it must be valid and is stored lowercase.
+  if (suppliedEmail && !/^\S+@\S+\.\S+$/.test(suppliedEmail)) return NextResponse.json({ error: "Enter a valid email address or leave it blank." }, { status: 400 });
+  input.email = suppliedEmail;
   let phone: string;
   try { phone = normalizePhilippinePhone(phoneInput); } catch { return NextResponse.json({ error: "Enter a valid Philippine mobile number." }, { status: 400 }); }
   const code = createOtpCode();
@@ -25,7 +28,7 @@ export async function POST(request: Request) {
   try {
     const passwordHash = await hashPassword(password);
     await withTransaction(async (client) => {
-      const duplicate = await client.query("select 1 from users where email = $1 or username = $2 or phone in ($3, $4) limit 1", [input.email, input.username, phoneInput, phone]);
+      const duplicate = await client.query("select 1 from users where (email = nullif($1, '') and email is not null) or username = $2 or phone in ($3, $4) limit 1", [suppliedEmail, input.username, phoneInput, phone]);
       if (duplicate.rowCount) throw new Error("DUPLICATE");
       const recentOtp = await client.query("select 1 from registration_otps where phone = $1 and last_sent_at > now() - interval '60 seconds' order by last_sent_at desc limit 1", [phone]);
       if (recentOtp.rowCount) throw new Error("OTP_RESEND_COOLDOWN");

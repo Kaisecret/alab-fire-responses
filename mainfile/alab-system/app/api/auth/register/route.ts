@@ -66,6 +66,7 @@ export async function POST(request: Request) {
   const googlePrefill = await getGoogleSignupPrefill();
   const firstName = clean(input.firstName, 50);
   const lastName = clean(input.lastName, 50);
+  // Email is optional for residents; an empty one is stored as null.
   const email = googlePrefill?.email ?? clean(input.email, 100).toLowerCase();
   const phone = clean(input.phone, 15);
   const municipality = clean(input.municipality, 100);
@@ -76,14 +77,14 @@ export async function POST(request: Request) {
   const password = input.password ?? "";
 
   if (!/^[A-Za-z0-9_.-]{3,30}$/.test(username)) return NextResponse.json({ error: "Username must contain 3 to 30 letters, numbers, dots, underscores, or hyphens." }, { status: 400 });
-  if (!firstName || !lastName || !/^\S+@\S+\.\S+$/.test(email) || !/^\+?[0-9]{10,15}$/.test(phone) ||
+  if (!firstName || !lastName || (email && !/^\S+@\S+\.\S+$/.test(email)) || !/^\+?[0-9]{10,15}$/.test(phone) ||
       !municipality || !barangay || !address || (!pendingPasswordHash && password.length < 8) || !input.termsAccepted) {
     return NextResponse.json({ error: "Please complete all required registration fields." }, { status: 400 });
   }
 
   let front: File; let selfie: File; let back: File | null;
-  try { front = image(form, "frontId")!; back = image(form, "backId", false); selfie = image(form, "selfie")!; } catch {
-    return NextResponse.json({ error: "Upload the front of your ID and take a clear selfie before submitting." }, { status: 400 });
+  try { front = image(form, "frontId")!; back = image(form, "backId")!; selfie = image(form, "selfie")!; } catch {
+    return NextResponse.json({ error: "Upload the front and back of your ID and take a clear selfie before submitting." }, { status: 400 });
   }
 
   // The ID must have passed the scan for this exact image and this name. The
@@ -91,11 +92,13 @@ export async function POST(request: Request) {
   // the photo afterwards, or change the name once verified.
   const idProof = readIdVerification(clean(form.get("idVerificationToken"), 4000), process.env.AUTH_SECRET ?? "");
   const frontSha256 = createHash("sha256").update(Buffer.from(await front.arrayBuffer())).digest("hex");
-  if (!idProof || idProof.sha256 !== frontSha256 || idProof.name !== registeredNameKey(firstName, lastName)) {
+  const backSha256 = createHash("sha256").update(Buffer.from(await back.arrayBuffer())).digest("hex");
+  if (!idProof || idProof.sha256 !== frontSha256 || idProof.backSha256 !== backSha256
+      || idProof.name !== registeredNameKey(firstName, lastName)) {
     return NextResponse.json({ error: "Your ID must pass verification before you can register. Go back and upload your ID again.", code: "ID_NOT_VERIFIED" }, { status: 400 });
   }
 
-  const duplicate = await getDatabase().query("select 1 from users where lower(email) = $1 or lower(username) = lower($2) or phone = $3 limit 1", [email, username, phone]);
+  const duplicate = await getDatabase().query("select 1 from users where (email is not null and lower(email) = nullif($1, '')) or lower(username) = lower($2) or phone = $3 limit 1", [email, username, phone]);
   if (duplicate.rowCount) return NextResponse.json({ error: "That email, username, or phone is already registered." }, { status: 409 });
 
   const locality = await getDatabase().query<{ municipality_id: string; barangay_id: string }>(
@@ -120,7 +123,7 @@ export async function POST(request: Request) {
       await client.query(
         `insert into users (id, email, username, password_hash, phone, google_subject, role, account_status, terms_accepted_at, created_at, updated_at)
          values ($1, $2, $3, $4, $5, $6, 'RESIDENT', 'PENDING_REVIEW', $7, $7, $7)`,
-        [userId, email, username, passwordHash, phone, googlePrefill?.subject ?? null, now],
+        [userId, email || null, username, passwordHash, phone, googlePrefill?.subject ?? null, now],
       );
       await client.query(`insert into resident_profiles (id, user_id, first_name, last_name, created_at, updated_at) values ($1,$2,$3,$4,$5,$5)`, [profileId, userId, firstName, lastName, now]);
       await client.query(

@@ -12,7 +12,7 @@ test("deployment build applies Belison coordinates before the app is built", asy
     await db.exec(`
       create role anon;
       create role authenticated;
-      create table public.users (id uuid primary key);
+      create table public.users (id uuid primary key, email text not null);
       create table public.municipalities (
         id uuid primary key default gen_random_uuid(),
         name text not null,

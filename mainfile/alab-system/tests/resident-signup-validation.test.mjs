@@ -12,7 +12,8 @@ test("resident signup uses step-aware validation before account creation", () =>
   assert.match(markup, /<form id="signupForm" novalidate>/);
   assert.match(component, /const validateRegistration = \(\) => \{/);
   assert.match(component, /showInvalidField\(index \+ 1, invalidField\)/);
-  assert.match(component, /Upload the front of your valid ID to continue\./);
+  // The back of the ID is required too, and both sides are scanned together.
+  assert.match(component, /Upload the front and back of your valid ID to continue\./);
   assert.match(component, /Take and confirm your selfie to continue\./);
   assert.match(component, /if \(!validateRegistration\(\)\) return;/);
 });

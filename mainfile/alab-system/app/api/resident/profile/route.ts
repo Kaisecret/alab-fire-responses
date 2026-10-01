@@ -121,12 +121,12 @@ export async function PUT(request: NextRequest) {
     }
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const phone = typeof body.phone === "string" ? body.phone.replace(/[\s-]/g, "") : "";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Enter a valid email address or leave it blank." }, { status: 400 });
     if (!/^\+?[0-9]{10,15}$/.test(phone)) return NextResponse.json({ error: "Enter a valid mobile number." }, { status: 400 });
     try {
-      const updated = await getDatabase().query<{ email: string; phone: string }>(
+      const updated = await getDatabase().query<{ email: string | null; phone: string }>(
         "update users set email = $1, phone = $2, updated_at = now() where id = $3 and role = 'RESIDENT' returning email, phone",
-        [email, phone, session.userId],
+        [email || null, phone, session.userId],
       );
       if (!updated.rowCount) return NextResponse.json({ error: "Resident profile not found." }, { status: 404 });
       return NextResponse.json({ profile: updated.rows[0] });

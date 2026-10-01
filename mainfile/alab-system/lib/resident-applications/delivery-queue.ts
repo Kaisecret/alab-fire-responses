@@ -27,7 +27,7 @@ export type DirectCorrectionDelivery = {
   verificationId: string;
   submissionNumber: number;
   phone: string;
-  email: string;
+  email: string | null;
   payload: CorrectionDeliveryPayload;
 };
 
@@ -36,7 +36,7 @@ export async function enqueueResidentCorrectionDeliveries(client: Queryable, inp
   recipientUserId: string;
   submissionNumber: number;
   phone: string;
-  email: string;
+  email: string | null;
   payload: CorrectionDeliveryPayload;
 }) {
   const table = await client.query<{ relation: string | null }>(
@@ -51,7 +51,7 @@ export async function enqueueResidentCorrectionDeliveries(client: Queryable, inp
   const ids: string[] = [];
 
   for (const job of jobs) {
-    if (!job.destination.trim()) continue;
+    if (!job.destination?.trim()) continue;
     const dedupeKey = `resident-correction:${input.verificationId}:${input.submissionNumber}:${job.channel.toLowerCase()}`;
     const result = await client.query<{ id: string }>(
       `insert into resident_notification_deliveries (

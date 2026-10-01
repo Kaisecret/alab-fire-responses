@@ -14,36 +14,77 @@ const DEFAULT_FALLBACK_MODELS = "gemini-3.1-flash-lite,gemini-flash-latest";
 const ATTEMPT_TIMEOUT_MS = 30_000;
 const TOTAL_BUDGET_MS = 55_000;
 
+export type IdCheckCode =
+  | "VERIFIED" | "NOT_AN_ID" | "UNREADABLE" | "NAME_NOT_FOUND" | "NAME_MISMATCH" | "TAMPERED"
+  | "BACK_REQUIRED" | "BACK_NOT_ID" | "BACK_MISMATCH" | "SERVICE_UNAVAILABLE";
+
 export type IdCheckOutcome =
   | { ok: true; code: "VERIFIED"; detectedName: string; documentType: string }
-  | { ok: false; code: "NOT_AN_ID" | "UNREADABLE" | "NAME_NOT_FOUND" | "NAME_MISMATCH" | "SERVICE_UNAVAILABLE"; message: string; detectedName?: string };
+  | { ok: false; side: "front" | "back"; code: Exclude<IdCheckCode, "VERIFIED">; message: string; detectedName?: string; frontVerified?: boolean };
 
 const INSTRUCTIONS = `You check identification documents uploaded during a resident registration in the Philippines.
-Look only at the attached image and report what you see. Do not guess or invent text.
-- is_identification_document: true only for an identification card or ID document that identifies a person, such as a PhilSys/national ID, driver's license, passport, UMID, SSS, PhilHealth, Pag-IBIG, postal ID, voter's ID, PRC ID, senior citizen or PWD ID, barangay ID, company or school ID card. False for certificates, receipts, school records, medical documents, letters, screenshots of apps, random photos, or anything that is not an ID.
+Image 1 is the FRONT of the uploaded ID. Image 2, when present, is the BACK. Report only what you see; do not guess or invent text.
+
+For "front":
+- is_identification_document: true only for an identification card that identifies a person, such as a PhilSys/national ID, driver's license, passport, UMID, SSS, PhilHealth, Pag-IBIG, postal ID, voter's ID, PRC ID, senior citizen or PWD ID, barangay ID, company or school ID card. False for certificates, receipts, school records, medical documents, letters, screenshots of apps, random photos, or anything that is not an ID.
 - image_quality: GOOD only when the card is sharp, evenly and brightly lit, fully inside the frame and every printed detail is easy to read. Use TOO_DARK for an underexposed or dim photo even if some text can still be made out, BLURRY for any noticeable blur, CROPPED if any edge of the card is cut off, GLARE if reflections hide details, otherwise UNREADABLE.
 - name_readable: true only if the holder's name can be read with confidence.
 - full_name, first_name, middle_name, last_name: the holder's name exactly as printed (empty strings if not readable). For "SURNAME, GIVEN NAMES" formats, split accordingly.
+- id_number: the ID or card number exactly as printed, or an empty string.
 - document_type: a short label such as "PhilSys ID" or "Driver's License".
-- reason: one short sentence explaining the result.`;
+- edit_suspected: true when there are visible signs the card was edited or forged: a name, number or date in a different font, size, weight, spacing or colour than the rest of the card; text that is misaligned, floating, pasted over or overlapping the printed design; smudged, blurred or blocky patches around the name, number or photo; a background pattern that breaks around a field; a photo pasted onto the card; a digital template, mock-up, "SAMPLE"/"SPECIMEN" card, screenshot or a photo of a screen or printout instead of a physical card. False when the card looks like an untouched original. Only report clear visible evidence.
+- edit_evidence: one short sentence describing what looks edited, or an empty string.
+
+For "back" (when Image 2 is present; otherwise set booleans to false and strings to empty):
+- is_back_of_identification_document: true only if Image 2 is the reverse side of an identification card.
+- image_quality, edit_suspected and edit_evidence: as for the front.
+- id_number and name: as printed on the back, or empty strings.
+
+back_matches_front: true only when Image 2 is the back of the same card as Image 1: the same card type and issuer design, and any ID number, name or birth date printed on both sides agree. False if they look like different cards or any shared detail differs. False when there is no Image 2.
+reason: one short sentence explaining the overall result.`;
+
+const SIDE_PROPERTIES = {
+  image_quality: { type: "STRING", enum: ["GOOD", "BLURRY", "TOO_DARK", "CROPPED", "GLARE", "UNREADABLE"] },
+  edit_suspected: { type: "BOOLEAN" },
+  edit_evidence: { type: "STRING" },
+  id_number: { type: "STRING" },
+};
 
 const RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
-    is_identification_document: { type: "BOOLEAN" },
-    document_type: { type: "STRING" },
-    image_quality: { type: "STRING", enum: ["GOOD", "BLURRY", "TOO_DARK", "CROPPED", "GLARE", "UNREADABLE"] },
-    name_readable: { type: "BOOLEAN" },
-    full_name: { type: "STRING" },
-    first_name: { type: "STRING" },
-    middle_name: { type: "STRING" },
-    last_name: { type: "STRING" },
+    front: {
+      type: "OBJECT",
+      properties: {
+        is_identification_document: { type: "BOOLEAN" },
+        document_type: { type: "STRING" },
+        ...SIDE_PROPERTIES,
+        name_readable: { type: "BOOLEAN" },
+        full_name: { type: "STRING" },
+        first_name: { type: "STRING" },
+        middle_name: { type: "STRING" },
+        last_name: { type: "STRING" },
+      },
+      required: ["is_identification_document", "document_type", "image_quality", "edit_suspected", "edit_evidence", "id_number", "name_readable", "full_name", "first_name", "middle_name", "last_name"],
+    },
+    back: {
+      type: "OBJECT",
+      properties: {
+        is_back_of_identification_document: { type: "BOOLEAN" },
+        ...SIDE_PROPERTIES,
+        name: { type: "STRING" },
+      },
+      required: ["is_back_of_identification_document", "image_quality", "edit_suspected", "edit_evidence", "id_number", "name"],
+    },
+    back_matches_front: { type: "BOOLEAN" },
     reason: { type: "STRING" },
   },
-  required: ["is_identification_document", "document_type", "image_quality", "name_readable", "full_name", "first_name", "middle_name", "last_name", "reason"],
+  required: ["front", "back", "back_matches_front", "reason"],
 };
 
-async function readIdImage(image: Buffer, mimeType: string): Promise<Record<string, unknown> | null> {
+type IdImage = { data: Buffer; mimeType: string };
+
+async function readIdImages(front: IdImage, back: IdImage | null): Promise<Record<string, unknown> | null> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
   const primary = process.env.GEMINI_MODEL || DEFAULT_MODEL;
@@ -51,7 +92,15 @@ async function readIdImage(image: Buffer, mimeType: string): Promise<Record<stri
     .split(",").map((model) => model.trim()).filter((model) => model && model !== primary);
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: INSTRUCTIONS }] },
-    contents: [{ role: "user", parts: [{ inlineData: { mimeType, data: image.toString("base64") } }, { text: "Check this uploaded file." }] }],
+    contents: [{
+      role: "user",
+      parts: [
+        { text: "Image 1 (front):" },
+        { inlineData: { mimeType: front.mimeType, data: front.data.toString("base64") } },
+        ...(back ? [{ text: "Image 2 (back):" }, { inlineData: { mimeType: back.mimeType, data: back.data.toString("base64") } }] : []),
+        { text: back ? "Check both sides of this ID." : "Check the front of this ID. There is no Image 2." },
+      ],
+    }],
     generationConfig: {
       temperature: 0,
       responseMimeType: "application/json",
@@ -101,11 +150,11 @@ async function readIdImage(image: Buffer, mimeType: string): Promise<Record<stri
 }
 
 export async function checkIdWithGemini(input: {
-  image: Buffer;
-  mimeType: string;
+  front: IdImage;
+  back: IdImage | null;
   firstName: string;
   lastName: string;
 }): Promise<IdCheckOutcome> {
-  const reading = await readIdImage(input.image, input.mimeType);
-  return interpretIdCheck(reading, { firstName: input.firstName, lastName: input.lastName }) as IdCheckOutcome;
+  const reading = await readIdImages(input.front, input.back);
+  return interpretIdCheck(reading, { firstName: input.firstName, lastName: input.lastName }, { hasBack: Boolean(input.back) }) as IdCheckOutcome;
 }

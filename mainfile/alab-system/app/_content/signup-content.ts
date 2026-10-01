@@ -840,6 +840,34 @@ export const signupStyles = `
             display: none;
         }
 
+        /* Address built from the dropdowns */
+        .address-preview {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin: 0 0 0.9rem;
+            padding: 0.65rem 0.8rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fafbfc;
+            color: var(--text-dark);
+            font-size: 0.8rem;
+            font-weight: 600;
+            line-height: 1.45;
+        }
+
+        .address-preview[hidden] {
+            display: none;
+        }
+
+        .address-preview svg {
+            width: 1rem;
+            height: 1rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+            color: var(--primary-red);
+        }
+
         /* ID verification status (front of ID) */
         .id-scan {
             display: flex;
@@ -946,6 +974,24 @@ export const signupStyles = `
         .id-scan-retry:focus-visible {
             outline: 2px solid var(--primary-red);
             outline-offset: 2px;
+        }
+
+        .id-scan.info {
+            border-color: #e2e8f0;
+            background: #fafbfc;
+        }
+
+        .id-scan.info .id-scan-icon {
+            background: rgba(217, 27, 16, 0.1);
+            color: var(--primary-red);
+        }
+
+        /* Continue stays locked until both sides of the ID are verified. */
+        .btn-continue:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
         }
 
         /* Until the scan passes, an uploaded ID is not shown as done. */
@@ -1399,7 +1445,7 @@ export const signupMarkup = `<main class="signup-container">
                                 <rect x="2" y="4" width="20" height="16" rx="2"/>
                                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                             </svg>
-                            <input type="email" class="form-input" placeholder="Email Address" required id="email" maxlength="100">
+                            <input type="email" class="form-input" placeholder="Email Address (Optional)" id="email" maxlength="100">
                         </div>
                     </div>
 
@@ -1496,16 +1542,6 @@ export const signupMarkup = `<main class="signup-container">
 
                     <div class="form-group">
                         <div class="input-wrapper">
-                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="top: 1rem;">
-                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                                <circle cx="12" cy="10" r="3"/>
-                            </svg>
-                            <textarea class="form-input" placeholder="Complete Address" required id="address" maxlength="200"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <div class="input-wrapper">
                             <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="3" width="18" height="18" rx="2"/>
                                 <path d="m3 9 9 4.5L21 9"/>
@@ -1514,6 +1550,14 @@ export const signupMarkup = `<main class="signup-container">
                             <input type="text" class="form-input" placeholder="Nearby Landmark (Optional)" id="landmark" maxlength="100">
                         </div>
                     </div>
+
+                    <p class="address-preview" id="addressPreview" hidden>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <span id="addressPreviewText"></span>
+                    </p>
 
                     <button type="button" class="btn-continue" id="toStep3">
                         Continue
@@ -1561,7 +1605,6 @@ export const signupMarkup = `<main class="signup-container">
                                 </svg>
                             </div>
                             <span class="upload-title">Upload Back of Valid ID</span>
-                            <span class="upload-optional">(when applicable)</span>
                         </div>
                         <label class="upload-dropzone" id="dropzoneBack">
                             <svg class="upload-cloud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1570,10 +1613,10 @@ export const signupMarkup = `<main class="signup-container">
                                 <line x1="12" y1="3" x2="12" y2="15"/>
                             </svg>
                             <span class="upload-text"><strong>Click to upload</strong> or drag and drop</span>
-                            <span class="upload-hint">Optional if your ID has no back details</span>
                             <span class="upload-hint">JPG, PNG, or WebP (Max. 5MB)</span>
                             <input type="file" id="fileBack" accept="image/jpeg,image/png,image/webp">
                         </label>
+                        <div class="id-scan" id="idScanBackStatus" role="status" aria-live="polite" hidden></div>
                     </div>
 
                     <!-- Take Selfie -->

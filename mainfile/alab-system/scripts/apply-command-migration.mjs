@@ -48,6 +48,14 @@ const releaseMigrations = [
          and column_name = 'duplicate_of_report_id'
     ) as applied`,
   },
+  {
+    version: "20261002090000",
+    name: "make_resident_email_optional",
+    appliedCheck: `select coalesce((
+      select is_nullable = 'YES' from information_schema.columns
+       where table_schema = 'public' and table_name = 'users' and column_name = 'email'
+    ), true) as applied`,
+  },
 ];
 
 const client = new pg.Client({

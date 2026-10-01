@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { registeredNameKey } from "./id-name-match.mjs";
 
 // Proof that an ID passed the check. Signed on the server and bound to the
-// exact image (SHA-256) and the registered name, so the browser cannot forge
+// exact front and back images (SHA-256) and the registered name, so the browser cannot forge
 // it, reuse it for another ID, or keep it after the name changes.
 
 const LIFETIME_MS = 60 * 60 * 1000;
@@ -12,10 +12,11 @@ function signature(payload, secret) {
   return createHmac("sha256", secret).update(`resident-id-verification:${payload}`).digest("base64url");
 }
 
-export function signIdVerification({ sha256, firstName, lastName, documentType }, secret, now = Date.now()) {
+export function signIdVerification({ sha256, backSha256, firstName, lastName, documentType }, secret, now = Date.now()) {
   const payload = Buffer.from(JSON.stringify({
     v: 1,
     sha256,
+    backSha256: backSha256 ?? null,
     name: registeredNameKey(firstName, lastName),
     documentType: String(documentType ?? "").slice(0, 80),
     exp: now + LIFETIME_MS,

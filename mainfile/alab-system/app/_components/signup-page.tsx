@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { signupMarkup, signupStyles } from "../_content/signup-content";
 import { residentAuthFontStyles } from "../_content/resident-auth-font";
 import { antiqueBarangays } from "../_content/antique-barangays";
+import { composeResidentAddress } from "../../lib/resident-applications/compose-address.mjs";
 
 const visibleEye = `
   <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
@@ -150,6 +151,29 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       barangaySelect.disabled = barangays.length === 0;
     };
 
+    // The address is built from the dropdowns, so residents never type it twice.
+    const addressPreview = root.querySelector<HTMLElement>("#addressPreview");
+    const addressPreviewText = root.querySelector<HTMLElement>("#addressPreviewText");
+    const fieldValue = (id: string) => root.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`)?.value ?? "";
+    const currentAddress = () => composeResidentAddress({
+      sitio: fieldValue("sitio"),
+      barangay: fieldValue("barangay"),
+      municipality: fieldValue("municipality"),
+      landmark: fieldValue("landmark"),
+    });
+    const updateAddressPreview = () => {
+      const address = currentAddress();
+      if (addressPreviewText) addressPreviewText.textContent = address;
+      if (addressPreview) addressPreview.hidden = !address;
+    };
+    const addressInputs = ["municipality", "barangay", "sitio", "landmark"]
+      .map((id) => root.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`))
+      .filter((field): field is HTMLInputElement | HTMLSelectElement => Boolean(field));
+    addressInputs.forEach((field) => {
+      field.addEventListener("input", updateAddressPreview);
+      field.addEventListener("change", updateAddressPreview);
+    });
+
     municipalitySelect?.addEventListener("change", handleMunicipalityChange);
     handleMunicipalityChange();
 
@@ -198,7 +222,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       if (progressFill) progressFill.style.width = `${(step / TOTAL_STEPS) * 100}%`;
       if (stepTitle) stepTitle.textContent = STEP_CONFIG[step - 1].title;
       if (stepSubtitle) stepSubtitle.textContent = STEP_CONFIG[step - 1].subtitle;
-      if (step === 3 && frontFile && !idVerificationToken && idScanState !== "scanning") void scanFrontId();
+      if (step === 3 && frontFile && idScanState === "idle") void scanFrontId();
 
       // Populate review on step 5
       if (step === 5 && reviewContent) {
@@ -209,7 +233,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         };
 
         const idStatus = frontFile ? (idVerificationToken ? "✓ ID verified" : "Not verified") : "Not uploaded";
-        const idBackStatus = backFile ? `✓ ${backFile.name}` : "Not provided";
+        const idBackStatus = backFile ? (idVerificationToken ? "✓ Verified" : "Not verified") : "Not uploaded";
         const selfieStatus = selfieTaken ? "✓ Captured" : "Not taken";
 
         reviewContent.innerHTML = `
@@ -236,7 +260,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
             </div>
             <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e2e8f0;">
               <span style="font-weight: 700; color: #334155;">Address</span>
-              <span style="font-weight: 600; color: #000; text-align: right; max-width: 60%;">${getValue("address")}</span>
+              <span style="font-weight: 600; color: #000; text-align: right; max-width: 60%;">${currentAddress()}</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e2e8f0;">
               <span style="font-weight: 700; color: #334155;">Valid ID (Front)</span>
@@ -260,13 +284,17 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     }
 
     // --- ID verification ---
-    const idScanStatus = root.querySelector<HTMLElement>("#idScanStatus");
+    const idScanFront = root.querySelector<HTMLElement>("#idScanStatus");
+    const idScanBack = root.querySelector<HTMLElement>("#idScanBackStatus");
     const nameValue = (id: string) => root.querySelector<HTMLInputElement>(`#${id}`)?.value.trim() ?? "";
     const ID_SCAN_TITLES: Record<string, string> = {
       NOT_AN_ID: "Not a valid ID",
-      UNREADABLE: "ID photo is not clear",
+      UNREADABLE: "Photo is not clear",
       NAME_NOT_FOUND: "Name not found on ID",
       NAME_MISMATCH: "Name does not match",
+      TAMPERED: "ID looks edited",
+      BACK_NOT_ID: "Not the back of an ID",
+      BACK_MISMATCH: "Back does not match front",
       SERVICE_UNAVAILABLE: "ID check unavailable",
       TOO_MANY_CHECKS: "Too many attempts",
       INVALID_FILE: "Unsupported file",
@@ -276,16 +304,35 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       scanning: '<path d="M21 12a9 9 0 1 1-6.22-8.56"/>',
       verified: '<polyline points="20 6 9 17 4 12"/>',
       failed: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12.5"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+      info: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9.5h20"/>',
     } as const;
+    type ScanLook = keyof typeof ID_SCAN_ICONS;
+    const sideParts = {
+      front: { status: idScanFront, section: uploadFrontSection, dropzone: dropzoneFront, input: fileFrontInput },
+      back: { status: idScanBack, section: uploadBackSection, dropzone: dropzoneBack, input: fileBackInput },
+    };
 
-    function renderIdScan(state: "scanning" | "verified" | "failed", title: string, text: string, action?: { label: string; onClick: () => void }) {
-      if (!idScanStatus) return;
-      idScanStatus.hidden = false;
-      idScanStatus.className = `id-scan ${state}`;
-      idScanStatus.replaceChildren();
+    function updateContinueState() {
+      if (toStep4) {
+        toStep4.disabled = !idVerificationToken;
+        toStep4.title = idVerificationToken ? "" : "Verify both sides of your ID to continue";
+      }
+    }
+
+    function renderSide(side: "front" | "back", look: ScanLook | null, title = "", text = "", action?: { label: string; onClick: () => void }) {
+      const { status, section, dropzone } = sideParts[side];
+      section?.classList.toggle("id-pending", look === "scanning");
+      section?.classList.toggle("id-failed", look === "failed");
+      dropzone?.classList.toggle("id-pending", look === "scanning");
+      dropzone?.classList.toggle("id-failed", look === "failed");
+      if (!status) return;
+      status.replaceChildren();
+      status.hidden = !look;
+      if (!look) return;
+      status.className = `id-scan ${look}`;
       const icon = document.createElement("span");
       icon.className = "id-scan-icon";
-      icon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ID_SCAN_ICONS[state]}</svg>`;
+      icon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ID_SCAN_ICONS[look]}</svg>`;
       const body = document.createElement("span");
       body.className = "id-scan-body";
       const titleEl = document.createElement("span");
@@ -295,19 +342,15 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       textEl.className = "id-scan-text";
       textEl.textContent = text;
       body.append(titleEl, textEl);
-      idScanStatus.append(icon, body);
+      status.append(icon, body);
       if (action) {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "id-scan-retry";
         button.textContent = action.label;
         button.addEventListener("click", (event) => { event.preventDefault(); action.onClick(); });
-        idScanStatus.append(button);
+        status.append(button);
       }
-      uploadFrontSection?.classList.toggle("id-pending", state === "scanning");
-      uploadFrontSection?.classList.toggle("id-failed", state === "failed");
-      dropzoneFront?.classList.toggle("id-pending", state === "scanning");
-      dropzoneFront?.classList.toggle("id-failed", state === "failed");
     }
 
     function resetIdVerification() {
@@ -315,70 +358,98 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       idScanController = null;
       idVerificationToken = null;
       idScanState = "idle";
-      if (idScanStatus) {
-        idScanStatus.hidden = true;
-        idScanStatus.replaceChildren();
-      }
-      uploadFrontSection?.classList.remove("id-pending", "id-failed");
-      dropzoneFront?.classList.remove("id-pending", "id-failed");
+      renderSide("front", null);
+      renderSide("back", null);
+      updateContinueState();
     }
 
-    const chooseAnotherId = () => fileFrontInput?.click();
+    const chooseFile = (side: "front" | "back") => () => sideParts[side].input?.click();
 
     async function scanFrontId() {
       if (!frontFile) {
         resetIdVerification();
+        if (backFile) renderSide("back", "info", "Upload the front first", "Both sides are checked together.");
         return;
       }
       const firstName = nameValue("firstName");
       const lastName = nameValue("lastName");
       idScanController?.abort();
       idVerificationToken = null;
+      updateContinueState();
       if (!firstName || !lastName) {
         idScanState = "failed";
-        renderIdScan("failed", ID_SCAN_TITLES.NAME_REQUIRED, "Go back to step 1 and enter your first and last name.");
+        renderSide("front", "failed", ID_SCAN_TITLES.NAME_REQUIRED, "Go back to step 1 and enter your first and last name.");
+        renderSide("back", null);
         return;
       }
       const controller = new AbortController();
       idScanController = controller;
       idScanState = "scanning";
-      renderIdScan("scanning", "Scanning your ID…", "Checking that it is a clear, valid ID with your name.");
-      const scannedFile = frontFile;
+      const scannedFront = frontFile;
+      const scannedBack = backFile;
+      renderSide("front", "scanning", "Scanning your ID…", scannedBack ? "Checking both sides, your name and signs of editing." : "Checking that it is a clear, valid ID with your name.");
+      if (scannedBack) renderSide("back", "scanning", "Checking the back…", "Making sure it belongs to the same card.");
+      else renderSide("back", null);
       const body = new FormData();
-      body.set("frontId", scannedFile);
+      body.set("frontId", scannedFront);
+      if (scannedBack) body.set("backId", scannedBack);
       body.set("firstName", firstName);
       body.set("lastName", lastName);
       try {
         const response = await fetch("/api/auth/register/id-check", { method: "POST", body, signal: controller.signal });
-        const result = await response.json().catch(() => ({})) as { verified?: boolean; token?: string; code?: string; message?: string; detectedName?: string | null };
+        const result = await response.json().catch(() => ({})) as {
+          verified?: boolean; token?: string; side?: "front" | "back"; code?: string; message?: string;
+          detectedName?: string | null; frontVerified?: boolean;
+        };
         // A newer file or name may have replaced this scan while it ran.
-        if (controller.signal.aborted || scannedFile !== frontFile) return;
+        if (controller.signal.aborted || scannedFront !== frontFile || scannedBack !== backFile) return;
+        const nameLine = result.detectedName ? `Name on ID: ${result.detectedName}` : "Your ID matches your name.";
         if (response.ok && result.verified && result.token) {
           idVerificationToken = result.token;
           idScanState = "verified";
-          renderIdScan("verified", "ID verified", result.detectedName ? `Name on ID: ${result.detectedName}` : "Your ID matches your name.");
+          renderSide("front", "verified", "ID verified", nameLine);
+          renderSide("back", "verified", "Back verified", "Same card as the front.");
           if (formStatus.textContent?.includes("ID")) formStatus.textContent = "";
+          updateContinueState();
+          return;
+        }
+        const code = result.code ?? "";
+        if (code === "BACK_REQUIRED") {
+          idScanState = "verified";
+          renderSide("front", "verified", "Front checked", nameLine);
+          renderSide("back", "info", "Upload the back of your ID", "Both sides must be from the same card.");
+          updateContinueState();
           return;
         }
         idScanState = "failed";
-        const code = result.code ?? "";
+        const failedSide = result.side === "back" ? "back" : "front";
         const retrySame = code === "SERVICE_UNAVAILABLE" || code === "TOO_MANY_CHECKS";
-        renderIdScan(
-          "failed",
-          ID_SCAN_TITLES[code] ?? "ID not verified",
-          result.message ?? "We could not verify this ID. Upload another photo.",
-          retrySame ? { label: "Try again", onClick: () => void scanFrontId() } : { label: "Upload another ID", onClick: chooseAnotherId },
-        );
+        const action = retrySame
+          ? { label: "Try again", onClick: () => void scanFrontId() }
+          : { label: failedSide === "back" ? "Upload another photo" : "Upload another ID", onClick: chooseFile(failedSide) };
+        const title = ID_SCAN_TITLES[code] ?? "ID not verified";
+        const message = result.message ?? "We could not verify this ID. Upload another photo.";
+        if (failedSide === "back") {
+          if (result.frontVerified) renderSide("front", "verified", "Front checked", nameLine);
+          else renderSide("front", null);
+          renderSide("back", "failed", title, message, action);
+        } else {
+          renderSide("front", "failed", title, message, action);
+          renderSide("back", null);
+        }
+        updateContinueState();
       } catch {
         if (controller.signal.aborted) return;
         idScanState = "failed";
-        renderIdScan("failed", "Could not check your ID", "Check your internet connection and try again.", { label: "Try again", onClick: () => void scanFrontId() });
+        renderSide("front", "failed", "Could not check your ID", "Check your internet connection and try again.", { label: "Try again", onClick: () => void scanFrontId() });
+        renderSide("back", null);
+        updateContinueState();
       }
     }
 
     // A verified ID belongs to the name it was checked against.
     const handleNameChange = () => {
-      if (!frontFile || (!idVerificationToken && idScanState !== "failed")) return;
+      if (!frontFile || idScanState === "idle") return;
       resetIdVerification();
     };
     const firstNameInput = root.querySelector<HTMLInputElement>("#firstName");
@@ -496,6 +567,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
           backFile = null;
           if (fileBackInput) fileBackInput.value = "";
           updateDropzoneUI(dropzoneBack, uploadBackSection, null);
+          if (frontFile) void scanFrontId();
+          else resetIdVerification();
         }
       }
     }
@@ -517,12 +590,14 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       else if (!frontFile) resetIdVerification();
     };
     const handleBackFileChange = (e: Event) => {
+      const previous = backFile;
       handleFileSelect(
         e,
         (f) => { backFile = f; },
         dropzoneBack,
         uploadBackSection
       );
+      if (backFile && backFile !== previous) void scanFrontId();
     };
 
     fileFrontInput?.addEventListener("change", handleFrontFileChange);
@@ -751,8 +826,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const handleToStep4 = () => {
       formStatus.textContent = "";
       if (!validateStep(panels[2])) return;
-      if (!frontFile || !selfieTaken) {
-        formStatus.textContent = "Upload the front of your valid ID and capture a selfie before continuing.";
+      if (!frontFile || !backFile || !selfieTaken) {
+        formStatus.textContent = "Upload the front and back of your valid ID and capture a selfie before continuing.";
         return;
       }
       if (!idVerificationToken) {
@@ -788,9 +863,9 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         }
       }
 
-      if (!frontFile) {
+      if (!frontFile || !backFile) {
         goToStep(3);
-        formStatus.textContent = "Upload the front of your valid ID to continue.";
+        formStatus.textContent = "Upload the front and back of your valid ID to continue.";
         return false;
       }
 
@@ -835,7 +910,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         completeButton.textContent = "Creating your account…";
         status.textContent = "";
         try {
-          if (!frontFile || !selfieFile) throw new Error("MISSING_EVIDENCE");
+          if (!frontFile || !backFile || !selfieFile) throw new Error("MISSING_EVIDENCE");
           if (!idVerificationToken) {
             completeButton.disabled = false;
             completeButton.textContent = "Create my account";
@@ -846,7 +921,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
           registration.set("verificationId", verificationId);
           registration.set("idVerificationToken", idVerificationToken);
           registration.set("frontId", frontFile);
-          if (backFile) registration.set("backId", backFile);
+          registration.set("backId", backFile);
           registration.set("selfie", selfieFile);
           const register = await fetch("/api/auth/register", { method: "POST", body: registration });
           if (!register.ok) {
@@ -905,7 +980,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       panel.querySelector<HTMLButtonElement>("#editSignupDetails")!.onclick = () => { window.clearInterval(resendTimer); goToStep(4); };
       const requestOtp = async () => {
         const value = (id: string) => root.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`#${id}`)?.value ?? "";
-        const response = await fetch("/api/auth/register/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ firstName: value("firstName"), lastName: value("lastName"), email: value("email"), phone: value("phone"), municipality: value("municipality"), barangay: value("barangay"), address: value("address"), username: value("username"), password: passwordField?.value, frontDocumentName: frontFile?.name, backDocumentName: backFile?.name, selfieCaptured: selfieTaken, termsAccepted: true }) });
+        const response = await fetch("/api/auth/register/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ firstName: value("firstName"), lastName: value("lastName"), email: value("email"), phone: value("phone"), municipality: value("municipality"), barangay: value("barangay"), address: currentAddress(), username: value("username"), password: passwordField?.value, frontDocumentName: frontFile?.name, backDocumentName: backFile?.name, selfieCaptured: selfieTaken, termsAccepted: true }) });
         const result = await response.json() as { verificationId?: string; error?: string };
         if (!response.ok || !result.verificationId) throw new Error(result.error ?? "Unable to send the verification code.");
         return result.verificationId;
@@ -951,7 +1026,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
             phone: value("phone"),
             municipality: value("municipality"),
             barangay: value("barangay"),
-            address: value("address"),
+            address: currentAddress(),
             username: value("username"),
             password: passwordField.value,
             frontDocumentName: frontFile.name,
@@ -987,6 +1062,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     toStep2?.addEventListener("click", handleToStep2);
     toStep3?.addEventListener("click", handleToStep3);
     toStep4?.addEventListener("click", handleToStep4);
+    updateContinueState();
     toStep5?.addEventListener("click", handleToStep5);
     backToStep1?.addEventListener("click", handleBackToStep1);
     backToStep2?.addEventListener("click", handleBackToStep2);
@@ -1015,6 +1091,10 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       formStatus.remove();
       fileFrontInput?.removeEventListener("change", handleFrontFileChange);
       firstNameInput?.removeEventListener("input", handleNameChange);
+      addressInputs.forEach((field) => {
+        field.removeEventListener("input", updateAddressPreview);
+        field.removeEventListener("change", updateAddressPreview);
+      });
       lastNameInput?.removeEventListener("input", handleNameChange);
       idScanController?.abort();
       fileBackInput?.removeEventListener("change", handleBackFileChange);
