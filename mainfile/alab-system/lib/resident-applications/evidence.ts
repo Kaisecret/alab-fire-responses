@@ -5,6 +5,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import type Sharp from "sharp";
 
+import { watermarkImage, watermarkTime } from "../media/watermark";
+
 // sharp ships a platform-specific native binary. A static import makes a
 // failure to load it (a missing linux-x64 libvips in the deployed bundle,
 // say) crash the whole route module before any handler runs, so the runtime
@@ -47,25 +49,6 @@ function storageClient() {
   const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("SUPABASE_SECRET_KEY is required for protected resident identity evidence.");
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-}
-
-function escapeXml(value: string) {
-  return value.replace(/[<>&'\"]/g, (character) => ({
-    "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", "\"": "&quot;",
-  }[character] ?? character));
-}
-
-function watermarkSvg(reference: string, submittedAt: Date) {
-  const date = new Intl.DateTimeFormat("en-PH", {
-    timeZone: "Asia/Manila", year: "numeric", month: "short", day: "2-digit",
-  }).format(submittedAt);
-  const label = escapeXml(`ALAB MUNICIPAL BFP REVIEW ONLY • ${reference} • ${date}`);
-  return Buffer.from(`<svg width="720" height="260" xmlns="http://www.w3.org/2000/svg">
-    <g transform="rotate(-24 360 130)" opacity="0.3">
-      <rect x="0" y="70" width="720" height="86" fill="#7f1d1d" opacity="0.22"/>
-      <text x="360" y="122" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#ffffff" stroke="#7f1d1d" stroke-width="1.5">${label}</text>
-    </g>
-  </svg>`);
 }
 
 // Magic-byte check used only when the image library is unavailable. It confirms
@@ -135,14 +118,14 @@ async function processAsset(
   // every signup and correction outright.
   let reviewKey: string | null = null;
   try {
-    const review = await (await loadSharp())(original)
-      .rotate()
-      .resize({ width: 1800, height: 1800, fit: "inside", withoutEnlargement: true })
-      .composite([{ input: watermarkSvg(reference, submittedAt), tile: true, blend: "over" }])
-      .webp({ quality: 88 })
-      .toBuffer();
+    const review = await watermarkImage(original, {
+      label: kind === "selfie" ? "Resident selfie · BFP review only" : "For BFP verification only",
+      detail: `${reference} · ${watermarkTime(submittedAt)}`,
+      maxSize: 1800,
+      format: "webp",
+    });
     reviewKey = `${applicationId}/review/${kind}-review-${assetId}.webp`;
-    await uploadObject(reviewKey, review, "image/webp");
+    await uploadObject(reviewKey, review.data, review.mimeType);
     uploadedKeys.push(reviewKey);
   } catch (error) {
     console.error(`Watermarked review copy unavailable for ${kind}; storing the original only`, error);

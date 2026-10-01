@@ -27,12 +27,12 @@ Image 1 is the FRONT of the uploaded ID. Image 2, when present, is the BACK. Rep
 
 For "front":
 - is_identification_document: true only for an identification card that identifies a person, such as a PhilSys/national ID, driver's license, passport, UMID, SSS, PhilHealth, Pag-IBIG, postal ID, voter's ID, PRC ID, senior citizen or PWD ID, barangay ID, company or school ID card. False for certificates, receipts, school records, medical documents, letters, screenshots of apps, random photos, or anything that is not an ID.
-- image_quality: GOOD only when the card is sharp, evenly and brightly lit, fully inside the frame and every printed detail is easy to read. Use TOO_DARK for an underexposed or dim photo even if some text can still be made out, BLURRY for any noticeable blur, CROPPED if any edge of the card is cut off, GLARE if reflections hide details, otherwise UNREADABLE.
+- image_quality: GOOD when the card is in focus, well lit, fully inside the frame and the name, ID number and other printed details are easy to read. Slight phone-camera grain, mild softness or a small tilt are still GOOD. Use TOO_DARK for an underexposed or dim photo even if some text can still be made out, BLURRY when blur makes the text hard to read, CROPPED if any edge of the card is cut off, GLARE if reflections hide details, otherwise UNREADABLE.
 - name_readable: true only if the holder's name can be read with confidence.
 - full_name, first_name, middle_name, last_name: the holder's name exactly as printed (empty strings if not readable). For "SURNAME, GIVEN NAMES" formats, split accordingly.
 - id_number: the ID or card number exactly as printed, or an empty string.
 - document_type: a short label such as "PhilSys ID" or "Driver's License".
-- edit_suspected: true when there are visible signs the card was edited or forged: a name, number or date in a different font, size, weight, spacing or colour than the rest of the card; text that is misaligned, floating, pasted over or overlapping the printed design; smudged, blurred or blocky patches around the name, number or photo; a background pattern that breaks around a field; a photo pasted onto the card; a digital template, mock-up, "SAMPLE"/"SPECIMEN" card, screenshot or a photo of a screen or printout instead of a physical card. False when the card looks like an untouched original. Only report clear visible evidence.
+- edit_suspected: true when there are visible signs the card was edited or forged: a name, number or date in a different font, size, weight, spacing or colour than the rest of the card; text that is misaligned, floating, pasted over or overlapping the printed design; smudged, blurred or blocky patches around the name, number or photo; a background pattern that breaks around a field; a photo pasted onto the card; a digital template, mock-up, "SAMPLE"/"SPECIMEN" card, screenshot or a photo of a screen or printout instead of a physical card. False when the card looks like an untouched original. Normal wear, scratches, fading, laminate texture, glare, camera grain, JPEG compression, resizing and a tilted angle are NOT signs of editing. Only report clear visible evidence.
 - edit_evidence: one short sentence describing what looks edited, or an empty string.
 
 For "back" (when Image 2 is present; otherwise set booleans to false and strings to empty):
@@ -156,5 +156,11 @@ export async function checkIdWithGemini(input: {
   lastName: string;
 }): Promise<IdCheckOutcome> {
   const reading = await readIdImages(input.front, input.back);
-  return interpretIdCheck(reading, { firstName: input.firstName, lastName: input.lastName }, { hasBack: Boolean(input.back) }) as IdCheckOutcome;
+  const outcome = interpretIdCheck(reading, { firstName: input.firstName, lastName: input.lastName }, { hasBack: Boolean(input.back) }) as IdCheckOutcome;
+  if (!outcome.ok && outcome.code === "TAMPERED") {
+    // What the model saw, so a wrongly rejected genuine ID can be investigated.
+    const side = (reading?.[outcome.side] ?? {}) as { edit_evidence?: unknown };
+    console.warn("ID check flagged as edited", { side: outcome.side, evidence: String(side.edit_evidence ?? "").slice(0, 200) });
+  }
+  return outcome;
 }

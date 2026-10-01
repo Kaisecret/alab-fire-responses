@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
     "/api/municipal-bfp/resident-applications/**": evidenceRuntimeFiles,
     "/api/provincial-bfp/resident-applications": evidenceRuntimeFiles,
     "/api/provincial-bfp/resident-applications/**": evidenceRuntimeFiles,
+    // ID checks read brightness, and sent photos are watermarked, with sharp.
+    "/api/auth/register/id-check": evidenceRuntimeFiles,
+    "/api/resident/fire-reports": evidenceRuntimeFiles,
+    "/api/mobile-bfp/backup-requests": evidenceRuntimeFiles,
   },
   allowedDevOrigins: ["169.254.6.6"],
   // sharp loads a platform-specific native binary, so it must stay external

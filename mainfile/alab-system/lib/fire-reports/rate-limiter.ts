@@ -1,20 +1,26 @@
 import type { PoolClient } from "pg";
 
-export const SOS_RATE_LIMIT_MAX_REPORTS = 2;
+/** One fire report per resident account, then a 5-minute cooldown. */
+export const SOS_RATE_LIMIT_MAX_REPORTS = 1;
+/**
+ * A network address may send a little more, because neighbours sharing one
+ * Wi-Fi or mobile carrier address can each report a fire.
+ */
+export const SOS_RATE_LIMIT_MAX_REPORTS_PER_IP = 2;
 export const SOS_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 export const SOS_RATE_LIMIT_WINDOW_SECONDS = 300; // 5 minutes in seconds
 
 export const SOS_RATE_LIMIT_ERROR_EN =
-  "You can only send up to 2 fire reports every 5 minutes. Please wait before submitting again.";
+  "You can send 1 fire report every 5 minutes. Please wait before submitting again.";
 
 // In-memory sliding window cache for fast checks and test/mock environments
-// Maps userId (or IP) -> array of timestamps of SUCCESSFUL submissions
+// Maps userId (or `ip:<address>`) -> timestamps of SUCCESSFUL submissions
 const memorySuccessfulSosReports = new Map<string, number[]>();
 
-export function getMemorySosReportCount(key: string, now = Date.now()): number {
+function memoryTimestamps(key: string, now: number): number[] {
   const windowStart = now - SOS_RATE_LIMIT_WINDOW_MS;
   const timestamps = memorySuccessfulSosReports.get(key) || [];
-  const valid = timestamps.filter((t) => t > windowStart);
+  const valid = timestamps.filter((t) => t > windowStart).sort((a, b) => a - b);
   if (valid.length !== timestamps.length) {
     if (valid.length > 0) {
       memorySuccessfulSosReports.set(key, valid);
@@ -22,7 +28,11 @@ export function getMemorySosReportCount(key: string, now = Date.now()): number {
       memorySuccessfulSosReports.delete(key);
     }
   }
-  return valid.length;
+  return valid;
+}
+
+export function getMemorySosReportCount(key: string, now = Date.now()): number {
+  return memoryTimestamps(key, now).length;
 }
 
 export function recordSuccessfulSosReportMemory(key: string, timestamp = Date.now()): void {
@@ -49,8 +59,39 @@ export interface SosRateLimitCheckResult {
 }
 
 /**
- * Checks whether the resident user or IP has exceeded the 2 reports per 5 minutes quota.
- * Only successfully saved fire reports within the last 5 minutes are counted.
+ * Seconds until the window holds fewer than `max` reports again, or 0 when it
+ * already does. `timestamps` are the reports inside the window, oldest first.
+ */
+function secondsUntilFree(timestamps: number[], max: number, now: number) {
+  if (timestamps.length < max) return 0;
+  const freesAt = timestamps[timestamps.length - max] + SOS_RATE_LIMIT_WINDOW_MS;
+  return Math.max(1, Math.ceil((freesAt - now) / 1000));
+}
+
+function decide(account: number[], ip: number[], now: number): SosRateLimitCheckResult {
+  const waitAccount = secondsUntilFree(account, SOS_RATE_LIMIT_MAX_REPORTS, now);
+  const waitIp = secondsUntilFree(ip, SOS_RATE_LIMIT_MAX_REPORTS_PER_IP, now);
+  const retryAfterSeconds = Math.max(waitAccount, waitIp);
+  const blockedByIp = waitIp > waitAccount;
+  return {
+    allowed: retryAfterSeconds === 0,
+    count: blockedByIp ? ip.length : account.length,
+    maxReports: blockedByIp ? SOS_RATE_LIMIT_MAX_REPORTS_PER_IP : SOS_RATE_LIMIT_MAX_REPORTS,
+    retryAfterSeconds,
+    message: retryAfterSeconds === 0 ? "" : SOS_RATE_LIMIT_ERROR_EN,
+  };
+}
+
+function merged(memory: number[], stored: number[]) {
+  // The database is authoritative; memory only covers reports another
+  // instance has not seen yet. Take whichever list knows about more reports.
+  return stored.length >= memory.length ? stored : memory;
+}
+
+/**
+ * Checks whether the resident account (1 report) or its network address
+ * (2 reports) has used up the 5-minute quota. Only successfully saved fire
+ * reports count.
  */
 export async function checkResidentSosRateLimit(
   userId: string,
@@ -60,98 +101,45 @@ export async function checkResidentSosRateLimit(
   const now = Date.now();
   const windowStart = new Date(now - SOS_RATE_LIMIT_WINDOW_MS);
 
-  // 1. Check in-memory tracking first
-  const memoryCount = Math.max(
-    getMemorySosReportCount(userId, now),
-    ipAddress ? getMemorySosReportCount(`ip:${ipAddress}`, now) : 0
-  );
+  // 1. In-memory tracking answers immediately when it already blocks.
+  const memoryAccount = memoryTimestamps(userId, now);
+  const memoryIp = ipAddress ? memoryTimestamps(`ip:${ipAddress}`, now) : [];
+  const fromMemory = decide(memoryAccount, memoryIp, now);
+  if (!fromMemory.allowed || providedClient === null) return fromMemory;
 
-  if (memoryCount >= SOS_RATE_LIMIT_MAX_REPORTS) {
-    return {
-      allowed: false,
-      count: memoryCount,
-      maxReports: SOS_RATE_LIMIT_MAX_REPORTS,
-      retryAfterSeconds: SOS_RATE_LIMIT_WINDOW_SECONDS,
-      message: SOS_RATE_LIMIT_ERROR_EN,
-    };
-  }
-
-  // 2. Query database for persistent successful reports in the last 5 minutes
+  // 2. Saved reports in the last 5 minutes, per account and per address.
   try {
     const executeQuery = async (client: PoolClient) => {
-      const result = await client.query<{ count: string; oldest_submitted_at: string | null }>(
-        `SELECT COUNT(*)::text AS count,
-                MIN(fr.submitted_at)::text AS oldest_submitted_at
+      const result = await client.query<{ account_times: string[] | null; ip_times: string[] | null }>(
+        `SELECT array_agg(fr.submitted_at::text ORDER BY fr.submitted_at) FILTER (WHERE rp.user_id = $1) AS account_times,
+                array_agg(fr.submitted_at::text ORDER BY fr.submitted_at)
+                  FILTER (WHERE $2::text IS NOT NULL AND host(fr.reporter_ip_address) = $2::text) AS ip_times
          FROM fire_reports fr
          LEFT JOIN resident_profiles rp ON rp.id = fr.resident_profile_id
-         WHERE (rp.user_id = $1 OR ($2::text IS NOT NULL AND fr.reporter_ip_address = $2))
+         WHERE (rp.user_id = $1 OR ($2::text IS NOT NULL AND host(fr.reporter_ip_address) = $2::text))
            AND fr.submitted_at >= $3`,
         [userId, ipAddress || null, windowStart.toISOString()]
       );
-
-      const dbCount = parseInt(result.rows[0]?.count || "0", 10);
-      return { dbCount, oldestSubmitted: result.rows[0]?.oldest_submitted_at };
+      const times = (values: string[] | null) => (values ?? []).map((value) => new Date(value).getTime());
+      return { account: times(result.rows[0]?.account_times ?? null), ip: times(result.rows[0]?.ip_times ?? null) };
     };
 
-    let dbCount = 0;
-    let oldestSubmitted: string | null = null;
-
+    let stored: { account: number[]; ip: number[] };
     if (providedClient) {
-      const res = await executeQuery(providedClient);
-      dbCount = res.dbCount;
-      oldestSubmitted = res.oldestSubmitted;
-    } else if (providedClient === null) {
-      // Explicit null = unit test / in-memory mode
-      dbCount = 0;
+      stored = await executeQuery(providedClient);
     } else {
       const { getDatabase } = await import("../db");
-      const pool = getDatabase();
-      const client = await pool.connect();
+      const client = await getDatabase().connect();
       try {
-        const res = await executeQuery(client);
-        dbCount = res.dbCount;
-        oldestSubmitted = res.oldestSubmitted;
+        stored = await executeQuery(client);
       } finally {
         client.release();
       }
     }
-
-    const effectiveCount = Math.max(memoryCount, dbCount);
-
-    if (effectiveCount >= SOS_RATE_LIMIT_MAX_REPORTS) {
-      let retryAfterSeconds = SOS_RATE_LIMIT_WINDOW_SECONDS;
-      if (oldestSubmitted) {
-        const oldestTime = new Date(oldestSubmitted).getTime();
-        const elapsed = now - oldestTime;
-        retryAfterSeconds = Math.max(1, Math.ceil((SOS_RATE_LIMIT_WINDOW_MS - elapsed) / 1000));
-      }
-
-      return {
-        allowed: false,
-        count: effectiveCount,
-        maxReports: SOS_RATE_LIMIT_MAX_REPORTS,
-        retryAfterSeconds,
-        message: SOS_RATE_LIMIT_ERROR_EN,
-      };
-    }
-
-    return {
-      allowed: true,
-      count: effectiveCount,
-      maxReports: SOS_RATE_LIMIT_MAX_REPORTS,
-      retryAfterSeconds: 0,
-      message: "",
-    };
+    return decide(merged(memoryAccount, stored.account), merged(memoryIp, stored.ip), now);
   } catch (error) {
-    // If database query fails, fallback to in-memory check without crashing
+    // If the database query fails, fall back to the in-memory check without crashing
     console.warn("[SOS_RATE_LIMIT] Database query failed, relying on memory check:", error);
-    const allowed = memoryCount < SOS_RATE_LIMIT_MAX_REPORTS;
-    return {
-      allowed,
-      count: memoryCount,
-      maxReports: SOS_RATE_LIMIT_MAX_REPORTS,
-      retryAfterSeconds: allowed ? 0 : SOS_RATE_LIMIT_WINDOW_SECONDS,
-      message: allowed ? "" : SOS_RATE_LIMIT_ERROR_EN,
-    };
+    return fromMemory;
   }
 }

@@ -8,10 +8,10 @@ const appRoot = "c:/Users/janna/OneDrive/Documents/Bestcapstone for us/mainfile/
 test("SOS Rate Limiter module exports constants, memory window, and check function", async () => {
   const rateLimiterModule = await import("../lib/fire-reports/rate-limiter.ts");
 
-  assert.equal(rateLimiterModule.SOS_RATE_LIMIT_MAX_REPORTS, 2);
+  assert.equal(rateLimiterModule.SOS_RATE_LIMIT_MAX_REPORTS, 1);
   assert.equal(rateLimiterModule.SOS_RATE_LIMIT_WINDOW_MS, 300000); // 5 minutes
   assert.equal(rateLimiterModule.SOS_RATE_LIMIT_WINDOW_SECONDS, 300);
-  assert.match(rateLimiterModule.SOS_RATE_LIMIT_ERROR_EN, /up to 2 fire reports every 5 minutes/);
+  assert.match(rateLimiterModule.SOS_RATE_LIMIT_ERROR_EN, /1 fire report every 5 minutes/);
 
   assert.equal(typeof rateLimiterModule.checkResidentSosRateLimit, "function");
   assert.equal(typeof rateLimiterModule.recordSuccessfulSosReportMemory, "function");
@@ -19,7 +19,7 @@ test("SOS Rate Limiter module exports constants, memory window, and check functi
   assert.equal(typeof rateLimiterModule.clearMemorySosReports, "function");
 });
 
-test("SOS Rate Limiter sliding window permits exactly 2 reports and rejects 3rd within 5 minutes", async () => {
+test("SOS Rate Limiter permits 1 report and rejects the 2nd within 5 minutes", async () => {
   const {
     checkResidentSosRateLimit,
     recordSuccessfulSosReportMemory,
@@ -38,20 +38,12 @@ test("SOS Rate Limiter sliding window permits exactly 2 reports and rejects 3rd 
   // Successfully submitted 1st report -> recorded
   recordSuccessfulSosReportMemory(testUser);
 
-  // Attempt 2: Should be allowed (1 existing report in window)
+  // Attempt 2: Should be BLOCKED (1 existing report in window)
   const check2 = await checkResidentSosRateLimit(testUser, undefined, null);
-  assert.equal(check2.allowed, true, "2nd report must be allowed");
+  assert.equal(check2.allowed, false, "2nd report must wait for the cooldown");
   assert.equal(check2.count, 1);
-
-  // Successfully submitted 2nd report -> recorded
-  recordSuccessfulSosReportMemory(testUser);
-
-  // Attempt 3: Should be BLOCKED (2 existing reports in window)
-  const check3 = await checkResidentSosRateLimit(testUser, undefined, null);
-  assert.equal(check3.allowed, false, "3rd report must be blocked");
-  assert.equal(check3.count, 2);
-  assert.equal(check3.message, SOS_RATE_LIMIT_ERROR_EN);
-  assert.ok(check3.retryAfterSeconds > 0);
+  assert.equal(check2.message, SOS_RATE_LIMIT_ERROR_EN);
+  assert.ok(check2.retryAfterSeconds > 290 && check2.retryAfterSeconds <= 300);
 });
 
 test("Failed submissions do NOT increment rate limit count", async () => {
@@ -116,7 +108,7 @@ test("Report fire UI contains short English rate limit popup with zero peacetime
   // Popup markup in English
   assert.match(contentSource, /data-rate-limit-dialog/);
   assert.match(contentSource, /Report Limit Reached/);
-  assert.match(contentSource, /You can only send up to <strong>2 fire reports every 5 minutes<\/strong>/);
+  assert.match(contentSource, /You can send <strong>1 fire report every 5 minutes<\/strong>/);
   assert.match(contentSource, /Okay, Understood/);
   assert.match(contentSource, /data-rate-limit-close/);
 

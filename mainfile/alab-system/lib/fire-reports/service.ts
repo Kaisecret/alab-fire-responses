@@ -22,7 +22,7 @@ import {
   type BuildingDensityStatus,
 } from "./building-density";
 import { assessReportDanger } from "./danger-assessment";
-import { findOpenIncidentNear } from "./duplicates";
+import { findOpenIncidentNear, findOwnOpenReportNear } from "./duplicates";
 
 export type PhotoMetadata = { storageKey: string; originalFileName: string; mimeType: string; fileSizeBytes: number };
 
@@ -98,6 +98,10 @@ export async function createResidentFireReport(userId: string, input: FireReport
     // of raising another alarm. The lock makes simultaneous reports in one
     // municipality take turns, so they cannot both become the first report.
     await client.query("select pg_advisory_xact_lock(hashtext($1))", [`fire-report-area:${municipalityId}`]);
+    // The same resident reporting the same place again (a double tap, or a
+    // second try while the first is still open) gets their first report back.
+    const ownReport = await findOwnOpenReportNear(client, userId, input.latitude, input.longitude);
+    if (ownReport) return { id: ownReport.id, referenceNumber: ownReport.referenceNumber, existing: true as const };
     const linkedIncident = await findOpenIncidentNear(client, input.latitude, input.longitude);
     const initialStatus = linkedIncident ? "DUPLICATE" : "PENDING_VERIFICATION";
 
@@ -163,6 +167,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
         buildingDensityConfidence: densityAssessment.confidence,
         buildingDensityBuildingCount: densityAssessment.buildingCount,
         linkedTo: { id: linkedIncident.id, referenceNumber: linkedIncident.referenceNumber },
+        existing: false as const,
       };
     }
     const [municipalRecipients, provincialRecipients] = await Promise.all([
@@ -209,6 +214,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
       buildingDensityConfidence: densityAssessment.confidence,
       buildingDensityBuildingCount: densityAssessment.buildingCount,
       linkedTo: null,
+      existing: false as const,
     };
   });
 }

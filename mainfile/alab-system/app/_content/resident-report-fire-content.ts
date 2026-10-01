@@ -832,6 +832,20 @@ export const reportFireStyles = `
     font-size: 0.86rem;
     line-height: 1.5;
   }
+  .rate-limit-dialog p.rate-limit-wait {
+    margin: -0.6rem auto 1.25rem;
+    padding: 0.4rem 0.85rem;
+    width: fit-content;
+    border-radius: 999px;
+    background: #FEF2F2;
+    color: #B91C1C;
+    font-size: 0.8rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .rate-limit-dialog p.rate-limit-wait[hidden] {
+    display: none;
+  }
   .rate-limit-actions {
     display: grid;
   }
@@ -1092,7 +1106,8 @@ export const reportFireMarkup = `
           <span class="rate-limit-badge">!</span>
         </div>
         <h3 id="rateLimitTitle">Report Limit Reached</h3>
-        <p>You can only send up to <strong>2 fire reports every 5 minutes</strong>. Please wait before submitting again.</p>
+        <p>You can send <strong>1 fire report every 5 minutes</strong>. Please wait before submitting again.</p>
+        <p class="rate-limit-wait" data-rate-limit-wait hidden></p>
         <div class="rate-limit-actions">
           <button type="button" class="rate-limit-btn-close" data-rate-limit-close>
             Okay, Understood

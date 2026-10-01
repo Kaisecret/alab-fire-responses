@@ -39,6 +39,42 @@ export async function findOpenIncidentNear(client: PoolClient, latitude: number,
   return result.rows[0] ?? null;
 }
 
+export type OwnOpenReport = { id: string; referenceNumber: string };
+
+/**
+ * The resident's own latest report within 50 m whose fire is still open, so
+ * reporting the same place again opens that report instead of a new one. A
+ * report linked to another resident's follows that incident's status.
+ */
+export async function findOwnOpenReportNear(
+  client: Pick<PoolClient, "query">,
+  userId: string,
+  latitude: number,
+  longitude: number,
+): Promise<OwnOpenReport | null> {
+  const { latitudeDelta, longitudeDelta } = searchBox(latitude);
+  const result = await client.query<OwnOpenReport>(
+    `select fr.id, fr.reference_number as "referenceNumber"
+       from fire_reports fr
+       join resident_profiles rp on rp.id = fr.resident_profile_id
+       left join fire_reports root on root.id = fr.duplicate_of_report_id
+      where rp.user_id = $8
+        and coalesce(root.status, fr.status) <> all($5::text[])
+        and fr.submitted_at > now() - make_interval(hours => $6::int)
+        and fr.latitude between $1::float8 - $3::float8 and $1::float8 + $3::float8
+        and fr.longitude between $2::float8 - $4::float8 and $2::float8 + $4::float8
+        and 6371000 * 2 * asin(sqrt(
+              power(sin(radians(fr.latitude::float8 - $1::float8) / 2), 2)
+              + cos(radians($1::float8)) * cos(radians(fr.latitude::float8))
+              * power(sin(radians(fr.longitude::float8 - $2::float8) / 2), 2)
+            )) <= $7::float8
+      order by fr.submitted_at desc
+      limit 1`,
+    [latitude, longitude, latitudeDelta, longitudeDelta, CLOSED_INCIDENT_STATUSES, DUPLICATE_WINDOW_HOURS, DUPLICATE_RADIUS_METERS, userId],
+  );
+  return result.rows[0] ?? null;
+}
+
 export type SharedIncidentReport = {
   id: string;
   referenceNumber: string;

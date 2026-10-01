@@ -21,6 +21,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     'resident/application-status/resubmit',
     'municipal-bfp/resident-applications/[applicationId]',
     'provincial-bfp/resident-applications/[applicationId]',
+    // Photos are watermarked with sharp before they are stored.
+    'auth/register/id-check',
+    'resident/fire-reports',
+    'mobile-bfp/backup-requests',
   ];
   for (const route of routes) {
     const tracePath = resolve(`.next/server/app/api/${route}/route.js.nft.json`);

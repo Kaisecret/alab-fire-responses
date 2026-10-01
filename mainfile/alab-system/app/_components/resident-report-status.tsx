@@ -39,6 +39,13 @@ type Report = {
 const detailStyles = `
   .resident-report-detail { min-height: 100vh; padding: 1.4rem 1rem 8rem; background: #fbfaf9; color: #1e293b; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
   .resident-report-detail-inner { width: min(100%, 51rem); margin: 0 auto; }
+  .resident-already-notice { display:flex; align-items:flex-start; gap:.75rem; margin-bottom:1rem; padding:.95rem 1rem; border:1px solid #BFDBFE; border-radius:1rem; background:#EFF6FF; color:#1E3A8A; animation:alreadyIn .3s ease both; }
+  .resident-already-icon { flex:0 0 auto; width:2.2rem; height:2.2rem; display:grid; place-items:center; border-radius:.75rem; background:#DBEAFE; color:#1D4ED8; }
+  .resident-already-notice div { flex:1; min-width:0; }
+  .resident-already-notice strong { display:block; font-size:.9rem; font-weight:850; }
+  .resident-already-notice p { margin:.25rem 0 0; color:#334155; font-size:.8rem; line-height:1.45; }
+  .resident-already-notice button { flex:0 0 auto; width:1.9rem; height:1.9rem; border:0; border-radius:50%; background:transparent; color:#1E3A8A; cursor:pointer; }
+  @keyframes alreadyIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
   .resident-detail-heading { display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; }
   .resident-detail-back { width:2.25rem; height:2.25rem; display:grid; place-items:center; border:0; border-radius:.65rem; color:#334155; background:#fff; font-size:1.5rem; text-decoration:none; box-shadow:0 1px 3px rgba(15,23,42,.1); }
   .resident-detail-heading h1 { margin:0; font-size:1.32rem; font-weight:800; }
@@ -436,12 +443,15 @@ const detailStyles = `
   .resident-photos-preview-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.55rem;
-    margin-bottom: 0.85rem;
+    gap: 0.6rem;
+    margin: 0.2rem 0 0.95rem;
   }
+  .resident-photos-preview-grid.count-1 { grid-template-columns: 1fr; }
+  .resident-photos-preview-grid.count-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .resident-photos-preview-grid.count-1 .resident-photo-preview-thumb { aspect-ratio: 4 / 3; }
   .resident-photo-preview-thumb {
     position: relative;
-    aspect-ratio: 1;
+    aspect-ratio: 3 / 4;
     border-radius: 0.75rem;
     overflow: hidden;
     border: 1.5px solid #E2E8F0;
@@ -458,12 +468,8 @@ const detailStyles = `
   .resident-photo-preview-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
-    transition: transform 0.25s ease;
-  }
-  .resident-photo-preview-thumb:hover .resident-photo-preview-img {
-    transform: scale(1.06);
   }
   .resident-photo-preview-badge {
     position: absolute;
@@ -695,6 +701,15 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   const { lang, t } = useResidentLanguage();
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState("");
+  const [alreadyNotice, setAlreadyNotice] = useState(false);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("already") !== "1") return;
+    url.searchParams.delete("already");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    queueMicrotask(() => setAlreadyNotice(true));
+  }, []);
   const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -731,7 +746,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
     try {
       const alreadyOnboarded = localStorage.getItem("alab_tactical_onboarded") === "true";
       if (!alreadyOnboarded && report && (!report.structure_material || !report.house_density || !report.route_accessibility)) {
-        setShowOnboarding(true);
+        queueMicrotask(() => setShowOnboarding(true));
       }
     } catch {
       // Ignore storage errors in restricted contexts
@@ -889,6 +904,17 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
         </a>
         <h1>Report Details</h1>
       </div>
+
+      {alreadyNotice && (
+        <div className="resident-already-notice" role="status">
+          <span className="resident-already-icon" aria-hidden="true"><i className="fa-solid fa-location-dot" /></span>
+          <div>
+            <strong>{lang === "en" ? "You already reported a fire here" : lang === "hil" ? "Nakareport ka na sang sunog diri" : "Naiulat mo na ang sunog dito"}</strong>
+            <p>{lang === "en" ? "This is your report. BFP is following it, so there is no need to send another." : lang === "hil" ? "Amo ini ang imo report. Ginasunod na ini sang BFP, gani indi na kinahanglan magpadala liwat." : "Ito ang iyong ulat. Sinusubaybayan na ito ng BFP, kaya hindi na kailangang magpadala ulit."}</p>
+          </div>
+          <button type="button" aria-label={lang === "en" ? "Close" : lang === "hil" ? "Isira" : "Isara"} onClick={() => setAlreadyNotice(false)}><i className="fa-solid fa-xmark" /></button>
+        </div>
+      )}
 
       <section className="resident-detail-hero">
         <div className="resident-hero-main">
@@ -1178,8 +1204,8 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 <span>📷</span> {lang === "en" ? "Incident Photos" : lang === "hil" ? "Mga Litrato sang Insidente" : "Mga Litrato ng Insidente"} ({photos.length})
               </h2>
 
-              {photos.length > 1 && (
-                <div className="resident-photos-preview-grid">
+              {photos.length > 0 && (
+                <div className={`resident-photos-preview-grid count-${Math.min(photos.length, 3)}`}>
                   {photos.map((p, idx) => (
                     <button
                       key={idx}

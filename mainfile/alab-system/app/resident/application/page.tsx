@@ -8,6 +8,7 @@ import {
   requestResidentApplicationJson,
 } from "../../../lib/resident-applications/client-request";
 import { ResidentSelfieCapture, residentSelfieCaptureStyles } from "../../_components/resident-selfie-capture";
+import { shrinkPhoto } from "../../_lib/shrink-photo";
 
 type Application = {
   reference: string;
@@ -182,12 +183,18 @@ export default function ResidentApplicationPage() {
     // Capture native values while controls are enabled. Disabled controls are
     // omitted by the FormData constructor, so pending state begins afterwards.
     const formData = new FormData(event.currentTarget);
-    if (frontId) formData.set("frontId", frontId.file);
-    if (backId) formData.set("backId", backId.file);
-    else formData.delete("backId");
-    formData.set("selfie", selfieFile);
-
     operationRef.current = "submitting";
+    // Phone photos are shrunk so the three images fit one request.
+    const [front, back, selfie] = await Promise.all([
+      frontId ? shrinkPhoto(frontId.file) : null,
+      backId ? shrinkPhoto(backId.file) : null,
+      shrinkPhoto(selfieFile, { maxSize: 1280, maxBytes: 800 * 1024 }),
+    ]);
+    if (front) formData.set("frontId", front);
+    if (back) formData.set("backId", back);
+    else formData.delete("backId");
+    formData.set("selfie", selfie);
+
     const version = ++requestVersionRef.current;
     setSaving(true);
     setRecoveryIssue(null);

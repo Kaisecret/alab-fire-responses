@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState, type RefObject } from 'react';
 import 'leaflet/dist/leaflet.css';
 import type { Circle, Map as LeafletMap, Marker } from 'leaflet';
 import { ResidentFireLoader } from '../../_components/resident-fire-loader';
@@ -21,6 +21,8 @@ import {
 const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const REVERSE_GEOCODE_URL = '/api/geocode/reverse';
 const DEFAULT_MAP_CENTER: [number, number] = [11.2753568, 121.7387252];
+/** One fire report per account, then this cooldown. */
+const SOS_COOLDOWN_MS = 5 * 60 * 1000;
 const LOCATION_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
   timeout: 12000,
@@ -64,6 +66,13 @@ function barangayLabel(value: string) {
   return /\bbarangay\b/i.test(value) ? value : `Barangay ${value}`;
 }
 
+// The form is plain HTML wired up by hand. It is kept out of React updates:
+// re-rendering it (for example when the sending loader shows) would replace
+// the markup and drop the chosen fire type, photos and every listener.
+const ReportFireForm = memo(function ReportFireForm({ rootRef }: { rootRef: RefObject<HTMLDivElement | null> }) {
+  return <div ref={rootRef} dangerouslySetInnerHTML={{ __html: reportFireMarkup }} />;
+});
+
 export default function ResidentReportFirePage() {
   return <LegacyResidentReportFirePage />;
 }
@@ -98,7 +107,7 @@ function LegacyResidentReportFirePage() {
   return (
     <>
       <style>{reportFireStyles}</style>
-      <div ref={rootRef} dangerouslySetInnerHTML={{ __html: reportFireMarkup }} />
+      <ReportFireForm rootRef={rootRef} />
       {isSubmitting && <ResidentFireLoader label="Sending your fire alert…" />}
     </>
   );
@@ -155,6 +164,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const confirmAlertCancelBtn = root.querySelector<HTMLButtonElement>('[data-confirm-alert-cancel]');
   const rateLimitDialog = root.querySelector<HTMLElement>('[data-rate-limit-dialog]');
   const rateLimitCloseBtn = root.querySelector<HTMLButtonElement>('[data-rate-limit-close]');
+  const rateLimitWait = root.querySelector<HTMLElement>('[data-rate-limit-wait]');
   const fireTypeSection = root.querySelector<HTMLElement>('[data-step-fire-type]');
   const fireTypeHint = root.querySelector<HTMLElement>('[data-fire-type-hint]');
   if (!submitButton || !locationCard || !landmarkInput || !photoInput || typeButtons.length === 0) return () => {};
@@ -254,14 +264,64 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   };
   confirmAlertDialog?.addEventListener('click', handleConfirmBackdropClick);
 
-  const showRateLimitDialog = () => {
+  // Seconds left in the cooldown, counted from this browser's last report.
+  const clientCooldownSeconds = (): number => {
+    try {
+      const raw = localStorage.getItem('alab_successful_sos_reports');
+      const timestamps: number[] = raw ? JSON.parse(raw) : [];
+      const latest = Math.max(0, ...timestamps.filter((t) => typeof t === 'number'));
+      return Math.max(0, Math.ceil((latest + SOS_COOLDOWN_MS - Date.now()) / 1000));
+    } catch {
+      return 0;
+    }
+  };
+
+  let cooldownEndsAt = 0;
+  let cooldownTimer: number | undefined;
+  const renderCooldown = () => {
+    if (!rateLimitWait) return;
+    const left = Math.max(0, Math.ceil((cooldownEndsAt - Date.now()) / 1000));
+    if (left === 0) {
+      rateLimitWait.hidden = true;
+      window.clearInterval(cooldownTimer);
+      return;
+    }
+    rateLimitWait.hidden = false;
+    rateLimitWait.textContent = `You can report again in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+  };
+
+  const showRateLimitDialog = (retryAfterSeconds?: number) => {
     if (!rateLimitDialog) return;
+    const wait = retryAfterSeconds && retryAfterSeconds > 0 ? retryAfterSeconds : clientCooldownSeconds();
+    cooldownEndsAt = Date.now() + wait * 1000;
+    window.clearInterval(cooldownTimer);
+    renderCooldown();
+    if (wait > 0) cooldownTimer = window.setInterval(renderCooldown, 1000);
     rateLimitDialog.hidden = false;
   };
 
   const hideRateLimitDialog = () => {
     if (!rateLimitDialog) return;
     rateLimitDialog.hidden = true;
+    window.clearInterval(cooldownTimer);
+  };
+
+  // Reporting the same place again opens the resident's own open report.
+  const openOwnReportHere = async (): Promise<boolean> => {
+    const { locationLatitude, locationLongitude } = locationCard.dataset;
+    if (!locationLatitude || !locationLongitude) return false;
+    try {
+      const response = await fetch(`/api/resident/fire-reports/open-nearby?latitude=${encodeURIComponent(locationLatitude)}&longitude=${encodeURIComponent(locationLongitude)}`, { cache: 'no-store' });
+      if (!response.ok) return false;
+      const data = await response.json() as { report?: { id: string } | null };
+      if (!data.report?.id) return false;
+      submitButton.disabled = true;
+      submitButton.textContent = 'OPENING YOUR REPORT…';
+      window.location.assign(`/resident/reports/${data.report.id}?already=1`);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   rateLimitCloseBtn?.addEventListener('click', hideRateLimitDialog);
@@ -275,12 +335,10 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       const now = Date.now();
       const raw = localStorage.getItem('alab_successful_sos_reports');
       const timestamps: number[] = raw ? JSON.parse(raw) : [];
-      const windowStart = now - 5 * 60 * 1000;
+      const windowStart = now - SOS_COOLDOWN_MS;
       const recent = timestamps.filter((t) => typeof t === 'number' && t > windowStart);
-      if (recent.length >= 2) {
-        return false;
-      }
-      return true;
+      // One report per 5 minutes.
+      return recent.length < 1;
     } catch {
       return true;
     }
@@ -291,7 +349,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       const now = Date.now();
       const raw = localStorage.getItem('alab_successful_sos_reports');
       const timestamps: number[] = raw ? JSON.parse(raw) : [];
-      const windowStart = now - 5 * 60 * 1000;
+      const windowStart = now - SOS_COOLDOWN_MS;
       const recent = timestamps.filter((t) => typeof t === 'number' && t > windowStart);
       recent.push(now);
       localStorage.setItem('alab_successful_sos_reports', JSON.stringify(recent));
@@ -516,14 +574,19 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     }
     try {
       const response = await fetch("/api/resident/fire-reports", { method: "POST", body: form });
-      const data = await response.json() as { error?: string; report?: { id: string } };
+      const data = await response.json() as { error?: string; report?: { id: string }; existing?: boolean; retryAfter?: number };
       if (!response.ok || !data.report?.id) {
         if (response.status === 429) {
-          showRateLimitDialog();
+          showRateLimitDialog(data.retryAfter);
           resetSubmission();
           return;
         }
         throw new Error(data.error || 'Unable to submit the fire report.');
+      }
+      if (data.existing) {
+        // Same place as the resident's open report: show that report.
+        window.location.assign(`/resident/reports/${data.report.id}?already=1`);
+        return;
       }
       // Only count towards rate limit if report was successfully sent!
       recordClientSuccessfulSos();
@@ -544,7 +607,15 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     if (submitting) return;
     showError('');
 
-    // Pre-flight UI security check: Max 2 successful reports per 5 minutes
+    // Already reported here: go straight to that report's summary.
+    if (locationCard.dataset.locationValid === 'true') {
+      submitting = true;
+      const opened = await openOwnReportHere();
+      submitting = false;
+      if (opened) return;
+    }
+
+    // Pre-flight UI check: 1 successful report per 5 minutes
     if (!checkClientSosRateLimit()) {
       showRateLimitDialog();
       return;
@@ -585,6 +656,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
         resetSubmission();
         return;
       }
+      if (await openOwnReportHere()) return;
       resetSubmission();
     }
 
@@ -621,6 +693,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     confirmAlertDialog?.removeEventListener('click', handleConfirmBackdropClick);
     confirmAlertSendBtn?.removeEventListener('click', handleConfirmSend);
     rateLimitCloseBtn?.removeEventListener('click', hideRateLimitDialog);
+    window.clearInterval(cooldownTimer);
     rateLimitDialog?.removeEventListener('click', handleRateLimitBackdropClick);
     window.removeEventListener('alab:resident-language-changed', onLangChange);
   };

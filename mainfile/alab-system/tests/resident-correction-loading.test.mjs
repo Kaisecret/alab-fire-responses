@@ -36,6 +36,7 @@ function pageHarness(request) {
     'next/link': { default: 'a' },
     '../../../lib/resident-applications/client-request': request,
     '../../_components/resident-selfie-capture': { ResidentSelfieCapture: 'resident-selfie-capture', residentSelfieCaptureStyles: '' },
+    '../../_lib/shrink-photo': { shrinkPhoto: async (file) => file },
   });
   return () => { stateCursor = 0; refCursor = 0; return mod.default(); };
 }

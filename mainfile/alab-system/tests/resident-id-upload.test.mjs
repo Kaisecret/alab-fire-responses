@@ -22,7 +22,8 @@ test('correction page implements accessible selected ID previews and optional ba
   assert.match(page, />Remove</);
   assert.match(page, /URL\.revokeObjectURL/);
   assert.match(page, /backInputRef\.current\.value = ""/);
-  assert.match(page, /formData\.set\("frontId", frontId\.file\)/);
+  assert.match(page, /shrinkPhoto\(frontId\.file\)/);
+  assert.match(page, /formData\.set\("frontId", front\)/);
   assert.match(page, /formData\.delete\("backId"\)/);
   assert.doesNotMatch(page, /className="upload"/);
 });

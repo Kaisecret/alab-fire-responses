@@ -6,6 +6,7 @@ import { signupMarkup, signupStyles } from "../_content/signup-content";
 import { residentAuthFontStyles } from "../_content/resident-auth-font";
 import { antiqueBarangays } from "../_content/antique-barangays";
 import { composeResidentAddress } from "../../lib/resident-applications/compose-address.mjs";
+import { shrinkPhoto } from "../_lib/shrink-photo";
 
 const visibleEye = `
   <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
@@ -298,6 +299,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       SERVICE_UNAVAILABLE: "ID check unavailable",
       TOO_MANY_CHECKS: "Too many attempts",
       INVALID_FILE: "Unsupported file",
+      TOO_LARGE: "Photo too large",
       NAME_REQUIRED: "Enter your name first",
     };
     const ID_SCAN_ICONS = {
@@ -364,8 +366,11 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     }
 
     const chooseFile = (side: "front" | "back") => () => sideParts[side].input?.click();
+    // Photos still being made smaller; they are never sent until ready.
+    const preparingSides = new Map<"front" | "back", File>();
 
     async function scanFrontId() {
+      if (preparingSides.size > 0) return; // the last photo to finish preparing starts the check
       if (!frontFile) {
         resetIdVerification();
         if (backFile) renderSide("back", "info", "Upload the front first", "Both sides are checked together.");
@@ -401,6 +406,11 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
           verified?: boolean; token?: string; side?: "front" | "back"; code?: string; message?: string;
           detectedName?: string | null; frontVerified?: boolean;
         };
+        if (response.status === 413) {
+          result.code = "TOO_LARGE";
+          result.side = scannedBack && scannedBack.size > scannedFront.size ? "back" : "front";
+          result.message = "This photo is too large to send. Take a new, closer photo of your ID and upload it again.";
+        }
         // A newer file or name may have replaced this scan while it ran.
         if (controller.signal.aborted || scannedFront !== frontFile || scannedBack !== backFile) return;
         const nameLine = result.detectedName ? `Name on ID: ${result.detectedName}` : "Your ID matches your name.";
@@ -504,8 +514,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     ) {
       const input = e.target as HTMLInputElement;
       const file = input.files?.[0] ?? null;
-      if (file && file.size > 5 * 1024 * 1024) {
-        window.alert("File size must be less than 5MB.");
+      if (file && file.size > 15 * 1024 * 1024) {
+        window.alert("Photo must be smaller than 15 MB.");
         input.value = "";
         return;
       }
@@ -560,11 +570,13 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         const section = target.closest(".upload-section") as HTMLElement;
         if (dropzone === dropzoneFront) {
           frontFile = null;
+          preparingSides.delete("front");
           if (fileFrontInput) fileFrontInput.value = "";
           updateDropzoneUI(dropzoneFront, uploadFrontSection, null);
           resetIdVerification();
         } else if (dropzone === dropzoneBack) {
           backFile = null;
+          preparingSides.delete("back");
           if (fileBackInput) fileBackInput.value = "";
           updateDropzoneUI(dropzoneBack, uploadBackSection, null);
           if (frontFile) void scanFrontId();
@@ -578,6 +590,25 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const cleanupDragBack = setupDragDrop(dropzoneBack, fileBackInput);
 
     // File input change handlers
+    // Photos are made smaller before the check, and the same smaller copy is
+    // sent at registration, so the verification token still matches it.
+    async function prepareIdSide(side: "front" | "back", picked: File) {
+      idScanController?.abort();
+      idVerificationToken = null;
+      idScanState = "scanning";
+      preparingSides.set(side, picked);
+      updateContinueState();
+      renderSide(side, "scanning", "Preparing your photo…", "Making it ready for a quick check.");
+      const small = await shrinkPhoto(picked);
+      if (preparingSides.get(side) !== picked) return; // replaced or removed meanwhile
+      preparingSides.delete(side);
+      if ((side === "front" ? frontFile : backFile) !== picked) return;
+      if (side === "front") frontFile = small;
+      else backFile = small;
+      // Both sides go in one check, so wait for the other side if it is still being prepared.
+      if (preparingSides.size === 0) void scanFrontId();
+    }
+
     const handleFrontFileChange = (e: Event) => {
       const previous = frontFile;
       handleFileSelect(
@@ -586,8 +617,11 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         dropzoneFront,
         uploadFrontSection
       );
-      if (frontFile && frontFile !== previous) void scanFrontId();
-      else if (!frontFile) resetIdVerification();
+      if (frontFile && frontFile !== previous) void prepareIdSide("front", frontFile);
+      else if (!frontFile) {
+        preparingSides.delete("front");
+        resetIdVerification();
+      }
     };
     const handleBackFileChange = (e: Event) => {
       const previous = backFile;
@@ -597,7 +631,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         dropzoneBack,
         uploadBackSection
       );
-      if (backFile && backFile !== previous) void scanFrontId();
+      if (backFile && backFile !== previous) void prepareIdSide("back", backFile);
     };
 
     fileFrontInput?.addEventListener("change", handleFrontFileChange);
@@ -711,12 +745,12 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       }, "image/jpeg", 0.92);
     };
 
-    const handleUseSelfie = () => {
+    const handleUseSelfie = async () => {
       if (!pendingSelfieBlob) {
         window.alert("Take a clear selfie before continuing.");
         return;
       }
-      selfieFile = new File([pendingSelfieBlob], `resident-selfie-${Date.now()}.jpg`, { type: "image/jpeg" });
+      selfieFile = await shrinkPhoto(new File([pendingSelfieBlob], `resident-selfie-${Date.now()}.jpg`, { type: "image/jpeg" }), { maxSize: 1280, maxBytes: 800 * 1024 });
       stopSelfieCamera();
       showSelfieCaptured();
     };

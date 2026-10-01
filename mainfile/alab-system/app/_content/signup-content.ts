@@ -1589,7 +1589,7 @@ export const signupMarkup = `<main class="signup-container">
                                 <line x1="12" y1="3" x2="12" y2="15"/>
                             </svg>
                             <span class="upload-text"><strong>Click to upload</strong> or drag and drop</span>
-                            <span class="upload-hint">JPG, PNG, or WebP (Max. 5MB)</span>
+                            <span class="upload-hint">JPG, PNG, or WebP (Max. 15MB)</span>
                             <input type="file" id="fileFront" accept="image/jpeg,image/png,image/webp">
                         </label>
                         <div class="id-scan" id="idScanStatus" role="status" aria-live="polite" hidden></div>
@@ -1613,7 +1613,7 @@ export const signupMarkup = `<main class="signup-container">
                                 <line x1="12" y1="3" x2="12" y2="15"/>
                             </svg>
                             <span class="upload-text"><strong>Click to upload</strong> or drag and drop</span>
-                            <span class="upload-hint">JPG, PNG, or WebP (Max. 5MB)</span>
+                            <span class="upload-hint">JPG, PNG, or WebP (Max. 15MB)</span>
                             <input type="file" id="fileBack" accept="image/jpeg,image/png,image/webp">
                         </label>
                         <div class="id-scan" id="idScanBackStatus" role="status" aria-live="polite" hidden></div>
