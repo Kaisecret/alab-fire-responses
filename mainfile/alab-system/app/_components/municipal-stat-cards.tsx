@@ -124,3 +124,6 @@ export function MunicipalStatCards({ items, label, columns, className }: { items
     </section>
   );
 }
+
+/** The same cards on the Provincial BFP pages, so both portals match. */
+export const StatCards = MunicipalStatCards;

@@ -41,7 +41,7 @@ test("provincial registry groups real records by municipality with a details pan
   assert.match(source, /municipalities\.map/);
   assert.match(source, /selectedMunicipality/);
   assert.match(source, /148 records from the BFP locator chart/);
-  assert.match(source, /aria-pressed=/);
+  assert.match(source, /active: allSelected/, 'the municipality filter card shows when it is on');
   assert.match(source, /All municipalities/);
   assert.match(source, /selectedSource/);
   assert.match(source, /method:\s*["']PATCH["']/);

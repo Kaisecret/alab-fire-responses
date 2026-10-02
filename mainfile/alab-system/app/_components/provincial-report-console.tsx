@@ -17,6 +17,7 @@ import {
   type ProvincialExportFilters,
   type ProvincialExportScope,
 } from "./provincial-report-export-dialog";
+import { StatCards } from "./municipal-stat-cards";
 
 /** Statuses the province counts as a real fire that was worked. */
 const CONFIRMED_STATUSES = [
@@ -38,90 +39,13 @@ const summaryCardStyles = `
   /* Carried over from the municipal report screen so a marshal reads the same
      shapes on both: a tinted card, a white icon tile, and the figure given the
      room to be seen from across a room. */
-  .prc-stats-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 0.75rem;
-  }
 
-  .prc-stat-card {
-    position: relative;
-    border-radius: 12px;
-    padding: 0.8rem 0.95rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    overflow: hidden;
-    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.24s ease, border-color 0.24s ease;
-  }
-  .prc-stat-card.slate {
-    background: linear-gradient(145deg, #F1F5F9 0%, #E2E8F0 100%);
-    border: 1.5px solid #CBD5E1;
-    box-shadow: 0 4px 16px rgba(71, 85, 105, 0.06);
-  }
-  .prc-stat-card.red {
-    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
-    border: 1.5px solid #FFBEBE;
-    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
-  }
-  .prc-stat-card.emerald {
-    background: linear-gradient(145deg, #E3F8ED 0%, #CEF2DE 100%);
-    border: 1.5px solid #B1ECC8;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
-  }
 
-  .prc-stat-card:hover { transform: translateY(-3px); }
-  .prc-stat-card.slate:hover { border-color: #94A3B8; box-shadow: 0 10px 22px -4px rgba(71, 85, 105, 0.2); }
-  .prc-stat-card.red:hover { border-color: #FFA3A3; box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2); }
-  .prc-stat-card.emerald:hover { border-color: #88E4AA; box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2); }
 
-  .prc-stat-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.4rem;
-    margin-bottom: 0.5rem;
-  }
 
-  .prc-stat-icon {
-    width: 2.35rem;
-    height: 2.35rem;
-    border-radius: 10px;
-    background: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.95);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.05rem;
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-  .prc-stat-icon.slate { color: #475569; }
-  .prc-stat-icon.red { color: #E23632; }
-  .prc-stat-icon.emerald { color: #059669; }
 
-  .prc-stat-tag {
-    font-size: 0.65rem;
-    font-weight: 800;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-  .prc-stat-tag.slate { background: #E2E8F0; color: #334155; }
-  .prc-stat-tag.red { background: #FDE8E8; color: #991B1B; }
-  .prc-stat-tag.emerald { background: #D1FAE5; color: #065F46; }
 
-  .prc-stat-body { display: flex; flex-direction: column; gap: 0.1rem; margin: 0.15rem 0 0.1rem; }
-  .prc-stat-value { font-size: 1.85rem; font-weight: 900; color: #0F172A; line-height: 1.05; font-variant-numeric: tabular-nums; }
-  .prc-stat-label { font-size: 0.69rem; font-weight: 750; color: #475569; text-transform: uppercase; letter-spacing: 0.03em; }
 
-  @media (prefers-reduced-motion: reduce) {
-    .prc-stat-card:hover { transform: none; }
-  }
 `;
 
 function getStatusBadge(rowStatus: string) {
@@ -502,46 +426,14 @@ export function ProvincialReportConsole() {
       </div>
 
       {/* Summary strip, in the same hand as the municipal counters. */}
-      <div className="prc-stats-row">
-        <div className="prc-stat-card slate">
-          <div className="prc-stat-header">
-            <div className="prc-stat-icon slate"><i className="fa-solid fa-folder-open" /></div>
-            <span className="prc-stat-tag slate"><i className="fa-solid fa-layer-group" />Intake</span>
-          </div>
-          <div className="prc-stat-body">
-            <span className="prc-stat-value">{summary?.totalReports ?? 0}</span>
-            <span className="prc-stat-label">Total Reports</span>
-          </div>
-        </div>
-
-        <div className="prc-stat-card red">
-          <div className="prc-stat-header">
-            <div className="prc-stat-icon red"><i className="fa-solid fa-fire" /></div>
-            <span className="prc-stat-tag red">
-              <i className="fa-solid fa-triangle-exclamation" />
-              {confirmedIncidents > 0 ? "Confirmed" : "None"}
-            </span>
-          </div>
-          <div className="prc-stat-body">
-            <span className="prc-stat-value">{confirmedIncidents}</span>
-            <span className="prc-stat-label">Confirmed Incidents</span>
-          </div>
-        </div>
-
-        <div className="prc-stat-card emerald">
-          <div className="prc-stat-header">
-            <div className="prc-stat-icon emerald"><i className="fa-solid fa-circle-check" /></div>
-            <span className="prc-stat-tag emerald">
-              <i className="fa-solid fa-flag-checkered" />
-              {resolvedIncidents > 0 ? "Closed" : "Open"}
-            </span>
-          </div>
-          <div className="prc-stat-body">
-            <span className="prc-stat-value">{resolvedIncidents}</span>
-            <span className="prc-stat-label">Resolved Incidents</span>
-          </div>
-        </div>
-      </div>
+      <StatCards
+        label="Report totals"
+        items={[
+          { key: "total", icon: "fa-folder-open", tone: "slate", badge: "Intake", value: summary?.totalReports ?? 0, label: "Total Reports" },
+          { key: "confirmed", icon: "fa-fire", tone: "red", badge: confirmedIncidents > 0 ? "Confirmed" : "None", value: confirmedIncidents, label: "Confirmed Incidents" },
+          { key: "resolved", icon: "fa-circle-check", tone: "emerald", badge: resolvedIncidents > 0 ? "Closed" : "Open", value: resolvedIncidents, label: "Resolved Incidents" },
+        ]}
+      />
 
       {/* Filters Toolbar */}
       <div

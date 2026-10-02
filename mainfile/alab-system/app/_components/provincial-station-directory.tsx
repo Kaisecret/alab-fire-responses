@@ -7,6 +7,7 @@ import { useManagementMutation } from './use-management-mutation';
 import { useProvincialManagementList } from './use-provincial-management-list';
 import { useManagementDialog } from './use-management-dialog';
 import type { ManagedStation } from '../../lib/provincial-bfp/management/types';
+import { StatCards } from "./municipal-stat-cards";
 
 const pageStyles = `
   .psd-container {
@@ -196,156 +197,13 @@ const pageStyles = `
   }
 
   /* ========== KPI STATS BAR (Pastel Gradient System) ========== */
-  .psd-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 0.85rem;
-  }
-  @media (max-width: 1024px) {
-    .psd-stats-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-  @media (max-width: 640px) {
-    .psd-stats-grid { grid-template-columns: 1fr; }
-  }
 
-  .psd-stat-card {
-    position: relative;
-    border-radius: 11px;
-    padding: 0.72rem 0.95rem 0.62rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-    cursor: pointer;
-    overflow: hidden;
-    text-decoration: none;
-    color: inherit;
-    min-height: 98px;
-  }
-  .psd-stat-card.blue {
-    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
-    border: 1.5px solid #B8D3FD;
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
-  }
-  .psd-stat-card.emerald {
-    background: linear-gradient(145deg, #E6FBF0 0%, #D1F7E2 100%);
-    border: 1.5px solid #A7F3D0;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
-  }
-  .psd-stat-card.purple {
-    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
-    border: 1.5px solid #D0BCFD;
-    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
-  }
-  .psd-stat-card.red {
-    background: linear-gradient(145deg, #FFF1F1 0%, #FEE2E2 100%);
-    border: 1.5px solid #FECACA;
-    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.06);
-  }
 
-  .psd-stat-card:hover { transform: translateY(-2.5px); }
-  .psd-stat-card.blue:hover { border-color: #91B8FA; box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2); }
-  .psd-stat-card.emerald:hover { border-color: #6EE7B7; box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2); }
-  .psd-stat-card.purple:hover { border-color: #B79BFB; box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2); }
-  .psd-stat-card.red:hover { border-color: #F87171; box-shadow: 0 10px 22px -4px rgba(220, 38, 38, 0.2); }
 
-  .psd-stat-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.35rem;
-    margin-bottom: 0.25rem;
-  }
-  .psd-stat-badge-icon {
-    width: 1.95rem;
-    height: 1.95rem;
-    border-radius: 8px;
-    background: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.95);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.88rem;
-    flex-shrink: 0;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .psd-stat-card:hover .psd-stat-badge-icon { transform: scale(1.06); }
-  .psd-stat-card.blue .psd-stat-badge-icon { color: #2563EB; }
-  .psd-stat-card.emerald .psd-stat-badge-icon { color: #059669; }
-  .psd-stat-card.purple .psd-stat-badge-icon { color: #7C3AED; }
-  .psd-stat-card.red .psd-stat-badge-icon { color: #DC2626; }
 
-  .psd-stat-trend-tag {
-    font-size: 0.58rem;
-    font-weight: 800;
-    padding: 0.14rem 0.42rem;
-    border-radius: 5px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.22rem;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-  .psd-stat-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
-  .psd-stat-trend-tag.emerald { color: #065F46; background: #D1FAE5; }
-  .psd-stat-trend-tag.purple { color: #5B21B6; background: #EDE9FE; }
-  .psd-stat-trend-tag.red { color: #991B1B; background: #FEE2E2; }
 
-  .psd-stat-body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.08rem;
-    margin: 0.08rem 0;
-  }
-  .psd-stat-label {
-    order: 2;
-    font-size: 0.63rem;
-    font-weight: 750;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .psd-stat-value {
-    order: 1;
-    font-size: 1.45rem;
-    font-weight: 850;
-    color: #0F172A;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-  }
 
-  .psd-stat-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 0.35rem;
-    padding-top: 0.32rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-    font-size: 0.65rem;
-    font-weight: 600;
-  }
-  .psd-stat-card.blue .psd-stat-footer { color: #2563EB; border-top-color: #DCE7FC; }
-  .psd-stat-card.emerald .psd-stat-footer { color: #059669; border-top-color: #A7F3D0; }
-  .psd-stat-card.purple .psd-stat-footer { color: #7C3AED; border-top-color: #E9D8FD; }
-  .psd-stat-card.red .psd-stat-footer { color: #DC2626; border-top-color: #FED7D7; }
 
-  .psd-stat-subtext {
-    font-weight: 600;
-    opacity: 0.9;
-  }
-  .psd-stat-footer i {
-    font-size: 0.64rem;
-    transition: transform 0.2s ease;
-  }
-  .psd-stat-card:hover .psd-stat-footer i {
-    transform: translateX(3px);
-  }
 
   /* ========== TOOLBAR BOX ========== */
   .psd-card {
@@ -1061,11 +919,6 @@ const pageStyles = `
   }
 
   /* Responsive Design */
-  @media (max-width: 960px) {
-    .psd-stats-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
 
   @media (max-width: 680px) {
     .psd-header {
@@ -1078,9 +931,6 @@ const pageStyles = `
       justify-content: flex-start;
     }
 
-    .psd-stats-grid {
-      grid-template-columns: 1fr;
-    }
 
     .psd-toolbar {
       flex-direction: column;
@@ -1344,107 +1194,15 @@ export function ProvincialStationDirectory() {
       </div>
 
       {/* Executive KPI Stat Cards */}
-      <div className="psd-stats-grid" role="region" aria-label="Station metrics">
-        {/* Card 1: Total Stations (Blue) */}
-        <div
-          className="psd-stat-card blue"
-          onClick={() => { setStatus(''); setPage(1); }}
-          role="button"
-          tabIndex={0}
-          title="Click to view all stations"
-        >
-          <div className="psd-stat-header">
-            <div className="psd-stat-badge-icon">
-              <i className="fa-solid fa-building-shield" />
-            </div>
-            <span className="psd-stat-trend-tag blue">
-              <i className="fa-solid fa-building" /> Stations
-            </span>
-          </div>
-          <div className="psd-stat-body">
-            <span className="psd-stat-label">Total Stations</span>
-            <span className="psd-stat-value">{loading && stations.length === 0 ? '—' : totalStationsCount}</span>
-          </div>
-          <div className="psd-stat-footer">
-            <span className="psd-stat-subtext">Registered in Antique</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
-
-        {/* Card 2: Active Operational (Emerald) */}
-        <div
-          className="psd-stat-card emerald"
-          onClick={() => { setStatus('ACTIVE'); setPage(1); }}
-          role="button"
-          tabIndex={0}
-          title="Click to view active operational stations"
-        >
-          <div className="psd-stat-header">
-            <div className="psd-stat-badge-icon">
-              <i className="fa-solid fa-tower-broadcast" />
-            </div>
-            <span className="psd-stat-trend-tag emerald">
-              <i className="fa-solid fa-signal" /> Ready
-            </span>
-          </div>
-          <div className="psd-stat-body">
-            <span className="psd-stat-label">Active Operational</span>
-            <span className="psd-stat-value">{loading && stations.length === 0 ? '—' : activeStationsCount}</span>
-          </div>
-          <div className="psd-stat-footer">
-            <span className="psd-stat-subtext">Dispatch ready stations</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
-
-        {/* Card 3: Municipalities Covered (Purple) */}
-        <div
-          className="psd-stat-card purple"
-          title="Municipal coverage across Antique province"
-        >
-          <div className="psd-stat-header">
-            <div className="psd-stat-badge-icon">
-              <i className="fa-solid fa-map-location-dot" />
-            </div>
-            <span className="psd-stat-trend-tag purple">
-              <i className="fa-solid fa-location-dot" /> Coverage
-            </span>
-          </div>
-          <div className="psd-stat-body">
-            <span className="psd-stat-label">Municipalities Covered</span>
-            <span className="psd-stat-value">
-              {loading && stations.length === 0 ? '—' : `${coveredMunicipalitiesCount} / 18`}
-            </span>
-          </div>
-          <div className="psd-stat-footer">
-            <span className="psd-stat-subtext">Across Antique province</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
-
-        {/* Card 4: Station Personnel (Red) */}
-        <div
-          className="psd-stat-card red"
-          title="Active assigned station responders"
-        >
-          <div className="psd-stat-header">
-            <div className="psd-stat-badge-icon">
-              <i className="fa-solid fa-users" />
-            </div>
-            <span className="psd-stat-trend-tag red">
-              <i className="fa-solid fa-user-shield" /> Crew
-            </span>
-          </div>
-          <div className="psd-stat-body">
-            <span className="psd-stat-label">Station Personnel</span>
-            <span className="psd-stat-value">{loading && stations.length === 0 ? '—' : totalPersonnelCount}</span>
-          </div>
-          <div className="psd-stat-footer">
-            <span className="psd-stat-subtext">Active assigned responders</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
-      </div>
+      <StatCards
+        label="Station metrics"
+        items={[
+          { key: "total", icon: "fa-building-shield", tone: "blue", badge: "Stations", value: totalStationsCount, label: "Total Stations", description: "Registered in Antique", onClick: () => { setStatus(''); setPage(1); }, active: !status, loading: loading && stations.length === 0 },
+          { key: "active", icon: "fa-tower-broadcast", tone: "emerald", badge: "Ready", value: activeStationsCount, label: "Active Operational", description: "Dispatch ready stations", onClick: () => { setStatus('ACTIVE'); setPage(1); }, active: status === 'ACTIVE', loading: loading && stations.length === 0 },
+          { key: "coverage", icon: "fa-map-location-dot", tone: "violet", badge: "Coverage", value: coveredMunicipalitiesCount, suffix: "/ 18", label: "Municipalities Covered", description: "Across Antique province", loading: loading && stations.length === 0 },
+          { key: "personnel", icon: "fa-users", tone: "red", badge: "Crew", value: totalPersonnelCount, label: "Station Personnel", description: "Active assigned responders", loading: loading && stations.length === 0 },
+        ]}
+      />
 
       {/* Error notification */}
       {error && (

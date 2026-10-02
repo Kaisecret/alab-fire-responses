@@ -32,6 +32,7 @@ function harness(path, name) {
     './provincial-account-dialog': { ProvincialAccountDialog: 'account-dialog' },
     './provincial-profile-popover': { ProvincialProfilePopover: 'profile-popover' },
     './provincial-backup-alarm': { ProvincialBackupAlarm: 'backup-alarm' },
+    './municipal-stat-cards': { StatCards: 'stat-cards', MunicipalStatCards: 'stat-cards' },
   });
   return { render() { cursor = 0; effects.length = 0; return mod[name]({ children: null }); }, effects };
 }
