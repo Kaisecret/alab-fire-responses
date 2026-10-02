@@ -5,7 +5,9 @@ import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMunicipalIncidentFeed } from './use-municipal-incident-feed';
+import { MunicipalStatCards } from './municipal-stat-cards';
 import { getFireTypeLabel } from '../../lib/municipal-bfp/reports/formatters';
+import { formatHotline, hotlineForMunicipality, hotlineHref, PROVINCIAL_FIRE_MARSHAL } from '../../lib/bfp-hotlines';
 
 /*
  * Municipal BFP dashboard: what needs the station now, at a glance. Every
@@ -129,18 +131,6 @@ const dashboardStyles = `
   .mbfp-icon-btn:disabled { cursor: progress; opacity: 0.7; }
   .mbfp-spin-icon { animation: mbfpSpin 0.9s linear infinite; }
 
-  .mbfp-stats-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
-  .mbfp-stat-card { display: flex; align-items: center; gap: 0.85rem; padding: 0.95rem 1rem; border: 1px solid var(--dash-line); border-radius: 14px; background: #fff; color: inherit; text-decoration: none; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03); transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1); }
-  .mbfp-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(15, 23, 42, 0.08); }
-  .mbfp-stat-icon { flex: 0 0 auto; width: 2.6rem; height: 2.6rem; display: grid; place-items: center; border-radius: 12px; font-size: 1.05rem; }
-  .mbfp-stat-icon.red { background: var(--dash-red-soft); color: var(--dash-red); }
-  .mbfp-stat-icon.amber { background: #FFFBEB; color: #D97706; }
-  .mbfp-stat-icon.blue { background: #EFF6FF; color: #2563EB; }
-  .mbfp-stat-icon.green { background: #ECFDF5; color: #059669; }
-  .mbfp-stat-body { display: grid; gap: 0.1rem; min-width: 0; }
-  .mbfp-stat-value { font-size: 1.65rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
-  .mbfp-stat-value small { margin-left: 0.2rem; color: var(--dash-muted); font-size: 0.85rem; font-weight: 700; }
-  .mbfp-stat-label { color: var(--dash-muted); font-size: 0.75rem; font-weight: 700; }
 
   .mbfp-columns { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
   .mbfp-col { display: grid; gap: 1rem; min-width: 0; }
@@ -175,8 +165,23 @@ const dashboardStyles = `
   .mbfp-chip.red { background: #FEF2F2; color: #B91C1C; }
   .mbfp-chip.green { background: #ECFDF5; color: #047857; }
   .mbfp-chip.gray { background: #F1F5F9; color: #475569; }
+  /* Wide screens: one aligned line per item, no empty middle. */
+  .mbfp-row.is-table { grid-template-columns: auto minmax(0, 1.25fr) minmax(0, 1fr) 4.75rem 7.25rem; padding: 0.6rem 1.1rem; }
+  .mbfp-row.is-table .mbfp-type-icon { width: 2.1rem; height: 2.1rem; border-radius: 10px; font-size: 0.85rem; }
+  .mbfp-cell { min-width: 0; color: var(--dash-body); font-size: 0.8rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mbfp-cell.time { color: var(--dash-muted); font-variant-numeric: tabular-nums; }
+  .mbfp-cell.end { display: flex; justify-content: flex-end; }
+  .mbfp-level { display: inline-block; margin-left: 0.35rem; padding: 0.1rem 0.45rem; border-radius: 6px; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.02em; vertical-align: 1px; }
+  .mbfp-level.CRITICAL { background: #7F1D1D; color: #FECACA; }
+  .mbfp-level.HIGH { background: #991B1B; color: #FEE2E2; }
+  .mbfp-level.MODERATE { background: #FEF3C7; color: #92400E; }
+  .mbfp-level.LOW { background: #D1FAE5; color: #065F46; }
+  .mbfp-row-sub.is-compact { display: none; }
   .mbfp-row-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.75rem; border-radius: 9px; background: var(--dash-ink); color: #fff; font-size: 0.75rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
   .mbfp-row-btn:hover { background: #1E293B; }
+  .mbfp-call { flex: 0 0 auto; width: 2.1rem; height: 2.1rem; display: grid; place-items: center; border-radius: 50%; background: #FEF2F2; color: #DC2626; font-size: 0.8rem; text-decoration: none; transition: background 0.15s ease; }
+  .mbfp-call:hover { background: #FEE2E2; }
+  .mbfp-row.is-hq { background: #FFF7F7; }
   .mbfp-empty { display: grid; justify-items: center; gap: 0.35rem; padding: 1.6rem 1rem; color: var(--dash-muted); font-size: 0.8rem; text-align: center; }
   .mbfp-empty i { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border-radius: 50%; background: #ECFDF5; color: #059669; font-size: 1rem; }
   .mbfp-empty strong { color: var(--dash-ink); font-size: 0.88rem; }
@@ -201,25 +206,24 @@ const dashboardStyles = `
   @keyframes mbfpShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
   @media (prefers-reduced-motion: reduce) { .mbfp-skel, .mbfp-spin-icon { animation: none; } }
 
-  @media (max-width: 360px) {
-    .mbfp-quick-actions { grid-template-columns: 1fr; }
-  }
-
   @media (max-width: 1100px) {
     .mbfp-columns { grid-template-columns: 1fr; }
   }
 
   @media (max-width: 768px) {
     .mbfp-dash { padding: 0.85rem; gap: 0.85rem; }
-    .mbfp-stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
-    .mbfp-stat-card { padding: 0.8rem; gap: 0.65rem; }
-    .mbfp-stat-value { font-size: 1.35rem; }
     .mbfp-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0.75rem 0.85rem 0.9rem; }
     .mbfp-qa { padding: 0.65rem; font-size: 0.78rem; }
     .mbfp-card-body { overflow-x: auto; }
     .mbfp-row { padding: 0.7rem 0.85rem; gap: 0.65rem; }
-    .mbfp-nearby-row { grid-template-columns: auto minmax(0, 1fr); }
-    .mbfp-nearby-row .mbfp-row-end { grid-column: 2; flex-direction: column; align-items: flex-start; }
+    .mbfp-row.is-table { grid-template-columns: auto minmax(0, 1fr) auto; padding: 0.65rem 0.85rem; }
+    .mbfp-row.is-table .mbfp-cell.type, .mbfp-row.is-table .mbfp-cell.time { display: none; }
+    .mbfp-row-sub.is-compact { display: flex; }
+    .mbfp-nearby-row .mbfp-row-end { gap: 0.35rem; }
+  }
+
+  @media (max-width: 360px) {
+    .mbfp-quick-actions { grid-template-columns: 1fr; }
   }
 `;
 
@@ -393,38 +397,15 @@ export function MunicipalBfpDashboard() {
           </div>
         </div>
 
-        <div className="mbfp-stats-row">
-          <Link href="/municipal-bfp/active-incidents" className="mbfp-stat-card">
-            <span className="mbfp-stat-icon red" aria-hidden="true"><i className="fa-solid fa-fire-flame-curved" /></span>
-            <span className="mbfp-stat-body">
-              <span className="mbfp-stat-value">{queueLoading ? <span className="mbfp-skel" style={{ width: 32, height: 26 }} /> : ownIncidents.length}</span>
-              <span className="mbfp-stat-label">Active fires</span>
-            </span>
-          </Link>
-          <Link href="/municipal-bfp/verification-queue" className="mbfp-stat-card">
-            <span className="mbfp-stat-icon amber" aria-hidden="true"><i className="fa-solid fa-clipboard-check" /></span>
-            <span className="mbfp-stat-body">
-              <span className="mbfp-stat-value">{queueLoading || dashLoading ? <span className="mbfp-skel" style={{ width: 32, height: 26 }} /> : totalPending}</span>
-              <span className="mbfp-stat-label">To verify</span>
-            </span>
-          </Link>
-          <Link href="/municipal-bfp/firetrucks" className="mbfp-stat-card">
-            <span className="mbfp-stat-icon blue" aria-hidden="true"><i className="fa-solid fa-truck-moving" /></span>
-            <span className="mbfp-stat-body">
-              <span className="mbfp-stat-value">
-                {dashLoading ? <span className="mbfp-skel" style={{ width: 32, height: 26 }} /> : <>{stats?.availableFiretrucks ?? 0}{stats?.totalFiretrucks ? <small>/ {stats.totalFiretrucks}</small> : null}</>}
-              </span>
-              <span className="mbfp-stat-label">Trucks ready</span>
-            </span>
-          </Link>
-          <Link href="/municipal-bfp/stations" className="mbfp-stat-card">
-            <span className="mbfp-stat-icon green" aria-hidden="true"><i className="fa-solid fa-users-gear" /></span>
-            <span className="mbfp-stat-body">
-              <span className="mbfp-stat-value">{dashLoading ? <span className="mbfp-skel" style={{ width: 32, height: 26 }} /> : (stats?.respondersOnDuty ?? 0)}</span>
-              <span className="mbfp-stat-label">Responders</span>
-            </span>
-          </Link>
-        </div>
+        <MunicipalStatCards
+          label="Station summary"
+          items={[
+            { key: "active", icon: "fa-fire-flame-curved", tone: "red", value: ownIncidents.length, label: "Active fires", href: "/municipal-bfp/active-incidents", loading: queueLoading },
+            { key: "verify", icon: "fa-clipboard-check", tone: "amber", value: totalPending, label: "To verify", href: "/municipal-bfp/verification-queue", loading: queueLoading || dashLoading },
+            { key: "trucks", icon: "fa-truck-moving", tone: "blue", value: stats?.availableFiretrucks ?? 0, suffix: stats?.totalFiretrucks ? `/ ${stats.totalFiretrucks}` : undefined, label: "Trucks ready", href: "/municipal-bfp/firetrucks", loading: dashLoading },
+            { key: "responders", icon: "fa-users-gear", tone: "emerald", value: stats?.respondersOnDuty ?? 0, label: "Responders", href: "/municipal-bfp/stations", loading: dashLoading },
+          ]}
+        />
 
         <div className="mbfp-columns">
           <div className="mbfp-col">
@@ -448,19 +429,25 @@ export function MunicipalBfpDashboard() {
                   </div>
                 ) : (
                   recentIncidents.slice(0, 5).map((inc) => (
-                    <Link key={inc.id} href={`/municipal-bfp/active-incidents?incident=${encodeURIComponent(inc.id)}`} className="mbfp-row">
+                    <Link key={inc.id} href={`/municipal-bfp/active-incidents?incident=${encodeURIComponent(inc.id)}`} className="mbfp-row is-table">
                       <span className={`mbfp-type-icon ${inc.calculatedSeverity ?? ''}`} title={inc.calculatedSeverity ?? undefined} aria-hidden="true">
                         <i className={`fa-solid ${TYPE_ICONS[inc.fireType] ?? 'fa-fire'}`} />
                       </span>
                       <span className="mbfp-row-main">
                         <span className="mbfp-row-title">{inc.barangay || 'Barangay not identified'}</span>
-                        <span className="mbfp-row-sub">
+                        <span className="mbfp-row-sub"><span className="mbfp-ref">{inc.referenceNumber}</span></span>
+                        <span className="mbfp-row-sub is-compact">
                           <span>{getFireTypeLabel(inc.fireType)}</span>
                           {inc.calculatedSeverity && <span>· {inc.calculatedSeverity}</span>}
                           <span>· {formatTime(inc.submittedAt)}</span>
                         </span>
                       </span>
-                      <span className="mbfp-row-end">
+                      <span className="mbfp-cell type">
+                        {getFireTypeLabel(inc.fireType)}
+                        {inc.calculatedSeverity && <span className={`mbfp-level ${inc.calculatedSeverity}`}>{inc.calculatedSeverity}</span>}
+                      </span>
+                      <span className="mbfp-cell time">{formatTime(inc.submittedAt)}</span>
+                      <span className="mbfp-cell end">
                         <span className={`mbfp-chip ${STATUS_TONES[inc.status] ?? 'gray'}`}>{STATUS_LABELS[inc.status] ?? inc.status.replaceAll('_', ' ').toLowerCase()}</span>
                       </span>
                     </Link>
@@ -489,15 +476,21 @@ export function MunicipalBfpDashboard() {
                 ) : (
                   <>
                     {pendingIncidents.slice(0, 3).map((rep) => (
-                      <div className="mbfp-row" key={`report-${rep.id}`}>
+                      <div className="mbfp-row is-table" key={`report-${rep.id}`}>
                         <span className={`mbfp-type-icon ${rep.calculatedSeverity ?? ''}`} aria-hidden="true">
                           <i className={`fa-solid ${TYPE_ICONS[rep.fireType] ?? 'fa-fire'}`} />
                         </span>
                         <span className="mbfp-row-main">
                           <span className="mbfp-row-title">{rep.barangay || 'Barangay not identified'}</span>
-                          <span className="mbfp-row-sub"><span className="mbfp-ref">{rep.referenceNumber}</span><span>· {formatTime(rep.submittedAt)}</span></span>
+                          <span className="mbfp-row-sub"><span className="mbfp-ref">{rep.referenceNumber}</span></span>
+                          <span className="mbfp-row-sub is-compact"><span>{getFireTypeLabel(rep.fireType)}</span><span>· {formatTime(rep.submittedAt)}</span></span>
                         </span>
-                        <span className="mbfp-row-end">
+                        <span className="mbfp-cell type">
+                          {getFireTypeLabel(rep.fireType)}
+                          {rep.calculatedSeverity && <span className={`mbfp-level ${rep.calculatedSeverity}`}>{rep.calculatedSeverity}</span>}
+                        </span>
+                        <span className="mbfp-cell time">{formatTime(rep.submittedAt)}</span>
+                        <span className="mbfp-cell end">
                           <Link href="/municipal-bfp/verification-queue" className="mbfp-row-btn">
                             <i className="fa-solid fa-check" aria-hidden="true" /> Verify
                           </Link>
@@ -505,13 +498,16 @@ export function MunicipalBfpDashboard() {
                       </div>
                     ))}
                     {pendingResidentApps.slice(0, 3).map((app) => (
-                      <div className="mbfp-row" key={`app-${app.id}`}>
+                      <div className="mbfp-row is-table" key={`app-${app.id}`}>
                         <span className="mbfp-type-icon kyc" aria-hidden="true"><i className="fa-solid fa-id-card" /></span>
                         <span className="mbfp-row-main">
                           <span className="mbfp-row-title">{app.firstName} {app.lastName}</span>
-                          <span className="mbfp-row-sub"><span>Resident ID · {app.barangay}</span><span>· {formatTime(app.submittedAt)}</span></span>
+                          <span className="mbfp-row-sub"><span className="mbfp-ref">{app.reference}</span></span>
+                          <span className="mbfp-row-sub is-compact"><span>Resident ID · {app.barangay}</span><span>· {formatTime(app.submittedAt)}</span></span>
                         </span>
-                        <span className="mbfp-row-end">
+                        <span className="mbfp-cell type">Resident ID · {app.barangay}</span>
+                        <span className="mbfp-cell time">{formatTime(app.submittedAt)}</span>
+                        <span className="mbfp-cell end">
                           <Link href="/municipal-bfp/verification-queue" className="mbfp-row-btn">
                             <i className="fa-solid fa-user-shield" aria-hidden="true" /> Review
                           </Link>
@@ -622,10 +618,30 @@ export function MunicipalBfpDashboard() {
                         <span className={`mbfp-chip ${station.activeIncidents > 0 ? 'red' : 'gray'}`}>
                           {station.activeIncidents > 0 ? `${station.activeIncidents} active` : 'Quiet'}
                         </span>
+                        {(() => {
+                          const hotline = hotlineForMunicipality(station.municipalityName);
+                          return hotline ? (
+                            <a href={hotlineHref(hotline.phone)} className="mbfp-call" aria-label={`Call ${hotline.name}, ${formatHotline(hotline.phone)}`} title={formatHotline(hotline.phone)}>
+                              <i className="fa-solid fa-phone" aria-hidden="true" />
+                            </a>
+                          ) : null;
+                        })()}
                       </span>
                     </div>
                   ))
                 )}
+                <div className="mbfp-row is-hq">
+                  <span className="mbfp-type-icon" aria-hidden="true"><i className="fa-solid fa-building-flag" /></span>
+                  <span className="mbfp-row-main">
+                    <span className="mbfp-row-title">Provincial Fire Marshal</span>
+                    <span className="mbfp-row-sub">{formatHotline(PROVINCIAL_FIRE_MARSHAL.phone)}</span>
+                  </span>
+                  <span className="mbfp-row-end">
+                    <a href={hotlineHref(PROVINCIAL_FIRE_MARSHAL.phone)} className="mbfp-call" aria-label={`Call the ${PROVINCIAL_FIRE_MARSHAL.name}`}>
+                      <i className="fa-solid fa-phone" aria-hidden="true" />
+                    </a>
+                  </span>
+                </div>
               </div>
             </section>
           </div>

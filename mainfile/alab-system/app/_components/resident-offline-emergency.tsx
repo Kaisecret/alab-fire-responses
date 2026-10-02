@@ -1,389 +1,220 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-const EMERGENCY_BFP_PHONE = "09109975737";
-const EMERGENCY_BFP_DISPLAY = "0910-997-5737";
+import {
+  BFP_HOTLINES,
+  formatHotline,
+  hotlineForMunicipality,
+  hotlineHref,
+  type BfpHotline,
+} from "../../lib/bfp-hotlines";
+import { useResidentLanguage, type ResidentLanguage } from "../_lib/resident-i18n";
+
+/*
+ * When the resident has no internet, a report cannot be sent, but a phone
+ * call still works. This sheet offers their own municipality's fire station
+ * first, 911, and every BFP Antique number, because the resident may be in
+ * another town (registered in Anini-y, but at a fire in San Jose).
+ *
+ * Other pages open it with: window.dispatchEvent(new Event(OPEN_BFP_HOTLINES)).
+ */
+export const OPEN_BFP_HOTLINES = "alab:show-bfp-hotlines";
+
+/** The resident's registered municipality, kept so it is known offline. */
+const HOME_MUNICIPALITY_KEY = "alab_resident_home_municipality";
+
+const TEXT: Record<ResidentLanguage, {
+  offlineTitle: string; callTitle: string; offlineBody: string; callBody: string; yourStation: string;
+  national: string; allNumbers: string; hideNumbers: string; search: string; close: string; pill: string; noMatch: string; yours: string;
+}> = {
+  en: {
+    offlineTitle: "No internet", callTitle: "Call BFP",
+    offlineBody: "Your report cannot be sent right now. A phone call still works.",
+    callBody: "Call the fire station nearest to the fire.",
+    yourStation: "Your registered station", national: "National emergency hotline",
+    allNumbers: "All BFP Antique numbers", hideNumbers: "Hide", search: "Search town or station",
+    close: "Close", pill: "Call BFP (offline)", noMatch: "No station found", yours: "Yours",
+  },
+  tl: {
+    offlineTitle: "Walang internet", callTitle: "Tumawag sa BFP",
+    offlineBody: "Hindi maipadala ang ulat ngayon. Gumagana pa rin ang tawag.",
+    callBody: "Tawagan ang pinakamalapit na fire station sa sunog.",
+    yourStation: "Istasyon ng iyong bayan", national: "National emergency hotline",
+    allNumbers: "Lahat ng numero ng BFP Antique", hideNumbers: "Itago", search: "Hanapin ang bayan o istasyon",
+    close: "Isara", pill: "Tumawag sa BFP (offline)", noMatch: "Walang nakitang istasyon", yours: "Iyo",
+  },
+  hil: {
+    offlineTitle: "Wala sang internet", callTitle: "Tawagi ang BFP",
+    offlineBody: "Indi mapadala ang report subong. Mapanawag ka gihapon.",
+    callBody: "Tawagi ang pinakamalapit nga fire station sa sunog.",
+    yourStation: "Istasyon sang imo banwa", national: "National emergency hotline",
+    allNumbers: "Tanan nga numero sang BFP Antique", hideNumbers: "Itago", search: "Pangitaa ang banwa ukon istasyon",
+    close: "Isira", pill: "Tawagi ang BFP (offline)", noMatch: "Wala sang istasyon", yours: "Imo",
+  },
+};
+
+function readHomeMunicipality(): string | null {
+  try {
+    return localStorage.getItem(HOME_MUNICIPALITY_KEY);
+  } catch {
+    return null;
+  }
+}
+
+const PhoneIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+  </svg>
+);
+
+const styles = `
+  .offline-emergency-backdrop { position: fixed; inset: 0; z-index: 10001; display: flex; align-items: flex-end; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, 0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: offlineFadeIn 0.25s ease both; }
+  .offline-emergency-sheet { position: relative; width: 100%; max-width: 28rem; max-height: calc(100dvh - 2rem); display: flex; flex-direction: column; overflow: hidden; border-radius: 1.5rem; background: #FFFFFF; color: #0F172A; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35); font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; animation: offlineSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .offline-sheet-accent { height: 5px; flex: 0 0 auto; background: linear-gradient(90deg, #DC2626, #EA580C, #F59E0B, #DC2626); background-size: 200% 100%; animation: offlineStripeMove 3s linear infinite; }
+  .offline-sheet-scroll { overflow-y: auto; padding: 1.25rem 1.2rem 1.2rem; display: grid; gap: 0.85rem; }
+  .offline-sheet-close { position: absolute; top: 0.9rem; right: 0.9rem; z-index: 1; width: 2.1rem; height: 2.1rem; display: grid; place-items: center; border: 1px solid #E2E8F0; border-radius: 50%; background: #F8FAFC; color: #475569; font-size: 1.25rem; line-height: 1; cursor: pointer; }
+  .offline-header { display: flex; align-items: flex-start; gap: 0.85rem; padding-right: 2.2rem; }
+  .offline-icon-box { flex: 0 0 auto; width: 2.75rem; height: 2.75rem; display: grid; place-items: center; border-radius: 0.85rem; background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; }
+  .offline-icon-box svg { width: 1.3rem; height: 1.3rem; }
+  .offline-header h3 { margin: 0; font-size: 1.1rem; font-weight: 850; }
+  .offline-header p { margin: 0.25rem 0 0; color: #475569; font-size: 0.84rem; line-height: 1.45; }
+  .offline-call-btn { display: flex; align-items: center; gap: 0.8rem; padding: 0.85rem 0.95rem; border-radius: 1rem; text-decoration: none; transition: transform 0.15s ease; }
+  .offline-call-btn:active { transform: scale(0.98); }
+  .offline-call-btn .offline-call-icon { flex: 0 0 auto; width: 2.6rem; height: 2.6rem; display: grid; place-items: center; border-radius: 50%; }
+  .offline-call-btn .offline-call-icon svg { width: 1.15rem; height: 1.15rem; }
+  .offline-call-text { display: grid; gap: 0.1rem; min-width: 0; }
+  .offline-call-text small { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.85; }
+  .offline-call-text strong { font-size: 0.98rem; font-weight: 850; line-height: 1.25; }
+  .offline-call-text span { font-size: 0.86rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .offline-call-bfp { background: linear-gradient(135deg, #DC2626, #B91C1C); color: #FFFFFF; box-shadow: 0 12px 24px -14px rgba(185, 28, 28, 0.9); }
+  .offline-call-bfp .offline-call-icon { background: rgba(255, 255, 255, 0.18); }
+  .offline-call-911 { background: #0F172A; color: #FFFFFF; }
+  .offline-call-911 .offline-call-icon { background: rgba(255, 255, 255, 0.12); }
+  .offline-all-toggle { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%; padding: 0.8rem 0.95rem; border: 1px solid #E2E8F0; border-radius: 0.9rem; background: #F8FAFC; color: #0F172A; font: inherit; font-size: 0.88rem; font-weight: 800; cursor: pointer; }
+  .offline-all-toggle span:last-child { color: #DC2626; font-size: 0.8rem; }
+  .offline-search { width: 100%; padding: 0.7rem 0.85rem; border: 1px solid #CBD5E1; border-radius: 0.75rem; font: inherit; font-size: 0.88rem; }
+  .offline-search:focus { outline: 3px solid rgba(220, 38, 38, 0.18); border-color: #DC2626; }
+  .offline-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+  .offline-list a { display: flex; align-items: center; gap: 0.7rem; padding: 0.65rem 0.75rem; border: 1px solid #E2E8F0; border-radius: 0.8rem; background: #FFFFFF; color: #0F172A; text-decoration: none; }
+  .offline-list a.is-home { border-color: #FCA5A5; background: #FFF5F5; }
+  .offline-list-text { display: grid; gap: 0.05rem; min-width: 0; flex: 1; }
+  .offline-list-text strong { font-size: 0.86rem; font-weight: 800; }
+  .offline-list-text span { color: #475569; font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .offline-list-tag { padding: 0.15rem 0.5rem; border-radius: 999px; background: #DC2626; color: #fff; font-size: 0.66rem; font-weight: 800; }
+  .offline-list-call { flex: 0 0 auto; width: 2.2rem; height: 2.2rem; display: grid; place-items: center; border-radius: 50%; background: #FEF2F2; color: #DC2626; }
+  .offline-list-call svg { width: 1rem; height: 1rem; }
+  .offline-empty { margin: 0; color: #64748B; font-size: 0.82rem; text-align: center; }
+  .offline-minimized-pill { position: fixed; left: 50%; bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px)); z-index: 10000; transform: translateX(-50%); display: flex; align-items: center; gap: 0.55rem; padding: 0.6rem 1rem; border: 0; border-radius: 999px; background: #DC2626; color: #FFFFFF; font: inherit; font-size: 0.82rem; font-weight: 800; box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4); cursor: pointer; animation: offlineFloatIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .offline-minimized-pill svg { width: 1rem; height: 1rem; }
+  .offline-min-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #FEF08A; box-shadow: 0 0 8px #FACC15; animation: offlineDotBlink 1.2s ease-in-out infinite; }
+  @keyframes offlineSlideUp { from { opacity: 0; transform: translateY(2.5rem) scale(0.96); } to { opacity: 1; transform: none; } }
+  @keyframes offlineFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes offlineStripeMove { from { background-position: 0% 0%; } to { background-position: 200% 0%; } }
+  @keyframes offlineDotBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @keyframes offlineFloatIn { from { opacity: 0; transform: translate(-50%, 1rem); } to { opacity: 1; transform: translate(-50%, 0); } }
+  @media (max-width: 600px) {
+    .offline-emergency-backdrop { padding: 0.5rem 0.5rem calc(4.5rem + env(safe-area-inset-bottom, 0px)); }
+    .offline-emergency-sheet { max-height: calc(100dvh - 5.5rem); border-radius: 1.25rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .offline-emergency-backdrop, .offline-emergency-sheet, .offline-sheet-accent, .offline-min-dot, .offline-minimized-pill { animation: none; }
+  }
+`;
+
+function HotlineLink({ hotline, home, yoursLabel }: { hotline: BfpHotline; home: boolean; yoursLabel: string }) {
+  return (
+    <li>
+      <a href={hotlineHref(hotline.phone)} className={home ? "is-home" : undefined} aria-label={`Call ${hotline.name}, ${formatHotline(hotline.phone)}`}>
+        <span className="offline-list-text">
+          <strong>{hotline.name}</strong>
+          <span>{formatHotline(hotline.phone)}</span>
+        </span>
+        {home && <span className="offline-list-tag">{yoursLabel}</span>}
+        <span className="offline-list-call"><PhoneIcon /></span>
+      </a>
+    </li>
+  );
+}
 
 export function ResidentOfflineEmergency() {
+  const { lang } = useResidentLanguage();
+  const text = TEXT[lang] ?? TEXT.en;
   const [isOffline, setIsOffline] = useState(false);
+  const [openedByRequest, setOpenedByRequest] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [query, setQuery] = useState("");
+  const [homeMunicipality, setHomeMunicipality] = useState<string | null>(null);
 
   useEffect(() => {
-    // Initial check
-    if (typeof window !== "undefined") {
-      setIsOffline(!navigator.onLine);
-    }
+    const sync = () => queueMicrotask(() => setIsOffline(!navigator.onLine));
+    sync();
+    queueMicrotask(() => setHomeMunicipality(readHomeMunicipality()));
 
     const handleOffline = () => {
       setIsOffline(true);
       setIsDismissed(false);
     };
-
     const handleOnline = () => {
       setIsOffline(false);
+      setOpenedByRequest(false);
       setIsDismissed(false);
     };
-
+    const handleOpen = () => {
+      setOpenedByRequest(true);
+      setIsDismissed(false);
+    };
     window.addEventListener("offline", handleOffline);
     window.addEventListener("online", handleOnline);
+    window.addEventListener(OPEN_BFP_HOTLINES, handleOpen);
+
+    // Learn the registered municipality while online, so it is known offline.
+    if (navigator.onLine) {
+      void fetch("/api/resident/profile", { cache: "no-store" })
+        .then((response) => (response.ok ? response.json() : null))
+        .then((data: { profile?: { municipality?: string } } | null) => {
+          const municipality = data?.profile?.municipality;
+          if (!municipality || !hotlineForMunicipality(municipality)) return;
+          try {
+            localStorage.setItem(HOME_MUNICIPALITY_KEY, municipality);
+          } catch {
+            // Storage can be blocked; the full list still works.
+          }
+          setHomeMunicipality(municipality);
+        })
+        .catch(() => undefined);
+    }
 
     return () => {
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("online", handleOnline);
+      window.removeEventListener(OPEN_BFP_HOTLINES, handleOpen);
     };
   }, []);
 
-  if (!isOffline) return null;
+  const home = useMemo(() => hotlineForMunicipality(homeMunicipality), [homeMunicipality]);
+  const listed = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    const matches = BFP_HOTLINES.filter((hotline) => !term
+      || hotline.name.toLowerCase().includes(term)
+      || hotline.municipality.toLowerCase().includes(term));
+    // The resident's own station first; the rest stay in the poster's order.
+    return home ? [...matches.filter((hotline) => hotline.id === home.id), ...matches.filter((hotline) => hotline.id !== home.id)] : matches;
+  }, [query, home]);
+
+  const visible = isOffline || openedByRequest;
+  if (!visible) return null;
+  const expanded = showAll || !home || query.length > 0;
 
   return (
     <>
-      <style>{`
-        /* =====================================================================
-           OFFLINE EMERGENCY SLIDE-IN POPUP & FLOATING PILL
-           ===================================================================== */
-        .offline-emergency-backdrop {
-          position: fixed;
-          inset: 0;
-          background: rgba(15, 23, 42, 0.65);
-          backdrop-filter: blur(6px);
-          -webkit-backdrop-filter: blur(6px);
-          z-index: 10001;
-          display: flex;
-          align-items: flex-end;
-          justify-content: center;
-          padding: 1rem;
-          animation: offlineFadeIn 0.25s ease forwards;
-        }
-
-        .offline-emergency-sheet {
-          position: relative;
-          width: 100%;
-          max-width: 28rem;
-          background: #FFFFFF;
-          border: 1px solid rgba(220, 38, 38, 0.25);
-          border-radius: 1.5rem;
-          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(239, 68, 68, 0.15);
-          padding: 1.5rem 1.4rem 1.3rem;
-          color: #0F172A;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-          animation: offlineSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          overflow: hidden;
-        }
-
-        @keyframes offlineSlideUp {
-          from {
-            opacity: 0;
-            transform: translateY(2.5rem) scale(0.96);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        @keyframes offlineFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        /* Top Accent Warning Stripe */
-        .offline-sheet-accent {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 5px;
-          background: linear-gradient(90deg, #DC2626, #EA580C, #F59E0B, #DC2626);
-          background-size: 200% 100%;
-          animation: offlineStripeMove 3s linear infinite;
-        }
-
-        @keyframes offlineStripeMove {
-          0% { background-position: 0% 0%; }
-          100% { background-position: 200% 0%; }
-        }
-
-        .offline-sheet-close {
-          position: absolute;
-          top: 0.9rem;
-          right: 0.9rem;
-          width: 2rem;
-          height: 2rem;
-          border-radius: 50%;
-          border: 1px solid #E2E8F0;
-          background: #F8FAFC;
-          color: #64748B;
-          display: grid;
-          place-items: center;
-          font-size: 1.25rem;
-          line-height: 1;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-
-        .offline-sheet-close:hover {
-          background: #F1F5F9;
-          color: #0F172A;
-        }
-
-        .offline-header {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.85rem;
-          margin-bottom: 1.15rem;
-        }
-
-        .offline-icon-box {
-          position: relative;
-          width: 2.85rem;
-          height: 2.85rem;
-          flex-shrink: 0;
-          border-radius: 0.85rem;
-          background: linear-gradient(135deg, #FEF2F2, #FEE2E2);
-          border: 1px solid #FECACA;
-          display: grid;
-          place-items: center;
-          color: #DC2626;
-        }
-
-        .offline-icon-box svg {
-          width: 1.55rem;
-          height: 1.55rem;
-        }
-
-        .offline-icon-pulse {
-          position: absolute;
-          inset: -3px;
-          border-radius: 1rem;
-          border: 2px solid #EF4444;
-          opacity: 0;
-          animation: offlinePulseRing 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
-        }
-
-        @keyframes offlinePulseRing {
-          0% { opacity: 0.8; transform: scale(0.95); }
-          50% { opacity: 0; transform: scale(1.15); }
-          100% { opacity: 0; transform: scale(1.2); }
-        }
-
-        .offline-title-wrap h3 {
-          margin: 0 0 0.2rem;
-          font-size: 1.1rem;
-          font-weight: 800;
-          color: #7F1D1D;
-          letter-spacing: -0.02em;
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-        }
-
-        .offline-pill {
-          font-size: 0.65rem;
-          font-weight: 750;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          padding: 0.18rem 0.45rem;
-          border-radius: 999px;
-          background: #FEE2E2;
-          color: #B91C1C;
-        }
-
-        .offline-title-wrap p {
-          margin: 0;
-          font-size: 0.82rem;
-          line-height: 1.45;
-          color: #475569;
-        }
-
-        /* Call Action Buttons Grid */
-        .offline-actions {
-          display: grid;
-          gap: 0.75rem;
-          margin-bottom: 0.9rem;
-        }
-
-        .offline-call-btn {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.85rem 1.1rem;
-          border-radius: 1rem;
-          text-decoration: none;
-          font-weight: 700;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-          cursor: pointer;
-        }
-
-        .offline-call-btn:hover {
-          transform: translateY(-2px);
-        }
-
-        .offline-call-btn:active {
-          transform: translateY(0) scale(0.98);
-        }
-
-        /* 911 Primary Button */
-        .offline-call-911 {
-          background: linear-gradient(135deg, #DC2626, #991B1B);
-          color: #FFFFFF;
-          border: 1px solid #B91C1C;
-          box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
-        }
-
-        .offline-call-911:hover {
-          box-shadow: 0 8px 24px rgba(220, 38, 38, 0.45);
-        }
-
-        /* Municipal BFP Button */
-        .offline-call-bfp {
-          background: linear-gradient(135deg, #0F172A, #1E293B);
-          color: #FFFFFF;
-          border: 1px solid #334155;
-          box-shadow: 0 6px 18px rgba(15, 23, 42, 0.25);
-        }
-
-        .offline-call-bfp:hover {
-          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.35);
-        }
-
-        .offline-btn-left {
-          display: flex;
-          align-items: center;
-          gap: 0.8rem;
-        }
-
-        .offline-btn-icon-circle {
-          width: 2.3rem;
-          height: 2.3rem;
-          border-radius: 0.7rem;
-          display: grid;
-          place-items: center;
-          flex-shrink: 0;
-        }
-
-        .offline-call-911 .offline-btn-icon-circle {
-          background: rgba(255, 255, 255, 0.2);
-          color: #FFFFFF;
-        }
-
-        .offline-call-bfp .offline-btn-icon-circle {
-          background: rgba(249, 115, 22, 0.2);
-          color: #FB923C;
-        }
-
-        .offline-btn-icon-circle svg {
-          width: 1.25rem;
-          height: 1.25rem;
-        }
-
-        .offline-btn-text {
-          display: flex;
-          flex-direction: column;
-          gap: 0.12rem;
-          text-align: left;
-        }
-
-        .offline-btn-label {
-          font-size: 0.98rem;
-          font-weight: 800;
-          letter-spacing: -0.01em;
-        }
-
-        .offline-btn-sub {
-          font-size: 0.72rem;
-          font-weight: 550;
-          opacity: 0.85;
-        }
-
-        .offline-dial-pill {
-          font-size: 0.72rem;
-          font-weight: 800;
-          padding: 0.35rem 0.65rem;
-          border-radius: 999px;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.3rem;
-          white-space: nowrap;
-        }
-
-        .offline-call-911 .offline-dial-pill {
-          background: #FFFFFF;
-          color: #991B1B;
-        }
-
-        .offline-call-bfp .offline-dial-pill {
-          background: #EA580C;
-          color: #FFFFFF;
-        }
-
-        /* Minimized Floating Alert Pill (When Sheet is Dismissed) */
-        .offline-minimized-pill {
-          position: fixed;
-          bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
-          right: 1rem;
-          z-index: 9999;
-          background: linear-gradient(135deg, #DC2626, #B91C1C);
-          color: #FFFFFF;
-          border: 1px solid #EF4444;
-          border-radius: 999px;
-          padding: 0.5rem 0.9rem;
-          display: flex;
-          align-items: center;
-          gap: 0.55rem;
-          box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
-          cursor: pointer;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-          font-size: 0.8rem;
-          font-weight: 800;
-          animation: offlineFloatIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          transition: transform 0.15s ease;
-        }
-
-        .offline-minimized-pill:hover {
-          transform: translateY(-2px);
-        }
-
-        .offline-min-dot {
-          width: 0.5rem;
-          height: 0.5rem;
-          border-radius: 50%;
-          background: #FEF08A;
-          box-shadow: 0 0 8px #FACC15;
-          animation: offlineDotBlink 1.2s infinite ease-in-out;
-        }
-
-        @keyframes offlineDotBlink {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.4; transform: scale(0.8); }
-        }
-
-        @keyframes offlineFloatIn {
-          from { opacity: 0; transform: translateY(1rem) scale(0.9); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @media (max-width: 600px) {
-          .offline-emergency-backdrop {
-            padding: 0.5rem 0.5rem calc(4.5rem + env(safe-area-inset-bottom, 0px));
-          }
-          .offline-emergency-sheet {
-            padding: 1.25rem 1.1rem 1.1rem;
-            border-radius: 1.25rem;
-          }
-        }
-      `}</style>
-
+      <style>{styles}</style>
       {isDismissed ? (
-        <button
-          type="button"
-          className="offline-minimized-pill"
-          onClick={() => setIsDismissed(false)}
-          aria-label="Tawag sa Emergency (Offline)"
-        >
+        <button type="button" className="offline-minimized-pill" onClick={() => setIsDismissed(false)}>
           <span className="offline-min-dot" aria-hidden="true" />
-          <span>📞 Tumawag sa BFP / 911 (Offline)</span>
+          <PhoneIcon />
+          <span>{text.pill}</span>
         </button>
       ) : (
         <div
@@ -391,8 +222,10 @@ export function ResidentOfflineEmergency() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="offlineEmergencyTitle"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsDismissed(true);
+          onClick={(event) => {
+            if (event.target !== event.currentTarget) return;
+            if (isOffline) setIsDismissed(true);
+            else setOpenedByRequest(false);
           }}
         >
           <aside className="offline-emergency-sheet">
@@ -400,75 +233,80 @@ export function ResidentOfflineEmergency() {
             <button
               type="button"
               className="offline-sheet-close"
-              onClick={() => setIsDismissed(true)}
-              aria-label="Isara ang emergency dialog"
+              onClick={() => (isOffline ? setIsDismissed(true) : setOpenedByRequest(false))}
+              aria-label={text.close}
             >
               ×
             </button>
-
-            <div className="offline-header">
-              <div className="offline-icon-box">
-                <span className="offline-icon-pulse" />
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              </div>
-              <div className="offline-title-wrap">
-                <h3 id="offlineEmergencyTitle">
-                  Walang Internet <span className="offline-pill">Offline</span>
-                </h3>
-                <p>
-                  Hindi makapag-send ng online report. Tumawag agad sa hotline sa ibaba para sa agarang responde.
-                </p>
-              </div>
-            </div>
-
-            <div className="offline-actions">
-              {/* National 911 Hotline */}
-              <a
-                href="tel:911"
-                className="offline-call-btn offline-call-911"
-                id="offlineBtn911"
-              >
-                <div className="offline-btn-left">
-                  <div className="offline-btn-icon-circle">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                  </div>
-                  <div className="offline-btn-text">
-                    <span className="offline-btn-label">Tawag sa 911</span>
-                    <span className="offline-btn-sub">National Emergency Hotline</span>
-                  </div>
+            <div className="offline-sheet-scroll">
+              <div className="offline-header">
+                <div className="offline-icon-box"><PhoneIcon /></div>
+                <div>
+                  <h3 id="offlineEmergencyTitle">{isOffline ? text.offlineTitle : text.callTitle}</h3>
+                  <p>{isOffline ? text.offlineBody : text.callBody}</p>
                 </div>
-                <span className="offline-dial-pill">Dial 911 📞</span>
+              </div>
+
+              {home && (
+                <a href={hotlineHref(home.phone)} className="offline-call-btn offline-call-bfp" id="offlineBtnBfp">
+                  <span className="offline-call-icon"><PhoneIcon /></span>
+                  <span className="offline-call-text">
+                    <small>{text.yourStation}</small>
+                    <strong>{home.name}</strong>
+                    <span>{formatHotline(home.phone)}</span>
+                  </span>
+                </a>
+              )}
+
+              <a href="tel:911" className="offline-call-btn offline-call-911" id="offlineBtn911">
+                <span className="offline-call-icon"><PhoneIcon /></span>
+                <span className="offline-call-text">
+                  <small>{text.national}</small>
+                  <strong>911</strong>
+                </span>
               </a>
 
-              {/* Municipal BFP Hotline */}
-              <a
-                href={`tel:${EMERGENCY_BFP_PHONE}`}
-                className="offline-call-btn offline-call-bfp"
-                id="offlineBtnBfp"
-              >
-                <div className="offline-btn-left">
-                  <div className="offline-btn-icon-circle">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
-                      <path d="M15 18H9" />
-                      <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
-                      <circle cx="17" cy="18" r="2" />
-                      <circle cx="7" cy="18" r="2" />
-                    </svg>
-                  </div>
-                  <div className="offline-btn-text">
-                    <span className="offline-btn-label">Municipal BFP Hotline</span>
-                    <span className="offline-btn-sub">{EMERGENCY_BFP_DISPLAY}</span>
-                  </div>
-                </div>
-                <span className="offline-dial-pill">Dial BFP 🚒</span>
-              </a>
+              {home && (
+                <button
+                  type="button"
+                  className="offline-all-toggle"
+                  aria-expanded={expanded}
+                  onClick={() => {
+                    if (expanded) {
+                      setShowAll(false);
+                      setQuery("");
+                    } else {
+                      setShowAll(true);
+                    }
+                  }}
+                >
+                  <span>{text.allNumbers}</span>
+                  <span>{expanded ? text.hideNumbers : `${BFP_HOTLINES.length}`}</span>
+                </button>
+              )}
+
+              {expanded && (
+                <>
+                  {!home && <strong style={{ fontSize: "0.88rem" }}>{text.allNumbers}</strong>}
+                  <input
+                    type="search"
+                    className="offline-search"
+                    placeholder={text.search}
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    aria-label={text.search}
+                  />
+                  {listed.length === 0 ? (
+                    <p className="offline-empty">{text.noMatch}</p>
+                  ) : (
+                    <ul className="offline-list">
+                      {listed.map((hotline) => (
+                        <HotlineLink key={hotline.id} hotline={hotline} home={hotline.id === home?.id} yoursLabel={text.yours} />
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
             </div>
           </aside>
         </div>

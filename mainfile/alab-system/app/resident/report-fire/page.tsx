@@ -4,6 +4,7 @@ import { memo, useEffect, useRef, useState, type RefObject } from 'react';
 import 'leaflet/dist/leaflet.css';
 import type { Circle, Map as LeafletMap, Marker } from 'leaflet';
 import { ResidentFireLoader } from '../../_components/resident-fire-loader';
+import { OPEN_BFP_HOTLINES } from '../../_components/resident-offline-emergency';
 import { reportFireMarkup, reportFireStyles } from '../../_content/resident-report-fire-content';
 import { getStoredLanguage, RESIDENT_TRANSLATIONS, type ResidentLanguage } from '../../_lib/resident-i18n';
 import { filterSituationForFireTypes, MAX_FIRE_TYPES, situationForFireTypes } from '../../../lib/fire-reports/fire-type-situation';
@@ -610,6 +611,13 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       recordClientSuccessfulSos();
       window.location.assign(`/resident/reports/${data.report.id}`);
     } catch (error) {
+      // A dropped connection: offer the BFP hotlines straight away.
+      if (!navigator.onLine || error instanceof TypeError) {
+        showError('No internet connection. Call BFP instead.');
+        resetSubmission();
+        window.dispatchEvent(new Event(OPEN_BFP_HOTLINES));
+        return;
+      }
       showError(error instanceof Error ? error.message : 'Unable to submit the fire report.');
       resetSubmission();
     }
@@ -695,8 +703,12 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     await executeFinalSubmission();
   };
   const cancel = () => window.location.assign('/resident');
+  // With no signal a report cannot be sent; a call to BFP still goes through.
+  const callBfpButton = root.querySelector<HTMLButtonElement>('[data-call-bfp]');
+  const openHotlines = () => window.dispatchEvent(new Event(OPEN_BFP_HOTLINES));
   submitButton.addEventListener('click', submit);
   cancelButton?.addEventListener('click', cancel);
+  callBfpButton?.addEventListener('click', openHotlines);
 
   return () => {
     typeHandlers.forEach((handler, button) => button.removeEventListener('click', handler));
@@ -704,6 +716,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     routeButton?.removeEventListener('click', handleRouteClick);
     submitButton.removeEventListener('click', submit);
     cancelButton?.removeEventListener('click', cancel);
+    callBfpButton?.removeEventListener('click', openHotlines);
     root.removeEventListener('resident-report:photos-updated', handlePhotosUpdated);
     photoReqCloseBtn?.removeEventListener('click', hidePhotoWarning);
     photoRequiredDialog?.removeEventListener('click', handleDialogBackdropClick);

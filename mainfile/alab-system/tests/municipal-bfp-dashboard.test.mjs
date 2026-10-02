@@ -36,6 +36,7 @@ test("Municipal BFP dashboard component connects directly to real database state
   assert.match(dash, /stations/);
   assert.match(dash, /nearbyStations/);
   assert.doesNotMatch(dash, /540-9999|tel:/, "no hardcoded hotlines");
+  assert.match(dash, /hotlineForMunicipality\(station\.municipalityName\)/, "call buttons use the official BFP Antique numbers");
 });
 
 test("nearby stations are the closest other stations, with their open fires, and trucks come from the fleet", async () => {

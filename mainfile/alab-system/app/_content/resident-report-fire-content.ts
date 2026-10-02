@@ -148,6 +148,8 @@ export const reportFireStyles = `
 
   .action-btn-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-top: auto; }
   .action-btn-row-single { grid-template-columns: minmax(0, 1fr); }
+  .call-bfp-link { grid-column: 1 / -1; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; min-height: 2.6rem; border: 0; background: none; color: #B91C1C; font: inherit; font-size: .82rem; font-weight: 800; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .call-bfp-link svg { width: 1rem; height: 1rem; }
   .btn-small-outline, .btn-outline-red, .btn-solid-red, .btn-cancel { display: inline-flex; min-height: 2.65rem; align-items: center; justify-content: center; gap: .45rem; border: 1px solid #DCE2EA; border-radius: .72rem; background: #fff; color: var(--report-ink); font-size: .76rem; font-weight: 800; cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease; }
   .btn-small-outline:hover:not(:disabled), .btn-cancel:hover { transform: translateY(-1px); border-color: var(--report-red); color: var(--report-red); box-shadow: 0 .45rem 1rem rgba(219, 27, 13, .09); }
   .btn-small-outline:focus-visible, .btn-cancel:focus-visible, .btn-primary:focus-visible, .type-btn:focus-visible { outline: 3px solid rgba(219, 27, 13, .22); outline-offset: 2px; }
@@ -1020,7 +1022,7 @@ export const reportFireMarkup = `
       </section>
 
       <p class="report-submit-error" data-report-submit-error role="alert" hidden></p>
-      <footer class="form-footer"><button type="button" class="btn-primary" data-report-submit><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>SEND FIRE ALERT</button><button type="button" class="btn-cancel" data-report-cancel>Cancel</button></footer>
+      <footer class="form-footer"><button type="button" class="btn-primary" data-report-submit><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>SEND FIRE ALERT</button><button type="button" class="btn-cancel" data-report-cancel>Cancel</button><button type="button" class="call-bfp-link" data-call-bfp><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>No signal? Call BFP</button></footer>
     </main>
 
     <!-- Hidden compatibility container for test assertions -->

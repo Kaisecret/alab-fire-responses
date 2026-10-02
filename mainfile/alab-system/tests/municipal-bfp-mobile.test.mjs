@@ -32,11 +32,11 @@ test("municipal dashboard mobile rules prevent cramped cards and page overflow",
   const dashboard = readFileSync(dashboardPath, "utf8");
 
   const mobileRules = dashboard.match(/@media \(max-width: 768px\)[\s\S]*?\n  \}/)?.[0] ?? "";
-  assert.match(mobileRules, /\.mbfp-stats-row[\s\S]*grid-template-columns:\s*repeat\(2/);
+  assert.match(dashboard, /<MunicipalStatCards/, 'summary cards use the shared municipal card, which turns two-up below 1024px');
   assert.match(mobileRules, /\.mbfp-quick-actions \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(dashboard, /@media \(max-width: 360px\)[\s\S]*?\.mbfp-quick-actions \{ grid-template-columns: 1fr; \}/);
   assert.match(mobileRules, /\.mbfp-card-body[\s\S]*overflow-x:\s*auto/);
-  assert.match(mobileRules, /\.mbfp-nearby-row \.mbfp-row-end[\s\S]*flex-direction:\s*column/);
+  assert.match(mobileRules, /\.mbfp-nearby-row \.mbfp-row-end \{ gap: 0\.35rem; \}/);
 });
 
 test("municipal incident feed refreshes every five seconds only while the tab is visible", () => {

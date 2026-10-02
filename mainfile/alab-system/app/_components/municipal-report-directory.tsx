@@ -18,121 +18,19 @@ import {
 import { BfpDataLoader } from "./bfp-data-loader";
 import { MunicipalReportDetail } from "./municipal-report-detail";
 import { MunicipalReportExportDialog } from "./municipal-report-export-dialog";
+import { MunicipalStatCards } from "./municipal-stat-cards";
 
 const summaryCardStyles = `
   /* Carried over from the dashboard counters so a station reads the same
      shapes on both screens: a tinted card, a white icon tile, and the figure
      given the room to be seen from across a room. */
-  .mrd-stats-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 0.75rem;
-  }
 
-  .mrd-stat-card {
-    position: relative;
-    border-radius: 12px;
-    padding: 0.8rem 0.95rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    overflow: hidden;
-    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.24s ease, border-color 0.24s ease;
-  }
-  .mrd-stat-card.slate {
-    background: linear-gradient(145deg, #F1F5F9 0%, #E2E8F0 100%);
-    border: 1.5px solid #CBD5E1;
-    box-shadow: 0 4px 16px rgba(71, 85, 105, 0.06);
-  }
-  .mrd-stat-card.red {
-    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
-    border: 1.5px solid #FFBEBE;
-    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
-  }
-  .mrd-stat-card.emerald {
-    background: linear-gradient(145deg, #E3F8ED 0%, #CEF2DE 100%);
-    border: 1.5px solid #B1ECC8;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
-  }
 
-  .mrd-stat-card:hover { transform: translateY(-3px); }
-  .mrd-stat-card.slate:hover {
-    border-color: #94A3B8;
-    box-shadow: 0 10px 22px -4px rgba(71, 85, 105, 0.2);
-  }
-  .mrd-stat-card.red:hover {
-    border-color: #FFA3A3;
-    box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2);
-  }
-  .mrd-stat-card.emerald:hover {
-    border-color: #88E4AA;
-    box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2);
-  }
 
-  .mrd-stat-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.4rem;
-    margin-bottom: 0.5rem;
-  }
 
-  .mrd-stat-icon {
-    width: 2.35rem;
-    height: 2.35rem;
-    border-radius: 10px;
-    background: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.95);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.05rem;
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-  .mrd-stat-icon.slate { color: #475569; }
-  .mrd-stat-icon.red { color: #E23632; }
-  .mrd-stat-icon.emerald { color: #059669; }
 
-  .mrd-stat-tag {
-    font-size: 0.65rem;
-    font-weight: 800;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-  .mrd-stat-tag.slate { background: #E2E8F0; color: #334155; }
-  .mrd-stat-tag.red { background: #FDE8E8; color: #991B1B; }
-  .mrd-stat-tag.emerald { background: #D1FAE5; color: #065F46; }
 
-  .mrd-stat-body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-    margin: 0.15rem 0 0.1rem;
-  }
-  .mrd-stat-value {
-    font-size: 1.85rem;
-    font-weight: 900;
-    color: #0F172A;
-    line-height: 1.05;
-    font-variant-numeric: tabular-nums;
-  }
-  .mrd-stat-label {
-    font-size: 0.69rem;
-    font-weight: 750;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
 
-  @media (prefers-reduced-motion: reduce) {
-    .mrd-stat-card:hover { transform: none; }
-  }
 `;
 
 export function MunicipalReportDirectory() {
@@ -643,56 +541,14 @@ export function MunicipalReportDirectory() {
         </div>
       </div>
 
-      {/* Summary strip, in the same hand as the dashboard's counters. */}
-      <div className="mrd-stats-row">
-        <div className="mrd-stat-card slate">
-          <div className="mrd-stat-header">
-            <div className="mrd-stat-icon slate">
-              <i className="fa-solid fa-folder-open" />
-            </div>
-            <span className="mrd-stat-tag slate">
-              <i className="fa-solid fa-layer-group" />
-              Intake
-            </span>
-          </div>
-          <div className="mrd-stat-body">
-            <span className="mrd-stat-value">{summary?.totalReports ?? 0}</span>
-            <span className="mrd-stat-label">Total Reports</span>
-          </div>
-        </div>
-
-        <div className="mrd-stat-card red">
-          <div className="mrd-stat-header">
-            <div className="mrd-stat-icon red">
-              <i className="fa-solid fa-fire" />
-            </div>
-            <span className="mrd-stat-tag red">
-              <i className="fa-solid fa-triangle-exclamation" />
-              {summary && summary.confirmedIncidents > 0 ? "Confirmed" : "None"}
-            </span>
-          </div>
-          <div className="mrd-stat-body">
-            <span className="mrd-stat-value">{summary?.confirmedIncidents ?? 0}</span>
-            <span className="mrd-stat-label">Confirmed Incidents</span>
-          </div>
-        </div>
-
-        <div className="mrd-stat-card emerald">
-          <div className="mrd-stat-header">
-            <div className="mrd-stat-icon emerald">
-              <i className="fa-solid fa-circle-check" />
-            </div>
-            <span className="mrd-stat-tag emerald">
-              <i className="fa-solid fa-flag-checkered" />
-              {summary && summary.resolvedIncidents > 0 ? "Closed" : "Open"}
-            </span>
-          </div>
-          <div className="mrd-stat-body">
-            <span className="mrd-stat-value">{summary?.resolvedIncidents ?? 0}</span>
-            <span className="mrd-stat-label">Resolved Incidents</span>
-          </div>
-        </div>
-      </div>
+      <MunicipalStatCards
+        label="Report totals"
+        items={[
+          { key: "total", icon: "fa-folder-open", tone: "slate", value: summary?.totalReports ?? 0, label: "Total reports" },
+          { key: "confirmed", icon: "fa-fire", tone: "red", value: summary?.confirmedIncidents ?? 0, label: "Confirmed" },
+          { key: "resolved", icon: "fa-circle-check", tone: "emerald", value: summary?.resolvedIncidents ?? 0, label: "Resolved" },
+        ]}
+      />
 
       {/* Filters Toolbar */}
       <div

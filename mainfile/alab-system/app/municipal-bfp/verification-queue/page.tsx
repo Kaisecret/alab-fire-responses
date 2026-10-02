@@ -4,6 +4,7 @@ import { municipalTabFetch as fetch } from "../../../lib/auth/municipal-tab-fetc
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { MunicipalStatCards } from "../../_components/municipal-stat-cards";
 
 type Summary = {
   id: string;
@@ -253,76 +254,15 @@ export default function VerificationQueuePage() {
         </div>
       )}
 
-      {/* METRIC CARDS (TACTICAL OVERVIEW) */}
-      <section className="vq-metrics-grid" aria-label="Application totals">
-        {/* PENDING / UNDER REVIEW */}
-        <div
-          className={`vq-metric-card pending ${filter === "PENDING" ? "active-card" : ""}`}
-          onClick={() => setFilter("PENDING")}
-          role="button"
-          tabIndex={0}
-        >
-          <div className="vq-metric-top">
-            <div className="vq-metric-icon-wrap pending">
-              <i className="fa-solid fa-clock" />
-            </div>
-            <span className="vq-metric-status pending">Pending Review</span>
-          </div>
-          <div className="vq-metric-value">{pendingCount}</div>
-          <div className="vq-metric-label">Awaiting Verification</div>
-        </div>
-
-        {/* CORRECTIONS REQUESTED */}
-        <div
-          className={`vq-metric-card corrections ${filter === "CHANGES_REQUESTED" ? "active-card" : ""}`}
-          onClick={() => setFilter("CHANGES_REQUESTED")}
-          role="button"
-          tabIndex={0}
-        >
-          <div className="vq-metric-top">
-            <div className="vq-metric-icon-wrap corrections">
-              <i className="fa-solid fa-triangle-exclamation" />
-            </div>
-            <span className="vq-metric-status corrections">Action Needed</span>
-          </div>
-          <div className="vq-metric-value">{correctionsCount}</div>
-          <div className="vq-metric-label">Corrections Requested</div>
-        </div>
-
-        {/* VERIFIED / APPROVED */}
-        <div
-          className={`vq-metric-card approved ${filter === "VERIFIED" ? "active-card" : ""}`}
-          onClick={() => setFilter("VERIFIED")}
-          role="button"
-          tabIndex={0}
-        >
-          <div className="vq-metric-top">
-            <div className="vq-metric-icon-wrap approved">
-              <i className="fa-solid fa-circle-check" />
-            </div>
-            <span className="vq-metric-status approved">Cleared</span>
-          </div>
-          <div className="vq-metric-value">{verifiedCount}</div>
-          <div className="vq-metric-label">Approved Residents</div>
-        </div>
-
-        {/* TOTAL SUBMISSIONS */}
-        <div
-          className={`vq-metric-card total ${filter === "ALL" ? "active-card" : ""}`}
-          onClick={() => setFilter("ALL")}
-          role="button"
-          tabIndex={0}
-        >
-          <div className="vq-metric-top">
-            <div className="vq-metric-icon-wrap total">
-              <i className="fa-solid fa-id-card" />
-            </div>
-            <span className="vq-metric-status total">All Time</span>
-          </div>
-          <div className="vq-metric-value">{applications.length}</div>
-          <div className="vq-metric-label">Total Submissions</div>
-        </div>
-      </section>
+      <MunicipalStatCards
+        label="Application totals"
+        items={[
+          { key: "pending", icon: "fa-clock", tone: "amber", value: pendingCount, label: "To review", onClick: () => setFilter("PENDING"), active: filter === "PENDING" },
+          { key: "corrections", icon: "fa-triangle-exclamation", tone: "red", value: correctionsCount, label: "Corrections", onClick: () => setFilter("CHANGES_REQUESTED"), active: filter === "CHANGES_REQUESTED" },
+          { key: "verified", icon: "fa-circle-check", tone: "emerald", value: verifiedCount, label: "Approved", onClick: () => setFilter("VERIFIED"), active: filter === "VERIFIED" },
+          { key: "total", icon: "fa-id-card", tone: "blue", value: applications.length, label: "All submissions", onClick: () => setFilter("ALL"), active: filter === "ALL" },
+        ]}
+      />
 
       {/* FILTER TABS & SEARCH TOOLBAR */}
       <section className="vq-toolbar">
@@ -1019,117 +959,22 @@ const styles = `
   }
 
   /* ================= METRICS GRID (COMPACT / SMALL) ================= */
-  .vq-metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.75rem;
-  }
 
-  .vq-metric-card {
-    background: #FFFFFF;
-    border-radius: 10px;
-    border: 1px solid #E2E8F0;
-    padding: 0.65rem 0.95rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
-    position: relative;
-    overflow: hidden;
-  }
 
-  .vq-metric-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-    border-color: #CBD5E1;
-  }
 
-  .vq-metric-card.active-card {
-    border-color: #D00F09;
-    box-shadow: 0 0 0 1.5px rgba(208, 15, 9, 0.2), 0 4px 14px rgba(15, 23, 42, 0.06);
-  }
 
-  .vq-metric-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.15rem;
-  }
 
-  .vq-metric-icon-wrap {
-    width: 26px;
-    height: 26px;
-    border-radius: 7px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.78rem;
-  }
 
-  .vq-metric-icon-wrap.pending {
-    background: #FFFBEB;
-    color: #D97706;
-  }
 
-  .vq-metric-icon-wrap.corrections {
-    background: #FEF2F2;
-    color: #DC2626;
-  }
 
-  .vq-metric-icon-wrap.approved {
-    background: #ECFDF5;
-    color: #10B981;
-  }
 
-  .vq-metric-icon-wrap.total {
-    background: #EFF6FF;
-    color: #2563EB;
-  }
 
-  .vq-metric-status {
-    font-size: 0.62rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 0.12rem 0.45rem;
-    border-radius: 999px;
-  }
 
-  .vq-metric-status.pending {
-    background: #FFFBEB;
-    color: #B45309;
-  }
 
-  .vq-metric-status.corrections {
-    background: #FEF2F2;
-    color: #B91C1C;
-  }
 
-  .vq-metric-status.approved {
-    background: #ECFDF5;
-    color: #047857;
-  }
 
-  .vq-metric-status.total {
-    background: #F1F5F9;
-    color: #475569;
-  }
 
-  .vq-metric-value {
-    font-size: 1.45rem;
-    font-weight: 850;
-    color: #0F172A;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
 
-  .vq-metric-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #64748B;
-  }
 
   /* ================= TOOLBAR ================= */
   .vq-toolbar {
@@ -2211,9 +2056,6 @@ const styles = `
 
   /* ================= RESPONSIVE BREAKPOINTS ================= */
   @media (max-width: 1100px) {
-    .vq-metrics-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
     .vq-row {
       grid-template-columns: 48px 1fr 1fr auto;
     }
@@ -2235,9 +2077,6 @@ const styles = `
   @media (max-width: 768px) {
     .vq-page {
       padding: 1rem;
-    }
-    .vq-metrics-grid {
-      grid-template-columns: 1fr;
     }
     .vq-toolbar {
       flex-direction: column;
