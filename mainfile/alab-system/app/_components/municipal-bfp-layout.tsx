@@ -775,6 +775,9 @@ const layoutStyles = `
     min-width: 0;
   }
 
+  .mbfp-header-inner.has-command-header .mbfp-header-left { flex: 1; }
+  .mbfp-command-header-slot { flex: 1; min-width: 0; }
+
   .mbfp-mobile-menu-toggle {
     display: none;
     width: 36px;
@@ -1141,6 +1144,7 @@ function MunicipalShellSkeleton() {
 
 export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const hasCommandHeader = pathname === '/municipal-bfp' || pathname === '/municipal-bfp/' || pathname === '/municipal-bfp/gis-map';
   // The sidebar badge shows the real queue depth, not a fixed number.
   const { incidents: liveIncidents } = useMunicipalIncidentFeed();
   const activeIncidentCount = liveIncidents.length;
@@ -1465,7 +1469,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
         <div className={`mbfp-main-area ${isCollapsed ? 'collapsed' : ''}`}>
           {/* Top Header */}
           <header className="mbfp-header">
-            <div className="mbfp-header-inner">
+            <div className={`mbfp-header-inner${hasCommandHeader ? ' has-command-header' : ''}`}>
               {/* Left: System title */}
               <div className="mbfp-header-left">
                 <button
@@ -1478,21 +1482,21 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                 >
                   <i className="fa-solid fa-bars" />
                 </button>
-                <div className="mbfp-header-titles">
+                {hasCommandHeader ? <div id="municipal-fire-command-header" className="mbfp-command-header-slot" /> : <div className="mbfp-header-titles">
                   <span className="mbfp-header-title">
                     {getTabTitle(pathname)}
                   </span>
-                </div>
+                </div>}
               </div>
 
               {/* Right: Location & notifications */}
               <div className="mbfp-header-right">
-                <div className="mbfp-header-location">
+                {!hasCommandHeader && <div className="mbfp-header-location">
                   <i className="fa-solid fa-location-dot" />
                   {checking
                     ? <span className="mbfp-shell-skel" style={{ width: '8rem' }} />
                     : <span>{identity?.municipalityName ?? 'Antique BFP'}</span>}
-                </div>
+                </div>}
 
                 {checking
                   ? <span className="mbfp-shell-skel mbfp-shell-skel-round" aria-hidden="true" />

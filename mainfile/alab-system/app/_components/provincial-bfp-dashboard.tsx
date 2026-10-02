@@ -7,6 +7,7 @@ import { useProvincialIncidentFeed } from './use-provincial-incident-feed';
 import { useProvincialAssistanceFeed } from './use-provincial-assistance-feed';
 import { ProvincialIncidentAnalytics } from './provincial-incident-analytics';
 import { ProvincialDashboardIncidentMap } from './provincial-dashboard-incident-map';
+import { FireCommandHeader } from './fire-command-header';
 
 type ManagementSummaryData = {
   totalMunicipalities: number;
@@ -487,12 +488,14 @@ export function ProvincialBfpDashboard() {
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [summaryChecking, setSummaryChecking] = useState(false);
 
   const {
     incidents,
     loading: incidentFeedLoading,
     error: incidentFeedError,
     checking: incidentFeedChecking,
+    lastCheckedAt,
     refresh: refreshIncidents,
   } = useProvincialIncidentFeed();
   const { requests: assistanceRequests } = useProvincialAssistanceFeed({ includeClosed: false });
@@ -536,6 +539,7 @@ export function ProvincialBfpDashboard() {
     async function fetchDashboardData() {
       if (inFlight || document.visibilityState === 'hidden') return;
       inFlight = true;
+      setSummaryChecking(true);
       try {
         const [sumRes, munRes] = await Promise.all([
           fetch('/api/provincial-bfp/management-summary', { cache: 'no-store', signal: controller.signal }),
@@ -560,6 +564,7 @@ export function ProvincialBfpDashboard() {
         if (active && !controller.signal.aborted) setSummaryError(err instanceof Error ? err.message : 'Unable to load dashboard totals.');
       } finally {
         inFlight = false;
+        if (active) setSummaryChecking(false);
       }
     }
 
@@ -578,6 +583,10 @@ export function ProvincialBfpDashboard() {
     <>
       <style>{dashboardStyles}</style>
       <div className="pbfp-dash-clean">
+        <FireCommandHeader slotId="provincial-fire-command-header" title="Antique Fire Command" checking={incidentFeedChecking || summaryChecking} lastCheckedAt={lastCheckedAt} error={incidentFeedError || summaryError} onRefresh={() => {
+          void refreshIncidents();
+          setRefreshKey(key => key + 1);
+        }} />
         {summaryError && <div role="alert" style={{ padding: '12px 16px', border: '1px solid #FECACA', borderRadius: 10, background: '#FFF1F2', color: '#991B1B' }}>
           {summaryError} {updatedAt && 'Showing the last loaded data. '}
           <button type="button" className="pbfp-retry" onClick={() => setRefreshKey(key => key + 1)}>Retry</button>
@@ -689,8 +698,6 @@ export function ProvincialBfpDashboard() {
             incidents={incidents}
             loading={incidentFeedLoading}
             error={incidentFeedError}
-            checking={incidentFeedChecking}
-            onRefresh={() => void refreshIncidents()}
           />
 
           {/* RIGHT: Active Incidents Card */}

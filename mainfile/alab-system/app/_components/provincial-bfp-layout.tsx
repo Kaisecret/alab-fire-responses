@@ -834,6 +834,10 @@ const provincialLayoutStyles = `
     min-width: 0;
   }
 
+  .pbfp-topbar-inner.has-command-header .pbfp-topbar-left { flex: 1; }
+  .pbfp-command-header-slot { flex: 1; min-width: 0; }
+  .pbfp-topbar-inner.has-command-header .pbfp-topbar-admin-text { display: none; }
+
   .pbfp-mobile-menu-btn {
     display: none;
     width: 38px;
@@ -1217,6 +1221,7 @@ function LiveClock() {
 
 export function ProvincialBfpLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || '/provincial-bfp';
+  const hasCommandHeader = pathname === '/provincial-bfp' || pathname === '/provincial-bfp/' || pathname === '/provincial-bfp/gis-map';
   const isAuthenticationPage = pathname === '/provincial-bfp/login';
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -1473,7 +1478,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
         <div className={`pbfp-main-area ${isCollapsed ? 'collapsed' : ''}`}>
           {/* Top Command Center Header */}
           <header className="pbfp-topbar">
-            <div className="pbfp-topbar-inner">
+            <div className={`pbfp-topbar-inner${hasCommandHeader ? ' has-command-header' : ''}`}>
               {/* Left: Mobile button + Title */}
               <div className="pbfp-topbar-left">
                 <button
@@ -1484,7 +1489,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                 >
                   <i className="fa-solid fa-bars" />
                 </button>
-                <div className="pbfp-topbar-title-group">
+                {hasCommandHeader ? <div id="provincial-fire-command-header" className="pbfp-command-header-slot" /> : <div className="pbfp-topbar-title-group">
                   <span className="pbfp-topbar-kicker">
                     <img
                       src="/images/bfp logo.png"
@@ -1493,12 +1498,12 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                     />
                     <span>Bureau of Fire Protection • Region VI</span>
                   </span>
-                </div>
+                </div>}
               </div>
 
               {/* Right: Clock + Status + Quick Profile */}
               <div className="pbfp-topbar-right">
-                <div className="pbfp-topbar-meta">
+                {!hasCommandHeader && <div className="pbfp-topbar-meta">
                   <div className="pbfp-clock-chip" title="Philippine Standard Time">
                     <i className="fa-regular fa-clock" />
                     <LiveClock />
@@ -1511,7 +1516,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                     <i className="fa-solid fa-building-circle-check" />
                     <span>18 Municipalities Active</span>
                   </div>
-                </div>
+                </div>}
 
                 <NotificationBell apiPath="/api/provincial-bfp/notifications" allHref="/provincial-bfp/notifications" />
 

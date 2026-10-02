@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { FireCommandHeader } from "./fire-command-header";
 import "leaflet/dist/leaflet.css";
 
 import { useProvincialIncidentFeed } from "./use-provincial-incident-feed";
@@ -1160,6 +1161,7 @@ function drawWaterSources(
   groups: WaterSourceMapGroup[],
   waterSourceId: string,
   onSelectSource: (source: WaterSource) => void,
+  frameView = true,
 ) {
   layer.clearLayers();
   const points: [number, number][] = [];
@@ -1179,11 +1181,12 @@ function drawWaterSources(
     marker.on("click", () => onSelectSource(group.sources.find((item) => item.id === waterSourceId) ?? source));
     marker.addTo(layer);
     const focusedSource = group.sources.find((item) => item.id === waterSourceId);
-    if (focusedSource) {
+    if (focusedSource && frameView) {
       map.setView(point, group.approximate ? 13 : 17, { animate: false });
     }
   });
 
+  if (!frameView) return;
   if (!waterSourceId && points.length === 1) {
     map.setView(points[0], 16, { animate: false });
   } else if (!waterSourceId && points.length > 1) {
@@ -1200,6 +1203,7 @@ function drawIncidents(
   clusters: IncidentCluster[],
   onSelectCluster: (cluster: IncidentCluster) => void,
   view: MapView = "ALL",
+  frameView = true,
 ) {
   layer.clearLayers();
   const points: [number, number][] = [];
@@ -1229,6 +1233,7 @@ function drawIncidents(
       marker.addTo(layer);
     });
 
+  if (!frameView) return;
   if (points.length === 1) {
     map.setView(points[0], 14, { animate: false });
   } else if (points.length > 1) {
@@ -1244,7 +1249,7 @@ export function ProvincialGisOperationsMap() {
     [],
   );
   const waterSourceId = searchParams.get("waterSource") ?? "";
-  const { incidents, loading, checking, error, refresh } = useProvincialIncidentFeed({
+  const { incidents, loading, checking, error, lastCheckedAt, refresh } = useProvincialIncidentFeed({
     includeHistory: true,
   });
 
@@ -1255,7 +1260,8 @@ export function ProvincialGisOperationsMap() {
   const stationLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const waterSourceLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
-  const clustersRef = useRef(clusters);
+  const incidentViewRef = useRef<MapView | null>(null);
+  const waterViewRef = useRef<string | null>(null);
 
   const [selectedCluster, setSelectedCluster] = useState<IncidentCluster | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState("");
@@ -1264,25 +1270,22 @@ export function ProvincialGisOperationsMap() {
   const [waterSources, setWaterSources] = useState<WaterSource[]>([]);
   const waterSourceMapGroups = useMemo(() => groupWaterSourceMapMarkers(waterSources, MUNICIPAL_CENTERS), [waterSources]);
   const [waterSourcesLoading, setWaterSourcesLoading] = useState(true);
+  const [waterSourcesCheckedAt, setWaterSourcesCheckedAt] = useState<Date | null>(null);
   const [waterSourcesError, setWaterSourcesError] = useState("");
   const [selectedWaterSource, setSelectedWaterSource] = useState<WaterSource | null>(null);
   const [view, setView] = useState<MapView>("ALL");
   const [showStations, setShowStations] = useState(true);
   const [mapMode, setMapMode] = useState<MapContentMode>(() => resolveProvincialMapMode(searchParams));
 
-  const viewRef = useRef<MapView>(view);
-  const mapModeRef = useRef<MapContentMode>(mapMode);
   const onSelectRef = useRef<(cluster: IncidentCluster) => void>((cluster) => {
     setSelectedCluster(cluster);
     setSelectedIncidentId(cluster.incidents[0]?.id ?? "");
   });
 
   useEffect(() => {
-    clustersRef.current = clusters;
-    viewRef.current = view;
-    mapModeRef.current = mapMode;
-    if (leafletRef.current && mapRef.current && layerRef.current) {
+    if (mapReady && leafletRef.current && mapRef.current && layerRef.current) {
       if (mapMode === "INCIDENTS") {
+        const frameView = !loading && incidentViewRef.current !== view;
         drawIncidents(
           leafletRef.current,
           mapRef.current,
@@ -1290,13 +1293,16 @@ export function ProvincialGisOperationsMap() {
           clusters,
           (c) => onSelectRef.current(c),
           view,
+          frameView,
         );
+        if (frameView) incidentViewRef.current = view;
         if (!mapRef.current.hasLayer(layerRef.current)) layerRef.current.addTo(mapRef.current);
       } else {
         mapRef.current.removeLayer(layerRef.current);
+        incidentViewRef.current = null;
       }
     }
-  }, [clusters, mapMode, view]);
+  }, [clusters, loading, mapMode, mapReady, view]);
 
   // Load Antique BFP fire stations across all municipalities
   useEffect(() => {
@@ -1354,6 +1360,7 @@ export function ProvincialGisOperationsMap() {
         if (controller.signal.aborted) return;
         setWaterSources(registry.sources);
         setWaterSourcesError("");
+        setWaterSourcesCheckedAt(new Date());
       })
       .catch((loadError) => {
         if (controller.signal.aborted) return;
@@ -1388,6 +1395,7 @@ export function ProvincialGisOperationsMap() {
     if (!L || !map || !mapReady) return;
     if (!waterSourceLayerRef.current) waterSourceLayerRef.current = L.layerGroup().addTo(map);
     if (mapMode === "WATER_SOURCES") {
+      const frameView = !waterSourcesLoading && waterViewRef.current !== waterSourceId;
       drawWaterSources(
         L,
         map,
@@ -1395,12 +1403,15 @@ export function ProvincialGisOperationsMap() {
         waterSourceMapGroups,
         waterSourceId,
         setSelectedWaterSource,
+        frameView,
       );
+      if (frameView) waterViewRef.current = waterSourceId;
       if (!map.hasLayer(waterSourceLayerRef.current)) waterSourceLayerRef.current.addTo(map);
     } else {
       map.removeLayer(waterSourceLayerRef.current);
+      waterViewRef.current = null;
     }
-  }, [mapMode, mapReady, waterSourceId, waterSourceMapGroups]);
+  }, [mapMode, mapReady, waterSourceId, waterSourceMapGroups, waterSourcesLoading]);
 
   // Mount Leaflet map with clean OpenStreetMap tiles
   useEffect(() => {
@@ -1430,22 +1441,13 @@ export function ProvincialGisOperationsMap() {
       mapRef.current = map;
       layerRef.current = incidentLayer;
 
-      if (mapModeRef.current === "INCIDENTS") {
-        incidentLayer.addTo(map);
-        drawIncidents(
-          L,
-          map,
-          incidentLayer,
-          clustersRef.current,
-          (c) => onSelectRef.current(c),
-          viewRef.current,
-        );
-      }
       setMapReady(true);
     })();
 
     return () => {
       disposed = true;
+      incidentViewRef.current = null;
+      waterViewRef.current = null;
       layerRef.current = null;
       stationLayerRef.current = null;
       waterSourceLayerRef.current = null;
@@ -1478,6 +1480,7 @@ export function ProvincialGisOperationsMap() {
       const registry = await fetchProvincialWaterSources();
       setWaterSources(registry.sources);
       setWaterSourcesError("");
+      setWaterSourcesCheckedAt(new Date());
     } catch (loadError) {
       setWaterSourcesError(
         loadError instanceof Error ? loadError.message : "Unable to load the provincial water-source layer.",
@@ -1529,25 +1532,7 @@ export function ProvincialGisOperationsMap() {
       <style>{styles}</style>
       <section className="mbfp-ops-workspace" aria-labelledby="provincial-gis-heading">
         {/* Header Toolbar */}
-        <header className="mbfp-ops-toolbar">
-          <div className="pbfp-title-group">
-            <p className="mbfp-ops-eyebrow">Provincial fire operations</p>
-            <h1 id="provincial-gis-heading" className="mbfp-ops-title">
-              {mapMode === "INCIDENTS" ? "GIS incident map" : "GIS water source map"}
-            </h1>
-          </div>
-          <div className="mbfp-ops-tools">
-            <button
-              className="mbfp-ops-refresh"
-              type="button"
-              onClick={() => void handleRefresh()}
-              disabled={mapMode === "INCIDENTS" ? checking : waterSourcesLoading}
-            >
-              <i className={`fa-solid fa-rotate-right ${(mapMode === "INCIDENTS" ? checking : waterSourcesLoading) ? "fa-spin" : ""}`} aria-hidden="true" />
-              <span>{(mapMode === "INCIDENTS" ? checking : waterSourcesLoading) ? "Refreshing map" : "Live refresh"}</span>
-            </button>
-          </div>
-        </header>
+        <FireCommandHeader slotId="provincial-fire-command-header" headingId="provincial-gis-heading" title="Antique Fire Command" checking={mapMode === "INCIDENTS" ? checking : waterSourcesLoading} lastCheckedAt={mapMode === "INCIDENTS" ? lastCheckedAt : waterSourcesCheckedAt} error={mapMode === "INCIDENTS" ? error : waterSourcesError} onRefresh={() => void handleRefresh()} />
 
         {/* 4 Clean Pastel KPI Stat Cards */}
         <div className="mbfp-ops-stats" aria-label="Provincial GIS totals">

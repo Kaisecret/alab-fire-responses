@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMunicipalIncidentFeed } from './use-municipal-incident-feed';
 import { MunicipalStatCards } from './municipal-stat-cards';
+import { FireCommandHeader } from './fire-command-header';
 import { getFireTypeLabel } from '../../lib/municipal-bfp/reports/formatters';
 import { formatHotline, hotlineForMunicipality, hotlineHref, PROVINCIAL_FIRE_MARSHAL } from '../../lib/bfp-hotlines';
 
@@ -295,16 +296,13 @@ export function MunicipalBfpDashboard() {
     loading: incidentsLoading,
     checking: incidentsChecking,
     lastCheckedAt,
+    error: incidentFeedError,
     refresh: refreshIncidents,
   } = useMunicipalIncidentFeed();
 
-  const initialCache = useRef<DashboardPayload | null>(null);
-  if (initialCache.current === null) {
-    initialCache.current = getCachedDashboard();
-  }
-
-  const [dashboardData, setDashboardData] = useState<DashboardPayload | null>(initialCache.current);
-  const [dashLoading, setDashLoading] = useState(!initialCache.current);
+  const [initialCache] = useState(getCachedDashboard);
+  const [dashboardData, setDashboardData] = useState<DashboardPayload | null>(initialCache);
+  const [dashLoading, setDashLoading] = useState(!initialCache);
   const [dashChecking, setDashChecking] = useState(false);
   const inFlight = useRef(false);
   const mounted = useRef(true);
@@ -336,7 +334,7 @@ export function MunicipalBfpDashboard() {
 
   useEffect(() => {
     mounted.current = true;
-    void fetchDashboard();
+    const initialTimer = setTimeout(() => void fetchDashboard(), 0);
 
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') {
@@ -346,6 +344,7 @@ export function MunicipalBfpDashboard() {
 
     return () => {
       mounted.current = false;
+      clearTimeout(initialTimer);
       clearInterval(interval);
     };
   }, [fetchDashboard]);
@@ -356,11 +355,6 @@ export function MunicipalBfpDashboard() {
   };
 
   const isChecking = incidentsChecking || dashChecking;
-  const liveStatus = isChecking
-    ? 'Live · checking...'
-    : lastCheckedAt
-      ? 'Live · checked just now'
-      : 'Live · connecting...';
 
   // The station's own reports; nearby fires are summarised per station below.
   const ownIncidents = incidents.filter((incident) => incident.accessScope !== 'OBSERVER');
@@ -379,23 +373,7 @@ export function MunicipalBfpDashboard() {
     <>
       <style>{dashboardStyles}</style>
       <div className="mbfp-dash">
-        <div className="mbfp-dash-header">
-          <div className="mbfp-dash-title-wrap">
-            <span className="mbfp-dash-fire-icon" aria-hidden="true">
-              <i className="fa-solid fa-fire-flame-curved" />
-            </span>
-            <h1 className="mbfp-dash-heading">{municipality} Fire Command</h1>
-          </div>
-          <div className="mbfp-top-ctrls">
-            <span className="mbfp-status-badge" role="status">
-              <span className="mbfp-live-dot" aria-hidden="true" />
-              {liveStatus}
-            </span>
-            <button type="button" className="mbfp-icon-btn" onClick={handleRefreshAll} disabled={isChecking} aria-label="Refresh" title="Refresh">
-              <i className={`fa-solid fa-arrows-rotate ${isChecking ? 'mbfp-spin-icon' : ''}`} aria-hidden="true" />
-            </button>
-          </div>
-        </div>
+        <FireCommandHeader slotId="municipal-fire-command-header" title={`${municipality} Fire Command`} checking={isChecking} lastCheckedAt={lastCheckedAt} error={incidentFeedError} onRefresh={handleRefreshAll} />
 
         <MunicipalStatCards
           label="Station summary"

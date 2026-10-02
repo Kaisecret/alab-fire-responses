@@ -76,5 +76,6 @@ test("municipal dashboard renders its incident queue from the authenticated live
   assert.match(dashboard, /useMunicipalIncidentFeed/);
   assert.doesNotMatch(dashboard, /const incidentData\s*=/);
   assert.match(dashboard, /[iI]ncidents\.slice\(0, 5\)/);
-  assert.match(dashboard, /Live · checked/);
+  assert.match(dashboard, /FireCommandHeader/);
+  assert.match(readFileSync(join(root, "app", "_components", "fire-command-header.tsx"), "utf8"), /Live · checked/);
 });

@@ -13,11 +13,9 @@ type Props = {
   incidents: ProvincialIncidentSummary[];
   loading: boolean;
   error: string;
-  checking: boolean;
-  onRefresh: () => void;
 };
 
-export function ProvincialDashboardIncidentMap({ incidents, loading, error, checking, onRefresh }: Props) {
+export function ProvincialDashboardIncidentMap({ incidents, loading, error }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const layerRef = useRef<LayerGroup | null>(null);
@@ -160,9 +158,6 @@ export function ProvincialDashboardIncidentMap({ incidents, loading, error, chec
               focusedIncidentsRef.current = true;
               if (boundsRef.current) mapRef.current?.stop().fitBounds(boundsRef.current, { padding: [18, 18], animate: false });
             }}><i className="fa-solid fa-expand" aria-hidden="true" />Show all Antique</button>
-            <button type="button" disabled={checking} aria-label="Refresh incident locations" onClick={onRefresh}>
-              <i className={`fa-solid fa-arrow-rotate-right ${checking ? "fa-spin" : ""}`} aria-hidden="true" />
-            </button>
           </div>
         </div>
       </header>

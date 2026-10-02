@@ -85,6 +85,7 @@ test("clusterProvincialIncidents groups coincident coordinates and counts active
       Fragment: () => null,
     },
     "leaflet/dist/leaflet.css": {},
+    "./fire-command-header": {},
     "../../lib/water-sources/map-positions": mapPositions,
     "./use-provincial-incident-feed": {
       useProvincialIncidentFeed: () => ({ incidents: [], loading: false, checking: false, error: "", refresh: async () => {} }),
@@ -176,6 +177,7 @@ test("provincial GIS loads the province-wide water-source registry and honors di
       Fragment: () => null,
     },
     "leaflet/dist/leaflet.css": {},
+    "./fire-command-header": {},
     "../../lib/water-sources/map-positions": mapPositions,
     "./use-provincial-incident-feed": {
       useProvincialIncidentFeed: () => ({ incidents: [], loading: false, checking: false, error: "", refresh: async () => {} }),

@@ -13,6 +13,7 @@ import { densityRiskClass } from "../../lib/fire-reports/building-density-presen
 import type { WaterSource } from "../../lib/water-sources/types";
 import { groupWaterSourceMapMarkers, type WaterSourceMapGroup } from "../../lib/water-sources/map-positions";
 import { MunicipalStatCards } from "./municipal-stat-cards";
+import { FireCommandHeader } from "./fire-command-header";
 
 const DEFAULT_MAP_CENTER: [number, number] = [10.75, 121.94];
 const TERMINAL_STATUSES = new Set(["RESOLVED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "CLOSED"]);
@@ -154,6 +155,7 @@ function drawWaterSources(
   groups: WaterSourceMapGroup[],
   waterSourceId: string,
   onSelectSource: (source: WaterSource) => void,
+  frameView = true,
 ) {
   layer.clearLayers();
   const points: [number, number][] = [];
@@ -173,17 +175,18 @@ function drawWaterSources(
     marker.on("click", () => onSelectSource(group.sources.find((item) => item.id === waterSourceId) ?? source));
     marker.addTo(layer);
     const focusedSource = group.sources.find((item) => item.id === waterSourceId);
-    if (focusedSource) {
+    if (focusedSource && frameView) {
       map.setView(point, group.approximate ? 13 : 17, { animate: false });
     }
   });
+  if (!frameView) return;
   if (!waterSourceId && points.length === 1) map.setView(points[0], 16, { animate: false });
   else if (!waterSourceId && points.length > 1) {
     map.fitBounds(L.latLngBounds(points), { padding: [72, 72], maxZoom: 16, animate: false });
   }
 }
 
-function drawIncidents(L: typeof import("leaflet"), map: import("leaflet").Map, layer: import("leaflet").LayerGroup, clusters: IncidentCluster[], municipality: string, onSelectIncident: (incidents: MunicipalIncident[]) => void, view: MapView = "ALL") {
+function drawIncidents(L: typeof import("leaflet"), map: import("leaflet").Map, layer: import("leaflet").LayerGroup, clusters: IncidentCluster[], municipality: string, onSelectIncident: (incidents: MunicipalIncident[]) => void, view: MapView = "ALL", frameView = true) {
   layer.clearLayers();
   const points: [number, number][] = [];
   clusters
@@ -199,6 +202,7 @@ function drawIncidents(L: typeof import("leaflet"), map: import("leaflet").Map, 
     marker.on("click", () => onSelectIncident(cluster.incidents));
     marker.addTo(layer);
   });
+  if (!frameView) return;
   if (points.length === 1) map.setView(points[0], 15, { animate: false });
   else if (points.length > 1) map.fitBounds(L.latLngBounds(points), { padding: [72, 72], maxZoom: 15, animate: false });
   else map.setView(MUNICIPAL_CENTERS[municipality] || DEFAULT_MAP_CENTER, 13, { animate: false });
@@ -207,15 +211,15 @@ function drawIncidents(L: typeof import("leaflet"), map: import("leaflet").Map, 
 export function MunicipalGisOperationsMap() {
   const searchParams = useSearchParams();
   const waterSourceId = searchParams.get("waterSource") ?? "";
-  const { municipality, incidents, loading, refreshing, error, refresh } = useMunicipalIncidentFeed({ includeHistory: true });
+  const { municipality, incidents, loading, checking, error, lastCheckedAt, refresh } = useMunicipalIncidentFeed({ includeHistory: true });
   const clusters = useMemo(() => clusterIncidents(incidents), [incidents]);
   const mapElement = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const layerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const densityLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
-  const clustersRef = useRef(clusters);
-  const municipalityRef = useRef(municipality);
+  const incidentViewRef = useRef<string | null>(null);
+  const waterViewRef = useRef<string | null>(null);
   const [selectedIncidents, setSelectedIncidents] = useState<MunicipalIncident[] | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState("");
   const [densityEvidence, setDensityEvidence] = useState<DensityEvidencePayload | null>(null);
@@ -247,29 +251,27 @@ export function MunicipalGisOperationsMap() {
   }, [selectedWaterSource]);
   const stationLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const waterSourceLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
-  const viewRef = useRef<MapView>(view);
-  const mapModeRef = useRef<MapContentMode>(mapMode);
   const onSelectRef = useRef<(clusterReports: MunicipalIncident[]) => void>((clusterReports) => {
     setSelectedIncidents(clusterReports);
     setSelectedIncidentId(clusterReports[0]?.id ?? "");
   });
 
   useEffect(() => {
-    clustersRef.current = clusters;
-    municipalityRef.current = municipality;
-    viewRef.current = view;
-    mapModeRef.current = mapMode;
     const L = leafletRef.current;
     const map = mapRef.current;
     const layer = layerRef.current;
-    if (!L || !map || !layer) return;
+    if (!mapReady || !L || !map || !layer) return;
     if (mapMode === "INCIDENTS") {
-      drawIncidents(L, map, layer, clusters, municipality, (clusterReports) => onSelectRef.current(clusterReports), view);
+      const scope = `${municipality}:${view}`;
+      const frameView = !loading && incidentViewRef.current !== scope;
+      drawIncidents(L, map, layer, clusters, municipality, (clusterReports) => onSelectRef.current(clusterReports), view, frameView);
+      if (frameView) incidentViewRef.current = scope;
       if (!map.hasLayer(layer)) layer.addTo(map);
     } else {
       map.removeLayer(layer);
+      incidentViewRef.current = null;
     }
-  }, [clusters, mapMode, municipality, view]);
+  }, [clusters, loading, mapMode, mapReady, municipality, view]);
 
   // The stations this municipality can send. They change rarely, so this is
   // read once rather than polled alongside the incidents.
@@ -316,10 +318,13 @@ export function MunicipalGisOperationsMap() {
     if (!L || !map || !mapReady) return;
     if (!waterSourceLayerRef.current) waterSourceLayerRef.current = L.layerGroup().addTo(map);
     if (showWaterSources) {
-      drawWaterSources(L, map, waterSourceLayerRef.current, waterSourceMapGroups, waterSourceId, setSelectedWaterSource);
+      const frameView = waterSourceMapGroups.length > 0 && waterViewRef.current !== waterSourceId;
+      drawWaterSources(L, map, waterSourceLayerRef.current, waterSourceMapGroups, waterSourceId, setSelectedWaterSource, frameView);
+      if (frameView) waterViewRef.current = waterSourceId;
       if (!map.hasLayer(waterSourceLayerRef.current)) waterSourceLayerRef.current.addTo(map);
     } else {
       map.removeLayer(waterSourceLayerRef.current);
+      waterViewRef.current = null;
     }
   }, [mapReady, showWaterSources, waterSourceId, waterSourceMapGroups]);
 
@@ -340,13 +345,9 @@ export function MunicipalGisOperationsMap() {
       }).addTo(map);
       const incidentLayer = L.layerGroup();
       leafletRef.current = L; mapRef.current = map; layerRef.current = incidentLayer;
-      if (mapModeRef.current === "INCIDENTS") {
-        incidentLayer.addTo(map);
-        drawIncidents(L, map, incidentLayer, clustersRef.current, municipalityRef.current, (clusterReports) => onSelectRef.current(clusterReports));
-      }
       setMapReady(true);
     })();
-    return () => { disposed = true; layerRef.current = null; densityLayerRef.current = null; stationLayerRef.current = null; waterSourceLayerRef.current = null; leafletRef.current = null; mapRef.current = null; map?.remove(); };
+    return () => { disposed = true; incidentViewRef.current = null; waterViewRef.current = null; layerRef.current = null; densityLayerRef.current = null; stationLayerRef.current = null; waterSourceLayerRef.current = null; leafletRef.current = null; mapRef.current = null; map?.remove(); };
   }, []);
 
   useEffect(() => {
@@ -417,17 +418,7 @@ export function MunicipalGisOperationsMap() {
   );
 
   return <main className="mbfp-ops-root"><style>{styles}</style><section className="mbfp-ops-workspace" aria-labelledby="municipal-gis-heading">
-    <header className="mbfp-ops-toolbar">
-      <div>
-        <p className="mbfp-ops-eyebrow">Municipal fire operations</p>
-        <h1 id="municipal-gis-heading" className="mbfp-ops-title">{mapMode === "INCIDENTS" ? "GIS incident map" : "GIS water source map"}</h1>
-      </div>
-      <div className="mbfp-ops-tools">
-        <button className="mbfp-ops-refresh" type="button" onClick={() => void refresh(true)} disabled={refreshing}>
-          <i className="fa-solid fa-rotate-right" aria-hidden="true" />{refreshing ? "Refreshing map" : "Live refresh"}
-        </button>
-      </div>
-    </header>
+    <FireCommandHeader slotId="municipal-fire-command-header" headingId="municipal-gis-heading" title={`${municipality || "Municipal"} Fire Command`} checking={checking} lastCheckedAt={lastCheckedAt} error={error} onRefresh={() => void refresh(true)} />
 
     {/* What the municipality is holding right now, above the map that shows
         where it is. The counts come from the same feed the pins do. */}

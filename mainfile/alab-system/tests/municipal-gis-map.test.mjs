@@ -46,7 +46,8 @@ test("Municipal GIS operations map draws every incident from the live municipal 
   assert.match(operationsMap, /includeHistory:\s*true/);
   assert.doesNotMatch(operationsMap, /autoRefresh:\s*false/);
   assert.match(operationsMap, /onSelectIncident/);
-  assert.match(operationsMap, /Live refresh/);
+  assert.match(operationsMap, /FireCommandHeader/);
+  assert.match(readFileSync(join(root, "app", "_components", "fire-command-header.tsx"), "utf8"), /aria-label="Live refresh"/);
   assert.doesNotMatch(operationsMap, /Manual refresh only/);
   assert.doesNotMatch(operationsMap, /Every report assigned to/);
   assert.match(operationsMap, /width:min\(100%,720px\)/);
