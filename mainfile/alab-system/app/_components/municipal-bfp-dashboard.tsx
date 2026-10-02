@@ -400,10 +400,10 @@ export function MunicipalBfpDashboard() {
         <MunicipalStatCards
           label="Station summary"
           items={[
-            { key: "active", icon: "fa-fire-flame-curved", tone: "red", value: ownIncidents.length, label: "Active fires", href: "/municipal-bfp/active-incidents", loading: queueLoading },
-            { key: "verify", icon: "fa-clipboard-check", tone: "amber", value: totalPending, label: "To verify", href: "/municipal-bfp/verification-queue", loading: queueLoading || dashLoading },
-            { key: "trucks", icon: "fa-truck-moving", tone: "blue", value: stats?.availableFiretrucks ?? 0, suffix: stats?.totalFiretrucks ? `/ ${stats.totalFiretrucks}` : undefined, label: "Trucks ready", href: "/municipal-bfp/firetrucks", loading: dashLoading },
-            { key: "responders", icon: "fa-users-gear", tone: "emerald", value: stats?.respondersOnDuty ?? 0, label: "Responders", href: "/municipal-bfp/stations", loading: dashLoading },
+            { key: "active", icon: "fa-fire-flame-curved", tone: "red", value: ownIncidents.length, label: "Active fires", badge: "Priority", description: "Live municipal incidents", href: "/municipal-bfp/active-incidents", loading: queueLoading },
+            { key: "verify", icon: "fa-clipboard-check", tone: "amber", value: totalPending, label: "To verify", badge: "Pending", description: "Verification queue", href: "/municipal-bfp/verification-queue", loading: queueLoading || dashLoading },
+            { key: "trucks", icon: "fa-truck-moving", tone: "blue", value: stats?.availableFiretrucks ?? 0, suffix: stats?.totalFiretrucks ? `/ ${stats.totalFiretrucks}` : undefined, label: "Trucks ready", badge: "Fleet", description: "Station fire trucks", href: "/municipal-bfp/firetrucks", loading: dashLoading },
+            { key: "responders", icon: "fa-users-gear", tone: "violet", value: stats?.respondersOnDuty ?? 0, label: "Responders", badge: "Personnel", description: "Station personnel roster", href: "/municipal-bfp/stations", loading: dashLoading },
           ]}
         />
 

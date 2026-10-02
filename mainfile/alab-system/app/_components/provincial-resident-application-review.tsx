@@ -6,7 +6,6 @@ import { useProvincialManagementList } from './use-provincial-management-list';
 import { useManagementDialog } from './use-management-dialog';
 import { PhotoLightbox } from './photo-lightbox';
 import type { ManagedApplication } from '../../lib/provincial-bfp/management/types';
-import { StatCards } from "./municipal-stat-cards";
 
 interface ApplicationReviewProps {
   initialMunicipalityId?: string;
@@ -180,14 +179,72 @@ const reviewStyles = `
   }
 
   /* KPI Summary Stats */
+  .par-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1rem;
+  }
 
+  .par-stat-card {
+    background: #FFFFFF;
+    border: 1px solid var(--slate-200);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.03);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
 
+  .par-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.08);
+  }
 
+  .par-stat-card.active {
+    border-color: var(--navy-800);
+    box-shadow: 0 0 0 2px var(--navy-800);
+  }
 
+  .par-stat-info {
+    display: flex;
+    flex-direction: column;
+  }
 
+  .par-stat-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--slate-500);
+  }
 
+  .par-stat-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--navy-900);
+    line-height: 1.2;
+    margin-top: 0.25rem;
+    font-variant-numeric: tabular-nums;
+  }
 
+  .par-stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 1.15rem;
+  }
 
+  .par-stat-card--all .par-stat-icon { background: #F1F5F9; color: var(--navy-700); }
+  .par-stat-card--pending .par-stat-icon { background: #FEF3C7; color: #D97706; }
+  .par-stat-card--verified .par-stat-icon { background: #D1FAE5; color: #059669; }
+  .par-stat-card--changes .par-stat-icon { background: #FFEDD5; color: #EA580C; }
 
   /* Filter Console */
   .par-filter-console {
@@ -1561,15 +1618,75 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
       </header>
 
       {/* KPI Stats Bar */}
-      <StatCards
-        label="Application summary metrics"
-        items={[
-          { key: "all", icon: "fa-folder-open", tone: "slate", value: total, label: "All applications", onClick: () => { setStatusFilter('ALL'); setPage(1); }, active: !statusFilter || statusFilter === 'ALL' },
-          { key: "pending", icon: "fa-clock-rotate-left", tone: "amber", value: pendingCount, label: "Pending", onClick: () => { setStatusFilter('PENDING'); setPage(1); }, active: statusFilter === 'PENDING' },
-          { key: "verified", icon: "fa-circle-check", tone: "emerald", value: verifiedCount, label: "Verified", onClick: () => { setStatusFilter('VERIFIED'); setPage(1); }, active: statusFilter === 'VERIFIED' },
-          { key: "changes", icon: "fa-triangle-exclamation", tone: "red", value: changesCount, label: "Changes requested", onClick: () => { setStatusFilter('CHANGES_REQUESTED'); setPage(1); }, active: statusFilter === 'CHANGES_REQUESTED' },
-        ]}
-      />
+      <div className="par-stats-grid" role="region" aria-label="Application summary metrics">
+        <div
+          className={`par-stat-card par-stat-card--all ${!statusFilter || statusFilter === 'ALL' ? 'active' : ''}`}
+          onClick={() => {
+            setStatusFilter('ALL');
+            setPage(1);
+          }}
+          title="Click to view all applications"
+        >
+          <div className="par-stat-info">
+            <span className="par-stat-label">Total Applications</span>
+            <span className="par-stat-value">{total}</span>
+          </div>
+          <div className="par-stat-icon">
+            <i className="fa-solid fa-folder-open" />
+          </div>
+        </div>
+
+        <div
+          className={`par-stat-card par-stat-card--pending ${statusFilter === 'PENDING' ? 'active' : ''}`}
+          onClick={() => {
+            setStatusFilter('PENDING');
+            setPage(1);
+          }}
+          title="Click to filter by Pending Review"
+        >
+          <div className="par-stat-info">
+            <span className="par-stat-label">Pending Review</span>
+            <span className="par-stat-value">{pendingCount}</span>
+          </div>
+          <div className="par-stat-icon">
+            <i className="fa-solid fa-clock-rotate-left" />
+          </div>
+        </div>
+
+        <div
+          className={`par-stat-card par-stat-card--verified ${statusFilter === 'VERIFIED' ? 'active' : ''}`}
+          onClick={() => {
+            setStatusFilter('VERIFIED');
+            setPage(1);
+          }}
+          title="Click to filter by Verified"
+        >
+          <div className="par-stat-info">
+            <span className="par-stat-label">Verified Accounts</span>
+            <span className="par-stat-value">{verifiedCount}</span>
+          </div>
+          <div className="par-stat-icon">
+            <i className="fa-solid fa-circle-check" />
+          </div>
+        </div>
+
+        <div
+          className={`par-stat-card par-stat-card--changes ${statusFilter === 'CHANGES_REQUESTED' ? 'active' : ''}`}
+          onClick={() => {
+            setStatusFilter('CHANGES_REQUESTED');
+            setPage(1);
+          }}
+          title="Click to filter by Changes Requested"
+        >
+          <div className="par-stat-info">
+            <span className="par-stat-label">Changes Requested</span>
+            <span className="par-stat-value">{changesCount}</span>
+          </div>
+          <div className="par-stat-icon">
+            <i className="fa-solid fa-triangle-exclamation" />
+          </div>
+        </div>
+      </div>
 
       {/* Filter Console */}
       <section className="par-filter-console" aria-label="Queue Filter Console">

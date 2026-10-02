@@ -544,9 +544,9 @@ export function MunicipalReportDirectory() {
       <MunicipalStatCards
         label="Report totals"
         items={[
-          { key: "total", icon: "fa-folder-open", tone: "slate", value: summary?.totalReports ?? 0, label: "Total reports" },
-          { key: "confirmed", icon: "fa-fire", tone: "red", value: summary?.confirmedIncidents ?? 0, label: "Confirmed" },
-          { key: "resolved", icon: "fa-circle-check", tone: "emerald", value: summary?.resolvedIncidents ?? 0, label: "Resolved" },
+          { key: "total", icon: "fa-folder-open", tone: "slate", value: summary?.totalReports ?? 0, label: "Total reports", badge: "Intake", description: "Reports in the selected period" },
+          { key: "confirmed", icon: "fa-fire", tone: "red", value: summary?.confirmedIncidents ?? 0, label: "Confirmed", badge: "Confirmed", description: "Confirmed municipal incidents" },
+          { key: "resolved", icon: "fa-circle-check", tone: "emerald", value: summary?.resolvedIncidents ?? 0, label: "Resolved", badge: "Closed", description: "Concluded incident reports" },
         ]}
       />
 

@@ -12,7 +12,7 @@ import { MunicipalIncident, useMunicipalIncidentFeed } from "./use-municipal-inc
 import { densityRiskClass } from "../../lib/fire-reports/building-density-presentation";
 import type { WaterSource } from "../../lib/water-sources/types";
 import { groupWaterSourceMapMarkers, type WaterSourceMapGroup } from "../../lib/water-sources/map-positions";
-import { StatCards } from "./municipal-stat-cards";
+import { MunicipalStatCards } from "./municipal-stat-cards";
 
 const DEFAULT_MAP_CENTER: [number, number] = [10.75, 121.94];
 const TERMINAL_STATUSES = new Set(["RESOLVED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "CLOSED"]);
@@ -432,13 +432,13 @@ export function MunicipalGisOperationsMap() {
     {/* What the municipality is holding right now, above the map that shows
         where it is. The counts come from the same feed the pins do. */}
     <div className="mbfp-ops-stats">
-      <StatCards
+      <MunicipalStatCards
         label="Municipal GIS totals"
         items={[
-          { key: "active", icon: "fa-fire", tone: "red", value: activeCount, label: "Active now", onClick: () => { setMapMode("INCIDENTS"); setView("ACTIVE"); }, active: mapMode === "INCIDENTS" && view === "ACTIVE" },
-          { key: "resolved", icon: "fa-check", tone: "violet", value: resolvedCount, label: "Resolved", onClick: () => { setMapMode("INCIDENTS"); setView("HISTORY"); }, active: mapMode === "INCIDENTS" && view === "HISTORY" },
-          { key: "stations", icon: "fa-truck-fast", tone: "blue", value: activeStationCount, label: "Active stations", onClick: () => { setMapMode("INCIDENTS"); setShowStations(true); } },
-          { key: "water", icon: "fa-location-dot", tone: "emerald", value: waterSources.length, label: "Water sources", onClick: () => setMapMode("WATER_SOURCES"), active: mapMode === "WATER_SOURCES" },
+          { key: "active", icon: "fa-fire", tone: "red", value: activeCount, label: "Active now", badge: "Live", description: "Show active incident locations", onClick: () => { setMapMode("INCIDENTS"); setView("ACTIVE"); }, active: mapMode === "INCIDENTS" && view === "ACTIVE" },
+          { key: "resolved", icon: "fa-check", tone: "violet", value: resolvedCount, label: "Resolved", badge: "History", description: "Show resolved incident locations", onClick: () => { setMapMode("INCIDENTS"); setView("HISTORY"); }, active: mapMode === "INCIDENTS" && view === "HISTORY" },
+          { key: "stations", icon: "fa-truck-fast", tone: "blue", value: activeStationCount, label: "Active stations", badge: "Stations", description: "Show stations and coverage", onClick: () => { setMapMode("INCIDENTS"); setShowStations(true); } },
+          { key: "water", icon: "fa-location-dot", tone: "emerald", value: waterSources.length, label: "Water sources", badge: "Water", description: "Show hydrants and water sources", onClick: () => setMapMode("WATER_SOURCES"), active: mapMode === "WATER_SOURCES" },
         ]}
       />
     </div>

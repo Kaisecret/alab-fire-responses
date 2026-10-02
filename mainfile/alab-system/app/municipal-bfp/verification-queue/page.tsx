@@ -257,10 +257,10 @@ export default function VerificationQueuePage() {
       <MunicipalStatCards
         label="Application totals"
         items={[
-          { key: "pending", icon: "fa-clock", tone: "amber", value: pendingCount, label: "To review", onClick: () => setFilter("PENDING"), active: filter === "PENDING" },
-          { key: "corrections", icon: "fa-triangle-exclamation", tone: "red", value: correctionsCount, label: "Corrections", onClick: () => setFilter("CHANGES_REQUESTED"), active: filter === "CHANGES_REQUESTED" },
-          { key: "verified", icon: "fa-circle-check", tone: "emerald", value: verifiedCount, label: "Approved", onClick: () => setFilter("VERIFIED"), active: filter === "VERIFIED" },
-          { key: "total", icon: "fa-id-card", tone: "blue", value: applications.length, label: "All submissions", onClick: () => setFilter("ALL"), active: filter === "ALL" },
+          { key: "pending", icon: "fa-clock", tone: "amber", value: pendingCount, label: "To review", badge: "Pending", description: "Awaiting application review", onClick: () => setFilter("PENDING"), active: filter === "PENDING" },
+          { key: "corrections", icon: "fa-triangle-exclamation", tone: "red", value: correctionsCount, label: "Corrections", badge: "Changes", description: "Applications needing updates", onClick: () => setFilter("CHANGES_REQUESTED"), active: filter === "CHANGES_REQUESTED" },
+          { key: "verified", icon: "fa-circle-check", tone: "emerald", value: verifiedCount, label: "Approved", badge: "Verified", description: "Approved resident applications", onClick: () => setFilter("VERIFIED"), active: filter === "VERIFIED" },
+          { key: "total", icon: "fa-id-card", tone: "blue", value: applications.length, label: "All submissions", badge: "Total", description: "All resident applications", onClick: () => setFilter("ALL"), active: filter === "ALL" },
         ]}
       />
 

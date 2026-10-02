@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useProvincialIncidentFeed } from './use-provincial-incident-feed';
 import { useProvincialAssistanceFeed } from './use-provincial-assistance-feed';
 import { ProvincialIncidentAnalytics } from './provincial-incident-analytics';
 import { ProvincialDashboardIncidentMap } from './provincial-dashboard-incident-map';
-import { StatCards } from "./municipal-stat-cards";
 
 type ManagementSummaryData = {
   totalMunicipalities: number;
@@ -31,35 +31,198 @@ const dashboardStyles = `
   }
 
   /* ========== 4 PASTEL KPI METRIC CARDS ROW ========== */
+  .pbfp-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    grid-auto-rows: 1fr;
+    margin-bottom: 0;
+  }
 
+  .pbfp-kpi-box {
+    position: relative;
+    min-height: 168px;
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    overflow: hidden;
+    text-decoration: none;
+    animation: pbfpCardReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
 
+  .pbfp-kpi-box:nth-child(1) { animation-delay: 0.05s; }
+  .pbfp-kpi-box:nth-child(2) { animation-delay: 0.1s; }
+  .pbfp-kpi-box:nth-child(3) { animation-delay: 0.15s; }
+  .pbfp-kpi-box:nth-child(4) { animation-delay: 0.2s; }
 
   /*
    * The same pastel tiles the municipal console uses for its own counters, so
    * an officer moving between the two reads one vocabulary rather than two.
    * The tint carries the category and the white icon tile lifts off it.
    */
+  .pbfp-kpi-box.red {
+    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
+    border: 1.5px solid #FFBEBE;
+    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
+  }
+  .pbfp-kpi-box.amber {
+    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
+    border: 1.5px solid #FFDC99;
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+  }
+  .pbfp-kpi-box.blue {
+    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
+    border: 1.5px solid #B8D3FD;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  }
+  .pbfp-kpi-box.purple {
+    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
+    border: 1.5px solid #D0BCFD;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
+  }
 
+  .pbfp-kpi-box:hover { transform: translateY(-3px); }
+  .pbfp-kpi-box.red:hover {
+    border-color: #FFA3A3;
+    box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2);
+  }
+  .pbfp-kpi-box.amber:hover {
+    border-color: #FFCF70;
+    box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2);
+  }
+  .pbfp-kpi-box.blue:hover {
+    border-color: #91B8FA;
+    box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2);
+  }
+  .pbfp-kpi-box.purple:hover {
+    border-color: #B79BFB;
+    box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2);
+  }
 
+  .pbfp-kpi-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    margin-bottom: 0.45rem;
+  }
 
+  .pbfp-kpi-badge-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 10px;
+    background: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 
+  .pbfp-kpi-box:hover .pbfp-kpi-badge-icon {
+    transform: scale(1.06);
+  }
 
+  .pbfp-kpi-badge-icon.red { color: #E23632; }
+  .pbfp-kpi-badge-icon.amber { color: #D97706; }
+  .pbfp-kpi-badge-icon.blue { color: #2563EB; }
+  .pbfp-kpi-badge-icon.purple { color: #7C3AED; }
 
+  .pbfp-kpi-badge-img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
 
   /* Pure White Trend/Status Pill Badge */
+  .pbfp-kpi-trend-tag {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
 
+  .pbfp-kpi-trend-tag.red { color: #991B1B; background: #FDE8E8; }
+  .pbfp-kpi-trend-tag.amber { color: #92400E; background: #FEF3C7; }
+  .pbfp-kpi-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
+  .pbfp-kpi-trend-tag.purple { color: #5B21B6; background: #EDE9FE; }
 
   /* The figure leads and the caption follows it, as on the municipal cards:
      the count is what is being read, the words only say what it counts. The
      order is set here so the markup can keep naming the thing before its
      value. */
+  .pbfp-kpi-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    margin: 0.15rem 0 0.1rem;
+  }
 
+  .pbfp-kpi-label {
+    order: 2;
+    font-size: 0.69rem;
+    font-weight: 750;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
+  .pbfp-kpi-number {
+    order: 1;
+    font-size: 1.85rem;
+    font-weight: 900;
+    color: #0F172A;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
 
+  .pbfp-kpi-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.55rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.7rem;
+    font-weight: 600;
+    min-height: 2.1rem;
+    gap: 0.5rem;
+  }
 
+  .pbfp-kpi-box.red .pbfp-kpi-footer { color: #DC2626; border-top-color: #FED7D7; }
+  .pbfp-kpi-box.amber .pbfp-kpi-footer { color: #D97706; border-top-color: #FEEBC8; }
+  .pbfp-kpi-box.blue .pbfp-kpi-footer { color: #2563EB; border-top-color: #DCE7FC; }
+  .pbfp-kpi-box.purple .pbfp-kpi-footer { color: #7C3AED; border-top-color: #E9D8FD; }
 
+  .pbfp-kpi-footer-subtext {
+    font-weight: 600;
+    opacity: 0.9;
+  }
 
+  .pbfp-kpi-footer i {
+    font-size: 0.72rem;
+    transition: transform 0.2s ease;
+  }
 
+  .pbfp-kpi-box:hover .pbfp-kpi-footer i {
+    transform: translateX(3px);
+  }
 
   /* ========== TWO COLUMN SECTION ========== */
   .pbfp-main-grid {
@@ -226,6 +389,9 @@ const dashboardStyles = `
   }
 
   @media (max-width: 1200px) {
+    .pbfp-kpi-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
     .pbfp-main-grid {
       grid-template-columns: 1fr;
       grid-auto-rows: 560px;
@@ -236,6 +402,9 @@ const dashboardStyles = `
     .pbfp-dash-clean {
       padding: 0.9rem;
       gap: 0.9rem;
+    }
+    .pbfp-kpi-row {
+      grid-template-columns: 1fr;
     }
   }
 
@@ -414,15 +583,105 @@ export function ProvincialBfpDashboard() {
           <button type="button" className="pbfp-retry" onClick={() => setRefreshKey(key => key + 1)}>Retry</button>
         </div>}
         {/* ===== 4 PASTEL STAT CARDS ROW ===== */}
-        <StatCards
-          label="Provincial summary"
-          items={[
-            { key: "incidents", icon: "fa-fire-flame-curved", tone: "red", value: <FastNumber value={activeIncidentCount} />, label: "Active incidents", href: "/provincial-bfp/incidents", loading: incidentFeedLoading },
-            { key: "stations", icon: "fa-building", tone: "amber", value: summary ? <FastNumber value={summary.totalStations} /> : "—", label: "Fire stations", href: "/provincial-bfp/firetrucks-stations?view=stations", loading: !summary && !summaryError },
-            { key: "personnel", icon: "fa-user-shield", tone: "blue", value: summary ? <FastNumber value={summary.totalPersonnel} /> : "—", label: "BFP personnel", href: "/provincial-bfp/responders", loading: !summary && !summaryError },
-            { key: "residents", icon: "fa-id-card", tone: "violet", value: summary ? <FastNumber value={summary.totalResidents} /> : "—", label: "Residents", suffix: summary?.pendingApplications ? `${summary.pendingApplications} pending` : undefined, href: "/provincial-bfp/resident-applications", loading: !summary && !summaryError },
-          ]}
-        />
+        <section className="pbfp-kpi-row" aria-label="Provincial KPI Metrics">
+          {/* Card 1: Active Incidents */}
+          <Link href="/provincial-bfp/incidents" className="pbfp-kpi-box red">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon red">
+                <Image
+                  src="/images/fire logo.webp"
+                  alt="Fire Icon"
+                  className="pbfp-kpi-badge-img"
+                  width={20}
+                  height={20}
+                />
+              </div>
+              <span className="pbfp-kpi-trend-tag red">
+                <i className="fa-solid fa-triangle-exclamation" /> Priority
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">Active Province Incidents</span>
+              <span className="pbfp-kpi-number">
+                {incidentFeedLoading ? '—' : <FastNumber value={activeIncidentCount} />}
+              </span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">
+                {backupCount > 0
+                  ? `${backupCount} backup request${backupCount > 1 ? "s" : ""} awaiting an alarm`
+                  : `Live Operations · ${openAssistanceCount} aid requests`}
+              </span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </Link>
+
+          {/* Card 2: Municipal Stations */}
+          <Link href="/provincial-bfp/firetrucks-stations?view=stations" className="pbfp-kpi-box amber">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon amber">
+                <i className="fa-solid fa-building" />
+              </div>
+              <span className="pbfp-kpi-trend-tag amber">
+                <i className="fa-solid fa-circle-check" /> {summary?.totalMunicipalities ?? '—'} LGUs
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">Municipal Fire Stations</span>
+              <span className="pbfp-kpi-number">
+                {summary ? <FastNumber value={summary.totalStations} /> : '—'}
+              </span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Station Directory</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </Link>
+
+          {/* Card 3: BFP Personnel Roster */}
+          <Link href="/provincial-bfp/responders" className="pbfp-kpi-box blue">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon blue">
+                <i className="fa-solid fa-user-shield" />
+              </div>
+              <span className="pbfp-kpi-trend-tag blue">
+                <i className="fa-solid fa-shield-halved" /> Officers & Staff
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">BFP Personnel Roster</span>
+              <span className="pbfp-kpi-number">
+                {summary ? <FastNumber value={summary.totalPersonnel} /> : '—'}
+              </span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Personnel Registry</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </Link>
+
+          {/* Card 4: Resident Applications */}
+          <Link href="/provincial-bfp/resident-applications" className="pbfp-kpi-box purple">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon purple">
+                <i className="fa-solid fa-id-card" />
+              </div>
+              <span className="pbfp-kpi-trend-tag purple">
+                <i className="fa-solid fa-clock" /> {summary?.pendingApplications ?? '—'} Pending
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">Resident Applications</span>
+              <span className="pbfp-kpi-number">
+                {summary ? <FastNumber value={summary.totalResidents} /> : '—'}
+              </span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Verification Queue</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </Link>
+        </section>
 
         {/* ===== TWO-COLUMN MAIN SECTION ===== */}
         <div className="pbfp-main-grid">

@@ -105,10 +105,10 @@ export function MunicipalFireTrucks() {
         <span className="truck-registry__badge"><i className="fa-solid fa-lock" aria-hidden="true" /> Records managed by Provincial BFP</span>
       </header>
       <MunicipalStatCards label="Fire truck totals" items={[
-        { key: "trucks", icon: "fa-truck-moving", tone: "blue", value: summary?.truckCount ?? 0, label: "Fire trucks", loading },
-        { key: "serviceable", icon: "fa-circle-check", tone: "emerald", value: summary?.serviceableCount ?? 0, label: "Serviceable", loading },
-        { key: "out", icon: "fa-screwdriver-wrench", tone: "amber", value: summary?.outOfServiceCount ?? 0, label: "Out of service", loading },
-        { key: "capacity", icon: "fa-droplet", tone: "violet", value: formatGallons(summary?.totalCapacityGallons ?? 0), label: "Water capacity", loading },
+        { key: "trucks", icon: "fa-truck-moving", tone: "blue", value: summary?.truckCount ?? 0, label: "Fire trucks", badge: "Fleet", description: "Trucks assigned to your stations", loading },
+        { key: "serviceable", icon: "fa-circle-check", tone: "emerald", value: summary?.serviceableCount ?? 0, label: "Serviceable", badge: "Ready", description: "Serviceable apparatus", loading },
+        { key: "out", icon: "fa-screwdriver-wrench", tone: "amber", value: summary?.outOfServiceCount ?? 0, label: "Out of service", badge: "Maintenance", description: "Apparatus needing service", loading },
+        { key: "capacity", icon: "fa-droplet", tone: "violet", value: formatGallons(summary?.totalCapacityGallons ?? 0), label: "Water capacity", badge: "Capacity", description: "Combined fleet capacity in gallons", loading },
       ]} />
       <div className="truck-registry__toolbar">
         <input className="truck-registry__search" aria-label="Search fire trucks" placeholder="Search make, station, or remarks" value={query} onChange={(event) => setQuery(event.target.value)} />

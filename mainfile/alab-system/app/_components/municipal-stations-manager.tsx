@@ -611,8 +611,8 @@ export function MunicipalStationsManager() {
             className="mbfp-station-hero-stats"
             label="Station personnel totals"
             items={[
-              { key: "personnel", icon: "fa-users", tone: "blue", value: rosterResponders.length, label: "Personnel", loading: rosterLoading },
-              { key: "on-duty", icon: "fa-user-check", tone: "emerald", value: onDutyCount, label: "On duty", loading: rosterLoading },
+              { key: "personnel", icon: "fa-users", tone: "blue", value: rosterResponders.length, label: "Personnel", badge: "Roster", description: "Assigned station personnel", loading: rosterLoading },
+              { key: "on-duty", icon: "fa-user-check", tone: "emerald", value: onDutyCount, label: "On duty", badge: "Duty", description: "Responders currently on duty", loading: rosterLoading },
             ]}
           />
         </div>
@@ -943,9 +943,9 @@ export function MunicipalStationsManager() {
       <MunicipalStatCards
         label="Municipal station totals"
         items={[
-          { key: "stations", icon: "fa-building-shield", tone: "red", value: stations.length, label: "Stations", suffix: `${activeCount} active`, loading },
-          { key: "personnel", icon: "fa-users", tone: "blue", value: personnelList.length, label: "Total personnel", loading },
-          { key: "accounts", icon: "fa-user-check", tone: "emerald", value: personnelList.filter((person) => person.accountStatus === "ACTIVE").length, label: "Active accounts", loading },
+          { key: "stations", icon: "fa-building-shield", tone: "red", value: stations.length, label: "Stations", suffix: `${activeCount} active`, badge: "Stations", description: "Municipal fire stations", loading },
+          { key: "personnel", icon: "fa-users", tone: "blue", value: personnelList.length, label: "Total personnel", badge: "Personnel", description: "Municipal personnel roster", loading },
+          { key: "accounts", icon: "fa-user-check", tone: "emerald", value: personnelList.filter((person) => person.accountStatus === "ACTIVE").length, label: "Active accounts", badge: "Active", description: "Active personnel accounts", loading },
         ]}
       />
 

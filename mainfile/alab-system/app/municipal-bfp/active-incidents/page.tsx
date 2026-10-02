@@ -705,10 +705,10 @@ function ActiveIncidentsContent() {
           className="mbfp-quick-stats"
           label="Incident Summary Statistics"
           items={[
-            { key: "active", icon: "fa-fire-flame-curved", tone: "red", value: incidents.length, label: "Active in queue", loading },
-            { key: "responding", icon: "fa-truck-fast", tone: "emerald", value: respondingCount, label: "Responding now", loading },
-            { key: "verified", icon: "fa-clipboard-check", tone: "blue", value: verifiedCount, label: "Verified / dispatched", loading },
-            { key: "pending", icon: "fa-triangle-exclamation", tone: "amber", value: pendingCount, label: "Pending verification", loading },
+            { key: "active", icon: "fa-fire-flame-curved", tone: "red", value: incidents.length, label: "Active in queue", badge: "Priority", description: "Live incident queue", loading },
+            { key: "responding", icon: "fa-truck-fast", tone: "emerald", value: respondingCount, label: "Responding now", badge: "Active", description: "Units responding to fires", loading },
+            { key: "verified", icon: "fa-clipboard-check", tone: "blue", value: verifiedCount, label: "Verified / dispatched", badge: "Verified", description: "Confirmed incident reports", loading },
+            { key: "pending", icon: "fa-triangle-exclamation", tone: "amber", value: pendingCount, label: "Pending verification", badge: "Pending", description: "Awaiting station verification", loading },
           ]}
         />
 

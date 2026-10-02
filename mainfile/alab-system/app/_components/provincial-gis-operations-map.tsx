@@ -10,7 +10,6 @@ import type {
   WaterSource,
 } from "../../lib/water-sources/types";
 import { groupWaterSourceMapMarkers, type WaterSourceMapGroup } from "../../lib/water-sources/map-positions";
-import { StatCards } from "./municipal-stat-cards";
 
 const DEFAULT_PROVINCE_CENTER: [number, number] = [11.18, 122.05];
 const TERMINAL_STATUSES = new Set(["RESOLVED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "CLOSED"]);
@@ -230,11 +229,148 @@ const styles = `
     cursor: wait;
   }
 
-  /* Shared summary cards keep both GIS portals consistent. */
-  .mbfp-ops-stats { min-width: 0; margin-bottom: 0.85rem; }
+  /* 4 KPI Stat Cards (Pastel Gradient Style matching Provincial Incidents) */
+  .mbfp-ops-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+  .mbfp-ops-stat {
+    position: relative;
+    border-radius: 11px;
+    padding: 0.72rem 0.95rem 0.62rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    min-height: 98px;
+  }
+  .mbfp-ops-stat.red, .mbfp-ops-stat.is-active {
+    background: linear-gradient(145deg, #FFE8E8 0%, #FFD6D6 100%);
+    border: 1.5px solid #FFBEBE;
+    box-shadow: 0 4px 16px rgba(226, 54, 50, 0.06);
+  }
+  .mbfp-ops-stat.purple, .mbfp-ops-stat.is-resolved {
+    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
+    border: 1.5px solid #D0BCFD;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
+  }
+  .mbfp-ops-stat.blue, .mbfp-ops-stat.is-stations {
+    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
+    border: 1.5px solid #B8D3FD;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  }
+  .mbfp-ops-stat.emerald, .mbfp-ops-stat.is-sites {
+    background: linear-gradient(145deg, #E6FBF0 0%, #D1F7E2 100%);
+    border: 1.5px solid #A7F3D0;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
+  }
+  .mbfp-ops-stat:hover { transform: translateY(-2.5px); }
+  .mbfp-ops-stat.red:hover, .mbfp-ops-stat.is-active:hover { border-color: #FFA3A3; box-shadow: 0 10px 22px -4px rgba(226, 54, 50, 0.2); }
+  .mbfp-ops-stat.purple:hover, .mbfp-ops-stat.is-resolved:hover { border-color: #B79BFB; box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2); }
+  .mbfp-ops-stat.blue:hover, .mbfp-ops-stat.is-stations:hover { border-color: #91B8FA; box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2); }
+  .mbfp-ops-stat.emerald:hover, .mbfp-ops-stat.is-sites:hover { border-color: #6EE7B7; box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2); }
 
+  .pbfp-stat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    margin-bottom: 0.25rem;
+  }
+  .pbfp-stat-icon-badge {
+    width: 1.95rem;
+    height: 1.95rem;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .mbfp-ops-stat:hover .pbfp-stat-icon-badge { transform: scale(1.06); }
+  .is-active .pbfp-stat-icon-badge, .pbfp-stat-icon-badge.red { color: #E23632; }
+  .is-resolved .pbfp-stat-icon-badge, .pbfp-stat-icon-badge.purple { color: #7C3AED; }
+  .is-stations .pbfp-stat-icon-badge, .pbfp-stat-icon-badge.blue { color: #2563EB; }
+  .is-sites .pbfp-stat-icon-badge, .pbfp-stat-icon-badge.emerald { color: #059669; }
 
+  .pbfp-kpi-trend-tag {
+    font-size: 0.58rem;
+    font-weight: 800;
+    padding: 0.14rem 0.42rem;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .pbfp-kpi-trend-tag.red { color: #991B1B; background: #FDE8E8; }
+  .pbfp-kpi-trend-tag.purple { color: #5B21B6; background: #EDE9FE; }
+  .pbfp-kpi-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
+  .pbfp-kpi-trend-tag.emerald { color: #065F46; background: #D1FAE5; }
 
+  .pbfp-kpi-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.08rem;
+    margin: 0.08rem 0;
+  }
+  .mbfp-ops-stat-label {
+    order: 2;
+    font-size: 0.63rem;
+    font-weight: 750;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .mbfp-ops-stat-num {
+    order: 1;
+    font-size: 1.45rem;
+    font-weight: 850;
+    color: #0F172A;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .pbfp-kpi-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.35rem;
+    padding-top: 0.32rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.65rem;
+    font-weight: 600;
+  }
+  .mbfp-ops-stat.red .pbfp-kpi-footer, .mbfp-ops-stat.is-active .pbfp-kpi-footer { color: #DC2626; border-top-color: #FED7D7; }
+  .mbfp-ops-stat.purple .pbfp-kpi-footer, .mbfp-ops-stat.is-resolved .pbfp-kpi-footer { color: #7C3AED; border-top-color: #E9D8FD; }
+  .mbfp-ops-stat.blue .pbfp-kpi-footer, .mbfp-ops-stat.is-stations .pbfp-kpi-footer { color: #2563EB; border-top-color: #DCE7FC; }
+  .mbfp-ops-stat.emerald .pbfp-kpi-footer, .mbfp-ops-stat.is-sites .pbfp-kpi-footer { color: #059669; border-top-color: #A7F3D0; }
+
+  .pbfp-kpi-footer-subtext {
+    font-weight: 600;
+    opacity: 0.9;
+  }
+  .pbfp-kpi-footer i {
+    font-size: 0.64rem;
+    transition: transform 0.2s ease;
+  }
+  .mbfp-ops-stat:hover .pbfp-kpi-footer i {
+    transform: translateX(3px);
+  }
 
   /* Segmented Controls & Layer Toggles (Clean Crisp White) */
   .mbfp-ops-controls {
@@ -960,6 +1096,11 @@ const styles = `
     to { background-position: -220% 0; }
   }
 
+  @media (max-width: 800px) {
+    .mbfp-ops-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
   @media (max-width: 720px) {
     .mbfp-ops-root { padding: 1rem; }
     .mbfp-ops-toolbar { align-items: stretch; flex-direction: column; }
@@ -1409,16 +1550,144 @@ export function ProvincialGisOperationsMap() {
         </header>
 
         {/* 4 Clean Pastel KPI Stat Cards */}
-        <div className="mbfp-ops-stats">
-          <StatCards
-            label="Provincial GIS totals"
-            items={[
-              { key: "active", icon: "fa-fire", tone: "red", value: activeCount, label: "Active now", onClick: () => { setMapMode("INCIDENTS"); setView("ACTIVE"); }, active: mapMode === "INCIDENTS" && view === "ACTIVE", loading },
-              { key: "resolved", icon: "fa-check", tone: "violet", value: resolvedCount, label: "Resolved", onClick: () => { setMapMode("INCIDENTS"); setView("HISTORY"); }, active: mapMode === "INCIDENTS" && view === "HISTORY", loading },
-              { key: "stations", icon: "fa-truck-fast", tone: "blue", value: activeStationCount, label: "Active stations", onClick: () => { setMapMode("INCIDENTS"); setShowStations(true); } },
-              { key: "water", icon: "fa-location-dot", tone: "emerald", value: waterSources.length, label: "Water sources", onClick: () => setMapMode("WATER_SOURCES"), active: mapMode === "WATER_SOURCES", loading: waterSourcesLoading },
-            ]}
-          />
+        <div className="mbfp-ops-stats" aria-label="Provincial GIS totals">
+          {/* Card 1: Active now */}
+          <article
+            className="mbfp-ops-stat is-active red"
+            onClick={() => {
+              setMapMode("INCIDENTS");
+              setView("ACTIVE");
+            }}
+            role="button"
+            tabIndex={0}
+            title="Filter by active incidents"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                setMapMode("INCIDENTS");
+                setView("ACTIVE");
+              }
+            }}
+          >
+            <div className="pbfp-stat-header">
+              <div className="pbfp-stat-icon-badge red">
+                <i className="fa-solid fa-fire" aria-hidden="true" />
+              </div>
+              <span className="pbfp-kpi-trend-tag red">
+                <i className="fa-solid fa-triangle-exclamation" /> Priority
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="mbfp-ops-stat-label">Active now</span>
+              <span className="mbfp-ops-stat-num">{loading ? "--" : activeCount}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Ongoing operations</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </article>
+
+          {/* Card 2: Resolved */}
+          <article
+            className="mbfp-ops-stat is-resolved purple"
+            onClick={() => {
+              setMapMode("INCIDENTS");
+              setView("HISTORY");
+            }}
+            role="button"
+            tabIndex={0}
+            title="Filter by resolved incidents"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                setMapMode("INCIDENTS");
+                setView("HISTORY");
+              }
+            }}
+          >
+            <div className="pbfp-stat-header">
+              <div className="pbfp-stat-icon-badge purple">
+                <i className="fa-solid fa-check" aria-hidden="true" />
+              </div>
+              <span className="pbfp-kpi-trend-tag purple">
+                <i className="fa-solid fa-shield-halved" /> Closed
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="mbfp-ops-stat-label">Resolved</span>
+              <span className="mbfp-ops-stat-num">{loading ? "--" : resolvedCount}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Completed responses</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </article>
+
+          {/* Card 3: Active stations */}
+          <article
+            className="mbfp-ops-stat is-stations blue"
+            onClick={() => {
+              setMapMode("INCIDENTS");
+              setShowStations(true);
+            }}
+            role="button"
+            tabIndex={0}
+            title="Show active stations on map"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                setMapMode("INCIDENTS");
+                setShowStations(true);
+              }
+            }}
+          >
+            <div className="pbfp-stat-header">
+              <div className="pbfp-stat-icon-badge blue">
+                <i className="fa-solid fa-truck-fast" aria-hidden="true" />
+              </div>
+              <span className="pbfp-kpi-trend-tag blue">
+                <i className="fa-solid fa-tower-broadcast" /> Operational
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="mbfp-ops-stat-label">Active stations</span>
+              <span className="mbfp-ops-stat-num">{activeStationCount}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Provincial coverage</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </article>
+
+          {/* Card 4: Water sources */}
+          <article
+            className="mbfp-ops-stat is-sites emerald"
+            onClick={() => {
+              setMapMode("WATER_SOURCES");
+            }}
+            role="button"
+            tabIndex={0}
+            title="Switch map to water sources layer"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                setMapMode("WATER_SOURCES");
+              }
+            }}
+          >
+            <div className="pbfp-stat-header">
+              <div className="pbfp-stat-icon-badge emerald">
+                <i className="fa-solid fa-location-dot" aria-hidden="true" />
+              </div>
+              <span className="pbfp-kpi-trend-tag emerald">
+                <i className="fa-solid fa-droplet" /> Mapped
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="mbfp-ops-stat-label">Water sources</span>
+              <span className="mbfp-ops-stat-num">{waterSourcesLoading ? "--" : waterSources.length}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Hydrants & supply points</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </article>
         </div>
 
         {/* Operational Filter Pills, Municipality Jump, and Coverage Toggle */}

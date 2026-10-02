@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useProvincialAssistanceFeed } from '../../_components/use-provincial-assistance-feed';
 import { BfpDataLoader } from '../../_components/bfp-data-loader';
 import { ProvincialAlarmPanel } from '../../_components/provincial-alarm-panel';
-import { StatCards } from "../../_components/municipal-stat-cards";
 
 const pageStyles = `
   .pbfp-aid-page {
@@ -146,12 +145,155 @@ const pageStyles = `
   }
 
   /* ========== 4 PASTEL KPI METRIC CARDS (DASHBOARD STYLE - COMPACT) ========== */
+  .pbfp-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  @media (max-width: 1024px) {
+    .pbfp-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .pbfp-kpi-grid { grid-template-columns: 1fr; }
+  }
 
+  .pbfp-kpi-box {
+    position: relative;
+    border-radius: 11px;
+    padding: 0.72rem 0.95rem 0.62rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    min-height: 98px;
+  }
+  .pbfp-kpi-box.blue {
+    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
+    border: 1.5px solid #B8D3FD;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  }
+  .pbfp-kpi-box.amber {
+    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
+    border: 1.5px solid #FFDC99;
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+  }
+  .pbfp-kpi-box.emerald {
+    background: linear-gradient(145deg, #E6FBF0 0%, #D1F7E2 100%);
+    border: 1.5px solid #A7F3D0;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
+  }
+  .pbfp-kpi-box.purple {
+    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
+    border: 1.5px solid #D0BCFD;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
+  }
 
+  .pbfp-kpi-box:hover { transform: translateY(-2.5px); }
+  .pbfp-kpi-box.blue:hover { border-color: #91B8FA; box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2); }
+  .pbfp-kpi-box.amber:hover { border-color: #FFCF70; box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2); }
+  .pbfp-kpi-box.emerald:hover { border-color: #6EE7B7; box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2); }
+  .pbfp-kpi-box.purple:hover { border-color: #B79BFB; box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2); }
 
+  .pbfp-kpi-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    margin-bottom: 0.25rem;
+  }
+  .pbfp-kpi-badge-icon {
+    width: 1.95rem;
+    height: 1.95rem;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pbfp-kpi-box:hover .pbfp-kpi-badge-icon { transform: scale(1.06); }
+  .pbfp-kpi-badge-icon.blue { color: #2563EB; }
+  .pbfp-kpi-badge-icon.amber { color: #D97706; }
+  .pbfp-kpi-badge-icon.emerald { color: #059669; }
+  .pbfp-kpi-badge-icon.purple { color: #7C3AED; }
 
+  .pbfp-kpi-trend-tag {
+    font-size: 0.58rem;
+    font-weight: 800;
+    padding: 0.14rem 0.42rem;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .pbfp-kpi-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
+  .pbfp-kpi-trend-tag.amber { color: #92400E; background: #FEF3C7; }
+  .pbfp-kpi-trend-tag.emerald { color: #065F46; background: #D1FAE5; }
+  .pbfp-kpi-trend-tag.purple { color: #5B21B6; background: #EDE9FE; }
 
+  .pbfp-kpi-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.08rem;
+    margin: 0.08rem 0;
+  }
+  .pbfp-kpi-label {
+    order: 2;
+    font-size: 0.63rem;
+    font-weight: 750;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pbfp-kpi-number {
+    order: 1;
+    font-size: 1.45rem;
+    font-weight: 850;
+    color: #0F172A;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .pbfp-kpi-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.35rem;
+    padding-top: 0.32rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.65rem;
+    font-weight: 600;
+  }
+  .pbfp-kpi-box.blue .pbfp-kpi-footer { color: #2563EB; border-top-color: #DCE7FC; }
+  .pbfp-kpi-box.amber .pbfp-kpi-footer { color: #D97706; border-top-color: #FEEBC8; }
+  .pbfp-kpi-box.emerald .pbfp-kpi-footer { color: #059669; border-top-color: #A7F3D0; }
+  .pbfp-kpi-box.purple .pbfp-kpi-footer { color: #7C3AED; border-top-color: #E9D8FD; }
 
+  .pbfp-kpi-footer-subtext {
+    font-weight: 600;
+    opacity: 0.9;
+  }
+  .pbfp-kpi-footer i {
+    font-size: 0.64rem;
+    transition: transform 0.2s ease;
+  }
+  .pbfp-kpi-box:hover .pbfp-kpi-footer i {
+    transform: translateX(3px);
+  }
 
 
   /* Escalation Section */
@@ -741,15 +883,87 @@ function AssistanceRequestsContent() {
         </div>
 
         {/* 4 Tactical KPI Cards (Dashboard Style) */}
-        <StatCards
-          label="Assistance request totals"
-          items={[
-            { key: "total", icon: "fa-layer-group", tone: "blue", value: metrics.total, label: "All requests" },
-            { key: "requested", icon: "fa-hourglass-half", tone: "amber", value: metrics.requested, label: "Awaiting reply" },
-            { key: "dispatched", icon: "fa-truck-fast", tone: "emerald", value: metrics.coordinated, label: "Dispatched" },
-            { key: "closed", icon: "fa-circle-check", tone: "violet", value: metrics.completed, label: "Closed" },
-          ]}
-        />
+        <div className="pbfp-kpi-grid">
+          {/* Card 1: Blue */}
+          <div className="pbfp-kpi-box blue">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon blue">
+                <i className="fa-solid fa-layer-group" />
+              </div>
+              <span className="pbfp-kpi-trend-tag blue">
+                <i className="fa-solid fa-tower-broadcast" /> Total Feed
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">Total Calls In Feed</span>
+              <span className="pbfp-kpi-number">{metrics.total}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Cross-jurisdiction logs</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </div>
+
+          {/* Card 2: Amber */}
+          <div className="pbfp-kpi-box amber">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon amber">
+                <i className="fa-solid fa-hourglass-half" />
+              </div>
+              <span className="pbfp-kpi-trend-tag amber">
+                <i className="fa-solid fa-clock" /> Pending
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">Awaiting Response</span>
+              <span className="pbfp-kpi-number">{metrics.requested}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Station decisions pending</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </div>
+
+          {/* Card 3: Emerald */}
+          <div className="pbfp-kpi-box emerald">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon emerald">
+                <i className="fa-solid fa-truck-fast" />
+              </div>
+              <span className="pbfp-kpi-trend-tag emerald">
+                <i className="fa-solid fa-truck-moving" /> Active
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">Units Dispatched</span>
+              <span className="pbfp-kpi-number">{metrics.coordinated}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Active apparatus en route</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </div>
+
+          {/* Card 4: Purple */}
+          <div className="pbfp-kpi-box purple">
+            <div className="pbfp-kpi-header">
+              <div className="pbfp-kpi-badge-icon purple">
+                <i className="fa-solid fa-circle-check" />
+              </div>
+              <span className="pbfp-kpi-trend-tag purple">
+                <i className="fa-solid fa-check-double" /> Closed
+              </span>
+            </div>
+            <div className="pbfp-kpi-body">
+              <span className="pbfp-kpi-label">Concluded / Returned</span>
+              <span className="pbfp-kpi-number">{metrics.completed}</span>
+            </div>
+            <div className="pbfp-kpi-footer">
+              <span className="pbfp-kpi-footer-subtext">Demobilized & closed</span>
+              <i className="fa-solid fa-arrow-right" />
+            </div>
+          </div>
+        </div>
 
 
 
