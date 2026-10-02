@@ -175,14 +175,14 @@ const layoutStyles = `
     height: 42px;
     flex-shrink: 0;
     border-radius: 10px;
-    background: #0f1420;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: transparent;
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 12px rgba(0, 0, 0, 0.35);
+    box-shadow: none;
     overflow: hidden;
-    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .mbfp-brand-logo-img {
@@ -205,7 +205,6 @@ const layoutStyles = `
 
   .mbfp-brand-link:hover .mbfp-brand-logo-wrap {
     transform: scale(1.05);
-    box-shadow: 0 0 16px rgba(0, 0, 0, 0.5);
   }
 
   .mbfp-brand-link:hover .mbfp-brand-tint-img {
@@ -413,6 +412,7 @@ const layoutStyles = `
    */
   .mbfp-nav-link.active {
     background: #FFFFFF;
+    border-radius: 5px;
     color: #B91C1C;
     font-weight: 700;
     border: 1px solid #FFFFFF;
