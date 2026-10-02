@@ -12,7 +12,7 @@ test("municipal firetrucks page shows real inventory without an add action", () 
   assert.match(component, /api\/municipal-bfp\/fire-trucks/);
   assert.doesNotMatch(component, /method:\s*["']POST["']/);
   assert.doesNotMatch(component, /Add fire ?truck/i);
-  assert.match(component, /Records managed by Provincial BFP/);
+  assert.doesNotMatch(component, /Fleet readiness|Records managed by Provincial BFP|Fire trucks assigned to your stations, from the provincial/);
   assert.match(component, /FireTruckDetailsDialog/);
   assert.match(component, />Retry</);
 });
