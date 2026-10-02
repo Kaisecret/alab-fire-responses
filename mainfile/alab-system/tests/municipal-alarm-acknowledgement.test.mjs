@@ -69,3 +69,46 @@ test("the alarm stays quiet for reports the station acknowledged on any device",
   assert.match(read("../scripts/apply-command-migration.mjs"), /add_municipal_report_acknowledgement/);
   assert.match(read("../app/api/municipal-bfp/incidents/[id]/acknowledge/route.ts"), /acknowledgeMunicipalReport\(/);
 });
+
+test("the municipal queue lists the station's own reports and nearby fires together", async () => {
+  const { loadServerModule } = await import("./helpers/load-server-module.mjs");
+  const { listScopedMunicipalIncidents } = loadServerModule("lib/intermunicipality/incident-access.ts", {
+    "../db": { getDatabase: () => { throw new Error("use the test client"); } },
+  });
+  const { db } = await database();
+  try {
+    await db.exec(`
+      create table public.incident_municipal_observers (
+        fire_report_id uuid, observer_municipality_id uuid, origin_municipality_id uuid, status text, acknowledged_at timestamptz
+      );
+      create table public.intermunicipal_assistance_requests (
+        fire_report_id uuid, recipient_municipality_id uuid, status text, requested_at timestamptz
+      );
+      alter table public.fire_reports add column caller_name_unused text;
+    `);
+    const nearby = "55555555-5555-4555-8555-555555555555";
+    await db.query(
+      `insert into fire_reports (id, reference_number, report_source, fire_type, status, municipality_id, latitude, longitude)
+       values ($1, 'ALAB-NEAR', 'ALAB_APP', 'GRASS', 'VERIFIED', $2, 10.8, 121.9)`,
+      [nearby, HAMTIC],
+    );
+    await db.query("insert into incident_municipal_observers values ($1, $2, $3, 'ACTIVE', now())", [nearby, SAN_JOSE, HAMTIC]);
+    await db.query("insert into intermunicipal_assistance_requests values ($1, $2, 'REQUESTED', now())", [nearby, SAN_JOSE]);
+    const client = { query: (sql, params) => db.query(sql, params) };
+    const rows = await listScopedMunicipalIncidents(SAN_JOSE, false, client);
+    const own = rows.find((row) => row.referenceNumber === "ALAB-1");
+    const near = rows.find((row) => row.referenceNumber === "ALAB-NEAR");
+    assert.equal(own?.accessScope, "ORIGIN");
+    assert.equal(own?.assistanceStatus, null);
+    assert.equal(near?.accessScope, "OBSERVER", "nearby fires are no longer dropped by a failing query");
+    assert.equal(near?.assistanceStatus, "REQUESTED");
+    assert.ok(near?.acknowledgedAt, "a nearby station's own 'Seen' counts as acknowledged");
+  } finally {
+    await db.close();
+  }
+});
+
+test("only the station's own reports sound the new-report siren", () => {
+  const alarm = read("../app/_components/municipal-incident-alarm.tsx");
+  assert.match(alarm, /incident\.accessScope !== "OBSERVER"/);
+});

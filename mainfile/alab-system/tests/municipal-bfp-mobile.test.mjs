@@ -33,9 +33,10 @@ test("municipal dashboard mobile rules prevent cramped cards and page overflow",
 
   const mobileRules = dashboard.match(/@media \(max-width: 768px\)[\s\S]*?\n  \}/)?.[0] ?? "";
   assert.match(mobileRules, /\.mbfp-stats-row[\s\S]*grid-template-columns:\s*repeat\(2/);
-  assert.match(mobileRules, /\.mbfp-quick-actions[\s\S]*grid-template-columns:\s*1fr/);
+  assert.match(mobileRules, /\.mbfp-quick-actions \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(dashboard, /@media \(max-width: 360px\)[\s\S]*?\.mbfp-quick-actions \{ grid-template-columns: 1fr; \}/);
   assert.match(mobileRules, /\.mbfp-card-body[\s\S]*overflow-x:\s*auto/);
-  assert.match(mobileRules, /\.mbfp-emergency-item[\s\S]*flex-direction:\s*column/);
+  assert.match(mobileRules, /\.mbfp-nearby-row \.mbfp-row-end[\s\S]*flex-direction:\s*column/);
 });
 
 test("municipal incident feed refreshes every five seconds only while the tab is visible", () => {
@@ -74,6 +75,6 @@ test("municipal dashboard renders its incident queue from the authenticated live
 
   assert.match(dashboard, /useMunicipalIncidentFeed/);
   assert.doesNotMatch(dashboard, /const incidentData\s*=/);
-  assert.match(dashboard, /incidents\.slice\(0, 5\)/);
+  assert.match(dashboard, /[iI]ncidents\.slice\(0, 5\)/);
   assert.match(dashboard, /Live · checked/);
 });

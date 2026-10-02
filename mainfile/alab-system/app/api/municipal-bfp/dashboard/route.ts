@@ -7,6 +7,10 @@ import { getDatabase } from "../../../../lib/db";
 
 export const runtime = "nodejs";
 
+/** Reports that still need the station to verify them. */
+const AWAITING_VERIFICATION = ["SUBMITTED", "PENDING_VERIFICATION", "UNDER_VERIFICATION"];
+const CLOSED_STATUSES = "('RESOLVED','REJECTED','FALSE_REPORT','DUPLICATE','CLOSED')";
+
 export async function GET(request: NextRequest) {
   if (isLocalUiPreviewEnabled()) {
     return NextResponse.json({
@@ -15,6 +19,7 @@ export async function GET(request: NextRequest) {
         activeIncidents: 0,
         pendingVerifications: 0,
         availableFiretrucks: 2,
+        totalFiretrucks: 2,
         respondersOnDuty: 4,
         assistanceRequests: 0,
       },
@@ -34,11 +39,9 @@ export async function GET(request: NextRequest) {
           assignedPersonnelCount: 4,
         },
       ],
-      mutualAid: [
-        { id: "m-hamtic", municipalityName: "Hamtic", stationName: "Hamtic Fire Station", phone: "(036) 540-8112" },
-        { id: "m-sibalom", municipalityName: "Sibalom", stationName: "Sibalom Fire Station", phone: "(036) 543-7001" },
-        { id: "m-belison", municipalityName: "Belison", stationName: "Belison Fire Station", phone: "(036) 540-9220" },
-        { id: "m-tobias", municipalityName: "Tobias Fornier", stationName: "Tobias Fornier Fire Station", phone: "(036) 536-0123" },
+      nearbyStations: [
+        { id: "preview-hamtic", municipalityName: "Hamtic", stationName: "Hamtic Fire Station", distanceKm: 6.2, activeIncidents: 1 },
+        { id: "preview-belison", municipalityName: "Belison", stationName: "Belison Fire Station", distanceKm: 18.4, activeIncidents: 0 },
       ],
     });
   }
@@ -64,7 +67,8 @@ export async function GET(request: NextRequest) {
       stationsResult,
       personnelResult,
       dispatchesResult,
-      mutualAidResult,
+      nearbyResult,
+      trucksResult,
     ] = await Promise.all([
       // 1. Active incidents
       (async () => {
@@ -93,7 +97,7 @@ export async function GET(request: NextRequest) {
                from fire_reports fr
                left join barangays b on b.id = fr.barangay_id
               where fr.municipality_id = $1
-                and fr.status not in ('RESOLVED','REJECTED','FALSE_REPORT','DUPLICATE','CLOSED')
+                and fr.status not in ${CLOSED_STATUSES}
               order by fr.submitted_at desc
               limit 10`,
             [municipalityId],
@@ -124,7 +128,7 @@ export async function GET(request: NextRequest) {
                from fire_reports fr
                left join barangays b on b.id = fr.barangay_id
               where fr.municipality_id = $1
-                and fr.status not in ('RESOLVED','REJECTED','FALSE_REPORT','DUPLICATE','CLOSED')
+                and fr.status not in ${CLOSED_STATUSES}
               order by fr.submitted_at desc
               limit 10`,
             [municipalityId],
@@ -218,22 +222,38 @@ export async function GET(request: NextRequest) {
         }
       })(),
 
-      // 6. Mutual aid municipalities in Antique
+      // 6. Nearest other stations, measured from this municipality's first station
       (async () => {
         try {
           return await db.query<{
             id: string;
             municipalityName: string;
             stationName: string;
+            distanceKm: number;
+            activeIncidents: number;
           }>(
-            `select m.id, m.name as "municipalityName",
-                    coalesce(
-                      (select s.station_name from municipal_bfp_stations s where s.municipality_id = m.id and s.status = 'ACTIVE' order by s.created_at asc limit 1),
-                      m.name || ' Fire Station'
-                    ) as "stationName"
-               from municipalities m
-              where m.id != $1 and m.province = 'Antique'
-              order by m.name asc
+            `with home as (
+               select latitude::float8 as lat, longitude::float8 as lng
+                 from municipal_bfp_stations
+                where municipality_id = $1
+                order by created_at asc
+                limit 1
+             )
+             select s.id, m.name as "municipalityName", s.station_name as "stationName",
+                    round((6371 * 2 * asin(sqrt(
+                      power(sin(radians(s.latitude::float8 - home.lat) / 2), 2)
+                      + cos(radians(home.lat)) * cos(radians(s.latitude::float8))
+                      * power(sin(radians(s.longitude::float8 - home.lng) / 2), 2)
+                    )))::numeric, 1)::float8 as "distanceKm",
+                    (select count(*)::int from fire_reports fr
+                      where fr.municipality_id = m.id
+                        and fr.status not in ${CLOSED_STATUSES}) as "activeIncidents"
+               from municipal_bfp_stations s
+               join municipalities m on m.id = s.municipality_id
+              cross join home
+              where s.municipality_id <> $1
+                and coalesce(s.status, 'ACTIVE') = 'ACTIVE'
+              order by "distanceKm" asc
               limit 4`,
             [municipalityId],
           );
@@ -241,25 +261,32 @@ export async function GET(request: NextRequest) {
           return { rows: [] };
         }
       })(),
+
+      // 7. Fire trucks on record for this municipality
+      (async () => {
+        try {
+          return await db.query<{ ready: number; total: number }>(
+            `select count(*) filter (where operational_status = 'SERVICEABLE')::int as ready,
+                    count(*)::int as total
+               from fire_trucks
+              where municipality_id = $1`,
+            [municipalityId],
+          );
+        } catch {
+          return { rows: [{ ready: 0, total: 0 }] };
+        }
+      })(),
     ]);
 
     const incidents = incidentsResult.rows;
-    const pendingFireReports = incidents.filter((i) => ["UNVERIFIED", "PENDING"].includes(i.status));
+    const pendingFireReports = incidents.filter((i) => AWAITING_VERIFICATION.includes(i.status));
     const pendingResidentApps = residentAppsResult.rows;
     const stations = stationsResult.rows;
     const respondersCount = personnelResult.rows[0]?.count ?? 0;
     const dispatchesCount = dispatchesResult.rows[0]?.count ?? 0;
 
-    // Mutual aid emergency hotlines mapping (Antique municipal hotlines)
-    const mutualAidWithContacts = mutualAidResult.rows.map((row) => ({
-      id: row.id,
-      municipalityName: row.municipalityName,
-      stationName: row.stationName,
-      phone: "(036) 540-8" + Math.abs(row.municipalityName.charCodeAt(0) * 7 % 900 + 100),
-    }));
-
     const totalPending = pendingFireReports.length + pendingResidentApps.length;
-    const availableFiretrucks = stations.length > 0 ? stations.length * 2 : 1;
+    const trucks = trucksResult.rows[0] ?? { ready: 0, total: 0 };
 
     return NextResponse.json({
       municipality: identity.municipalityName,
@@ -268,7 +295,8 @@ export async function GET(request: NextRequest) {
         pendingVerifications: totalPending,
         pendingReportsCount: pendingFireReports.length,
         pendingApplicationsCount: pendingResidentApps.length,
-        availableFiretrucks,
+        availableFiretrucks: trucks.ready,
+        totalFiretrucks: trucks.total,
         respondersOnDuty: respondersCount,
         assistanceRequests: dispatchesCount,
       },
@@ -279,7 +307,7 @@ export async function GET(request: NextRequest) {
         totalPending,
       },
       stations,
-      mutualAid: mutualAidWithContacts,
+      nearbyStations: nearbyResult.rows,
     });
   } catch (error) {
     console.error("Municipal dashboard API aggregate failed", error);

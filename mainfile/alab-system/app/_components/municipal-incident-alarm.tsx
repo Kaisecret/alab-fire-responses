@@ -132,7 +132,10 @@ export function MunicipalIncidentAlarm() {
   const stopSirenRef = useRef<(() => void) | null>(null);
 
   const pending = useMemo(
+    // Only this station's own reports sound the siren. Nearby fires show on
+    // the board; a request for help has its own alarm (MunicipalAlarmDeclaration).
     () => incidents.filter((incident) => ALARM_STATUSES.has(incident.status)
+      && incident.accessScope !== "OBSERVER"
       && !incident.acknowledgedAt
       && !acknowledged.has(incident.id)),
     [incidents, acknowledged],

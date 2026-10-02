@@ -102,8 +102,8 @@ export async function resolveMunicipalIncidentAccess(
 export async function listScopedMunicipalIncidents(
   municipalityId: string,
   includeHistory: boolean,
+  db: Pick<ReturnType<typeof getDatabase>, "query"> = getDatabase(),
 ): Promise<ScopedMunicipalIncident[]> {
-  const db = getDatabase();
   const terminalFilter = includeHistory
     ? ""
     : "and fr.status not in ('RESOLVED','REJECTED','FALSE_REPORT','DUPLICATE','CLOSED')";
@@ -128,7 +128,9 @@ export async function listScopedMunicipalIncidents(
              fr.building_density_minimum_gap_meters::float as "buildingDensityMinimumGapMeters",
              'ORIGIN'::text as "accessScope",
              origin.name as "originMunicipality",
-             fr.municipal_acknowledged_at as "acknowledgedAt"
+             fr.municipal_acknowledged_at as "acknowledgedAt",
+             -- Both halves of the union need the same columns, in order.
+             null::text as "assistanceStatus"
         from fire_reports fr
         join municipalities origin on origin.id = fr.municipality_id
         left join barangays barangay on barangay.id = fr.barangay_id
@@ -153,7 +155,8 @@ export async function listScopedMunicipalIncidents(
              fr.building_density_minimum_gap_meters::float as "buildingDensityMinimumGapMeters",
              'OBSERVER'::text as "accessScope",
              origin.name as "originMunicipality",
-             null::timestamptz as "acknowledgedAt",
+             -- A nearby station acknowledges with its own "Seen".
+             observer.acknowledged_at as "acknowledgedAt",
              -- Whether this municipality was asked to send help, rather than
              -- only being told a fire is burning nearby. The two read very
              -- differently on a board: one is awareness, the other is a task.
