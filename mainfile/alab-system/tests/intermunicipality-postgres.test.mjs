@@ -37,6 +37,7 @@ async function database(applyCommandMigration = true) {
     alter table fire_reports add column calculated_severity text;
     alter table fire_reports add column severity_score integer;
     alter table fire_reports add column severity_factors jsonb;
+    alter table fire_reports add column fire_types text[];
     alter table fire_reports drop constraint fire_reports_status_check;
     insert into municipalities(id, name) values ('${origin}', 'Origin'), ('${recipient}', 'Recipient');
     insert into users(id, email, username, password_hash, phone, terms_accepted_at)

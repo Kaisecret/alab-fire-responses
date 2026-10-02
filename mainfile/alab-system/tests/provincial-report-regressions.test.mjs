@@ -61,6 +61,7 @@ test('report SQL counts Manila day, honors search/severity, and excludes active 
       create table barangays(id text,name text);
       create table fire_reports(id text,municipality_id text,barangay_id text,status text,report_source text,fire_type text,calculated_severity text,submitted_at timestamptz,updated_at timestamptz,reference_number text,description text);
       alter table fire_reports add column response_started_at timestamptz;
+      alter table fire_reports add column fire_types text[];
       create table fire_report_status_history(fire_report_id text,next_status text,created_at timestamptz);
       insert into fire_report_status_history values ('a','RESOLVED','2026-09-09T17:00:00Z');
       create table incident_dispatches(id text,fire_report_id text,status text,completed_at timestamptz);

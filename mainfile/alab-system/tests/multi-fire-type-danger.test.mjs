@@ -108,3 +108,34 @@ test("the fire_types column accepts 1 to 3 known types only", async () => {
     await db.close();
   }
 });
+
+test("BFP screens show a chip per fire type and an icon per reason", async () => {
+  const { describeDangerFactors, dangerFactorKind } = await import("../lib/fire-reports/danger-factor-display.ts");
+  const view = describeDangerFactors({
+    factors: [
+      "House/Building fire sets the level (highest of House/Building + Grass)",
+      "Dikit-dikit na kabahayan (High conflagration risk)",
+      "Light combustible materials (Kahoy/Kawayan/Nipa)",
+      "Eskinita / Makipot na looban (Hindi mapasok ng malaking firetruck, kailangan ng mahabang hose)",
+      "Also burning: Grass fire (MODERATE, 36/100)",
+    ],
+    fireType: "HOUSE_BUILDING",
+    fireTypes: ["GRASS", "HOUSE_BUILDING"],
+    level: "CRITICAL",
+    score: 84,
+  });
+  assert.equal(view.mixed, true);
+  assert.deepEqual(view.types, [
+    { fireType: "HOUSE_BUILDING", level: "CRITICAL", score: 84, setsLevel: true },
+    { fireType: "GRASS", level: "MODERATE", score: 36, setsLevel: false },
+  ]);
+  assert.deepEqual(view.rows.map((row) => row.kind), ["density", "material", "route"], "summary lines become chips, not rows");
+  assert.equal(dangerFactorKind("Malakas ang hangin (27 km/h - mabilis kumalat ang apoy)"), "wind");
+  assert.equal(dangerFactorKind("Matinding init at tuyong panahon (34°C, 50% RH)"), "weather");
+  assert.equal(dangerFactorKind("Nearest mapped building 30 m away (occupancy unverified)"), "distance");
+  assert.equal(dangerFactorKind("Makipot na kalsada (1-lane passage)"), "route");
+  assert.equal(dangerFactorKind("12 mapped structures within 30 m; minimum mapped gap 2 m"), "density");
+  const single = describeDangerFactors({ factors: ["Semi-concrete structure"], fireType: "HOUSE_BUILDING", level: "MODERATE", score: 40 });
+  assert.equal(single.mixed, false);
+  assert.equal(single.types[0].setsLevel, false);
+});

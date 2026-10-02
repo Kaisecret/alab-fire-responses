@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useManagementDialog } from './use-management-dialog';
 import { PhotoLightbox } from './photo-lightbox';
 import { ProvincialIncidentMiniMap, provincialMiniMapStyles } from './provincial-incident-mini-map';
+import { DangerFactors } from './danger-factors';
 import type { ProvincialReportDetail as ReportDetailType } from '../../lib/provincial-bfp/management/types';
 import {
   getFireTypeLabel,
@@ -1064,8 +1065,10 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                       <span>Classification</span>
                     </div>
                     <div>
-                      <div className="pid-fact-value">{getFireTypeLabel(report.fireType)}</div>
-                      <div className="pid-fact-sub">BFP Antique Jurisdiction</div>
+                      <div className="pid-fact-value">{(report.fireTypes?.length ? report.fireTypes : [report.fireType]).map(getFireTypeLabel).join(' + ')}</div>
+                      <div className="pid-fact-sub">
+                        {(report.fireTypes?.length ?? 0) > 1 ? `Level set by ${getFireTypeLabel(report.fireType)}` : 'BFP Antique Jurisdiction'}
+                      </div>
                     </div>
                   </div>
 
@@ -1140,12 +1143,13 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                   </div>
                 </div>
 
-                {report.severityFactors && report.severityFactors.length > 0 && (
-                  <section className="pid-card" aria-label="Level of Danger factors">
-                    <div className="pid-card-header"><h3 className="pid-card-title">Why this Level of Danger</h3></div>
-                    <ul>{report.severityFactors.map((factor, index) => <li key={`${index}-${factor}`}>{factor}</li>)}</ul>
-                  </section>
-                )}
+                <DangerFactors
+                  factors={report.severityFactors}
+                  fireType={report.fireType}
+                  fireTypes={report.fireTypes}
+                  level={report.severity && report.severity !== 'UNKNOWN' ? report.severity : null}
+                  score={report.severityScore}
+                />
 
                 {/* Ground Reconnaissance Mini-Map */}
                 {typeof report.latitude === 'number' &&

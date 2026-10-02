@@ -147,6 +147,7 @@ export async function getProvincialReport(
     severity: string | null;
     severityScore: number | null;
     severityFactors: string[] | null;
+    fireTypes: string[] | null;
     status: string;
     latitude: string | number;
     longitude: string | number;
@@ -175,6 +176,7 @@ export async function getProvincialReport(
             coalesce(fr.calculated_severity, 'UNKNOWN') as "severity",
             fr.severity_score as "severityScore",
             fr.severity_factors as "severityFactors",
+            coalesce(fr.fire_types, array[fr.fire_type]) as "fireTypes",
             fr.status,
             fr.latitude,
             fr.longitude,
@@ -326,6 +328,7 @@ export async function getProvincialReport(
     severity: rep.severity ?? "UNKNOWN",
     severityScore: rep.severityScore == null ? null : Number(rep.severityScore),
     severityFactors: Array.isArray(rep.severityFactors) ? rep.severityFactors : null,
+    fireTypes: Array.isArray(rep.fireTypes) && rep.fireTypes.length ? rep.fireTypes : [rep.fireType],
     status: rep.status,
     latitude: Number(rep.latitude),
     longitude: Number(rep.longitude),

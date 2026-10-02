@@ -180,6 +180,8 @@ export type ProvincialReportRow = {
 };
 
 export type ProvincialReportDetail = ProvincialReportRow & {
+  /** Every kind of fire reported; fireType is the one that set the level. */
+  fireTypes: string[];
   severityScore: number | null;
   severityFactors: string[] | null;
   description: string;

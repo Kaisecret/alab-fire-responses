@@ -22,6 +22,8 @@ export type ProvincialIncidentSummary = {
 };
 
 export type ProvincialIncidentDetail = ProvincialIncidentSummary & {
+  /** Every kind of fire reported; fireType is the one that set the level. */
+  fireTypes: string[];
   severityScore: number | null;
   severityFactors: string[] | null;
   latitude: number;
@@ -56,6 +58,7 @@ type DbIncidentRow = {
   calculated_severity: string | null;
   severity_score?: number | null;
   severity_factors?: string[] | null;
+  fire_types?: string[] | null;
   status: string;
   submitted_at: Date | string;
   dispatched_at: Date | string | null;
@@ -292,6 +295,7 @@ export async function getProvincialCoordinationIncident(
        fr.calculated_severity,
        fr.severity_score,
        fr.severity_factors,
+       coalesce(fr.fire_types, array[fr.fire_type]) as fire_types,
        fr.status,
        fr.submitted_at,
        fr.latitude,
@@ -426,6 +430,7 @@ export async function getProvincialCoordinationIncident(
     calculatedSeverity: row.calculated_severity,
     severityScore: row.severity_score == null ? null : Number(row.severity_score),
     severityFactors: Array.isArray(row.severity_factors) ? row.severity_factors : null,
+    fireTypes: Array.isArray(row.fire_types) && row.fire_types.length ? row.fire_types : [row.fire_type],
     status: row.status,
     submittedAt: new Date(row.submitted_at).toISOString(),
     dispatchedAt: row.dispatched_at ? new Date(row.dispatched_at).toISOString() : null,

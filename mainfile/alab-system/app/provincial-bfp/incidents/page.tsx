@@ -6,6 +6,16 @@ import { useSearchParams } from 'next/navigation';
 import { useProvincialIncidentFeed } from '../../_components/use-provincial-incident-feed';
 import { BfpDataLoader } from '../../_components/bfp-data-loader';
 import type { ProvincialIncidentDetail } from '../../../lib/intermunicipality/provincial';
+import { DangerFactors } from '../../_components/danger-factors';
+import { formatPhilippineDateTime, getFireTypeLabel } from '../../../lib/municipal-bfp/reports/formatters';
+
+const POPUP_TYPE_ICONS: Record<string, string> = {
+  HOUSE_BUILDING: 'fa-house-fire',
+  GRASS: 'fa-seedling',
+  FOREST: 'fa-tree',
+  VEHICLE: 'fa-car-burst',
+  OTHER: 'fa-dumpster-fire',
+};
 
 const pageStyles = `
   .pbfp-incidents-page {
@@ -546,7 +556,9 @@ const pageStyles = `
   .pbfp-modal-title {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.6rem;
+    min-width: 0;
   }
 
   .pbfp-modal-title h3 {
@@ -554,6 +566,8 @@ const pageStyles = `
     font-size: 1.05rem;
     font-weight: 850;
     color: #0F172A;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   .pbfp-modal-close {
@@ -583,17 +597,17 @@ const pageStyles = `
   .pbfp-modal-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.15rem 1rem;
+    gap: 0.75rem;
   }
 
   .pbfp-modal-field {
     background: #F8FAFC;
-    padding: 1rem 1.1rem;
-    border-radius: 12px;
+    padding: 0.8rem 0.95rem;
+    border-radius: 10px;
     border: 1px solid #E2E8F0;
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.35rem;
     min-width: 0;
   }
 
@@ -605,6 +619,97 @@ const pageStyles = `
     text-transform: uppercase;
     letter-spacing: 0.05em;
     line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .pbfp-modal-field label i {
+    color: #DC2626;
+    font-size: 0.75rem;
+    width: 0.9rem;
+    text-align: center;
+  }
+
+  .pbfp-field-sub {
+    display: block;
+    margin-top: 0.15rem;
+    color: #475569;
+    font-size: 0.76rem;
+    font-weight: 600;
+  }
+
+  /* Classification band: what is burning and how dangerous, read first. */
+  .pbfp-modal-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 0.85rem 1rem;
+    border: 1px solid #FECACA;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #FFF5F5 0%, #FFFFFF 70%);
+  }
+
+  .pbfp-modal-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .pbfp-type-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid #E2E8F0;
+    background: #FFFFFF;
+    color: #0F172A;
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  .pbfp-type-chip i { color: #DC2626; }
+
+  .pbfp-type-chip.is-lead {
+    border-color: #DC2626;
+    box-shadow: 0 4px 12px -8px rgba(220, 38, 38, 0.6);
+  }
+
+  .pbfp-modal-danger {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .pbfp-danger-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  .pbfp-danger-pill.CRITICAL { background: #7F1D1D; color: #FECACA; }
+  .pbfp-danger-pill.HIGH { background: #991B1B; color: #FEE2E2; }
+  .pbfp-danger-pill.MODERATE { background: #B45309; color: #FEF3C7; }
+  .pbfp-danger-pill.LOW { background: #047857; color: #D1FAE5; }
+  .pbfp-danger-pill.NONE { background: #F1F5F9; color: #475569; }
+
+  .pbfp-score-pill {
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid #E2E8F0;
+    background: #FFFFFF;
+    color: #334155;
+    font-size: 0.74rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
   }
 
   .pbfp-modal-field p {
@@ -674,6 +779,9 @@ const pageStyles = `
   @media (max-width: 640px) {
     .pbfp-kpi-grid { grid-template-columns: 1fr; }
     .pbfp-modal-grid { grid-template-columns: 1fr; }
+    .pbfp-modal-header { align-items: flex-start; padding: 1rem 1.1rem; gap: 0.75rem; }
+    .pbfp-modal-body { padding: 1.1rem; }
+    .pbfp-modal-title h3 { font-size: 0.98rem; }
   }
 `;
 
@@ -1100,57 +1208,69 @@ function ProvincialIncidentsContent() {
                     </div>
                   )}
 
+                  {(() => {
+                    const types = incidentDetail.fireTypes?.length ? incidentDetail.fireTypes : [incidentDetail.fireType];
+                    const level = incidentDetail.calculatedSeverity;
+                    const ruleBased = incidentDetail.fireType === 'VEHICLE' || incidentDetail.fireType === 'OTHER';
+                    return (
+                      <div className="pbfp-modal-hero">
+                        <div className="pbfp-modal-types" aria-label="Reported fire types">
+                          {types.map((type) => (
+                            <span key={type} className={`pbfp-type-chip${types.length > 1 && type === incidentDetail.fireType ? ' is-lead' : ''}`}>
+                              <i className={`fa-solid ${POPUP_TYPE_ICONS[type] ?? 'fa-fire'}`} aria-hidden="true" />
+                              {getFireTypeLabel(type)}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="pbfp-modal-danger">
+                          <span className={`pbfp-danger-pill ${level ?? 'NONE'}`}>
+                            <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+                            {level ?? 'UNASSESSED'}
+                          </span>
+                          <span className="pbfp-score-pill">{ruleBased ? 'Rule-based' : incidentDetail.severityScore == null ? 'No score' : `${incidentDetail.severityScore}/100`}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div className="pbfp-modal-grid">
                     <div className="pbfp-modal-field">
-                      <label>Origin Municipality</label>
+                      <label><i className="fa-solid fa-location-dot" aria-hidden="true" />Origin Municipality</label>
                       <p>{incidentDetail.originMunicipality}</p>
                     </div>
                     <div className="pbfp-modal-field">
-                      <label>Barangay & Location</label>
+                      <label><i className="fa-solid fa-map-pin" aria-hidden="true" />Barangay</label>
                       <p>{incidentDetail.barangay || 'Not specified'}</p>
                     </div>
-                  </div>
-
-                  <div className="pbfp-modal-grid">
                     <div className="pbfp-modal-field">
-                      <label>Classification & Level of Danger</label>
-                      <p>{incidentDetail.fireType === 'OTHER' ? 'Rubbish Fire' : incidentDetail.fireType.replaceAll('_', ' ')} · {incidentDetail.calculatedSeverity || 'UNASSESSED'} {incidentDetail.fireType === 'VEHICLE' || incidentDetail.fireType === 'OTHER'
-                        ? '(Rule-based)' : incidentDetail.severityScore == null ? '' : `(${incidentDetail.severityScore}/100)`}</p>
+                      <label><i className="fa-regular fa-clock" aria-hidden="true" />Reported</label>
+                      <p>{formatPhilippineDateTime(incidentDetail.submittedAt)}</p>
                     </div>
                     <div className="pbfp-modal-field">
-                      <label>Reported Timestamp</label>
-                      <p>{new Date(incidentDetail.submittedAt).toLocaleString()}</p>
+                      <label><i className="fa-solid fa-landmark" aria-hidden="true" />Nearest Landmark</label>
+                      <p>{incidentDetail.landmark || 'None provided'}</p>
                     </div>
-                  </div>
-
-                  {incidentDetail.severityFactors && incidentDetail.severityFactors.length > 0 && (
-                    <section aria-label="Level of Danger factors" className="pbfp-modal-field">
-                      <label>Why this Level of Danger</label>
-                      <ul>{incidentDetail.severityFactors.map((factor, index) => <li key={`${index}-${factor}`}>{factor}</li>)}</ul>
-                    </section>
-                  )}
-
-                  <div className="pbfp-modal-grid">
                     <div className="pbfp-modal-field">
-                      <label>GPS Coordinates</label>
+                      <label><i className="fa-solid fa-crosshairs" aria-hidden="true" />GPS Coordinates</label>
                       <p className="is-measurement">{incidentDetail.latitude.toFixed(6)}, {incidentDetail.longitude.toFixed(6)}</p>
                     </div>
                     <div className="pbfp-modal-field">
-                      <label>Nearest Landmark</label>
-                      <p>{incidentDetail.landmark || 'None provided'}</p>
+                      <label><i className="fa-solid fa-truck-fast" aria-hidden="true" />Dispatch</label>
+                      <p>
+                        {incidentDetail.assignedStationCount} Station{incidentDetail.assignedStationCount === 1 ? '' : 's'}
+                        <span className="pbfp-field-sub">{incidentDetail.assignedRecipientCount} personnel notified</span>
+                      </p>
                     </div>
                   </div>
 
-                  <div className="pbfp-modal-grid">
-                    <div className="pbfp-modal-field">
-                      <label>Assigned Station Units</label>
-                      <p>{incidentDetail.assignedStationCount} Station{incidentDetail.assignedStationCount === 1 ? '' : 's'}</p>
-                    </div>
-                    <div className="pbfp-modal-field">
-                      <label>Active Responders Dispatched</label>
-                      <p>{incidentDetail.assignedRecipientCount} Personnel</p>
-                    </div>
-                  </div>
+                  <DangerFactors
+                    tone="tile"
+                    factors={incidentDetail.severityFactors}
+                    fireType={incidentDetail.fireType}
+                    fireTypes={incidentDetail.fireTypes}
+                    level={incidentDetail.calculatedSeverity}
+                    score={incidentDetail.severityScore}
+                  />
 
                   {/* Observers Situational Awareness */}
                   <h4 className="pbfp-modal-section-title">
