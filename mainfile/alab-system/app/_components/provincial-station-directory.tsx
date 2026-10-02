@@ -19,89 +19,12 @@ const pageStyles = `
     color: #1E293B;
   }
 
-  /* ========== HEADER CARD ========== */
-  .psd-header {
+  .psd-top-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 1.25rem;
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 1.25rem 1.6rem;
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
-  }
-
-  .psd-header-title-area {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
-  .psd-kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .psd-kicker-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    background: #FEF2F2;
-    color: #DB1B0D;
-    border: 1px solid #FEE2E2;
-    padding: 0.22rem 0.65rem;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .psd-kicker-emblem {
-    width: 16px;
-    height: 16px;
-    object-fit: contain;
-  }
-
-  .psd-kicker-dot {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: #CBD5E1;
-  }
-
-  .psd-kicker-text {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #64748B;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .psd-title {
-    font-size: 1.55rem;
-    font-weight: 850;
-    color: #0F172A;
-    margin: 0;
-    letter-spacing: -0.025em;
-    line-height: 1.2;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-  }
-
-  .psd-title-icon {
-    color: #DB1B0D;
-    font-size: 1.35rem;
-  }
-
-  .psd-subtitle {
-    font-size: 0.85rem;
-    color: #64748B;
-    margin: 0;
-    line-height: 1.45;
+    flex-wrap: wrap;
   }
 
   .psd-actions {
@@ -156,20 +79,6 @@ const pageStyles = `
     border: 1px solid transparent;
     font-family: inherit;
     white-space: nowrap;
-  }
-
-  .psd-btn-refresh {
-    background: #FFFFFF;
-    border-color: #D7E3F1;
-    color: #475569;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-  }
-
-  .psd-btn-refresh:hover:not(:disabled) {
-    background: #F8FAFC;
-    color: #0F172A;
-    border-color: #94A3B8;
-    transform: translateY(-1px);
   }
 
   .psd-btn-primary {
@@ -921,10 +830,9 @@ const pageStyles = `
   /* Responsive Design */
 
   @media (max-width: 680px) {
-    .psd-header {
+    .psd-top-row {
       flex-direction: column;
       align-items: stretch;
-      padding: 1.15rem;
     }
 
     .psd-actions {
@@ -948,7 +856,7 @@ const pageStyles = `
   }
 `;
 
-export function ProvincialStationDirectory() {
+export function ProvincialStationDirectory({ topTabs }: { topTabs?: React.ReactNode }) {
   const mutate = useManagementMutation();
   const {
     items: stations,
@@ -1147,47 +1055,18 @@ export function ProvincialStationDirectory() {
     <div className="psd-container">
       <style>{pageStyles}</style>
 
-      {/* Header Hub */}
-      <div className="psd-header">
-        <div className="psd-header-title-area">
-          <div className="psd-kicker">
-            <span className="psd-kicker-badge">
-              <img src="/images/bfp logo.png" alt="BFP Official Logo" className="psd-kicker-emblem" />
-              <span>PROVINCIAL COMMAND</span>
-            </span>
-            <span className="psd-kicker-dot" />
-            <span className="psd-kicker-text">ANTIQUE JURISDICTION</span>
-          </div>
-          <h1 className="psd-title">
-            <i className="fa-solid fa-truck-fast psd-title-icon" />
-            Provincial Fire Station Directory
-          </h1>
-          <p className="psd-subtitle">
-            Manage all municipal BFP fire stations, geographical coordinates, and deployment readiness across Antique.
-          </p>
-        </div>
-
+      <div className="psd-top-row">
+        {topTabs}
         <div className="psd-actions">
           {/* Provincial export trigger */}
           <ProvincialManagementToolbar exportOnly dataset="STATIONS" filters={filters} onFilterChange={() => {}} />
 
           <button
             type="button"
-            onClick={() => fetchStations()}
-            disabled={loading}
-            className="psd-btn psd-btn-refresh"
-            title="Refresh Directory"
-          >
-            <i className={`fa-solid fa-arrows-rotate ${loading ? 'fa-spin' : ''}`} />
-            <span>{loading ? 'Refreshing…' : 'Refresh'}</span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setIsCreating(true)}
             className="psd-btn psd-btn-primary"
           >
-            <i className="fa-solid fa-plus" />
+            <i className="fa-solid fa-plus" aria-hidden="true" />
             <span>Provision Station</span>
           </button>
         </div>

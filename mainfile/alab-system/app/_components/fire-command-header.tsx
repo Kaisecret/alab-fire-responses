@@ -11,6 +11,7 @@ type Props = {
   checking?: boolean;
   lastCheckedAt?: Date | null;
   error?: string | null;
+  live?: boolean;
   onRefresh?: () => void;
   children?: ReactNode;
 };
@@ -36,7 +37,7 @@ const styles = `
 const subscribe = () => () => {};
 const serverTarget = () => null;
 
-export function FireCommandHeader({ slotId, headingId, title, icon = "fa-fire-flame-curved", checking = false, lastCheckedAt = null, error, onRefresh, children }: Props) {
+export function FireCommandHeader({ slotId, headingId, title, icon = "fa-fire-flame-curved", checking = false, lastCheckedAt = null, error, onRefresh, live = !!onRefresh, children }: Props) {
   const target = useSyncExternalStore(subscribe, () => document.getElementById(slotId), serverTarget);
   const status = error ? "Live · update unavailable" : checking ? "Live · checking..." : lastCheckedAt ? "Live · checked just now" : "Live · connecting...";
   const header = <>
@@ -46,9 +47,9 @@ export function FireCommandHeader({ slotId, headingId, title, icon = "fa-fire-fl
         <span className="fire-command-icon" aria-hidden="true"><i className={`fa-solid ${icon}`} /></span>
         <h1 id={headingId}>{title}</h1>
       </div>
-      {(children || onRefresh) && <div className="fire-command-controls">
+      {(children || live || onRefresh) && <div className="fire-command-controls">
         {children}
-        {onRefresh && <span className={`fire-command-status${error ? " is-error" : ""}`} role="status" title={lastCheckedAt ? `Last checked ${lastCheckedAt.toLocaleTimeString()}` : undefined}>
+        {live && <span className={`fire-command-status${error ? " is-error" : ""}`} role="status" title={lastCheckedAt ? `Last checked ${lastCheckedAt.toLocaleTimeString()}` : undefined}>
           <span className="fire-command-dot" aria-hidden="true" />{status}
         </span>}
         {onRefresh && <button className="fire-command-refresh" type="button" onClick={onRefresh} disabled={checking} aria-label="Live refresh" title="Live refresh">

@@ -1,11 +1,11 @@
 'use client';
 
 import React, { Suspense, useMemo } from 'react';
-import Link from 'next/link';
 import { useProvincialAssistanceFeed } from '../../_components/use-provincial-assistance-feed';
 import { BfpDataLoader } from '../../_components/bfp-data-loader';
 import { ProvincialAlarmPanel } from '../../_components/provincial-alarm-panel';
 import { StatCards } from "../../_components/municipal-stat-cards";
+import { FireCommandHeader } from '../../_components/fire-command-header';
 
 const pageStyles = `
   .pbfp-aid-page {
@@ -17,132 +17,6 @@ const pageStyles = `
     background: #F8FAFC;
     min-height: 100%;
     color: #0F172A;
-  }
-
-  /* Header Hub */
-  .pbfp-aid-header-hub {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-    padding-bottom: 0.25rem;
-  }
-
-  .pbfp-aid-header-left {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-  }
-
-  .pbfp-aid-icon-badge {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: #DC2626;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #FFFFFF;
-    font-size: 1.15rem;
-    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
-    flex-shrink: 0;
-  }
-
-  .pbfp-aid-header-title-box h1 {
-    font-size: 1.3rem;
-    font-weight: 850;
-    color: #0F172A;
-    margin: 0;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .pbfp-live-check {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.72rem;
-    font-weight: 750;
-    color: #065F46;
-    background: #ECFDF5;
-    border: 1px solid #A7F3D0;
-    padding: 0.18rem 0.55rem;
-    border-radius: 999px;
-  }
-
-  .pbfp-live-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #10B981;
-    box-shadow: 0 0 6px #10B981;
-    animation: pbfp-live-pulse 2s infinite ease-in-out;
-  }
-
-  @keyframes pbfp-live-pulse {
-    0% { transform: scale(0.9); opacity: 0.8; }
-    50% { transform: scale(1.3); opacity: 1; }
-    100% { transform: scale(0.9); opacity: 0.8; }
-  }
-
-  .pbfp-aid-header-title-box p {
-    font-size: 0.78rem;
-    color: #64748B;
-    margin: 0.15rem 0 0;
-    font-weight: 500;
-  }
-
-  .pbfp-aid-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-  }
-
-  .pbfp-aid-refresh-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.48rem 0.9rem;
-    background: #FFFFFF;
-    border: 1px solid #CBD5E1;
-    border-radius: 8px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #334155;
-    cursor: pointer;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-    transition: all 0.15s ease;
-  }
-
-  .pbfp-aid-refresh-btn:hover {
-    background: #F8FAFC;
-    border-color: #94A3B8;
-    color: #0F172A;
-  }
-
-  .pbfp-btn-gis {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.48rem 1rem;
-    background: #0F172A;
-    color: #FFFFFF;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 0.78rem;
-    text-decoration: none;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
-    transition: all 0.18s ease;
-  }
-
-  .pbfp-btn-gis:hover {
-    background: #1E293B;
-    transform: translateY(-1px);
   }
 
   /* ========== 4 PASTEL KPI METRIC CARDS (DASHBOARD STYLE - COMPACT) ========== */
@@ -678,9 +552,9 @@ const pageStyles = `
 function AssistanceRequestsContent() {
   const {
     requests,
-    isRefreshing,
-    lastUpdated,
-    refresh,
+    checking,
+    error,
+    lastCheckedAt,
   } = useProvincialAssistanceFeed();
 
   // Metrics computation
@@ -701,44 +575,7 @@ function AssistanceRequestsContent() {
     <>
       <style>{pageStyles}</style>
       <div className="pbfp-aid-page">
-        {/* Header Hub */}
-        <div className="pbfp-aid-header-hub">
-          <div className="pbfp-aid-header-left">
-            <div className="pbfp-aid-icon-badge">
-              <i className="fa-solid fa-handshake-angle" />
-            </div>
-            <div className="pbfp-aid-header-title-box">
-              <h1>
-                Inter-Municipality Mutual Aid Coordination
-                <span className="pbfp-live-check">
-                  <span className="pbfp-live-dot" />
-                  Live (5s)
-                </span>
-              </h1>
-            </div>
-          </div>
-
-          <div className="pbfp-aid-header-actions">
-            {lastUpdated && (
-              <span style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: 600 }}>
-                Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-              </span>
-            )}
-            <button
-              className="pbfp-aid-refresh-btn"
-              onClick={() => void refresh(true)}
-              disabled={isRefreshing}
-              title="Refresh requests feed"
-            >
-              <i className={`fa-solid fa-arrows-rotate ${isRefreshing ? 'fa-spin' : ''}`} />
-              Refresh
-            </button>
-            <Link href="/provincial-bfp/gis-map" className="pbfp-btn-gis" title="View Antique GIS Map">
-              <i className="fa-solid fa-map-location-dot" />
-              GIS Map
-            </Link>
-          </div>
-        </div>
+        <FireCommandHeader slotId="provincial-fire-command-header" title="Inter-Municipality Mutual Aid Coordination" icon="fa-handshake-angle" live checking={checking} lastCheckedAt={lastCheckedAt} error={error} />
 
         {/* 4 Tactical KPI Cards (Dashboard Style) */}
         <StatCards

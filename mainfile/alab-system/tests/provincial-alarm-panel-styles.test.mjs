@@ -51,7 +51,7 @@ test("the escalations sit under the page heading, not above it", () => {
    * the moment a request arrived: the page appeared to turn into a different
    * one a few seconds after it loaded.
    */
-  const headerAt = page.indexOf("pbfp-aid-header-hub");
+  const headerAt = page.indexOf("<FireCommandHeader");
   const panelAt = page.indexOf("<ProvincialAlarmPanel />");
   assert.ok(headerAt > 0 && panelAt > 0);
   assert.ok(panelAt > headerAt, "the heading is rendered before the escalations");

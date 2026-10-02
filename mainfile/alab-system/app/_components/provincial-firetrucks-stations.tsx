@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { ProvincialFireTrucks } from "./provincial-fire-trucks";
 import { ProvincialStationDirectory } from "./provincial-station-directory";
+import { FireCommandHeader } from "./fire-command-header";
 
 const styles = `
   .prov-fleet-tabs { display:inline-flex; gap:.2rem; margin:0; padding:.28rem; border:1px solid #cbd9e8; border-radius:12px; background:#fff; box-shadow:0 5px 14px rgba(15,23,42,.06); font-family:'Plus Jakarta Sans',sans-serif; }
@@ -59,11 +60,11 @@ export function ProvincialFiretrucksStations() {
 
   return <>
     <style>{styles}</style>
-    {view === "trucks" ? null : tabs}
+    <FireCommandHeader slotId="provincial-fire-command-header" title={view === "stations" ? "Provincial Fire Station Directory" : "Fire trucks"} icon={view === "stations" ? "fa-building-shield" : "fa-truck-moving"} />
     <div id="prov-fleet-panel" role="tabpanel" aria-labelledby={view === "trucks" ? "prov-fleet-tab-trucks" : "prov-fleet-tab-stations"}>
       {view === "trucks"
         ? <ProvincialFireTrucks initialMunicipalityId={searchParams.get("municipalityId") ?? ""} topTabs={tabs} />
-        : <ProvincialStationDirectory />}
+        : <ProvincialStationDirectory topTabs={tabs} />}
     </div>
   </>;
 }
