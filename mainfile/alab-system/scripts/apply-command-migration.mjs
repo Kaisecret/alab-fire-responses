@@ -2,6 +2,12 @@ import { readFile } from "node:fs/promises";
 import nextEnv from "@next/env";
 import pg from "pg";
 
+// Preview deployments compile the app without applying release migrations.
+if (process.env.VERCEL_ENV === "preview") {
+  console.log("Skipping release migrations for Vercel preview deployment.");
+  process.exit(0);
+}
+
 nextEnv.loadEnvConfig(process.cwd());
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL missing");
