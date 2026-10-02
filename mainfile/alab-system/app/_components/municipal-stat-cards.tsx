@@ -4,9 +4,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 /*
- * Municipal summary cards follow the original Provincial BFP card design:
- * colored backgrounds, white icon tiles, category badges, and large counts.
- * Links and filters retain their existing destinations and pressed states.
+ * Municipal summary cards: solid color gradients with white text, a frosted
+ * icon tile, a soft decorative wave and a colored shadow. Links and filters
+ * keep their existing destinations and pressed states.
  */
 
 export type StatTone = "red" | "emerald" | "blue" | "amber" | "violet" | "slate";
@@ -30,37 +30,62 @@ export type StatItem = {
 
 export const municipalStatCardStyles = `
   .mstat-row { display: grid; grid-template-columns: repeat(var(--mstat-columns, 4), minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 1rem; }
-  .mstat-card { --mstat-start: #F1F5F9; --mstat-end: #E2E8F0; --mstat-border: #CBD5E1; --mstat-ink: #475569; --mstat-tag-bg: #E2E8F0; --mstat-tag-ink: #334155; position: relative; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; min-height: 138px; box-sizing: border-box; padding: 10px 1.2rem 8px; border: 1.5px solid var(--mstat-border); border-radius: 14px; background: linear-gradient(145deg, var(--mstat-start) 0%, var(--mstat-end) 100%); color: #0F172A; font: inherit; text-align: left; text-decoration: none; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06); transition: border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
-  .mstat-card.red { --mstat-start: #FFE8E8; --mstat-end: #FFD6D6; --mstat-border: #FFBEBE; --mstat-ink: #DC2626; --mstat-tag-bg: #FDE8E8; --mstat-tag-ink: #991B1B; }
-  .mstat-card.amber { --mstat-start: #FFF5DE; --mstat-end: #FFE8BA; --mstat-border: #FFDC99; --mstat-ink: #D97706; --mstat-tag-bg: #FEF3C7; --mstat-tag-ink: #92400E; }
-  .mstat-card.blue { --mstat-start: #E6EFFF; --mstat-end: #D2E3FD; --mstat-border: #B8D3FD; --mstat-ink: #2563EB; --mstat-tag-bg: #DBEAFE; --mstat-tag-ink: #1E40AF; }
-  .mstat-card.violet { --mstat-start: #F0E8FF; --mstat-end: #E2D3FD; --mstat-border: #D0BCFD; --mstat-ink: #7C3AED; --mstat-tag-bg: #EDE9FE; --mstat-tag-ink: #5B21B6; }
-  .mstat-card.emerald { --mstat-start: #E3F8ED; --mstat-end: #CEF2DE; --mstat-border: #B1ECC8; --mstat-ink: #059669; --mstat-tag-bg: #D1FAE5; --mstat-tag-ink: #065F46; }
+  .mstat-card {
+    --mstat-start: #64748B; --mstat-end: #334155; --mstat-glow: rgba(51, 65, 85, 0.45);
+    position: relative; isolation: isolate; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    min-width: 0; min-height: 138px; box-sizing: border-box; padding: 12px 1.15rem 10px;
+    border: 0; border-radius: 16px;
+    background: linear-gradient(135deg, var(--mstat-start) 0%, var(--mstat-end) 100%);
+    color: #FFFFFF; font: inherit; text-align: left; text-decoration: none;
+    box-shadow: 0 16px 30px -16px var(--mstat-glow), 0 3px 8px rgba(15, 23, 42, 0.08);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  /* Colors chosen so white text keeps readable contrast across the gradient. */
+  .mstat-card.red { --mstat-start: #EF4444; --mstat-end: #B91C1C; --mstat-glow: rgba(185, 28, 28, 0.55); }
+  .mstat-card.amber { --mstat-start: #E58A0F; --mstat-end: #B45309; --mstat-glow: rgba(180, 83, 9, 0.5); }
+  .mstat-card.blue { --mstat-start: #3B82F6; --mstat-end: #1D4ED8; --mstat-glow: rgba(29, 78, 216, 0.5); }
+  .mstat-card.violet { --mstat-start: #8B5CF6; --mstat-end: #6D28D9; --mstat-glow: rgba(109, 40, 217, 0.5); }
+  .mstat-card.emerald { --mstat-start: #10A574; --mstat-end: #047857; --mstat-glow: rgba(4, 120, 87, 0.5); }
+  .mstat-card::before { content: ""; position: absolute; z-index: -1; top: -45%; right: -18%; width: 70%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 70%); pointer-events: none; }
+  .mstat-wave { position: absolute; z-index: -1; right: 0; bottom: 30px; width: 46%; height: 44px; pointer-events: none; opacity: 0.85; }
   a.mstat-card, button.mstat-card { cursor: pointer; }
-  a.mstat-card:hover, button.mstat-card:hover { border-color: var(--mstat-ink); transform: translateY(-3px); box-shadow: 0 10px 22px -4px rgba(15, 23, 42, 0.16); }
-  .mstat-card:focus-visible { outline: 3px solid rgba(37, 99, 235, 0.3); outline-offset: 2px; }
-  .mstat-card.is-active { border-color: var(--mstat-ink); box-shadow: 0 0 0 1px var(--mstat-ink), 0 8px 24px rgba(15, 23, 42, 0.08); }
-  .mstat-header { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; min-width: 0; margin-bottom: 3px; }
-  .mstat-icon { flex: 0 0 auto; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(255, 255, 255, 0.95); border-radius: 10px; background: #FFFFFF; color: var(--mstat-ink); font-size: 1.05rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
-  .mstat-tag { min-width: 0; overflow: hidden; padding: 0.2rem 0.5rem; border-radius: 6px; background: var(--mstat-tag-bg); color: var(--mstat-tag-ink); font-size: 0.65rem; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; text-overflow: ellipsis; }
-  .mstat-tag i { margin-right: 0.25rem; }
+  a.mstat-card:hover, button.mstat-card:hover { transform: translateY(-3px); box-shadow: 0 22px 36px -16px var(--mstat-glow), 0 4px 10px rgba(15, 23, 42, 0.1); }
+  .mstat-card:focus-visible { outline: 3px solid var(--mstat-end); outline-offset: 3px; }
+  .mstat-card.is-active { outline: 3px solid var(--mstat-start); outline-offset: 3px; }
+  .mstat-header { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; min-width: 0; margin-bottom: 4px; }
+  .mstat-icon { flex: 0 0 auto; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 11px; background: rgba(255, 255, 255, 0.2); color: #FFFFFF; font-size: 1.02rem; backdrop-filter: blur(4px); }
+  .mstat-tag { min-width: 0; overflow: hidden; padding: 0.22rem 0.55rem; border-radius: 999px; background: rgba(255, 255, 255, 0.18); color: #FFFFFF; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; text-overflow: ellipsis; }
+  .mstat-tag i { margin-right: 0.3rem; opacity: 0.9; }
   .mstat-body { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; margin: 0.15rem 0 0.1rem; }
-  .mstat-value { display: flex; align-items: baseline; gap: 0.25rem; font-size: 1.85rem; font-weight: 900; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-  .mstat-value small { color: #64748B; font-size: 0.82rem; font-weight: 700; letter-spacing: 0; }
-  .mstat-label { color: #475569; font-size: 0.69rem; font-weight: 750; line-height: 1.35; text-transform: uppercase; letter-spacing: 0.03em; overflow-wrap: anywhere; }
-  .mstat-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 1.5rem; margin-top: 3px; padding-top: 4px; border-top: 1px solid var(--mstat-border); color: var(--mstat-ink); font-size: 0.7rem; font-weight: 600; line-height: 1.4; }
-  .mstat-footer i { flex: 0 0 auto; font-size: 0.72rem; }
-  .mstat-skel { display: inline-block; width: 2.5rem; height: 1.75rem; border-radius: 6px; background: linear-gradient(90deg, rgba(255,255,255,0.3) 25%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.3) 75%); background-size: 200% 100%; animation: mstatShimmer 1.4s ease-in-out infinite; }
+  .mstat-value { display: flex; align-items: baseline; gap: 0.25rem; font-size: 1.9rem; font-weight: 900; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+  .mstat-value small { color: rgba(255, 255, 255, 0.82); font-size: 0.85rem; font-weight: 700; letter-spacing: 0; }
+  .mstat-label { color: rgba(255, 255, 255, 0.92); font-size: 0.7rem; font-weight: 800; line-height: 1.35; text-transform: uppercase; letter-spacing: 0.04em; overflow-wrap: anywhere; }
+  .mstat-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 1.5rem; margin-top: 4px; padding-top: 5px; border-top: 1px solid rgba(255, 255, 255, 0.24); color: rgba(255, 255, 255, 0.92); font-size: 0.7rem; font-weight: 650; line-height: 1.4; }
+  .mstat-footer i { flex: 0 0 auto; font-size: 0.72rem; transition: transform 0.2s ease; }
+  a.mstat-card:hover .mstat-footer i, button.mstat-card:hover .mstat-footer i { transform: translateX(3px); }
+  .mstat-skel { display: inline-block; width: 2.5rem; height: 1.75rem; border-radius: 6px; background: linear-gradient(90deg, rgba(255,255,255,0.18) 25%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0.18) 75%); background-size: 200% 100%; animation: mstatShimmer 1.4s ease-in-out infinite; }
   @keyframes mstatShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
   @media (max-width: 1024px) { .mstat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 640px) { .mstat-row { gap: 0.75rem; } .mstat-card { padding: 8px 0.85rem 6px; } .mstat-icon { width: 32px; height: 32px; font-size: 0.95rem; } .mstat-tag { padding: 0.2rem 0.3rem; font-size: 0.6rem; } .mstat-value { font-size: 1.7rem; } }
+  @media (max-width: 640px) { .mstat-row { gap: 0.75rem; } .mstat-card { padding: 10px 0.85rem 8px; min-height: 124px; } .mstat-icon { width: 32px; height: 32px; font-size: 0.95rem; } .mstat-tag { padding: 0.2rem 0.4rem; font-size: 0.58rem; } .mstat-value { font-size: 1.7rem; } .mstat-wave { display: none; } }
   @media (max-width: 360px) { .mstat-row { grid-template-columns: minmax(0, 1fr); } }
   @media (prefers-reduced-motion: reduce) { .mstat-skel { animation: none; } .mstat-card { transition: none; } a.mstat-card:hover, button.mstat-card:hover { transform: none; } }
 `;
 
+/** A soft decorative wave; it is not a chart and carries no data. */
+function Wave() {
+  return (
+    <svg className="mstat-wave" viewBox="0 0 160 56" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <path d="M0 44 C 22 44, 30 20, 52 24 S 84 46, 106 30 S 140 6, 160 12 L 160 56 L 0 56 Z" fill="rgba(255,255,255,0.10)" />
+      <path d="M0 44 C 22 44, 30 20, 52 24 S 84 46, 106 30 S 140 6, 160 12" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
 function CardContent({ item }: { item: StatItem }) {
   return (
     <>
+      <Wave />
       <span className="mstat-header">
         <span className="mstat-icon" aria-hidden="true"><i className={`fa-solid ${item.icon}`} /></span>
         <span className="mstat-tag" title={item.badge ?? item.label}><i className={`fa-solid ${item.icon}`} aria-hidden="true" />{item.badge ?? item.label}</span>
