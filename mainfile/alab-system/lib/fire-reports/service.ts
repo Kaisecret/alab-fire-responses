@@ -21,7 +21,7 @@ import {
   type BuildingDensityConfidence,
   type BuildingDensityStatus,
 } from "./building-density";
-import { assessReportDanger } from "./danger-assessment";
+import { assessMultiTypeDanger } from "./danger-assessment";
 import { findOpenIncidentNear, findOwnOpenReportNear } from "./duplicates";
 
 export type PhotoMetadata = { storageKey: string; originalFileName: string; mimeType: string; fileSizeBytes: number };
@@ -79,8 +79,9 @@ export async function createResidentFireReport(userId: string, input: FireReport
     }
 
     const densityAssessment = await assessBuildingDensity(client, input.latitude, input.longitude);
-    const { densityContext, assessment: severityAssessment } = await assessReportDanger(client, {
-      fireType: input.fireType,
+    // Each selected kind of fire is scored with its own model; the highest
+    // score is the Level of Danger and its type becomes the main fire type.
+    const { primaryFireType, densityContext, assessment: severityAssessment } = await assessMultiTypeDanger(client, {
       structureMaterial: input.structureMaterial,
       houseDensity: input.houseDensity,
       routeAccessibility: input.routeAccessibility,
@@ -88,7 +89,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
       windDirectionDeg: weatherWindDirection ?? undefined,
       temperatureC: weatherTemperature ?? undefined,
       relativeHumidity: weatherHumidity ?? undefined,
-    }, densityAssessment, input.latitude, input.longitude);
+    }, input.fireTypes, densityAssessment, input.latitude, input.longitude);
 
     const reportId = randomUUID();
     const reference = referenceNumber();
@@ -114,10 +115,10 @@ export async function createResidentFireReport(userId: string, input: FireReport
         weather_wind_speed, weather_wind_direction, weather_wind_condition, calculated_severity, severity_score, severity_factors,
         detected_building_density, building_density_confidence, building_density_building_count,
         building_density_minimum_gap_meters, building_density_source, building_density_assessed_at,
-        submitted_at, updated_at, duplicate_of_report_id
-      ) values ($1,$2,$3,$4,$5,$6,$7,$37,$8,$9,$10,'GPS',$11,true,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$36,$38)`,
+        submitted_at, updated_at, duplicate_of_report_id, fire_types
+      ) values ($1,$2,$3,$4,$5,$6,$7,$37,$8,$9,$10,'GPS',$11,true,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$36,$38,$39::text[])`,
       [
-        reportId, reference, resident.id, resident.name, resident.phone, input.fireType, input.description || "No description provided.",
+        reportId, reference, resident.id, resident.name, resident.phone, primaryFireType, input.description || "No description provided.",
         input.latitude, input.longitude, input.locationAccuracy,
         barangay.needsVerification ? "BARANGAY_NEEDS_VERIFICATION" : "DETECTED", municipalityId, barangay.barangayId,
         `${barangay.barangayName}, ${detectedMunicipality}, Antique`, input.landmark || null, audit.ipAddress, audit.deviceSummary,
@@ -126,7 +127,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
         weatherWindCondition || null, severityAssessment.level, severityAssessment.score, JSON.stringify(severityAssessment.factors),
         densityAssessment.status, densityAssessment.confidence, densityAssessment.buildingCount,
         densityAssessment.minimumGapMeters, densityAssessment.source, densityAssessment.assessedAt,
-        now, initialStatus, linkedIncident?.id ?? null,
+        now, initialStatus, linkedIncident?.id ?? null, input.fireTypes,
       ],
     );
     for (const evidence of densityAssessment.evidence) {
@@ -234,7 +235,7 @@ export async function updateResidentReportTacticalDetails(
 ) {
   return withTransaction(async (client) => {
     const current = await client.query<{
-      id: string; fire_type: string; structure_material: string | null; house_density: string | null;
+      id: string; fire_type: string; fire_types: string[] | null; structure_material: string | null; house_density: string | null;
       latitude: string; longitude: string;
       reported_house_density: string | null; detected_building_density: BuildingDensityStatus;
       building_density_confidence: BuildingDensityConfidence; building_density_building_count: number | null;
@@ -243,7 +244,7 @@ export async function updateResidentReportTacticalDetails(
       route_accessibility: string | null; weather_wind_speed: string | null; weather_wind_direction: string | null;
       weather_temperature: string | null; weather_humidity: string | null;
     }>(
-      `select fr.id, fr.fire_type, fr.structure_material, fr.reported_house_density, fr.house_density,
+      `select fr.id, fr.fire_type, fr.fire_types, fr.structure_material, fr.reported_house_density, fr.house_density,
               fr.latitude, fr.longitude,
               fr.detected_building_density, fr.building_density_confidence, fr.building_density_building_count,
               fr.building_density_minimum_gap_meters, fr.building_density_source, fr.building_density_assessed_at,
@@ -275,8 +276,7 @@ export async function updateResidentReportTacticalDetails(
       assessedAt: row.building_density_assessed_at ? new Date(row.building_density_assessed_at) : new Date(),
       evidence: [],
     };
-    const { densityContext, assessment: reassessment } = await assessReportDanger(client, {
-      fireType: row.fire_type,
+    const { primaryFireType, densityContext, assessment: reassessment } = await assessMultiTypeDanger(client, {
       structureMaterial: newMaterial,
       houseDensity: reportedDensity,
       routeAccessibility: newRoute,
@@ -284,11 +284,12 @@ export async function updateResidentReportTacticalDetails(
       windDirectionDeg: row.weather_wind_direction != null ? Number(row.weather_wind_direction) : undefined,
       temperatureC: row.weather_temperature != null ? Number(row.weather_temperature) : undefined,
       relativeHumidity: row.weather_humidity != null ? Number(row.weather_humidity) : undefined,
-    }, densityAssessment, Number(row.latitude), Number(row.longitude));
+    }, row.fire_types?.length ? row.fire_types : [row.fire_type], densityAssessment, Number(row.latitude), Number(row.longitude));
 
     await client.query(
       `update fire_reports
-          set structure_material = $1,
+          set fire_type = $9,
+              structure_material = $1,
               reported_house_density = $2,
               house_density = $3,
               route_accessibility = $4,
@@ -298,11 +299,13 @@ export async function updateResidentReportTacticalDetails(
               updated_at = now()
         where id = $8`,
       [newMaterial, reportedDensity, densityContext.effectiveHouseDensity, newRoute,
-        reassessment.level, reassessment.score, JSON.stringify(reassessment.factors), reportId]
+        reassessment.level, reassessment.score, JSON.stringify(reassessment.factors), reportId, primaryFireType]
     );
 
     return {
       id: reportId,
+      fireType: primaryFireType,
+      fire_type: primaryFireType,
       calculatedSeverity: reassessment.level,
       severityScore: reassessment.score,
       severityFactors: reassessment.factors,
@@ -329,8 +332,8 @@ export async function findResidentReport(userId: string, reportId: string) {
     weather_temperature: string | null; weather_humidity: string | null; weather_wind_speed: string | null;
     weather_wind_direction: string | null; weather_wind_condition: string | null;
     calculated_severity: string | null; severity_score: number | null; severity_factors: string[] | null;
-    duplicate_of_report_id: string | null;
-  }>(`select fr.id, fr.reference_number, fr.status, fr.duplicate_of_report_id, fr.fire_type, fr.description, fr.nearest_landmark, fr.latitude, fr.longitude, fr.submitted_at,
+    duplicate_of_report_id: string | null; fire_types: string[] | null;
+  }>(`select fr.id, fr.reference_number, fr.status, fr.duplicate_of_report_id, fr.fire_type, coalesce(fr.fire_types, array[fr.fire_type]) as fire_types, fr.description, fr.nearest_landmark, fr.latitude, fr.longitude, fr.submitted_at,
              m.name as municipality, b.name as barangay, fr.resident_profile_id,
              fr.structure_material, fr.reported_house_density, fr.house_density, fr.route_accessibility,
              fr.weather_temperature, fr.weather_humidity, fr.weather_wind_speed, fr.weather_wind_direction, fr.weather_wind_condition,

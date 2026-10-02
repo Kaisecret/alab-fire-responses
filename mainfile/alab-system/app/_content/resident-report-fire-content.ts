@@ -213,6 +213,9 @@ export const reportFireStyles = `
   .type-btn { display: flex; min-height: 7.3rem; flex-direction: column; align-items: center; justify-content: center; gap: .65rem; padding: .75rem .45rem; border: 1px solid #E1E6ED; border-radius: 1rem; background: #fff; color: #607084; font-size: .78rem; font-weight: 800; line-height: 1.25; text-align: center; cursor: pointer; transition: transform .18s ease, border-color .18s ease, color .18s ease, background .18s ease, box-shadow .18s ease; }
   .type-btn svg { width: 1.7rem; height: 1.7rem; }
   .type-btn:hover { transform: translateY(-2px); border-color: #F0AAA3; color: var(--report-red); box-shadow: 0 .75rem 1.5rem rgba(16, 34, 49, .07); }
+  .type-multi-note { margin: -.35rem 0 .8rem; color: #64748B; font-size: .78rem; font-weight: 650; }
+  .type-btn { position: relative; }
+  .type-btn.selected::after { content: ""; position: absolute; top: .5rem; right: .5rem; width: 1.15rem; height: 1.15rem; border-radius: 50%; background: var(--report-red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center / .7rem no-repeat; box-shadow: 0 2px 6px rgba(219, 27, 13, .35); }
   .type-btn.selected { border-color: var(--report-red); color: var(--report-red); background: linear-gradient(145deg, #FFF7F6, #FFFDFC); box-shadow: inset 0 0 0 1px rgba(219, 27, 13, .08), 0 .75rem 1.5rem rgba(219, 27, 13, .08); }
 
   /* Quick Tactical Toggle Pills */
@@ -957,7 +960,8 @@ export const reportFireMarkup = `
       </div>
 
       <section class="step-section" data-step-fire-type>
-        <div class="step-title"><span class="step-number">3</span> WHAT IS BURNING? <span class="step-hint" data-fire-type-hint style="display:none; color:#DC2626; font-size:0.75rem; font-weight:800; margin-left:0.5rem;">• Pumili ng isa (Need to click 1)</span></div>
+        <div class="step-title"><span class="step-number">3</span> WHAT IS BURNING? <span class="step-hint" data-fire-type-hint style="display:none; color:#DC2626; font-size:0.75rem; font-weight:800; margin-left:0.5rem;">• Pumili ng kahit isa (Select at least 1)</span></div>
+        <p class="type-multi-note" data-fire-type-note>Tap everything that is burning (up to 3).</p>
         <div class="type-grid" role="list" aria-label="Fire type">
           <button type="button" class="type-btn" data-fire-type="HOUSE_BUILDING" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>House/Building</button>
           <button type="button" class="type-btn" data-fire-type="GRASS" role="listitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8M8 20v-5M16 20v-6M4 20v-3M20 20v-4"/></svg>Grass Fire</button>

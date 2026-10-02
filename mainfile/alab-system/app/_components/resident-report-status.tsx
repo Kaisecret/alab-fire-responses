@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 import { useResidentLanguage, getLocalizedStatusLabel, type ResidentLanguage } from "../_lib/resident-i18n";
-import { situationForFireType } from "../../lib/fire-reports/fire-type-situation";
+import { situationForFireTypes } from "../../lib/fire-reports/fire-type-situation";
 import { SharedIncidentCard, SharedIncidentPopup, type SharedIncident } from "./resident-shared-incident";
 
 type Report = {
@@ -13,6 +13,8 @@ type Report = {
   reference_number: string;
   status: FireReportStatus;
   fire_type: string;
+  /** Every kind of fire reported; fire_type is the one that set the level. */
+  fire_types?: string[] | null;
   description: string;
   nearest_landmark: string | null;
   municipality: string;
@@ -893,7 +895,8 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   const photoUrl = currentPhoto?.url || "";
   const windSpeed = Number(report.weather_wind_speed) || 0;
   const severity = report.calculated_severity || "UNASSESSED";
-  const situationChoices = situationForFireType(report.fire_type);
+  const fireTypes = report.fire_types?.length ? report.fire_types : [report.fire_type];
+  const situationChoices = situationForFireTypes(fireTypes);
   const hasPhotos = photos.length > 0;
 
   return (
@@ -1003,7 +1006,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
               </div>
             )}
 
-            {report.fire_type === "HOUSE_BUILDING" && <div className="tactical-group">
+            {fireTypes.includes("HOUSE_BUILDING") && <div className="tactical-group">
               <div className="tactical-group-header">
                 <span className="tactical-label">Building material:</span>
                 <span className={`tactical-select-guide ${report.structure_material ? "is-done" : ""}`}>
@@ -1114,8 +1117,8 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 >
                   <span className="tactical-btn-icon icon-alley"><i className="fa-solid fa-person-walking" /></span>
                   <span className="tactical-btn-content">
-                    <strong>{report.fire_type === "VEHICLE" ? "Narrow street" : report.fire_type === "HOUSE_BUILDING" ? "Narrow alley" : "Difficult road access"}</strong>
-                    <small>{report.fire_type === "VEHICLE" ? "Fire trucks may have difficulty passing" : report.fire_type === "HOUSE_BUILDING" ? "A fire truck may not fit" : "Road is blocked or ends before the fire"}</small>
+                    <strong>{situationChoices.route === "NARROW_STREET" ? "Narrow street" : situationChoices.route === "INTERIOR_ALLEY_ESKINITA" ? "Narrow alley" : "Difficult road access"}</strong>
+                    <small>{situationChoices.route === "NARROW_STREET" ? "Fire trucks may have difficulty passing" : situationChoices.route === "INTERIOR_ALLEY_ESKINITA" ? "A fire truck may not fit" : "Road is blocked or ends before the fire"}</small>
                   </span>
                   <span className="tactical-radio-dot" aria-hidden="true" />
                 </button>
@@ -1182,7 +1185,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                 icon="home"
               />
               <Info label={t("thDateReported")} value={formatDate(report.submitted_at)} icon="calendar" />
-              <Info label={lang === "en" ? "Fire Type" : lang === "hil" ? "Klase sang Kalayo" : "Uri ng Sunog"} value={formatFireType(report.fire_type)} icon="fire" />
+              <Info label={lang === "en" ? "Fire Type" : lang === "hil" ? "Klase sang Kalayo" : "Uri ng Sunog"} value={fireTypes.map(formatFireType).join(" + ")} icon="fire" />
             </div>
           </section>
 

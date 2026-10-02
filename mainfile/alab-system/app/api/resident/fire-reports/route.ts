@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   try {
     form = await request.formData();
     input = validateFireReportInput({
-      fireType: form.get("fireType"), latitude: form.get("latitude"), longitude: form.get("longitude"),
+      fireType: form.get("fireType"), fireTypes: form.getAll("fireTypes"), latitude: form.get("latitude"), longitude: form.get("longitude"),
       locationAccuracy: form.get("locationAccuracy"), municipality: form.get("municipality"), barangay: form.get("barangay"),
       landmark: form.get("landmark"), description: form.get("description"),
       structureMaterial: form.get("structureMaterial"), houseDensity: form.get("houseDensity"),

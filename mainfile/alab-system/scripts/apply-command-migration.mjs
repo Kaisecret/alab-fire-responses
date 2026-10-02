@@ -56,6 +56,13 @@ const releaseMigrations = [
        where table_schema = 'public' and table_name = 'users' and column_name = 'email'
     ), true) as applied`,
   },
+  {
+    version: "20261002120000",
+    name: "add_fire_report_fire_types",
+    appliedCheck: `select exists(
+      select 1 from pg_constraint where conname = 'fire_reports_fire_types_check'
+    ) as applied`,
+  },
 ];
 
 const client = new pg.Client({

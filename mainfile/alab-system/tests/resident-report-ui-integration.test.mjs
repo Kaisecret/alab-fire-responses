@@ -70,7 +70,7 @@ test("resident fire report requires user selection for burning type and requires
   // Fire type is not preselected
   assert.doesNotMatch(content, /class="type-btn selected" data-fire-type="HOUSE_BUILDING"/);
   assert.match(content, /data-fire-type-hint/);
-  assert.match(page, /if \(!fireType\) \{/);
+  assert.match(page, /if \(fireTypes\.length === 0\) \{/);
 
   // Photo required
   assert.match(content, /REQUIRED · AT LEAST 1 PHOTO/);

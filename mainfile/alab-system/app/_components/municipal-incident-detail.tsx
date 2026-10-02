@@ -25,6 +25,8 @@ type Incident = {
   assistanceRequests?: AssistanceRequestSummary[];
   alarmStatus?: IncidentAlarmStatus | null;
   fireType: string;
+  /** Every kind of fire the resident reported; fireType set the danger level. */
+  fireTypes?: string[] | null;
   description: string;
   landmark: string | null;
   latitude: number;
@@ -2064,6 +2066,7 @@ export function MunicipalIncidentDetail({
   }
 
   const isPhoneReport = incident.reportSource === "PHONE_CALL";
+  const reportedFireTypes = incident.fireTypes?.length ? incident.fireTypes : [incident.fireType];
   /*
    * A response is under way from the moment stations are dispatched until the
    * incident closes. Testing for RESPONDING alone meant an incident whose crews
@@ -2121,7 +2124,7 @@ export function MunicipalIncidentDetail({
               {isPhoneReport && <span className="mbfp-hero-ref-tag">From Phone Caller</span>}
               <span className="mbfp-hero-firetype-pill">
                 <i className="fa-solid fa-fire" />
-                <span>{incident.fireType === "OTHER" ? "Rubbish Fire" : incident.fireType.replaceAll("_", " ")}</span>
+                <span>{reportedFireTypes.map((type) => (type === "OTHER" ? "Rubbish Fire" : type.replaceAll("_", " "))).join(" + ")}</span>
               </span>
               {incident.calculatedSeverity && (
                 <span className={`mbfp-severity-hero-badge ${incident.calculatedSeverity}`}>
@@ -2221,7 +2224,7 @@ export function MunicipalIncidentDetail({
 
               <div className="mbfp-tactical-metrics-grid">
                 {/* House proximity is relevant to structural, vehicle, and rubbish fires. */}
-                {["HOUSE_BUILDING", "VEHICLE", "OTHER"].includes(incident.fireType) && <div className={`mbfp-metric-item ${incident.houseDensity === "PACKED_MAGKAKADIKIT" ? "alert-conflagration" : ""}`}>
+                {reportedFireTypes.some((type) => ["HOUSE_BUILDING", "VEHICLE", "OTHER"].includes(type)) && <div className={`mbfp-metric-item ${incident.houseDensity === "PACKED_MAGKAKADIKIT" ? "alert-conflagration" : ""}`}>
                   <div className="mbfp-metric-label">
                     <i className="fa-solid fa-people-roof" />
                     <span>Nearby Houses</span>
@@ -2249,7 +2252,7 @@ export function MunicipalIncidentDetail({
                 </div>
 
                 {/* Structure material is scored only for building fires. */}
-                {incident.fireType === "HOUSE_BUILDING" && <div className="mbfp-metric-item">
+                {reportedFireTypes.includes("HOUSE_BUILDING") && <div className="mbfp-metric-item">
                   <div className="mbfp-metric-label">
                     <i className="fa-solid fa-cubes-stacked" />
                     <span>Structure Material</span>
@@ -2268,7 +2271,7 @@ export function MunicipalIncidentDetail({
                 </div>}
 
                 {/* Road access is not part of the rubbish-fire rule. */}
-                {incident.fireType !== "OTHER" && <div className={`mbfp-metric-item ${incident.routeAccessibility === "INTERIOR_ALLEY_ESKINITA" ? "alert-route" : ""}`}>
+                {reportedFireTypes.some((type) => type !== "OTHER") && <div className={`mbfp-metric-item ${incident.routeAccessibility === "INTERIOR_ALLEY_ESKINITA" ? "alert-route" : ""}`}>
                   <div className="mbfp-metric-label">
                     <i className="fa-solid fa-road-barrier" />
                     <span>Road Access</span>

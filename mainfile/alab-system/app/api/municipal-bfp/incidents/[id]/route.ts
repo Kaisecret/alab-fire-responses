@@ -93,7 +93,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     let incident: any = null;
     try {
       const incidentResult = await database.query(
-        `select fr.id, fr.reference_number as "referenceNumber", fr.status, fr.fire_type as "fireType", fr.description, fr.nearest_landmark as landmark,
+        `select fr.id, fr.reference_number as "referenceNumber", fr.status, fr.fire_type as "fireType", coalesce(fr.fire_types, array[fr.fire_type]) as "fireTypes", fr.description, fr.nearest_landmark as landmark,
                 fr.latitude::float as latitude, fr.longitude::float as longitude, fr.submitted_at as "submittedAt", fr.response_started_at as "responseStartedAt",
                 fr.responding_station_name as "respondingStationName", fr.report_source as "reportSource",
                 coalesce(fr.caller_name, fr.reporter_name_snapshot) as "residentName", coalesce(fr.caller_phone, fr.reporter_phone_snapshot) as "phone",
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       incident = incidentResult.rows[0];
       if (!incident && isPreview) {
         const previewResult = await database.query(
-          `select fr.id, fr.reference_number as "referenceNumber", fr.status, fr.fire_type as "fireType", fr.description, fr.nearest_landmark as landmark,
+          `select fr.id, fr.reference_number as "referenceNumber", fr.status, fr.fire_type as "fireType", coalesce(fr.fire_types, array[fr.fire_type]) as "fireTypes", fr.description, fr.nearest_landmark as landmark,
                   fr.latitude::float as latitude, fr.longitude::float as longitude, fr.submitted_at as "submittedAt", fr.response_started_at as "responseStartedAt",
                   fr.responding_station_name as "respondingStationName", fr.report_source as "reportSource",
                   coalesce(fr.caller_name, fr.reporter_name_snapshot) as "residentName", coalesce(fr.caller_phone, fr.reporter_phone_snapshot) as "phone",
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     } catch (queryErr: any) {
       console.warn("Primary municipal incident detail query failed, falling back to resilient query:", queryErr?.message);
       const fallbackResult = await database.query(
-        `select fr.id, fr.reference_number as "referenceNumber", fr.status, fr.fire_type as "fireType", fr.description, fr.nearest_landmark as landmark,
+        `select fr.id, fr.reference_number as "referenceNumber", fr.status, fr.fire_type as "fireType", coalesce(fr.fire_types, array[fr.fire_type]) as "fireTypes", fr.description, fr.nearest_landmark as landmark,
                 fr.latitude::float as latitude, fr.longitude::float as longitude, fr.submitted_at as "submittedAt", fr.response_started_at as "responseStartedAt",
                 fr.responding_station_name as "respondingStationName", 'ALAB_APP' as "reportSource",
                 fr.reporter_name_snapshot as "residentName", fr.reporter_phone_snapshot as "phone",

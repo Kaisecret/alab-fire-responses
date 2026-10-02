@@ -6,7 +6,7 @@ import type { Circle, Map as LeafletMap, Marker } from 'leaflet';
 import { ResidentFireLoader } from '../../_components/resident-fire-loader';
 import { reportFireMarkup, reportFireStyles } from '../../_content/resident-report-fire-content';
 import { getStoredLanguage, RESIDENT_TRANSLATIONS, type ResidentLanguage } from '../../_lib/resident-i18n';
-import { filterSituationForFireType, situationForFireType } from '../../../lib/fire-reports/fire-type-situation';
+import { filterSituationForFireTypes, MAX_FIRE_TYPES, situationForFireTypes } from '../../../lib/fire-reports/fire-type-situation';
 import {
   REFINEMENT_WINDOW_MS,
   chooseBetterReading,
@@ -166,21 +166,23 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const rateLimitCloseBtn = root.querySelector<HTMLButtonElement>('[data-rate-limit-close]');
   const rateLimitWait = root.querySelector<HTMLElement>('[data-rate-limit-wait]');
   const fireTypeSection = root.querySelector<HTMLElement>('[data-step-fire-type]');
-  const fireTypeHint = root.querySelector<HTMLElement>('[data-fire-type-hint]');
+  // The hint is rebuilt when the language changes, so look it up each time.
+  const fireTypeHint = () => root.querySelector<HTMLElement>('[data-fire-type-hint]');
   if (!submitButton || !locationCard || !landmarkInput || !photoInput || typeButtons.length === 0) return () => {};
 
-  let fireType: string | null = typeButtons.find((button) => button.classList.contains('selected'))?.dataset.fireType ?? null;
+  // Every kind of fire the resident tapped, in the order tapped (up to 3).
+  let fireTypes: string[] = typeButtons.filter((button) => button.classList.contains('selected')).map((button) => button.dataset.fireType ?? '').filter(Boolean);
   let selectedDensity: string | null = null;
   let selectedRoute: string | null = null;
   let submitting = false;
   let attachedPhotos: File[] = [];
 
   const renderSituation = () => {
-    const options = situationForFireType(fireType);
-    const filtered = filterSituationForFireType(fireType, selectedDensity, selectedRoute);
+    const options = situationForFireTypes(fireTypes);
+    const filtered = filterSituationForFireTypes(fireTypes, selectedDensity, selectedRoute);
     selectedDensity = filtered.density;
     selectedRoute = filtered.route;
-    if (quickSituationRow) quickSituationRow.hidden = !fireType;
+    if (quickSituationRow) quickSituationRow.hidden = fireTypes.length === 0;
     if (densityButton) {
       densityButton.hidden = !options.density;
       densityButton.classList.toggle('is-active', Boolean(selectedDensity));
@@ -395,6 +397,9 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       step3Title.innerHTML = `<span class="step-number">3</span> ${dict.step3WhatIsBurning} <span class="step-hint" data-fire-type-hint style="display:${hintDisplay}; color:#DC2626; font-size:0.75rem; font-weight:800; margin-left:0.5rem;">${dict.selectOneHint}</span>`;
     }
 
+    const fireTypeNote = root.querySelector<HTMLElement>('[data-fire-type-note]');
+    if (fireTypeNote) fireTypeNote.textContent = dict.fireTypeMultiNote;
+
     const typeButtonsMap: Record<string, string> = {
       HOUSE_BUILDING: dict.typeHouse,
       GRASS: dict.typeGrass,
@@ -509,13 +514,25 @@ function initializeReportSubmission(root: HTMLElement): () => void {
 
   typeButtons.forEach((button) => {
     const handler = () => {
-      fireType = button.dataset.fireType ?? null;
+      const kind = button.dataset.fireType;
+      if (!kind) return;
+      if (fireTypes.includes(kind)) {
+        fireTypes = fireTypes.filter((item) => item !== kind);
+      } else if (fireTypes.length >= MAX_FIRE_TYPES) {
+        showError(`You can select up to ${MAX_FIRE_TYPES} kinds of fire. Tap one again to remove it.`);
+        return;
+      } else {
+        fireTypes = [...fireTypes, kind];
+      }
+      showError('');
       typeButtons.forEach((item) => {
-        item.classList.toggle('selected', item === button);
-        item.setAttribute('aria-pressed', String(item === button));
+        const selected = fireTypes.includes(item.dataset.fireType ?? '');
+        item.classList.toggle('selected', selected);
+        item.setAttribute('aria-pressed', String(selected));
       });
       renderSituation();
-      if (fireTypeHint) fireTypeHint.style.display = 'none';
+      const hint = fireTypeHint();
+      if (hint && fireTypes.length) hint.style.display = 'none';
     };
     typeHandlers.set(button, handler);
     button.addEventListener('click', handler);
@@ -540,7 +557,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
 
   const executeFinalSubmission = async () => {
     const { locationLatitude, locationLongitude, locationAccuracy, locationMunicipality, locationBarangay } = locationCard.dataset;
-    if (!locationLatitude || !locationLongitude || !locationMunicipality || !locationBarangay || !fireType) {
+    if (!locationLatitude || !locationLongitude || !locationMunicipality || !locationBarangay || fireTypes.length === 0) {
       showError('Current GPS location, municipality, and barangay are required.');
       resetSubmission();
       return;
@@ -550,7 +567,8 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     submitButton.textContent = 'SENDING FIRE ALERT…';
     setSubmissionLoading(true);
     const form = new FormData();
-    form.set('fireType', fireType);
+    form.set('fireType', fireTypes[0]);
+    fireTypes.forEach((kind) => form.append('fireTypes', kind));
     form.set("latitude", locationLatitude);
     form.set('longitude', locationLongitude);
     form.set('locationAccuracy', locationAccuracy ?? '');
@@ -558,7 +576,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     form.set('barangay', locationBarangay);
     form.set('landmark', landmarkInput.value.trim());
     form.set('description', '');
-    const situation = filterSituationForFireType(fireType, selectedDensity, selectedRoute);
+    const situation = filterSituationForFireTypes(fireTypes, selectedDensity, selectedRoute);
     if (situation.density) form.set('houseDensity', situation.density);
     if (situation.route) form.set('routeAccessibility', situation.route);
     if (locationCard.dataset.weatherTemperature) form.set('weatherTemperature', locationCard.dataset.weatherTemperature);
@@ -622,12 +640,13 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     }
 
     // 1. Fire type required (must click 1)
-    if (!fireType) {
-      if (fireTypeHint) fireTypeHint.style.display = 'inline-block';
+    if (fireTypes.length === 0) {
+      const hint = fireTypeHint();
+      if (hint) hint.style.display = 'inline-block';
       if (fireTypeSection) {
         fireTypeSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-      showError('Pumili kung anong nasusunog (Please select 1 fire type).');
+      showError('Pumili kung anong nasusunog (Select at least 1 fire type).');
       resetSubmission();
       return;
     }

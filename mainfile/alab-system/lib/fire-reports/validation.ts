@@ -12,6 +12,8 @@ const municipalResolutionStatuses = new Set<FireReportStatus>([
 
 export type FireReportInput = {
   fireType: FireType;
+  /** Every kind of fire the resident selected, first pick first (1 to 3). */
+  fireTypes: FireType[];
   latitude: number;
   longitude: number;
   locationAccuracy: number | null;
@@ -154,6 +156,11 @@ export function normalizeRouteAccessibility(value: unknown): RouteAccessibility 
 
 export function validateFireReportInput(raw: Record<string, unknown>): FireReportInput {
   const fireType = text(raw.fireType, 40) as FireType;
+  // fireTypes may arrive as several form values; older clients send one fireType.
+  const listed = (Array.isArray(raw.fireTypes) ? raw.fireTypes : raw.fireTypes == null ? [] : [raw.fireTypes])
+    .map((value) => text(value, 40) as FireType)
+    .filter(Boolean);
+  const fireTypesSelected = [...new Set(listed.length ? listed : [fireType])];
   const latitude = Number(raw.latitude);
   const longitude = Number(raw.longitude);
   const locationAccuracy = raw.locationAccuracy === "" || raw.locationAccuracy == null ? null : Number(raw.locationAccuracy);
@@ -173,14 +180,16 @@ export function validateFireReportInput(raw: Record<string, unknown>): FireRepor
   const weatherWindDirection = raw.weatherWindDirection != null && raw.weatherWindDirection !== "" ? Number(raw.weatherWindDirection) : null;
   const weatherWindCondition = text(raw.weatherWindCondition, 40) || null;
 
-  if (!fireTypes.has(fireType)) throw new Error("Select what is burning.");
+  if (!fireTypesSelected.length || fireTypesSelected.some((type) => !fireTypes.has(type))) throw new Error("Select what is burning.");
+  if (fireTypesSelected.length > 3) throw new Error("Select up to 3 kinds of fire.");
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < 4 || latitude > 22 || longitude < 116 || longitude > 127) throw new Error("A valid Philippine location is required.");
   if (locationAccuracy !== null && (!Number.isFinite(locationAccuracy) || locationAccuracy < 0 || locationAccuracy > 100000)) throw new Error("Invalid location accuracy.");
   if (!municipality || !barangay) throw new Error("Detected municipality and barangay are required.");
   if (landmark.length > 180 || description.length > 1200) throw new Error("Report details are too long.");
 
   return {
-    fireType,
+    fireType: fireTypesSelected[0],
+    fireTypes: fireTypesSelected,
     latitude,
     longitude,
     locationAccuracy,
