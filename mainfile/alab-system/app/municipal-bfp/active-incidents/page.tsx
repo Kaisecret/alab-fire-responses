@@ -563,10 +563,18 @@ const activeIncidentsStyles = `
   }
 
   /* Responsive Adjustments */
-  /* Search, filters and the phone-call action share one row. */
-  .mbfp-toolbar .mbfp-search-box { max-width: 360px; }
-  .mbfp-toolbar .mbfp-filter-pills { flex: 1 1 0; min-width: 260px; justify-content: flex-end; }
+  /* Wide: search, filters and the phone-call action share one row.
+     Narrower: search and action stay on top and the filters get their own
+     row, so a single pill never wraps alone under the others. */
+  .mbfp-toolbar { container: mbfp-toolbar / inline-size; }
+  .mbfp-toolbar .mbfp-search-box { flex: 0 1 320px; min-width: 200px; max-width: 320px; }
+  .mbfp-toolbar .mbfp-filter-pills { flex: 1 0 auto; flex-wrap: nowrap; justify-content: flex-end; }
+  .mbfp-toolbar .mbfp-tab-pill { white-space: nowrap; }
   .mbfp-toolbar .mbfp-new-phone-incident-btn { flex: 0 0 auto; }
+  @container mbfp-toolbar (max-width: 1240px) {
+    .mbfp-toolbar .mbfp-search-box { flex: 1 1 260px; max-width: none; }
+    .mbfp-toolbar .mbfp-filter-pills { order: 3; flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; }
+  }
 
   @media (max-width: 1024px) {
     .mbfp-quick-stats {
@@ -616,6 +624,11 @@ const activeIncidentsStyles = `
   }
 `;
 
+// Filter and counter groups, using the statuses reports actually carry.
+const PENDING_STATUSES = new Set(["SUBMITTED", "PENDING_VERIFICATION", "UNDER_VERIFICATION", "NEEDS_MORE_INFO"]);
+const VERIFIED_STATUSES = new Set(["VERIFIED", "CONFIRMED", "FIRETRUCK_DISPATCHED"]);
+const RESPONDING_STATUSES = new Set(["RESPONDING", "RESPONDER_ARRIVED", "UNDER_CONTROL"]);
+
 function ActiveIncidentsContent() {
   const searchParams = useSearchParams();
   const deepLinkedIncident = searchParams.get("incident");
@@ -632,11 +645,10 @@ function ActiveIncidentsContent() {
     }
   }, [searchParams]);
 
-  const ownedCount = useMemo(() => incidents.filter((i) => i.accessScope !== "OBSERVER").length, [incidents]);
   const nearbyCount = useMemo(() => incidents.filter((i) => i.accessScope === "OBSERVER").length, [incidents]);
-  const respondingCount = incidents.filter((i) => i.status === "RESPONDING").length;
-  const verifiedCount = incidents.filter((i) => i.status === "VERIFIED" || i.status === "DISPATCHED").length;
-  const pendingCount = incidents.filter((i) => i.status === "PENDING" || i.status === "UNVERIFIED").length;
+  const respondingCount = incidents.filter((i) => RESPONDING_STATUSES.has(i.status)).length;
+  const verifiedCount = incidents.filter((i) => VERIFIED_STATUSES.has(i.status)).length;
+  const pendingCount = incidents.filter((i) => PENDING_STATUSES.has(i.status)).length;
 
   const filteredIncidents = useMemo(() => {
     return incidents.filter((item) => {
@@ -651,12 +663,10 @@ function ActiveIncidentsContent() {
       if (!matchesSearch) return false;
 
       if (activeFilter === "ALL") return true;
-      if (activeFilter === "OWNED") return item.accessScope !== "OBSERVER";
       if (activeFilter === "NEARBY") return item.accessScope === "OBSERVER";
-      if (activeFilter === "RESPONDING") return item.status === "RESPONDING";
-      if (activeFilter === "DISPATCHED") return item.status === "DISPATCHED" || item.status === "ASSIGNED";
-      if (activeFilter === "VERIFIED") return item.status === "VERIFIED";
-      if (activeFilter === "PENDING") return item.status === "PENDING" || item.status === "UNVERIFIED";
+      if (activeFilter === "RESPONDING") return RESPONDING_STATUSES.has(item.status);
+      if (activeFilter === "VERIFIED") return VERIFIED_STATUSES.has(item.status);
+      if (activeFilter === "PENDING") return PENDING_STATUSES.has(item.status);
 
       return true;
     });
@@ -715,12 +725,6 @@ function ActiveIncidentsContent() {
               onClick={() => setActiveFilter("ALL")}
             >
               All ({incidents.length})
-            </button>
-            <button
-              className={`mbfp-tab-pill ${activeFilter === "OWNED" ? "active" : ""}`}
-              onClick={() => setActiveFilter("OWNED")}
-            >
-              My Municipality ({ownedCount})
             </button>
             <button
               className={`mbfp-tab-pill ${activeFilter === "NEARBY" ? "active" : ""}`}
