@@ -27,6 +27,8 @@ export type ScopedMunicipalIncident = {
   buildingDensityMinimumGapMeters?: number | null;
   accessScope: "ORIGIN" | "OBSERVER";
   originMunicipality: string;
+  /** When the origin station first acknowledged the report; null for observers. */
+  acknowledgedAt?: string | null;
 };
 
 export type ObserverIncidentDetail = {
@@ -125,7 +127,8 @@ export async function listScopedMunicipalIncidents(
              fr.building_density_building_count as "buildingDensityBuildingCount",
              fr.building_density_minimum_gap_meters::float as "buildingDensityMinimumGapMeters",
              'ORIGIN'::text as "accessScope",
-             origin.name as "originMunicipality"
+             origin.name as "originMunicipality",
+             fr.municipal_acknowledged_at as "acknowledgedAt"
         from fire_reports fr
         join municipalities origin on origin.id = fr.municipality_id
         left join barangays barangay on barangay.id = fr.barangay_id
@@ -150,6 +153,7 @@ export async function listScopedMunicipalIncidents(
              fr.building_density_minimum_gap_meters::float as "buildingDensityMinimumGapMeters",
              'OBSERVER'::text as "accessScope",
              origin.name as "originMunicipality",
+             null::timestamptz as "acknowledgedAt",
              -- Whether this municipality was asked to send help, rather than
              -- only being told a fire is burning nearby. The two read very
              -- differently on a board: one is awareness, the other is a task.
@@ -198,7 +202,8 @@ export async function listScopedMunicipalIncidents(
                  fr.building_density_building_count as "buildingDensityBuildingCount",
                  fr.building_density_minimum_gap_meters::float as "buildingDensityMinimumGapMeters",
                  'ORIGIN'::text as "accessScope",
-                 origin.name as "originMunicipality"
+                 origin.name as "originMunicipality",
+                 fr.municipal_acknowledged_at as "acknowledgedAt"
             from fire_reports fr
             join municipalities origin on origin.id = fr.municipality_id
             left join barangays barangay on barangay.id = fr.barangay_id
@@ -232,7 +237,8 @@ export async function listScopedMunicipalIncidents(
                    null::integer as "buildingDensityBuildingCount",
                    null::float as "buildingDensityMinimumGapMeters",
                    'ORIGIN'::text as "accessScope",
-                   origin.name as "originMunicipality"
+                   origin.name as "originMunicipality",
+                   null::timestamptz as "acknowledgedAt"
               from fire_reports fr
               join municipalities origin on origin.id = fr.municipality_id
               left join barangays barangay on barangay.id = fr.barangay_id

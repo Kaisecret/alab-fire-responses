@@ -63,6 +63,15 @@ const releaseMigrations = [
       select 1 from pg_constraint where conname = 'fire_reports_fire_types_check'
     ) as applied`,
   },
+  {
+    version: "20261002150000",
+    name: "add_municipal_report_acknowledgement",
+    appliedCheck: `select exists(
+      select 1 from information_schema.columns
+       where table_schema = 'public' and table_name = 'fire_reports'
+         and column_name = 'municipal_acknowledged_by_user_id'
+    ) as applied`,
+  },
 ];
 
 const client = new pg.Client({

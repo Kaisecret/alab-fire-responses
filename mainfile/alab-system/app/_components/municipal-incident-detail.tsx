@@ -1929,6 +1929,15 @@ export function MunicipalIncidentDetail({
     };
   }, [load]);
 
+  // Opening its own station's report counts as seeing it: the new-report
+  // alarm stays quiet for it on every sign-in and device afterwards.
+  const loadedIncidentId = incident?.id ?? null;
+  const loadedScope = incident?.accessScope ?? null;
+  useEffect(() => {
+    if (!loadedIncidentId || loadedScope === "OBSERVER") return;
+    void fetch(`/api/municipal-bfp/incidents/${encodeURIComponent(loadedIncidentId)}/acknowledge`, { method: "POST" }).catch(() => undefined);
+  }, [loadedIncidentId, loadedScope]);
+
   const openDispatch = useCallback(async () => {
     setDispatchOpen(true);
     setDispatchError("");

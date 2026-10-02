@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
 import { useMunicipalIncidentFeed, type MunicipalIncident } from "./use-municipal-incident-feed";
 import { getFireTypeLabel, getSeverityLabel } from "../../lib/municipal-bfp/reports/formatters";
 import { EmergencyAlertCard } from "./emergency-alert-card";
@@ -19,9 +20,10 @@ const ALARM_STATUSES = new Set([
 ]);
 
 /*
- * Acknowledgements persist across sessions. Holding them per tab meant every
- * sign-in re-raised the alarm for reports the officer had already attended to,
- * because the tab storage had been cleared in between.
+ * The station's acknowledgement is saved on the report (acknowledgedAt), so a
+ * sign-in on any device stays quiet for reports already attended to. This
+ * browser copy only bridges the seconds until the next queue refresh, and
+ * keeps the alarm dismissed if the save could not reach the server.
  */
 const ACK_KEY = "alab_acknowledged_incident_alarms";
 
@@ -130,7 +132,9 @@ export function MunicipalIncidentAlarm() {
   const stopSirenRef = useRef<(() => void) | null>(null);
 
   const pending = useMemo(
-    () => incidents.filter((incident) => ALARM_STATUSES.has(incident.status) && !acknowledged.has(incident.id)),
+    () => incidents.filter((incident) => ALARM_STATUSES.has(incident.status)
+      && !incident.acknowledgedAt
+      && !acknowledged.has(incident.id)),
     [incidents, acknowledged],
   );
   const active: MunicipalIncident | undefined = pending[0];
@@ -209,6 +213,12 @@ export function MunicipalIncidentAlarm() {
       writeAcknowledged(next);
       return next;
     });
+    // Save it for the whole station, so other sign-ins and devices stay quiet.
+    const incident = incidents.find((item) => item.id === incidentId);
+    if (incident?.accessScope !== "OBSERVER") {
+      void municipalTabFetch(`/api/municipal-bfp/incidents/${encodeURIComponent(incidentId)}/acknowledge`, { method: "POST", keepalive: true })
+        .catch(() => undefined);
+    }
   }, [stopSiren, incidents]);
 
   if (!active) return null;

@@ -27,6 +27,8 @@ export interface MunicipalIncident {
   originMunicipality: string;
   /** Set when this municipality was asked to send help, not merely told. */
   assistanceStatus?: "REQUESTED" | "ACCEPTED" | "PARTIALLY_ACCEPTED" | null;
+  /** When this station first acknowledged the report, on any device. */
+  acknowledgedAt?: string | null;
 }
 
 interface MunicipalIncidentResponse {
