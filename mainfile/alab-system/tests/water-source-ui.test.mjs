@@ -16,7 +16,7 @@ test("municipal registry opens a full-screen editable details dialog", () => {
   assert.match(source, />Retry</);
   assert.match(source, /selectedSource/);
   assert.match(source, /method:\s*["']PATCH["']/);
-  assert.match(source, /Edit location, type\/color, and quantity/);
+  assert.match(source, /Coordinates are controlled by Provincial BFP/);
   assert.match(source, /createPortal/);
   assert.match(source, /document\.body/);
   assert.match(source, /edit-water-type-color/);

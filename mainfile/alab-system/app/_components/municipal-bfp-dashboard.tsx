@@ -8,7 +8,7 @@ import { useMunicipalIncidentFeed } from './use-municipal-incident-feed';
 import { MunicipalStatCards } from './municipal-stat-cards';
 import { FireCommandHeader } from './fire-command-header';
 import { getFireTypeLabel } from '../../lib/municipal-bfp/reports/formatters';
-import { formatHotline, hotlineForMunicipality, hotlineHref, PROVINCIAL_FIRE_MARSHAL } from '../../lib/bfp-hotlines';
+import { formatHotline, PROVINCIAL_FIRE_MARSHAL } from '../../lib/bfp-hotlines';
 
 /*
  * Municipal BFP dashboard: what needs the station now, at a glance. Every
@@ -205,8 +205,6 @@ const dashboardStyles = `
   .mbfp-row-sub.is-compact { display: none; }
   .mbfp-row-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.75rem; border-radius: 9px; background: var(--dash-ink); color: #fff; font-size: 0.75rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
   .mbfp-row-btn:hover { background: #1E293B; }
-  .mbfp-call { flex: 0 0 auto; width: 2.1rem; height: 2.1rem; display: grid; place-items: center; border-radius: 50%; background: #FEF2F2; color: #DC2626; font-size: 0.8rem; text-decoration: none; transition: background 0.15s ease; }
-  .mbfp-call:hover { background: #FEE2E2; }
   .mbfp-row.is-hq { background: #FFF7F7; }
   .mbfp-empty { display: grid; justify-items: center; gap: 0.35rem; padding: 1.6rem 1rem; color: var(--dash-muted); font-size: 0.8rem; text-align: center; }
   .mbfp-empty > i { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border-radius: 50%; background: #ECFDF5; color: #059669; font-size: 1rem; }
@@ -595,7 +593,51 @@ export function MunicipalBfpDashboard() {
           </div>
 
           <div className="mbfp-col">
-            <section className="mbfp-card" aria-labelledby="mbfp-actions-title">
+            <section className="mbfp-card" aria-labelledby="mbfp-nearby-title">
+              <div className="mbfp-card-header">
+                <h2 className="mbfp-card-title" id="mbfp-nearby-title">
+                  <i className="fa-solid fa-tower-broadcast" style={{ background: '#F5F3FF', color: '#7C3AED' }} aria-hidden="true" />
+                  Nearby stations
+                </h2>
+                <Link href="/municipal-bfp/active-incidents" className="mbfp-card-link">Nearby fires <i className="fa-solid fa-arrow-right" aria-hidden="true" /></Link>
+              </div>
+              <div className="mbfp-card-body">
+                {dashLoading ? (
+                  <SkeletonRows count={3} />
+                ) : nearbyStations.length === 0 ? (
+                  <div className="mbfp-empty">
+                    <strong>No nearby stations</strong>
+                    <span>Set your station&apos;s location to see the closest ones.</span>
+                  </div>
+                ) : (
+                  nearbyStations.map((station) => (
+                    <div className="mbfp-row mbfp-nearby-row" key={station.id}>
+                      <span className="mbfp-type-icon" style={{ background: '#F5F3FF', color: '#7C3AED' }} aria-hidden="true"><i className="fa-solid fa-fire-extinguisher" /></span>
+                      <span className="mbfp-row-main">
+                        <span className="mbfp-row-title">{station.stationName}</span>
+                        <span className="mbfp-row-sub">
+                          <span>{station.municipalityName}</span>
+                          {station.distanceKm != null && <span>· {station.distanceKm} km</span>}
+                        </span>
+                      </span>
+                      <span className="mbfp-row-end">
+                        <span className={`mbfp-chip ${station.activeIncidents > 0 ? 'red' : 'gray'}`}>
+                          {station.activeIncidents > 0 ? `${station.activeIncidents} active` : 'Quiet'}
+                        </span>
+                      </span>
+                    </div>
+                  ))
+                )}
+                <div className="mbfp-row is-hq">
+                  <span className="mbfp-type-icon" aria-hidden="true"><i className="fa-solid fa-building-flag" /></span>
+                  <span className="mbfp-row-main">
+                    <span className="mbfp-row-title">Provincial Fire Marshal</span>
+                    <span className="mbfp-row-sub">{formatHotline(PROVINCIAL_FIRE_MARSHAL.phone)}</span>
+                  </span>
+                </div>
+              </div>
+            </section>
+            <section className="mbfp-card is-grow" aria-labelledby="mbfp-actions-title">
               <div className="mbfp-card-header">
                 <h2 className="mbfp-card-title" id="mbfp-actions-title">
                   <i className="fa-solid fa-bolt" style={{ background: '#EFF6FF', color: '#2563EB' }} aria-hidden="true" />
@@ -629,63 +671,6 @@ export function MunicipalBfpDashboard() {
             </section>
 
 
-            <section className="mbfp-card is-grow" aria-labelledby="mbfp-nearby-title">
-              <div className="mbfp-card-header">
-                <h2 className="mbfp-card-title" id="mbfp-nearby-title">
-                  <i className="fa-solid fa-tower-broadcast" style={{ background: '#F5F3FF', color: '#7C3AED' }} aria-hidden="true" />
-                  Nearby stations
-                </h2>
-                <Link href="/municipal-bfp/active-incidents" className="mbfp-card-link">Nearby fires <i className="fa-solid fa-arrow-right" aria-hidden="true" /></Link>
-              </div>
-              <div className="mbfp-card-body">
-                {dashLoading ? (
-                  <SkeletonRows count={3} />
-                ) : nearbyStations.length === 0 ? (
-                  <div className="mbfp-empty">
-                    <strong>No nearby stations</strong>
-                    <span>Set your station&apos;s location to see the closest ones.</span>
-                  </div>
-                ) : (
-                  nearbyStations.map((station) => (
-                    <div className="mbfp-row mbfp-nearby-row" key={station.id}>
-                      <span className="mbfp-type-icon" style={{ background: '#F5F3FF', color: '#7C3AED' }} aria-hidden="true"><i className="fa-solid fa-fire-extinguisher" /></span>
-                      <span className="mbfp-row-main">
-                        <span className="mbfp-row-title">{station.stationName}</span>
-                        <span className="mbfp-row-sub">
-                          <span>{station.municipalityName}</span>
-                          {station.distanceKm != null && <span>· {station.distanceKm} km</span>}
-                        </span>
-                      </span>
-                      <span className="mbfp-row-end">
-                        <span className={`mbfp-chip ${station.activeIncidents > 0 ? 'red' : 'gray'}`}>
-                          {station.activeIncidents > 0 ? `${station.activeIncidents} active` : 'Quiet'}
-                        </span>
-                        {(() => {
-                          const hotline = hotlineForMunicipality(station.municipalityName);
-                          return hotline ? (
-                            <a href={hotlineHref(hotline.phone)} className="mbfp-call" aria-label={`Call ${hotline.name}, ${formatHotline(hotline.phone)}`} title={formatHotline(hotline.phone)}>
-                              <i className="fa-solid fa-phone" aria-hidden="true" />
-                            </a>
-                          ) : null;
-                        })()}
-                      </span>
-                    </div>
-                  ))
-                )}
-                <div className="mbfp-row is-hq">
-                  <span className="mbfp-type-icon" aria-hidden="true"><i className="fa-solid fa-building-flag" /></span>
-                  <span className="mbfp-row-main">
-                    <span className="mbfp-row-title">Provincial Fire Marshal</span>
-                    <span className="mbfp-row-sub">{formatHotline(PROVINCIAL_FIRE_MARSHAL.phone)}</span>
-                  </span>
-                  <span className="mbfp-row-end">
-                    <a href={hotlineHref(PROVINCIAL_FIRE_MARSHAL.phone)} className="mbfp-call" aria-label={`Call the ${PROVINCIAL_FIRE_MARSHAL.name}`}>
-                      <i className="fa-solid fa-phone" aria-hidden="true" />
-                    </a>
-                  </span>
-                </div>
-              </div>
-            </section>
           </div>
         </div>
       </div>

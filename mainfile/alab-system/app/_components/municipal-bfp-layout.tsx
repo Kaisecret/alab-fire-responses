@@ -10,6 +10,7 @@ import { MunicipalIncidentAlarm } from './municipal-incident-alarm';
 import { MunicipalBackupAlarm } from './municipal-backup-alarm';
 import { MunicipalAlarmDeclaration } from './municipal-alarm-declaration';
 import { useMunicipalIncidentFeed } from './use-municipal-incident-feed';
+import { BfpLogoutDialog, confirmBfpSignedOut } from './bfp-logout-dialog';
 
 type NavItem = {
   label: string;
@@ -1151,6 +1152,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [identity, setIdentity] = useState<MunicipalUserIdentity | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -1256,23 +1258,26 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
     return match?.label || 'Municipal Operations';
   };
 
+  // Ends this tab's login (each tab has its own session cookie) and leaves
+  // only after /me confirms the server no longer accepts this tab.
   const handleLogout = async () => {
+    let response: Response;
+    try {
+      response = await fetch('/api/auth/bfp/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+        body: 'portal=MUNICIPAL',
+      });
+    } catch {
+      throw new Error('No connection. You are still signed in. Try again.');
+    }
+    await confirmBfpSignedOut(response, () => fetch('/api/municipal-bfp/me', { cache: 'no-store' }));
     try {
       sessionStorage.removeItem(MUNICIPAL_IDENTITY_KEY);
     } catch {
       // ignore
     }
-    setIdentity(null);
-    try {
-      await fetch('/api/auth/bfp/logout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'portal=MUNICIPAL',
-      });
-    } catch {
-      // ignore
-    }
-    window.location.assign('/municipal-bfp/login');
+    window.location.replace('/municipal-bfp/login');
   };
 
   if (isAuthenticationPage) return <>{children}</>;
@@ -1448,7 +1453,11 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                 <button
                   type="button"
                   className="mbfp-popover-item mbfp-popover-logout"
-                  onClick={handleLogout}
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    closeMobileNav();
+                    setIsLogoutOpen(true);
+                  }}
                 >
                   <i className="fa-solid fa-arrow-right-from-bracket" />
                   <span>Sign Out</span>
@@ -1523,6 +1532,14 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
           <MunicipalAlarmDeclaration />
         </>
       )}
+
+      <BfpLogoutDialog
+        open={isLogoutOpen}
+        message="This ends your session in this tab. Other open tabs keep their own login."
+        accountName={identity ? [identity.displayName, identity.municipalityName].filter(Boolean).join(' · ') : null}
+        onCancel={() => setIsLogoutOpen(false)}
+        onConfirm={handleLogout}
+      />
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isLocalUiPreviewEnabled } from "../../../../../lib/auth/local-ui-preview";
 import { bfpSessionCookieName, bfpSessionCookie, type BfpRole } from "../../../../../lib/auth/session";
 
 export async function POST(request: Request) {
@@ -21,7 +22,11 @@ export async function POST(request: Request) {
 
   const role: BfpRole = portal === "PROVINCIAL" ? "PROVINCIAL_BFP" : "MUNICIPAL_BFP";
   const loginPath = portal === "PROVINCIAL" ? "/provincial-bfp/login" : "/municipal-bfp/login";
-  const response = NextResponse.redirect(new URL(loginPath, request.url), 303);
+  // The in-app sign-out asks for JSON so it can check the result before it
+  // leaves the page; a plain form post still gets the redirect.
+  const response = (request.headers.get("accept") ?? "").includes("application/json")
+    ? NextResponse.json({ signedOut: true, loginPath, previewSession: isLocalUiPreviewEnabled() }, { headers: { "Cache-Control": "no-store" } })
+    : NextResponse.redirect(new URL(loginPath, request.url), 303);
   response.cookies.set(bfpSessionCookieName(role, request.headers), "", { ...bfpSessionCookie, expires: new Date(0), maxAge: 0 });
   return response;
 }

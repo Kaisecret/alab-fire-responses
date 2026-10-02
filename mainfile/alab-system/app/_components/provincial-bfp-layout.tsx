@@ -7,6 +7,19 @@ import { NotificationBell } from './notifications/notification-bell';
 import { ProvincialRequestError, requestProvincialJson } from '../../lib/provincial-bfp/client-request';
 import { ProvincialProfilePopover } from './provincial-profile-popover';
 import { ProvincialBackupAlarm } from './provincial-backup-alarm';
+import { BfpLogoutDialog, confirmBfpSignedOut } from './bfp-logout-dialog';
+
+// Tells other provincial tabs that the shared browser session has ended.
+const PROVINCIAL_SESSION_CHANNEL = 'alab-provincial-session';
+
+function clearProvincialBrowserCache() {
+  for (const storage of [localStorage, sessionStorage]) {
+    for (let i = storage.length - 1; i >= 0; i--) {
+      const key = storage.key(i);
+      if (key && /provincial/i.test(key)) storage.removeItem(key);
+    }
+  }
+}
 
 type NavItem = {
   label: string;
@@ -1227,6 +1240,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null);
   const [identity, setIdentity] = useState<ProvincialIdentity | null>(null);
   const [identityLoading, setIdentityLoading] = useState(true);
@@ -1285,18 +1299,54 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
     return pathname.startsWith(item.href);
   };
 
+  // The provincial cookie is shared by every tab of this browser, so a
+  // sign-out ends them all. Leave only after /me confirms the server refuses it.
   const handleLogout = async () => {
+    let response: Response;
     try {
-      await fetch('/api/auth/bfp/logout', {
+      response = await fetch('/api/auth/bfp/logout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ portal: 'PROVINCIAL' }),
+        cache: 'no-store',
       });
     } catch {
-      // ignore
+      throw new Error('No connection. You are still signed in. Try again.');
     }
-    window.location.assign('/provincial-bfp/login');
+    await confirmBfpSignedOut(response, () => fetch('/api/provincial-bfp/me', { cache: 'no-store' }));
+    try {
+      clearProvincialBrowserCache();
+    } catch {
+      // Storage can be blocked; the session itself is already gone.
+    }
+    try {
+      const channel = new BroadcastChannel(PROVINCIAL_SESSION_CHANNEL);
+      channel.postMessage('signed-out');
+      channel.close();
+    } catch {
+      // Older browsers: other tabs reach the login page on their next request.
+    }
+    window.location.replace('/provincial-bfp/login');
   };
+
+  // Another tab signed out, or the page came back from the back/forward
+  // cache: never keep showing provincial data without a live session.
+  useEffect(() => {
+    if (isAuthenticationPage) return;
+    const onPageShow = (event: PageTransitionEvent) => { if (event.persisted) window.location.reload(); };
+    window.addEventListener('pageshow', onPageShow);
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel(PROVINCIAL_SESSION_CHANNEL);
+      channel.onmessage = (event) => { if (event.data === 'signed-out') window.location.replace('/provincial-bfp/login'); };
+    } catch {
+      channel = null;
+    }
+    return () => {
+      window.removeEventListener('pageshow', onPageShow);
+      channel?.close();
+    };
+  }, [isAuthenticationPage]);
 
   if (isAuthenticationPage) {
     return <>{children}</>;
@@ -1457,7 +1507,10 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                 <button
                   type="button"
                   className="pbfp-popover-item pbfp-popover-logout"
-                  onClick={handleLogout}
+                  onClick={() => {
+                    closeMobileDrawer();
+                    setIsLogoutOpen(true);
+                  }}
                 >
                   <i className="fa-solid fa-arrow-right-from-bracket" />
                   <span>Sign Out</span>
@@ -1555,6 +1608,14 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
       {/* Escalated backup has to reach the duty officer on whatever page they
           are on, so the alarm lives in the shell rather than on one screen. */}
       <ProvincialBackupAlarm />
+
+      <BfpLogoutDialog
+        open={isLogoutOpen}
+        message="This ends the Provincial BFP session on this browser, including every open tab."
+        accountName={identity?.displayName ?? null}
+        onCancel={() => setIsLogoutOpen(false)}
+        onConfirm={handleLogout}
+      />
     </>
   );
 }
