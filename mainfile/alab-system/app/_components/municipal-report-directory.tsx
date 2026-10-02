@@ -443,87 +443,6 @@ export function MunicipalReportDirectory() {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", fontFamily: "inherit" }}>
       <style>{summaryCardStyles}</style>
       <FireCommandHeader slotId="municipal-fire-command-header" title="Incident Reports" icon="fa-file-lines" />
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "1rem",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.6rem", flexWrap: "wrap", marginLeft: "auto" }}>
-          <button
-            type="button"
-            onClick={() => downloadPdf("MUNICIPAL_SUMMARY")}
-            disabled={pdfBusy !== null}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              minHeight: 44,
-              padding: "0.65rem 1.2rem",
-              borderRadius: 10,
-              border: "1px solid #CBD5E1",
-              background: "#FFFFFF",
-              color: "#334155",
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              cursor: pdfBusy ? "progress" : "pointer",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <i
-              className={`fa-solid ${pdfBusy === "MUNICIPAL_SUMMARY" ? "fa-circle-notch fa-spin" : "fa-download"}`}
-              style={{ color: "#475569" }}
-            />
-            {pdfBusy === "MUNICIPAL_SUMMARY" ? "Preparing..." : "Download summary"}
-          </button>
-
-          {pdfError && (
-            <span
-              role="status"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.35rem",
-                fontSize: "0.78rem",
-                fontWeight: 600,
-                color: "#B91C1C",
-              }}
-            >
-              <i className="fa-solid fa-circle-exclamation" />
-              {pdfError}
-            </span>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setIsExportDialogOpen(true)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              minHeight: 44,
-              padding: "0.65rem 1.2rem",
-              borderRadius: 10,
-              border: "none",
-              background: "linear-gradient(135deg, #D00F09, #DC2626)",
-              color: "#FFFFFF",
-              fontSize: "0.85rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              boxShadow: "0 2px 6px rgba(208, 15, 9, 0.3)",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <i className="fa-solid fa-file-export" /> Export data
-          </button>
-        </div>
-      </div>
-
       <MunicipalStatCards
         label="Report totals"
         items={[
@@ -590,7 +509,8 @@ export function MunicipalReportDirectory() {
             ))}
           </div>
 
-          {/* Search bar */}
+          {/* Search bar and page actions, on the right */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.6rem", flexWrap: "wrap", marginLeft: "auto" }}>
           <div style={{ position: "relative", minWidth: 220, flex: 1, maxWidth: 320 }}>
             <i
               className="fa-solid fa-magnifying-glass"
@@ -613,7 +533,8 @@ export function MunicipalReportDirectory() {
               }}
               style={{
                 width: "100%",
-                padding: "0.45rem 1.8rem 0.45rem 2rem",
+                height: 40,
+                padding: "0 1.8rem 0 2rem",
                 borderRadius: 6,
                 border: "1px solid #CBD5E1",
                 fontSize: "0.82rem",
@@ -644,6 +565,74 @@ export function MunicipalReportDirectory() {
                 &times;
               </button>
             )}
+          </div>
+          <button
+            type="button"
+            onClick={() => downloadPdf("MUNICIPAL_SUMMARY")}
+            disabled={pdfBusy !== null}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              minHeight: 40,
+              padding: "0.5rem 1.1rem",
+              borderRadius: 10,
+              border: "1px solid #CBD5E1",
+              background: "#FFFFFF",
+              color: "#334155",
+              fontSize: "0.82rem",
+              fontWeight: 600,
+              cursor: pdfBusy ? "progress" : "pointer",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <i
+              className={`fa-solid ${pdfBusy === "MUNICIPAL_SUMMARY" ? "fa-circle-notch fa-spin" : "fa-download"}`}
+              style={{ color: "#475569" }}
+            />
+            {pdfBusy === "MUNICIPAL_SUMMARY" ? "Preparing..." : "Download summary"}
+          </button>
+
+          {pdfError && (
+            <span
+              role="status"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                fontSize: "0.78rem",
+                fontWeight: 600,
+                color: "#B91C1C",
+              }}
+            >
+              <i className="fa-solid fa-circle-exclamation" />
+              {pdfError}
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsExportDialogOpen(true)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              minHeight: 40,
+              padding: "0.5rem 1.1rem",
+              borderRadius: 10,
+              border: "none",
+              background: "linear-gradient(135deg, #D00F09, #DC2626)",
+              color: "#FFFFFF",
+              fontSize: "0.82rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 2px 6px rgba(208, 15, 9, 0.3)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <i className="fa-solid fa-file-export" /> Export data
+          </button>
           </div>
         </div>
 

@@ -169,25 +169,6 @@ export function MunicipalPersonnelManager() {
     <section className="mbfp-personnel-page">
       <style>{pageStyles}</style>
 
-      {/* HEADER SECTION */}
-      <div className="mbfp-header-top is-actions-only">
-        <div className="mbfp-header-actions">
-          <button
-            type="button"
-            className="mbfp-add-btn"
-            onClick={() => {
-              setModalError("");
-              setIsAddModalOpen(true);
-            }}
-            disabled={stations.length === 0}
-            title={stations.length === 0 ? "Create a station first" : "Issue account"}
-          >
-            <i className="fa-solid fa-user-plus" />
-            <span>Issue Account</span>
-          </button>
-        </div>
-      </div>
-
       {/* ALERT / NOTICE BANNER */}
       {stations.length === 0 && !loading && (
         <div className="mbfp-alert-banner warning" role="alert">
@@ -241,6 +222,7 @@ export function MunicipalPersonnelManager() {
             )}
           </div>
 
+          <div className="mbfp-toolbar-end">
           <div className="mbfp-filter-pills">
             <button
               type="button"
@@ -262,6 +244,20 @@ export function MunicipalPersonnelManager() {
               onClick={() => setStatusFilter("INACTIVE")}
             >
               Inactive ({inactiveCount})
+            </button>
+          </div>
+            <button
+              type="button"
+              className="mbfp-add-btn"
+              onClick={() => {
+                setModalError("");
+                setIsAddModalOpen(true);
+              }}
+              disabled={stations.length === 0}
+              title={stations.length === 0 ? "Create a station first" : "Issue account"}
+            >
+              <i className="fa-solid fa-user-plus" />
+              <span>Issue Account</span>
             </button>
           </div>
         </div>
@@ -633,7 +629,6 @@ const pageStyles = `
   }
 
   /* Header */
-  .mbfp-header-top.is-actions-only { justify-content: flex-end; }
   .mbfp-header-top {
     display: flex;
     justify-content: space-between;
@@ -791,6 +786,21 @@ const pageStyles = `
 
   .mbfp-search-clear:hover {
     color: #334155;
+  }
+
+  .mbfp-toolbar-end {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+
+  .mbfp-toolbar-end .mbfp-add-btn {
+    min-height: 40px;
+    padding: 0.5rem 1.1rem;
+    white-space: nowrap;
   }
 
   .mbfp-filter-pills {
@@ -1406,6 +1416,12 @@ const pageStyles = `
     .mbfp-add-btn {
       width: 100%;
       justify-content: center;
+    }
+    .mbfp-toolbar-end {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+      margin-left: 0;
     }
   }
 `;

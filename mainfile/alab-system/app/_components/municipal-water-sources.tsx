@@ -20,7 +20,6 @@ function DialogField({ id, label, icon, wide, children }: { id: string; label: s
 const styles = `
   .water-registry { padding: 1.5rem clamp(1rem, 2vw, 2rem) 3rem; color: #172033; font-family: 'Plus Jakarta Sans', sans-serif; }
   .water-registry * { box-sizing: border-box; }
-  .water-registry__header { display:flex; justify-content:flex-end; gap:1rem; align-items:center; margin-bottom:1.25rem; }
   .water-registry__eyebrow { color:#b42318; font-size:.72rem; font-weight:800; letter-spacing:.11em; text-transform:uppercase; margin:0 0 .45rem; }
   .water-registry__button { min-height:44px; border:0; border-radius:8px; background:linear-gradient(135deg,#D00F09 0%,#EF5350 100%); color:#fff; padding:.6rem 1.25rem; font:inherit; font-size:.85rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:.55rem; justify-content:center; box-shadow:0 4px 14px rgba(208,15,9,.28); transition:transform .2s,box-shadow .2s; }
   .water-registry__button:hover:not(:disabled) { transform:translateY(-1.5px); box-shadow:0 6px 18px rgba(208,15,9,.38); }
@@ -29,6 +28,8 @@ const styles = `
   .water-registry__button:disabled { opacity:.6; cursor:wait; }
   .water-registry__toolbar { display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin:1.15rem 0; }
   .water-registry__search { min-height:44px; width:min(410px,100%); border:1px solid #d0d5dd; border-radius:9px; padding:.7rem .85rem; font:inherit; color:#172033; background:#fff; }
+  .water-registry__toolbar-end { display:flex; align-items:center; justify-content:flex-end; gap:.75rem; flex-wrap:wrap; margin-left:auto; }
+  .water-registry__toolbar-end .water-registry__button { white-space:nowrap; }
   .water-registry__count { color:#667085; font-size:.8rem; font-weight:700; white-space:nowrap; }
   .water-registry__grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(285px,1fr)); gap:.75rem; }
   .water-registry__card { appearance:none; width:100%; padding:0; text-align:left; font:inherit; cursor:pointer; display:flex; flex-direction:column; min-height:230px; color:inherit; text-decoration:none; background:#fff; border:1px solid #e4e7ec; border-radius:12px; overflow:hidden; transition:border-color .18s, transform .18s, box-shadow .18s; }
@@ -85,7 +86,7 @@ const styles = `
   .water-dialog__fact span { display:block; margin-bottom:.15rem; color:#667085; font-size:.64rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
   .water-dialog__fact strong { display:block; font-size:.78rem; line-height:1.4; word-break:break-word; font-variant-numeric:tabular-nums; }
   .water-dialog__map { color:#0f766e; text-decoration:none; }
-  @media (max-width:760px) { .water-registry__header { flex-direction:column; } .water-registry__header .water-registry__button { width:100%; } .water-registry__toolbar { align-items:stretch; flex-direction:column; } }
+  @media (max-width:760px) { .water-registry__toolbar-end { flex-direction:column; align-items:stretch; margin-left:0; } .water-registry__toolbar-end .water-registry__button { width:100%; justify-content:center; } .water-registry__toolbar { align-items:stretch; flex-direction:column; } }
   @media (max-width:520px) {
     .water-dialog-backdrop { align-items:end; padding:0; }
     .water-dialog { width:100%; max-height:92vh; border-radius:18px 18px 0 0; }
@@ -241,14 +242,13 @@ export function MunicipalWaterSources() {
   return <>
     <style>{styles}</style>
     <main className="water-registry">
-      <header className="water-registry__header"><button className="water-registry__button" type="button" onClick={() => setOpen(true)}><i className="fa-solid fa-plus" aria-hidden="true" /> Add fire hydrant or water source</button></header>
       <MunicipalStatCards label="Water source totals" items={[
         { key: "locations", icon: "fa-location-dot", tone: "blue", value: registry?.summary.sourceCount ?? 0, label: "Locations", badge: "Mapped", description: "Recorded water access points", loading },
         { key: "hydrants", icon: "fa-fire-extinguisher", tone: "red", value: registry?.summary.fireHydrantCount ?? 0, label: "Fire hydrants", badge: "Hydrants", description: "Municipal fire hydrant records", loading },
         { key: "other", icon: "fa-droplet", tone: "violet", value: registry?.summary.waterSourceCount ?? 0, label: "Other sources", badge: "Water", description: "Other recorded water sources", loading },
         { key: "units", icon: "fa-layer-group", tone: "emerald", value: registry?.summary.totalQuantity ?? 0, label: "Total units", badge: "Total", description: "Units across all recorded locations", loading },
       ]} />
-      <div className="water-registry__toolbar"><input className="water-registry__search" aria-label="Search water sources" placeholder="Search location, type, or color" value={query} onChange={(event) => setQuery(event.target.value)} /><span className="water-registry__count">Showing {sources.length} location{sources.length === 1 ? "" : "s"}</span></div>
+      <div className="water-registry__toolbar"><input className="water-registry__search" aria-label="Search water sources" placeholder="Search location, type, or color" value={query} onChange={(event) => setQuery(event.target.value)} /><div className="water-registry__toolbar-end"><span className="water-registry__count">Showing {sources.length} location{sources.length === 1 ? "" : "s"}</span><button className="water-registry__button" type="button" onClick={() => setOpen(true)}><i className="fa-solid fa-plus" aria-hidden="true" /> Add fire hydrant or water source</button></div></div>
       {loading ? <div className="water-registry__state">Loading municipal water sources…</div> : loadError ? <div className="water-registry__state"><p>{loadError}</p><button className="water-registry__button" type="button" onClick={() => void retryLoad()}>Retry</button></div> : sources.length === 0 ? <div className="water-registry__state">No matching water sources were found.</div> : <section className="water-registry__grid" aria-label="Municipal water sources">{sources.map((source) => <div className="water-registry__card" key={source.id}><Link className="water-registry__card-main" href={`/municipal-bfp/gis-map?layer=water-sources&waterSource=${source.id}`} aria-label={`View ${source.exactLocation} on map`}><div className="water-registry__card-head"><span className="water-registry__icon"><i className={source.sourceKind === "FIRE_HYDRANT" ? "fa-solid fa-fire-extinguisher" : "fa-solid fa-droplet"} /></span><div><p className="water-registry__card-title">{source.exactLocation}</p><p className="water-registry__kind">{labelFor(source)}</p></div></div><div className="water-registry__card-body"><div className="water-registry__row"><span>Type / color</span><strong>{source.typeColor}</strong></div><div className="water-registry__row"><span>Quantity</span><strong>{source.quantity}</strong></div><div className="water-registry__row"><span>Coordinates</span><strong>{source.latitude.toFixed(7)}, {source.longitude.toFixed(7)}</strong></div><span className="water-registry__origin">{source.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</span></div><span className="water-registry__map-cue"><i className="fa-solid fa-map-location-dot" /> Go to map</span></Link><button type="button" className="water-registry__edit" onClick={() => openDetails(source)} aria-label={`Edit ${source.exactLocation}`}><i className="fa-solid fa-pen-to-square" /> Edit water source</button></div>)}</section>}
     </main>
     {open && createPortal(

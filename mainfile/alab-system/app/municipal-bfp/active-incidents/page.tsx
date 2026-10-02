@@ -563,6 +563,11 @@ const activeIncidentsStyles = `
   }
 
   /* Responsive Adjustments */
+  /* Search, filters and the phone-call action share one row. */
+  .mbfp-toolbar .mbfp-search-box { max-width: 360px; }
+  .mbfp-toolbar .mbfp-filter-pills { flex: 1 1 0; min-width: 260px; justify-content: flex-end; }
+  .mbfp-toolbar .mbfp-new-phone-incident-btn { flex: 0 0 auto; }
+
   @media (max-width: 1024px) {
     .mbfp-quick-stats {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -598,8 +603,15 @@ const activeIncidentsStyles = `
       flex-direction: column;
       align-items: stretch;
     }
-    .mbfp-search-box {
+    .mbfp-search-box,
+    .mbfp-toolbar .mbfp-search-box {
       max-width: 100%;
+    }
+    .mbfp-toolbar .mbfp-filter-pills {
+      justify-content: flex-start;
+    }
+    .mbfp-toolbar .mbfp-new-phone-incident-btn {
+      justify-content: center;
     }
   }
 `;
@@ -669,16 +681,7 @@ function ActiveIncidentsContent() {
       <style>{activeIncidentsStyles}</style>
       <div className="mbfp-incidents-shell">
         {/* Page Header */}
-        <FireCommandHeader slotId="municipal-fire-command-header" title="Active Incidents" icon="fa-fire" checking={checking} lastCheckedAt={lastCheckedAt} error={error} onRefresh={() => void refresh(true)}>
-            <button
-              type="button"
-              className="mbfp-new-phone-incident-btn"
-              onClick={() => setPhoneIntakeOpen(true)}
-            >
-              <i className="fa-solid fa-phone-volume" aria-hidden="true" />
-              <span>New Phone Call Incident</span>
-            </button>
-        </FireCommandHeader>
+        <FireCommandHeader slotId="municipal-fire-command-header" title="Active Incidents" icon="fa-fire" checking={checking} lastCheckedAt={lastCheckedAt} error={error} onRefresh={() => void refresh(true)} />
 
         {/* Quick KPI Stats Row */}
         <MunicipalStatCards
@@ -744,6 +747,15 @@ function ActiveIncidentsContent() {
               Pending ({pendingCount})
             </button>
           </div>
+
+          <button
+            type="button"
+            className="mbfp-new-phone-incident-btn"
+            onClick={() => setPhoneIntakeOpen(true)}
+          >
+            <i className="fa-solid fa-phone-volume" aria-hidden="true" />
+            <span>New Phone Call Incident</span>
+          </button>
         </div>
 
         {/* Error Alert */}

@@ -917,22 +917,6 @@ export function MunicipalStationsManager() {
       <section className="mbfp-stations-page">
 
       {/* HEADER SECTION */}
-      <div className="mbfp-header-top is-actions-only">
-        <div className="mbfp-header-actions">
-          <button
-            type="button"
-            className="mbfp-add-btn"
-            onClick={() => {
-              setModalError("");
-              setIsAddModalOpen(true);
-            }}
-          >
-            <i className="fa-solid fa-plus" />
-            <span>Add Station</span>
-          </button>
-        </div>
-      </div>
-
       {/* MUNICIPAL OVERVIEW STATS ROW */}
       <MunicipalStatCards
         label="Municipal station totals"
@@ -987,6 +971,7 @@ export function MunicipalStationsManager() {
             )}
           </div>
 
+          <div className="mbfp-toolbar-end">
           <div className="mbfp-filter-pills">
             <button
               type="button"
@@ -1008,6 +993,18 @@ export function MunicipalStationsManager() {
               onClick={() => setStatusFilter("INACTIVE")}
             >
               Inactive ({inactiveCount})
+            </button>
+          </div>
+            <button
+              type="button"
+              className="mbfp-add-btn"
+              onClick={() => {
+                setModalError("");
+                setIsAddModalOpen(true);
+              }}
+            >
+              <i className="fa-solid fa-plus" />
+              <span>Add Station</span>
             </button>
           </div>
         </div>
@@ -1833,8 +1830,6 @@ const pageStyles = `
   }
 
   /* ================= HEADER ================= */
-  .mbfp-header-top.is-actions-only { justify-content: flex-end; }
-  .mbfp-header-top.is-actions-only .mbfp-header-actions { justify-content: flex-end; }
   .mbfp-header-top {
     display: flex;
     justify-content: space-between;
@@ -2097,6 +2092,22 @@ const pageStyles = `
     display: flex;
     align-items: center;
     gap: 0.4rem;
+  }
+
+  /* Filters and the page action share the search row, on the right. */
+  .mbfp-toolbar-end {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+
+  .mbfp-toolbar-end .mbfp-add-btn {
+    min-height: 40px;
+    padding: 0.5rem 1.1rem;
+    white-space: nowrap;
   }
 
   .mbfp-pill-btn {
@@ -4283,6 +4294,16 @@ const pageStyles = `
     .mbfp-filter-pills {
       overflow-x: auto;
       padding-bottom: 0.25rem;
+    }
+
+    .mbfp-toolbar-end {
+      flex-direction: column;
+      align-items: stretch;
+      margin-left: 0;
+    }
+
+    .mbfp-toolbar-end .mbfp-add-btn {
+      justify-content: center;
     }
 
     .mbfp-form-row {
