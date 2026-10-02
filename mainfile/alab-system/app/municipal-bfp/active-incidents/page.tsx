@@ -7,6 +7,7 @@ import { BfpDataLoader } from "../../_components/bfp-data-loader";
 import { MunicipalPhoneCallIncidentIntake } from "../../_components/municipal-phone-call-incident-intake";
 import { useMunicipalIncidentFeed } from "../../_components/use-municipal-incident-feed";
 import { MunicipalStatCards } from "../../_components/municipal-stat-cards";
+import { FireCommandHeader } from "../../_components/fire-command-header";
 
 const activeIncidentsStyles = `
   /* ========== ACTIVE INCIDENTS STYLES ========== */
@@ -610,7 +611,7 @@ function ActiveIncidentsContent() {
   const [phoneIntakeOpen, setPhoneIntakeOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("ALL");
-  const { incidents, loading, checking, refreshing, error, lastCheckedAt, refresh } = useMunicipalIncidentFeed();
+  const { incidents, loading, checking, error, lastCheckedAt, refresh } = useMunicipalIncidentFeed();
 
   useEffect(() => {
     const inc = searchParams.get("incident");
@@ -624,12 +625,6 @@ function ActiveIncidentsContent() {
   const respondingCount = incidents.filter((i) => i.status === "RESPONDING").length;
   const verifiedCount = incidents.filter((i) => i.status === "VERIFIED" || i.status === "DISPATCHED").length;
   const pendingCount = incidents.filter((i) => i.status === "PENDING" || i.status === "UNVERIFIED").length;
-
-  const liveRefreshLabel = checking
-    ? "Live · checking..."
-    : lastCheckedAt
-      ? "Live · checked just now"
-      : "Live · waiting for telemetry";
 
   const filteredIncidents = useMemo(() => {
     return incidents.filter((item) => {
@@ -657,12 +652,15 @@ function ActiveIncidentsContent() {
 
   if (selected) {
     return (
+      <>
+      <FireCommandHeader slotId="municipal-fire-command-header" title="Active Incidents" icon="fa-fire" />
       <MunicipalIncidentDetail
         incidentId={selected}
         autoOpenAssignment={searchParams.get("assign") === "1"}
         onBack={() => setSelected(null)}
         onResponded={() => refresh()}
       />
+      </>
     );
   }
 
@@ -671,34 +669,16 @@ function ActiveIncidentsContent() {
       <style>{activeIncidentsStyles}</style>
       <div className="mbfp-incidents-shell">
         {/* Page Header */}
-        <header className="mbfp-incidents-header">
-          <div className="mbfp-incidents-title-group">
-            <h1 className="mbfp-incidents-h1">
-              <i className="fa-solid fa-fire" />
-              <span>Active Incidents</span>
-            </h1>
-            <span className="mbfp-live-check" aria-live="polite">{liveRefreshLabel}</span>
-          </div>
-
-          <div className="mbfp-header-actions">
+        <FireCommandHeader slotId="municipal-fire-command-header" title="Active Incidents" icon="fa-fire" checking={checking} lastCheckedAt={lastCheckedAt} error={error} onRefresh={() => void refresh(true)}>
             <button
+              type="button"
               className="mbfp-new-phone-incident-btn"
               onClick={() => setPhoneIntakeOpen(true)}
             >
-              <i className="fa-solid fa-phone-volume" />
+              <i className="fa-solid fa-phone-volume" aria-hidden="true" />
               <span>New Phone Call Incident</span>
             </button>
-            <button
-              className="mbfp-refresh-btn"
-              onClick={() => refresh(true)}
-              disabled={refreshing}
-              aria-label="Refresh incident queue"
-            >
-              <i className={`fa-solid fa-arrows-rotate ${checking ? "spin" : ""}`} />
-              <span>{refreshing ? "Refreshing…" : "Live Refresh"}</span>
-            </button>
-          </div>
-        </header>
+        </FireCommandHeader>
 
         {/* Quick KPI Stats Row */}
         <MunicipalStatCards

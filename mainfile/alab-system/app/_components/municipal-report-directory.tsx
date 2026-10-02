@@ -19,6 +19,7 @@ import { BfpDataLoader } from "./bfp-data-loader";
 import { MunicipalReportDetail } from "./municipal-report-detail";
 import { MunicipalReportExportDialog } from "./municipal-report-export-dialog";
 import { MunicipalStatCards } from "./municipal-stat-cards";
+import { FireCommandHeader } from "./fire-command-header";
 
 const summaryCardStyles = `
   /* Carried over from the dashboard counters so a station reads the same
@@ -441,6 +442,7 @@ export function MunicipalReportDirectory() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", fontFamily: "inherit" }}>
       <style>{summaryCardStyles}</style>
+      <FireCommandHeader slotId="municipal-fire-command-header" title="Incident Reports" icon="fa-file-lines" />
       {/* Header */}
       <div
         style={{
@@ -451,27 +453,6 @@ export function MunicipalReportDirectory() {
           gap: "1rem",
         }}
       >
-        <div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "1.45rem",
-              fontWeight: 800,
-              color: "#0F172A",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            <i className="fa-solid fa-file-lines" style={{ color: "#D00F09" }} />
-            Incident Reports
-          </h1>
-          <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "#64748B" }}>
-            Review municipal incidents and export records or summaries.
-          </p>
-        </div>
-
         <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
           <button
             type="button"

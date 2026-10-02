@@ -8,13 +8,11 @@ import type { FireTruck, MunicipalFireTruckRegistry } from "../../lib/fire-truck
 import { FireTruckCard, fireTruckCardStyles } from "./fire-truck-card";
 import { FireTruckDetailsDialog, fireTruckDialogStyles } from "./fire-truck-details-dialog";
 import { MunicipalStatCards } from "./municipal-stat-cards";
+import { FireCommandHeader } from "./fire-command-header";
 
 const styles = `
   .truck-registry { padding:1.5rem clamp(1rem,2vw,2rem) 3rem; color:#172033; font-family:'Plus Jakarta Sans',sans-serif; }
   .truck-registry * { box-sizing:border-box; }
-  .truck-registry__header { margin-bottom:1.25rem; }
-  .truck-registry h1 { display:flex; align-items:center; gap:.65rem; margin:0; font-size:1.65rem; font-weight:800; letter-spacing:-.035em; }
-  .truck-registry h1 i { color:#dc2626; }
   .truck-registry__toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem; margin:1.15rem 0; }
   .truck-registry__search { min-height:44px; width:min(380px,100%); padding:.7rem .85rem; border:1px solid #d0d5dd; border-radius:9px; background:#fff; color:#172033; font:inherit; }
   .truck-registry__search:focus-visible, .truck-registry__chip:focus-visible, .truck-registry__button:focus-visible { outline:3px solid rgba(37,99,235,.35); outline-offset:2px; }
@@ -87,9 +85,7 @@ export function MunicipalFireTrucks() {
   return <>
     <style>{styles}</style>
     <main className="truck-registry">
-      <header className="truck-registry__header">
-        <h1><i className="fa-solid fa-truck-moving" aria-hidden="true" />Fire trucks</h1>
-      </header>
+      <FireCommandHeader slotId="municipal-fire-command-header" title="Fire trucks" icon="fa-truck-moving" />
       <MunicipalStatCards label="Fire truck totals" items={[
         { key: "trucks", icon: "fa-truck-moving", tone: "blue", value: summary?.truckCount ?? 0, label: "Fire trucks", badge: "Fleet", description: "Trucks assigned to your stations", loading },
         { key: "serviceable", icon: "fa-circle-check", tone: "emerald", value: summary?.serviceableCount ?? 0, label: "Serviceable", badge: "Ready", description: "Serviceable apparatus", loading },

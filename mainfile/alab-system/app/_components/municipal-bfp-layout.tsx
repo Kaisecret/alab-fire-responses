@@ -1144,7 +1144,7 @@ function MunicipalShellSkeleton() {
 
 export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const hasCommandHeader = pathname === '/municipal-bfp' || pathname === '/municipal-bfp/' || pathname === '/municipal-bfp/gis-map';
+  const hasCommandHeader = pathname === '/municipal-bfp' || pathname === '/municipal-bfp/' || pathname === '/municipal-bfp/gis-map' || pathname === '/municipal-bfp/active-incidents' || pathname === '/municipal-bfp/firetrucks' || pathname === '/municipal-bfp/incident-reports';
   // The sidebar badge shows the real queue depth, not a fixed number.
   const { incidents: liveIncidents } = useMunicipalIncidentFeed();
   const activeIncidentCount = liveIncidents.length;

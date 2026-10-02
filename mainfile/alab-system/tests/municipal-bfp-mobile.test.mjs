@@ -56,7 +56,8 @@ test("municipal active incidents uses the shared live feed instead of a local tw
 
   assert.match(page, /useMunicipalIncidentFeed/);
   assert.doesNotMatch(page, /12000/);
-  assert.match(page, /Live · checked/);
+  assert.match(page, /FireCommandHeader/);
+  assert.match(readFileSync(join(root, "app", "_components", "fire-command-header.tsx"), "utf8"), /Live · checked/);
 });
 
 test("municipal active incidents uses an uncluttered compact eight-pixel card rhythm", () => {
