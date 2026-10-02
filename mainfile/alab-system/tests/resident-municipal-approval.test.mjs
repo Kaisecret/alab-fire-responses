@@ -147,7 +147,7 @@ test("resident and municipal approval screens use real APIs and correct review l
   const applicant = source("app/resident/application/page.tsx");
   const statusApi = source("app/api/resident/application-status/route.ts");
 
-  assert.match(municipal, /Resident Applications/);
+  assert.match(source("app/_components/municipal-bfp-layout.tsx"), /Resident Applications/);
   assert.match(municipal, /api\/municipal-bfp\/resident-applications/);
   assert.match(municipal, /Request corrections/);
   assert.doesNotMatch(municipal, /VR-2025-0152/);

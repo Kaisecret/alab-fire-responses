@@ -366,7 +366,7 @@ export function ProvincialReportConsole() {
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.6rem", flexWrap: "wrap", marginLeft: "auto" }}>
           <button
             type="button"
             onClick={() => downloadPdf("PROVINCIAL_SUMMARY")}
@@ -374,13 +374,14 @@ export function ProvincialReportConsole() {
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.48rem 1rem",
-              borderRadius: 6,
+              gap: "0.5rem",
+              minHeight: 44,
+              padding: "0.65rem 1.2rem",
+              borderRadius: 10,
               border: "1px solid #CBD5E1",
               background: "#FFFFFF",
               color: "#334155",
-              fontSize: "0.82rem",
+              fontSize: "0.85rem",
               fontWeight: 600,
               cursor: pdfBusy ? "progress" : "pointer",
               boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
@@ -407,13 +408,14 @@ export function ProvincialReportConsole() {
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.48rem 1.2rem",
-              borderRadius: 6,
+              gap: "0.5rem",
+              minHeight: 44,
+              padding: "0.65rem 1.2rem",
+              borderRadius: 10,
               border: "none",
               background: "linear-gradient(135deg, #D00F09, #DC2626)",
               color: "#FFFFFF",
-              fontSize: "0.82rem",
+              fontSize: "0.85rem",
               fontWeight: 700,
               cursor: "pointer",
               boxShadow: "0 2px 6px rgba(208, 15, 9, 0.3)",

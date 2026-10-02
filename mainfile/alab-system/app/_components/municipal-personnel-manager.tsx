@@ -170,13 +170,7 @@ export function MunicipalPersonnelManager() {
       <style>{pageStyles}</style>
 
       {/* HEADER SECTION */}
-      <div className="mbfp-header-top">
-        <div className="mbfp-page-header">
-          <h1>
-            <i className="fa-solid fa-users" /> BFP Personnel
-          </h1>
-        </div>
-
+      <div className="mbfp-header-top is-actions-only">
         <div className="mbfp-header-actions">
           <button
             type="button"
@@ -639,6 +633,7 @@ const pageStyles = `
   }
 
   /* Header */
+  .mbfp-header-top.is-actions-only { justify-content: flex-end; }
   .mbfp-header-top {
     display: flex;
     justify-content: space-between;
@@ -646,22 +641,6 @@ const pageStyles = `
     flex-wrap: wrap;
     gap: 1rem;
     padding-bottom: 0.25rem;
-  }
-
-  .mbfp-page-header h1 {
-    font-size: 1.65rem;
-    font-weight: 850;
-    letter-spacing: -0.02em;
-    color: #0F172A;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-  }
-
-  .mbfp-page-header h1 i {
-    color: #D00F09;
-    font-size: 1.5rem;
   }
 
   .mbfp-header-actions {

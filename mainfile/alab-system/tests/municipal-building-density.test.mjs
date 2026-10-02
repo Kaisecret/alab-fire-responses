@@ -44,5 +44,7 @@ test("municipal GIS map uses live refresh and renders density evidence", () => {
   assert.doesNotMatch(map, /autoRefresh:\s*false/);
   assert.match(map, /building-density/);
   assert.match(map, /geoJSON/);
-  assert.match(map, /Mapped building-density evidence/);
+  // The evidence stays on the map; the incident popup no longer repeats it as text.
+  assert.match(map, /Mapped structures near the fire/);
+  assert.doesNotMatch(read("app/_components/municipal-gis-incident-modal.tsx"), /Automatic building-density assessment/);
 });

@@ -800,17 +800,39 @@ const layoutStyles = `
     border-color: #CBD5E1;
   }
 
+  /* Same title and icon tile as the command header on the other tabs. */
   .mbfp-header-titles {
     display: flex;
     align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .mbfp-header-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #DC2626;
+    color: #FFFFFF;
+    font-size: 1.2rem;
+    box-shadow: 0 3px 8px #DC262625;
   }
 
   .mbfp-header-title {
-    font-size: 1.15rem;
+    min-width: 0;
+    font-size: clamp(1rem, 1.5vw, 1.35rem);
     font-weight: 800;
     color: #0F172A;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
+    line-height: 1.3;
+    letter-spacing: -0.025em;
+  }
+
+  @media (max-width: 640px) {
+    .mbfp-header-titles { gap: 0.5rem; }
+    .mbfp-header-icon { flex-basis: 34px; width: 34px; height: 34px; border-radius: 9px; font-size: 1rem; }
   }
 
   .mbfp-header-right {
@@ -1258,6 +1280,16 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
     return match?.label || 'Municipal Operations';
   };
 
+  const getTabIcon = (path: string): string => {
+    if (path.startsWith('/municipal-bfp/verification-queue') || path.startsWith('/municipal-bfp/resident-applications')) return 'fa-id-card';
+    if (path.startsWith('/municipal-bfp/stations')) return 'fa-building-shield';
+    if (path.startsWith('/municipal-bfp/water-sources')) return 'fa-droplet';
+    if (path.startsWith('/municipal-bfp/responders')) return 'fa-users';
+    if (path.startsWith('/municipal-bfp/profile')) return 'fa-user-gear';
+    if (path.startsWith('/municipal-bfp/notifications')) return 'fa-bell';
+    return 'fa-fire-flame-curved';
+  };
+
   // Ends this tab's login (each tab has its own session cookie) and leaves
   // only after /me confirms the server no longer accepts this tab.
   const handleLogout = async () => {
@@ -1492,6 +1524,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
                   <i className="fa-solid fa-bars" />
                 </button>
                 {hasCommandHeader ? <div id="municipal-fire-command-header" className="mbfp-command-header-slot" /> : <div className="mbfp-header-titles">
+                  <span className="mbfp-header-icon" aria-hidden="true"><i className={`fa-solid ${getTabIcon(pathname)}`} /></span>
                   <span className="mbfp-header-title">
                     {getTabTitle(pathname)}
                   </span>

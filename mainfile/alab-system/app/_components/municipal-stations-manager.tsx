@@ -917,13 +917,7 @@ export function MunicipalStationsManager() {
       <section className="mbfp-stations-page">
 
       {/* HEADER SECTION */}
-      <div className="mbfp-header-top">
-        <div className="mbfp-page-header">
-          <h1>
-            <i className="fa-solid fa-building-shield" /> Stations
-          </h1>
-        </div>
-
+      <div className="mbfp-header-top is-actions-only">
         <div className="mbfp-header-actions">
           <button
             type="button"
@@ -1839,6 +1833,8 @@ const pageStyles = `
   }
 
   /* ================= HEADER ================= */
+  .mbfp-header-top.is-actions-only { justify-content: flex-end; }
+  .mbfp-header-top.is-actions-only .mbfp-header-actions { justify-content: flex-end; }
   .mbfp-header-top {
     display: flex;
     justify-content: space-between;
@@ -1857,29 +1853,6 @@ const pageStyles = `
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 0.35rem;
-  }
-
-  .mbfp-page-header h1 {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #0F172A;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin: 0;
-    letter-spacing: -0.02em;
-  }
-
-  .mbfp-page-header h1 i {
-    color: #D00F09;
-  }
-
-  .mbfp-page-header p {
-    font-size: 0.86rem;
-    color: #64748B;
-    margin: 0.35rem 0 0;
-    max-width: 44rem;
-    line-height: 1.5;
   }
 
   .mbfp-header-actions {

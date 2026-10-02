@@ -2,11 +2,10 @@
 
 import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import type { MunicipalIncident } from "./use-municipal-incident-feed";
-import { densityAssessmentCopy, densityRiskClass } from "../../lib/fire-reports/building-density-presentation";
 
 export type DensityEvidencePayload = {
   incident: { latitude: number; longitude: number };
@@ -69,13 +68,22 @@ function formatDate(value: string | null | undefined) {
   return Number.isNaN(date.getTime()) ? "Not recorded" : new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-export function MunicipalGisIncidentModal({ incidents, onClose, onSelectedIncidentChange, densityEvidence, densityLoading, densityError }: {
+const dangerTones: Record<string, string> = { CRITICAL: "red", HIGH: "orange", MODERATE: "amber", LOW: "green" };
+
+/** One labelled value with an icon tile; shared by the incident and water-source popups. */
+export function GisFact({ icon, tone, label, children }: { icon: string; tone: string; label: string; children: ReactNode }) {
+  return (
+    <article className="mbfp-gis-fact">
+      <i className={`fa-solid ${icon} mbfp-gis-fact-icon ${tone}`} aria-hidden="true" />
+      <div><span>{label}</span><strong>{children}</strong></div>
+    </article>
+  );
+}
+
+export function MunicipalGisIncidentModal({ incidents, onClose, onSelectedIncidentChange }: {
   incidents: MunicipalIncident[];
   onClose: () => void;
   onSelectedIncidentChange?: (id: string) => void;
-  densityEvidence?: DensityEvidencePayload | null;
-  densityLoading?: boolean;
-  densityError?: string;
 }) {
   const [mounted, setMounted] = useState(false);
   const [requestedId, setSelectedId] = useState(incidents[0]?.id ?? "");
@@ -154,9 +162,12 @@ export function MunicipalGisIncidentModal({ incidents, onClose, onSelectedIncide
         onClick={(event) => event.stopPropagation()}
       >
         <header className="mbfp-gis-modal-header">
-          <div>
-            <p className="mbfp-gis-modal-kicker">Municipality-secured incident record</p>
-            <h2 id="municipal-gis-incident-title">{incidents.length > 1 ? `${incidents.length} reports at this location` : "Incident details"}</h2>
+          <div className="mbfp-gis-modal-heading">
+            <span className="mbfp-gis-modal-badge" aria-hidden="true"><i className="fa-solid fa-file-shield" /></span>
+            <div>
+              <p className="mbfp-gis-modal-kicker">Municipality-secured incident record</p>
+              <h2 id="municipal-gis-incident-title">{incidents.length > 1 ? `${incidents.length} reports at this location` : "Incident details"}</h2>
+            </div>
           </div>
           <button className="mbfp-gis-modal-close" type="button" onClick={onClose} aria-label="Close incident details"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
         </header>
@@ -176,39 +187,29 @@ export function MunicipalGisIncidentModal({ incidents, onClose, onSelectedIncide
             <section className="mbfp-gis-modal-hero">
               <span className="mbfp-gis-modal-fire"><i className="fa-solid fa-fire" aria-hidden="true" /></span>
               <div><strong>{detail.referenceNumber}</strong>{detail.reportSource === "PHONE_CALL" && <span>From Phone Caller</span>}<span className={`mbfp-gis-status status-${detail.status.toLowerCase()}`}>{humanize(detail.status)}</span></div>
-              <p>Reported {formatDate(detail.submittedAt)}</p>
+              <p><i className="fa-regular fa-clock" aria-hidden="true" /> Reported {formatDate(detail.submittedAt)}</p>
             </section>
 
             <div className="mbfp-gis-facts">
-              <article><span>{detail.reportSource === "PHONE_CALL" ? "Caller" : "Resident"}</span><strong>{detail.residentName || [detail.firstName, detail.lastName].filter(Boolean).join(" ") || "Not recorded"}</strong></article>
-              <article><span>{detail.reportSource === "PHONE_CALL" ? "Caller contact" : "Direct contact"}</span><strong>{detail.phone || "Not recorded"}</strong></article>
-              <article><span>Reported location</span><strong>{[detail.barangay, detail.municipality].filter(Boolean).join(", ") || "Not recorded"}</strong></article>
-              <article><span>Nearest landmark</span><strong>{detail.landmark || "Not recorded"}</strong></article>
-              <article><span>GPS coordinates</span><strong>{Number.isFinite(detail.latitude) ? `${detail.latitude.toFixed(6)}, ${detail.longitude.toFixed(6)}` : "Not recorded"}</strong></article>
-              <article><span>Fire classification</span><strong>{humanize(detail.fireType)}</strong></article>
-              <article><span>Response started</span><strong>{formatDate(detail.responseStartedAt)}</strong></article>
-              <article><span>Completed / closed</span><strong>{completion ? formatDate(completion.createdAt) : "Not completed"}</strong></article>
-              <article><span>Level of danger</span><strong>{humanize(detail.calculatedSeverity)}</strong></article>
-              <article><span>Effective house density</span><strong>{humanize(detail.houseDensity)}</strong></article>
+              <GisFact icon={detail.reportSource === "PHONE_CALL" ? "fa-phone-volume" : "fa-user"} tone="blue" label={detail.reportSource === "PHONE_CALL" ? "Caller" : "Resident"}>{detail.residentName || [detail.firstName, detail.lastName].filter(Boolean).join(" ") || "Not recorded"}</GisFact>
+              <GisFact icon="fa-phone" tone="green" label={detail.reportSource === "PHONE_CALL" ? "Caller contact" : "Direct contact"}>{detail.phone || "Not recorded"}</GisFact>
+              <GisFact icon="fa-location-dot" tone="red" label="Reported location">{[detail.barangay, detail.municipality].filter(Boolean).join(", ") || "Not recorded"}</GisFact>
+              <GisFact icon="fa-landmark" tone="violet" label="Nearest landmark">{detail.landmark || "Not recorded"}</GisFact>
+              <GisFact icon="fa-crosshairs" tone="slate" label="GPS coordinates">{Number.isFinite(detail.latitude) ? `${detail.latitude.toFixed(6)}, ${detail.longitude.toFixed(6)}` : "Not recorded"}</GisFact>
+              <GisFact icon="fa-fire" tone="orange" label="Fire classification">{humanize(detail.fireType)}</GisFact>
+              <GisFact icon="fa-truck-fast" tone="blue" label="Response started">{formatDate(detail.responseStartedAt)}</GisFact>
+              <GisFact icon="fa-flag-checkered" tone="green" label="Completed / closed">{completion ? formatDate(completion.createdAt) : "Not completed"}</GisFact>
+              <GisFact icon="fa-triangle-exclamation" tone={dangerTones[detail.calculatedSeverity ?? ""] ?? "slate"} label="Level of danger">
+                {detail.calculatedSeverity ? <b className={`mbfp-gis-danger ${dangerTones[detail.calculatedSeverity] ?? "slate"}`}>{humanize(detail.calculatedSeverity)}</b> : "Not recorded"}
+              </GisFact>
+              <GisFact icon="fa-house-chimney" tone="amber" label="Effective house density">{humanize(detail.houseDensity)}</GisFact>
             </div>
 
-            <section className={`mbfp-gis-modal-section ${densityRiskClass(densityEvidence?.assessment.status, densityEvidence?.assessment.confidence)}`}>
-              <h3>Automatic building-density assessment</h3>
-              {densityLoading ? <p>Checking mapped structures around the alert location…</p> : densityError ? <p>{densityError} The incident remains visible; use Live refresh to retry.</p> : densityEvidence ? <p>
-                <strong>{densityAssessmentCopy(densityEvidence.assessment.status)}</strong><br />
-                {densityEvidence.assessment.buildingCount} mapped structures within 30 m
-                {densityEvidence.assessment.minimumGapMeters != null ? ` · minimum mapped gap ${densityEvidence.assessment.minimumGapMeters} m` : ""}
-                {` · ${humanize(densityEvidence.assessment.confidence)} confidence`}. The red polygons are the exact mapped evidence used for this report.<br />
-                <a href={densityEvidence.attribution.url} target="_blank" rel="noreferrer">{densityEvidence.attribution.label}</a> · {densityEvidence.attribution.license}<br />
-                Verify actual conditions on scene.
-              </p> : <p>Mapped building-density evidence is unavailable for this incident.</p>}
-            </section>
+            <section className="mbfp-gis-modal-section"><h3><i className="fa-solid fa-file-lines" aria-hidden="true" />Reported cause / description</h3><p>{detail.description || (detail.reportSource === "PHONE_CALL" ? "No caller description was provided. This is a phone-call report, not a confirmed fire-cause assessment." : "No resident description was provided. This is a resident report, not a confirmed fire-cause assessment.")}</p></section>
 
-            <section className="mbfp-gis-modal-section"><h3>Reported cause / description</h3><p>{detail.description || (detail.reportSource === "PHONE_CALL" ? "No caller description was provided. This is a phone-call report, not a confirmed fire-cause assessment." : "No resident description was provided. This is a resident report, not a confirmed fire-cause assessment.")}</p></section>
+            <section className="mbfp-gis-modal-section"><h3><i className="fa-solid fa-clock-rotate-left" aria-hidden="true" />Status timeline</h3><ol className="mbfp-gis-timeline">{detail.history.length ? detail.history.map((event, index) => <li key={`${event.status}-${event.createdAt}-${index}`}><span /><div><strong>{humanize(event.status)}</strong><small>{formatDate(event.createdAt)}</small>{event.message && <p>{event.message}</p>}</div></li>) : <li><span /><div><strong>{humanize(detail.status)}</strong><small>{formatDate(detail.submittedAt)}</small></div></li>}</ol></section>
 
-            <section className="mbfp-gis-modal-section"><h3>Status timeline</h3><ol className="mbfp-gis-timeline">{detail.history.length ? detail.history.map((event, index) => <li key={`${event.status}-${event.createdAt}-${index}`}><span /><div><strong>{humanize(event.status)}</strong><small>{formatDate(event.createdAt)}</small>{event.message && <p>{event.message}</p>}</div></li>) : <li><span /><div><strong>{humanize(detail.status)}</strong><small>{formatDate(detail.submittedAt)}</small></div></li>}</ol></section>
-
-            {detail.photos.some((photo) => photo.url) && <section className="mbfp-gis-modal-section"><h3>Incident photo</h3><div className="mbfp-gis-photo-grid">{detail.photos.filter((photo) => photo.url).map((photo, index) => <a key={photo.url} href={photo.url!} target="_blank" rel="noreferrer" className="mbfp-gis-photo-link"><img src={photo.url!} alt={`Incident evidence ${index + 1}`} /><span>View incident photo <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" /></span></a>)}</div></section>}
+            {detail.photos.some((photo) => photo.url) && <section className="mbfp-gis-modal-section"><h3><i className="fa-solid fa-camera" aria-hidden="true" />Incident photo</h3><div className="mbfp-gis-photo-grid">{detail.photos.filter((photo) => photo.url).map((photo, index) => <a key={photo.url} href={photo.url!} target="_blank" rel="noreferrer" className="mbfp-gis-photo-link"><img src={photo.url!} alt={`Incident evidence ${index + 1}`} /><span>View incident photo <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" /></span></a>)}</div></section>}
           </div>
         )}
       </section>

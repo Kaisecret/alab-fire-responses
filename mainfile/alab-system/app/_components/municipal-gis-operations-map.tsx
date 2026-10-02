@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "leaflet/dist/leaflet.css";
 
-import { MunicipalGisIncidentModal, type DensityEvidencePayload } from "./municipal-gis-incident-modal";
+import { GisFact, MunicipalGisIncidentModal, type DensityEvidencePayload } from "./municipal-gis-incident-modal";
 import { MunicipalIncident, useMunicipalIncidentFeed } from "./use-municipal-incident-feed";
 import { densityRiskClass } from "../../lib/fire-reports/building-density-presentation";
 import type { WaterSource } from "../../lib/water-sources/types";
@@ -85,6 +85,7 @@ const styles = `
   .mbfp-ops-water-count{position:absolute;right:-13px;top:-8px;display:grid;min-width:25px;height:25px;place-items:center;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#92400e;color:#fff;font-size:.7rem;font-weight:800;transform:rotate(45deg)}
   .mbfp-ops-mode-switch{display:inline-flex;padding:.28rem;border:1px solid #cbd9e8;border-radius:12px;background:#fff;box-shadow:0 5px 14px rgba(15,23,42,.06)}
   .mbfp-ops-mode-button{display:inline-flex;align-items:center;justify-content:center;gap:.48rem;min-height:2.55rem;padding:.55rem 1rem;border:0;border-radius:9px;background:transparent;color:#52627a;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer}.mbfp-ops-mode-button.is-on{background:#0f766e;color:#fff;box-shadow:0 5px 12px rgba(15,118,110,.2)}.mbfp-ops-mode-button:focus-visible{outline:2px solid #0f766e;outline-offset:2px}
+  .mbfp-gis-modal-heading{display:flex;align-items:center;gap:.8rem;min-width:0}.mbfp-gis-modal-badge{display:grid;flex:0 0 44px;width:44px;height:44px;place-items:center;border-radius:13px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:1.1rem;box-shadow:0 10px 20px -10px rgba(185,28,28,.8)}.mbfp-water-modal .mbfp-gis-modal-badge{background:linear-gradient(135deg,#14b8a6,#0f766e);box-shadow:0 10px 20px -10px rgba(15,118,110,.8)}.mbfp-gis-modal-fire{background:linear-gradient(135deg,#ef4444,#b91c1c);font-size:1.1rem}.mbfp-gis-modal-hero p i{margin-right:.25rem}.mbfp-gis-facts .mbfp-gis-fact{display:flex;align-items:flex-start;gap:.65rem;background:#fff;box-shadow:0 6px 16px -14px rgba(15,23,42,.45)}.mbfp-gis-facts .mbfp-gis-fact>div{min-width:0}.mbfp-gis-facts .mbfp-gis-fact-icon{display:grid;flex:0 0 auto;width:34px;height:34px;place-items:center;border-radius:10px;font-size:.85rem;line-height:1}.mbfp-gis-fact-icon.red{background:#fef2f2;color:#b91c1c}.mbfp-gis-fact-icon.orange{background:#fff7ed;color:#c2410c}.mbfp-gis-fact-icon.amber{background:#fffbeb;color:#b45309}.mbfp-gis-fact-icon.green{background:#ecfdf3;color:#067647}.mbfp-gis-fact-icon.blue{background:#eff6ff;color:#1d4ed8}.mbfp-gis-fact-icon.violet{background:#f5f3ff;color:#6d28d9}.mbfp-gis-fact-icon.teal{background:#f0fdfa;color:#0f766e}.mbfp-gis-fact-icon.slate{background:#f1f5f9;color:#475569}.mbfp-gis-facts .mbfp-gis-danger{display:inline-flex;padding:.15rem .55rem;border-radius:999px;font-size:.78rem;font-weight:850}.mbfp-gis-danger.red{background:#fee2e2;color:#b91c1c}.mbfp-gis-danger.orange{background:#ffedd5;color:#c2410c}.mbfp-gis-danger.amber{background:#fef3c7;color:#b45309}.mbfp-gis-danger.green{background:#dcfce7;color:#047857}.mbfp-gis-danger.slate{background:#f1f5f9;color:#475569}.mbfp-gis-modal-section h3{display:flex;align-items:center;gap:.5rem}.mbfp-gis-modal-section h3 i{display:grid;width:26px;height:26px;place-items:center;border-radius:8px;background:#fef2f2;color:#dc2626;font-size:.75rem}.mbfp-water-modal__origin i{color:#0f766e}
   .mbfp-water-modal{width:min(100%,660px)}.mbfp-water-modal .mbfp-gis-modal-kicker{color:#0f766e}.mbfp-water-modal__hero{display:grid;grid-template-columns:auto 1fr;gap:.9rem;align-items:center;padding:1rem;border:1px solid #bfe4dd;border-radius:15px;background:#f0fdfa}.mbfp-water-modal__icon{display:grid;width:52px;height:52px;place-items:center;border-radius:16px;background:#0f766e;color:#fff;font-size:1.25rem;box-shadow:0 10px 22px rgba(15,118,110,.22)}.mbfp-water-modal__kind{margin:0 0 .18rem;color:#0f766e;font-size:.7rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase}.mbfp-water-modal__location{margin:0;color:#132238;font-size:1rem;line-height:1.45}.mbfp-water-modal__origin{display:inline-flex;align-items:center;gap:.4rem;margin-top:1rem;padding:.5rem .65rem;border-radius:9px;background:#f1f5f9;color:#64748b;font-size:.72rem;font-weight:700}
   .mbfp-water-modal__warning{margin:.8rem 0 0;padding:.85rem 1rem;border:1px solid #fcd34d;border-radius:12px;background:#fffbeb;color:#78350f;font-size:.82rem;line-height:1.5}
   .mbfp-water-modal__select{width:100%;margin-top:.8rem;padding:.65rem .75rem;border:1px solid #d5dfeb;border-radius:10px;background:#fff;color:#132238;font:inherit}
@@ -223,8 +224,6 @@ export function MunicipalGisOperationsMap() {
   const [selectedIncidents, setSelectedIncidents] = useState<MunicipalIncident[] | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState("");
   const [densityEvidence, setDensityEvidence] = useState<DensityEvidencePayload | null>(null);
-  const [densityLoading, setDensityLoading] = useState(false);
-  const [densityError, setDensityError] = useState("");
   const [mapReady, setMapReady] = useState(false);
   const [stations, setStations] = useState<StationMarker[]>([]);
   const [waterSources, setWaterSources] = useState<WaterSource[]>([]);
@@ -355,9 +354,7 @@ export function MunicipalGisOperationsMap() {
     const map = mapRef.current;
     if (!selectedIncidentId || !L || !map) return;
     const controller = new AbortController();
-    setDensityLoading(true);
     setDensityEvidence(null);
-    setDensityError("");
     if (densityLayerRef.current) map.removeLayer(densityLayerRef.current);
     densityLayerRef.current = null;
     void (async () => {
@@ -380,12 +377,7 @@ export function MunicipalGisOperationsMap() {
         densityLayerRef.current = group;
         setDensityEvidence(payload);
       } catch (caught) {
-        if (!controller.signal.aborted) {
-          console.warn("Building-density overlay unavailable", caught);
-          setDensityError(caught instanceof Error ? caught.message : "Mapped building-density evidence is unavailable.");
-        }
-      } finally {
-        if (!controller.signal.aborted) setDensityLoading(false);
+        if (!controller.signal.aborted) console.warn("Building-density overlay unavailable", caught);
       }
     })();
     return () => controller.abort();
@@ -395,7 +387,6 @@ export function MunicipalGisOperationsMap() {
     if (densityLayerRef.current && mapRef.current) mapRef.current.removeLayer(densityLayerRef.current);
     densityLayerRef.current = null;
     setDensityEvidence(null);
-    setDensityError("");
     setSelectedIncidentId("");
     setSelectedIncidents(null);
   }
@@ -467,7 +458,7 @@ export function MunicipalGisOperationsMap() {
       {mapMode === "INCIDENTS" && !loading && !error && incidents.length > 0 && view === "ACTIVE" && activeCount === 0 && <div className="mbfp-ops-empty" role="status"><strong>Nothing is burning right now</strong><p>Every incident in {stationName} is resolved or closed. Switch to History to see them.</p></div>}
       {mapMode === "WATER_SOURCES" && waterSources.length === 0 && <div className="mbfp-ops-empty" role="status"><strong>No mapped water sources yet</strong><p>Add a hydrant or water source from the municipal water-source registry.</p></div>}</div>
     <footer className="mbfp-ops-footnote">{mapMode === "INCIDENTS" ? <><span className="mbfp-ops-summary"><strong>{incidents.length}</strong>{incidents.length === 1 ? "municipality-scoped report" : "municipality-scoped reports"} across {clusters.length} reported {clusters.length === 1 ? "location" : "locations"} for {stationName}.</span>{error ? <span className="mbfp-ops-error" role="alert">{error}</span> : <a className="mbfp-ops-queue-link" href="/municipal-bfp/active-incidents">Open active incident queue</a>}</> : <><span className="mbfp-ops-summary"><strong>{waterSources.length}</strong>{waterSources.length === 1 ? "mapped water source" : "mapped water sources"} for {stationName}.</span><a className="mbfp-ops-queue-link" href="/municipal-bfp/water-sources">Open water-source registry</a></>}</footer>
-  </section>{selectedIncidents && <MunicipalGisIncidentModal incidents={selectedIncidents} onClose={closeIncident} onSelectedIncidentChange={setSelectedIncidentId} densityEvidence={densityEvidence} densityLoading={densityLoading} densityError={densityError} />}
+  </section>{selectedIncidents && <MunicipalGisIncidentModal incidents={selectedIncidents} onClose={closeIncident} onSelectedIncidentChange={setSelectedIncidentId} />}
   {selectedWaterSource && createPortal(
     <div
       className="mbfp-gis-modal-backdrop"
@@ -476,7 +467,10 @@ export function MunicipalGisOperationsMap() {
     >
       <section className="mbfp-gis-modal mbfp-water-modal" role="dialog" aria-modal="true" aria-labelledby="water-source-modal-title">
         <header className="mbfp-gis-modal-header">
-          <div><p className="mbfp-gis-modal-kicker">Mapped municipal water network</p><h2 id="water-source-modal-title">Water source details</h2></div>
+          <div className="mbfp-gis-modal-heading">
+            <span className="mbfp-gis-modal-badge" aria-hidden="true"><i className="fa-solid fa-droplet" /></span>
+            <div><p className="mbfp-gis-modal-kicker">Mapped municipal water network</p><h2 id="water-source-modal-title">Water source details</h2></div>
+          </div>
           <button className="mbfp-gis-modal-close" type="button" aria-label="Close water source details" onClick={() => setSelectedWaterSource(null)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
         </header>
         <div className="mbfp-gis-modal-body">
@@ -485,10 +479,10 @@ export function MunicipalGisOperationsMap() {
             <div><p className="mbfp-water-modal__kind">{selectedWaterSource.sourceKind === "FIRE_HYDRANT" ? "Fire hydrant" : "Water source"}</p><h3 className="mbfp-water-modal__location">{selectedWaterSource.exactLocation}</h3></div>
           </section>
           <div className="mbfp-gis-facts">
-            <article><span>Type / color</span><strong>{selectedWaterSource.typeColor}</strong></article>
-            <article><span>Quantity</span><strong>{selectedWaterSource.quantity}</strong></article>
-            <article><span>Recorded latitude</span><strong>{selectedWaterSource.latitude.toFixed(7)}</strong></article>
-            <article><span>Recorded longitude</span><strong>{selectedWaterSource.longitude.toFixed(7)}</strong></article>
+            <GisFact icon="fa-palette" tone="red" label="Type / color">{selectedWaterSource.typeColor}</GisFact>
+            <GisFact icon="fa-hashtag" tone="blue" label="Quantity">{selectedWaterSource.quantity}</GisFact>
+            <GisFact icon="fa-arrows-up-down" tone="teal" label="Recorded latitude">{selectedWaterSource.latitude.toFixed(7)}</GisFact>
+            <GisFact icon="fa-arrows-left-right" tone="teal" label="Recorded longitude">{selectedWaterSource.longitude.toFixed(7)}</GisFact>
           </div>
           {selectedWaterSourceGroup?.approximate && (
             <div className="mbfp-water-modal__warning" role="note">
