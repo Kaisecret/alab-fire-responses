@@ -485,15 +485,15 @@ const provincialLayoutStyles = `
   }
 
   .pbfp-nav-link.active {
-    background: var(--pbfp-red-soft);
+    background: #DC2626;
     color: #FFFFFF;
     font-weight: 700;
-    border-left-color: var(--pbfp-red);
+    border-left-color: #DC2626;
   }
 
   .pbfp-sidebar.collapsed .pbfp-nav-link.active {
     border-left-color: transparent;
-    box-shadow: inset 0 0 0 1px rgba(219, 27, 13, 0.4);
+    box-shadow: none;
   }
 
   .pbfp-nav-icon {
@@ -518,7 +518,7 @@ const provincialLayoutStyles = `
 
   .pbfp-nav-link.active .pbfp-nav-icon,
   .pbfp-nav-link.active .pbfp-custom-dash-icon {
-    color: var(--pbfp-red);
+    color: #FFFFFF;
     transform: scale(1.1);
   }
 
@@ -1125,7 +1125,7 @@ const provincialLayoutStyles = `
     }
 
     .pbfp-sidebar.collapsed .pbfp-nav-link.active {
-      border-left-color: var(--pbfp-red);
+      border-left-color: #DC2626;
     }
 
     .pbfp-main-area,
