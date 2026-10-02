@@ -133,8 +133,33 @@ const dashboardStyles = `
   .mbfp-spin-icon { animation: mbfpSpin 0.9s linear infinite; }
 
 
-  .mbfp-columns { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
-  .mbfp-col { display: grid; gap: 1rem; min-width: 0; }
+  /* Both columns end level: one card in each column grows to take up the
+     difference, so a quiet day never leaves a hole beside a long column. */
+  .mbfp-columns { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 1rem; align-items: stretch; }
+  .mbfp-col { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+  .mbfp-card.is-grow { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .mbfp-card.is-grow > .mbfp-card-body { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .mbfp-card.is-grow > .mbfp-card-body > .mbfp-empty.is-hero { flex: 1 1 auto; align-content: center; padding: 2rem 1rem; }
+  .mbfp-empty.is-hero > i { width: 3.4rem; height: 3.4rem; font-size: 1.35rem; box-shadow: 0 0 0 8px #F0FDF4; }
+  .mbfp-empty.is-hero strong { font-size: 1rem; }
+  .mbfp-empty-cta { display: inline-flex; align-items: center; gap: 0.45rem; margin-top: 0.55rem; padding: 0.55rem 0.9rem; border-radius: 10px; background: #FFF1F2; color: #B91C1C; font-size: 0.8rem; font-weight: 800; text-decoration: none; transition: background 0.15s ease; }
+  .mbfp-empty-cta:hover { background: #FFE4E6; }
+
+  /* Status overview under a short incident list. */
+  .mbfp-fill { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 0.7rem; padding: 1rem 1.1rem 1.1rem; border-top: 1px solid #F1F5F9; background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%); }
+  .mbfp-fill-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--dash-muted); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+  .mbfp-fill-head span:last-child { font-weight: 650; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+  .mbfp-fill-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.6rem; }
+  .mbfp-fill-tile { display: flex; align-items: center; gap: 0.6rem; min-width: 0; padding: 0.7rem 0.75rem; border: 1px solid #E2E8F0; border-radius: 12px; background: #FFFFFF; color: inherit; text-decoration: none; box-shadow: 0 4px 12px -10px rgba(15, 23, 42, 0.35); transition: border-color 0.15s ease, transform 0.15s ease; }
+  .mbfp-fill-tile:hover { border-color: #CBD5E1; transform: translateY(-1px); }
+  .mbfp-fill-tile > i { flex: 0 0 auto; width: 1.9rem; height: 1.9rem; display: grid; place-items: center; border-radius: 9px; font-size: 0.8rem; }
+  .mbfp-fill-tile.amber > i { background: #FEF3C7; color: #B45309; }
+  .mbfp-fill-tile.blue > i { background: #DBEAFE; color: #1D4ED8; }
+  .mbfp-fill-tile.red > i { background: #FEE2E2; color: #B91C1C; }
+  .mbfp-fill-tile.green > i { background: #D1FAE5; color: #047857; }
+  .mbfp-fill-tile span { display: grid; min-width: 0; }
+  .mbfp-fill-tile strong { font-size: 1.1rem; font-weight: 850; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .mbfp-fill-tile small { overflow: hidden; color: var(--dash-muted); font-size: 0.7rem; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; }
   .mbfp-card { min-width: 0; border: 1px solid var(--dash-line); border-radius: 16px; background: #fff; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03); overflow: hidden; }
   .mbfp-card-header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.9rem 1.1rem; border-bottom: 1px solid #EEF2F7; }
   .mbfp-card-title { display: flex; align-items: center; gap: 0.55rem; margin: 0; font-size: 0.95rem; font-weight: 800; letter-spacing: -0.01em; }
@@ -184,7 +209,7 @@ const dashboardStyles = `
   .mbfp-call:hover { background: #FEE2E2; }
   .mbfp-row.is-hq { background: #FFF7F7; }
   .mbfp-empty { display: grid; justify-items: center; gap: 0.35rem; padding: 1.6rem 1rem; color: var(--dash-muted); font-size: 0.8rem; text-align: center; }
-  .mbfp-empty i { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border-radius: 50%; background: #ECFDF5; color: #059669; font-size: 1rem; }
+  .mbfp-empty > i { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border-radius: 50%; background: #ECFDF5; color: #059669; font-size: 1rem; }
   .mbfp-empty strong { color: var(--dash-ink); font-size: 0.88rem; }
 
   /* Quick actions */
@@ -209,6 +234,8 @@ const dashboardStyles = `
 
   @media (max-width: 1100px) {
     .mbfp-columns { grid-template-columns: 1fr; }
+    /* One column: nothing to balance against, so keep the page short. */
+    .mbfp-fill { display: none; }
   }
 
   @media (max-width: 768px) {
@@ -367,6 +394,13 @@ export function MunicipalBfpDashboard() {
   const stations = dashboardData?.stations ?? [];
   const nearbyStations = dashboardData?.nearbyStations ?? [];
   const municipality = dashboardData?.municipality || 'Municipal';
+  const statusCounts = {
+    toVerify: ownIncidents.filter((incident) => AWAITING_VERIFICATION.has(incident.status)).length,
+    verified: ownIncidents.filter((incident) => incident.status === 'VERIFIED' || incident.status === 'CONFIRMED').length,
+    responding: ownIncidents.filter((incident) => ['RESPONDING', 'FIRETRUCK_DISPATCHED', 'RESPONDER_ARRIVED'].includes(incident.status)).length,
+    underControl: ownIncidents.filter((incident) => incident.status === 'UNDER_CONTROL').length,
+  };
+  const latestReportAt = ownIncidents.reduce<string | null>((latest, incident) => (!latest || incident.submittedAt > latest ? incident.submittedAt : latest), null);
   const queueLoading = incidentsLoading && incidents.length === 0;
 
   return (
@@ -387,7 +421,7 @@ export function MunicipalBfpDashboard() {
 
         <div className="mbfp-columns">
           <div className="mbfp-col">
-            <section className="mbfp-card" aria-labelledby="mbfp-incidents-title">
+            <section className="mbfp-card is-grow" aria-labelledby="mbfp-incidents-title">
               <div className="mbfp-card-header">
                 <h2 className="mbfp-card-title" id="mbfp-incidents-title">
                   <i className="fa-solid fa-fire" style={{ background: '#FFF1F2', color: '#E23632' }} aria-hidden="true" />
@@ -400,10 +434,14 @@ export function MunicipalBfpDashboard() {
                 {queueLoading ? (
                   <SkeletonRows count={4} />
                 ) : recentIncidents.length === 0 ? (
-                  <div className="mbfp-empty">
+                  <div className="mbfp-empty is-hero">
                     <i className="fa-solid fa-shield-halved" aria-hidden="true" />
                     <strong>All clear</strong>
-                    <span>No active fires in {municipality}.</span>
+                    <span>No active fires in {municipality}. New reports appear here live.</span>
+                    <Link href="/municipal-bfp/incident-reports" className="mbfp-empty-cta">
+                      <i className="fa-solid fa-phone-volume" aria-hidden="true" />
+                      Log phone report
+                    </Link>
                   </div>
                 ) : (
                   recentIncidents.slice(0, 5).map((inc) => (
@@ -430,6 +468,32 @@ export function MunicipalBfpDashboard() {
                       </span>
                     </Link>
                   ))
+                )}
+                {!queueLoading && recentIncidents.length > 0 && recentIncidents.length < 5 && (
+                  <div className="mbfp-fill" aria-label="Incident status overview">
+                    <div className="mbfp-fill-head">
+                      <span>Status overview</span>
+                      {latestReportAt && <span>Last report {formatTime(latestReportAt)}</span>}
+                    </div>
+                    <div className="mbfp-fill-grid">
+                      <Link href="/municipal-bfp/active-incidents" className="mbfp-fill-tile amber">
+                        <i className="fa-solid fa-clipboard-check" aria-hidden="true" />
+                        <span><strong>{statusCounts.toVerify}</strong><small>To verify</small></span>
+                      </Link>
+                      <Link href="/municipal-bfp/active-incidents" className="mbfp-fill-tile blue">
+                        <i className="fa-solid fa-circle-check" aria-hidden="true" />
+                        <span><strong>{statusCounts.verified}</strong><small>Verified</small></span>
+                      </Link>
+                      <Link href="/municipal-bfp/active-incidents" className="mbfp-fill-tile red">
+                        <i className="fa-solid fa-truck-fast" aria-hidden="true" />
+                        <span><strong>{statusCounts.responding}</strong><small>Responding</small></span>
+                      </Link>
+                      <Link href="/municipal-bfp/active-incidents" className="mbfp-fill-tile green">
+                        <i className="fa-solid fa-shield-halved" aria-hidden="true" />
+                        <span><strong>{statusCounts.underControl}</strong><small>Under control</small></span>
+                      </Link>
+                    </div>
+                  </div>
                 )}
               </div>
             </section>
@@ -496,6 +560,38 @@ export function MunicipalBfpDashboard() {
                 )}
               </div>
             </section>
+            <section className="mbfp-card" aria-labelledby="mbfp-stations-title">
+              <div className="mbfp-card-header">
+                <h2 className="mbfp-card-title" id="mbfp-stations-title">
+                  <i className="fa-solid fa-building-shield" style={{ background: '#ECFDF5', color: '#059669' }} aria-hidden="true" />
+                  Stations
+                </h2>
+                <Link href="/municipal-bfp/stations" className="mbfp-card-link">Manage <i className="fa-solid fa-arrow-right" aria-hidden="true" /></Link>
+              </div>
+              <div className="mbfp-card-body">
+                {dashLoading ? (
+                  <SkeletonRows count={2} />
+                ) : stations.length === 0 ? (
+                  <div className="mbfp-empty">
+                    <strong>No station yet</strong>
+                    <Link href="/municipal-bfp/stations" className="mbfp-card-link">Add station</Link>
+                  </div>
+                ) : (
+                  stations.map((st) => (
+                    <div className="mbfp-row" key={st.id}>
+                      <span className="mbfp-type-icon" style={{ background: '#EFF6FF', color: '#2563EB' }} aria-hidden="true"><i className="fa-solid fa-fire-extinguisher" /></span>
+                      <span className="mbfp-row-main">
+                        <span className="mbfp-row-title">{st.stationName}</span>
+                        <span className="mbfp-row-sub"><i className="fa-solid fa-user-shield" aria-hidden="true" /> {st.assignedPersonnelCount} responder{st.assignedPersonnelCount === 1 ? '' : 's'}</span>
+                      </span>
+                      <span className="mbfp-row-end">
+                        <span className={`mbfp-chip ${st.assignedPersonnelCount > 0 ? 'green' : 'gray'}`}>{st.assignedPersonnelCount > 0 ? 'Ready' : 'No crew'}</span>
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
           </div>
 
           <div className="mbfp-col">
@@ -532,40 +628,8 @@ export function MunicipalBfpDashboard() {
               </div>
             </section>
 
-            <section className="mbfp-card" aria-labelledby="mbfp-stations-title">
-              <div className="mbfp-card-header">
-                <h2 className="mbfp-card-title" id="mbfp-stations-title">
-                  <i className="fa-solid fa-building-shield" style={{ background: '#ECFDF5', color: '#059669' }} aria-hidden="true" />
-                  Stations
-                </h2>
-                <Link href="/municipal-bfp/stations" className="mbfp-card-link">Manage <i className="fa-solid fa-arrow-right" aria-hidden="true" /></Link>
-              </div>
-              <div className="mbfp-card-body">
-                {dashLoading ? (
-                  <SkeletonRows count={2} />
-                ) : stations.length === 0 ? (
-                  <div className="mbfp-empty">
-                    <strong>No station yet</strong>
-                    <Link href="/municipal-bfp/stations" className="mbfp-card-link">Add station</Link>
-                  </div>
-                ) : (
-                  stations.map((st) => (
-                    <div className="mbfp-row" key={st.id}>
-                      <span className="mbfp-type-icon" style={{ background: '#EFF6FF', color: '#2563EB' }} aria-hidden="true"><i className="fa-solid fa-fire-extinguisher" /></span>
-                      <span className="mbfp-row-main">
-                        <span className="mbfp-row-title">{st.stationName}</span>
-                        <span className="mbfp-row-sub"><i className="fa-solid fa-user-shield" aria-hidden="true" /> {st.assignedPersonnelCount} responder{st.assignedPersonnelCount === 1 ? '' : 's'}</span>
-                      </span>
-                      <span className="mbfp-row-end">
-                        <span className={`mbfp-chip ${st.assignedPersonnelCount > 0 ? 'green' : 'gray'}`}>{st.assignedPersonnelCount > 0 ? 'Ready' : 'No crew'}</span>
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
 
-            <section className="mbfp-card" aria-labelledby="mbfp-nearby-title">
+            <section className="mbfp-card is-grow" aria-labelledby="mbfp-nearby-title">
               <div className="mbfp-card-header">
                 <h2 className="mbfp-card-title" id="mbfp-nearby-title">
                   <i className="fa-solid fa-tower-broadcast" style={{ background: '#F5F3FF', color: '#7C3AED' }} aria-hidden="true" />
