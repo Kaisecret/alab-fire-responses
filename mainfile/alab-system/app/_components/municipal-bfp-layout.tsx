@@ -409,24 +409,20 @@ const layoutStyles = `
   }
 
   /*
-   * Active Pill State. Hover already darkens the row, so the current page is
-   * marked by a lighter fill plus a left accent bar instead of a deeper one.
+   * The current municipal page uses a solid white pill with red text and icons.
    */
   .mbfp-nav-link.active {
-    background: rgba(255, 255, 255, 0.16);
-    color: #FFFFFF;
+    background: #FFFFFF;
+    color: #B91C1C;
     font-weight: 700;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    box-shadow: inset 3px 0 0 #FFFFFF, 0 1px 3px rgba(69, 6, 3, 0.3);
+    border: 1px solid #FFFFFF;
+    box-shadow: 0 1px 3px rgba(69, 6, 3, 0.3);
   }
 
   .mbfp-nav-link.active:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: #FFFFFF;
+    color: #B91C1C;
     transform: none;
-  }
-
-  .mbfp-sidebar.collapsed .mbfp-nav-link.active {
-    box-shadow: inset 0 -2px 0 #FFFFFF, 0 1px 3px rgba(69, 6, 3, 0.3);
   }
 
   .mbfp-nav-icon {
@@ -450,7 +446,7 @@ const layoutStyles = `
 
   .mbfp-nav-link.active .mbfp-nav-icon,
   .mbfp-nav-link.active .mbfp-custom-dash-icon {
-    color: #FFFFFF;
+    color: #B91C1C;
     opacity: 1;
     transform: scale(1.08);
   }
