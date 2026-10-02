@@ -51,12 +51,12 @@ const ORDINALS: Record<number, string> = {
 const styles = `
   .pap-wrap {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 0.85rem;
-    align-items: stretch;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1rem;
+    align-items: start;
   }
   @media (max-width: 768px) {
-    .pap-wrap { grid-template-columns: 1fr; }
+    .pap-wrap { grid-template-columns: minmax(0, 1fr); }
   }
 
   /* Professional BFP Command-Center Incident Card */
@@ -65,19 +65,18 @@ const styles = `
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
     border-radius: 14px;
-    padding: 1rem 1.15rem;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.02);
+    padding: 1rem 1.1rem 1.05rem;
+    box-shadow: 0 12px 28px -14px rgba(15, 23, 42, 0.22), 0 2px 6px rgba(15, 23, 42, 0.05);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 0.75rem;
+    gap: 0.8rem;
     overflow: hidden;
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
   .pap-card:hover {
     transform: translateY(-2px);
     border-color: #CBD5E1;
-    box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 18px 36px -16px rgba(15, 23, 42, 0.3), 0 4px 10px rgba(15, 23, 42, 0.06);
   }
 
   /* Ensure no yellow bar */
@@ -304,26 +303,17 @@ const styles = `
     line-height: 1.45;
   }
 
-  .pap-photos-head {
-    display: flex;
-    align-items: center;
-    gap: 0.32rem;
-    font-size: 0.66rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #475569;
-    margin: 0.5rem 0 0.35rem;
-  }
   .pap-photos {
     display: flex;
-    gap: 0.45rem;
+    align-items: center;
+    gap: 0.4rem;
     flex-wrap: wrap;
+    margin-top: 0.45rem;
   }
   .pap-photo {
     position: relative;
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid #CBD5E1;
@@ -362,8 +352,7 @@ const styles = `
   .pap-photo:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
 
   .pap-declare {
-    margin-top: 0.55rem;
-    padding-top: 0.65rem;
+    padding-top: 0.7rem;
     border-top: 1px solid #F1F5F9;
   }
   .pap-label {
@@ -381,11 +370,15 @@ const styles = `
   /* Clear Step-based Escalation Component */
   .pap-levels {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.55rem;
   }
   @media (max-width: 600px) {
-    .pap-levels { grid-template-columns: 1fr; }
+    .pap-levels { gap: 0.4rem; }
+    .pap-level { padding: 0.55rem 0.5rem; }
+    .pap-level-ord { font-size: 0.78rem; }
+    .pap-level-word { display: none; }
+    .pap-card { padding: 0.9rem; }
   }
 
   .pap-level {
@@ -395,7 +388,7 @@ const styles = `
     gap: 0.35rem;
     width: 100%;
     text-align: left;
-    padding: 0.72rem 0.85rem;
+    padding: 0.6rem 0.75rem;
     border-radius: 10px;
     border: 1.5px solid #E2E8F0;
     background: #FFFFFF;
@@ -403,7 +396,7 @@ const styles = `
     cursor: pointer;
     transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 4px 10px -6px rgba(15, 23, 42, 0.18);
   }
   .pap-level-top-row {
     display: flex;
@@ -539,6 +532,7 @@ const styles = `
     background: #FFFFFF;
     border: 1px dashed #CBD5E1;
     border-radius: 14px;
+    box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.2);
   }
   .pap-empty-icon {
     display: grid;
@@ -719,9 +713,9 @@ export function ProvincialAlarmPanel() {
                       {request.municipalityName}
                       {request.barangay ? ` · ${request.barangay}` : ""}
                     </div>
-                    <div className="pap-who">
-                      <i className="fa-solid fa-user-shield" style={{ marginRight: '0.25rem', color: '#94A3B8' }} />
-                      Requested by {request.requestedByName}
+                    <div className="pap-who" title={`Requested by ${request.requestedByName}`}>
+                      <i className="fa-solid fa-user-shield" style={{ marginRight: '0.3rem', color: '#94A3B8' }} />
+                      {request.requestedByName}
                     </div>
                     {(request.requestedFiretrucks > 0 || request.requestedPersonnel > 0) && (
                       <div className="pap-asks">
@@ -748,12 +742,12 @@ export function ProvincialAlarmPanel() {
                   {request.alarmLevel && (
                     <span className="pap-upper-standing" title={`Current standing alarm: ${ORDINALS[request.alarmLevel]} Alarm`}>
                       <span className="pap-standing-pulse" aria-hidden="true" />
-                      STANDING
+                      {ORDINALS[request.alarmLevel]} alarm
                     </span>
                   )}
                   {request.forwardedAutomatically && (
                     <span className="pap-auto">
-                      <i className="fa-regular fa-clock" /> Auto-escalated
+                      <i className="fa-regular fa-clock" /> Auto
                     </span>
                   )}
                 </div>
@@ -762,31 +756,26 @@ export function ProvincialAlarmPanel() {
               {request.reason && <div className="pap-reason">{request.reason}</div>}
 
               {request.photos?.length > 0 && (
-                <div>
-                  <div className="pap-photos-head">
+                <div className="pap-photos" aria-label={`${request.photos.length} photo${request.photos.length > 1 ? "s" : ""} from the scene`}>
+                  <span className="pap-ask" aria-hidden="true">
                     <i className="fa-solid fa-camera" />
-                    From the scene ({request.photos.length})
-                  </div>
-                  <div className="pap-photos">
-                    {request.photos.map((photo, index) => (
-                      <ScenePhotoThumbnail
-                        key={photo || index}
-                        photo={photo}
-                        index={index}
-                        onClick={() => setViewer({ requestId: request.id, index })}
-                      />
-                    ))}
-                  </div>
+                    {request.photos.length}
+                  </span>
+                  {request.photos.map((photo, index) => (
+                    <ScenePhotoThumbnail
+                      key={photo || index}
+                      photo={photo}
+                      index={index}
+                      onClick={() => setViewer({ requestId: request.id, index })}
+                    />
+                  ))}
                 </div>
               )}
             </div>
 
             <div className="pap-declare">
               <div className="pap-label">
-                <span>{request.alarmLevel ? "Raise Alarm Level" : "Declare Alarm Level"}</span>
-                <span style={{ fontSize: "0.62rem", color: "#94A3B8", fontWeight: 600, textTransform: "none" }}>
-                  Summons jurisdiction reinforcements
-                </span>
+                <span>{request.alarmLevel ? "Raise alarm" : "Declare alarm"}</span>
               </div>
               <div className="pap-levels">
                 {DECLARABLE_LEVELS.map((entry) => {
@@ -806,7 +795,7 @@ export function ProvincialAlarmPanel() {
                       title={entry.summons}
                     >
                       <div className="pap-level-top-row">
-                        <span className="pap-level-ord">{entry.label} Alarm</span>
+                        <span className="pap-level-ord">{entry.label}<span className="pap-level-word"> Alarm</span></span>
                         {isCurrent ? (
                           <i className="fa-solid fa-circle-check pap-level-check-current" aria-hidden="true" />
                         ) : isPassed ? (
