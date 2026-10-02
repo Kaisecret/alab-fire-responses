@@ -11,12 +11,13 @@ import { MunicipalStatCards } from "./municipal-stat-cards";
 const styles = `
   .water-registry { padding: 1.5rem clamp(1rem, 2vw, 2rem) 3rem; color: #172033; font-family: 'Plus Jakarta Sans', sans-serif; }
   .water-registry * { box-sizing: border-box; }
-  .water-registry__header { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; margin-bottom:1.25rem; }
+  .water-registry__header { display:flex; justify-content:space-between; gap:1rem; align-items:center; margin-bottom:1.25rem; }
   .water-registry__eyebrow { color:#b42318; font-size:.72rem; font-weight:800; letter-spacing:.11em; text-transform:uppercase; margin:0 0 .45rem; }
-  .water-registry h1 { margin:0; font-size:clamp(1.45rem,2vw,2rem); letter-spacing:-.035em; }
-  .water-registry__subtitle { color:#667085; margin:.45rem 0 0; max-width:720px; font-size:.9rem; line-height:1.55; }
-  .water-registry__button { min-height:44px; border:0; border-radius:9px; background:#b42318; color:#fff; padding:.7rem 1rem; font:inherit; font-size:.82rem; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:.5rem; justify-content:center; }
-  .water-registry__button:hover { background:#912018; }
+  .water-registry h1 { display:flex; align-items:center; gap:.65rem; margin:0; font-size:1.65rem; font-weight:800; letter-spacing:-.035em; }
+  .water-registry h1 i { color:#dc2626; }
+  .water-registry__button { min-height:44px; border:0; border-radius:8px; background:linear-gradient(135deg,#D00F09 0%,#EF5350 100%); color:#fff; padding:.6rem 1.25rem; font:inherit; font-size:.85rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:.55rem; justify-content:center; box-shadow:0 4px 14px rgba(208,15,9,.28); transition:transform .2s,box-shadow .2s; }
+  .water-registry__button:hover:not(:disabled) { transform:translateY(-1.5px); box-shadow:0 6px 18px rgba(208,15,9,.38); }
+  .water-registry__button:active:not(:disabled) { transform:translateY(0); }
   .water-registry__button:focus-visible, .water-registry a:focus-visible, .water-registry input:focus-visible, .water-registry select:focus-visible { outline:3px solid rgba(37,99,235,.35); outline-offset:2px; }
   .water-registry__button:disabled { opacity:.6; cursor:wait; }
   .water-registry__toolbar { display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin:1.15rem 0; }
@@ -63,7 +64,7 @@ const styles = `
   .water-dialog__map { color:#0f766e; text-decoration:none; }
   @media (max-width:760px) { .water-registry__header { flex-direction:column; } .water-registry__header .water-registry__button { width:100%; } .water-registry__toolbar { align-items:stretch; flex-direction:column; } }
   @media (max-width:520px) { .water-dialog__grid { grid-template-columns:1fr; } .water-dialog__field--wide { grid-column:auto; } }
-  @media (prefers-reduced-motion:reduce) { .water-registry__card { transition:none; } }
+  @media (prefers-reduced-motion:reduce) { .water-registry__card, .water-registry__button { transition:none; } .water-registry__button:hover:not(:disabled) { transform:none; } }
 `;
 
 const emptyForm = { sourceKind: "FIRE_HYDRANT", quantity: "1", exactLocation: "", latitude: "", longitude: "", typeColor: "Wet barrel" };
@@ -210,7 +211,7 @@ export function MunicipalWaterSources() {
   return <>
     <style>{styles}</style>
     <main className="water-registry">
-      <header className="water-registry__header"><div><p className="water-registry__eyebrow">Operational water network</p><h1>{registry?.municipality.name || "Municipal"} water sources</h1><p className="water-registry__subtitle">Hydrants and water access points recorded for your municipality. Select any card to locate it on the operations map.</p></div><button className="water-registry__button" type="button" onClick={() => setOpen(true)}><i className="fa-solid fa-plus" /> Add fire hydrant or water source</button></header>
+      <header className="water-registry__header"><h1><i className="fa-solid fa-droplet" aria-hidden="true" />Water Sources</h1><button className="water-registry__button" type="button" onClick={() => setOpen(true)}><i className="fa-solid fa-plus" aria-hidden="true" /> Add fire hydrant or water source</button></header>
       <MunicipalStatCards label="Water source totals" items={[
         { key: "locations", icon: "fa-location-dot", tone: "blue", value: registry?.summary.sourceCount ?? 0, label: "Locations", badge: "Mapped", description: "Recorded water access points", loading },
         { key: "hydrants", icon: "fa-fire-extinguisher", tone: "red", value: registry?.summary.fireHydrantCount ?? 0, label: "Fire hydrants", badge: "Hydrants", description: "Municipal fire hydrant records", loading },
