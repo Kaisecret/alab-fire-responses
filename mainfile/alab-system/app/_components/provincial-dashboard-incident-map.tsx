@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Feature, FeatureCollection, Polygon, Position } from "geojson";
+import type { FeatureCollection } from "geojson";
 import type { Map as LeafletMap, LayerGroup, LatLngBounds } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { ProvincialIncidentSummary } from "../../lib/intermunicipality/provincial";
-import { groupAntiqueDashboardIncidents } from "../../lib/provincial-bfp/dashboard-map";
+import { groupAntiqueDashboardIncidents, isPointInAntique } from "../../lib/provincial-bfp/dashboard-map";
 import styles from "./provincial-dashboard-incident-map.module.css";
 
 type Props = {
@@ -23,6 +23,7 @@ export function ProvincialDashboardIncidentMap({ incidents, loading, error, chec
   const layerRef = useRef<LayerGroup | null>(null);
   const boundsRef = useRef<LatLngBounds | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
+  const focusedIncidentsRef = useRef(false);
   const [boundary, setBoundary] = useState<FeatureCollection | null>(null);
   const [ready, setReady] = useState(false);
   const [mapError, setMapError] = useState("");
@@ -49,7 +50,7 @@ export function ProvincialDashboardIncidentMap({ incidents, loading, error, chec
         const province = await response.json() as FeatureCollection;
         if (disposed) return;
         const provinceLayer = L.geoJSON(province, {
-          style: { color: "#526d85", weight: 2, fillColor: "#dc2626", fillOpacity: 0.035 },
+          style: { color: "#526d85", weight: 2, fill: false },
           interactive: false,
         });
         const bounds = provinceLayer.getBounds();
@@ -63,21 +64,26 @@ export function ProvincialDashboardIncidentMap({ incidents, loading, error, chec
           maxZoom: 19,
         }).addTo(map);
 
-        // Dim neighboring provinces so Antique and its island municipalities lead the view.
-        const outline: Position[][] = province.features.flatMap(({ geometry }) => {
-          if (geometry?.type === "Polygon") return [geometry.coordinates[0]];
-          if (geometry?.type === "MultiPolygon") return geometry.coordinates.map(polygon => polygon[0]);
-          return [];
-        });
-        const mask: Feature<Polygon> = { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [
-          [[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]], ...outline,
-        ] } };
-        L.geoJSON(mask, { style: { stroke: false, fillColor: "#dce5ed", fillOpacity: 0.9, fillRule: "evenodd" }, interactive: false }).addTo(map);
         provinceLayer.addTo(map);
         layerRef.current = L.layerGroup().addTo(map);
         L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
-        map.fitBounds(bounds, { padding: [18, 18], animate: false });
+        map.setView([11.05, 122.03], 10, { animate: false });
         map.setMinZoom(map.getBoundsZoom(bounds, false, L.point(36, 36)));
+        const provinceMap = map;
+        let lastValidCenter = provinceMap.getCenter();
+        let restoringCenter = false;
+        provinceMap.on("moveend", () => {
+          if (disposed || restoringCenter) return;
+          const center = provinceMap.getCenter();
+          if (isPointInAntique(center.lat, center.lng, province)) {
+            lastValidCenter = center;
+          } else {
+            // Keep the map center in Antique while the surrounding tiles stay visible.
+            restoringCenter = true;
+            provinceMap.panTo(lastValidCenter, { animate: false });
+            restoringCenter = false;
+          }
+        });
         observer = new ResizeObserver(() => {
           if (!map || disposed) return;
           map.invalidateSize();
@@ -99,13 +105,21 @@ export function ProvincialDashboardIncidentMap({ incidents, loading, error, chec
       mapRef.current = null;
       layerRef.current = null;
       leafletRef.current = null;
+      focusedIncidentsRef.current = false;
     };
   }, [retry]);
 
   useEffect(() => {
     const L = leafletRef.current;
     const layer = layerRef.current;
-    if (!ready || !L || !layer) return;
+    const map = mapRef.current;
+    if (!ready || !L || !layer || !map) return;
+    if (locations.length > 0 && !focusedIncidentsRef.current) {
+      focusedIncidentsRef.current = true;
+      map.fitBounds(L.latLngBounds(locations.map(location => [location.latitude, location.longitude])), {
+        padding: [40, 40], maxZoom: 12, animate: false,
+      });
+    }
     layer.clearLayers();
     for (const location of locations) {
       const icon = L.divIcon({
@@ -143,6 +157,7 @@ export function ProvincialDashboardIncidentMap({ incidents, loading, error, chec
           <span className={styles.scope}><span />Antique only</span>
           <div className={styles.actions}>
             <button type="button" disabled={!ready} onClick={() => {
+              focusedIncidentsRef.current = true;
               if (boundsRef.current) mapRef.current?.stop().fitBounds(boundsRef.current, { padding: [18, 18], animate: false });
             }}><i className="fa-solid fa-expand" aria-hidden="true" />Show all Antique</button>
             <button type="button" disabled={checking} aria-label="Refresh incident locations" onClick={onRefresh}>

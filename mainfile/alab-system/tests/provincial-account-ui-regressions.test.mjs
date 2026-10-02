@@ -22,6 +22,9 @@ function harness(path, name) {
   };
   const requestPath = 'lib/provincial-bfp/client-request.ts';
   const request = existsSync(requestPath) ? loadServerModule(requestPath, {}) : {};
+  const statCards = loadServerModule('app/_components/municipal-stat-cards.tsx', {
+    'react/jsx-runtime': jsx, 'next/link': { default: 'a' },
+  });
   const mod = loadServerModule(path, {
     react, 'react/jsx-runtime': jsx,
     'react-dom': { createPortal: (children, target) => ({ type: 'portal', props: { children, target } }) },
@@ -32,6 +35,7 @@ function harness(path, name) {
     './provincial-account-dialog': { ProvincialAccountDialog: 'account-dialog' },
     './provincial-profile-popover': { ProvincialProfilePopover: 'profile-popover' },
     './provincial-backup-alarm': { ProvincialBackupAlarm: 'backup-alarm' },
+    './municipal-stat-cards': statCards,
   });
   return { render() { cursor = 0; effects.length = 0; return mod[name]({ children: null }); }, effects };
 }

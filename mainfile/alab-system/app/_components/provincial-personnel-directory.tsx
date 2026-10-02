@@ -6,6 +6,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useProvincialManagementList } from './use-provincial-management-list';
 import { useManagementDialog } from './use-management-dialog';
 import type { ManagedPersonnel } from '../../lib/provincial-bfp/management/types';
+import { StatCards } from "./municipal-stat-cards";
 
 const directoryStyles = `
   .ppd-container {
@@ -169,156 +170,13 @@ const directoryStyles = `
   }
 
   /* KPI Summary Stats (Pastel Gradient Style matching Provincial Incidents) */
-  .ppd-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 0.85rem;
-  }
-  @media (max-width: 1024px) {
-    .ppd-stats-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-  @media (max-width: 640px) {
-    .ppd-stats-grid { grid-template-columns: 1fr; }
-  }
 
-  .ppd-stat-card {
-    position: relative;
-    border-radius: 11px;
-    padding: 0.72rem 0.95rem 0.62rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-    cursor: pointer;
-    overflow: hidden;
-    text-decoration: none;
-    color: inherit;
-    min-height: 98px;
-  }
-  .ppd-stat-card--all {
-    background: linear-gradient(145deg, #F0E8FF 0%, #E2D3FD 100%);
-    border: 1.5px solid #D0BCFD;
-    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.06);
-  }
-  .ppd-stat-card--stations {
-    background: linear-gradient(145deg, #E6EFFF 0%, #D2E3FD 100%);
-    border: 1.5px solid #B8D3FD;
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
-  }
-  .ppd-stat-card--admins {
-    background: linear-gradient(145deg, #FFF5DE 0%, #FFE8BA 100%);
-    border: 1.5px solid #FFDC99;
-    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
-  }
-  .ppd-stat-card--active {
-    background: linear-gradient(145deg, #E6FBF0 0%, #D1F7E2 100%);
-    border: 1.5px solid #A7F3D0;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.06);
-  }
 
-  .ppd-stat-card:hover { transform: translateY(-2.5px); }
-  .ppd-stat-card--all:hover { border-color: #B79BFB; box-shadow: 0 10px 22px -4px rgba(124, 58, 237, 0.2); }
-  .ppd-stat-card--stations:hover { border-color: #91B8FA; box-shadow: 0 10px 22px -4px rgba(37, 99, 235, 0.2); }
-  .ppd-stat-card--admins:hover { border-color: #FFCF70; box-shadow: 0 10px 22px -4px rgba(217, 119, 6, 0.2); }
-  .ppd-stat-card--active:hover { border-color: #6EE7B7; box-shadow: 0 10px 22px -4px rgba(16, 185, 129, 0.2); }
 
-  .ppd-stat-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.35rem;
-    margin-bottom: 0.25rem;
-  }
-  .ppd-stat-badge-icon {
-    width: 1.95rem;
-    height: 1.95rem;
-    border-radius: 8px;
-    background: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.95);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.88rem;
-    flex-shrink: 0;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .ppd-stat-card:hover .ppd-stat-badge-icon { transform: scale(1.06); }
-  .ppd-stat-card--all .ppd-stat-badge-icon { color: #7C3AED; }
-  .ppd-stat-card--stations .ppd-stat-badge-icon { color: #2563EB; }
-  .ppd-stat-card--admins .ppd-stat-badge-icon { color: #D97706; }
-  .ppd-stat-card--active .ppd-stat-badge-icon { color: #059669; }
 
-  .ppd-stat-trend-tag {
-    font-size: 0.58rem;
-    font-weight: 800;
-    padding: 0.14rem 0.42rem;
-    border-radius: 5px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.22rem;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-  .ppd-stat-trend-tag.purple { color: #5B21B6; background: #EDE9FE; }
-  .ppd-stat-trend-tag.blue { color: #1E40AF; background: #DBEAFE; }
-  .ppd-stat-trend-tag.amber { color: #92400E; background: #FEF3C7; }
-  .ppd-stat-trend-tag.emerald { color: #065F46; background: #D1FAE5; }
 
-  .ppd-stat-body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.08rem;
-    margin: 0.08rem 0;
-  }
-  .ppd-stat-label {
-    order: 2;
-    font-size: 0.63rem;
-    font-weight: 750;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .ppd-stat-value {
-    order: 1;
-    font-size: 1.45rem;
-    font-weight: 850;
-    color: #0F172A;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-  }
 
-  .ppd-stat-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 0.35rem;
-    padding-top: 0.32rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-    font-size: 0.65rem;
-    font-weight: 600;
-  }
-  .ppd-stat-card--all .ppd-stat-footer { color: #7C3AED; border-top-color: #E9D8FD; }
-  .ppd-stat-card--stations .ppd-stat-footer { color: #2563EB; border-top-color: #DCE7FC; }
-  .ppd-stat-card--admins .ppd-stat-footer { color: #D97706; border-top-color: #FEEBC8; }
-  .ppd-stat-card--active .ppd-stat-footer { color: #059669; border-top-color: #A7F3D0; }
 
-  .ppd-stat-subtext {
-    font-weight: 600;
-    opacity: 0.9;
-  }
-  .ppd-stat-footer i {
-    font-size: 0.64rem;
-    transition: transform 0.2s ease;
-  }
-  .ppd-stat-card:hover .ppd-stat-footer i {
-    transform: translateX(3px);
-  }
 
   /* Filter Console */
   .ppd-filter-console {
@@ -1322,104 +1180,15 @@ export function ProvincialPersonnelDirectory() {
       </header>
 
       {/* KPI Stats Bar */}
-      <div className="ppd-stats-grid" role="region" aria-label="Personnel registry metrics">
-        <div
-          className="ppd-stat-card ppd-stat-card--all"
-          onClick={clearAllFilters}
-          role="button"
-          tabIndex={0}
-          title="Click to view all personnel"
-        >
-          <div className="ppd-stat-header">
-            <div className="ppd-stat-badge-icon">
-              <i className="fa-solid fa-users" />
-            </div>
-            <span className="ppd-stat-trend-tag purple">
-              <i className="fa-solid fa-layer-group" /> Roster
-            </span>
-          </div>
-          <div className="ppd-stat-body">
-            <span className="ppd-stat-label">Total Personnel</span>
-            <span className="ppd-stat-value">{total}</span>
-          </div>
-          <div className="ppd-stat-footer">
-            <span className="ppd-stat-subtext">Province-wide personnel</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
-
-        <div
-          className="ppd-stat-card ppd-stat-card--stations"
-          title="Personnel assigned to fire stations"
-        >
-          <div className="ppd-stat-header">
-            <div className="ppd-stat-badge-icon">
-              <i className="fa-solid fa-building-shield" />
-            </div>
-            <span className="ppd-stat-trend-tag blue">
-              <i className="fa-solid fa-truck-fast" /> Deployed
-            </span>
-          </div>
-          <div className="ppd-stat-body">
-            <span className="ppd-stat-label">Station Crews</span>
-            <span className="ppd-stat-value">{assignedStationCount}</span>
-          </div>
-          <div className="ppd-stat-footer">
-            <span className="ppd-stat-subtext">Station crew assignments</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
-
-        <div
-          className="ppd-stat-card ppd-stat-card--admins"
-          title="Municipal Administrators"
-        >
-          <div className="ppd-stat-header">
-            <div className="ppd-stat-badge-icon">
-              <i className="fa-solid fa-user-gear" />
-            </div>
-            <span className="ppd-stat-trend-tag amber">
-              <i className="fa-solid fa-shield-halved" /> Officers
-            </span>
-          </div>
-          <div className="ppd-stat-body">
-            <span className="ppd-stat-label">Municipal Admins</span>
-            <span className="ppd-stat-value">{adminCount}</span>
-          </div>
-          <div className="ppd-stat-footer">
-            <span className="ppd-stat-subtext">Municipal administrators</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
-
-        <div
-          className="ppd-stat-card ppd-stat-card--active"
-          onClick={() => {
-            setStatus('ACTIVE');
-            setPage(1);
-          }}
-          role="button"
-          tabIndex={0}
-          title="Active Duty Personnel"
-        >
-          <div className="ppd-stat-header">
-            <div className="ppd-stat-badge-icon">
-              <i className="fa-solid fa-circle-check" />
-            </div>
-            <span className="ppd-stat-trend-tag emerald">
-              <i className="fa-solid fa-check" /> Ready
-            </span>
-          </div>
-          <div className="ppd-stat-body">
-            <span className="ppd-stat-label">Active Duty</span>
-            <span className="ppd-stat-value">{activeCount}</span>
-          </div>
-          <div className="ppd-stat-footer">
-            <span className="ppd-stat-subtext">Operational responders</span>
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
-      </div>
+      <StatCards
+        label="Personnel registry metrics"
+        items={[
+          { key: "all", icon: "fa-users", tone: "violet", value: total, label: "Personnel", onClick: clearAllFilters },
+          { key: "crews", icon: "fa-building-shield", tone: "blue", value: assignedStationCount, label: "Station crews" },
+          { key: "admins", icon: "fa-user-gear", tone: "amber", value: adminCount, label: "Municipal admins" },
+          { key: "active", icon: "fa-circle-check", tone: "emerald", value: activeCount, label: "Active duty", onClick: () => { setStatus('ACTIVE'); setPage(1); } },
+        ]}
+      />
 
       {/* Filter Console */}
       <section className="ppd-filter-console" aria-label="Personnel Filter Console">

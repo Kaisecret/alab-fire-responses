@@ -6,6 +6,7 @@ import { MunicipalIncidentDetail } from "../../_components/municipal-incident-de
 import { BfpDataLoader } from "../../_components/bfp-data-loader";
 import { MunicipalPhoneCallIncidentIntake } from "../../_components/municipal-phone-call-incident-intake";
 import { useMunicipalIncidentFeed } from "../../_components/use-municipal-incident-feed";
+import { MunicipalStatCards } from "../../_components/municipal-stat-cards";
 
 const activeIncidentsStyles = `
   /* ========== ACTIVE INCIDENTS STYLES ========== */
@@ -128,64 +129,6 @@ const activeIncidentsStyles = `
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     margin-bottom: 0;
-  }
-
-  .mbfp-qstat-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 0.85rem 0.95rem 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .mbfp-qstat-card:hover {
-    border-color: #CBD5E1;
-    transform: translateY(-1.5px);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-  }
-
-  .mbfp-qstat-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    flex-shrink: 0;
-  }
-
-  .mbfp-qstat-icon.red { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
-  .mbfp-qstat-icon.emerald { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
-  .mbfp-qstat-icon.blue { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
-  .mbfp-qstat-icon.amber { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
-
-  .mbfp-qstat-body {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-
-  .mbfp-qstat-val {
-    font-size: 1.45rem;
-    font-weight: 850;
-    color: #0F172A;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
-
-  .mbfp-qstat-lbl {
-    font-size: 0.74rem;
-    color: #64748B;
-    font-weight: 600;
-    margin-top: 0.15rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   /* Filter & Search Bar */
@@ -758,55 +701,16 @@ function ActiveIncidentsContent() {
         </header>
 
         {/* Quick KPI Stats Row */}
-        <section className="mbfp-quick-stats" aria-label="Incident Summary Statistics">
-          <div className="mbfp-qstat-card">
-            <div className="mbfp-qstat-icon red">
-              <i className="fa-solid fa-fire-flame-curved" />
-            </div>
-            <div className="mbfp-qstat-body">
-              <span className="mbfp-qstat-val">
-                {loading ? <span className="mbfp-skel-val" /> : incidents.length}
-              </span>
-              <span className="mbfp-qstat-lbl">Total Active In Queue</span>
-            </div>
-          </div>
-
-          <div className="mbfp-qstat-card">
-            <div className="mbfp-qstat-icon emerald">
-              <i className="fa-solid fa-truck-fast" />
-            </div>
-            <div className="mbfp-qstat-body">
-              <span className="mbfp-qstat-val">
-                {loading ? <span className="mbfp-skel-val" /> : respondingCount}
-              </span>
-              <span className="mbfp-qstat-lbl">BFP Responding Now</span>
-            </div>
-          </div>
-
-          <div className="mbfp-qstat-card">
-            <div className="mbfp-qstat-icon blue">
-              <i className="fa-solid fa-clipboard-check" />
-            </div>
-            <div className="mbfp-qstat-body">
-              <span className="mbfp-qstat-val">
-                {loading ? <span className="mbfp-skel-val" /> : verifiedCount}
-              </span>
-              <span className="mbfp-qstat-lbl">Verified &amp; Dispatched</span>
-            </div>
-          </div>
-
-          <div className="mbfp-qstat-card">
-            <div className="mbfp-qstat-icon amber">
-              <i className="fa-solid fa-triangle-exclamation" />
-            </div>
-            <div className="mbfp-qstat-body">
-              <span className="mbfp-qstat-val">
-                {loading ? <span className="mbfp-skel-val" /> : pendingCount}
-              </span>
-              <span className="mbfp-qstat-lbl">Pending Verification</span>
-            </div>
-          </div>
-        </section>
+        <MunicipalStatCards
+          className="mbfp-quick-stats"
+          label="Incident Summary Statistics"
+          items={[
+            { key: "active", icon: "fa-fire-flame-curved", tone: "red", value: incidents.length, label: "Active in queue", loading },
+            { key: "responding", icon: "fa-truck-fast", tone: "emerald", value: respondingCount, label: "Responding now", loading },
+            { key: "verified", icon: "fa-clipboard-check", tone: "blue", value: verifiedCount, label: "Verified / dispatched", loading },
+            { key: "pending", icon: "fa-triangle-exclamation", tone: "amber", value: pendingCount, label: "Pending verification", loading },
+          ]}
+        />
 
         {/* Search & Filter Toolbar */}
         <div className="mbfp-toolbar">

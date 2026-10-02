@@ -5,6 +5,7 @@ import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { MunicipalStatCards } from "./municipal-stat-cards";
 
 type Station = {
   id: string;
@@ -606,19 +607,14 @@ export function MunicipalStationsManager() {
             </div>
           </div>
 
-          <div className="mbfp-station-hero-stats">
-            <div className="mbfp-hero-stat-card">
-              <span className="mbfp-hero-stat-val">{rosterResponders.length}</span>
-              <span className="mbfp-hero-stat-lbl">Total Personnel</span>
-            </div>
-            <div className="mbfp-hero-stat-card on-duty">
-              <span className="mbfp-hero-stat-val">
-                <span className="mbfp-stat-dot on-duty" />
-                {onDutyCount}
-              </span>
-              <span className="mbfp-hero-stat-lbl">On Duty / Dispatched</span>
-            </div>
-          </div>
+          <MunicipalStatCards
+            className="mbfp-station-hero-stats"
+            label="Station personnel totals"
+            items={[
+              { key: "personnel", icon: "fa-users", tone: "blue", value: rosterResponders.length, label: "Personnel", loading: rosterLoading },
+              { key: "on-duty", icon: "fa-user-check", tone: "emerald", value: onDutyCount, label: "On duty", loading: rosterLoading },
+            ]}
+          />
         </div>
 
         {/* ERROR ALERT */}
@@ -944,40 +940,14 @@ export function MunicipalStationsManager() {
       </div>
 
       {/* MUNICIPAL OVERVIEW STATS ROW */}
-      <div className="mbfp-stats-overview-row">
-        <div className="mbfp-overview-stat-card">
-          <div className="mbfp-overview-stat-icon red">
-            <i className="fa-solid fa-building-shield" />
-          </div>
-          <div className="mbfp-overview-stat-info">
-            <span className="mbfp-overview-stat-val">{stations.length}</span>
-            <span className="mbfp-overview-stat-lbl">Stations ({activeCount} Active)</span>
-          </div>
-        </div>
-
-        <div className="mbfp-overview-stat-card">
-          <div className="mbfp-overview-stat-icon blue">
-            <i className="fa-solid fa-users" />
-          </div>
-          <div className="mbfp-overview-stat-info">
-            <span className="mbfp-overview-stat-val">{personnelList.length}</span>
-            <span className="mbfp-overview-stat-lbl">Total Personnel</span>
-          </div>
-        </div>
-
-        <div className="mbfp-overview-stat-card green">
-          <div className="mbfp-overview-stat-icon green">
-            <i className="fa-solid fa-user-check" />
-          </div>
-          <div className="mbfp-overview-stat-info">
-            <span className="mbfp-overview-stat-val">
-              <span className="mbfp-stat-dot on-duty" />
-              {personnelList.filter((p) => p.accountStatus === "ACTIVE").length}
-            </span>
-            <span className="mbfp-overview-stat-lbl">Active Accounts</span>
-          </div>
-        </div>
-      </div>
+      <MunicipalStatCards
+        label="Municipal station totals"
+        items={[
+          { key: "stations", icon: "fa-building-shield", tone: "red", value: stations.length, label: "Stations", suffix: `${activeCount} active`, loading },
+          { key: "personnel", icon: "fa-users", tone: "blue", value: personnelList.length, label: "Total personnel", loading },
+          { key: "accounts", icon: "fa-user-check", tone: "emerald", value: personnelList.filter((person) => person.accountStatus === "ACTIVE").length, label: "Active accounts", loading },
+        ]}
+      />
 
       {/* ALERT / ERROR BANNER */}
       {error && (
@@ -2923,83 +2893,8 @@ const pageStyles = `
   }
 
   .mbfp-station-hero-stats {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .mbfp-hero-stat-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 0.65rem 1.1rem;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 10px;
-    min-width: 100px;
-    text-align: center;
-  }
-
-  .mbfp-hero-stat-card.on-duty {
-    background: #ECFDF5;
-    border-color: #A7F3D0;
-  }
-
-  .mbfp-hero-stat-card.standby {
-    background: #FFFBEB;
-    border-color: #FDE68A;
-  }
-
-  .mbfp-hero-stat-val {
-    font-size: 1.3rem;
-    font-weight: 800;
-    color: #0F172A;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    line-height: 1.1;
-  }
-
-  .mbfp-hero-stat-card.on-duty .mbfp-hero-stat-val {
-    color: #065F46;
-  }
-
-  .mbfp-hero-stat-card.standby .mbfp-hero-stat-val {
-    color: #92400E;
-  }
-
-  .mbfp-hero-stat-lbl {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-top: 0.25rem;
-  }
-
-  .mbfp-hero-stat-card.on-duty .mbfp-hero-stat-lbl {
-    color: #047857;
-  }
-
-  .mbfp-hero-stat-card.standby .mbfp-hero-stat-lbl {
-    color: #B45309;
-  }
-
-  .mbfp-stat-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-
-  .mbfp-stat-dot.on-duty {
-    background: #10B981;
-    box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
-  }
-
-  .mbfp-stat-dot.standby {
-    background: #F59E0B;
+    width: min(100%, 410px);
+    min-width: 0;
   }
 
   .mbfp-roster-header-icon {
@@ -4358,74 +4253,7 @@ const pageStyles = `
     text-align: left;
   }
 
-  /* ================= MUNICIPAL OVERVIEW STATS ROW ================= */
-  .mbfp-stats-overview-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 0.2rem;
-  }
 
-  .mbfp-overview-stat-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 0.9rem 1.15rem;
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-  }
-
-  .mbfp-overview-stat-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.15rem;
-    flex-shrink: 0;
-  }
-
-  .mbfp-overview-stat-icon.red {
-    background: #FEF2F2;
-    color: #DC2626;
-  }
-
-  .mbfp-overview-stat-icon.blue {
-    background: #EFF6FF;
-    color: #2563EB;
-  }
-
-  .mbfp-overview-stat-icon.green {
-    background: #ECFDF5;
-    color: #059669;
-  }
-
-  .mbfp-overview-stat-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  .mbfp-overview-stat-val {
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: #0F172A;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    line-height: 1.1;
-  }
-
-  .mbfp-overview-stat-lbl {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
 
   /* ================= ANIMATIONS & RESPONSIVENESS ================= */
   @keyframes mbfpShimmer {

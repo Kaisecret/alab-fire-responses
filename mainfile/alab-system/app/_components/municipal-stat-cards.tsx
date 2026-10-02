@@ -27,8 +27,8 @@ export type StatItem = {
 };
 
 export const municipalStatCardStyles = `
-  .mstat-row { display: grid; grid-template-columns: repeat(var(--mstat-columns, 4), minmax(0, 1fr)); gap: 8px; }
-  .mstat-card { display: flex; align-items: center; gap: 0.85rem; min-width: 0; padding: 0.85rem 0.95rem; border: 1px solid #E2E8F0; border-radius: 14px; background: #FFFFFF; color: #0F172A; font: inherit; text-align: left; text-decoration: none; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03); transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+  .mstat-row { display: grid; grid-template-columns: repeat(var(--mstat-columns, 4), minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 8px; }
+  .mstat-card { display: flex; align-items: center; gap: 0.85rem; min-width: 0; min-height: 72px; padding: 0.85rem 0.95rem; border: 1px solid #E2E8F0; border-radius: 14px; background: #FFFFFF; color: #0F172A; font: inherit; text-align: left; text-decoration: none; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03); transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
   a.mstat-card, button.mstat-card { cursor: pointer; }
   a.mstat-card:hover, button.mstat-card:hover { border-color: #CBD5E1; transform: translateY(-1.5px); box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08); }
   .mstat-card:focus-visible { outline: 3px solid rgba(37, 99, 235, 0.3); outline-offset: 2px; }
@@ -65,9 +65,9 @@ function CardContent({ item }: { item: StatItem }) {
   );
 }
 
-export function MunicipalStatCards({ items, label, columns }: { items: StatItem[]; label: string; columns?: number }) {
+export function MunicipalStatCards({ items, label, columns, className }: { items: StatItem[]; label: string; columns?: number; className?: string }) {
   return (
-    <section className="mstat-row" aria-label={label} style={{ ["--mstat-columns" as string]: String(columns ?? items.length) }}>
+    <section className={`mstat-row${className ? ` ${className}` : ""}`} aria-label={label} style={{ ["--mstat-columns" as string]: String(columns ?? items.length) }}>
       <style>{municipalStatCardStyles}</style>
       {items.map((item) => {
         if (item.href) {
@@ -85,3 +85,6 @@ export function MunicipalStatCards({ items, label, columns }: { items: StatItem[
     </section>
   );
 }
+
+/** The same cards for the Provincial BFP pages, so both portals match. */
+export const StatCards = MunicipalStatCards;
