@@ -3,15 +3,10 @@
 import { useEffect, useRef } from "react";
 
 import { signupMarkup, signupStyles } from "../_content/signup-content";
-import { emergencyCallMarkup, emergencyCallStyles } from "../_content/emergency-call";
-import { OPEN_BFP_HOTLINES } from "./resident-offline-emergency";
 import { residentAuthFontStyles } from "../_content/resident-auth-font";
 import { antiqueBarangays } from "../_content/antique-barangays";
 import { composeResidentAddress } from "../../lib/resident-applications/compose-address.mjs";
 import { shrinkPhoto } from "../_lib/shrink-photo";
-
-// Before an account is approved, a person can still call BFP in one tap.
-const markup = signupMarkup.replace("</header>", `</header>${emergencyCallMarkup}`);
 
 const visibleEye = `
   <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
@@ -45,14 +40,6 @@ const STEP_CONFIG = [
 
 export function SignupPage({ fontVariableClassName }: SignupPageProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-
-  // The emergency button lives in the static markup; it opens the BFP hotline sheet.
-  useEffect(() => {
-    const button = rootRef.current?.querySelector("[data-call-bfp]");
-    const openHotlines = () => window.dispatchEvent(new Event(OPEN_BFP_HOTLINES));
-    button?.addEventListener("click", openHotlines);
-    return () => button?.removeEventListener("click", openHotlines);
-  }, []);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -1162,11 +1149,10 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     <>
       <style>{residentAuthFontStyles}</style>
       <style>{signupStyles}</style>
-      <style>{emergencyCallStyles}</style>
       <div
         ref={rootRef}
         className={`signup-page-root ${fontVariableClassName}`}
-        dangerouslySetInnerHTML={{ __html: markup }}
+        dangerouslySetInnerHTML={{ __html: signupMarkup }}
       />
     </>
   );

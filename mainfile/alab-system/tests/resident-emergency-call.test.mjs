@@ -4,24 +4,28 @@ import test from "node:test";
 
 const source = (path) => readFileSync(path, "utf8");
 
-test("people who cannot report in the app yet can call BFP in one tap", () => {
+test("the landing hero lets anyone call BFP in one tap", () => {
   const content = source("app/_content/emergency-call.ts");
-  assert.match(content, /Fire emergency\? Call BFP now/);
-  assert.match(content, /data-call-bfp/);
+  assert.match(content, /class="hero__emergency" data-call-bfp/);
+  assert.match(content, /Fire emergency right now\?/);
 
+  const landing = source("app/_components/landing-page.tsx");
+  assert.match(landing, /<a class="button button--secondary" href="#incidents">/);
+  assert.match(landing, /heroEmergencyMarkup/);
+  assert.match(landing, /dangerouslySetInnerHTML=\{\{ __html: markup \}\}/);
+  assert.match(landing, /querySelector\("\[data-call-bfp\]"\)/);
+  assert.match(landing, /dispatchEvent\(new Event\(OPEN_BFP_HOTLINES\)\)/);
+  assert.match(landing, /<ResidentOfflineEmergency \/>/);
+});
+
+test("the login and sign-up forms carry no emergency button", () => {
   for (const path of ["app/_components/login-page.tsx", "app/_components/signup-page.tsx"]) {
-    const page = source(path);
-    assert.match(page, /Markup\.replace\("<\/header>", `<\/header>\$\{emergencyCallMarkup\}`\)/, `${path} lacks the emergency button`);
-    assert.match(page, /dangerouslySetInnerHTML=\{\{ __html: markup \}\}/);
-    assert.match(page, /querySelector\("\[data-call-bfp\]"\)/);
-    assert.match(page, /dispatchEvent\(new Event\(OPEN_BFP_HOTLINES\)\)/);
+    assert.doesNotMatch(source(path), /emergency-call|data-call-bfp/, `${path} still shows the emergency button`);
   }
+});
 
+test("an applicant waiting for approval can still call BFP", () => {
   const application = source("app/resident/application/page.tsx");
   assert.match(application, /\{!isApproved && \(\s*<div className="approval-emergency">/);
   assert.match(application, /dispatchEvent\(new Event\(OPEN_BFP_HOTLINES\)\)/);
-
-  // The hotline sheet is mounted on these screens.
-  const layout = source("app/resident/layout.tsx");
-  assert.match(layout, /if \(isAuth\) return <>\{children\}<ResidentOfflineEmergency \/><\/>;/);
 });

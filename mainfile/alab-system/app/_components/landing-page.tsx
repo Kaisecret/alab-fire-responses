@@ -7,9 +7,28 @@ import {
   landingStyles,
 } from "../_content/landing-content";
 import { landingMobileStyles } from "../_content/landing-mobile-styles";
+import { heroEmergencyMarkup, heroEmergencyStyles } from "../_content/emergency-call";
+import { OPEN_BFP_HOTLINES, ResidentOfflineEmergency } from "./resident-offline-emergency";
+
+// Under the hero actions: anyone, with or without an account, can call BFP.
+const heroActionsEnd = '<a class="button button--secondary" href="#incidents">';
+const markup = (() => {
+  const start = landingMarkup.indexOf(heroActionsEnd);
+  const end = start < 0 ? -1 : landingMarkup.indexOf("</div>", start);
+  return end < 0 ? landingMarkup : `${landingMarkup.slice(0, end + 6)}${heroEmergencyMarkup}${landingMarkup.slice(end + 6)}`;
+})();
 
 export function LandingPage() {
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // The emergency button lives in the static markup; it opens the BFP hotline sheet.
+  useEffect(() => {
+    const button = rootRef.current?.querySelector("[data-call-bfp]");
+    const openHotlines = () => window.dispatchEvent(new Event(OPEN_BFP_HOTLINES));
+    button?.addEventListener("click", openHotlines);
+    return () => button?.removeEventListener("click", openHotlines);
+  }, []);
+
 
   useEffect(() => {
     const root = rootRef.current;
@@ -103,12 +122,13 @@ export function LandingPage() {
 
   return (
     <>
-      <style>{`${landingStyles}\n${landingMobileStyles}`}</style>
+      <style>{`${landingStyles}\n${landingMobileStyles}\n${heroEmergencyStyles}`}</style>
       <div
         ref={rootRef}
         className="landing-page-root"
-        dangerouslySetInnerHTML={{ __html: landingMarkup }}
+        dangerouslySetInnerHTML={{ __html: markup }}
       />
+      <ResidentOfflineEmergency />
     </>
   );
 }
