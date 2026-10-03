@@ -9,6 +9,7 @@ import type { ProvincialIncidentDetail } from '../../../lib/intermunicipality/pr
 import { DangerFactors } from '../../_components/danger-factors';
 import { formatPhilippineDateTime, getFireTypeLabel } from '../../../lib/municipal-bfp/reports/formatters';
 import { StatCards } from "../../_components/municipal-stat-cards";
+import { FireCommandHeader } from '../../_components/fire-command-header';
 
 const POPUP_TYPE_ICONS: Record<string, string> = {
   HOUSE_BUILDING: 'fa-house-fire',
@@ -33,45 +34,10 @@ const pageStyles = `
   /* Header */
   .pbfp-header-hub {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     gap: 1rem;
     flex-wrap: wrap;
-  }
-
-  .pbfp-header-left {
-    display: flex;
-    align-items: center;
-    gap: 0.9rem;
-  }
-
-  .pbfp-header-icon-badge {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #FFFFFF;
-    font-size: 1.25rem;
-    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
-    flex-shrink: 0;
-  }
-
-  .pbfp-header-title-box h1 {
-    font-size: 1.35rem;
-    font-weight: 850;
-    color: #0F172A;
-    margin: 0;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
-  }
-
-  .pbfp-live-check {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #64748B;
   }
 
   .pbfp-header-actions {
@@ -731,20 +697,17 @@ function ProvincialIncidentsContent() {
   return (
     <>
       <style>{pageStyles}</style>
+      <FireCommandHeader
+        slotId="provincial-fire-command-header"
+        title="Province-Wide Incident Command Roster"
+        checking={checking}
+        lastCheckedAt={lastCheckedAt}
+        error={error}
+        live
+      />
       <div className="pbfp-incidents-page">
         {/* Header */}
         <div className="pbfp-header-hub">
-          <div className="pbfp-header-left">
-            <div className="pbfp-header-icon-badge">
-              <i className="fa-solid fa-fire" />
-            </div>
-            <div className="pbfp-header-title-box">
-              <h1>Province-Wide Incident Command Roster</h1>
-              <span className="pbfp-live-check">
-                {checking ? 'Live · syncing…' : lastCheckedAt ? `Live · checked ${lastCheckedAt.toLocaleTimeString()}` : 'Live Telemetry'}
-              </span>
-            </div>
-          </div>
           <div className="pbfp-header-actions">
             <button type="button" className="pbfp-btn-refresh" onClick={() => void refresh(true)} disabled={checking}>
               <i className={`fa-solid fa-arrows-rotate ${checking ? 'fa-spin' : ''}`} />

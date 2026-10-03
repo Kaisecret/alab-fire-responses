@@ -18,6 +18,7 @@ import {
   type ProvincialExportScope,
 } from "./provincial-report-export-dialog";
 import { StatCards } from "./municipal-stat-cards";
+import { FireCommandHeader } from "./fire-command-header";
 
 /** Statuses the province counts as a real fire that was worked. */
 const CONFIRMED_STATUSES = [
@@ -353,19 +354,10 @@ export function ProvincialReportConsole() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", fontFamily: "inherit" }}>
       <style>{summaryCardStyles}</style>
+      <FireCommandHeader slotId="provincial-fire-command-header" title="Incident Reports" icon="fa-file-shield" />
 
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: "1.45rem", fontWeight: 800, color: "#0F172A", display: "flex", alignItems: "center", gap: "0.5rem", letterSpacing: "-0.02em" }}>
-            <i className="fa-solid fa-file-lines" style={{ color: "#D00F09" }} />
-            Incident Reports
-          </h1>
-          <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "#64748B" }}>
-            Review provincial incidents and export records or summaries.
-          </p>
-        </div>
-
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.6rem", flexWrap: "wrap", marginLeft: "auto" }}>
           <button
             type="button"

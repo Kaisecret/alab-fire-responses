@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useProvincialManagementList } from '../../_components/use-provincial-management-list';
 import Link from 'next/link';
 import type { MunicipalitySummary } from '../../../lib/provincial-bfp/management/types';
+import { FireCommandHeader } from '../../_components/fire-command-header';
 
 const styles = `
   .pbfp-page {
@@ -46,29 +47,6 @@ const styles = `
     display: flex;
     align-items: center;
     gap: 0.9rem;
-  }
-
-  .pbfp-header-icon-badge {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #E23632 0%, #B91C1C 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #FFFFFF;
-    font-size: 1.25rem;
-    box-shadow: 0 4px 14px rgba(226, 54, 50, 0.35);
-    flex-shrink: 0;
-  }
-
-  .pbfp-header-title-box h1 {
-    font-size: 1.35rem;
-    font-weight: 800;
-    color: #0F172A;
-    margin: 0;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
   }
 
   .pbfp-header-title-box p {
@@ -928,15 +906,12 @@ export default function MunicipalStatusPage() {
   return (
     <>
       <style>{styles}</style>
+      <FireCommandHeader slotId="provincial-fire-command-header" title="Municipality Directory" icon="fa-building-shield" />
       <div className="pbfp-page">
         {/* Header Bar */}
         <div className="pbfp-header-hub">
           <div className="pbfp-header-left">
-            <div className="pbfp-header-icon-badge">
-              <i className="fa-solid fa-building-shield" />
-            </div>
             <div className="pbfp-header-title-box">
-              <h1>Municipality Directory</h1>
               <p>
                 Province of Antique · {municipalities.length} Local Government Units
                 {lastUpdated && ` · Updated ${new Date(lastUpdated).toLocaleTimeString()}`}

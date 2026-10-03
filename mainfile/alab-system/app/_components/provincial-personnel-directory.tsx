@@ -7,6 +7,7 @@ import { useProvincialManagementList } from './use-provincial-management-list';
 import { useManagementDialog } from './use-management-dialog';
 import type { ManagedPersonnel } from '../../lib/provincial-bfp/management/types';
 import { StatCards } from "./municipal-stat-cards";
+import { FireCommandHeader } from "./fire-command-header";
 
 const directoryStyles = `
   .ppd-container {
@@ -42,76 +43,10 @@ const directoryStyles = `
 
   /* Command Header */
   .ppd-header-card {
-    background: #FFFFFF;
-    border: 1px solid var(--slate-200);
-    border-radius: 16px;
-    padding: 1.25rem 1.5rem;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     gap: 1.25rem;
-    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
-  }
-
-  .ppd-header-left {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    min-width: 0;
-  }
-
-  .ppd-header-icon-box {
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #FFF1F1 0%, #FEE2E2 100%);
-    border: 1px solid #FECACA;
-    display: grid;
-    place-items: center;
-    color: var(--red-600);
-    font-size: 1.35rem;
-    flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(226, 54, 50, 0.12);
-  }
-
-  .ppd-kicker {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--red-600);
-  }
-
-  .ppd-kicker-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--emerald-600);
-    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
-    animation: ppdPulse 2s infinite;
-  }
-
-  @keyframes ppdPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(0.9); }
-  }
-
-  .ppd-title {
-    margin: 0.2rem 0 0;
-    font-size: clamp(1.25rem, 2vw, 1.55rem);
-    font-weight: 800;
-    color: var(--navy-900);
-    letter-spacing: -0.025em;
-    line-height: 1.2;
-  }
-
-  .ppd-subtitle {
-    margin: 0.3rem 0 0;
-    font-size: 0.825rem;
-    color: var(--slate-500);
   }
 
   .ppd-header-actions {
@@ -825,10 +760,13 @@ const directoryStyles = `
     cursor: not-allowed;
   }
 
-  @media (max-width: 960px) {
+  @media (max-width: 1200px) {
     .ppd-filters-row {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+  }
+
+  @media (max-width: 960px) {
     .ppd-header-card {
       flex-direction: column;
       align-items: flex-start;
@@ -1150,22 +1088,10 @@ export function ProvincialPersonnelDirectory() {
   return (
     <section className="ppd-container" aria-label="Municipal BFP Personnel Registry">
       <style>{directoryStyles}</style>
+      <FireCommandHeader slotId="provincial-fire-command-header" title="Municipal BFP Personnel Registry" icon="fa-users" />
 
       {/* Header Hub */}
       <header className="ppd-header-card">
-        <div className="ppd-header-left">
-          <div className="ppd-header-icon-box" aria-hidden="true">
-            <i className="fa-solid fa-user-shield" />
-          </div>
-          <div>
-            <div className="ppd-kicker">
-              <span className="ppd-kicker-dot" />
-              <span>BUREAU OF FIRE PROTECTION • REGION VI</span>
-            </div>
-            <h1 className="ppd-title">Municipal BFP Personnel Registry</h1>
-          </div>
-        </div>
-
         <div className="ppd-header-actions">
           <ProvincialManagementToolbar exportOnly dataset="PERSONNEL" filters={filters} onFilterChange={() => {}} />
           <button

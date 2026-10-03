@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ProvincialRequestError, requestProvincialJson } from "../../lib/provincial-bfp/client-request";
 import { ProvincialAccountDialog } from "./provincial-account-dialog";
 import { StatCards } from "./municipal-stat-cards";
+import { FireCommandHeader } from "./fire-command-header";
 
 type Municipality = { id: string; name: string; psgcCode: string | null };
 type Account = {
@@ -50,78 +51,9 @@ const pageStyles = `
   /* ========== HEADER CARD ========== */
   .pma-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     gap: 1.25rem;
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 1.25rem 1.6rem;
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
-  }
-
-  .pma-header-title-area {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-  }
-
-  .pma-kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .pma-kicker-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: #FEF2F2;
-    color: #DB1B0D;
-    border: 1px solid #FEE2E2;
-    padding: 0.2rem 0.6rem;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .pma-kicker-emblem {
-    width: 16px;
-    height: 16px;
-    object-fit: contain;
-  }
-
-  .pma-kicker-dot {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: #CBD5E1;
-  }
-
-  .pma-kicker-text {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #64748B;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .pma-title {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #0F172A;
-    margin: 0;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
-  }
-
-  .pma-subtitle {
-    font-size: 0.85rem;
-    color: #64748B;
-    margin: 0;
-    line-height: 1.4;
   }
 
   .pma-actions {
@@ -873,7 +805,6 @@ const pageStyles = `
     .pma-header {
       flex-direction: column;
       align-items: stretch;
-      padding: 1.15rem;
     }
 
     .pma-actions {
@@ -1055,23 +986,10 @@ export function ProvincialMunicipalAccounts() {
   return (
     <div className="pma-container">
       <style>{pageStyles}</style>
+      <FireCommandHeader slotId="provincial-fire-command-header" title="Municipal BFP Accounts" icon="fa-id-card-clip" />
 
       {/* Header section */}
       <div className="pma-header">
-        <div className="pma-header-title-area">
-          <div className="pma-kicker">
-            <span className="pma-kicker-badge">
-              <img src="/images/bfp logo.png" alt="BFP Official Logo" className="pma-kicker-emblem" />
-              <span>PROVINCIAL COMMAND</span>
-            </span>
-            <span className="pma-kicker-dot" />
-            <span className="pma-kicker-text">ANTIQUE JURISDICTION</span>
-          </div>
-          <h1 className="pma-title">Municipal BFP Accounts</h1>
-          <p className="pma-subtitle">
-            Station credential oversight and officer access provisioning.
-          </p>
-        </div>
         <div className="pma-actions">
           <button className="pma-btn pma-btn-refresh" type="button" onClick={refresh} disabled={loading} title="Refresh Roster">
             <i className={`fa-solid fa-arrows-rotate ${loading ? 'fa-spin' : ''}`} />

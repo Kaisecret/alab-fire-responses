@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { FireCommandHeader } from '../../_components/fire-command-header';
 
 const styles = `
   .pbfp-page {
@@ -9,20 +10,6 @@ const styles = `
     flex-direction: column;
     gap: 1.5rem;
     font-family: 'Plus Jakarta Sans', sans-serif;
-  }
-  .pbfp-header-top h1 {
-    font-size: 1.45rem;
-    font-weight: 800;
-    color: #0F172A;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0 0 0.25rem;
-  }
-  .pbfp-header-top p {
-    font-size: 0.86rem;
-    color: #64748B;
-    margin: 0;
   }
   .pbfp-analytics-grid {
     display: grid;
@@ -73,17 +60,8 @@ export default function AnalyticsPage() {
   return (
     <>
       <style>{styles}</style>
+      <FireCommandHeader slotId="provincial-fire-command-header" title="Provincial Fire Response Intelligence & Analytics" icon="fa-chart-pie" />
       <div className="pbfp-page">
-        <div className="pbfp-header-top">
-          <h1>
-            <i className="fa-solid fa-chart-pie" style={{ color: '#DB1B0D' }} />
-            Provincial Fire Response Intelligence & Analytics
-          </h1>
-          <p>
-            Statistical overview of response durations, incident distribution by municipality, alarm frequencies, and apparatus utilization in Antique.
-          </p>
-        </div>
-
         <div className="pbfp-analytics-grid">
           <div className="pbfp-stat-box">
             <span className="pbfp-stat-title">Average Response Time (Province)</span>

@@ -5,13 +5,12 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ProvincialWaterSourceRegistry, WaterSource } from "../../lib/water-sources/types";
 import { StatCards } from "./municipal-stat-cards";
+import { FireCommandHeader } from "./fire-command-header";
 
 const styles = `
   .prov-water { padding: 1.5rem clamp(1rem, 2vw, 2rem) 3rem; color: #172033; font-family: 'Plus Jakarta Sans', sans-serif; }
   .prov-water * { box-sizing: border-box; }
-  .prov-water__header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 1.25rem; }
-  .prov-water__eyebrow { margin: 0 0 .4rem; color: #b42318; font-size: .7rem; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
-  .prov-water h1 { margin: 0; font-size: clamp(1.45rem, 2vw, 2rem); letter-spacing: -.035em; }
+  .prov-water__header { display: flex; justify-content: flex-end; gap: 1rem; align-items: center; margin-bottom: 1.25rem; }
   .prov-water__badge { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: .55rem .75rem; border: 1px solid #d0d5dd; border-radius: 9px; background: #fff; color: #475467; font-size: .75rem; font-weight: 800; white-space: nowrap; }
 
   /* ========== 4 CLEAN BFP KPI METRIC CARDS (PASTEL GRADIENT STYLE) ========== */
@@ -237,13 +236,10 @@ export function ProvincialWaterSources() {
   return (
     <>
       <style>{styles}</style>
+      <FireCommandHeader slotId="provincial-fire-command-header" title="Water sources by municipality" icon="fa-droplet" />
       <main className="prov-water">
         <header className="prov-water__header">
-          <div>
-            <p className="prov-water__eyebrow">Antique provincial overview</p>
-            <h1>Water sources by municipality</h1>
-            {/* 148 records from the BFP locator chart */}
-          </div>
+          {/* 148 records from the BFP locator chart */}
           <span className="prov-water__badge">
             <i className="fa-solid fa-file-shield" aria-hidden="true" /> BFP source register
           </span>

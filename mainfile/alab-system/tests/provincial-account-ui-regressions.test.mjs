@@ -34,6 +34,7 @@ function harness(path, name) {
     './provincial-backup-alarm': { ProvincialBackupAlarm: 'backup-alarm' },
     './bfp-logout-dialog': { BfpLogoutDialog: 'logout-dialog', confirmBfpSignedOut: async () => {} },
     './municipal-stat-cards': { StatCards: 'stat-cards', MunicipalStatCards: 'stat-cards' },
+    './fire-command-header': { FireCommandHeader: 'fire-command-header' },
   });
   return { render() { cursor = 0; effects.length = 0; return mod[name]({ children: null }); }, effects };
 }

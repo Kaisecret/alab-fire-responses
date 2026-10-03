@@ -21,10 +21,12 @@ export function NotificationCenter({
   apiPath,
   eyebrow = "LIVE ACCOUNT UPDATES",
   desktopVariant,
+  showHeading = true,
 }: {
   apiPath: string;
   eyebrow?: string;
   desktopVariant?: "municipal";
+  showHeading?: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>("ALL");
   const { notifications, unreadCount, isLoading, error, markRead, markAllRead } = useNotifications(apiPath, 50);
@@ -37,13 +39,13 @@ export function NotificationCenter({
   return (
     <section className={`${styles.center} ${desktopVariant === "municipal" ? styles.municipalDesktop : ""}`}>
       <header className={styles.centerHeader}>
-        <div className={styles.centerHeading}>
+        {showHeading && <div className={styles.centerHeading}>
           <span className={styles.centerHeaderIcon} aria-hidden="true"><i className="fa-solid fa-bell" /></span>
           <span>
             <small className={styles.eyebrow}>{eyebrow}</small>
             <h1>Notifications</h1>
           </span>
-        </div>
+        </div>}
         <div className={styles.centerActions}>
           <span className={styles.livePill}><i className="fa-solid fa-circle" /> Live updates</span>
           {unreadCount > 0 && <button className={styles.markAllButton} type="button" onClick={() => void markAllRead()}>

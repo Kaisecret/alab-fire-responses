@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { FireCommandHeader } from '../../_components/fire-command-header';
 import {
   ALARM_DOCTRINE,
   NEARBY_RADIUS_METERS,
@@ -51,16 +52,9 @@ const styles = `
   .pset__head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 12px;
     margin-bottom: 18px;
-  }
-  .pset__head h1 {
-    margin: 0;
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    color: #0f172a;
   }
   .pset__refresh {
     display: inline-flex;
@@ -599,9 +593,9 @@ export default function ProvincialSettingsPage() {
   return (
     <div className="pset">
       <style>{styles}</style>
+      <FireCommandHeader slotId="provincial-fire-command-header" title="Settings" icon="fa-sliders" />
 
       <div className="pset__head">
-        <h1>Settings</h1>
         <button type="button" className="pset__refresh" onClick={() => setRevision((value) => value + 1)} disabled={loading}>
           <i className={`fa-solid ${loading ? 'fa-circle-notch fa-spin' : 'fa-rotate'}`} aria-hidden="true" />
           {loading ? 'Refreshing' : 'Refresh'}

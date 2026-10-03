@@ -6,16 +6,16 @@ import { useProvincialManagementList } from './use-provincial-management-list';
 import type { ProvincialReportRow } from '../../lib/provincial-bfp/management/types';
 import { getFireTypeLabel, getSeverityLabel, getStatusLabel } from '../../lib/municipal-bfp/reports/formatters';
 import { ProvincialReportDetail } from './provincial-report-detail';
+import { FireCommandHeader } from './fire-command-header';
 
 interface ProvincialReportDirectoryProps { initialMunicipalityId?: string; }
 
 const directoryStyles = `
   .prd-card{--navy:#10234a;--red:#e23632;--border:#dce6f2;display:flex;flex-direction:column;gap:1rem;font-family:inherit;color:var(--navy)}
   .prd-card ::selection{background:#fee2e2;color:#7f1d1d}.prd-card :is(button,select,input,a):focus-visible{outline:3px solid rgba(226,54,50,.24);outline-offset:2px}
-  .prd-command,.prd-filter-console,.prd-records{background:#fff;border:1px solid var(--border);box-shadow:0 8px 24px rgba(38,65,99,.06)}
-  .prd-command{min-height:92px;padding:1.15rem 1.3rem;border-radius:15px;display:flex;align-items:center;justify-content:space-between;gap:1rem}
-  .prd-heading{display:flex;align-items:center;gap:.95rem;min-width:0}.prd-heading-icon{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;color:var(--red);background:#fff1f1;border:1px solid #fee2e2;font-size:1.08rem}
-  .prd-heading h1{margin:0;color:#081a3a;font-size:clamp(1.25rem,2vw,1.55rem);line-height:1.15;letter-spacing:-.035em;font-weight:800}.prd-heading-meta{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem .65rem;margin:.35rem 0 0;color:#64748b;font-size:.82rem;font-weight:500}.prd-meta-dot{color:#b8c4d2}
+  .prd-filter-console,.prd-records{background:#fff;border:1px solid var(--border);box-shadow:0 8px 24px rgba(38,65,99,.06)}
+  .prd-command{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+  .prd-heading-meta{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem .65rem;margin:0;color:#64748b;font-size:.82rem;font-weight:500}.prd-meta-dot{color:#b8c4d2}
   .prd-actions{display:flex;align-items:center;gap:.65rem;flex-wrap:wrap}.prd-actions .no-print{gap:0!important}.prd-actions .no-print button,.prd-refresh{min-height:42px;border-radius:9px!important;padding:.65rem 1rem!important;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font:inherit;font-size:.82rem!important;font-weight:800!important;cursor:pointer;transition:transform 160ms ease,box-shadow 160ms ease,background 160ms ease,border-color 160ms ease}
   .prd-refresh{color:#1e3a67;background:#fff;border:1px solid #b9cbe1}.prd-actions .no-print button{color:#fff!important;background:var(--red)!important;border:1px solid var(--red)!important;box-shadow:0 6px 14px rgba(226,54,50,.18)!important}.prd-actions button:hover:not(:disabled){transform:translateY(-1px)}.prd-refresh:hover:not(:disabled){background:#f8fbff;border-color:#7898be}.prd-actions .no-print button:hover:not(:disabled){background:#c82e2a!important}.prd-actions button:active:not(:disabled){transform:scale(.98)}.prd-actions button:disabled{cursor:progress;opacity:.62}
   .prd-filter-console{padding:1rem 1.2rem 1.15rem;border-radius:15px}.prd-filter-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-bottom:.85rem;margin-bottom:.85rem;border-bottom:1px solid #edf2f7}.prd-filter-heading strong{font-size:.82rem;color:#20365e}.prd-filter-summary{display:flex;align-items:center;gap:.7rem}.prd-filter-count{display:inline-flex;align-items:center;gap:.4rem;color:#526983;font-size:.76rem;font-weight:700}.prd-clear{border:0;background:transparent;color:#b42320;padding:.25rem;font:inherit;font-size:.76rem;font-weight:800;cursor:pointer}.prd-clear:disabled{color:#a8b4c2;cursor:default}
@@ -30,7 +30,7 @@ const directoryStyles = `
   .prd-mobile-records{display:none}.prd-footer{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.85rem 1rem;border-top:1px solid #e1e9f2;color:#5b7089;font-size:.75rem}.prd-pagination,.prd-page-size{display:flex;align-items:center;gap:.55rem}.prd-footer select,.prd-page-button{min-height:34px;border:1px solid #c8d5e4;border-radius:7px;background:#fff;color:#294466;font:inherit;font-weight:700}.prd-footer select{padding:.35rem .55rem}.prd-page-button{min-width:34px;padding:.35rem .55rem;cursor:pointer}.prd-page-button:disabled{color:#9aa8b8;background:#f4f7fa;cursor:default}
   @media(max-width:1280px){.prd-filters{grid-template-columns:repeat(4,minmax(145px,1fr))}.prd-search{grid-column:span 2}}
   @media (max-width: 900px){.prd-command{align-items:flex-start;flex-direction:column}.prd-actions{width:100%}.prd-actions>*{flex:1 1 auto}.prd-actions .no-print button,.prd-refresh{width:100%}.prd-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.prd-search{grid-column:1/-1}.prd-scroll{display:none}.prd-mobile-records{display:grid}.prd-mobile-record{padding:1rem;border-bottom:1px solid #e4ebf3;display:grid;grid-template-columns:1fr auto;gap:.85rem 1rem}.prd-mobile-record:last-child{border-bottom:0}.prd-mobile-top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:.7rem}.prd-mobile-data{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem 1rem}.prd-mobile-label{display:block;margin-bottom:.18rem;color:#7c8da1;font-size:.61rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}}
-  @media(max-width:600px){.prd-card{gap:.75rem}.prd-command,.prd-filter-console{padding:1rem;border-radius:12px}.prd-heading-icon{width:42px;height:42px}.prd-filter-heading,.prd-footer{align-items:flex-start;flex-direction:column}.prd-filters{grid-template-columns:1fr}.prd-search{grid-column:auto}.prd-mobile-record{grid-template-columns:1fr}.prd-mobile-top{align-items:flex-start}.prd-mobile-data{grid-template-columns:1fr 1fr}.prd-mobile-record .prd-view{width:100%}.prd-pagination{width:100%;justify-content:space-between}}
+  @media(max-width:600px){.prd-card{gap:.75rem}.prd-filter-console{padding:1rem;border-radius:12px}.prd-filter-heading,.prd-footer{align-items:flex-start;flex-direction:column}.prd-filters{grid-template-columns:1fr}.prd-search{grid-column:auto}.prd-mobile-record{grid-template-columns:1fr}.prd-mobile-top{align-items:flex-start}.prd-mobile-data{grid-template-columns:1fr 1fr}.prd-mobile-record .prd-view{width:100%}.prd-pagination{width:100%;justify-content:space-between}}
   @media(prefers-reduced-motion:reduce){.prd-card *,.prd-card *::before,.prd-card *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 `;
 
@@ -95,11 +95,9 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
   return (
     <section className="prd-card" aria-labelledby="provincial-report-title">
       <style>{directoryStyles}</style>
+      <FireCommandHeader slotId="provincial-fire-command-header" headingId="provincial-report-title" title="All Municipal Fire Reports" icon="fa-file-lines" />
       <header className="prd-command">
-        <div className="prd-heading"><div className="prd-heading-icon" aria-hidden="true"><i className="fa-solid fa-file-lines" /></div><div>
-          <h1 id="provincial-report-title">All Municipal Fire Reports</h1>
           <p className="prd-heading-meta"><span>{loading && total === 0 ? 'Reading the provincial registry…' : `${total.toLocaleString()} report${total === 1 ? '' : 's'} across Antique Province`}</span><span className="prd-meta-dot" aria-hidden="true">•</span><span>Last updated {updatedLabel}</span></p>
-        </div></div>
         <div className="prd-actions">
           <button type="button" className="prd-refresh" onClick={fetchReports} disabled={loading}><i className={`fa-solid fa-arrows-rotate${loading ? ' fa-spin' : ''}`} aria-hidden="true" />{loading ? 'Refreshing' : 'Refresh'}</button>
           <ProvincialManagementToolbar exportOnly dataset="FIRE_REPORTS" filters={filters} onFilterChange={() => {}} />

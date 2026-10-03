@@ -1234,7 +1234,9 @@ function LiveClock() {
 
 export function ProvincialBfpLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || '/provincial-bfp';
-  const hasCommandHeader = pathname === '/provincial-bfp' || pathname === '/provincial-bfp/' || pathname === '/provincial-bfp/gis-map' || pathname === '/provincial-bfp/assistance-requests' || pathname === '/provincial-bfp/firetrucks-stations';
+  const hasCommandHeader = pathname === '/provincial-bfp/'
+    || pathname === '/provincial-bfp/notifications'
+    || navigationGroups.some(group => group.items.some(item => item.href === pathname));
   const isAuthenticationPage = pathname === '/provincial-bfp/login';
 
   const [isCollapsed, setIsCollapsed] = useState(false);

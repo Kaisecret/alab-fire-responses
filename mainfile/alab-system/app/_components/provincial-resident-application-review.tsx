@@ -7,6 +7,7 @@ import { useManagementDialog } from './use-management-dialog';
 import { PhotoLightbox } from './photo-lightbox';
 import type { ManagedApplication } from '../../lib/provincial-bfp/management/types';
 import { StatCards } from "./municipal-stat-cards";
+import { FireCommandHeader } from "./fire-command-header";
 
 interface ApplicationReviewProps {
   initialMunicipalityId?: string;
@@ -46,77 +47,11 @@ const reviewStyles = `
 
   /* Command Header */
   .par-header-card {
-    background: #FFFFFF;
-    border: 1px solid var(--slate-200);
-    border-radius: 16px;
-    padding: 1.25rem 1.5rem;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     flex-wrap: wrap;
     gap: 1.25rem;
-    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
-  }
-
-  .par-header-left {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    min-width: 0;
-  }
-
-  .par-header-icon-box {
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #FFF1F1 0%, #FEE2E2 100%);
-    border: 1px solid #FECACA;
-    display: grid;
-    place-items: center;
-    color: var(--red-600);
-    font-size: 1.35rem;
-    flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(226, 54, 50, 0.12);
-  }
-
-  .par-kicker {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--red-600);
-  }
-
-  .par-kicker-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--emerald-600);
-    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
-    animation: parPulse 2s infinite;
-  }
-
-  @keyframes parPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(0.9); }
-  }
-
-  .par-title {
-    margin: 0.2rem 0 0;
-    font-size: clamp(1.25rem, 2vw, 1.55rem);
-    font-weight: 800;
-    color: var(--navy-900);
-    letter-spacing: -0.025em;
-    line-height: 1.2;
-  }
-
-  .par-subtitle {
-    margin: 0.3rem 0 0;
-    font-size: 0.825rem;
-    color: var(--slate-500);
   }
 
   .par-header-actions {
@@ -1526,25 +1461,10 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
   return (
     <section className="par-container" aria-label="Provincial Resident Applications Review">
       <style>{reviewStyles}</style>
+      <FireCommandHeader slotId="provincial-fire-command-header" title="Resident Applications Review" icon="fa-user-check" />
 
       {/* Header Bar */}
       <header className="par-header-card">
-        <div className="par-header-left">
-          <div className="par-header-icon-box" aria-hidden="true">
-            <i className="fa-solid fa-id-card-clip" />
-          </div>
-          <div>
-            <div className="par-kicker">
-              <span className="par-kicker-dot" />
-              <span>BUREAU OF FIRE PROTECTION • REGION VI</span>
-            </div>
-            <h1 className="par-title">Resident Applications Review</h1>
-            <p className="par-subtitle">
-              Provincial jurisdiction queue for reviewing, verifying, and requesting corrections on resident accounts across Antique.
-            </p>
-          </div>
-        </div>
-
         <div className="par-header-actions">
           <button
             type="button"
