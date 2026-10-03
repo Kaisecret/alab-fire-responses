@@ -919,14 +919,7 @@ export default function MunicipalStatusPage() {
             </div>
           </div>
           <div className="pbfp-header-actions">
-            <button
-              type="button"
-              className="pbfp-btn-refresh"
-              onClick={() => fetchMunicipalities()}
-              disabled={loading}
-            >
-              <i className={`fa-solid fa-rotate ${loading ? 'fa-spin' : ''}`} /> Refresh
-            </button>
+
             <Link href="/provincial-bfp/gis-map" className="pbfp-btn-gis">
               <i className="fa-solid fa-map-location-dot" /> Open GIS View
             </Link>

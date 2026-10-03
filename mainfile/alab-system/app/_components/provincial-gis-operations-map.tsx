@@ -1113,7 +1113,7 @@ export function ProvincialGisOperationsMap() {
     [],
   );
   const waterSourceId = searchParams.get("waterSource") ?? "";
-  const { incidents, loading, checking, error, lastCheckedAt, refresh } = useProvincialIncidentFeed({
+  const { incidents, loading, checking, error, lastCheckedAt } = useProvincialIncidentFeed({
     includeHistory: true,
   });
 
@@ -1219,23 +1219,31 @@ export function ProvincialGisOperationsMap() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void fetchProvincialWaterSources(fetch, controller.signal)
-      .then((registry) => {
-        if (controller.signal.aborted) return;
-        setWaterSources(registry.sources);
-        setWaterSourcesError("");
-        setWaterSourcesCheckedAt(new Date());
-      })
-      .catch((loadError) => {
-        if (controller.signal.aborted) return;
-        setWaterSourcesError(
-          loadError instanceof Error ? loadError.message : "Unable to load the provincial water-source layer.",
-        );
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setWaterSourcesLoading(false);
-      });
-    return () => controller.abort();
+    let pending = false;
+    const read = () => {
+      if (pending || document.visibilityState === "hidden" || controller.signal.aborted) return;
+      pending = true;
+      void fetchProvincialWaterSources(fetch, controller.signal)
+        .then((registry) => {
+          if (controller.signal.aborted) return;
+          setWaterSources(registry.sources);
+          setWaterSourcesError("");
+          setWaterSourcesCheckedAt(new Date());
+        })
+        .catch((loadError) => {
+          if (controller.signal.aborted) return;
+          setWaterSourcesError(
+            loadError instanceof Error ? loadError.message : "Unable to load the provincial water-source layer.",
+          );
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setWaterSourcesLoading(false);
+        }).finally(() => { pending = false; });
+    };
+    read();
+    const interval = window.setInterval(read, 60000);
+    document.addEventListener("visibilitychange", read);
+    return () => { controller.abort(); window.clearInterval(interval); document.removeEventListener("visibilitychange", read); };
   }, []);
 
   // Sync station coverage markers
@@ -1334,26 +1342,6 @@ export function ProvincialGisOperationsMap() {
     mapRef.current.flyTo(DEFAULT_PROVINCE_CENTER, 9, { duration: 1.2 });
   }
 
-  async function handleRefresh() {
-    if (mapMode === "INCIDENTS") {
-      await refresh(true);
-      return;
-    }
-    setWaterSourcesLoading(true);
-    try {
-      const registry = await fetchProvincialWaterSources();
-      setWaterSources(registry.sources);
-      setWaterSourcesError("");
-      setWaterSourcesCheckedAt(new Date());
-    } catch (loadError) {
-      setWaterSourcesError(
-        loadError instanceof Error ? loadError.message : "Unable to load the provincial water-source layer.",
-      );
-    } finally {
-      setWaterSourcesLoading(false);
-    }
-  }
-
   const activeCount = useMemo(
     () => incidents.filter((incident) => !TERMINAL_STATUSES.has(incident.status)).length,
     [incidents],
@@ -1396,7 +1384,7 @@ export function ProvincialGisOperationsMap() {
       <style>{styles}</style>
       <section className="mbfp-ops-workspace" aria-labelledby="provincial-gis-heading">
         {/* Header Toolbar */}
-        <FireCommandHeader slotId="provincial-fire-command-header" headingId="provincial-gis-heading" title="Antique Fire Command" checking={mapMode === "INCIDENTS" ? checking : waterSourcesLoading} lastCheckedAt={mapMode === "INCIDENTS" ? lastCheckedAt : waterSourcesCheckedAt} error={mapMode === "INCIDENTS" ? error : waterSourcesError} onRefresh={() => void handleRefresh()} />
+        <FireCommandHeader slotId="provincial-fire-command-header" headingId="provincial-gis-heading" title="Antique Fire Command" checking={mapMode === "INCIDENTS" ? checking : waterSourcesLoading} lastCheckedAt={mapMode === "INCIDENTS" ? lastCheckedAt : waterSourcesCheckedAt} error={mapMode === "INCIDENTS" ? error : waterSourcesError} live />
 
         {/* 4 Clean Pastel KPI Stat Cards */}
         <div className="mbfp-ops-stats">

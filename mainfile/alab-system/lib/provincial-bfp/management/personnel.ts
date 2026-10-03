@@ -82,8 +82,11 @@ export async function listManagedPersonnel(
 
   const whereClause = `where ${conditions.join(" and ")}`;
 
-  const countRes = await db.query<{ count: string }>(
-    `select count(distinct u.id) as count
+  const countRes = await db.query<{ count: string; assigned: string; admins: string; active: string }>(
+    `select count(distinct u.id) as count,
+              count(distinct u.id) filter (where s.id is not null) as assigned,
+              count(distinct u.id) filter (where a.assignment_role = 'MUNICIPAL_ADMIN') as admins,
+              count(distinct u.id) filter (where u.account_status = 'ACTIVE') as active
        from users u
        join bfp_personnel_profiles p on p.user_id = u.id
        left join bfp_municipality_assignments a on a.personnel_profile_id = p.id and a.status = 'ACTIVE'
@@ -136,6 +139,11 @@ export async function listManagedPersonnel(
       updatedAt: new Date(r.updatedAt).toISOString(),
     })),
     total,
+    metrics: {
+      assigned: Number(countRes.rows[0]?.assigned ?? 0),
+      admins: Number(countRes.rows[0]?.admins ?? 0),
+      active: Number(countRes.rows[0]?.active ?? 0),
+    },
     page: filters.page,
     pageSize: filters.pageSize,
     updatedAt: new Date().toISOString(),

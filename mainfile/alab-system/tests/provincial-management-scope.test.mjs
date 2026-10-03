@@ -65,6 +65,17 @@ test("parseManagementFilters rejects invalid page size, negative page, and malfo
   );
 });
 
+test("seven-row provincial tables retain their requested page and report filters", () => {
+  const filters = parseReportFilters(new URLSearchParams({
+    page: "3", pageSize: "7", status: "CONFIRMED", reportSource: "PHONE_CALL",
+  }));
+  assert.equal(filters.page, 3);
+  assert.equal(filters.pageSize, 7);
+  assert.equal(filters.status, "CONFIRMED");
+  assert.equal(filters.reportSource, "PHONE_CALL");
+  assert.equal((filters.page - 1) * filters.pageSize, 14);
+});
+
 test("parseReportFilters extracts report-specific parameters safely", () => {
   const filters = parseReportFilters(new URLSearchParams({
     reportSource: "ALAB_APP",

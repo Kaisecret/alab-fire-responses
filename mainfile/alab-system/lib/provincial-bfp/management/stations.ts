@@ -70,8 +70,12 @@ export async function listManagedStations(
 
   const whereClause = `where ${conditions.join(" and ")}`;
 
-  const countRes = await db.query<{ count: string }>(
-    `select count(*) as count
+  const countRes = await db.query<{ count: string; active: string; municipalities: string; personnel: string }>(
+    `select count(*) as count,
+              count(*) filter (where s.status = 'ACTIVE') as active,
+              count(distinct s.municipality_id) as municipalities,
+              coalesce(sum((select count(distinct a.personnel_profile_id)
+                from bfp_station_assignments a where a.station_id = s.id and a.status = 'ACTIVE')), 0) as personnel
        from municipal_bfp_stations s
        join municipalities m on m.id = s.municipality_id
      ${whereClause}`,
@@ -124,6 +128,11 @@ export async function listManagedStations(
       updatedAt: new Date(r.updatedAt).toISOString(),
     })),
     total,
+    metrics: {
+      active: Number(countRes.rows[0]?.active ?? 0),
+      municipalities: Number(countRes.rows[0]?.municipalities ?? 0),
+      personnel: Number(countRes.rows[0]?.personnel ?? 0),
+    },
     page: filters.page,
     pageSize: filters.pageSize,
     updatedAt: new Date().toISOString(),

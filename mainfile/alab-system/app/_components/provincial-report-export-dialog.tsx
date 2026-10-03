@@ -12,7 +12,7 @@ export type ProvincialExportFormat = "PDF" | "XLSX" | "CSV";
 /** The filter values the console currently has applied, already resolved to dates. */
 export type ProvincialExportFilters = {
   page: number;
-  pageSize: 25 | 50 | 100;
+  pageSize: 7 | 25 | 50 | 100;
   municipalityId?: string;
   from?: string;
   to?: string;

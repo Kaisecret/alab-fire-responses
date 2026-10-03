@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ProvincialManagementToolbar, ProvincialMunicipalityFilter } from './provincial-management-toolbar';
+import { ProvincialTableToolbar, ProvincialManagementToolbar, ProvincialMunicipalityFilter } from './provincial-management-toolbar';
 import { useProvincialManagementList } from './use-provincial-management-list';
 import type { ProvincialReportRow } from '../../lib/provincial-bfp/management/types';
 import { getFireTypeLabel, getSeverityLabel, getStatusLabel } from '../../lib/municipal-bfp/reports/formatters';
@@ -51,7 +51,7 @@ const formatDateTime = (value: string) => new Intl.DateTimeFormat('en-PH', {
 
 export function ProvincialReportDirectory({ initialMunicipalityId = '' }: ProvincialReportDirectoryProps) {
   const { items: reports, total, updatedAt, page, pageSize, filters, loading, error, setPage, setPageSize, setFilters, setFilter, refresh: fetchReports } = useProvincialManagementList<ProvincialReportRow>({
-    endpoint: '/api/provincial-bfp/incident-reports', initialFilters: { municipalityId: initialMunicipalityId },
+    endpoint: '/api/provincial-bfp/incident-reports', initialFilters: { municipalityId: initialMunicipalityId, pageSize: 7 },
   });
   const municipalityFilter = filters.municipalityId || '';
   const statusFilter = filters.status || '';
@@ -96,13 +96,7 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
     <section className="prd-card" aria-labelledby="provincial-report-title">
       <style>{directoryStyles}</style>
       <FireCommandHeader slotId="provincial-fire-command-header" headingId="provincial-report-title" title="All Municipal Fire Reports" icon="fa-file-lines" />
-      <header className="prd-command">
-          <p className="prd-heading-meta"><span>{loading && total === 0 ? 'Reading the provincial registry…' : `${total.toLocaleString()} report${total === 1 ? '' : 's'} across Antique Province`}</span><span className="prd-meta-dot" aria-hidden="true">•</span><span>Last updated {updatedLabel}</span></p>
-        <div className="prd-actions">
-          <button type="button" className="prd-refresh" onClick={fetchReports} disabled={loading}><i className={`fa-solid fa-arrows-rotate${loading ? ' fa-spin' : ''}`} aria-hidden="true" />{loading ? 'Refreshing' : 'Refresh'}</button>
-          <ProvincialManagementToolbar exportOnly dataset="FIRE_REPORTS" filters={filters} onFilterChange={() => {}} />
-        </div>
-      </header>
+
 
       <section className="prd-filter-console" aria-labelledby="report-filter-title">
         <div className="prd-filter-heading"><strong id="report-filter-title">Filter the provincial registry</strong><div className="prd-filter-summary"><span className="prd-filter-count"><i className="fa-solid fa-filter" aria-hidden="true" /> {activeFilterCount} active</span><button type="button" className="prd-clear" onClick={clearFilters} disabled={activeFilterCount === 0}>Clear filters</button></div></div>
@@ -118,12 +112,15 @@ export function ProvincialReportDirectory({ initialMunicipalityId = '' }: Provin
       </section>
 
       <section className="prd-records" aria-label="Provincial fire report records" aria-busy={loading}>
+        <ProvincialTableToolbar title={<>          <p className="prd-heading-meta"><span>{loading && total === 0 ? 'Reading the provincial registry…' : `${total.toLocaleString()} report${total === 1 ? '' : 's'} across Antique Province`}</span><span className="prd-meta-dot" aria-hidden="true">•</span><span>Last updated {updatedLabel}</span></p></>}>
+          <ProvincialManagementToolbar exportOnly dataset="FIRE_REPORTS" filters={filters} onFilterChange={() => {}} />
+        </ProvincialTableToolbar>
         {error && <div className="prd-alert" role="alert"><span><strong>Could not load reports.</strong> {error}</span><button type="button" onClick={fetchReports}>Try again</button></div>}
         {loading && reports.length === 0 ? <div aria-label="Loading reports">{[0,1,2,3,4].map((row)=><div className="prd-skeleton-row" key={row}>{Array.from({length:8},(_,cell)=><span className="prd-skeleton" key={cell}/>)}</div>)}</div> : reports.length === 0 ? <div className="prd-state"><div className="prd-state-icon"><i className="fa-solid fa-file-circle-xmark" aria-hidden="true" /></div><strong>No matching fire reports</strong><span>Change or clear the filters to see more records.</span></div> : <>
           <div className="prd-scroll"><table className="prd-table"><thead><tr><th>Reference</th><th>Municipality / Barangay</th><th>Source</th><th>Type / Danger level</th><th>Status</th><th>Submitted time</th><th>Dispatches</th><th style={{textAlign:'right'}}>Actions</th></tr></thead><tbody>{reports.map((rep)=><tr key={rep.id} className="prd-row">
             <td><span className="prd-reference">{rep.referenceNumber}</span></td><td><div className="prd-place"><strong>{rep.municipalityName}</strong><span>{rep.barangay}</span></div></td><td><span className="prd-source">{rep.reportSource==='ALAB_APP'?'App':'Phone'}</span></td><td><span className="prd-fire-type">{getFireTypeLabel(rep.fireType)}</span>{rep.severity&&rep.severity!=='UNKNOWN'?severityBadge(rep.severity):<span className="prd-not-rated">Not rated</span>}</td><td>{statusBadge(rep.status)}</td><td><span className="prd-date">{formatDateTime(rep.submittedAt)}</span></td><td><span className="prd-dispatch">{rep.latestDispatchSummary||'No dispatch active'}</span></td><td style={{textAlign:'right'}}><button type="button" className="prd-view" onClick={()=>setSelectedReportId(rep.id)}><i className="fa-solid fa-arrow-right" aria-hidden="true" /> View</button></td>
           </tr>)}</tbody></table></div><div className="prd-mobile-records">{reports.map(renderMobileRecord)}</div></>}
-        <footer className="prd-footer"><span aria-live="polite">Showing {rangeStart}–{rangeEnd} of {total.toLocaleString()} reports</span><div className="prd-pagination"><label className="prd-page-size">Rows <select aria-label="Rows per page" value={pageSize} onChange={(event)=>setPageSize(Number(event.target.value) as 25|50|100)}><option value={25}>25</option><option value={50}>50</option><option value={100}>100</option></select></label><button type="button" className="prd-page-button" aria-label="Previous page" disabled={loading||page<=1} onClick={()=>setPage(page-1)}><i className="fa-solid fa-chevron-left" /></button><span>Page {page} of {pages}</span><button type="button" className="prd-page-button" aria-label="Next page" disabled={loading||page>=pages} onClick={()=>setPage(page+1)}><i className="fa-solid fa-chevron-right" /></button></div></footer>
+        <footer className="prd-footer"><span aria-live="polite">Showing {rangeStart}–{rangeEnd} of {total.toLocaleString()} reports</span><div className="prd-pagination"><label className="prd-page-size">Rows <select aria-label="Rows per page" value={pageSize} onChange={(event)=>setPageSize(Number(event.target.value) as 7|25|50|100)}><option value={7}>7</option><option value={25}>25</option><option value={50}>50</option><option value={100}>100</option></select></label><button type="button" className="prd-page-button" aria-label="Previous page" disabled={loading||page<=1} onClick={()=>setPage(page-1)}><i className="fa-solid fa-chevron-left" /></button><span>Page {page} of {pages}</span><button type="button" className="prd-page-button" aria-label="Next page" disabled={loading||page>=pages} onClick={()=>setPage(page+1)}><i className="fa-solid fa-chevron-right" /></button></div></footer>
       </section>
 
       {selectedReportId && <ProvincialReportDetail key={selectedReportId} reportId={selectedReportId} onClose={()=>{setSelectedReportId(null);const url=new URL(window.location.href);url.searchParams.delete('report');window.history.replaceState(window.history.state,'',url);}} />}

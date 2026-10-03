@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { ProvincialManagementToolbar } from './provincial-management-toolbar';
+import { ProvincialTableToolbar, ProvincialManagementToolbar } from './provincial-management-toolbar';
 import { useManagementMutation } from './use-management-mutation';
 import { useProvincialManagementList } from './use-provincial-management-list';
 import { useManagementDialog } from './use-management-dialog';
@@ -861,6 +861,7 @@ export function ProvincialStationDirectory({ topTabs }: { topTabs?: React.ReactN
   const {
     items: stations,
     total,
+    metrics,
     loading,
     error,
     page,
@@ -869,7 +870,7 @@ export function ProvincialStationDirectory({ topTabs }: { topTabs?: React.ReactN
     filters,
     setFilter,
     refresh: fetchStations,
-  } = useProvincialManagementList<ManagedStation>({ endpoint: '/api/provincial-bfp/stations' });
+  } = useProvincialManagementList<ManagedStation>({ endpoint: '/api/provincial-bfp/stations', initialFilters: { pageSize: 7 } });
 
   const municipalityId = filters.municipalityId || '';
   const setMunicipalityId = (value: string) => setFilter('municipalityId', value);
@@ -904,13 +905,6 @@ export function ProvincialStationDirectory({ topTabs }: { topTabs?: React.ReactN
       .then((data) => setMunicipalities(data.items || []))
       .catch(() => {});
   }, []);
-
-  // Update default municipality in form when filter changes
-  useEffect(() => {
-    if (municipalityId) {
-      setNewStation((prev) => ({ ...prev, municipalityId }));
-    }
-  }, [municipalityId]);
 
   // Executive KPI stats calculation
   const totalStationsCount = total > 0 ? total : stations.length;
@@ -1055,33 +1049,18 @@ export function ProvincialStationDirectory({ topTabs }: { topTabs?: React.ReactN
     <div className="psd-container">
       <style>{pageStyles}</style>
 
-      <div className="psd-top-row">
-        {topTabs}
-        <div className="psd-actions">
-          {/* Provincial export trigger */}
-          <ProvincialManagementToolbar exportOnly dataset="STATIONS" filters={filters} onFilterChange={() => {}} />
-
-          <button
-            type="button"
-            onClick={() => setIsCreating(true)}
-            className="psd-btn psd-btn-primary"
-          >
-            <i className="fa-solid fa-plus" aria-hidden="true" />
-            <span>Provision Station</span>
-          </button>
-        </div>
-      </div>
-
       {/* Executive KPI Stat Cards */}
       <StatCards
         label="Station metrics"
         items={[
           { key: "total", icon: "fa-building-shield", tone: "blue", badge: "Stations", value: totalStationsCount, label: "Total Stations", description: "Registered in Antique", onClick: () => { setStatus(''); setPage(1); }, active: !status, loading: loading && stations.length === 0 },
-          { key: "active", icon: "fa-tower-broadcast", tone: "emerald", badge: "Ready", value: activeStationsCount, label: "Active Operational", description: "Dispatch ready stations", onClick: () => { setStatus('ACTIVE'); setPage(1); }, active: status === 'ACTIVE', loading: loading && stations.length === 0 },
-          { key: "coverage", icon: "fa-map-location-dot", tone: "violet", badge: "Coverage", value: coveredMunicipalitiesCount, suffix: "/ 18", label: "Municipalities Covered", description: "Across Antique province", loading: loading && stations.length === 0 },
-          { key: "personnel", icon: "fa-users", tone: "red", badge: "Crew", value: totalPersonnelCount, label: "Station Personnel", description: "Active assigned responders", loading: loading && stations.length === 0 },
+          { key: "active", icon: "fa-tower-broadcast", tone: "emerald", badge: "Ready", value: metrics.active ?? activeStationsCount, label: "Active Operational", description: "Dispatch ready stations", onClick: () => { setStatus('ACTIVE'); setPage(1); }, active: status === 'ACTIVE', loading: loading && stations.length === 0 },
+          { key: "coverage", icon: "fa-map-location-dot", tone: "violet", badge: "Coverage", value: metrics.municipalities ?? coveredMunicipalitiesCount, suffix: "/ 18", label: "Municipalities Covered", description: "Across Antique province", loading: loading && stations.length === 0 },
+          { key: "personnel", icon: "fa-users", tone: "red", badge: "Crew", value: metrics.personnel ?? totalPersonnelCount, label: "Station Personnel", description: "Active assigned responders", loading: loading && stations.length === 0 },
         ]}
       />
+
+      <div className="psd-top-row">{topTabs}</div>
 
       {/* Error notification */}
       {error && (
@@ -1098,6 +1077,19 @@ export function ProvincialStationDirectory({ topTabs }: { topTabs?: React.ReactN
 
       {/* Main Table Card */}
       <div className="psd-card">
+        <ProvincialTableToolbar title="Station directory">
+          {/* Provincial export trigger */}
+          <ProvincialManagementToolbar exportOnly dataset="STATIONS" filters={filters} onFilterChange={() => {}} />
+
+          <button
+            type="button"
+            onClick={() => { if (municipalityId) setNewStation(previous => ({ ...previous, municipalityId })); setIsCreating(true); }}
+            className="psd-btn psd-btn-primary"
+          >
+            <i className="fa-solid fa-plus" aria-hidden="true" />
+            <span>Provision Station</span>
+          </button>
+        </ProvincialTableToolbar>
         {/* Toolbar Bar */}
         <div className="psd-toolbar">
           <div className="psd-filters-left">

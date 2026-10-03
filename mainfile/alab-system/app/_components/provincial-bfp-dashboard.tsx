@@ -414,10 +414,7 @@ export function ProvincialBfpDashboard() {
     <>
       <style>{dashboardStyles}</style>
       <div className="pbfp-dash-clean">
-        <FireCommandHeader slotId="provincial-fire-command-header" title="Antique Fire Command" checking={incidentFeedChecking || summaryChecking} lastCheckedAt={lastCheckedAt} error={incidentFeedError || summaryError} onRefresh={() => {
-          void refreshIncidents();
-          setRefreshKey(key => key + 1);
-        }} />
+        <FireCommandHeader slotId="provincial-fire-command-header" title="Antique Fire Command" checking={incidentFeedChecking || summaryChecking} lastCheckedAt={lastCheckedAt} error={incidentFeedError || summaryError} live />
         {summaryError && <div role="alert" style={{ padding: '12px 16px', border: '1px solid #FECACA', borderRadius: 10, background: '#FFF1F2', color: '#991B1B' }}>
           {summaryError} {updatedAt && 'Showing the last loaded data. '}
           <button type="button" className="pbfp-retry" onClick={() => setRefreshKey(key => key + 1)}>Retry</button>

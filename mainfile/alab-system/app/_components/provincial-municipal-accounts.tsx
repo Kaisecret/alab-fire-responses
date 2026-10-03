@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ProvincialRequestError, requestProvincialJson } from "../../lib/provincial-bfp/client-request";
 import { ProvincialAccountDialog } from "./provincial-account-dialog";
 import { StatCards } from "./municipal-stat-cards";
+import { ProvincialManagementPagination } from "./provincial-management-toolbar";
 import { FireCommandHeader } from "./fire-command-header";
 
 type Municipality = { id: string; name: string; psgcCode: string | null };
@@ -135,6 +136,7 @@ const pageStyles = `
   }
 
   .pma-toolbar {
+    flex-wrap: wrap;
     padding: 0.9rem 1.4rem;
     display: flex;
     justify-content: space-between;
@@ -143,6 +145,10 @@ const pageStyles = `
     background: #FAFAFA;
     border-bottom: 1px solid #E2E8F0;
   }
+
+  .pma-toolbar > .pma-actions { flex:1 1 480px; min-width:0; justify-content:flex-end; }
+  .pma-toolbar .pma-search-wrapper { width:280px; max-width:100%; flex:1 1 220px; min-width:0; }
+  .pma-toolbar .pma-search-input, .pma-toolbar .pma-btn { min-height:44px; }
 
   .pma-filter-group {
     display: flex;
@@ -844,7 +850,9 @@ export function ProvincialMunicipalAccounts() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [form, setForm] = useState<FormState>(initialForm);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [statusFilter, updateStatusFilter] = useState<StatusFilter>('ALL');
+  const [page, setPage] = useState(1);
+  const setStatusFilter = (value: StatusFilter) => { updateStatusFilter(value); setPage(1); };
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -896,6 +904,13 @@ export function ProvincialMunicipalAccounts() {
     return () => controller.abort();
   }, [revision]);
 
+  useEffect(() => {
+    const refreshVisible = () => { if (document.visibilityState === "visible") setRevision(value => value + 1); };
+    const interval = window.setInterval(refreshVisible, 60000);
+    document.addEventListener("visibilitychange", refreshVisible);
+    return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", refreshVisible); };
+  }, []);
+
   const activeFor = (municipalityId: string) =>
     accounts.filter(
       (account) =>
@@ -928,6 +943,9 @@ export function ProvincialMunicipalAccounts() {
       return true;
     });
   }, [municipalities, query, statusFilter, accounts]);
+
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredMunicipalities.length / 7)));
+  const visibleMunicipalities = filteredMunicipalities.slice((currentPage - 1) * 7, currentPage * 7);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -988,25 +1006,6 @@ export function ProvincialMunicipalAccounts() {
       <style>{pageStyles}</style>
       <FireCommandHeader slotId="provincial-fire-command-header" title="Municipal BFP Accounts" icon="fa-id-card-clip" />
 
-      {/* Header section */}
-      <div className="pma-header">
-        <div className="pma-actions">
-          <button className="pma-btn pma-btn-refresh" type="button" onClick={refresh} disabled={loading} title="Refresh Roster">
-            <i className={`fa-solid fa-arrows-rotate ${loading ? 'fa-spin' : ''}`} />
-            <span>{loading ? 'Loading…' : 'Refresh'}</span>
-          </button>
-          <button
-            className="pma-btn pma-btn-primary"
-            type="button"
-            disabled={!loaded || saving}
-            onClick={() => { setForm(initialForm); setFormError(""); setOpen(true); }}
-          >
-            <i className="fa-solid fa-user-plus" />
-            <span>Issue New Account</span>
-          </button>
-        </div>
-      </div>
-
       {/* Quick KPI Stats Overview */}
       <StatCards
         label="Municipal accounts metrics"
@@ -1055,6 +1054,8 @@ export function ProvincialMunicipalAccounts() {
             </button>
           </div>
 
+          <div className="pma-actions" style={{ flexWrap: "wrap" }}>
+
           <div className="pma-search-wrapper">
             <i className="fa-solid fa-magnifying-glass pma-search-icon" />
             <input
@@ -1062,18 +1063,28 @@ export function ProvincialMunicipalAccounts() {
               aria-label="Search municipalities"
               placeholder="Search municipality…"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => { setQuery(event.target.value); setPage(1); }}
             />
             {query && (
               <button
                 type="button"
                 className="pma-clear-btn"
-                onClick={() => setQuery("")}
+                onClick={() => { setQuery(""); setPage(1); }}
                 aria-label="Clear search"
               >
                 <i className="fa-solid fa-xmark" />
               </button>
             )}
+          </div>
+          <button
+            className="pma-btn pma-btn-primary"
+            type="button"
+            disabled={!loaded || saving}
+            onClick={() => { setForm(initialForm); setFormError(""); setOpen(true); }}
+          >
+            <i className="fa-solid fa-user-plus" />
+            <span>Issue New Account</span>
+          </button>
           </div>
         </div>
 
@@ -1107,7 +1118,7 @@ export function ProvincialMunicipalAccounts() {
                   </td>
                 </tr>
               ) : (
-                filteredMunicipalities.map((municipality) => {
+                visibleMunicipalities.map((municipality) => {
                   const active = activeFor(municipality.id);
                   const isProvisioned = active.length > 0;
                   return (
@@ -1178,6 +1189,9 @@ export function ProvincialMunicipalAccounts() {
               )}
             </tbody>
           </table>
+        </div>
+        <div style={{ padding: "16px 20px", borderTop: "1px solid #e2e8f0" }}>
+          <ProvincialManagementPagination page={currentPage} pageSize={7} total={filteredMunicipalities.length} loading={loading} setPage={setPage} />
         </div>
       </div>
 

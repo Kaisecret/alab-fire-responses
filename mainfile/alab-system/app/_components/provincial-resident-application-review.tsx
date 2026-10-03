@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ProvincialManagementToolbar, ProvincialMunicipalityFilter, ProvincialManagementPagination } from './provincial-management-toolbar';
+import { ProvincialTableToolbar, ProvincialManagementToolbar, ProvincialMunicipalityFilter, ProvincialManagementPagination } from './provincial-management-toolbar';
 import { useProvincialManagementList } from './use-provincial-management-list';
 import { useManagementDialog } from './use-management-dialog';
 import { PhotoLightbox } from './photo-lightbox';
@@ -1177,6 +1177,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
   const {
     items: applications,
     total,
+    metrics,
     page,
     pageSize,
     setPage,
@@ -1188,7 +1189,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
     refresh: fetchApplications,
   } = useProvincialManagementList<ManagedApplication>({
     endpoint: '/api/provincial-bfp/resident-applications',
-    initialFilters: { municipalityId: initialMunicipalityId },
+    initialFilters: { municipalityId: initialMunicipalityId, pageSize: 7 },
   });
 
   const municipalityFilter = filters.municipalityId || '';
@@ -1463,31 +1464,14 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
       <style>{reviewStyles}</style>
       <FireCommandHeader slotId="provincial-fire-command-header" title="Resident Applications Review" icon="fa-user-check" />
 
-      {/* Header Bar */}
-      <header className="par-header-card">
-        <div className="par-header-actions">
-          <button
-            type="button"
-            className="par-btn-refresh"
-            onClick={fetchApplications}
-            disabled={loading}
-            aria-label="Refresh Queue"
-          >
-            <i className={`fa-solid fa-arrows-rotate${loading ? ' fa-spin' : ''}`} aria-hidden="true" />
-            {loading ? 'Refreshing…' : '↻ Refresh Queue'}
-          </button>
-          <ProvincialManagementToolbar exportOnly dataset="APPLICATIONS" filters={filters} onFilterChange={() => {}} />
-        </div>
-      </header>
-
       {/* KPI Stats Bar */}
       <StatCards
         label="Application summary metrics"
         items={[
           { key: "all", icon: "fa-folder-open", tone: "slate", badge: "All", value: total, label: "Total Applications", description: "All submissions", onClick: () => { setStatusFilter('ALL'); setPage(1); }, active: !statusFilter || statusFilter === 'ALL' },
-          { key: "pending", icon: "fa-clock-rotate-left", tone: "amber", badge: "Pending", value: pendingCount, label: "Pending Review", description: "Awaiting review", onClick: () => { setStatusFilter('PENDING'); setPage(1); }, active: statusFilter === 'PENDING' },
-          { key: "verified", icon: "fa-circle-check", tone: "emerald", badge: "Verified", value: verifiedCount, label: "Verified Accounts", description: "Approved residents", onClick: () => { setStatusFilter('VERIFIED'); setPage(1); }, active: statusFilter === 'VERIFIED' },
-          { key: "changes", icon: "fa-triangle-exclamation", tone: "red", badge: "Changes", value: changesCount, label: "Changes Requested", description: "Needs resident update", onClick: () => { setStatusFilter('CHANGES_REQUESTED'); setPage(1); }, active: statusFilter === 'CHANGES_REQUESTED' },
+          { key: "pending", icon: "fa-clock-rotate-left", tone: "amber", badge: "Pending", value: metrics.pending ?? pendingCount, label: "Pending Review", description: "Awaiting review", onClick: () => { setStatusFilter('PENDING'); setPage(1); }, active: statusFilter === 'PENDING' },
+          { key: "verified", icon: "fa-circle-check", tone: "emerald", badge: "Verified", value: metrics.verified ?? verifiedCount, label: "Verified Accounts", description: "Approved residents", onClick: () => { setStatusFilter('VERIFIED'); setPage(1); }, active: statusFilter === 'VERIFIED' },
+          { key: "changes", icon: "fa-triangle-exclamation", tone: "red", badge: "Changes", value: metrics.changes ?? changesCount, label: "Changes Requested", description: "Needs resident update", onClick: () => { setStatusFilter('CHANGES_REQUESTED'); setPage(1); }, active: statusFilter === 'CHANGES_REQUESTED' },
         ]}
       />
 
@@ -1573,6 +1557,9 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
 
       {/* Main Applications Table */}
       <div className="par-records-card">
+        <ProvincialTableToolbar title="Resident applications">
+          <ProvincialManagementToolbar exportOnly dataset="APPLICATIONS" filters={filters} onFilterChange={() => {}} />
+        </ProvincialTableToolbar>
         {error && (
           <div style={{ padding: '1rem 1.25rem', background: '#FEE2E2', color: '#991B1B', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <i className="fa-solid fa-triangle-exclamation" />

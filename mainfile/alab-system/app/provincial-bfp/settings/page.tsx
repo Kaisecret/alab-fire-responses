@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { FireCommandHeader } from '../../_components/fire-command-header';
 import {
@@ -522,11 +522,12 @@ export default function ProvincialSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [marking, setMarking] = useState(false);
   const [revision, setRevision] = useState(0);
+  const hasLoaded = useRef(false);
 
   useEffect(() => {
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
-      setLoading(true);
+      setLoading(!hasLoaded.current);
       setError(null);
       const options = { signal: controller.signal, cache: 'no-store' as const };
       try {
@@ -543,6 +544,7 @@ export default function ProvincialSettingsPage() {
         }
 
         const me = await meResponse.json();
+        hasLoaded.current = true;
         setIdentity(me.user ?? null);
         setFeed(feedResponse.ok ? await feedResponse.json().catch(() => null) : null);
         setCounts(countsResponse.ok ? await countsResponse.json().catch(() => null) : null);
@@ -556,6 +558,14 @@ export default function ProvincialSettingsPage() {
     }, 0);
     return () => { controller.abort(); window.clearTimeout(timer); };
   }, [revision]);
+
+  useEffect(() => {
+    const readVisible = () => { if (document.visibilityState === "visible") setRevision(value => value + 1); };
+    const interval = window.setInterval(readVisible, 60000);
+    document.addEventListener("visibilitychange", readVisible);
+    return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", readVisible); };
+  }, []);
+
 
   const markAllRead = useCallback(async () => {
     if (marking) return;
@@ -595,12 +605,7 @@ export default function ProvincialSettingsPage() {
       <style>{styles}</style>
       <FireCommandHeader slotId="provincial-fire-command-header" title="Settings" icon="fa-sliders" />
 
-      <div className="pset__head">
-        <button type="button" className="pset__refresh" onClick={() => setRevision((value) => value + 1)} disabled={loading}>
-          <i className={`fa-solid ${loading ? 'fa-circle-notch fa-spin' : 'fa-rotate'}`} aria-hidden="true" />
-          {loading ? 'Refreshing' : 'Refresh'}
-        </button>
-      </div>
+
 
       {error && (
         <div className="pset__alert" role="alert">
@@ -767,7 +772,7 @@ export default function ProvincialSettingsPage() {
                   <strong>
                     {unread > 0 ? `${counter.format(unread)} unread notification${unread === 1 ? '' : 's'}` : 'In-app notifications active'}
                   </strong>
-                  <small>Updates every 5 seconds while this tab is open.</small>
+                  <small>Updates automatically while this tab is open.</small>
                 </span>
               </div>
 

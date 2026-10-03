@@ -10,7 +10,7 @@ import type { ManagedResident } from '../../lib/provincial-bfp/management/types'
 
 export function ProvincialResidentDirectory() {
   const mutate = useManagementMutation();
-  const { items: residents, total, loading, error, page, pageSize, setPage, filters, setFilter, refresh: fetchResidents } = useProvincialManagementList<ManagedResident>({ endpoint: '/api/provincial-bfp/residents' });
+  const { items: residents, total, loading, error, page, pageSize, setPage, filters, setFilter, refresh: fetchResidents } = useProvincialManagementList<ManagedResident>({ endpoint: '/api/provincial-bfp/residents', initialFilters: { pageSize: 7 } });
   const municipalityId = filters.municipalityId || '';
   const setMunicipalityId = (value: string) => setFilter('municipalityId', value);
   const status = filters.status || '';

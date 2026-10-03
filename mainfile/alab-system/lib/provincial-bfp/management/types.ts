@@ -7,10 +7,11 @@ export type ManagementFilters = {
   from?: string;
   to?: string;
   page: number;
-  pageSize: 25 | 50 | 100;
+  pageSize: 7 | 25 | 50 | 100;
 };
 
 export type ManagementPage<T> = {
+  metrics?: Record<string, number>;
   items: T[];
   total: number;
   page: number;

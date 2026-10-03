@@ -1,8 +1,8 @@
 'use client';
 
-import { ProvincialManagementToolbar } from './provincial-management-toolbar';
+import { ProvincialTableToolbar, ProvincialManagementToolbar } from './provincial-management-toolbar';
 import { useManagementMutation } from './use-management-mutation';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useProvincialManagementList } from './use-provincial-management-list';
 import { useManagementDialog } from './use-management-dialog';
 import type { ManagedPersonnel } from '../../lib/provincial-bfp/management/types';
@@ -795,6 +795,7 @@ export function ProvincialPersonnelDirectory() {
   const {
     items: personnel,
     total,
+    metrics,
     loading,
     error,
     page,
@@ -805,7 +806,7 @@ export function ProvincialPersonnelDirectory() {
     setFilters,
     refresh: fetchPersonnel,
   } = useProvincialManagementList<ManagedPersonnel>({
-    endpoint: '/api/provincial-bfp/personnel',
+    endpoint: '/api/provincial-bfp/personnel', initialFilters: { pageSize: 7 },
   });
 
   const municipalityId = filters.municipalityId || '';
@@ -1090,29 +1091,14 @@ export function ProvincialPersonnelDirectory() {
       <style>{directoryStyles}</style>
       <FireCommandHeader slotId="provincial-fire-command-header" title="Municipal BFP Personnel Registry" icon="fa-users" />
 
-      {/* Header Hub */}
-      <header className="ppd-header-card">
-        <div className="ppd-header-actions">
-          <ProvincialManagementToolbar exportOnly dataset="PERSONNEL" filters={filters} onFilterChange={() => {}} />
-          <button
-            type="button"
-            onClick={() => setIsCreating(true)}
-            className="ppd-btn-provision"
-          >
-            <i className="fa-solid fa-user-plus" />
-            <span>+ Provision Personnel</span>
-          </button>
-        </div>
-      </header>
-
       {/* KPI Stats Bar */}
       <StatCards
         label="Personnel registry metrics"
         items={[
           { key: "all", icon: "fa-users", tone: "violet", badge: "Roster", value: total, label: "Total Personnel", description: "Province-wide personnel", onClick: clearAllFilters },
-          { key: "crews", icon: "fa-building-shield", tone: "blue", badge: "Deployed", value: assignedStationCount, label: "Station Crews", description: "Station crew assignments" },
-          { key: "admins", icon: "fa-user-gear", tone: "amber", badge: "Officers", value: adminCount, label: "Municipal Admins", description: "Municipal administrators" },
-          { key: "active", icon: "fa-circle-check", tone: "emerald", badge: "Ready", value: activeCount, label: "Active Duty", description: "Operational responders", onClick: () => { setStatus('ACTIVE'); setPage(1); } },
+          { key: "crews", icon: "fa-building-shield", tone: "blue", badge: "Deployed", value: metrics.assigned ?? assignedStationCount, label: "Station Crews", description: "Station crew assignments" },
+          { key: "admins", icon: "fa-user-gear", tone: "amber", badge: "Officers", value: metrics.admins ?? adminCount, label: "Municipal Admins", description: "Municipal administrators" },
+          { key: "active", icon: "fa-circle-check", tone: "emerald", badge: "Ready", value: metrics.active ?? activeCount, label: "Active Duty", description: "Operational responders", onClick: () => { setStatus('ACTIVE'); setPage(1); } },
         ]}
       />
 
@@ -1246,6 +1232,18 @@ export function ProvincialPersonnelDirectory() {
 
       {/* Personnel Table Card */}
       <div className="ppd-records-card">
+        <ProvincialTableToolbar title="Personnel roster">
+          <ProvincialManagementToolbar exportOnly dataset="PERSONNEL" filters={filters} onFilterChange={() => {}} />
+          <button
+            type="button"
+            onClick={() => setIsCreating(true)}
+            className="ppd-btn-provision"
+          >
+            <i className="fa-solid fa-user-plus" />
+            <span>+ Provision Personnel</span>
+          </button>
+        </ProvincialTableToolbar>
+
         <div className="ppd-table-wrap">
           <table className="ppd-table">
             <thead>

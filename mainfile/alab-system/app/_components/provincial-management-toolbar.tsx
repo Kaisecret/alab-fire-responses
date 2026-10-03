@@ -66,9 +66,9 @@ export function ProvincialManagementToolbar({
     }
   };
 
-  if (exportOnly) return <div className="no-print" style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'flex-end' }}>
+  if (exportOnly) return <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'flex-end', minWidth: 0 }}>
     {exportError && <span role="alert" style={{ color: '#B91C1C' }}>{exportError}</span>}
-    <button type="button" onClick={handleExportExcel} disabled={isExporting || !dataset} style={{ padding: '10px 16px', border: '1px solid #CBD5E1', borderRadius: 8, background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>
+    <button type="button" onClick={handleExportExcel} disabled={isExporting || !dataset} style={{ minHeight: 44, padding: '10px 16px', border: '1px solid #CBD5E1', borderRadius: 8, background: '#fff', color: '#334155', fontSize: '.85rem', fontWeight: 700, cursor: 'pointer' }}>
       {isExporting ? 'Exporting…' : 'Export Excel'}
     </button>
   </div>;
@@ -210,12 +210,26 @@ export function ProvincialMunicipalityFilter({ value, onChange }: { value: strin
   </label>;
 }
 
+export function ProvincialTableToolbar({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
+  return <div className="provincial-table-toolbar">
+    <style>{`
+      .provincial-table-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:16px 20px; border-bottom:1px solid #e2e8f0; background:#fff; }
+      .provincial-table-toolbar__title { min-width:0; font-size:.9rem; font-weight:700; color:#0f172a; }
+      .provincial-table-toolbar__actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:10px; min-width:0; }
+      @media(max-width:600px) { .provincial-table-toolbar { padding:14px; } .provincial-table-toolbar__actions { width:100%; justify-content:flex-start; } }
+    `}</style>
+    <div className="provincial-table-toolbar__title">{title}</div>
+    <div className="provincial-table-toolbar__actions">{children}</div>
+  </div>;
+}
+
 export function ProvincialManagementPagination({ page, pageSize, total, loading, setPage }: {
   page: number; pageSize: number; total: number; loading: boolean; setPage: (page: number) => void;
 }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
-  return <nav aria-label="Record pages" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: '0.8125rem', color: '#475569' }}>
-    <span aria-live="polite">{total ? `${(page - 1) * pageSize + 1}?${Math.min(page * pageSize, total)} of ${total}` : '0 records'}</span>
+  return <nav className="provincial-record-pagination" aria-label="Record pages" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: '0.8125rem', color: '#475569' }}>
+    <style>{`.provincial-record-pagination button { min-height:36px; padding:7px 12px; border:1px solid #cbd5e1; border-radius:5px; background:#fff; color:#334155; font:inherit; font-weight:600; cursor:pointer; } .provincial-record-pagination button:disabled { color:#94a3b8; cursor:default; } .provincial-record-pagination button:hover:not(:disabled) { background:#f1f5f9; }`}</style>
+    <span aria-live="polite">{total ? `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}` : '0 records'}</span>
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       <button type="button" disabled={loading || page <= 1} onClick={() => setPage(page - 1)}>Previous</button>
       <span>Page {page} of {pages}</span>

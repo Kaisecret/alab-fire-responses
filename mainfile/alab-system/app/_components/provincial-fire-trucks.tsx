@@ -117,10 +117,18 @@ export function ProvincialFireTrucks({
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchRegistry(controller.signal)
-      .then((data) => { setRegistry(data); setLoadError(""); })
-      .catch((error) => { if (error?.name !== "AbortError") setLoadError(error instanceof Error ? error.message : loadFailure); });
-    return () => controller.abort();
+    let pending = false;
+    const read = () => {
+      if (pending || document.visibilityState === "hidden" || controller.signal.aborted) return;
+      pending = true;
+      fetchRegistry(controller.signal)
+        .then((data) => { if (!controller.signal.aborted) { setRegistry(data); setLoadError(""); } })
+        .catch((error) => { if (error?.name !== "AbortError") setLoadError(error instanceof Error ? error.message : loadFailure); }).finally(() => { pending = false; });
+    };
+    read();
+    const interval = window.setInterval(read, 60000);
+    document.addEventListener("visibilitychange", read);
+    return () => { controller.abort(); window.clearInterval(interval); document.removeEventListener("visibilitychange", read); };
   }, []);
 
   async function load() {
@@ -208,12 +216,6 @@ export function ProvincialFireTrucks({
   return <>
     <style>{styles}</style>
     <main className="prov-trucks">
-      <div className="prov-trucks__top-row">
-        {topTabs ? topTabs : <div />}
-        <button className="prov-trucks__button" type="button" onClick={openAdd} disabled={!registry}>
-          <i className="fa-solid fa-plus" aria-hidden="true" /> Add fire truck
-        </button>
-      </div>
       <StatCards
         label="Provincial fleet totals"
         items={[
@@ -223,16 +225,24 @@ export function ProvincialFireTrucks({
           { key: "stations", icon: "fa-building-shield", tone: "blue", badge: "Municipal", value: totals.stations, label: "Active Stations", description: "Covering all 18 LGUs", href: "/provincial-bfp/firetrucks-stations?view=stations" },
         ]}
       />
-      {loadError ? (
+      <div className="prov-trucks__top-row">
+        {topTabs}
+        <button className="prov-trucks__button" type="button" onClick={openAdd} disabled={!registry}>
+          <i className="fa-solid fa-plus" aria-hidden="true" /> Add fire truck
+        </button>
+      </div>
+      {loadError && (
         <div className="prov-trucks__state">
           <p>{loadError}</p>
           <button className="prov-trucks__button" type="button" onClick={() => void load()}>Retry</button>
         </div>
-      ) : !registry ? (
+      )}
+      {!registry ? (
         <div className="prov-trucks__state">Loading the provincial fire truck inventory…</div>
       ) : (
         <>
           <div className="prov-trucks__toolbar">
+
             <div className="prov-trucks__search-box">
               <i className="fa-solid fa-magnifying-glass prov-trucks__search-icon" aria-hidden="true" />
               <input

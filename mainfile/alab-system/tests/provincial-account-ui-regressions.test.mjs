@@ -35,6 +35,7 @@ function harness(path, name) {
     './bfp-logout-dialog': { BfpLogoutDialog: 'logout-dialog', confirmBfpSignedOut: async () => {} },
     './municipal-stat-cards': { StatCards: 'stat-cards', MunicipalStatCards: 'stat-cards' },
     './fire-command-header': { FireCommandHeader: 'fire-command-header' },
+    './provincial-management-toolbar': { ProvincialManagementPagination: 'record-pages' },
   });
   return { render() { cursor = 0; effects.length = 0; return mod[name]({ children: null }); }, effects };
 }
@@ -46,6 +47,55 @@ function all(tree) {
 }
 function text(tree) { return all(tree).filter(node => typeof node === 'string').join(' '); }
 function find(tree, predicate) { return all(tree).find(node => node?.props && predicate(node)); }
+
+test('accounts show seven rows and automatic updates preserve the selected page and open issue form', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
+  const originalDocument = globalThis.document;
+  let interval;
+  const listeners = new Map();
+  const reads = [];
+  let cleanup;
+  try {
+    globalThis.window = { setInterval(fn, delay) { assert.equal(delay, 60000); interval = fn; return 1; }, clearInterval() { interval = null; } };
+    globalThis.document = { visibilityState: 'visible', addEventListener: (event, fn) => listeners.set(event, fn), removeEventListener: event => listeners.delete(event) };
+    globalThis.fetch = async () => {
+      reads.push(true);
+      return new Response(JSON.stringify({ municipalities: Array.from({ length: 15 }, (_, i) => ({ id: String(i + 1), name: `Town ${String(i + 1).padStart(2, '0')}`, psgcCode: '0600' })), accounts: [] }));
+    };
+    const h = harness('app/_components/provincial-municipal-accounts.tsx', 'ProvincialMunicipalAccounts');
+    h.render();
+    h.effects[0]();
+    cleanup = h.effects[1]();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    let tree = h.render();
+    assert.equal(all(tree).filter(node => node?.type === 'tr').length, 8);
+    find(tree, node => node.type === 'record-pages').props.setPage(2);
+    find(tree, node => node.type === 'button' && text(node).includes('Issue New Account')).props.onClick();
+    tree = h.render();
+    const draft = find(tree, node => node.type === 'input' && node.props.value === '' && node.props.onChange && node.props.required);
+    assert.ok(draft);
+    draft.props.onChange({ target: { value: 'Officer draft' } });
+    document.visibilityState = 'hidden'; interval();
+    assert.equal(reads.length, 1);
+    document.visibilityState = 'visible'; interval(); h.render(); h.effects[0]();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    tree = h.render();
+    assert.equal(reads.length, 2);
+    assert.equal(find(tree, node => node.type === 'record-pages').props.page, 2);
+    const table = find(tree, node => node.type === 'table');
+    assert.ok(text(table).includes('Town 08'));
+    assert.ok(!text(table).includes('Town 01'));
+    assert.ok(find(tree, node => node.type === 'input' && node.props.value === 'Officer draft'));
+    assert.ok(find(tree, node => node.type === 'account-dialog'));
+    find(tree, node => node.type === 'input' && node.props['aria-label'] === 'Search municipalities').props.onChange({ target: { value: 'Town 15' } });
+    assert.equal(find(h.render(), node => node.type === 'record-pages').props.page, 1);
+    cleanup(); cleanup = null;
+    assert.equal(listeners.size, 0);
+  } finally {
+    cleanup?.(); globalThis.fetch = originalFetch; globalThis.window = originalWindow; globalThis.document = originalDocument;
+  }
+});
 
 test('account creation errors stay visible inside the open form', async () => {
   const originalFetch = globalThis.fetch;

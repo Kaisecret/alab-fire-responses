@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolvePeriodDates } from "../../lib/municipal-bfp/reports/filters";
 import {
   formatPhilippineDateTime,
@@ -18,6 +18,7 @@ import {
   type ProvincialExportScope,
 } from "./provincial-report-export-dialog";
 import { StatCards } from "./municipal-stat-cards";
+import { ProvincialTableToolbar } from "./provincial-management-toolbar";
 import { FireCommandHeader } from "./fire-command-header";
 
 /** Statuses the province counts as a real fire that was worked. */
@@ -113,9 +114,9 @@ export function ProvincialReportConsole() {
   const [municipalities, setMunicipalities] = useState<{ id: string; name: string }[]>([]);
 
   const [page, setPage] = useState<number>(() => Math.max(1, Number(readParam("page")) || 1));
-  const [pageSize, setPageSize] = useState<25 | 50 | 100>(() => {
+  const [pageSize, setPageSize] = useState<7 | 25 | 50 | 100>(() => {
     const size = Number(readParam("pageSize"));
-    return size === 50 || size === 100 ? size : 25;
+    return size === 25 || size === 50 || size === 100 ? size : 7;
   });
   const [period, setPeriod] = useState<MunicipalReportPeriod>(() => (readParam("period") || "THIS_MONTH") as MunicipalReportPeriod);
   const [from, setFrom] = useState(() => readParam("from"));
@@ -130,6 +131,7 @@ export function ProvincialReportConsole() {
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoaded = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(() => readParam("report") || null);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -162,7 +164,7 @@ export function ProvincialReportConsole() {
     };
 
     sync("page", page, 1);
-    sync("pageSize", pageSize, 25);
+    sync("pageSize", pageSize, 7);
     sync("period", period, "THIS_MONTH");
     sync("from", from, "");
     sync("to", to, "");
@@ -180,7 +182,7 @@ export function ProvincialReportConsole() {
   useEffect(() => {
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
-      setLoading(true);
+      setLoading(!hasLoaded.current);
       setError(null);
 
       const shared = new URLSearchParams();
@@ -214,8 +216,9 @@ export function ProvincialReportConsole() {
 
         if (controller.signal.aborted) return;
         const items: ProvincialReportRow[] = listBody.items || [];
+        hasLoaded.current = true;
         setReports(items);
-        setSelectedIds([]);
+        setSelectedIds(previous => previous.filter(id => items.some(item => item.id === id)));
         setTotal(listBody.total || 0);
         setSummary(summaryBody.summary || null);
 
@@ -232,6 +235,13 @@ export function ProvincialReportConsole() {
 
     return () => { controller.abort(); window.clearTimeout(timer); };
   }, [page, pageSize, dates, municipalityId, status, fireType, severity, reportSource, search, revision]);
+
+  useEffect(() => {
+    const refreshVisible = () => { if (document.visibilityState === "visible") setRevision(value => value + 1); };
+    const interval = window.setInterval(refreshVisible, 60000);
+    document.addEventListener("visibilitychange", refreshVisible);
+    return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", refreshVisible); };
+  }, []);
 
   const confirmedIncidents = useMemo(
     () => (summary ? CONFIRMED_STATUSES.reduce((sum, key) => sum + (summary.byStatus[key] || 0), 0) : 0),
@@ -355,69 +365,6 @@ export function ProvincialReportConsole() {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", fontFamily: "inherit" }}>
       <style>{summaryCardStyles}</style>
       <FireCommandHeader slotId="provincial-fire-command-header" title="Incident Reports" icon="fa-file-shield" />
-
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.6rem", flexWrap: "wrap", marginLeft: "auto" }}>
-          <button
-            type="button"
-            onClick={() => downloadPdf("PROVINCIAL_SUMMARY")}
-            disabled={pdfBusy !== null}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              minHeight: 44,
-              padding: "0.65rem 1.2rem",
-              borderRadius: 10,
-              border: "1px solid #CBD5E1",
-              background: "#FFFFFF",
-              color: "#334155",
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              cursor: pdfBusy ? "progress" : "pointer",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <i
-              className={`fa-solid ${pdfBusy === "PROVINCIAL_SUMMARY" ? "fa-circle-notch fa-spin" : "fa-download"}`}
-              style={{ color: "#475569" }}
-            />
-            {pdfBusy === "PROVINCIAL_SUMMARY" ? "Preparing..." : "Download summary"}
-          </button>
-
-          {pdfError && (
-            <span role="status" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.78rem", fontWeight: 600, color: "#B91C1C" }}>
-              <i className="fa-solid fa-circle-exclamation" />
-              {pdfError}
-            </span>
-          )}
-
-          <button
-            type="button"
-            onClick={() => { setExportScope("ALL_MATCHING"); setIsExportDialogOpen(true); }}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              minHeight: 44,
-              padding: "0.65rem 1.2rem",
-              borderRadius: 10,
-              border: "none",
-              background: "linear-gradient(135deg, #D00F09, #DC2626)",
-              color: "#FFFFFF",
-              fontSize: "0.85rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              boxShadow: "0 2px 6px rgba(208, 15, 9, 0.3)",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <i className="fa-solid fa-file-export" /> Export data
-          </button>
-        </div>
-      </div>
 
       {/* Summary strip, in the same hand as the municipal counters. */}
       <StatCards
@@ -793,6 +740,65 @@ export function ProvincialReportConsole() {
 
       {/* Data Table */}
       <div style={{ background: "#FFFFFF", borderRadius: 10, border: "1px solid #E2E8F0", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <ProvincialTableToolbar title="Incident records">
+          <button
+            type="button"
+            onClick={() => downloadPdf("PROVINCIAL_SUMMARY")}
+            disabled={pdfBusy !== null}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              minHeight: 44,
+              padding: "0.65rem 1.2rem",
+              borderRadius: 10,
+              border: "1px solid #CBD5E1",
+              background: "#FFFFFF",
+              color: "#334155",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              cursor: pdfBusy ? "progress" : "pointer",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <i
+              className={`fa-solid ${pdfBusy === "PROVINCIAL_SUMMARY" ? "fa-circle-notch fa-spin" : "fa-download"}`}
+              style={{ color: "#475569" }}
+            />
+            {pdfBusy === "PROVINCIAL_SUMMARY" ? "Preparing..." : "Download summary"}
+          </button>
+
+          {pdfError && (
+            <span role="status" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.78rem", fontWeight: 600, color: "#B91C1C" }}>
+              <i className="fa-solid fa-circle-exclamation" />
+              {pdfError}
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={() => { setExportScope("ALL_MATCHING"); setIsExportDialogOpen(true); }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              minHeight: 44,
+              padding: "0.65rem 1.2rem",
+              borderRadius: 10,
+              border: "none",
+              background: "linear-gradient(135deg, #D00F09, #DC2626)",
+              color: "#FFFFFF",
+              fontSize: "0.85rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 2px 6px rgba(208, 15, 9, 0.3)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <i className="fa-solid fa-file-export" /> Export data
+          </button>
+        </ProvincialTableToolbar>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
@@ -965,9 +971,10 @@ export function ProvincialReportConsole() {
                 <select
                   id="prc-page-size"
                   value={pageSize}
-                  onChange={(event) => { setPageSize(Number(event.target.value) as 25 | 50 | 100); setPage(1); }}
+                  onChange={(event) => { setPageSize(Number(event.target.value) as 7 | 25 | 50 | 100); setPage(1); }}
                   style={{ padding: "0.25rem 0.5rem", borderRadius: 4, border: "1px solid #CBD5E1", background: "#FFFFFF", fontSize: "0.78rem" }}
                 >
+                  <option value={7}>7</option>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>

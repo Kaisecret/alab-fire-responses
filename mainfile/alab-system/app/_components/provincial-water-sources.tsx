@@ -114,20 +114,30 @@ export function ProvincialWaterSources() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/provincial-bfp/water-sources", { cache: "no-store", signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Unable to load the provincial registry.");
-        return response.json();
-      })
-      .then((data: ProvincialWaterSourceRegistry) => {
-        setRegistry(data);
-      })
-      .catch((reason) => {
-        if (reason?.name !== "AbortError") {
-          setError(reason instanceof Error ? reason.message : "Unable to load the provincial registry.");
-        }
-      });
-    return () => controller.abort();
+    let pending = false;
+    const read = () => {
+      if (pending || document.visibilityState === "hidden" || controller.signal.aborted) return;
+      pending = true;
+      fetch("/api/provincial-bfp/water-sources", { cache: "no-store", signal: controller.signal })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Unable to load the provincial registry.");
+          return response.json();
+        })
+        .then((data: ProvincialWaterSourceRegistry) => {
+          if (controller.signal.aborted) return;
+          setError("");
+          setRegistry(data);
+        })
+        .catch((reason) => {
+          if (reason?.name !== "AbortError") {
+            setError(reason instanceof Error ? reason.message : "Unable to load the provincial registry.");
+          }
+        }).finally(() => { pending = false; });
+    };
+    read();
+    const interval = window.setInterval(read, 60000);
+    document.addEventListener("visibilitychange", read);
+    return () => { controller.abort(); window.clearInterval(interval); document.removeEventListener("visibilitychange", read); };
   }, []);
 
   useEffect(() => {
@@ -238,12 +248,7 @@ export function ProvincialWaterSources() {
       <style>{styles}</style>
       <FireCommandHeader slotId="provincial-fire-command-header" title="Water sources by municipality" icon="fa-droplet" />
       <main className="prov-water">
-        <header className="prov-water__header">
-          {/* 148 records from the BFP locator chart */}
-          <span className="prov-water__badge">
-            <i className="fa-solid fa-file-shield" aria-hidden="true" /> BFP source register
-          </span>
-        </header>
+
 
         {/* 4 Pastel KPI Summary Cards (Compact Style) */}
         <StatCards
@@ -256,9 +261,8 @@ export function ProvincialWaterSources() {
           ]}
         />
 
-        {error ? (
-          <div className="prov-water__empty">{error}</div>
-        ) : !registry ? (
+        {error && <div className="prov-water__empty" role="alert">{error}</div>}
+        {!registry ? (
           <div className="prov-water__empty">Loading the province-wide registry…</div>
         ) : (
           <>

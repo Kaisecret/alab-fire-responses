@@ -57,8 +57,11 @@ export async function listManagedApplications(
 
   const whereSql = whereClauses.length > 0 ? `where ${whereClauses.join(" and ")}` : "";
 
-  const countResult = await db.query<{ count: string }>(
-    `select count(*)::text as count
+  const countResult = await db.query<{ count: string; pending: string; verified: string; changes: string }>(
+    `select count(*)::text as count,
+              count(*) filter (where rv.status = 'PENDING')::text as pending,
+              count(*) filter (where rv.status = 'VERIFIED')::text as verified,
+              count(*) filter (where rv.status = 'CHANGES_REQUESTED')::text as changes
        from resident_verifications rv
        join resident_profiles rp on rp.id = rv.resident_profile_id
        join users u on u.id = rp.user_id
@@ -160,6 +163,11 @@ export async function listManagedApplications(
     pageSize: filters.pageSize,
     total,
     totalPages,
+    metrics: {
+      pending: Number(countResult.rows[0]?.pending ?? 0),
+      verified: Number(countResult.rows[0]?.verified ?? 0),
+      changes: Number(countResult.rows[0]?.changes ?? 0),
+    },
     updatedAt: new Date().toISOString(),
   };
 }

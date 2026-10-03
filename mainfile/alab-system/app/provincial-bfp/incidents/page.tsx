@@ -629,7 +629,7 @@ function ProvincialIncidentsContent() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
-  const { incidents, loading, checking, error, lastCheckedAt, refresh } = useProvincialIncidentFeed({
+  const { incidents, loading, checking, error, lastCheckedAt } = useProvincialIncidentFeed({
     includeHistory: filter === 'ALL' || filter === 'RESOLVED',
   });
 
@@ -706,19 +706,6 @@ function ProvincialIncidentsContent() {
         live
       />
       <div className="pbfp-incidents-page">
-        {/* Header */}
-        <div className="pbfp-header-hub">
-          <div className="pbfp-header-actions">
-            <button type="button" className="pbfp-btn-refresh" onClick={() => void refresh(true)} disabled={checking}>
-              <i className={`fa-solid fa-arrows-rotate ${checking ? 'fa-spin' : ''}`} />
-              <span>{checking ? 'Checking…' : 'Live Refresh'}</span>
-            </button>
-            <Link href="/provincial-bfp/gis-map" className="pbfp-btn-gis">
-              <i className="fa-solid fa-map-location-dot" /> Open GIS View
-            </Link>
-          </div>
-        </div>
-
         {error && (
           <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '10px', padding: '0.65rem 1rem', color: '#991B1B', fontSize: '0.8rem', fontWeight: 600 }}>
             <i className="fa-solid fa-circle-exclamation" style={{ marginRight: '0.4rem' }} /> {error}
@@ -766,6 +753,9 @@ function ProvincialIncidentsContent() {
               </button>
             </div>
 
+            <Link href="/provincial-bfp/gis-map" className="pbfp-btn-gis">
+              <i className="fa-solid fa-map-location-dot" /> Open GIS View
+            </Link>
             <div className="pbfp-search-box">
               <i className="fa-solid fa-magnifying-glass" />
               <input

@@ -13,9 +13,10 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
   const defaults = useRef(initialFilters);
   const [filters, updateFilters] = useState<Filters>(initialFilters);
   const [page, setPage] = useState(initialFilters.page || 1);
-  const [pageSize, updatePageSize] = useState<25 | 50 | 100>(initialFilters.pageSize || 25);
+  const [pageSize, updatePageSize] = useState<ReportFilters["pageSize"]>(initialFilters.pageSize || 25);
   const [items, setItems] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
+  const [metrics, setMetrics] = useState<Record<string, number>>({});
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,8 +32,9 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
       updateFilters(restored as Filters);
       const requestedPage = Number(params.get("page") || 1);
       setPage(Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
-      const size = Number(params.get("pageSize") || 25);
-      updatePageSize(size === 50 || size === 100 ? size : 25);
+      const defaultSize = defaults.current.pageSize || 25;
+      const size = Number(params.get("pageSize") || defaultSize);
+      updatePageSize(size === 7 || size === 25 || size === 50 || size === 100 ? size : defaultSize);
       setReady(true);
     };
     restore();
@@ -51,7 +53,7 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
   const setFilter = useCallback((key: keyof ReportFilters, value: string) => {
     setFilters(previous => ({ ...previous, [key]: value || undefined }));
   }, [setFilters]);
-  const setPageSize = useCallback((size: 25 | 50 | 100) => { updatePageSize(size); setPage(1); }, []);
+  const setPageSize = useCallback((size: ReportFilters["pageSize"]) => { updatePageSize(size); setPage(1); }, []);
   const refresh = useCallback(() => setRevision(value => value + 1), []);
 
   useEffect(() => {
@@ -80,7 +82,7 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
       setLoading(!hasRows.current);
       setError(null);
       try {
-        const body = await requestProvincialJson<Record<string, unknown> & { items?: T[]; total?: number; updatedAt?: string }>(
+        const body = await requestProvincialJson<Record<string, unknown> & { items?: T[]; total?: number; updatedAt?: string; metrics?: Record<string, number> }>(
           `${endpoint}?${params}`, { signal: controller.signal },
         );
         if (controller.signal.aborted) return;
@@ -89,13 +91,14 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
         setItems(records as T[]);
         hasRows.current = (records as T[]).length > 0;
         setTotal(body.total || 0);
+        setMetrics(body.metrics || {});
         setUpdatedAt(body.updatedAt || new Date().toISOString());
         const lastPage = Math.max(1, Math.ceil((body.total || 0) / pageSize));
         if (page > lastPage) setPage(lastPage);
       } catch (cause) {
         if (!controller.signal.aborted) {
           if (cause instanceof ProvincialRequestError && (cause.status === 401 || cause.status === 403)) {
-            setItems([]); hasRows.current = false; setTotal(0); setUpdatedAt(null);
+            setItems([]); hasRows.current = false; setTotal(0); setMetrics({}); setUpdatedAt(null);
           }
           setError(cause instanceof Error ? cause.message : "Unable to load records.");
         }
@@ -104,5 +107,5 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
     return () => { controller.abort(); window.clearTimeout(timer); };
   }, [endpoint, filters, page, pageSize, dataKey, ready, revision]);
 
-  return { items, total, updatedAt, page, pageSize, filters, loading, error, setPage, setPageSize, setFilters, setFilter, refresh };
+  return { items, total, metrics, updatedAt, page, pageSize, filters, loading, error, setPage, setPageSize, setFilters, setFilter, refresh };
 }

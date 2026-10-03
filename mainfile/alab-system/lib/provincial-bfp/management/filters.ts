@@ -1,7 +1,7 @@
 import type { ManagementFilters, ReportFilters } from "./types";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ALLOWED_PAGE_SIZES = new Set([25, 50, 100]);
+const ALLOWED_PAGE_SIZES = new Set([7, 25, 50, 100]);
 const ALLOWED_REPORT_SOURCES = new Set(["ALAB_APP", "PHONE_CALL"]);
 
 function cleanString(value: unknown, maxLength = 100): string | undefined {
@@ -55,13 +55,13 @@ export function parseManagementFilters(
     page = parsedPage;
   }
 
-  let pageSize: 25 | 50 | 100 = 25;
+  let pageSize: ManagementFilters["pageSize"] = 25;
   if (pageSizeRaw !== undefined && pageSizeRaw !== "") {
     const parsedPageSize = Number(pageSizeRaw);
     if (!ALLOWED_PAGE_SIZES.has(parsedPageSize)) {
       throw new Error("INVALID_PAGE_SIZE");
     }
-    pageSize = parsedPageSize as 25 | 50 | 100;
+    pageSize = parsedPageSize as ManagementFilters["pageSize"];
   }
 
   const municipalityId = parseUuid(getParam(rawParams, "municipalityId"));
