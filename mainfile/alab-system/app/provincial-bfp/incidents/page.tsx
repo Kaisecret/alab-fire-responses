@@ -4,7 +4,7 @@ import React, { Suspense, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useProvincialIncidentFeed } from '../../_components/use-provincial-incident-feed';
-import { BfpDataLoader } from '../../_components/bfp-data-loader';
+import { SkeletonDetail, SkeletonPage, SkeletonTableRows } from '../../_components/skeleton-loader';
 import type { ProvincialIncidentDetail } from '../../../lib/intermunicipality/provincial';
 import { DangerFactors } from '../../_components/danger-factors';
 import { formatPhilippineDateTime, getFireTypeLabel } from '../../../lib/municipal-bfp/reports/formatters';
@@ -784,11 +784,7 @@ function ProvincialIncidentsContent() {
               </thead>
               <tbody>
                 {loading && incidents.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-                      <BfpDataLoader theme="provincial" size="sm" title="Loading provincial incident feed..." />
-                    </td>
-                  </tr>
+                  <SkeletonTableRows rows={7} columns={8} label="Loading provincial incident feed" />
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td colSpan={8} style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748B' }}>
@@ -929,7 +925,7 @@ function ProvincialIncidentsContent() {
 
             <div className="pbfp-modal-body">
               {detailLoading ? (
-                <BfpDataLoader theme="provincial" size="sm" title="Loading incident oversight detail..." />
+                <SkeletonDetail label="Loading incident oversight detail" />
               ) : detailError ? (
                 <div style={{ color: '#B91C1C', padding: '1rem', background: '#FEF2F2', borderRadius: '8px' }}>
                   {detailError}
@@ -1117,7 +1113,7 @@ function ProvincialIncidentsContent() {
 
 export default function ProvinceIncidentsPage() {
   return (
-    <Suspense fallback={<BfpDataLoader title="Loading provincial incidents..." theme="provincial" />}>
+    <Suspense fallback={<SkeletonPage label="Loading provincial incidents" style={{ padding: '10px 1.5rem 2.5rem' }} />}>
       <ProvincialIncidentsContent />
     </Suspense>
   );

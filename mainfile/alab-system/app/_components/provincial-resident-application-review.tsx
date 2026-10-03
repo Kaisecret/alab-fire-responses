@@ -8,6 +8,7 @@ import { PhotoLightbox } from './photo-lightbox';
 import type { ManagedApplication } from '../../lib/provincial-bfp/management/types';
 import { StatCards } from "./municipal-stat-cards";
 import { FireCommandHeader } from "./fire-command-header";
+import { SkeletonDetail } from './skeleton-loader';
 
 interface ApplicationReviewProps {
   initialMunicipalityId?: string;
@@ -1751,13 +1752,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
             {/* Dossier Body */}
             <div className="par-drawer-body">
               {dossierLoading ? (
-                <div className="par-state-box">
-                  <div className="par-state-icon">
-                    <i className="fa-solid fa-arrows-rotate fa-spin" />
-                  </div>
-                  <div className="par-state-title">Loading Application Evidence & Dossier…</div>
-                  <div>Retrieving resident government identification and audit records.</div>
-                </div>
+                <SkeletonDetail label="Loading the application evidence and dossier" />
               ) : dossierError ? (
                 <div style={{ padding: '1.25rem', background: '#FEE2E2', color: '#991B1B', borderRadius: 10, display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                   <i className="fa-solid fa-triangle-exclamation" />

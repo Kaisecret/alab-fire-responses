@@ -6,6 +6,7 @@ import { ProvincialAccountDialog } from "./provincial-account-dialog";
 import { StatCards } from "./municipal-stat-cards";
 import { ProvincialManagementPagination } from "./provincial-management-toolbar";
 import { FireCommandHeader } from "./fire-command-header";
+import { SkeletonTableRows } from "./skeleton-loader";
 
 type Municipality = { id: string; name: string; psgcCode: string | null };
 type Account = {
@@ -1101,12 +1102,7 @@ export function ProvincialMunicipalAccounts() {
             </thead>
             <tbody>
               {loading && !loaded ? (
-                <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748B' }}>
-                    <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '0.5rem', color: '#DB1B0D' }} />
-                    Loading municipal account roster…
-                  </td>
-                </tr>
+                <SkeletonTableRows rows={6} columns={5} label="Loading municipal account roster" />
               ) : filteredMunicipalities.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748B' }}>

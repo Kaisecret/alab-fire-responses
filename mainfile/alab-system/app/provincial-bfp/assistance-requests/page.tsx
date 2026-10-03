@@ -2,7 +2,7 @@
 
 import React, { Suspense, useMemo } from 'react';
 import { useProvincialAssistanceFeed } from '../../_components/use-provincial-assistance-feed';
-import { BfpDataLoader } from '../../_components/bfp-data-loader';
+import { SkeletonPage } from '../../_components/skeleton-loader';
 import { ProvincialAlarmPanel } from '../../_components/provincial-alarm-panel';
 import { StatCards } from "../../_components/municipal-stat-cards";
 import { FireCommandHeader } from '../../_components/fire-command-header';
@@ -614,7 +614,7 @@ function AssistanceRequestsContent() {
 
 export default function AssistanceRequestsPage() {
   return (
-    <Suspense fallback={<BfpDataLoader theme="provincial" title="Loading assistance requests..." />}>
+    <Suspense fallback={<SkeletonPage label="Loading assistance requests" style={{ padding: '10px 1.5rem 2.5rem' }} />}>
       <AssistanceRequestsContent />
     </Suspense>
   );

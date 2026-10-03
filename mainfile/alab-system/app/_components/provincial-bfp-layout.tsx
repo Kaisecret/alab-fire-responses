@@ -8,6 +8,7 @@ import { ProvincialRequestError, requestProvincialJson } from '../../lib/provinc
 import { ProvincialProfilePopover } from './provincial-profile-popover';
 import { ProvincialBackupAlarm } from './provincial-backup-alarm';
 import { BfpLogoutDialog, confirmBfpSignedOut } from './bfp-logout-dialog';
+import { SkeletonBar } from './skeleton-loader';
 
 // Tells other provincial tabs that the shared browser session has ended.
 const PROVINCIAL_SESSION_CHANNEL = 'alab-provincial-session';
@@ -1467,7 +1468,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
               </div>
               <div className="pbfp-profile-info">
                 <div className="pbfp-profile-name">
-                  {identity?.displayName || (identityLoading ? 'Loading account…' : 'Account unavailable')}
+                  {identity?.displayName || (identityLoading ? <SkeletonBar width="7rem" height={11} style={{ background: 'rgba(255,255,255,.28)' }} /> : 'Account unavailable')}
                 </div>
                 <div className="pbfp-profile-role">
                   <span>Provincial Administrator</span>
@@ -1587,7 +1588,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                     <i className="fa-solid fa-user-shield" />
                   </div>
                   <span className="pbfp-topbar-admin-text">
-                    {identity?.displayName || (identityLoading ? 'Loading…' : 'Account')}
+                    {identity?.displayName || (identityLoading ? <SkeletonBar width="5rem" height={10} style={{ display: 'inline-block' }} /> : 'Account')}
                   </span>
                 </button>
               </div>

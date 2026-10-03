@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { ProvincialWaterSourceRegistry, WaterSource } from "../../lib/water-sources/types";
 import { StatCards } from "./municipal-stat-cards";
 import { FireCommandHeader } from "./fire-command-header";
+import { SkeletonCards } from "./skeleton-loader";
 
 const styles = `
   .prov-water { padding: 1.5rem clamp(1rem, 2vw, 2rem) 3rem; color: #172033; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -263,7 +264,7 @@ export function ProvincialWaterSources() {
 
         {error && <div className="prov-water__empty" role="alert">{error}</div>}
         {!registry ? (
-          <div className="prov-water__empty">Loading the province-wide registry…</div>
+          <SkeletonCards count={6} label="Loading the province-wide water-source registry" />
         ) : (
           <>
             {/* Toolbar: Search input + Municipality Filter Select + Showing Badge */}

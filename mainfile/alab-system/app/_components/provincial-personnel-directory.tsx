@@ -8,6 +8,7 @@ import { useManagementDialog } from './use-management-dialog';
 import type { ManagedPersonnel } from '../../lib/provincial-bfp/management/types';
 import { StatCards } from "./municipal-stat-cards";
 import { FireCommandHeader } from "./fire-command-header";
+import { SkeletonTableRows } from './skeleton-loader';
 
 const directoryStyles = `
   .ppd-container {
@@ -1259,14 +1260,7 @@ export function ProvincialPersonnelDirectory() {
             </thead>
             <tbody>
               {loading && personnel.length === 0 ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                    <td colSpan={7} style={{ padding: '1.4rem', textAlign: 'center', color: '#94A3B8' }}>
-                      <i className="fa-solid fa-arrows-rotate fa-spin" style={{ marginRight: '0.5rem' }} />
-                      Loading municipal BFP personnel roster…
-                    </td>
-                  </tr>
-                ))
+                <SkeletonTableRows rows={6} columns={7} label="Loading municipal BFP personnel roster" />
               ) : personnel.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ padding: '3.5rem 1rem', textAlign: 'center', color: '#64748B' }}>

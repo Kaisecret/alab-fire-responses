@@ -10,6 +10,7 @@ import { FireTruckCard, fireTruckCardStyles } from "./fire-truck-card";
 import { FireTruckDetailsDialog, fireTruckDialogStyles } from "./fire-truck-details-dialog";
 import { useDialogFocus } from "./use-dialog-focus";
 import { StatCards } from "./municipal-stat-cards";
+import { SkeletonCards } from "./skeleton-loader";
 
 const styles = `
   .prov-trucks { padding:1.5rem clamp(1rem,2vw,2rem) 3rem; color:#172033; font-family:'Plus Jakarta Sans',sans-serif; }
@@ -238,7 +239,7 @@ export function ProvincialFireTrucks({
         </div>
       )}
       {!registry ? (
-        <div className="prov-trucks__state">Loading the provincial fire truck inventory…</div>
+        <SkeletonCards count={6} label="Loading the provincial fire truck inventory" />
       ) : (
         <>
           <div className="prov-trucks__toolbar">

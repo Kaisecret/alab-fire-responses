@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useProvincialManagementList } from './use-provincial-management-list';
 import { useManagementDialog } from './use-management-dialog';
 import type { ManagedResident } from '../../lib/provincial-bfp/management/types';
+import { SkeletonTableRows } from './skeleton-loader';
 
 export function ProvincialResidentDirectory() {
   const mutate = useManagementMutation();
@@ -307,13 +308,7 @@ export function ProvincialResidentDirectory() {
           </thead>
           <tbody>
             {loading && residents.length === 0 ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                  <td colSpan={6} style={{ padding: '1.2rem', textAlign: 'center', color: '#94A3B8' }}>
-                    Loading resident directory…
-                  </td>
-                </tr>
-              ))
+              <SkeletonTableRows rows={6} columns={6} label="Loading resident directory" />
             ) : residents.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ padding: '3rem 1rem', textAlign: 'center', color: '#64748B' }}>

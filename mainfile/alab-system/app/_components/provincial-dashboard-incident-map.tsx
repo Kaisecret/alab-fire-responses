@@ -8,6 +8,7 @@ import "leaflet/dist/leaflet.css";
 import type { ProvincialIncidentSummary } from "../../lib/intermunicipality/provincial";
 import { groupAntiqueDashboardIncidents, isPointInAntique } from "../../lib/provincial-bfp/dashboard-map";
 import styles from "./provincial-dashboard-incident-map.module.css";
+import { SkeletonBar } from "./skeleton-loader";
 
 type Props = {
   incidents: ProvincialIncidentSummary[];
@@ -178,7 +179,7 @@ export function ProvincialDashboardIncidentMap({ incidents, loading, error }: Pr
           <Link href="/provincial-bfp/gis-map">Open GIS map <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" /></Link>
         </div>
         <p role={error ? "alert" : "status"} className={error ? styles.error : undefined}>
-          {error ? `Incident feed unavailable: ${error}` : loading ? "Loading incident locations…"
+          {error ? `Incident feed unavailable: ${error}` : loading ? <SkeletonBar width="14rem" height={10} style={{ display: "inline-block", verticalAlign: "middle" }} />
             : !ready ? "Preparing Antique's map boundary…"
             : unmappedCount > 0 ? `${unmappedCount} report${unmappedCount === 1 ? " has" : "s have"} no usable location within Antique.`
             : "Select a pin to view its incident reports."}

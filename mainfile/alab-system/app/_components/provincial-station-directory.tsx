@@ -8,6 +8,7 @@ import { useProvincialManagementList } from './use-provincial-management-list';
 import { useManagementDialog } from './use-management-dialog';
 import type { ManagedStation } from '../../lib/provincial-bfp/management/types';
 import { StatCards } from "./municipal-stat-cards";
+import { SkeletonTableRows } from './skeleton-loader';
 
 const pageStyles = `
   .psd-container {
@@ -1208,14 +1209,7 @@ export function ProvincialStationDirectory({ topTabs }: { topTabs?: React.ReactN
             </thead>
             <tbody>
               {loading && stations.length === 0 ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <tr key={i}>
-                    <td colSpan={6} style={{ padding: '1.4rem', textAlign: 'center', color: '#94A3B8' }}>
-                      <i className="fa-solid fa-circle-notch fa-spin" style={{ marginRight: '0.5rem' }} />
-                      Loading provincial stations registry…
-                    </td>
-                  </tr>
-                ))
+                <SkeletonTableRows rows={5} columns={6} label="Loading provincial stations registry" />
               ) : stations.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ padding: '3.5rem 1rem', textAlign: 'center', color: '#64748B' }}>

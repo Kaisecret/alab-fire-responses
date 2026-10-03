@@ -8,6 +8,7 @@ import { ProvincialIncidentAnalytics } from './provincial-incident-analytics';
 import { ProvincialDashboardIncidentMap } from './provincial-dashboard-incident-map';
 import { FireCommandHeader } from './fire-command-header';
 import { StatCards } from "./municipal-stat-cards";
+import { SkeletonList } from './skeleton-loader';
 
 type ManagementSummaryData = {
   totalMunicipalities: number;
@@ -452,9 +453,8 @@ export function ProvincialBfpDashboard() {
 
             <div className="pbfp-incidents-list">
               {incidentFeedLoading && incidents.length === 0 ? (
-                <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748B', fontSize: '0.82rem' }}>
-                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '0.4rem', color: '#DC2626' }} />
-                  Loading active incidents...
+                <div style={{ padding: '0.75rem' }}>
+                  <SkeletonList rows={4} label="Loading active incidents" />
                 </div>
               ) : incidentFeedError && incidents.length === 0 ? (
                 <div role="alert" style={{ padding: '2rem 1rem', color: '#991B1B', fontSize: '0.82rem' }}>

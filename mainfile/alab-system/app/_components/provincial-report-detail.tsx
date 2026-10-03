@@ -11,6 +11,7 @@ import {
   getStatusLabel,
   formatPhilippineDateTime,
 } from '../../lib/municipal-bfp/reports/formatters';
+import { SkeletonDetail } from './skeleton-loader';
 
 interface ProvincialReportDetailProps {
   reportId: string;
@@ -1034,11 +1035,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
           {/* Body */}
           <div className="pid-body">
             {loading ? (
-              <div className="pid-empty-box" style={{ padding: '3.5rem' }}>
-                <i className="fa-solid fa-circle-notch fa-spin" style={{ color: '#DC2626' }} />
-                <strong>Loading full incident report dossier…</strong>
-                <span>Retrieving dispatch status and logs from Antique command network.</span>
-              </div>
+              <SkeletonDetail label="Loading the incident report dossier" />
             ) : error ? (
               <div style={{ padding: '1.25rem', background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', borderRadius: 10 }}>
                 <strong style={{ display: 'block', marginBottom: '4px' }}>Unable to load incident dossier</strong>

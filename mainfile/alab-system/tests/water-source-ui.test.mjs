@@ -40,7 +40,7 @@ test("provincial registry groups real records by municipality with a details pan
   assert.match(source, /api\/provincial-bfp\/water-sources/);
   assert.match(source, /municipalities\.map/);
   assert.match(source, /selectedMunicipality/);
-  assert.match(source, /148 records from the BFP locator chart/);
+  assert.match(source, /<SkeletonCards count=\{6\} label="Loading the province-wide water-source registry" \/>/, 'the registry loads with skeleton cards');
   assert.match(source, /active: allSelected/, 'the municipality filter card shows when it is on');
   assert.match(source, /All municipalities/);
   assert.match(source, /selectedSource/);

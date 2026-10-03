@@ -33,6 +33,7 @@ function harness(path, name) {
     './provincial-profile-popover': { ProvincialProfilePopover: 'profile-popover' },
     './provincial-backup-alarm': { ProvincialBackupAlarm: 'backup-alarm' },
     './bfp-logout-dialog': { BfpLogoutDialog: 'logout-dialog', confirmBfpSignedOut: async () => {} },
+    './skeleton-loader': { SkeletonBar: 'skeleton-bar', SkeletonTableRows: 'skeleton-table-rows' },
     './municipal-stat-cards': { StatCards: 'stat-cards', MunicipalStatCards: 'stat-cards' },
     './fire-command-header': { FireCommandHeader: 'fire-command-header' },
     './provincial-management-toolbar': { ProvincialManagementPagination: 'record-pages' },

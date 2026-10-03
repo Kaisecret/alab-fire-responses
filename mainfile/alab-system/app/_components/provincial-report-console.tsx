@@ -10,7 +10,7 @@ import {
 } from "../../lib/municipal-bfp/reports/formatters";
 import type { MunicipalReportPeriod } from "../../lib/municipal-bfp/reports/types";
 import type { ProvincialReportRow, ProvincialReportSummary } from "../../lib/provincial-bfp/management/types";
-import { BfpDataLoader } from "./bfp-data-loader";
+import { SkeletonTableRows } from "./skeleton-loader";
 import { ProvincialReportDetail } from "./provincial-report-detail";
 import {
   ProvincialReportExportDialog,
@@ -823,11 +823,7 @@ export function ProvincialReportConsole() {
             </thead>
             <tbody>
               {loading && (
-                <tr>
-                  <td colSpan={8} style={{ padding: "1.5rem", textAlign: "center", color: "#64748B" }}>
-                    <BfpDataLoader size="sm" minHeight="150px" title="Loading incident records…" />
-                  </td>
-                </tr>
+                <SkeletonTableRows rows={7} columns={8} label="Loading incident records" />
               )}
 
               {!loading && reports.length === 0 && (

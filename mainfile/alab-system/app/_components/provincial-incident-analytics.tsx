@@ -18,6 +18,7 @@ import {
   hasRecordedActivity,
 } from "../../lib/provincial-bfp/dashboard-analytics.mjs";
 import type { ProvincialReportSummary } from "../../lib/provincial-bfp/management/types";
+import { SkeletonChart } from "./skeleton-loader";
 
 type AnalyticsView = "TREND" | "MUNICIPALITIES" | "FIRE_TYPES";
 type ComparisonMode = "NONE" | "PREVIOUS" | "LAST_YEAR" | "BOTH";
@@ -114,8 +115,6 @@ const styles = `
   .pia-metric span { display:block; color:#718096; font-size:.64rem; font-weight:750; text-transform:uppercase; letter-spacing:.035em; }
   .pia-metric strong { display:block; margin-top:.2rem; color:#14233B; font-size:1.16rem; font-weight:850; font-variant-numeric:tabular-nums; }
   .pia-body { position:relative; min-height:330px; padding:1rem 1.35rem 1.15rem; }
-  .pia-loading { position:absolute; inset:0; z-index:2; display:grid; place-items:center; background:rgba(255,255,255,.78); backdrop-filter:blur(2px); color:#5C6B80; font-size:.76rem; font-weight:700; }
-  .pia-loading i { margin-right:.4rem; color:#D92D20; }
   .pia-error, .pia-empty { min-height:280px; display:grid; place-items:center; align-content:center; gap:.55rem; text-align:center; color:#64748B; }
   .pia-error i, .pia-empty i { font-size:1.55rem; color:#94A3B8; }
   .pia-error strong, .pia-empty strong { color:#14233B; font-size:.88rem; }
@@ -938,8 +937,8 @@ export function ProvincialIncidentAnalytics({ municipalities }: { municipalities
     </div>
 
     <div className="pia-body" aria-busy={loading}>
-      {loading && <div className="pia-loading"><span><i className="fa-solid fa-spinner fa-spin" />Loading live analytics…</span></div>}
-      {error ? <div className="pia-error" role="alert"><i className="fa-solid fa-chart-simple" /><strong>Incident analytics could not be loaded</strong><span>{error}</span><button type="button" className="pia-retry" onClick={() => setRevision((value) => value + 1)}>Retry</button></div>
+      {loading ? <SkeletonChart label="Loading incident analytics" />
+        : error ? <div className="pia-error" role="alert"><i className="fa-solid fa-chart-simple" /><strong>Incident analytics could not be loaded</strong><span>{error}</span><button type="button" className="pia-retry" onClick={() => setRevision((value) => value + 1)}>Retry</button></div>
         : summary && ((view === "TREND" && !trendHasData) || (view !== "TREND" && summary.totalReports === 0)) ? <div className="pia-empty"><i className="fa-regular fa-calendar-check" /><strong>No incidents recorded for this selection</strong><span>Choose another month or municipality to review its activity.</span></div>
         : summary ? <>
             {view === "TREND" && <MonthlyTrend summary={summary} previousSummary={comparisons.previous} lastYearSummary={comparisons.lastYear} month={month} comparisonMode={comparisonMode} chartStyle={trendChartStyle} metric={trendMetric} onComparisonMode={setComparisonMode} onChartStyle={setTrendChartStyle} onMetric={setTrendMetric} />}

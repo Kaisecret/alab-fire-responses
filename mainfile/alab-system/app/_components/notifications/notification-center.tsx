@@ -6,6 +6,7 @@ import type { NotificationCategory } from "@/lib/notifications/types";
 import { NotificationCard } from "./notification-card";
 import styles from "./notification-ui.module.css";
 import { useNotifications } from "./use-notifications";
+import { SkeletonList } from "../skeleton-loader";
 
 type Filter = "ALL" | "UNREAD" | NotificationCategory;
 const filters: Array<{ value: Filter; label: string }> = [
@@ -73,7 +74,7 @@ export function NotificationCenter({
         </span>
       </div>
       <div className={styles.centerList}>
-        {isLoading && <div className={styles.state}>Loading account updates…</div>}
+        {isLoading && <SkeletonList rows={5} label="Loading account updates" />}
         {!isLoading && error && <div className={styles.state}>{error}</div>}
         {!isLoading && !error && visible.length === 0 && (
           <div className={styles.emptyStateLarge}>
