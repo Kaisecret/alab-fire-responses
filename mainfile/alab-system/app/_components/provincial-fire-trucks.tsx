@@ -14,7 +14,7 @@ import { StatCards } from "./municipal-stat-cards";
 const styles = `
   .prov-trucks { padding:1.5rem clamp(1rem,2vw,2rem) 3rem; color:#172033; font-family:'Plus Jakarta Sans',sans-serif; }
   .prov-trucks * { box-sizing:border-box; }
-  .prov-trucks__top-row { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .prov-trucks__top-row { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin:1.25rem 0; flex-wrap:wrap; }
   .prov-trucks__button { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.7rem 1.15rem; border:0; border-radius:9px; background:#b42318; color:#fff; font:inherit; font-size:.82rem; font-weight:800; cursor:pointer; white-space:nowrap; box-shadow:0 2px 8px rgba(180,35,24,.2); transition:background .15s, transform .15s; }
   .prov-trucks__button:hover { background:#912018; transform:translateY(-1px); }
   .prov-trucks__button:disabled { opacity:.6; cursor:wait; transform:none; }
