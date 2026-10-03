@@ -220,10 +220,10 @@ export function ProvincialFireTrucks({
       <StatCards
         label="Provincial fleet totals"
         items={[
-          { key: "trucks", icon: "fa-truck-moving", tone: "red", badge: "Priority", value: totals.trucks, label: "Fire Trucks", description: "Provincial emergency fleet", onClick: () => setSelectedMunicipality("ALL"), active: allSelected },
-          { key: "serviceable", icon: "fa-circle-check", tone: "emerald", badge: "Ready", value: totals.serviceable, label: "Serviceable", description: "Operational response units", onClick: () => setSelectedMunicipality("ALL") },
-          { key: "down", icon: "fa-wrench", tone: "violet", badge: "Under Repair", value: totals.down, label: "Out of Service", description: "Maintenance & bay inspection", onClick: () => setSelectedMunicipality("ALL") },
-          { key: "stations", icon: "fa-building-shield", tone: "blue", badge: "Municipal", value: totals.stations, label: "Active Stations", description: "Covering all 18 LGUs", href: "/provincial-bfp/firetrucks-stations?view=stations" },
+          { key: "trucks", icon: "fa-truck-moving", tone: "red", badge: "Priority", value: totals.trucks, label: "Fire Trucks", description: "Provincial emergency fleet", onClick: () => setSelectedMunicipality("ALL"), active: allSelected, loading: !registry && !loadError },
+          { key: "serviceable", icon: "fa-circle-check", tone: "emerald", badge: "Ready", value: totals.serviceable, label: "Serviceable", description: "Operational response units", onClick: () => setSelectedMunicipality("ALL"), loading: !registry && !loadError },
+          { key: "down", icon: "fa-wrench", tone: "violet", badge: "Under Repair", value: totals.down, label: "Out of Service", description: "Maintenance & bay inspection", onClick: () => setSelectedMunicipality("ALL"), loading: !registry && !loadError },
+          { key: "stations", icon: "fa-building-shield", tone: "blue", badge: "Municipal", value: totals.stations, label: "Active Stations", description: "Covering all 18 LGUs", href: "/provincial-bfp/firetrucks-stations?view=stations", loading: !registry && !loadError },
         ]}
       />
       <div className="prov-trucks__top-row">

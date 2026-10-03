@@ -255,10 +255,10 @@ export function ProvincialWaterSources() {
         <StatCards
           label="Provincial totals"
           items={[
-            { key: "municipalities", icon: "fa-city", tone: "blue", badge: "Coverage", value: registry?.municipalities.length ?? 0, label: "Municipalities", description: "Province-wide water network", onClick: () => { setSelectedMunicipality("ALL"); setQuery(""); }, active: allSelected },
-            { key: "locations", icon: "fa-location-dot", tone: "emerald", badge: "Verified", value: totalLocations, label: "Mapped Locations", description: "Exact GPS coordinates", onClick: () => { setSelectedMunicipality("ALL"); setQuery(""); } },
-            { key: "hydrants", icon: "fa-fire-extinguisher", tone: "red", badge: "Priority", value: totalHydrants, label: "Fire Hydrants", description: "Active municipal hydrants", onClick: () => { setSelectedMunicipality("ALL"); setQuery(""); } },
-            { key: "other", icon: "fa-droplet", tone: "violet", badge: "Reserve", value: totalOtherSources, label: "Other Sources", description: "Natural & open supply points", onClick: () => { setSelectedMunicipality("ALL"); setQuery(""); } },
+            { key: "municipalities", icon: "fa-city", tone: "blue", badge: "Coverage", value: registry?.municipalities.length ?? 0, label: "Municipalities", description: "Province-wide water network", onClick: () => { setSelectedMunicipality("ALL"); setQuery(""); }, active: allSelected, loading: !registry && !error },
+            { key: "locations", icon: "fa-location-dot", tone: "emerald", badge: "Verified", value: totalLocations, label: "Mapped Locations", description: "Exact GPS coordinates", onClick: () => { setSelectedMunicipality("ALL"); setQuery(""); }, loading: !registry && !error },
+            { key: "hydrants", icon: "fa-fire-extinguisher", tone: "red", badge: "Priority", value: totalHydrants, label: "Fire Hydrants", description: "Active municipal hydrants", onClick: () => { setSelectedMunicipality("ALL"); setQuery(""); }, loading: !registry && !error },
+            { key: "other", icon: "fa-droplet", tone: "violet", badge: "Reserve", value: totalOtherSources, label: "Other Sources", description: "Natural & open supply points", onClick: () => { setSelectedMunicipality("ALL"); setQuery(""); }, loading: !registry && !error },
           ]}
         />
 

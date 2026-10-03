@@ -1096,10 +1096,10 @@ export function ProvincialPersonnelDirectory() {
       <StatCards
         label="Personnel registry metrics"
         items={[
-          { key: "all", icon: "fa-users", tone: "violet", badge: "Roster", value: total, label: "Total Personnel", description: "Province-wide personnel", onClick: clearAllFilters },
-          { key: "crews", icon: "fa-building-shield", tone: "blue", badge: "Deployed", value: metrics.assigned ?? assignedStationCount, label: "Station Crews", description: "Station crew assignments" },
-          { key: "admins", icon: "fa-user-gear", tone: "amber", badge: "Officers", value: metrics.admins ?? adminCount, label: "Municipal Admins", description: "Municipal administrators" },
-          { key: "active", icon: "fa-circle-check", tone: "emerald", badge: "Ready", value: metrics.active ?? activeCount, label: "Active Duty", description: "Operational responders", onClick: () => { setStatus('ACTIVE'); setPage(1); } },
+          { key: "all", icon: "fa-users", tone: "violet", badge: "Roster", value: total, label: "Total Personnel", description: "Province-wide personnel", onClick: clearAllFilters, loading: loading && personnel.length === 0 },
+          { key: "crews", icon: "fa-building-shield", tone: "blue", badge: "Deployed", value: metrics.assigned ?? assignedStationCount, label: "Station Crews", description: "Station crew assignments", loading: loading && personnel.length === 0 },
+          { key: "admins", icon: "fa-user-gear", tone: "amber", badge: "Officers", value: metrics.admins ?? adminCount, label: "Municipal Admins", description: "Municipal administrators", loading: loading && personnel.length === 0 },
+          { key: "active", icon: "fa-circle-check", tone: "emerald", badge: "Ready", value: metrics.active ?? activeCount, label: "Active Duty", description: "Operational responders", onClick: () => { setStatus('ACTIVE'); setPage(1); }, loading: loading && personnel.length === 0 },
         ]}
       />
 

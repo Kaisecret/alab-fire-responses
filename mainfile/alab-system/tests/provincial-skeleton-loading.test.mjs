@@ -43,3 +43,19 @@ test("skeleton styles are hoisted once and respect reduced motion", () => {
   assert.match(skeleton, /prefers-reduced-motion: reduce\) \{ \.skl::after \{ animation: none; \}/);
   assert.match(skeleton, /role="status"/);
 });
+
+test("provincial summary cards show placeholders until their numbers arrive", () => {
+  const cards = {
+    "app/_components/provincial-water-sources.tsx": [/loading: !registry && !error/g, 4],
+    "app/_components/provincial-fire-trucks.tsx": [/loading: !registry && !loadError/g, 4],
+    "app/_components/provincial-personnel-directory.tsx": [/loading: loading && personnel\.length === 0/g, 4],
+    "app/_components/provincial-report-console.tsx": [/loading: loading && !summary/g, 3],
+    "app/_components/provincial-resident-application-review.tsx": [/loading: loading && applications\.length === 0/g, 4],
+    "app/provincial-bfp/assistance-requests/page.tsx": [/loading: !lastCheckedAt && !error/g, 4],
+    "app/_components/provincial-bfp-dashboard.tsx": [/loading: !summary && !summaryError/g, 3],
+    "app/_components/provincial-gis-operations-map.tsx": [/loading: stationsLoading/g, 1],
+  };
+  for (const [path, [pattern, count]] of Object.entries(cards)) {
+    assert.equal(source(path).match(pattern)?.length ?? 0, count, `${path} summary cards`);
+  }
+});

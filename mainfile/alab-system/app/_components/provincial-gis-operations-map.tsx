@@ -1131,6 +1131,7 @@ export function ProvincialGisOperationsMap() {
   const [selectedIncidentId, setSelectedIncidentId] = useState("");
   const [mapReady, setMapReady] = useState(false);
   const [stations, setStations] = useState<StationMarker[]>([]);
+  const [stationsLoading, setStationsLoading] = useState(true);
   const [waterSources, setWaterSources] = useState<WaterSource[]>([]);
   const waterSourceMapGroups = useMemo(() => groupWaterSourceMapMarkers(waterSources, MUNICIPAL_CENTERS), [waterSources]);
   const [waterSourcesLoading, setWaterSourcesLoading] = useState(true);
@@ -1212,6 +1213,8 @@ export function ProvincialGisOperationsMap() {
         }
       } catch {
         // Station overlay error degrades gracefully
+      } finally {
+        if (!controller.signal.aborted) setStationsLoading(false);
       }
     })();
     return () => controller.abort();
@@ -1393,7 +1396,7 @@ export function ProvincialGisOperationsMap() {
             items={[
               { key: "active", icon: "fa-fire", tone: "red", badge: "Priority", value: activeCount, label: "Active now", description: "Ongoing operations", onClick: () => { setMapMode("INCIDENTS"); setView("ACTIVE"); }, active: mapMode === "INCIDENTS" && view === "ACTIVE", loading },
               { key: "resolved", icon: "fa-check", tone: "violet", badge: "Closed", value: resolvedCount, label: "Resolved", description: "Completed responses", onClick: () => { setMapMode("INCIDENTS"); setView("HISTORY"); }, active: mapMode === "INCIDENTS" && view === "HISTORY", loading },
-              { key: "stations", icon: "fa-truck-fast", tone: "blue", badge: "Operational", value: activeStationCount, label: "Active stations", description: "Provincial coverage", onClick: () => { setMapMode("INCIDENTS"); setShowStations(true); } },
+              { key: "stations", icon: "fa-truck-fast", tone: "blue", badge: "Operational", value: activeStationCount, label: "Active stations", description: "Provincial coverage", onClick: () => { setMapMode("INCIDENTS"); setShowStations(true); }, loading: stationsLoading },
               { key: "water", icon: "fa-location-dot", tone: "emerald", badge: "Mapped", value: waterSources.length, label: "Water sources", description: "Hydrants & supply points", onClick: () => setMapMode("WATER_SOURCES"), active: mapMode === "WATER_SOURCES", loading: waterSourcesLoading },
             ]}
           />

@@ -581,10 +581,10 @@ function AssistanceRequestsContent() {
         <StatCards
           label="Assistance request totals"
           items={[
-            { key: "total", icon: "fa-layer-group", tone: "blue", badge: "Total Feed", value: metrics.total, label: "Total Calls In Feed", description: "Cross-jurisdiction logs" },
-            { key: "requested", icon: "fa-hourglass-half", tone: "amber", badge: "Pending", value: metrics.requested, label: "Awaiting Response", description: "Station decisions pending" },
-            { key: "dispatched", icon: "fa-truck-fast", tone: "emerald", badge: "Active", value: metrics.coordinated, label: "Units Dispatched", description: "Active apparatus en route" },
-            { key: "closed", icon: "fa-circle-check", tone: "violet", badge: "Closed", value: metrics.completed, label: "Concluded / Returned", description: "Demobilized & closed" },
+            { key: "total", icon: "fa-layer-group", tone: "blue", badge: "Total Feed", value: metrics.total, label: "Total Calls In Feed", description: "Cross-jurisdiction logs", loading: !lastCheckedAt && !error },
+            { key: "requested", icon: "fa-hourglass-half", tone: "amber", badge: "Pending", value: metrics.requested, label: "Awaiting Response", description: "Station decisions pending", loading: !lastCheckedAt && !error },
+            { key: "dispatched", icon: "fa-truck-fast", tone: "emerald", badge: "Active", value: metrics.coordinated, label: "Units Dispatched", description: "Active apparatus en route", loading: !lastCheckedAt && !error },
+            { key: "closed", icon: "fa-circle-check", tone: "violet", badge: "Closed", value: metrics.completed, label: "Concluded / Returned", description: "Demobilized & closed", loading: !lastCheckedAt && !error },
           ]}
         />
 

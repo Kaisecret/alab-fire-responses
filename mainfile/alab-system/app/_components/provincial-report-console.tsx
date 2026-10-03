@@ -370,9 +370,9 @@ export function ProvincialReportConsole() {
       <StatCards
         label="Report totals"
         items={[
-          { key: "total", icon: "fa-folder-open", tone: "slate", badge: "Intake", value: summary?.totalReports ?? 0, label: "Total Reports" },
-          { key: "confirmed", icon: "fa-fire", tone: "red", badge: confirmedIncidents > 0 ? "Confirmed" : "None", value: confirmedIncidents, label: "Confirmed Incidents" },
-          { key: "resolved", icon: "fa-circle-check", tone: "emerald", badge: resolvedIncidents > 0 ? "Closed" : "Open", value: resolvedIncidents, label: "Resolved Incidents" },
+          { key: "total", icon: "fa-folder-open", tone: "slate", badge: "Intake", value: summary?.totalReports ?? 0, label: "Total Reports", loading: loading && !summary },
+          { key: "confirmed", icon: "fa-fire", tone: "red", badge: confirmedIncidents > 0 ? "Confirmed" : "None", value: confirmedIncidents, label: "Confirmed Incidents", loading: loading && !summary },
+          { key: "resolved", icon: "fa-circle-check", tone: "emerald", badge: resolvedIncidents > 0 ? "Closed" : "Open", value: resolvedIncidents, label: "Resolved Incidents", loading: loading && !summary },
         ]}
       />
 

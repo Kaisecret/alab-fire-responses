@@ -1469,10 +1469,10 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
       <StatCards
         label="Application summary metrics"
         items={[
-          { key: "all", icon: "fa-folder-open", tone: "slate", badge: "All", value: total, label: "Total Applications", description: "All submissions", onClick: () => { setStatusFilter('ALL'); setPage(1); }, active: !statusFilter || statusFilter === 'ALL' },
-          { key: "pending", icon: "fa-clock-rotate-left", tone: "amber", badge: "Pending", value: metrics.pending ?? pendingCount, label: "Pending Review", description: "Awaiting review", onClick: () => { setStatusFilter('PENDING'); setPage(1); }, active: statusFilter === 'PENDING' },
-          { key: "verified", icon: "fa-circle-check", tone: "emerald", badge: "Verified", value: metrics.verified ?? verifiedCount, label: "Verified Accounts", description: "Approved residents", onClick: () => { setStatusFilter('VERIFIED'); setPage(1); }, active: statusFilter === 'VERIFIED' },
-          { key: "changes", icon: "fa-triangle-exclamation", tone: "red", badge: "Changes", value: metrics.changes ?? changesCount, label: "Changes Requested", description: "Needs resident update", onClick: () => { setStatusFilter('CHANGES_REQUESTED'); setPage(1); }, active: statusFilter === 'CHANGES_REQUESTED' },
+          { key: "all", icon: "fa-folder-open", tone: "slate", badge: "All", value: total, label: "Total Applications", description: "All submissions", onClick: () => { setStatusFilter('ALL'); setPage(1); }, active: !statusFilter || statusFilter === 'ALL', loading: loading && applications.length === 0 },
+          { key: "pending", icon: "fa-clock-rotate-left", tone: "amber", badge: "Pending", value: metrics.pending ?? pendingCount, label: "Pending Review", description: "Awaiting review", onClick: () => { setStatusFilter('PENDING'); setPage(1); }, active: statusFilter === 'PENDING', loading: loading && applications.length === 0 },
+          { key: "verified", icon: "fa-circle-check", tone: "emerald", badge: "Verified", value: metrics.verified ?? verifiedCount, label: "Verified Accounts", description: "Approved residents", onClick: () => { setStatusFilter('VERIFIED'); setPage(1); }, active: statusFilter === 'VERIFIED', loading: loading && applications.length === 0 },
+          { key: "changes", icon: "fa-triangle-exclamation", tone: "red", badge: "Changes", value: metrics.changes ?? changesCount, label: "Changes Requested", description: "Needs resident update", onClick: () => { setStatusFilter('CHANGES_REQUESTED'); setPage(1); }, active: statusFilter === 'CHANGES_REQUESTED', loading: loading && applications.length === 0 },
         ]}
       />
 
