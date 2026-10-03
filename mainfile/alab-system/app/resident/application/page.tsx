@@ -9,6 +9,8 @@ import {
 } from "../../../lib/resident-applications/client-request";
 import { ResidentSelfieCapture, residentSelfieCaptureStyles } from "../../_components/resident-selfie-capture";
 import { shrinkPhoto } from "../../_lib/shrink-photo";
+import { EMERGENCY_CALL_LABEL, PHONE_ICON_PATH, emergencyCallStyles } from "../../_content/emergency-call";
+import { OPEN_BFP_HOTLINES } from "../../_components/resident-offline-emergency";
 
 type Application = {
   reference: string;
@@ -301,6 +303,7 @@ export default function ResidentApplicationPage() {
     <main className="approval-page">
       <style>{styles}</style>
       <style>{residentSelfieCaptureStyles}</style>
+      <style>{emergencyCallStyles}</style>
       <section className="approval-shell">
         <header className="approval-brand"><img src="/images/Logo.webp" alt="ALAB" /><span>Resident identity review</span></header>
 
@@ -332,6 +335,15 @@ export default function ResidentApplicationPage() {
             </div>
 
             {isApproved && <Link className="primary-action" href="/resident/login">Continue to resident login</Link>}
+            {!isApproved && (
+              <div className="approval-emergency">
+                <button type="button" className="alab-emergency-call" aria-haspopup="dialog" onClick={() => window.dispatchEvent(new Event(OPEN_BFP_HOTLINES))}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={PHONE_ICON_PATH} /></svg>
+                  <span>{EMERGENCY_CALL_LABEL}</span>
+                </button>
+                <p>In-app fire reports open once your account is approved. A call reaches BFP right away.</p>
+              </div>
+            )}
             {!isApproved && !needsChanges && <div className="review-note"><strong>What happens next?</strong><p>Authorized Municipal BFP personnel will compare your registration details with your protected, watermarked ID copies. You can return to this page after signing in to check the result.</p></div>}
 
             {needsChanges && (
@@ -419,7 +431,7 @@ const styles = `
 .approval-summary div{padding:1.1rem 1.4rem;background:#fff;min-width:0}
 .approval-summary small{display:block;color:#64748b;font-weight:700;margin-bottom:.3rem}
 .approval-summary strong{display:block;overflow-wrap:anywhere;font-size:.92rem}
-.review-note,.correction-form{margin:1.4rem;padding:1.35rem;border-radius:18px;background:#f8fafc;border:1px solid #e5e7eb}
+.approval-emergency{margin:1.4rem 1.4rem 0}.approval-emergency p{margin:.5rem 0 0;color:#64748b;font-size:.8rem;line-height:1.5;text-align:center}.review-note,.correction-form{margin:1.4rem;padding:1.35rem;border-radius:18px;background:#f8fafc;border:1px solid #e5e7eb}
 .review-note p,.form-help{color:#64748b;line-height:1.6}
 .form-intro h2{margin:1.5rem 0 .25rem;font-size:1.25rem}.form-intro .form-help{margin:.25rem 0 0}
 .form-help.small{margin:.35rem 0 .9rem;font-size:.9rem}

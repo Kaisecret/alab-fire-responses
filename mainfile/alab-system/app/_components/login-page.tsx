@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { residentAuthFontStyles } from "../_content/resident-auth-font";
 import { loginMarkup, loginStyles } from "../_content/login-content";
+import { emergencyCallMarkup, emergencyCallStyles } from "../_content/emergency-call";
+import { OPEN_BFP_HOTLINES } from "./resident-offline-emergency";
+
+// Before signing in, a person can still call BFP in one tap.
+const markup = loginMarkup.replace("</header>", `</header>${emergencyCallMarkup}`);
 
 const fireLoaderStyles = `
   /* =====================================================================
@@ -148,6 +153,15 @@ export function LoginPage({
   fontVariableClassName,
 }: LoginPageProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // The emergency button lives in the static markup; it opens the BFP hotline sheet.
+  useEffect(() => {
+    const button = rootRef.current?.querySelector("[data-call-bfp]");
+    const openHotlines = () => window.dispatchEvent(new Event(OPEN_BFP_HOTLINES));
+    button?.addEventListener("click", openHotlines);
+    return () => button?.removeEventListener("click", openHotlines);
+  }, []);
+
   const [isLoading, setIsLoading] = useState(false);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
   const lockoutSecondsRef = useRef(0);
@@ -473,10 +487,11 @@ export function LoginPage({
       <style>{residentAuthFontStyles}</style>
       <style>{loginStyles}</style>
       <style>{fireLoaderStyles}</style>
+      <style>{emergencyCallStyles}</style>
       <div
         ref={rootRef}
         className={`login-page-root ${fontVariableClassName}`}
-        dangerouslySetInnerHTML={{ __html: loginMarkup }}
+        dangerouslySetInnerHTML={{ __html: markup }}
       />
       {isLoading && (
         <div className="mbfp-fire-loader-overlay">

@@ -37,6 +37,8 @@ function pageHarness(request) {
     '../../../lib/resident-applications/client-request': request,
     '../../_components/resident-selfie-capture': { ResidentSelfieCapture: 'resident-selfie-capture', residentSelfieCaptureStyles: '' },
     '../../_lib/shrink-photo': { shrinkPhoto: async (file) => file },
+    '../../_content/emergency-call': { EMERGENCY_CALL_LABEL: 'Fire emergency? Call BFP now', PHONE_ICON_PATH: '', emergencyCallStyles: '' },
+    '../../_components/resident-offline-emergency': { OPEN_BFP_HOTLINES: 'alab:show-bfp-hotlines' },
   });
   return () => { stateCursor = 0; refCursor = 0; return mod.default(); };
 }
