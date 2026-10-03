@@ -44,7 +44,6 @@ export const heroEmergencyMarkup =
   `<button type="button" class="button hero__emergency" data-call-bfp aria-haspopup="dialog">` +
   `<span class="hero__emergency-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="${PHONE_ICON_PATH}" /></svg></span>` +
   `<span class="hero__emergency-text"><strong>Fire emergency?</strong><span>Call BFP or 911 now</span></span>` +
-  `<svg class="hero__emergency-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>` +
   `</button>`;
 
 export const heroEmergencyStyles = `
@@ -85,7 +84,6 @@ export const heroEmergencyStyles = `
   .hero__emergency-text { display: grid; flex: 1 1 auto; gap: 0.05rem; min-width: 0; }
   .hero__emergency-text strong { color: #b91c1c; font-size: 0.95rem; font-weight: 850; line-height: 1.2; letter-spacing: -0.01em; }
   .hero__emergency-text span { color: var(--muted, #52616a); font-size: 0.76rem; font-weight: 650; line-height: 1.25; }
-  .hero__emergency-arrow { flex: 0 0 auto; width: 1.1rem; height: 1.1rem; fill: none; stroke: #b91c1c; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   @keyframes hero-emergency-ring { 0% { box-shadow: 0 0 0 0 rgb(232 41 18 / 45%); } 80%, 100% { box-shadow: 0 0 0 0.6rem rgb(232 41 18 / 0%); } }
   @media (max-width: 640px) {
     .hero__actions .button--primary,
