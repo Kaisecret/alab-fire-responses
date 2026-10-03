@@ -35,34 +35,32 @@ export const emergencyCallStyles = `
   .alab-emergency-call svg { flex: 0 0 auto; width: 18px; height: 18px; }
 `;
 
-/** The landing hero version: sits under "Report a fire" and opens the hotlines. */
+/**
+ * The landing hero version. It takes the place of "View active incidents" and
+ * uses the hero .button class, so it is the same size as "Report a fire" at
+ * every screen width.
+ */
 export const heroEmergencyMarkup =
-  `<button type="button" class="hero__emergency" data-call-bfp aria-haspopup="dialog">` +
+  `<button type="button" class="button hero__emergency" data-call-bfp aria-haspopup="dialog">` +
   `<span class="hero__emergency-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="${PHONE_ICON_PATH}" /></svg></span>` +
-  `<span class="hero__emergency-text"><strong>Fire emergency right now?</strong><span>Call BFP Antique or 911 in one tap</span></span>` +
+  `<span class="hero__emergency-text"><strong>Fire emergency?</strong><span>Call BFP or 911 now</span></span>` +
   `<svg class="hero__emergency-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>` +
   `</button>`;
 
 export const heroEmergencyStyles = `
-  .hero__emergency {
-    display: inline-flex;
-    width: fit-content;
-    max-width: 100%;
-    margin-top: 1rem;
-    padding: 0.5rem 1rem 0.5rem 0.5rem;
-    align-items: center;
-    gap: 0.75rem;
-    border: 0.08rem solid rgb(217 27 16 / 28%);
-    border-radius: 999px;
+  .hero__actions .button--primary,
+  .hero__actions .hero__emergency { min-width: 15.5rem; }
+  .hero__emergency.button {
+    justify-content: flex-start;
+    padding: 0.45rem 0.95rem 0.45rem 0.5rem;
+    gap: 0.7rem;
     color: var(--ink, #10222c);
     background: rgb(255 250 245 / 82%);
     backdrop-filter: blur(0.4rem);
-    box-shadow: 0 0.6rem 1.6rem rgb(117 33 12 / 12%);
     text-align: left;
     cursor: pointer;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
-  .hero__emergency:hover { transform: translateY(-1px); border-color: rgb(217 27 16 / 55%); box-shadow: 0 0.9rem 2rem rgb(117 33 12 / 18%); }
+  .hero__emergency.button:hover { background: #fff1ef; }
   .hero__emergency:focus-visible { outline: 3px solid rgb(217 27 16 / 40%); outline-offset: 3px; }
   .hero__emergency-icon {
     position: relative;
@@ -84,19 +82,17 @@ export const heroEmergencyStyles = `
     animation: hero-emergency-ring 1.8s ease-out infinite;
   }
   .hero__emergency-icon svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-  .hero__emergency-text { display: grid; gap: 0.05rem; min-width: 0; }
-  .hero__emergency-text strong { color: #b91c1c; font-size: 0.92rem; font-weight: 850; line-height: 1.25; }
-  .hero__emergency-text span { color: var(--muted, #52616a); font-size: 0.78rem; font-weight: 600; line-height: 1.3; }
+  .hero__emergency-text { display: grid; flex: 1 1 auto; gap: 0.05rem; min-width: 0; }
+  .hero__emergency-text strong { color: #b91c1c; font-size: 0.95rem; font-weight: 850; line-height: 1.2; letter-spacing: -0.01em; }
+  .hero__emergency-text span { color: var(--muted, #52616a); font-size: 0.76rem; font-weight: 650; line-height: 1.25; }
   .hero__emergency-arrow { flex: 0 0 auto; width: 1.1rem; height: 1.1rem; fill: none; stroke: #b91c1c; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-  .hero__content > .hero__emergency { animation-delay: 440ms; }
-  .hero__content > .hero__trust { animation-delay: 520ms; }
   @keyframes hero-emergency-ring { 0% { box-shadow: 0 0 0 0 rgb(232 41 18 / 45%); } 80%, 100% { box-shadow: 0 0 0 0.6rem rgb(232 41 18 / 0%); } }
   @media (max-width: 640px) {
-    .hero__emergency { order: 8; width: 100%; margin-top: 0.55rem; border-radius: 0.8rem; }
-    .hero__emergency-text { flex: 1 1 auto; }
+    .hero__actions .button--primary,
+    .hero__actions .hero__emergency { min-width: 0; }
+    .hero__emergency-icon { width: 2.2rem; height: 2.2rem; }
   }
   @media (prefers-reduced-motion: reduce) {
     .hero__emergency-icon::after { animation: none; }
-    .hero__emergency:hover { transform: none; }
   }
 `;

@@ -10,12 +10,13 @@ import { landingMobileStyles } from "../_content/landing-mobile-styles";
 import { heroEmergencyMarkup, heroEmergencyStyles } from "../_content/emergency-call";
 import { OPEN_BFP_HOTLINES, ResidentOfflineEmergency } from "./resident-offline-emergency";
 
-// Under the hero actions: anyone, with or without an account, can call BFP.
-const heroActionsEnd = '<a class="button button--secondary" href="#incidents">';
+// The hero's second action is the emergency call (it replaces "View active
+// incidents"), so anyone, with or without an account, can call BFP.
+const viewIncidentsButton = '<a class="button button--secondary" href="#incidents">';
 const markup = (() => {
-  const start = landingMarkup.indexOf(heroActionsEnd);
-  const end = start < 0 ? -1 : landingMarkup.indexOf("</div>", start);
-  return end < 0 ? landingMarkup : `${landingMarkup.slice(0, end + 6)}${heroEmergencyMarkup}${landingMarkup.slice(end + 6)}`;
+  const start = landingMarkup.indexOf(viewIncidentsButton);
+  const end = start < 0 ? -1 : landingMarkup.indexOf("</a>", start);
+  return end < 0 ? landingMarkup : `${landingMarkup.slice(0, start)}${heroEmergencyMarkup}${landingMarkup.slice(end + 4)}`;
 })();
 
 export function LandingPage() {

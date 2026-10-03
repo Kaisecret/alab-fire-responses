@@ -6,12 +6,14 @@ const source = (path) => readFileSync(path, "utf8");
 
 test("the landing hero lets anyone call BFP in one tap", () => {
   const content = source("app/_content/emergency-call.ts");
-  assert.match(content, /class="hero__emergency" data-call-bfp/);
-  assert.match(content, /Fire emergency right now\?/);
+  assert.match(content, /class="button hero__emergency" data-call-bfp/);
+  assert.match(content, /Fire emergency\?/);
 
   const landing = source("app/_components/landing-page.tsx");
   assert.match(landing, /<a class="button button--secondary" href="#incidents">/);
   assert.match(landing, /heroEmergencyMarkup/);
+  // It replaces "View active incidents" rather than adding a third action.
+  assert.match(landing, /landingMarkup\.slice\(0, start\)\}\$\{heroEmergencyMarkup\}\$\{landingMarkup\.slice\(end \+ 4\)\}/);
   assert.match(landing, /dangerouslySetInnerHTML=\{\{ __html: markup \}\}/);
   assert.match(landing, /querySelector\("\[data-call-bfp\]"\)/);
   assert.match(landing, /dispatchEvent\(new Event\(OPEN_BFP_HOTLINES\)\)/);
