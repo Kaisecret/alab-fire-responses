@@ -95,15 +95,15 @@ const styles = `
   .offline-all-toggle span:last-child { color: #DC2626; font-size: 0.8rem; }
   .offline-search { width: 100%; padding: 0.7rem 0.85rem; border: 1px solid #CBD5E1; border-radius: 0.75rem; font: inherit; font-size: 0.88rem; }
   .offline-search:focus { outline: 3px solid rgba(220, 38, 38, 0.18); border-color: #DC2626; }
-  .offline-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
-  .offline-list a { display: flex; align-items: center; gap: 0.7rem; padding: 0.65rem 0.75rem; border: 1px solid #E2E8F0; border-radius: 0.8rem; background: #FFFFFF; color: #0F172A; text-decoration: none; }
-  .offline-list a.is-home { border-color: #FCA5A5; background: #FFF5F5; }
-  .offline-list-text { display: grid; gap: 0.05rem; min-width: 0; flex: 1; }
-  .offline-list-text strong { font-size: 0.86rem; font-weight: 800; }
-  .offline-list-text span { color: #475569; font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .offline-list-tag { padding: 0.15rem 0.5rem; border-radius: 999px; background: #DC2626; color: #fff; font-size: 0.66rem; font-weight: 800; }
-  .offline-list-call { flex: 0 0 auto; width: 2.2rem; height: 2.2rem; display: grid; place-items: center; border-radius: 50%; background: #FEF2F2; color: #DC2626; }
-  .offline-list-call svg { width: 1rem; height: 1rem; }
+  .hotline-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+  .hotline-list a { display: flex; align-items: center; gap: 0.7rem; padding: 0.65rem 0.75rem; border: 1px solid #E2E8F0; border-radius: 0.8rem; background: #FFFFFF; color: #0F172A; text-decoration: none; }
+  .hotline-list a.is-home { border-color: #FCA5A5; background: #FFF5F5; }
+  .hotline-list-text { display: grid; gap: 0.05rem; min-width: 0; flex: 1; }
+  .hotline-list-text strong { font-size: 0.86rem; font-weight: 800; }
+  .hotline-list-text span { color: #475569; font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .hotline-list-tag { padding: 0.15rem 0.5rem; border-radius: 999px; background: #DC2626; color: #fff; font-size: 0.66rem; font-weight: 800; }
+  .hotline-list-call { flex: 0 0 auto; width: 2.2rem; height: 2.2rem; display: grid; place-items: center; border-radius: 50%; background: #FEF2F2; color: #DC2626; }
+  .hotline-list-call svg { width: 1rem; height: 1rem; }
   .offline-empty { margin: 0; color: #64748B; font-size: 0.82rem; text-align: center; }
   .offline-minimized-pill { position: fixed; left: 50%; bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px)); z-index: 10000; transform: translateX(-50%); display: flex; align-items: center; gap: 0.55rem; padding: 0.6rem 1rem; border: 0; border-radius: 999px; background: #DC2626; color: #FFFFFF; font: inherit; font-size: 0.82rem; font-weight: 800; box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4); cursor: pointer; animation: offlineFloatIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
   .offline-minimized-pill svg { width: 1rem; height: 1rem; }
@@ -126,12 +126,12 @@ function HotlineLink({ hotline, home, yoursLabel }: { hotline: BfpHotline; home:
   return (
     <li>
       <a href={hotlineHref(hotline.phone)} className={home ? "is-home" : undefined} aria-label={`Call ${hotline.name}, ${formatHotline(hotline.phone)}`}>
-        <span className="offline-list-text">
+        <span className="hotline-list-text">
           <strong>{hotline.name}</strong>
           <span>{formatHotline(hotline.phone)}</span>
         </span>
-        {home && <span className="offline-list-tag">{yoursLabel}</span>}
-        <span className="offline-list-call"><PhoneIcon /></span>
+        {home && <span className="hotline-list-tag">{yoursLabel}</span>}
+        <span className="hotline-list-call"><PhoneIcon /></span>
       </a>
     </li>
   );
@@ -299,7 +299,7 @@ export function ResidentOfflineEmergency() {
                   {listed.length === 0 ? (
                     <p className="offline-empty">{text.noMatch}</p>
                   ) : (
-                    <ul className="offline-list">
+                    <ul className="hotline-list">
                       {listed.map((hotline) => (
                         <HotlineLink key={hotline.id} hotline={hotline} home={hotline.id === home?.id} yoursLabel={text.yours} />
                       ))}
