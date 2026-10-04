@@ -20,7 +20,7 @@ void main() {
     stationLongitude: 121.9270,
   );
 
-  testWidgets('IncidentDetailSheet renders Create Incident Report and omits Update Status', (tester) async {
+  testWidgets('IncidentDetailSheet links to Response History and has no personal report form', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(() {
@@ -56,17 +56,53 @@ void main() {
     expect(find.text('Update Status'), findsNothing);
     expect(find.text('Comms / Dispatch'), findsNothing);
 
-    // 3. Verify 'Create Incident Report' button is present
-    final createReportBtn = find.text('Create Incident Report');
-    await tester.ensureVisible(createReportBtn);
-    await tester.pumpAndSettle();
-    expect(createReportBtn, findsOneWidget);
+    // 3. Responders do not write incident reports in the mobile app; the
+    //    paper keeps report generation with authorized personnel on the web.
+    expect(find.text('Create Incident Report'), findsNothing);
+    expect(find.text('BFP INCIDENT REPORTING'), findsNothing);
 
-    // 4. Verify tapping 'Create Incident Report' opens reporting modal
-    await tester.tap(createReportBtn);
+    // 4. The sheet still links to the read-only Response History tab.
+    final historyBtn = find.text('View Response History');
+    await tester.ensureVisible(historyBtn);
+    await tester.pumpAndSettle();
+    expect(historyBtn, findsOneWidget);
+  });
+
+  testWidgets('View Response History closes the sheet and opens the History tab', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    int? openedTab;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => IncidentDetailSheet.show(
+                context,
+                assignment: sampleAssignment,
+                onNavigateTab: (index) => openedTab = index,
+              ),
+              child: const Text('Open Details'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open Details'));
+    await tester.pumpAndSettle();
+    final historyBtn = find.text('View Response History');
+    await tester.ensureVisible(historyBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(historyBtn);
     await tester.pumpAndSettle();
 
-    expect(find.text('Submit Incident Report'), findsOneWidget);
-    expect(find.text('FIELD RESPONSE NARRATIVE & ACTIONS TAKEN'), findsOneWidget);
+    expect(openedTab, 3);
+    expect(find.text('View Response History'), findsNothing);
   });
 }
