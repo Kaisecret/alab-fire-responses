@@ -88,6 +88,8 @@ export const heroEmergencyStyles = `
   @media (max-width: 640px) {
     .hero__actions .button--primary,
     .hero__actions .hero__emergency { min-width: 0; }
+    .hero__emergency.button { justify-content: center; padding-inline: 0.95rem; }
+    .hero__emergency-text { flex: 0 1 auto; }
     .hero__emergency-icon { width: 2.2rem; height: 2.2rem; }
   }
   @media (prefers-reduced-motion: reduce) {
