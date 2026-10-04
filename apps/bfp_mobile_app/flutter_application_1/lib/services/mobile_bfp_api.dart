@@ -127,6 +127,14 @@ class MobileDispatchAssignment {
     this.stationLatitude,
     this.stationLongitude,
     this.landmark,
+    this.assignedAt,
+    this.enRouteAt,
+    this.onSceneAt,
+    this.completedAt,
+    this.arrivalMethod,
+    this.levelOfDanger,
+    this.dangerScore,
+    this.responseSeconds,
   });
 
   final String dispatchId;
@@ -142,6 +150,35 @@ class MobileDispatchAssignment {
   final double? stationLatitude;
   final double? stationLongitude;
   final String? landmark;
+
+  // Response timeline and Level of Danger. Only the resolved list sends these.
+  final DateTime? assignedAt;
+  final DateTime? enRouteAt;
+  final DateTime? onSceneAt;
+  final DateTime? completedAt;
+  final String? arrivalMethod;
+  final String? levelOfDanger;
+  final int? dangerScore;
+  final int? responseSeconds;
+
+  /// Time from assignment to arrival on scene, or "Not recorded".
+  String get responseTimeLabel {
+    final seconds = responseSeconds;
+    if (seconds == null || seconds < 0) return 'Not recorded';
+    if (seconds < 60) return '$seconds s';
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    if (hours > 0) return minutes > 0 ? '$hours h $minutes min' : '$hours h';
+    final rest = seconds % 60;
+    return rest > 0 ? '$minutes min $rest s' : '$minutes min';
+  }
+
+  /// Level of Danger as written in the paper: Low, Moderate, High, Critical.
+  String get levelOfDangerLabel {
+    final level = levelOfDanger;
+    if (level == null || level.isEmpty) return 'Not rated';
+    return level[0].toUpperCase() + level.substring(1).toLowerCase();
+  }
 
   String get locationSummary => LocalityHelper.resolveBarangay(
     rawBarangay: barangay,
@@ -171,7 +208,18 @@ class MobileDispatchAssignment {
         stationLatitude: (json['stationLatitude'] as num?)?.toDouble(),
         stationLongitude: (json['stationLongitude'] as num?)?.toDouble(),
         landmark: json['landmark'] as String?,
+        assignedAt: _parseTime(json['assignedAt']),
+        enRouteAt: _parseTime(json['enRouteAt']),
+        onSceneAt: _parseTime(json['onSceneAt']),
+        completedAt: _parseTime(json['completedAt']),
+        arrivalMethod: json['arrivalMethod'] as String?,
+        levelOfDanger: json['levelOfDanger'] as String?,
+        dangerScore: (json['dangerScore'] as num?)?.toInt(),
+        responseSeconds: (json['responseSeconds'] as num?)?.toInt(),
       );
+
+  static DateTime? _parseTime(Object? value) =>
+      value is String ? DateTime.tryParse(value) : null;
 }
 
 class MobileBfpApi {

@@ -14,7 +14,7 @@ import 'screens/incidents_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/map_screen.dart';
 import 'widgets/map_layer_toggle.dart';
-import 'screens/reports_screen.dart';
+import 'screens/response_history_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/change_temporary_password_screen.dart';
 import 'services/mobile_bfp_api.dart';
@@ -317,7 +317,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                   requestedMode: _requestedMapMode,
                   requestId: _mapRequestId,
                 ),
-                const SafeArea(bottom: false, child: ReportsScreen()),
+                SafeArea(bottom: false, child: ResponseHistoryScreen(session: _session, dispatchStore: _dispatchStore)),
                 SafeArea(
                   bottom: false,
                   child: ProfileScreen(

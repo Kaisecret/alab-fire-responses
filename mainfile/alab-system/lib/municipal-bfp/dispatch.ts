@@ -618,10 +618,25 @@ export async function getMobileResolvedCount(userId: string): Promise<number> {
   return Number(result.rows[0]?.count ?? 0);
 }
 
-export async function listMobileResolvedAssignments(userId: string): Promise<MobileDispatchAssignment[]> {
-  const result = await getDatabase().query<MobileDispatchAssignment>(
+export type MobileResolvedAssignment = MobileDispatchAssignment & {
+  enRouteAt: string | null;
+  onSceneAt: string | null;
+  completedAt: string | null;
+  arrivalMethod: "AUTO_GEOFENCE" | "MANUAL" | null;
+  levelOfDanger: "LOW" | "MODERATE" | "HIGH" | "CRITICAL" | null;
+  dangerScore: number | null;
+  // Seconds from assignment to arrival on scene; null when arrival was never recorded.
+  responseSeconds: number | null;
+};
+
+export async function listMobileResolvedAssignments(userId: string): Promise<MobileResolvedAssignment[]> {
+  const result = await getDatabase().query<MobileResolvedAssignment>(
     `select d.id as "dispatchId", recipient.id as "recipientId", recipient.status as "recipientStatus",
-            recipient.assigned_at as "assignedAt", report.reference_number as "referenceNumber", report.fire_type as "fireType",
+            recipient.assigned_at as "assignedAt", recipient.en_route_at as "enRouteAt", recipient.on_scene_at as "onSceneAt",
+            recipient.completed_at as "completedAt", recipient.arrival_method as "arrivalMethod",
+            report.calculated_severity as "levelOfDanger", report.severity_score as "dangerScore",
+            extract(epoch from (recipient.on_scene_at - recipient.assigned_at))::int as "responseSeconds",
+            report.reference_number as "referenceNumber", report.fire_type as "fireType",
             report.status as "reportStatus", report.latitude::float as latitude, report.longitude::float as longitude,
             coalesce(b.name, rp_b.name, nullif(trim(split_part(report.address_label, ',', 1)), '')) as barangay,
             municipality.name as municipality,

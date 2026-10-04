@@ -564,7 +564,7 @@ class IncidentDetailSheet extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: () {
                             Navigator.pop(context);
-                            onNavigateTab?.call(3); // Tab 3: Reports
+                            onNavigateTab?.call(3); // Tab 3: Response History
                           },
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: Color(0xFFCBD5E1)),
@@ -576,7 +576,7 @@ class IncidentDetailSheet extends StatelessWidget {
                           icon: const Icon(Icons.folder_open_rounded,
                               size: 15, color: Color(0xFF475569)),
                           label: Text(
-                            'View All Incident Reports',
+                            'View Response History',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,

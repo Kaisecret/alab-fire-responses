@@ -76,11 +76,11 @@ class LiquidBottomNavBar extends StatelessWidget {
                 // 3. Center Map Prominent Button
                 _buildCenterMapButton(),
 
-                // 4. Reports
+                // 4. Response History
                 _buildNavItem(
                   index: 3,
-                  icon: Icons.assignment_rounded,
-                  label: 'Reports',
+                  icon: Icons.history_rounded,
+                  label: 'History',
                 ),
 
                 // 5. Profile
