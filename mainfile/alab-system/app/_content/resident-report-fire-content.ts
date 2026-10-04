@@ -767,6 +767,9 @@ export const reportFireStyles = `
   }
 
   /* Rate Limit Warning Popup Dialog (English) */
+  .same-phone-dialog { border: 0; padding: 0; border-radius: 1.25rem; max-width: calc(100vw - 2rem); }
+  .same-phone-dialog::backdrop { background: rgba(15, 23, 42, .6); }
+  .same-phone-dialog button:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 4px; }
   .rate-limit-dialog-backdrop {
     position: fixed;
     inset: 0;
@@ -1099,6 +1102,19 @@ export const reportFireMarkup = `
         </div>
       </div>
     </div>
+
+    <dialog class="same-phone-dialog" data-same-phone-dialog role="alertdialog" aria-modal="true" aria-labelledby="samePhoneTitle" aria-describedby="samePhoneMessage">
+      <div class="rate-limit-dialog">
+        <div class="rate-limit-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        </div>
+        <h3 id="samePhoneTitle">Same phone, same fire report</h3>
+        <p id="samePhoneMessage" data-same-phone-message>This phone already sent the same fire report using another account. No new report was sent to BFP. You can follow the existing incident's status from this account.</p>
+        <div class="rate-limit-actions">
+          <button type="button" class="rate-limit-btn-close" data-same-phone-view>View incident status</button>
+        </div>
+      </div>
+    </dialog>
 
     <!-- Short Rate Limit Warning Popup Dialog (English) -->
     <div class="rate-limit-dialog-backdrop" data-rate-limit-dialog hidden>

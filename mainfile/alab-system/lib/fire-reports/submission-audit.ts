@@ -1,8 +1,10 @@
 import { isIP } from "node:net";
+import { verifyReportingDeviceToken } from "../auth/reporting-device.ts";
 
 export type FireReportSubmissionAudit = {
   ipAddress: string | null;
   deviceSummary: string | null;
+  deviceId?: string | null;
 };
 
 function firstValidIp(value: string | null) {
@@ -42,10 +44,10 @@ function deviceSummary(userAgent: string | null) {
 }
 
 /** Uses headers set by the trusted server platform; no client-provided form field is accepted. */
-export function submissionAuditFromHeaders(headers: Headers): FireReportSubmissionAudit {
+export function submissionAuditFromHeaders(headers: Headers, reportingDeviceToken?: string | null): FireReportSubmissionAudit {
   const ipAddress = firstValidIp(headers.get("x-vercel-forwarded-for"))
     ?? firstValidIp(headers.get("x-forwarded-for"))
     ?? firstValidIp(headers.get("x-real-ip"));
 
-  return { ipAddress, deviceSummary: deviceSummary(headers.get("user-agent")) };
+  return { ipAddress, deviceSummary: deviceSummary(headers.get("user-agent")), deviceId: verifyReportingDeviceToken(reportingDeviceToken) };
 }

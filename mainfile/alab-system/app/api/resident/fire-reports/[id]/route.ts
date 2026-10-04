@@ -27,7 +27,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       acknowledgedAt: shared.acknowledgedAt,
       respondingAt: shared.respondingAt,
       reporterCount: shared.reporterCount,
-      viewerIsPrimary: shared.viewerIsPrimary,
+      viewerIsPrimary: report.can_edit && shared.viewerIsPrimary,
       history: shared.history,
       otherPhotos: (await Promise.all(shared.reports.flatMap((item, index) => item.isViewer ? [] : item.photoKeys.map(async (key) => ({
         url: await getFireReportPhotoUrl(key).catch(() => null),
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         submittedAt: item.submittedAt,
       }))))).filter((photo) => photo.url),
     } : null;
-    return NextResponse.json({ report: { ...report, photos, incident } });
+    return NextResponse.json({ report: { ...report, photos, incident } }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Resident report detail failed", error);
     return NextResponse.json({ error: "Unable to load this report." }, { status: 500 });

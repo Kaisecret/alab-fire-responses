@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { updateSupabaseSession } from "./utils/supabase/middleware";
 import { isLocalUiPreviewEnabled } from "./lib/auth/local-ui-preview";
+import { REPORTING_DEVICE_COOKIE, createReportingDeviceToken, reportingDeviceCookieOptions, verifyReportingDeviceToken } from "./lib/auth/reporting-device";
 
 const SESSION_COOKIE = "alab_resident_session";
 const PROVINCIAL_BFP_SESSION_COOKIE = "alab_provincial_bfp_session";
@@ -75,6 +76,10 @@ export async function proxy(request: NextRequest) {
   const supabaseResponse = await updateSupabaseSession(request);
   const path = request.nextUrl.pathname;
   if (path === "/resident" || path.startsWith("/resident/")) {
+    if (process.env.AUTH_SECRET && process.env.AUTH_SECRET.length >= 32
+      && !verifyReportingDeviceToken(request.cookies.get(REPORTING_DEVICE_COOKIE)?.value)) {
+      supabaseResponse.cookies.set(REPORTING_DEVICE_COOKIE, createReportingDeviceToken(), reportingDeviceCookieOptions);
+    }
     if (path === "/resident/login") {
       const isAuthed = await verifyResidentSession(request.cookies.get(SESSION_COOKIE)?.value);
       if (isAuthed) {

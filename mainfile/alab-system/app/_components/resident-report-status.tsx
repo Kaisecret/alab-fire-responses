@@ -12,6 +12,7 @@ type Report = {
   id: string;
   reference_number: string;
   status: FireReportStatus;
+  can_edit?: boolean;
   fire_type: string;
   /** Every kind of fire reported; fire_type is the one that set the level. */
   fire_types?: string[] | null;
@@ -34,7 +35,7 @@ type Report = {
   severity_factors?: string[] | null;
   history: Array<{ next_status: FireReportStatus; resident_message: string | null; created_at: string }>;
   photos: Array<{ url: string | null }>;
-  /** Present when other residents reported the same fire within 50 m. */
+  /** Present when other residents reported the same fire within 100 m. */
   incident?: SharedIncident | null;
 };
 
@@ -919,6 +920,15 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
         </div>
       )}
 
+      {report.can_edit === false && (
+        <div className="resident-already-notice" role="status">
+          <div>
+            <strong>{lang === "en" ? "Following an existing incident" : lang === "hil" ? "Ginasunod ang nareport na nga insidente" : "Sinusubaybayan ang naunang insidente"}</strong>
+            <p>{lang === "en" ? "The same fire was already reported from this phone. This account can follow the latest BFP status without sending another report." : lang === "hil" ? "Nareport na ang amo nga sunog gamit ini nga telepono. Masunod sang ini nga account ang pinakabag-o nga status sang BFP nga wala nagapadala sang lain nga report." : "Naiulat na ang parehong sunog mula sa teleponong ito. Makikita ng account na ito ang pinakabagong status ng BFP nang hindi nagpapadala ng panibagong ulat."}</p>
+          </div>
+        </div>
+      )}
+
       <section className="resident-detail-hero">
         <div className="resident-hero-main">
           <p className="resident-ref-badge">REPORT #{report.reference_number || report.id.slice(0, 8)}</p>
@@ -928,7 +938,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
           <span className={`severity-pill ${severity}`}>
             {severity} {lang === "en" ? "Danger" : lang === "hil" ? "Kadilikado" : "Panganib"}
           </span>
-          <span className="resident-status-pill">{getLocalizedStatusLabel(report.status, lang)}</span>
+          <span className="resident-status-pill">{getLocalizedStatusLabel(timelineStatus ?? report.status, lang)}</span>
         </div>
       </section>
 
@@ -960,7 +970,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
 
       <div className="resident-detail-grid">
         <div className="resident-grid-col">
-          <section className="resident-detail-card tactical-enrichment-card">
+          {report.can_edit !== false && <section className="resident-detail-card tactical-enrichment-card">
             <h2>
               <i className="fa-solid fa-bolt" style={{ color: "#DC2626", marginRight: "0.4rem" }} />{" "}
               {lang === "en" ? "Help Responders" : lang === "hil" ? "Bulig sa mga Responders" : "Tulong sa Responders"}
@@ -1126,7 +1136,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
             </div>}
 
             {savedFeedback && <span className="tactical-saved-pill">{savedFeedback}</span>}
-          </section>
+          </section>}
 
           <section className="resident-detail-card">
             <h2>

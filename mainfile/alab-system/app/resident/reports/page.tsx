@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { reportsStyles } from "../../_content/resident-reports-content";
 import type { FireReportStatus } from "../../../lib/fire-reports/types";
-import { useResidentLanguage, getLocalizedStatusLabel, type ResidentLanguage } from "../../_lib/resident-i18n";
+import { useResidentLanguage, getLocalizedStatusLabel, type ResidentLanguage, type TranslationKeys } from "../../_lib/resident-i18n";
 
 type Report = { id: string; reference_number: string; status: FireReportStatus; fire_type: string; submitted_at: string; municipality: string | null; barangay: string | null; };
 type Filter = "ALL" | "ACTIVE" | "CLOSED";
@@ -38,47 +38,25 @@ const liveReportsStyles = `
 
 export default function ReportsPage() {
   const { lang, t } = useResidentLanguage();
-  const [reports, setReports] = useState<Report[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("alab_cache_resident_reports") || sessionStorage.getItem("alab_cache_resident_reports");
-        if (cached) return JSON.parse(cached);
-      } catch {}
-    }
-    return [];
-  });
+  const [reports, setReports] = useState<Report[]>([]);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        return !localStorage.getItem("alab_cache_resident_reports") && !sessionStorage.getItem("alab_cache_resident_reports");
-      } catch {}
-    }
-    return true;
-  });
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("ALL");
   const [query, setQuery] = useState("");
 
   useEffect(() => {
     let isMounted = true;
-    fetch("/api/resident/fire-reports")
+    fetch("/api/resident/fire-reports", { cache: "no-store" })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Unable to load your reports.");
         if (isMounted) {
           setReports(data.reports || []);
-          try {
-            localStorage.setItem("alab_cache_resident_reports", JSON.stringify(data.reports || []));
-            sessionStorage.setItem("alab_cache_resident_reports", JSON.stringify(data.reports || []));
-          } catch {}
         }
       })
       .catch((cause) => {
         if (isMounted) {
-          const hasCached = reports.length > 0 || (typeof window !== "undefined" && Boolean(localStorage.getItem("alab_cache_resident_reports")));
-          if (!hasCached) {
-            setError(cause instanceof Error ? cause.message : "Unable to load your reports.");
-          }
+          setError(cause instanceof Error ? cause.message : "Unable to load your reports.");
         }
       })
       .finally(() => { if (isMounted) setLoading(false); });
@@ -222,7 +200,7 @@ function LocationCell({ report }: { report: Report }) {
   );
 }
 
-function EmptyState({ t }: { t: (key: any) => string }) {
+function EmptyState({ t }: { t: (key: TranslationKeys) => string }) {
   return (
     <div className="reports-empty-state">
       <h2>{t("reportsEmptyTitle")}</h2>

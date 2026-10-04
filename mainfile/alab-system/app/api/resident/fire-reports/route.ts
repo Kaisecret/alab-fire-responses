@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { RESIDENT_SESSION_COOKIE, verifyResidentSession } from "../../../../lib/auth/session";
+import { REPORTING_DEVICE_COOKIE, createReportingDeviceToken, reportingDeviceCookieOptions, verifyReportingDeviceToken } from "../../../../lib/auth/reporting-device";
 import { getDatabase } from "../../../../lib/db";
 import { findOwnOpenReportNear } from "../../../../lib/fire-reports/duplicates";
+import { findSameDeviceIncident, followSameDeviceIncident, SAME_DEVICE_DUPLICATE_MESSAGE } from "../../../../lib/fire-reports/device-sharing";
 import { attachFireReportPhoto, createResidentFireReport, listResidentReports } from "../../../../lib/fire-reports/service";
 import { watermarkTime } from "../../../../lib/media/watermark";
 import { submissionAuditFromHeaders } from "../../../../lib/fire-reports/submission-audit";
@@ -12,6 +14,7 @@ import {
   checkResidentSosRateLimit,
   recordSuccessfulSosReportMemory,
   SOS_RATE_LIMIT_ERROR_EN,
+  SosRateLimitError,
 } from "../../../../lib/fire-reports/rate-limiter";
 
 export const runtime = "nodejs";
@@ -20,11 +23,41 @@ function sessionFor(request: NextRequest) {
   return verifyResidentSession(request.cookies.get(RESIDENT_SESSION_COOKIE)?.value);
 }
 
+function withReportingDevice(request: NextRequest, response: NextResponse) {
+  if (!verifyReportingDeviceToken(request.cookies.get(REPORTING_DEVICE_COOKIE)?.value)) {
+    response.cookies.set(REPORTING_DEVICE_COOKIE, createReportingDeviceToken(), reportingDeviceCookieOptions);
+  }
+  return response;
+}
+
+function sameDeviceResponse(report: { id: string; referenceNumber: string; status: string }) {
+  return NextResponse.json({ report, sameDeviceDuplicate: true, existing: true, message: SAME_DEVICE_DUPLICATE_MESSAGE });
+}
+
 export async function GET(request: NextRequest) {
   const session = sessionFor(request);
   if (!session) return NextResponse.json({ error: "Resident sign-in is required." }, { status: 401 });
   try {
-    return NextResponse.json({ reports: await listResidentReports(session.userId) });
+    if (request.nextUrl.searchParams.get("cooldown") === "1") {
+      const cooldown = await checkResidentSosRateLimit(session.userId);
+      let sameDeviceDuplicateAvailable = false;
+      const deviceId = verifyReportingDeviceToken(request.cookies.get(REPORTING_DEVICE_COOKIE)?.value);
+      if (!cooldown.allowed && deviceId && request.nextUrl.searchParams.has("fireTypes")) {
+        // Read-only eligibility: access is granted only by the submission endpoint.
+        try {
+          const candidate = validateFireReportInput({
+            latitude: request.nextUrl.searchParams.get("latitude"), longitude: request.nextUrl.searchParams.get("longitude"),
+            municipality: request.nextUrl.searchParams.get("municipality"), barangay: request.nextUrl.searchParams.get("barangay"),
+            fireTypes: request.nextUrl.searchParams.getAll("fireTypes"),
+          });
+          sameDeviceDuplicateAvailable = Boolean(await findSameDeviceIncident(getDatabase(), session.userId, deviceId, candidate.latitude, candidate.longitude, candidate.fireTypes));
+        } catch {
+          // The account cooldown still applies if eligibility cannot be established.
+        }
+      }
+      return withReportingDevice(request, NextResponse.json({ ...cooldown, sameDeviceDuplicateAvailable }, { headers: { "Cache-Control": "no-store" } }));
+    }
+    return withReportingDevice(request, NextResponse.json({ reports: await listResidentReports(session.userId) }, { headers: { "Cache-Control": "no-store" } }));
   } catch (error) {
     console.error("Resident report list failed", error);
     return NextResponse.json({ error: "Unable to load your reports." }, { status: 500 });
@@ -39,7 +72,7 @@ export async function POST(request: NextRequest) {
   const session = sessionFor(request);
   if (!session) return NextResponse.json({ error: "Resident sign-in is required." }, { status: 401 });
 
-  const submissionAudit = submissionAuditFromHeaders(request.headers);
+  const submissionAudit = submissionAuditFromHeaders(request.headers, request.cookies.get(REPORTING_DEVICE_COOKIE)?.value);
 
   let form: FormData;
   let input: ReturnType<typeof validateFireReportInput>;
@@ -64,14 +97,23 @@ export async function POST(request: NextRequest) {
   // Reporting the same place again opens the resident's open report instead
   // of a second alarm, even inside the cooldown.
   try {
-    const ownReport = await findOwnOpenReportNear(getDatabase(), session.userId, input.latitude, input.longitude);
+    const ownReport = await findOwnOpenReportNear(getDatabase(), session.userId, input.latitude, input.longitude, input.fireTypes);
     if (ownReport) return NextResponse.json({ report: ownReport, existing: true });
   } catch (error) {
     console.warn("Own report lookup failed; continuing with a new report", error);
   }
 
+  if (submissionAudit.deviceId) {
+    try {
+      const incident = await followSameDeviceIncident(getDatabase(), session.userId, submissionAudit.deviceId, input.latitude, input.longitude, input.fireTypes);
+      if (incident) return sameDeviceResponse(incident);
+    } catch (error) {
+      console.warn("Same-phone lookup failed; checking again in the submission transaction", error);
+    }
+  }
+
   // One successful report per account every 5 minutes.
-  const rateLimit = await checkResidentSosRateLimit(session.userId, submissionAudit.ipAddress);
+  const rateLimit = await checkResidentSosRateLimit(session.userId);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       {
@@ -116,13 +158,11 @@ export async function POST(request: NextRequest) {
 
     // Emergency routing is never dependent on optional photo storage.
     const report = await createResidentFireReport(session.userId, input, submissionAudit);
+    if ("sameDeviceDuplicate" in report && report.sameDeviceDuplicate) return sameDeviceResponse(report);
     if (report.existing) {
       return NextResponse.json({ report: { id: report.id, referenceNumber: report.referenceNumber }, existing: true });
     }
     recordSuccessfulSosReportMemory(session.userId);
-    if (submissionAudit.ipAddress) {
-      recordSuccessfulSosReportMemory(`ip:${submissionAudit.ipAddress}`);
-    }
     let photoWarning: string | undefined;
 
     if (validPhotos.length > 0) {
@@ -151,6 +191,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ report, photoWarning }, { status: 201 });
   } catch (error) {
+    if (error instanceof SosRateLimitError) {
+      return NextResponse.json({ error: error.message, retryAfter: error.retryAfterSeconds }, {
+        status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) },
+      });
+    }
     const message = error instanceof Error ? error.message : "Unable to submit the fire report.";
     if (!knownValidation(message)) console.error("Resident fire report submission failed", error);
     return NextResponse.json({ error: knownValidation(message) ? message : "Unable to submit the fire report." }, { status: knownValidation(message) ? 400 : 500 });

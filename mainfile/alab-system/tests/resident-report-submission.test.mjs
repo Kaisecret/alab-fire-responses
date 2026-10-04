@@ -21,7 +21,7 @@ test("a photo storage failure cannot prevent an emergency report from being save
 
   const submissionAudit = readFileSync(join(root, "lib", "fire-reports", "submission-audit.ts"), "utf8");
 
-  assert.match(createRoute, /submissionAuditFromHeaders\(request\.headers\)/);
+  assert.match(createRoute, /submissionAuditFromHeaders\(request\.headers,/);
   assert.match(createRoute, /createResidentFireReport\(session\.userId, input, submissionAudit\)/);
   assert.match(createRoute, /attachFireReportPhoto\(report\.id, uploadedPhoto\)/);
   assert.match(createRoute, /photoWarning/);

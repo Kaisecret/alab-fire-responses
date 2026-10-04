@@ -218,6 +218,10 @@ export async function acknowledgeNearbyIncident(input: {
   acknowledgedAt: Date;
 }): Promise<NearbyObserver> {
   return withTransaction(async (client) => {
+    // Assistance and resolution lock the incident before its observers. Taking
+    // that lock first also prevents the acknowledgment audit's foreign keys
+    // from waiting on an assignment while holding the same observer it needs.
+    await client.query("select id from fire_reports where id = $1 for update", [input.fireReportId]);
     const row = await findObserverForAcknowledgment(client, input.fireReportId, input.observerMunicipalityId) as {
       id: string;
       fire_report_id: string;

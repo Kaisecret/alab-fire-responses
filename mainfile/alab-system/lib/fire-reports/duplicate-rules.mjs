@@ -2,7 +2,7 @@
 // database code so the thresholds and stage mapping are unit-tested.
 
 /** Reports this close together are treated as the same fire. */
-export const DUPLICATE_RADIUS_METERS = 50;
+export const DUPLICATE_RADIUS_METERS = 100;
 
 /** A report only joins an incident that is still open and this recent. */
 export const DUPLICATE_WINDOW_HOURS = 12;
@@ -24,8 +24,12 @@ export function distanceMeters(fromLatitude, fromLongitude, toLatitude, toLongit
  * bounding box before the exact distance check.
  */
 export function searchBox(latitude, radiusMeters = DUPLICATE_RADIUS_METERS) {
-  const latitudeDelta = radiusMeters / 111_320;
-  const longitudeDelta = radiusMeters / (111_320 * Math.max(Math.cos((latitude * Math.PI) / 180), 0.01));
+  const angularRadius = radiusMeters / 6371000;
+  const latitudeRadians = (latitude * Math.PI) / 180;
+  const latitudeDelta = (angularRadius * 180) / Math.PI;
+  const longitudeDelta = Math.abs(latitudeRadians) + angularRadius >= Math.PI / 2
+    ? 180
+    : (Math.asin(Math.min(1, Math.sin(angularRadius) / Math.cos(latitudeRadians))) * 180) / Math.PI;
   return { latitudeDelta, longitudeDelta };
 }
 

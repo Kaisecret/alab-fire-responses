@@ -8,21 +8,24 @@ import {
   incidentStage,
   searchBox,
 } from "./duplicate-rules.mjs";
-import type { FireReportStatus } from "./types";
+import type { FireReportStatus, FireType } from "./types";
 
 export type OpenIncident = { id: string; referenceNumber: string; status: FireReportStatus; residentProfileId: string | null };
 
 /**
- * The earliest open, unlinked report within 50 m submitted in the last
+ * The earliest open, unlinked report with the same fire types within 100 m, submitted in the last
  * 12 hours. Callers hold a lock so two simultaneous reports cannot both miss
  * each other.
  */
-export async function findOpenIncidentNear(client: PoolClient, latitude: number, longitude: number): Promise<OpenIncident | null> {
+export async function findOpenIncidentNear(client: Pick<PoolClient, "query">, latitude: number, longitude: number, fireTypes: FireType[]): Promise<OpenIncident | null> {
+  if (fireTypes.length === 0) return null;
   const { latitudeDelta, longitudeDelta } = searchBox(latitude);
   const result = await client.query<OpenIncident>(
     `select fr.id, fr.reference_number as "referenceNumber", fr.status, fr.resident_profile_id as "residentProfileId"
        from fire_reports fr
       where fr.duplicate_of_report_id is null
+        and coalesce(fr.fire_types, array[fr.fire_type]) @> $8::text[]
+        and coalesce(fr.fire_types, array[fr.fire_type]) <@ $8::text[]
         and fr.status <> all($5::text[])
         and fr.submitted_at > now() - make_interval(hours => $6::int)
         and fr.latitude between $1::float8 - $3::float8 and $1::float8 + $3::float8
@@ -34,7 +37,7 @@ export async function findOpenIncidentNear(client: PoolClient, latitude: number,
             )) <= $7::float8
       order by fr.submitted_at asc
       limit 1`,
-    [latitude, longitude, latitudeDelta, longitudeDelta, CLOSED_INCIDENT_STATUSES, DUPLICATE_WINDOW_HOURS, DUPLICATE_RADIUS_METERS],
+    [latitude, longitude, latitudeDelta, longitudeDelta, CLOSED_INCIDENT_STATUSES, DUPLICATE_WINDOW_HOURS, DUPLICATE_RADIUS_METERS, fireTypes],
   );
   return result.rows[0] ?? null;
 }
@@ -42,7 +45,7 @@ export async function findOpenIncidentNear(client: PoolClient, latitude: number,
 export type OwnOpenReport = { id: string; referenceNumber: string };
 
 /**
- * The resident's own latest report within 50 m whose fire is still open, so
+ * The resident's own latest report with the same fire types within 100 m whose fire is still open, so
  * reporting the same place again opens that report instead of a new one. A
  * report linked to another resident's follows that incident's status.
  */
@@ -51,7 +54,9 @@ export async function findOwnOpenReportNear(
   userId: string,
   latitude: number,
   longitude: number,
+  fireTypes: FireType[],
 ): Promise<OwnOpenReport | null> {
+  if (fireTypes.length === 0) return null;
   const { latitudeDelta, longitudeDelta } = searchBox(latitude);
   const result = await client.query<OwnOpenReport>(
     `select fr.id, fr.reference_number as "referenceNumber"
@@ -59,6 +64,8 @@ export async function findOwnOpenReportNear(
        join resident_profiles rp on rp.id = fr.resident_profile_id
        left join fire_reports root on root.id = fr.duplicate_of_report_id
       where rp.user_id = $8
+        and coalesce(fr.fire_types, array[fr.fire_type]) @> $9::text[]
+        and coalesce(fr.fire_types, array[fr.fire_type]) <@ $9::text[]
         and coalesce(root.status, fr.status) <> all($5::text[])
         and fr.submitted_at > now() - make_interval(hours => $6::int)
         and fr.latitude between $1::float8 - $3::float8 and $1::float8 + $3::float8
@@ -70,7 +77,7 @@ export async function findOwnOpenReportNear(
             )) <= $7::float8
       order by fr.submitted_at desc
       limit 1`,
-    [latitude, longitude, latitudeDelta, longitudeDelta, CLOSED_INCIDENT_STATUSES, DUPLICATE_WINDOW_HOURS, DUPLICATE_RADIUS_METERS, userId],
+    [latitude, longitude, latitudeDelta, longitudeDelta, CLOSED_INCIDENT_STATUSES, DUPLICATE_WINDOW_HOURS, DUPLICATE_RADIUS_METERS, userId, fireTypes],
   );
   return result.rows[0] ?? null;
 }

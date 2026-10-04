@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { EmergencyAlertCard } from "./emergency-alert-card";
 import { PhotoLightbox } from "./photo-lightbox";
+import { ProvincialBarangayAlert } from "./provincial-barangay-alert";
 
 interface BackupRequest {
   id: string;
@@ -396,7 +397,7 @@ export function ProvincialBackupAlarm() {
     }
   }, [active, load]);
 
-  if (!active) return null;
+  if (!active) return <ProvincialBarangayAlert />;
 
   return (
     <>

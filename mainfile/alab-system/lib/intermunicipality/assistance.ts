@@ -64,6 +64,7 @@ export type TransitionAssistanceRequestInput = {
 
 export async function createAssistanceRequests(
   input: CreateAssistanceRequestsInput,
+  transactionClient?: PoolClient,
 ): Promise<AssistanceRequestSummary[]> {
   if (!isValidUuid(input.fireReportId) || !isValidUuid(input.requesterMunicipalityId) || !isValidUuid(input.actorUserId)) {
     throw new Error("INVALID_ASSISTANCE_INPUT");
@@ -82,7 +83,7 @@ export async function createAssistanceRequests(
   );
   const note = cleanNote(input.requestNote);
 
-  return withTransaction(async (client) => {
+  const create = async (client: PoolClient) => {
     const reportCheck = await client.query<{
       fire_report_id: string;
       dispatch_id: string;
@@ -331,7 +332,8 @@ export async function createAssistanceRequests(
     }
 
     return summaries;
-  });
+  };
+  return transactionClient ? create(transactionClient) : withTransaction(create);
 }
 
 export async function transitionAssistanceRequest(

@@ -22,8 +22,6 @@ import {
 const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const REVERSE_GEOCODE_URL = '/api/geocode/reverse';
 const DEFAULT_MAP_CENTER: [number, number] = [11.2753568, 121.7387252];
-/** One fire report per account, then this cooldown. */
-const SOS_COOLDOWN_MS = 5 * 60 * 1000;
 const LOCATION_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
   timeout: 12000,
@@ -166,6 +164,9 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const rateLimitDialog = root.querySelector<HTMLElement>('[data-rate-limit-dialog]');
   const rateLimitCloseBtn = root.querySelector<HTMLButtonElement>('[data-rate-limit-close]');
   const rateLimitWait = root.querySelector<HTMLElement>('[data-rate-limit-wait]');
+  const samePhoneDialog = root.querySelector<HTMLDialogElement>('[data-same-phone-dialog]');
+  const samePhoneMessage = root.querySelector<HTMLElement>('[data-same-phone-message]');
+  const samePhoneViewButton = root.querySelector<HTMLButtonElement>('[data-same-phone-view]');
   const fireTypeSection = root.querySelector<HTMLElement>('[data-step-fire-type]');
   // The hint is rebuilt when the language changes, so look it up each time.
   const fireTypeHint = () => root.querySelector<HTMLElement>('[data-fire-type-hint]');
@@ -177,6 +178,20 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   let selectedRoute: string | null = null;
   let submitting = false;
   let attachedPhotos: File[] = [];
+  let samePhoneReportId: string | null = null;
+
+  const showSamePhoneDialog = (reportId: string, message?: string) => {
+    samePhoneReportId = reportId;
+    if (samePhoneMessage && message) samePhoneMessage.textContent = message;
+    if (samePhoneDialog && !samePhoneDialog.open) samePhoneDialog.showModal();
+    samePhoneViewButton?.focus();
+  };
+  const viewSamePhoneIncident = () => {
+    if (!samePhoneReportId) return;
+    samePhoneDialog?.close();
+    window.location.assign(`/resident/reports/${encodeURIComponent(samePhoneReportId)}`);
+  };
+  samePhoneViewButton?.addEventListener('click', viewSamePhoneIncident);
 
   const renderSituation = () => {
     const options = situationForFireTypes(fireTypes);
@@ -267,18 +282,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   };
   confirmAlertDialog?.addEventListener('click', handleConfirmBackdropClick);
 
-  // Seconds left in the cooldown, counted from this browser's last report.
-  const clientCooldownSeconds = (): number => {
-    try {
-      const raw = localStorage.getItem('alab_successful_sos_reports');
-      const timestamps: number[] = raw ? JSON.parse(raw) : [];
-      const latest = Math.max(0, ...timestamps.filter((t) => typeof t === 'number'));
-      return Math.max(0, Math.ceil((latest + SOS_COOLDOWN_MS - Date.now()) / 1000));
-    } catch {
-      return 0;
-    }
-  };
-
+  let accountRetryAfterSeconds = 0;
   let cooldownEndsAt = 0;
   let cooldownTimer: number | undefined;
   const renderCooldown = () => {
@@ -295,7 +299,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
 
   const showRateLimitDialog = (retryAfterSeconds?: number) => {
     if (!rateLimitDialog) return;
-    const wait = retryAfterSeconds && retryAfterSeconds > 0 ? retryAfterSeconds : clientCooldownSeconds();
+    const wait = retryAfterSeconds && retryAfterSeconds > 0 ? retryAfterSeconds : accountRetryAfterSeconds;
     cooldownEndsAt = Date.now() + wait * 1000;
     window.clearInterval(cooldownTimer);
     renderCooldown();
@@ -311,10 +315,15 @@ function initializeReportSubmission(root: HTMLElement): () => void {
 
   // Reporting the same place again opens the resident's own open report.
   const openOwnReportHere = async (): Promise<boolean> => {
-    const { locationLatitude, locationLongitude } = locationCard.dataset;
-    if (!locationLatitude || !locationLongitude) return false;
+    const { locationLatitude, locationLongitude, locationMunicipality, locationBarangay } = locationCard.dataset;
+    if (!locationLatitude || !locationLongitude || fireTypes.length === 0) return false;
     try {
-      const response = await fetch(`/api/resident/fire-reports/open-nearby?latitude=${encodeURIComponent(locationLatitude)}&longitude=${encodeURIComponent(locationLongitude)}`, { cache: 'no-store' });
+      const searchParams = new URLSearchParams({
+        latitude: locationLatitude, longitude: locationLongitude,
+        municipality: locationMunicipality ?? '', barangay: locationBarangay ?? '',
+      });
+      fireTypes.forEach((kind) => searchParams.append('fireTypes', kind));
+      const response = await fetch(`/api/resident/fire-reports/open-nearby?${searchParams}`, { cache: 'no-store' });
       if (!response.ok) return false;
       const data = await response.json() as { report?: { id: string } | null };
       if (!data.report?.id) return false;
@@ -333,31 +342,27 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   };
   rateLimitDialog?.addEventListener('click', handleRateLimitBackdropClick);
 
-  const checkClientSosRateLimit = (): boolean => {
+  // Always check the signed-in account on the server. A browser-wide cache
+  // would carry the previous account's cooldown across sign-ins.
+  const checkClientSosRateLimit = async (): Promise<boolean> => {
     try {
-      const now = Date.now();
-      const raw = localStorage.getItem('alab_successful_sos_reports');
-      const timestamps: number[] = raw ? JSON.parse(raw) : [];
-      const windowStart = now - SOS_COOLDOWN_MS;
-      const recent = timestamps.filter((t) => typeof t === 'number' && t > windowStart);
-      // One report per 5 minutes.
-      return recent.length < 1;
+      const searchParams = new URLSearchParams({ cooldown: '1' });
+      const { locationLatitude, locationLongitude, locationMunicipality, locationBarangay } = locationCard.dataset;
+      if (locationLatitude && locationLongitude && fireTypes.length > 0) {
+        searchParams.set('latitude', locationLatitude);
+        searchParams.set('longitude', locationLongitude);
+        searchParams.set('municipality', locationMunicipality ?? '');
+        searchParams.set('barangay', locationBarangay ?? '');
+        fireTypes.forEach((kind) => searchParams.append('fireTypes', kind));
+      }
+      const response = await fetch(`/api/resident/fire-reports?${searchParams}`, { cache: 'no-store' });
+      if (!response.ok) return true;
+      const data = await response.json() as { allowed: boolean; retryAfterSeconds: number; sameDeviceDuplicateAvailable?: boolean };
+      accountRetryAfterSeconds = data.retryAfterSeconds;
+      return data.allowed || data.sameDeviceDuplicateAvailable === true;
     } catch {
+      // The submission endpoint still enforces the account's cooldown.
       return true;
-    }
-  };
-
-  const recordClientSuccessfulSos = () => {
-    try {
-      const now = Date.now();
-      const raw = localStorage.getItem('alab_successful_sos_reports');
-      const timestamps: number[] = raw ? JSON.parse(raw) : [];
-      const windowStart = now - SOS_COOLDOWN_MS;
-      const recent = timestamps.filter((t) => typeof t === 'number' && t > windowStart);
-      recent.push(now);
-      localStorage.setItem('alab_successful_sos_reports', JSON.stringify(recent));
-    } catch {
-      // Non-blocking
     }
   };
 
@@ -593,7 +598,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     }
     try {
       const response = await fetch("/api/resident/fire-reports", { method: "POST", body: form });
-      const data = await response.json() as { error?: string; report?: { id: string }; existing?: boolean; retryAfter?: number };
+      const data = await response.json() as { error?: string; report?: { id: string }; existing?: boolean; sameDeviceDuplicate?: boolean; message?: string; retryAfter?: number };
       if (!response.ok || !data.report?.id) {
         if (response.status === 429) {
           showRateLimitDialog(data.retryAfter);
@@ -602,13 +607,16 @@ function initializeReportSubmission(root: HTMLElement): () => void {
         }
         throw new Error(data.error || 'Unable to submit the fire report.');
       }
+      if (data.sameDeviceDuplicate) {
+        resetSubmission();
+        showSamePhoneDialog(data.report.id, data.message);
+        return;
+      }
       if (data.existing) {
         // Same place as the resident's open report: show that report.
         window.location.assign(`/resident/reports/${data.report.id}?already=1`);
         return;
       }
-      // Only count towards rate limit if report was successfully sent!
-      recordClientSuccessfulSos();
       window.location.assign(`/resident/reports/${data.report.id}`);
     } catch (error) {
       // A dropped connection: offer the BFP hotlines straight away.
@@ -642,7 +650,10 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     }
 
     // Pre-flight UI check: 1 successful report per 5 minutes
-    if (!checkClientSosRateLimit()) {
+    submitting = true;
+    const allowed = await checkClientSosRateLimit();
+    submitting = false;
+    if (!allowed) {
       showRateLimitDialog();
       return;
     }
@@ -725,6 +736,8 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     confirmAlertDialog?.removeEventListener('click', handleConfirmBackdropClick);
     confirmAlertSendBtn?.removeEventListener('click', handleConfirmSend);
     rateLimitCloseBtn?.removeEventListener('click', hideRateLimitDialog);
+    samePhoneViewButton?.removeEventListener('click', viewSamePhoneIncident);
+    if (samePhoneDialog?.open) samePhoneDialog.close();
     window.clearInterval(cooldownTimer);
     rateLimitDialog?.removeEventListener('click', handleRateLimitBackdropClick);
     window.removeEventListener('alab:resident-language-changed', onLangChange);

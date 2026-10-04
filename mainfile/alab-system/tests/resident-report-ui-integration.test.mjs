@@ -29,7 +29,7 @@ test("resident reports keep the established report cards while loading live API 
   const reportsPage = read("app/resident/reports/page.tsx");
 
   assert.match(reportsPage, /import \{ reportsStyles \} from "\.\.\/\.\.\/_content\/resident-reports-content"/);
-  assert.match(reportsPage, /fetch\("\/api\/resident\/fire-reports"\)/);
+  assert.match(reportsPage, /fetch\("\/api\/resident\/fire-reports", \{ cache: "no-store" \}\)/);
   assert.match(reportsPage, /className="mobile-reports-list"/);
   assert.match(reportsPage, /mobile-report-card/);
   assert.match(reportsPage, /className="reports-table-card"/);

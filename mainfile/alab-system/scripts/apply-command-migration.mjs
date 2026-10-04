@@ -78,6 +78,16 @@ const releaseMigrations = [
          and column_name = 'municipal_acknowledged_by_user_id'
     ) as applied`,
   },
+  {
+    version: "20261004130448",
+    name: "add_resident_fire_report_follows",
+    appliedCheck: `select to_regclass('public.resident_fire_report_follows') is not null as applied`,
+  },
+  {
+    version: "20261004133956",
+    name: "add_provincial_barangay_alerts",
+    appliedCheck: `select to_regclass('public.provincial_barangay_alerts') is not null as applied`,
+  },
 ];
 
 const client = new pg.Client({

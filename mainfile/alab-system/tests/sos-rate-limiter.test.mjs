@@ -117,7 +117,23 @@ test("Report fire UI contains short English rate limit popup with zero peacetime
 
   // Page logic: client pre-flight check and success-only recording
   assert.match(pageSource, /checkClientSosRateLimit/);
-  assert.match(pageSource, /alab_successful_sos_reports/);
-  assert.match(pageSource, /recordClientSuccessfulSos/);
+  assert.match(pageSource, /new URLSearchParams\(\{ cooldown: '1' \}\)/);
+  assert.doesNotMatch(pageSource, /alab_successful_sos_reports/);
   assert.match(pageSource, /showRateLimitDialog/);
+});
+
+test("successful submissions from other accounts never block a shared IP in memory", async () => {
+  const limiter = await import('../lib/fire-reports/rate-limiter.ts');
+  limiter.clearMemorySosReports();
+  try {
+    limiter.recordSuccessfulSosReportMemory('account-a');
+    limiter.recordSuccessfulSosReportMemory('account-b');
+    limiter.recordSuccessfulSosReportMemory('ip:203.0.113.9');
+    limiter.recordSuccessfulSosReportMemory('ip:203.0.113.9');
+    assert.equal((await limiter.checkResidentSosRateLimit('account-c', '203.0.113.9', null)).allowed, true);
+    assert.equal((await limiter.checkResidentSosRateLimit('account-a', '198.51.100.9', null)).allowed, false,
+      'the reporting account still waits even if its network changes');
+  } finally {
+    limiter.clearMemorySosReports();
+  }
 });

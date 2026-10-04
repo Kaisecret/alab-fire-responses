@@ -6,6 +6,7 @@ import { SkeletonPage } from '../../_components/skeleton-loader';
 import { ProvincialAlarmPanel } from '../../_components/provincial-alarm-panel';
 import { StatCards } from "../../_components/municipal-stat-cards";
 import { FireCommandHeader } from '../../_components/fire-command-header';
+import { ProvincialBarangayCoordination } from '../../_components/provincial-barangay-coordination';
 
 const pageStyles = `
   .pbfp-aid-page {
@@ -576,6 +577,8 @@ function AssistanceRequestsContent() {
       <style>{pageStyles}</style>
       <div className="pbfp-aid-page">
         <FireCommandHeader slotId="provincial-fire-command-header" title="Inter-Municipality Mutual Aid Coordination" icon="fa-handshake-angle" live checking={checking} lastCheckedAt={lastCheckedAt} error={error} />
+
+        <ProvincialBarangayCoordination />
 
         {/* 4 Tactical KPI Cards (Dashboard Style) */}
         <StatCards

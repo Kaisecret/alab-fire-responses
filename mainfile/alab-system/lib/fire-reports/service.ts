@@ -23,6 +23,8 @@ import {
 } from "./building-density";
 import { assessMultiTypeDanger } from "./danger-assessment";
 import { findOpenIncidentNear, findOwnOpenReportNear } from "./duplicates";
+import { checkResidentSosRateLimit, SosRateLimitError } from "./rate-limiter";
+import { followSameDeviceIncident, recordResidentIncidentFollow } from "./device-sharing";
 
 export type PhotoMetadata = { storageKey: string; originalFileName: string; mimeType: string; fileSizeBytes: number };
 
@@ -42,6 +44,16 @@ export async function createResidentFireReport(userId: string, input: FireReport
   return withTransaction(async (client) => {
     const resident = await residentProfile(client, userId);
     if (!resident) throw new Error("RESIDENT_PROFILE_NOT_FOUND");
+    await client.query("select pg_advisory_xact_lock(hashtext($1))", [`fire-report-account:${userId}`]);
+    if (audit.deviceId) {
+      await client.query("select pg_advisory_xact_lock(hashtext($1))", [`fire-report-device:${audit.deviceId}`]);
+    }
+    const ownReport = await findOwnOpenReportNear(client, userId, input.latitude, input.longitude, input.fireTypes);
+    if (ownReport) return { id: ownReport.id, referenceNumber: ownReport.referenceNumber, existing: true as const };
+    const sameDeviceIncident = await followSameDeviceIncident(client, userId, audit.deviceId, input.latitude, input.longitude, input.fireTypes);
+    if (sameDeviceIncident) return sameDeviceIncident;
+    const rateLimit = await checkResidentSosRateLimit(userId, null, client);
+    if (!rateLimit.allowed) throw new SosRateLimitError(rateLimit.retryAfterSeconds);
     const detectedMunicipality = normalizeDetectedMunicipality(input.municipality);
     const detectedBarangay = normalizeDetectedBarangay(input.barangay);
     const localities = await client.query<{ municipality_id: string; barangay_id: string | null; barangay_name: string | null }>(
@@ -95,15 +107,11 @@ export async function createResidentFireReport(userId: string, input: FireReport
     const reference = referenceNumber();
     const now = new Date();
 
-    // A second report within 50 m of an open fire joins that incident instead
+    // A second report of the same fire types within 100 m joins that incident instead
     // of raising another alarm. The lock makes simultaneous reports in one
     // municipality take turns, so they cannot both become the first report.
     await client.query("select pg_advisory_xact_lock(hashtext($1))", [`fire-report-area:${municipalityId}`]);
-    // The same resident reporting the same place again (a double tap, or a
-    // second try while the first is still open) gets their first report back.
-    const ownReport = await findOwnOpenReportNear(client, userId, input.latitude, input.longitude);
-    if (ownReport) return { id: ownReport.id, referenceNumber: ownReport.referenceNumber, existing: true as const };
-    const linkedIncident = await findOpenIncidentNear(client, input.latitude, input.longitude);
+    const linkedIncident = await findOpenIncidentNear(client, input.latitude, input.longitude, input.fireTypes);
     const initialStatus = linkedIncident ? "DUPLICATE" : "PENDING_VERIFICATION";
 
     await client.query(
@@ -130,6 +138,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
         now, initialStatus, linkedIncident?.id ?? null, input.fireTypes,
       ],
     );
+    if (audit.deviceId) await recordResidentIncidentFollow(client, userId, reportId, audit.deviceId);
     for (const evidence of densityAssessment.evidence) {
       await client.query(
         `insert into gis.fire_report_density_evidence (
@@ -327,27 +336,31 @@ export async function updateResidentReportTacticalDetails(
 export async function findResidentReport(userId: string, reportId: string) {
   const result = await getDatabase().query<{
     id: string; reference_number: string; status: FireReportStatus; fire_type: string; description: string; nearest_landmark: string | null;
-    latitude: string; longitude: string; submitted_at: string; municipality: string; barangay: string; resident_profile_id: string;
+    latitude: string; longitude: string; submitted_at: string; municipality: string; barangay: string; resident_profile_id: string | null;
     structure_material: string | null; reported_house_density: string | null; house_density: string | null; route_accessibility: string | null;
     weather_temperature: string | null; weather_humidity: string | null; weather_wind_speed: string | null;
     weather_wind_direction: string | null; weather_wind_condition: string | null;
     calculated_severity: string | null; severity_score: number | null; severity_factors: string[] | null;
-    duplicate_of_report_id: string | null; fire_types: string[] | null;
+    duplicate_of_report_id: string | null; fire_types: string[] | null; can_edit: boolean;
   }>(`select fr.id, fr.reference_number, fr.status, fr.duplicate_of_report_id, fr.fire_type, coalesce(fr.fire_types, array[fr.fire_type]) as fire_types, fr.description, fr.nearest_landmark, fr.latitude, fr.longitude, fr.submitted_at,
              m.name as municipality, b.name as barangay, fr.resident_profile_id,
              fr.structure_material, fr.reported_house_density, fr.house_density, fr.route_accessibility,
              fr.weather_temperature, fr.weather_humidity, fr.weather_wind_speed, fr.weather_wind_direction, fr.weather_wind_condition,
-             fr.calculated_severity, fr.severity_score, fr.severity_factors
-        from fire_reports fr join resident_profiles rp on rp.id = fr.resident_profile_id
+             fr.calculated_severity, fr.severity_score, fr.severity_factors, coalesce(rp.user_id = $2, false) as can_edit
+        from fire_reports fr left join resident_profiles rp on rp.id = fr.resident_profile_id
         left join municipalities m on m.id = fr.municipality_id left join barangays b on b.id = fr.barangay_id
-       where fr.id = $1 and rp.user_id = $2 limit 1`, [reportId, userId]);
+       where fr.id = $1 and (rp.user_id = $2 or exists (
+         select 1 from resident_fire_report_follows follow
+         join resident_profiles viewer on viewer.id = follow.resident_profile_id
+         where follow.fire_report_id = fr.id and viewer.user_id = $2
+       )) limit 1`, [reportId, userId]);
   const report = result.rows[0];
   if (!report) return null;
   const [photos, history] = await Promise.all([
     getDatabase().query<{ storage_key: string }>("select storage_key from fire_report_photos where fire_report_id = $1 order by uploaded_at asc", [reportId]),
     getDatabase().query<{ next_status: FireReportStatus; resident_message: string | null; created_at: string }>("select next_status, resident_message, created_at from fire_report_status_history where fire_report_id = $1 order by created_at asc", [reportId]),
   ]);
-  return { ...report, photos: photos.rows, history: history.rows };
+  return { ...report, resident_profile_id: report.can_edit ? report.resident_profile_id : null, photos: photos.rows, history: history.rows };
 }
 
 export async function listResidentReports(userId: string) {
@@ -357,8 +370,12 @@ export async function listResidentReports(userId: string) {
   }>(
     `select fr.id, fr.reference_number, fr.status, fr.fire_type, fr.submitted_at, m.name as municipality, b.name as barangay,
             fr.calculated_severity, fr.severity_score
-       from fire_reports fr join resident_profiles rp on rp.id = fr.resident_profile_id
+       from fire_reports fr left join resident_profiles rp on rp.id = fr.resident_profile_id
        left join municipalities m on m.id = fr.municipality_id left join barangays b on b.id = fr.barangay_id
-      where rp.user_id = $1 order by fr.submitted_at desc`, [userId]);
+      where rp.user_id = $1 or exists (
+        select 1 from resident_fire_report_follows follow
+        join resident_profiles viewer on viewer.id = follow.resident_profile_id
+        where follow.fire_report_id = fr.id and viewer.user_id = $1
+      ) order by fr.submitted_at desc`, [userId]);
   return result.rows;
 }

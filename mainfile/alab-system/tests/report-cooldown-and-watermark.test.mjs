@@ -14,6 +14,8 @@ async function reportsDatabase() {
       reference_number text not null,
       resident_profile_id uuid references public.resident_profiles(id),
       status text not null,
+      fire_type text not null default 'HOUSE_BUILDING',
+      fire_types text[],
       latitude numeric(9, 6) not null,
       longitude numeric(9, 6) not null,
       reporter_ip_address inet,
@@ -41,30 +43,31 @@ test("a resident reporting the same place again gets their own open report back"
     );
 
     await insert("NEIGHBOUR", theirs, "PENDING_VERIFICATION", 10.7432, 121.9394);
-    await insert("MINE-FAR", mine, "PENDING_VERIFICATION", 10.7440, 121.9394);    // ~100 m away
+    await insert("MINE-FAR", mine, "PENDING_VERIFICATION", 10.7441, 121.9394);    // ~111 m away
     await insert("MINE-DONE", mine, "RESOLVED", 10.7432, 121.9394);               // over
     await insert("MINE-OLD", mine, "RESPONDING", 10.7432, 121.9394, 13);          // 13 h old
-    assert.equal(await findOwnOpenReportNear(client, me, 10.7431, 121.9394), null, "another resident's report is not mine");
+    assert.equal(await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['HOUSE_BUILDING']), null, "another resident's report is not mine");
 
     await insert("MINE-OPEN", mine, "VERIFIED", 10.7433, 121.9394);               // ~22 m, open
-    assert.equal((await findOwnOpenReportNear(client, me, 10.7431, 121.9394))?.referenceNumber, "MINE-OPEN");
+    assert.equal((await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['HOUSE_BUILDING']))?.referenceNumber, "MINE-OPEN");
+    assert.equal(await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['GRASS']), null,
+      'another fire type must not open the resident\'s house report');
 
     // A report linked to a neighbour's fire follows that fire's status.
     await db.query("update fire_reports set status = 'RESOLVED' where reference_number = 'MINE-OPEN'");
     const root = (await insert("ROOT", theirs, "RESPONDING", 10.7500, 121.9500)).rows[0].id;
     await insert("MINE-LINKED", mine, "DUPLICATE", 10.7431, 121.9395, 0.05, root);
-    assert.equal((await findOwnOpenReportNear(client, me, 10.7431, 121.9394))?.referenceNumber, "MINE-LINKED");
+    assert.equal((await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['HOUSE_BUILDING']))?.referenceNumber, "MINE-LINKED");
     await db.query("update fire_reports set status = 'RESOLVED' where id = $1", [root]);
-    assert.equal(await findOwnOpenReportNear(client, me, 10.7431, 121.9394), null, "the linked fire is over");
+    assert.equal(await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['HOUSE_BUILDING']), null, "the linked fire is over");
   } finally {
     await db.close();
   }
 });
 
-test("one report per account every 5 minutes, two per network address", async () => {
+test("one report per account every 5 minutes without blocking other accounts on the same network", async () => {
   const limiter = await import("../lib/fire-reports/rate-limiter.ts");
   assert.equal(limiter.SOS_RATE_LIMIT_MAX_REPORTS, 1);
-  assert.equal(limiter.SOS_RATE_LIMIT_MAX_REPORTS_PER_IP, 2);
   const { db, client } = await reportsDatabase();
   try {
     const me = "33333333-3333-4333-8333-333333333333";
@@ -89,7 +92,7 @@ test("one report per account every 5 minutes, two per network address", async ()
     await insert(theirs, "203.0.113.7", 1);
     assert.equal((await limiter.checkResidentSosRateLimit(other, "203.0.113.7", client)).allowed, false);
     const third = "55555555-5555-4555-8555-555555555555";
-    assert.equal((await limiter.checkResidentSosRateLimit(third, "203.0.113.7", client)).allowed, false, "the address used its 2 reports");
+    assert.equal((await limiter.checkResidentSosRateLimit(third, "203.0.113.7", client)).allowed, true, "other accounts on the address can still report");
     assert.equal((await limiter.checkResidentSosRateLimit(third, "198.51.100.4", client)).allowed, true);
 
     // Reports older than 5 minutes no longer count.
@@ -102,14 +105,19 @@ test("one report per account every 5 minutes, two per network address", async ()
 
 test("the report form opens the resident's own report instead of sending the same fire twice", () => {
   const route = read("../app/api/resident/fire-reports/route.ts");
-  const ownAt = route.indexOf("findOwnOpenReportNear(");
-  assert.ok(ownAt > 0 && ownAt < route.indexOf("checkResidentSosRateLimit("), "checked before the cooldown");
+  const post = route.slice(route.indexOf('export async function POST'));
+  const ownAt = post.indexOf("findOwnOpenReportNear(");
+  assert.ok(ownAt > 0 && ownAt < post.indexOf("checkResidentSosRateLimit("), "checked before the cooldown");
   assert.match(route, /existing: true/);
   assert.match(read("../lib/fire-reports/service.ts"), /findOwnOpenReportNear\(client, userId/);
   const page = read("../app/resident/report-fire/page.tsx");
   assert.match(page, /open-nearby/);
   assert.match(page, /already=1/);
-  assert.match(page, /recent\.length < 1/);
+  assert.doesNotMatch(page, /localStorage\.(?:getItem|setItem)\('alab_successful_sos_reports'/,
+    'switching accounts must not inherit a browser-wide cooldown');
+  assert.match(page, /new URLSearchParams\(\{ cooldown: '1' \}\)/);
+  assert.match(page, /fireTypes\.forEach\(.*searchParams\.append/,
+    'the own-report lookup includes the selected fire types');
   assert.match(read("../app/_content/resident-report-fire-content.ts"), /<strong>1 fire report every 5 minutes<\/strong>/);
 });
 
