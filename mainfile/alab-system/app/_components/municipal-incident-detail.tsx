@@ -13,6 +13,7 @@ import { IncidentMutualAidBoard, type IncidentAlarmStatus } from "./incident-mut
 import type { NearbyObserver, AssistanceRequestSummary } from "../../lib/intermunicipality/types";
 import { shouldShowMutualAidBoard, shouldShowStationAssignment } from "../../lib/municipal-bfp/alarm-alert.mjs";
 import { respondFromButton } from "./municipal-dispatch-choice";
+import { buildResponseGuidance } from "../../lib/fire-reports/response-guidance";
 
 type Incident = {
   id: string;
@@ -404,7 +405,7 @@ const detailStyles = `
   .mbfp-tactical-metrics-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.15rem 1rem;
+    gap: 12px;
     margin-bottom: 1.5rem;
   }
   .mbfp-metric-item {
@@ -514,6 +515,78 @@ const detailStyles = `
     .mbfp-tactical-metrics-grid { grid-template-columns: 1fr; }
   }
 
+  /* Recommended BFP Actions: numbered steps, each with the condition behind it. */
+  .mbfp-guidance-badge {
+    padding: 0.28rem 0.65rem;
+    border: 1px solid #BFDBFE;
+    border-radius: 6px;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    font-size: 0.72rem;
+    font-weight: 850;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .mbfp-guidance-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .mbfp-guidance-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.85rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    background: #F8FAFC;
+  }
+  .mbfp-guidance-step {
+    display: grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+    border-radius: 999px;
+    background: #1D4ED8;
+    color: #FFFFFF;
+    font-size: 0.8rem;
+    font-weight: 850;
+  }
+  .mbfp-guidance-body strong {
+    display: block;
+    color: #0F172A;
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1.4;
+  }
+  .mbfp-guidance-body p {
+    margin: 0.3rem 0 0.5rem;
+    color: #334155;
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+  .mbfp-guidance-reason {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .mbfp-guidance-note {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 1rem 0 0;
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
   /* 2-Column Tactical Layout Grid (Balanced Mission Control) */
   .mbfp-tactical-grid {
     display: grid;
@@ -525,7 +598,7 @@ const detailStyles = `
   @media (max-width: 1080px) {
     .mbfp-tactical-grid {
       grid-template-columns: 1fr;
-      gap: 1.25rem;
+      gap: 16px;
     }
   }
 
@@ -533,7 +606,7 @@ const detailStyles = `
   .mbfp-map-card-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 16px;
     min-width: 0;
   }
 
@@ -581,7 +654,7 @@ const detailStyles = `
   .mbfp-profile-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
+    gap: 12px;
   }
 
   /*
@@ -1792,7 +1865,7 @@ const detailStyles = `
     }
     .mbfp-profile-grid {
       grid-template-columns: 1fr;
-      gap: 7px;
+      gap: 12px;
     }
     .mbfp-respond-btn {
       width: 100%;
@@ -2114,6 +2187,19 @@ export function MunicipalIncidentDetail({
 
   const isPhoneReport = incident.reportSource === "PHONE_CALL";
   const reportedFireTypes = incident.fireTypes?.length ? incident.fireTypes : [incident.fireType];
+  const guidance = buildResponseGuidance({
+    level: incident.calculatedSeverity,
+    fireType: incident.fireType,
+    fireTypes: incident.fireTypes,
+    houseDensity: incident.houseDensity,
+    structureMaterial: incident.structureMaterial,
+    routeAccessibility: incident.routeAccessibility,
+    windSpeedKmh: incident.weatherWindSpeed,
+    windDirectionDeg: incident.weatherWindDirection,
+    temperatureC: incident.weatherTemperature,
+    humidity: incident.weatherHumidity,
+    factors: incident.severityFactors,
+  });
   /*
    * A response is under way from the moment stations are dispatched until the
    * incident closes. Testing for RESPONDING alone meant an incident whose crews
@@ -2255,7 +2341,7 @@ export function MunicipalIncidentDetail({
         {/* Tactical 2-Column Grid */}
         <div className="mbfp-tactical-grid">
           {/* Left Column: Data & Photos */}
-          <div>
+          <div className="mbfp-intel-column">
             {/* Tactical Severity & Conflagration Assessment Card */}
             <section className="mbfp-card mbfp-tactical-severity-card" aria-labelledby="mbfp-severity-heading">
               <div className="mbfp-card-header">
@@ -2352,6 +2438,35 @@ export function MunicipalIncidentDetail({
                   </ul>
                 </div>
               )}
+            </section>
+
+            {/* Decision support: advisory steps drawn from the same conditions
+                the Level of Danger was scored from. */}
+            <section className="mbfp-card" aria-labelledby="mbfp-guidance-heading">
+              <div className="mbfp-card-header">
+                <h2 id="mbfp-guidance-heading" className="mbfp-card-title">
+                  <i className="fa-solid fa-list-check" />
+                  <span>Recommended BFP Actions</span>
+                </h2>
+                <span className="mbfp-guidance-badge">Decision support</span>
+              </div>
+              <ol className="mbfp-guidance-list">
+                {guidance.map((action, index) => (
+                  <li key={action.key} className="mbfp-guidance-item">
+                    <span className="mbfp-guidance-step" aria-hidden="true">{index + 1}</span>
+                    <div className="mbfp-guidance-body">
+                      <strong>{action.title}</strong>
+                      <p>{action.detail}</p>
+                      <span className="mbfp-guidance-reason">
+                        <i className="fa-solid fa-circle-info" aria-hidden="true" /> {action.reason}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <p className="mbfp-guidance-note">
+                <i className="fa-solid fa-user-shield" aria-hidden="true" /> Advisory. The officer in charge decides.
+              </p>
             </section>
 
             {/* Caller Profile Card */}

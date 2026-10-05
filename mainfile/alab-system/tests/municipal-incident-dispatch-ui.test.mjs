@@ -21,13 +21,13 @@ test("an active response keeps its green status control available for inspection
   assert.doesNotMatch(component, /disabled=\{sending \|\| isResponding\}/);
 });
 
-test("resident emergency profile cards keep a seven-pixel gap at every breakpoint", () => {
+test("resident emergency profile cards keep a twelve-pixel gap at every breakpoint", () => {
   const component = readFileSync(join(process.cwd(), "app", "_components", "municipal-incident-detail.tsx"), "utf8");
-  const sevenPixelProfileGrids = component.match(
-    /\.mbfp-profile-grid\s*\{[^}]*gap:\s*7px;/g,
+  const twelvePixelProfileGrids = component.match(
+    /\.mbfp-profile-grid\s*\{[^}]*gap:\s*12px;/g,
   ) ?? [];
 
-  assert.equal(sevenPixelProfileGrids.length, 2);
+  assert.equal(twelvePixelProfileGrids.length, 2);
 });
 
 test("Acknowledge & Respond dispatches a lone station in one click and keeps the picker otherwise", () => {
