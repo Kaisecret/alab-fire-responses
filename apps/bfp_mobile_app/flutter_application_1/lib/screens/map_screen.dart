@@ -772,7 +772,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           municipalityName: widget.dispatchStore.session.identity.municipalityName,
           stationPosition: _stationPoint,
           responderPosition: _responder == null ? null : LatLng(_responder!.latitude, _responder!.longitude),
-          onLocate: () => unawaited(_locate()),
           layerControl: layerToggle,
         ),
       );

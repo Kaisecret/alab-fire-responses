@@ -151,7 +151,7 @@ class MobileDispatchAssignment {
   final double? stationLongitude;
   final String? landmark;
 
-  // Response timeline and Level of Danger. Only the resolved list sends these.
+  // Recorded response timeline and danger level for active and resolved incidents.
   final DateTime? assignedAt;
   final DateTime? enRouteAt;
   final DateTime? onSceneAt;

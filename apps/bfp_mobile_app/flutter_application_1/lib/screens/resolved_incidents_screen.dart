@@ -50,6 +50,8 @@ class _ResolvedIncidentsScreenState extends State<ResolvedIncidentsScreen> {
       context,
       assignment: assignment,
       onNavigateTab: widget.onNavigateTab,
+      sessionToken: widget.session.token,
+      api: widget.dispatchStore?.api ?? _api,
     );
   }
 

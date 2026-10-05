@@ -7,6 +7,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../services/mobile_bfp_api.dart';
+import '../services/phone_location_service.dart';
 import '../services/municipality_map_view.dart';
 import '../services/road_routing_service.dart';
 import '../services/water_source_store.dart';
@@ -21,8 +22,11 @@ class WaterSourcesMap extends StatefulWidget {
     required this.municipalityName,
     this.stationPosition,
     this.responderPosition,
-    this.onLocate,
     this.layerControl,
+    this.initialSource,
+    this.locationService,
+    this.routingService,
+    this.waterSourceStore,
   });
 
   final MobileBfpApi api;
@@ -30,7 +34,10 @@ class WaterSourcesMap extends StatefulWidget {
   final String? municipalityName;
   final LatLng? stationPosition;
   final LatLng? responderPosition;
-  final VoidCallback? onLocate;
+  final MobileWaterSource? initialSource;
+  final PhoneLocationService? locationService;
+  final RoadRoutingService? routingService;
+  final WaterSourceStore? waterSourceStore;
 
   /// Optional map control shown below the header, such as the layer toggle.
   final Widget? layerControl;
@@ -42,7 +49,8 @@ class WaterSourcesMap extends StatefulWidget {
 class _WaterSourcesMapState extends State<WaterSourcesMap>
     with WidgetsBindingObserver {
   final MapController _controller = MapController();
-  final RoadRoutingService _routingService = RoadRoutingService();
+  late final RoadRoutingService _routingService;
+  late final PhoneLocationService _locationService;
   late final WaterSourceStore _store;
   List<MobileWaterSource> _sources = const [];
   List<LatLng> _boundary = const [];
@@ -59,13 +67,12 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
   bool _syncing = false;
   String? _message;
 
-  LatLng? get _origin => widget.stationPosition ?? widget.responderPosition;
+  LatLng? get _origin => widget.responderPosition;
 
   @override
   void didUpdateWidget(covariant WaterSourcesMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final previousOrigin =
-        oldWidget.stationPosition ?? oldWidget.responderPosition;
+    final previousOrigin = oldWidget.responderPosition;
     final origin = _origin;
     if (_selected != null &&
         origin != null &&
@@ -79,10 +86,14 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
   @override
   void initState() {
     super.initState();
+    _routingService = widget.routingService ?? RoadRoutingService();
+    _locationService = widget.locationService ?? PhoneLocationService();
     WidgetsBinding.instance.addObserver(this);
-    _store = WaterSourceStore(
-      fetchSources: () => widget.api.listWaterSources(widget.token),
-    );
+    _store =
+        widget.waterSourceStore ??
+        WaterSourceStore(
+          fetchSources: () => widget.api.listWaterSources(widget.token),
+        );
     unawaited(_load());
     unawaited(_loadBoundary());
     _refreshTimer = Timer.periodic(
@@ -198,21 +209,35 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
 
   Future<void> _showRoadRoute(MobileWaterSource source) async {
     final requestId = ++_routeRequestId;
-    final origin = _origin;
     setState(() {
       _selected = source;
       _selectedRoute = null;
-      _routeOrigin = origin;
-      _routing = origin != null;
-      _routeMessage = origin == null
-          ? 'Assign a BFP station or enable phone GPS to calculate a route.'
-          : null;
+      _routeOrigin = null;
+      _routing = true;
+      _routeMessage = null;
     });
-    if (origin == null) {
-      widget.onLocate?.call();
+    LatLng origin;
+    try {
+      origin = await _locationService.currentPosition();
+    } on PhoneLocationException catch (error) {
+      if (!mounted || requestId != _routeRequestId) return;
+      setState(() {
+        _routing = false;
+        _routeMessage = error.message;
+      });
+      _controller.move(LatLng(source.latitude, source.longitude), 14);
+      return;
+    } catch (_) {
+      if (!mounted || requestId != _routeRequestId) return;
+      setState(() {
+        _routing = false;
+        _routeMessage = 'Unable to get your current location. Please retry.';
+      });
       _controller.move(LatLng(source.latitude, source.longitude), 14);
       return;
     }
+    if (!mounted || requestId != _routeRequestId) return;
+    setState(() => _routeOrigin = origin);
 
     final routes = await _routingService.fetchRoadRoutes(
       from: origin,
@@ -263,7 +288,7 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
     WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     _controller.dispose();
-    unawaited(_store.dispose());
+    if (widget.waterSourceStore == null) unawaited(_store.dispose());
     super.dispose();
   }
 
@@ -278,14 +303,25 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
           mapController: _controller,
           options: MapOptions(
             initialCenter:
-                widget.stationPosition ??
+                (widget.initialSource == null
+                    ? null
+                    : LatLng(
+                        widget.initialSource!.latitude,
+                        widget.initialSource!.longitude,
+                      )) ??
                 municipalityCenter(widget.municipalityName) ??
                 widget.responderPosition ??
+                widget.stationPosition ??
                 const LatLng(10.7431, 121.9394),
             initialZoom: 12.5,
             onMapReady: () {
               _mapReady = true;
-              _fitSources();
+              if (widget.initialSource case final source?) {
+                _didFit = true;
+                unawaited(_showRoadRoute(source));
+              } else {
+                _fitSources();
+              }
             },
           ),
           children: [
@@ -324,12 +360,10 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
                     width: 48,
                     height: 48,
                     child: Tooltip(
-                      message: widget.stationPosition != null
-                          ? 'BFP station'
-                          : 'BFP phone location',
+                      message: 'Your current location',
                       child: const Icon(
-                        Icons.local_fire_department_rounded,
-                        color: Color(0xFFDC2626),
+                        Icons.my_location_rounded,
+                        color: Color(0xFF2563EB),
                         size: 36,
                       ),
                     ),
@@ -453,7 +487,7 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
         Positioned(
           left: 16,
           right: 16,
-          bottom: 92,
+          bottom: widget.initialSource == null ? 92 : 16,
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -485,9 +519,17 @@ class _WaterSourcesMapState extends State<WaterSourcesMap>
                           ),
                         ),
                         const SizedBox(height: 8),
+                        const Text(
+                          'From your current phone location',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
                         if (_routing)
                           const Text(
-                            'Finding driving route…',
+                            'Getting your location and driving route…',
                             style: TextStyle(fontSize: 12),
                           )
                         else if (_selectedRoute != null)

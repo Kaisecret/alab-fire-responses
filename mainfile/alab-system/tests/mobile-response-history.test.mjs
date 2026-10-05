@@ -95,3 +95,26 @@ test("a record without an arrival time reports no response time instead of a gue
     await db.close();
   }
 });
+
+test("active dispatch details carry recorded travel and arrival times and danger level", async () => {
+  const { db, dispatch } = await fixture();
+  try {
+    await db.exec(`
+      update incident_dispatches set status = 'ACTIVE';
+      update fire_reports set status = 'RESPONDING';
+      update incident_dispatch_recipients set status = 'ON_SCENE', completed_at = null;
+    `);
+    const [latest, older] = await dispatch.listMobileDispatchAssignments(responder);
+    assert.equal(new Date(latest.enRouteAt).toISOString(), "2026-10-01T08:02:00.000Z");
+    assert.equal(new Date(latest.onSceneAt).toISOString(), "2026-10-01T08:10:30.000Z");
+    assert.equal(latest.completedAt, null);
+    assert.equal(latest.levelOfDanger, "HIGH");
+    assert.equal(latest.responseSeconds, 630);
+    assert.equal(older.enRouteAt, null);
+    assert.equal(older.onSceneAt, null);
+    assert.equal(older.levelOfDanger, null);
+    assert.deepEqual(await dispatch.listMobileDispatchAssignments('cccccccc-0000-4000-8000-000000000099'), []);
+  } finally {
+    await db.close();
+  }
+});

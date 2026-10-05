@@ -3,8 +3,7 @@ import '../services/mobile_bfp_api.dart';
 import '../services/mobile_dispatch_store.dart';
 import '../theme/app_colors.dart';
 import 'incident_detail_sheet.dart';
-
-enum AlertFilter { all, dispatches, system }
+import 'response_history_screen.dart' show formatHistoryDateTime;
 
 class NotificationAlertsSheet extends StatefulWidget {
   final MobileDispatchStore dispatchStore;
@@ -38,42 +37,8 @@ class NotificationAlertsSheet extends StatefulWidget {
 }
 
 class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
-  AlertFilter _activeFilter = AlertFilter.all;
   bool _isRefreshing = false;
   final Set<String> _readAlertIds = {};
-
-  final List<Map<String, dynamic>> _systemAlerts = [
-    {
-      'id': 'sys-01',
-      'type': 'readiness',
-      'title': 'BFP Station Bravo on High Readiness',
-      'desc': 'Station engine lines E-01 & T-02 are fully staffed and on 24/7 standby.',
-      'time': 'Just now',
-      'icon': Icons.shield_rounded,
-      'color': AppColors.successGreen,
-      'bgColor': Color(0xFFECFDF5),
-    },
-    {
-      'id': 'sys-02',
-      'type': 'water_sync',
-      'title': 'Municipal Hydrants Telemetry Synced',
-      'desc': '18 verified drafting points and high-pressure hydrants cached for offline routing.',
-      'time': '12m ago',
-      'icon': Icons.water_drop_rounded,
-      'color': AppColors.infoBlue,
-      'bgColor': Color(0xFFEFF6FF),
-    },
-    {
-      'id': 'sys-03',
-      'type': 'advisory',
-      'title': 'PAGASA Fire Danger Advisory',
-      'desc': 'Elevated grassland and brush fire risk recorded in coastal barangays.',
-      'time': '1h ago',
-      'icon': Icons.warning_amber_rounded,
-      'color': AppColors.warningAmber,
-      'bgColor': Color(0xFFFFFBEB),
-    },
-  ];
 
   Future<void> _handleRefresh() async {
     setState(() => _isRefreshing = true);
@@ -90,9 +55,6 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
     setState(() {
       for (final a in widget.dispatchStore.assignments) {
         _readAlertIds.add(a.dispatchId);
-      }
-      for (final s in _systemAlerts) {
-        _readAlertIds.add(s['id'] as String);
       }
     });
 
@@ -120,24 +82,29 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
   }
 
   void _openDetailsFor(MobileDispatchAssignment item) {
+    final parentContext = Navigator.of(context).context;
+    final store = widget.dispatchStore;
+    final onNavigateTab = widget.onNavigateTab;
+    setState(() => _readAlertIds.add(item.dispatchId));
     Navigator.of(context).pop();
     IncidentDetailSheet.show(
-      context,
+      parentContext,
       assignment: item,
-      onNavigateTab: widget.onNavigateTab,
+      onNavigateTab: onNavigateTab,
+      sessionToken: store.session.token,
+      api: store.api,
+      roadRoute: store.activeAssignment?.dispatchId == item.dispatchId ? store.activeRoadRoute : null,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final assignments = widget.dispatchStore.assignments;
-    final totalCount = assignments.length + _systemAlerts.length;
-    final unreadCount = totalCount - _readAlertIds.length;
-
     return AnimatedBuilder(
       animation: widget.dispatchStore,
       builder: (context, _) {
         final currentAssignments = widget.dispatchStore.assignments;
+        final syncDelayed = widget.dispatchStore.error != null;
+        final unreadCount = currentAssignments.where((item) => !_readAlertIds.contains(item.dispatchId)).length;
 
         return Container(
           height: MediaQuery.of(context).size.height * 0.82,
@@ -243,18 +210,18 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
                                 Container(
                                   width: 7,
                                   height: 7,
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: AppColors.successGreen,
+                                    color: syncDelayed ? AppColors.warningAmber : AppColors.successGreen,
                                   ),
                                 ),
                                 const SizedBox(width: 5),
-                                const Text(
-                                  'Live Dispatch Telemetry Active',
+                                Text(
+                                  syncDelayed ? 'Sync delayed · showing last update' : 'Live dispatch queue',
                                   style: TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF0F766E),
+                                    color: syncDelayed ? const Color(0xFFB45309) : const Color(0xFF0F766E),
                                   ),
                                 ),
                               ],
@@ -300,34 +267,17 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          child: Row(
-                            children: [
-                              _buildFilterPill(
-                                label: 'All',
-                                count: totalCount,
-                                filter: AlertFilter.all,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildFilterPill(
-                                label: 'Dispatches',
-                                count: currentAssignments.length,
-                                filter: AlertFilter.dispatches,
-                                isUrgent: currentAssignments.isNotEmpty,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildFilterPill(
-                                label: 'System',
-                                count: _systemAlerts.length,
-                                filter: AlertFilter.system,
-                              ),
-                            ],
+                        child: Text(
+                          currentAssignments.isEmpty
+                              ? 'No active dispatches'
+                              : '${currentAssignments.length} active ${currentAssignments.length == 1 ? 'dispatch' : 'dispatches'}',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textDark,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
                       // Mark all read button
                       IconButton(
                         tooltip: 'Mark all as read',
@@ -375,12 +325,12 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.wifi_tethering_rounded, size: 16, color: AppColors.successGreen),
+                      const Icon(Icons.local_fire_department_outlined, size: 16, color: AppColors.textMuted),
                       const SizedBox(width: 8),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Antique BFP Provincial Network · Live Telemetry',
-                          style: TextStyle(
+                          'BFP ${widget.dispatchStore.session.identity.municipalityName}',
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textMuted,
@@ -418,83 +368,8 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
     );
   }
 
-  Widget _buildFilterPill({
-    required String label,
-    required int count,
-    required AlertFilter filter,
-    bool isUrgent = false,
-  }) {
-    final isSelected = _activeFilter == filter;
-
-    return GestureDetector(
-      onTap: () => setState(() => _activeFilter = filter),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isUrgent ? AppColors.primaryRed : const Color(0xFF0F172A))
-              : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? (isUrgent ? AppColors.primaryRed : const Color(0xFF0F172A))
-                : const Color(0xFFE2E8F0),
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: (isUrgent ? AppColors.primaryRed : const Color(0xFF0F172A))
-                        .withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.textDark,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.25)
-                    : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: isSelected ? Colors.white : AppColors.textMuted,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildAlertsList(List<MobileDispatchAssignment> assignments) {
-    final showDispatches = _activeFilter == AlertFilter.all || _activeFilter == AlertFilter.dispatches;
-    final showSystem = _activeFilter == AlertFilter.all || _activeFilter == AlertFilter.system;
-
-    final hasDispatches = assignments.isNotEmpty && showDispatches;
-    final hasSystem = _systemAlerts.isNotEmpty && showSystem;
-
-    if (!hasDispatches && !hasSystem) {
+    if (assignments.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -540,61 +415,7 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       children: [
-        // ── Active Dispatches Section ──
-        if (showDispatches && assignments.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                const Icon(Icons.emergency_rounded, size: 16, color: AppColors.primaryRed),
-                const SizedBox(width: 6),
-                const Text(
-                  'PRIORITY DISPATCH ASSIGNMENTS',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primaryRed,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '${assignments.length} ACTIVE',
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primaryRed,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ...assignments.map((item) => _buildDispatchCard(item)),
-          const SizedBox(height: 14),
-        ],
-
-        // ── System & Broadcasts Section ──
-        if (showSystem) ...[
-          const Padding(
-            padding: EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                Icon(Icons.cell_tower_rounded, size: 16, color: AppColors.textMuted),
-                SizedBox(width: 6),
-                Text(
-                  'STATION TELEMETRY & ADVISORIES',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textMuted,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ..._systemAlerts.map((alert) => _buildSystemCard(alert)),
-        ],
+        ...assignments.map(_buildDispatchCard),
       ],
     );
   }
@@ -657,23 +478,34 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text(
+                            item.referenceNumber,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                              color: AppColors.textDark,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
                           Row(
                             children: [
-                              Expanded(
+                              Flexible(
                                 child: Text(
-                                  item.referenceNumber,
+                                  fireTypeName,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 14,
-                                    color: AppColors.textDark,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryRed,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 8),
                               ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 112),
+                                constraints: const BoxConstraints(maxWidth: 170),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                   decoration: BoxDecoration(
@@ -688,7 +520,7 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
                                     ),
                                   ),
                                   child: Text(
-                                    item.reportStatus,
+                                    item.reportStatus.replaceAll('_', ' '),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -703,14 +535,19 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
                               ),
                             ],
                           ),
-                          Text(
-                            fireTypeName,
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryRed,
+                          if (item.assignedAt case final assignedAt?) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Dispatched ${formatHistoryDateTime(assignedAt)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textMuted,
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
@@ -816,82 +653,6 @@ class _NotificationAlertsSheetState extends State<NotificationAlertsSheet> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSystemCard(Map<String, dynamic> alert) {
-    final alertId = alert['id'] as String;
-    final isRead = _readAlertIds.contains(alertId);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: alert['bgColor'] as Color,
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(
-              alert['icon'] as IconData,
-              color: alert['color'] as Color,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        alert['title'] as String,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: isRead ? FontWeight.w700 : FontWeight.w800,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      alert['time'] as String,
-                      style: const TextStyle(fontSize: 10.5, color: AppColors.textSubtle),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  alert['desc'] as String,
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    color: AppColors.textMuted,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

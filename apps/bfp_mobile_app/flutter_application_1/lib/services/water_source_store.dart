@@ -1,5 +1,6 @@
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
+import 'package:latlong2/latlong.dart';
 
 DatabaseFactory get databaseFactoryDefault => databaseFactory;
 
@@ -19,6 +20,9 @@ class MobileWaterSource {
   final String sourceKind;
   final double latitude;
   final double longitude;
+
+  String get kindLabel =>
+      sourceKind == 'FIRE_HYDRANT' ? 'Fire hydrant' : 'Natural water source';
 
   factory MobileWaterSource.fromJson(Map<String, dynamic> json) =>
       MobileWaterSource(
@@ -48,6 +52,33 @@ class MobileWaterSource {
         latitude: (row['latitude'] as num).toDouble(),
         longitude: (row['longitude'] as num).toDouble(),
       );
+}
+
+/// Finds the closest registered source to the incident, rather than the station.
+MobileWaterSource? nearestWaterSource(
+  List<MobileWaterSource> sources,
+  LatLng incident,
+) {
+  MobileWaterSource? nearest;
+  var shortest = double.infinity;
+  for (final source in sources) {
+    if (!source.latitude.isFinite ||
+        !source.longitude.isFinite ||
+        source.latitude.abs() > 90 ||
+        source.longitude.abs() > 180 ||
+        (source.latitude == 0 && source.longitude == 0)) {
+      continue;
+    }
+    final meters = const Distance()(
+      incident,
+      LatLng(source.latitude, source.longitude),
+    );
+    if (meters < shortest) {
+      shortest = meters;
+      nearest = source;
+    }
+  }
+  return nearest;
 }
 
 class WaterSourceStore {

@@ -1,34 +1,41 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latlong2/latlong.dart';
+
 import '../services/mobile_bfp_api.dart';
+import '../services/phone_location_service.dart';
+import '../services/road_routing_service.dart';
+import '../services/water_source_store.dart';
 import '../theme/app_colors.dart';
-import '../theme/liquid_glass.dart';
+import 'response_history_screen.dart' show formatHistoryDateTime;
+import 'water_sources_map.dart';
 
-class IncidentDetailSheet extends StatelessWidget {
-  final String title;
-  final String location;
-  final String severity;
-  final String eta;
-  final String distance;
-  final String unitsAssigned;
-  final MobileDispatchAssignment? assignment;
-  final ValueChanged<int>? onNavigateTab;
-  /// Present when the responder is signed in, which is what allows backup to
-  /// be requested from this sheet.
-  final String? sessionToken;
-
+class IncidentDetailSheet extends StatefulWidget {
   const IncidentDetailSheet({
     super.key,
-    this.title = 'Structure Fire',
-    this.location = 'Brgy. San Isidro, City of San Jose',
-    this.severity = 'HIGH',
-    this.eta = '08:12',
-    this.distance = '4.2 km',
-    this.unitsAssigned = 'E-01, T-02',
+    this.title,
+    this.location,
+    this.severity,
+    this.eta,
+    this.distance,
+    this.unitsAssigned,
     this.assignment,
     this.onNavigateTab,
     this.sessionToken,
+    this.api,
+    this.roadRoute,
+    this.waterSourceStore,
   });
+
+  final String? title, location, severity, eta, distance, unitsAssigned;
+  final MobileDispatchAssignment? assignment;
+  final ValueChanged<int>? onNavigateTab;
+  final String? sessionToken;
+  final MobileBfpApi? api;
+  final RoadRouteOption? roadRoute;
+  final WaterSourceStore? waterSourceStore;
 
   static void show(
     BuildContext context, {
@@ -41,712 +48,617 @@ class IncidentDetailSheet extends StatelessWidget {
     MobileDispatchAssignment? assignment,
     ValueChanged<int>? onNavigateTab,
     String? sessionToken,
+    MobileBfpApi? api,
+    RoadRouteOption? roadRoute,
   }) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => IncidentDetailSheet(
-        title: title ?? (assignment != null ? assignment.fireTypeLabel : 'Structure Fire'),
-        location: location ?? (assignment != null ? assignment.locationSummary : 'Brgy. San Isidro, City of San Jose'),
-        severity: severity ?? (assignment != null ? assignment.reportStatus : 'HIGH'),
-        eta: eta ?? '08:12',
-        distance: distance ?? '4.2 km',
-        unitsAssigned: unitsAssigned ?? (assignment != null ? assignment.stationName : 'E-01, T-02'),
+      builder: (_) => IncidentDetailSheet(
+        title: title,
+        location: location,
+        severity: severity,
+        eta: eta,
+        distance: distance,
+        unitsAssigned: unitsAssigned,
         assignment: assignment,
         onNavigateTab: onNavigateTab,
         sessionToken: sessionToken,
+        api: api,
+        roadRoute: roadRoute,
       ),
     );
   }
 
-  String _formatShortUnits(String rawUnits) {
-    if (rawUnits.contains('·')) {
-      final part = rawUnits.split('·').first.trim();
-      return part.replaceAll('Fire Station', 'Stn').replaceAll('Station', 'Stn');
+  @override
+  State<IncidentDetailSheet> createState() => _IncidentDetailSheetState();
+}
+
+class _IncidentDetailSheetState extends State<IncidentDetailSheet> {
+  late final MobileBfpApi _api;
+  WaterSourceStore? _waterStore;
+  MobileWaterSource? _nearest;
+  RoadRouteOption? _route;
+  bool _loadingWater = false, _loadingRoute = false, _cachedWater = false;
+  String? _waterMessage, _routeMessage;
+
+  MobileDispatchAssignment? get _assignment => widget.assignment;
+  bool get _resolved =>
+      _assignment?.reportStatus == 'RESOLVED' ||
+      _assignment?.recipientStatus == 'COMPLETED';
+  LatLng get _incident => LatLng(_assignment!.latitude, _assignment!.longitude);
+  String get _status => _resolved
+      ? 'RESOLVED'
+      : switch (_assignment?.recipientStatus ?? widget.severity) {
+          'ON_SCENE' => 'ON SCENE',
+          'EN_ROUTE' => 'EN ROUTE',
+          'ACKNOWLEDGED' => 'ACKNOWLEDGED',
+          'ASSIGNED' => 'DISPATCHED',
+          final String value => value.replaceAll('_', ' '),
+          _ => 'Not recorded',
+        };
+
+  @override
+  void initState() {
+    super.initState();
+    _api = widget.api ?? MobileBfpApi();
+    _route = widget.roadRoute;
+    if (_assignment != null &&
+        (widget.sessionToken != null || widget.waterSourceStore != null)) {
+      _waterStore =
+          widget.waterSourceStore ??
+          WaterSourceStore(
+            fetchSources: () => _api.listWaterSources(widget.sessionToken!),
+          );
+      unawaited(_loadWater());
+      if (!_resolved && _route == null && widget.sessionToken != null) {
+        unawaited(_loadRoute());
+      }
     }
-    return rawUnits;
   }
 
-  String _formatShortSeverity(String raw) {
-    final upper = raw.toUpperCase();
-    if (upper == 'RESPONDING' || upper == 'ON_SCENE') return 'ON SCENE';
-    if (upper == 'COMPLETED' || upper == 'RESOLVED') return 'RESOLVED';
-    if (upper == 'EN_ROUTE') return 'EN ROUTE';
-    if (upper == 'ASSIGNED') return 'DISPATCHED';
-    return raw;
+  Future<void> _loadWater() async {
+    setState(() {
+      _loadingWater = true;
+      _waterMessage = null;
+    });
+    try {
+      final cached = await _waterStore!.loadCached();
+      if (!mounted) return;
+      if (cached.isNotEmpty) {
+        setState(() {
+          _nearest = nearestWaterSource(cached, _incident);
+          _cachedWater = true;
+        });
+      }
+    } catch (_) {
+      /* A missing cache does not prevent a live fetch. */
+    }
+    try {
+      final sources = await _waterStore!.refresh();
+      if (!mounted) return;
+      setState(() {
+        _nearest = nearestWaterSource(sources, _incident);
+        _cachedWater = false;
+        _waterMessage = _nearest == null
+            ? 'No water sources have been registered yet.'
+            : null;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _waterMessage = _nearest == null
+              ? 'Unable to load water sources. Connect to the internet and retry.'
+              : null;
+          _cachedWater = true;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _loadingWater = false);
+    }
   }
 
-  bool _isResolved(String raw) {
-    final upper = raw.toUpperCase();
-    return upper == 'COMPLETED' || upper == 'RESOLVED';
+  Future<void> _loadRoute() async {
+    if (_loadingRoute) return;
+    setState(() {
+      _loadingRoute = true;
+      _routeMessage = null;
+      _route = null;
+    });
+    try {
+      final origin = await PhoneLocationService().currentPosition();
+      if (!mounted) return;
+      final routes = await RoadRoutingService().fetchRoadRoutes(
+        from: origin,
+        to: _incident,
+        includeAlternatives: false,
+      );
+      if (!mounted) return;
+      setState(() {
+        _route = routes.firstOrNull;
+        _routeMessage = _route == null
+            ? 'Driving route unavailable. Connect to the internet and retry.'
+            : null;
+      });
+    } on PhoneLocationException catch (error) {
+      if (mounted) setState(() => _routeMessage = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _routeMessage = 'Unable to calculate the route. Please retry.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingRoute = false);
+    }
+  }
+
+  void _routeToWater() {
+    final source = _nearest;
+    if (source == null || widget.sessionToken == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Water source route')),
+          body: WaterSourcesMap(
+            api: _api,
+            token: widget.sessionToken!,
+            municipalityName: source.municipalityName,
+            initialSource: source,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    if (widget.waterSourceStore == null) unawaited(_waterStore?.dispose());
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final shortUnits = _formatShortUnits(unitsAssigned);
-    final shortSeverity = _formatShortSeverity(severity);
-    final refNumber = assignment?.referenceNumber ?? 'INC-2026-LIVE';
-
-    final isResolvedStatus = _isResolved(severity);
-
+    final a = _assignment;
+    final accent = _resolved ? AppColors.successGreen : AppColors.primaryRed;
     return Container(
-      height: MediaQuery.of(context).size.height * 0.90,
+      height: MediaQuery.sizeOf(context).height * .9,
       decoration: const BoxDecoration(
-        color: Color(0xFFF8FAFC),
+        color: AppColors.bgLight,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      child: Column(
-        children: [
-          // Drag Handle
-          const SizedBox(height: 12),
-          Container(
-            width: 44,
-            height: 5,
-            decoration: BoxDecoration(
-              color: const Color(0xFFCBD5E1),
-              borderRadius: BorderRadius.circular(10),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 44,
+              height: 5,
+              decoration: BoxDecoration(
+                color: const Color(0xFFCBD5E1),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-
-          // Sheet Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isResolvedStatus
-                        ? const Color(0xFFECFDF5)
-                        : const Color(0xFFFEF2F2),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isResolvedStatus
-                          ? const Color(0xFFA7F3D0)
-                          : const Color(0xFFFECACA),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 12, 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: .08),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      _resolved
+                          ? Icons.verified_rounded
+                          : Icons.local_fire_department_rounded,
+                      color: accent,
                     ),
                   ),
-                  child: Icon(
-                    isResolvedStatus
-                        ? Icons.verified_rounded
-                        : Icons.local_fire_department_rounded,
-                    color: isResolvedStatus
-                        ? const Color(0xFF047857)
-                        : AppColors.primaryRed,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (a != null)
+                          Text(
+                            a.referenceNumber,
+                            style: _text(
+                              11,
+                              AppColors.textMuted,
+                              FontWeight.w700,
+                            ),
+                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          a?.fireTypeLabel ??
+                              widget.title ??
+                              'No incident selected',
+                          style: _text(20, AppColors.textDark, FontWeight.w800),
+                        ),
+                        if (a != null) ...[
+                          const SizedBox(height: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 3),
+                              horizontal: 9,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: isResolvedStatus
-                                  ? const Color(0xFFE6F4EA)
-                                  : const Color(0xFFFEE2E2),
+                              color: accent.withValues(alpha: .08),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              shortSeverity,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w900,
-                                color: isResolvedStatus
-                                    ? const Color(0xFF15803D)
-                                    : AppColors.primaryRed,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              refNumber,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF64748B),
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                              _status,
+                              style: _text(10, accent, FontWeight.w800),
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        title,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF141923),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_rounded,
-                              size: 13, color: AppColors.primaryRed),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              location,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF64748B),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded,
-                      color: Color(0xFF64748B), size: 22),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+                  IconButton(
+                    tooltip: 'Close incident details',
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xFFE2E8F0)),
-
-          // Scrollable Content
-          Expanded(
-            child: ListView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              children: [
-                // Quick Info Glass Grid
-                LiquidGlassContainer(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-                  borderRadius: 18,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildDetailCol(
-                          'Status',
-                          shortSeverity,
-                          isResolvedStatus
-                              ? const Color(0xFF047857)
-                              : AppColors.primaryRed,
-                          isResolvedStatus
-                              ? Icons.check_circle_rounded
-                              : Icons.warning_amber_rounded,
+            const Divider(height: 1),
+            Expanded(
+              child: a == null
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                          'Open an assigned incident to see its recorded details.',
                         ),
                       ),
-                      Container(
-                          width: 1, height: 28, color: const Color(0xFFE2E8F0)),
-                      Expanded(
-                        child: _buildDetailCol(
-                          'Distance',
-                          distance,
-                          const Color(0xFF141923),
-                          Icons.navigation_rounded,
-                        ),
-                      ),
-                      Container(
-                          width: 1, height: 28, color: const Color(0xFFE2E8F0)),
-                      Expanded(
-                        child: _buildDetailCol(
-                          'ETA',
-                          eta,
-                          AppColors.primaryRed,
-                          Icons.timer_rounded,
-                        ),
-                      ),
-                      Container(
-                          width: 1, height: 28, color: const Color(0xFFE2E8F0)),
-                      Expanded(
-                        child: _buildDetailCol(
-                          'Unit',
-                          shortUnits,
-                          const Color(0xFF141923),
-                          Icons.fire_truck_rounded,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Dedicated Station & Responding Unit Banner
-                Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF0F172A).withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF2F2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.shield_outlined,
-                            size: 18, color: AppColors.primaryRed),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'ASSIGNED BFP FIRE STATION',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF94A3B8),
-                                letterSpacing: 0.6,
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                      children: [
+                        _card(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _section(
+                                'Incident location',
+                                Icons.location_on_outlined,
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              unitsAssigned,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF141923),
+                              const SizedBox(height: 12),
+                              Text(
+                                a.locationSummary,
+                                style: _text(
+                                  16,
+                                  AppColors.textDark,
+                                  FontWeight.w700,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Official Incident Dossier Card ──
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(7),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.assignment_outlined,
-                                color: Color(0xFF2563EB), size: 18),
+                              // The summary already ends with the municipality when it is known.
+                              if (a.municipality?.isNotEmpty == true &&
+                                  !a.locationSummary.contains(a.municipality!)) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  a.municipality!,
+                                  style: _text(13, AppColors.textMuted),
+                                ),
+                              ],
+                              if (a.landmark?.isNotEmpty == true) ...[
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Landmark: ${a.landmark}',
+                                  style: _text(13, AppColors.textMuted),
+                                ),
+                              ],
+                              const SizedBox(height: 10),
+                              SelectableText(
+                                '${a.latitude.toStringAsFixed(6)}, ${a.longitude.toStringAsFixed(6)}',
+                                style: _text(12, AppColors.textMuted),
+                              ),
+                              const Divider(height: 28),
+                              _row('Assigned station', a.stationName),
+                              _row(
+                                'Incident status',
+                                a.reportStatus.replaceAll('_', ' '),
+                              ),
+                              _row('Level of danger', a.levelOfDangerLabel),
+                            ],
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
+                        ),
+                        if (!_resolved) ...[
+                          const SizedBox(height: 14),
+                          _card(
+                            Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'OFFICIAL INCIDENT DOSSIER',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF2563EB),
-                                    letterSpacing: 0.6,
-                                  ),
+                                _section(
+                                  'Route from your location',
+                                  Icons.near_me_outlined,
                                 ),
-                                Text(
-                                  refNumber,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w900,
-                                    color: const Color(0xFF141923),
-                                  ),
+                                const SizedBox(height: 14),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _metric(
+                                        'Driving distance',
+                                        _route?.formattedDistance ??
+                                            widget.distance ??
+                                            'Not calculated',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _metric(
+                                        'Estimated arrival',
+                                        _route?.formattedEta ??
+                                            widget.eta ??
+                                            'Not calculated',
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFECFDF5),
-                              borderRadius: BorderRadius.circular(8),
-                              border:
-                                  Border.all(color: const Color(0xFFA7F3D0)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.verified_rounded,
-                                    size: 12, color: Color(0xFF047857)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'BFP SYNCED',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF047857),
+                                if (_loadingRoute) ...[
+                                  const SizedBox(height: 14),
+                                  const LinearProgressIndicator(minHeight: 2),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Getting your location and driving route…',
+                                    style: _text(12, AppColors.textMuted),
                                   ),
+                                ],
+                                if (_routeMessage != null) ...[
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _routeMessage!,
+                                    style: _text(12, AppColors.textMuted),
+                                  ),
+                                ],
+                                const SizedBox(height: 8),
+                                TextButton.icon(
+                                  onPressed: _loadingRoute ? null : _loadRoute,
+                                  icon: const Icon(
+                                    Icons.my_location_rounded,
+                                    size: 18,
+                                  ),
+                                  label: const Text('Refresh from my location'),
                                 ),
                               ],
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 12),
-                      const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                      const SizedBox(height: 10),
-
-                      _buildReportRow('Fire Classification', title),
-                      const SizedBox(height: 6),
-                      _buildReportRow('Barangay Location', location),
-                      if (assignment?.landmark != null &&
-                          assignment!.landmark!.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        _buildReportRow('Landmark', assignment!.landmark!),
-                      ],
-                      if (assignment != null) ...[
-                        const SizedBox(height: 6),
-                        _buildReportRow(
-                          'GPS Coordinates',
-                          '${assignment!.latitude.toStringAsFixed(4)}, ${assignment!.longitude.toStringAsFixed(4)}',
-                        ),
-                      ],
-                      const SizedBox(height: 6),
-                      _buildReportRow('Operational Status', shortSeverity),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Read-only record of finished responses
-                SizedBox(
-                  width: double.infinity,
-                  height: 40,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      onNavigateTab?.call(3); // Tab 3: Response History
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFCBD5E1)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.white,
-                    ),
-                    icon: const Icon(Icons.history_rounded,
-                        size: 15, color: Color(0xFF475569)),
-                    label: Text(
-                      'View Response History',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF475569),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 18),
-
-                // Live Tactical Status Timeline
-                Text(
-                  'TACTICAL DISPATCH STATUS',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF141923),
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                LiquidGlassContainer(
-                  padding: const EdgeInsets.all(14),
-                  borderRadius: 18,
-                  child: Column(
-                    children: [
-                      _buildTimelineItem(
-                        time: '08:00 AM',
-                        title: 'Citizen Emergency Call Verified',
-                        subtitle:
-                            'Reference $refNumber recorded by Municipal BFP',
-                        isFirst: true,
-                      ),
-                      _buildTimelineItem(
-                        time: '08:04 AM',
-                        title: 'Units Dispatched: $shortUnits',
-                        subtitle: 'Station: $unitsAssigned',
-                      ),
-                      _buildTimelineItem(
-                        time: isResolvedStatus ? '08:45 AM' : '08:07 AM',
-                        title: isResolvedStatus
-                            ? 'Fire Incident Suppressed & Resolved'
-                            : 'Provincial BFP Notified for Backup',
-                        subtitle:
-                            'Current Operational Status: $shortSeverity',
-                        isLast: true,
-                        isActive: true,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                // Nearest Verified Water Source
-                Text(
-                  'NEAREST VERIFIED WATER SOURCE',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF141923),
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                LiquidGlassContainer(
-                  padding: const EdgeInsets.all(14),
-                  borderRadius: 18,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.water_drop_rounded,
-                          color: Color(0xFF2563EB),
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Hydrant #SJ-04 (High Pressure)',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF141923),
+                        const SizedBox(height: 14),
+                        _card(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _section(
+                                'Response timeline',
+                                Icons.schedule_rounded,
                               ),
-                            ),
-                            Text(
-                              '350m North • Corner Mabini St. • 55 PSI',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF64748B),
+                              const SizedBox(height: 16),
+                              _timeline('Dispatched', a.assignedAt),
+                              _timeline('En route', a.enRouteAt),
+                              _timeline('On scene', a.onSceneAt),
+                              _timeline(
+                                'Response completed',
+                                a.completedAt,
+                                last: true,
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'OPERATIONAL',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF047857),
+                              if (a.responseSeconds != null) ...[
+                                const Divider(height: 24),
+                                _row('Response time', a.responseTimeLabel),
+                              ],
+                            ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
+                        const SizedBox(height: 14),
+                        _card(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _section(
+                                'Nearest water source',
+                                Icons.water_drop_outlined,
+                                color: AppColors.infoBlue,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Closest registered source to this incident',
+                                style: _text(11, AppColors.textMuted),
+                              ),
+                              const SizedBox(height: 14),
+                              if (_loadingWater && _nearest == null)
+                                const LinearProgressIndicator(minHeight: 2)
+                              else if (_nearest case final source?) ...[
+                                Text(
+                                  source.exactLocation,
+                                  style: _text(
+                                    15,
+                                    AppColors.textDark,
+                                    FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '${source.kindLabel} · ${source.municipalityName}',
+                                  style: _text(12, AppColors.textMuted),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '${_waterDistance(source)} from incident · straight-line distance',
+                                  style: _text(
+                                    12,
+                                    AppColors.infoBlue,
+                                    FontWeight.w600,
+                                  ),
+                                ),
+                                if (_cachedWater) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Offline · saved water-source locations',
+                                    style: _text(11, AppColors.textMuted),
+                                  ),
+                                ],
+                                if (widget.sessionToken != null) ...[
+                                  const SizedBox(height: 14),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.icon(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: AppColors.infoBlue,
+                                        minimumSize: const Size(0, 48),
+                                      ),
+                                      onPressed: _routeToWater,
+                                      icon: const Icon(Icons.alt_route_rounded),
+                                      label: const Text(
+                                        'Route from my location',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ] else
+                                Text(
+                                  _waterMessage ??
+                                      'Water-source information is unavailable.',
+                                  style: _text(13, AppColors.textMuted),
+                                ),
+                              if (_waterStore != null &&
+                                  !_loadingWater &&
+                                  (_waterMessage != null || _cachedWater))
+                                TextButton.icon(
+                                  onPressed: _loadWater,
+                                  icon: const Icon(Icons.refresh_rounded),
+                                  label: const Text('Retry water sources'),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            widget.onNavigateTab?.call(3);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                          ),
+                          icon: const Icon(Icons.history_rounded),
+                          label: const Text('View Response History'),
+                        ),
+                      ],
+                    ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildReportRow(String label, String value) {
-    return Row(
+  String _waterDistance(MobileWaterSource source) {
+    final meters = const Distance()(
+      _incident,
+      LatLng(source.latitude, source.longitude),
+    );
+    return meters < 1000
+        ? '${meters.round()} m'
+        : '${(meters / 1000).toStringAsFixed(1)} km';
+  }
+
+  TextStyle _text(
+    double size,
+    Color color, [
+    FontWeight weight = FontWeight.w500,
+  ]) => GoogleFonts.plusJakartaSans(
+    fontSize: size,
+    color: color,
+    fontWeight: weight,
+    height: 1.4,
+  );
+
+  Widget _card(Widget child) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: const Color(0xFFE2E8F0)),
+    ),
+    child: child,
+  );
+
+  Widget _section(
+    String label,
+    IconData icon, {
+    Color color = AppColors.textDark,
+  }) => Row(
+    children: [
+      Icon(icon, size: 19, color: color),
+      const SizedBox(width: 8),
+      Expanded(child: Text(label, style: _text(14, color, FontWeight.w800))),
+    ],
+  );
+
+  Widget _row(String label, String value) => Padding(
+    padding: const EdgeInsets.only(top: 8),
+    child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 130,
-          child: Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF64748B),
-            ),
-          ),
-        ),
+        Expanded(child: Text(label, style: _text(12, AppColors.textMuted))),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF141923),
-            ),
+            textAlign: TextAlign.right,
+            style: _text(12, AppColors.textDark, FontWeight.w700),
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
 
-  Widget _buildDetailCol(
-      String label, String value, Color valueColor, IconData icon) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(icon, size: 16, color: const Color(0xFF64748B)),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          softWrap: false,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w800,
-            color: valueColor,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 9.5,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF94A3B8),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _metric(String label, String value) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(value, style: _text(18, AppColors.textDark, FontWeight.w800)),
+      const SizedBox(height: 4),
+      Text(label, style: _text(11, AppColors.textMuted)),
+    ],
+  );
 
-  Widget _buildTimelineItem({
-    required String time,
-    required String title,
-    required String subtitle,
-    bool isFirst = false,
-    bool isLast = false,
-    bool isActive = false,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
+  Widget _timeline(String label, DateTime? time, {bool last = false}) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Column(
+        children: [
+          Icon(
+            time == null
+                ? Icons.radio_button_unchecked
+                : Icons.check_circle_rounded,
+            size: 18,
+            color: time == null ? AppColors.textMuted : AppColors.successGreen,
+          ),
+          if (!last)
+            Container(width: 1, height: 42, color: const Color(0xFFE2E8F0)),
+        ],
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isActive
-                    ? AppColors.primaryRed
-                    : const Color(0xFFCBD5E1),
-              ),
+            Text(label, style: _text(13, AppColors.textDark, FontWeight.w700)),
+            const SizedBox(height: 3),
+            Text(
+              time == null ? 'Not recorded' : formatHistoryDateTime(time),
+              style: _text(12, AppColors.textMuted),
             ),
-            if (!isLast)
-              Container(
-                width: 2,
-                height: 38,
-                color: const Color(0xFFE2E8F0),
-              ),
           ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        fontWeight:
-                            isActive ? FontWeight.w800 : FontWeight.w600,
-                        color: isActive
-                            ? AppColors.primaryRed
-                            : const Color(0xFF141923),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Text(
-                    time,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF94A3B8),
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                subtitle,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF64748B),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 }
