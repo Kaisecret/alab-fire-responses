@@ -132,12 +132,26 @@ async function loadEmblems(): Promise<Emblems> {
 
 /** Letterhead geometry. The masthead runs from the top margin to its rule. */
 const LETTERHEAD_HEIGHT = 84;
-const CREED = ["PREVENT", "PREPARE", "RESPOND", "RECOVER", "TOGETHER"];
+const WATERMARK_OPACITY = 0.06;
 
 function fittedText(doc: Doc, text: string, x: number, y: number, width: number, size: number, font = "Helvetica-Bold", color: string = COLORS.ink) {
   doc.font(font).fontSize(size);
   while (doc.widthOfString(text) > width && size > 5) doc.fontSize(size -= 0.25);
   doc.fillColor(color).text(text, x, y, { width, align: "center", lineBreak: false });
+}
+
+/**
+ * A faint ALAB mark centred on the paper. It is laid over the finished page:
+ * drawn underneath, the white tables and cards hid most of it.
+ */
+function drawWatermark(doc: Doc, emblems: Emblems): void {
+  const size = CONTENT_WIDTH * 0.74;
+  const x = (PAGE.width - size) / 2;
+  const y = (PAGE.height - size) / 2 + 24;
+  doc.save().opacity(WATERMARK_OPACITY);
+  if (emblems.alab) doc.image(emblems.alab, x, y, { fit: [size, size], align: "center", valign: "center" });
+  else doc.font("Helvetica-Bold").fontSize(110).fillColor(COLORS.brandDark).text("ALAB", x, y + size / 2 - 55, { width: size, align: "center", lineBreak: false });
+  doc.restore();
 }
 
 function drawHeader(doc: Doc, context: MunicipalPdfContext, emblems: Emblems): void {
@@ -151,17 +165,12 @@ function drawHeader(doc: Doc, context: MunicipalPdfContext, emblems: Emblems): v
     .moveTo(PAGE.margin + 72, top + 6).lineTo(PAGE.margin + 72, top + 70).stroke().restore();
 
   const wordLeft = PAGE.margin + 172;
-  const creedX = PAGE.width - PAGE.margin - 37;
-  const wordWidth = creedX - 10 - wordLeft;
+  const wordWidth = PAGE.width - PAGE.margin - wordLeft;
   fittedText(doc, "REPUBLIC OF THE PHILIPPINES", wordLeft, top + 4, wordWidth, 6.8, "Helvetica", "#294967");
   fittedText(doc, "DEPARTMENT OF THE INTERIOR AND LOCAL GOVERNMENT", wordLeft, top + 14, wordWidth, 6.5, "Helvetica", "#294967");
   fittedText(doc, "BUREAU OF FIRE PROTECTION", wordLeft, top + 30, wordWidth, 18.5, "Helvetica-Bold", COLORS.brandDark);
   fittedText(doc, `MUNICIPAL FIRE STATION \u2022 ${context.municipalityName.toUpperCase() || "MUNICIPAL"}, ANTIQUE`, wordLeft, top + 52, wordWidth, 10.5, "Helvetica-Bold", "#103E63");
   fittedText(doc, "ALAB Emergency Dispatch, Telemetry & Citizen Intake System", wordLeft, top + 68, wordWidth, 8, "Helvetica", "#103E63");
-  doc.save().strokeColor("#9CAFC4").lineWidth(0.7)
-    .moveTo(creedX - 4, top + 7).lineTo(creedX - 4, top + 72).stroke().restore();
-  doc.font("Helvetica").fontSize(6.2).fillColor("#365775");
-  CREED.forEach((word, i) => doc.text(word, creedX + 3, top + 10 + i * 12, { width: 37, lineBreak: false }));
   const ruleY = top + LETTERHEAD_HEIGHT;
   doc.save().strokeColor(COLORS.brand).lineWidth(2).moveTo(PAGE.margin, ruleY).lineTo(PAGE.width - PAGE.margin, ruleY).stroke()
     .strokeColor("#103E63").lineWidth(1).moveTo(PAGE.margin, ruleY + 4).lineTo(PAGE.width - PAGE.margin, ruleY + 4).stroke().restore();
@@ -271,15 +280,15 @@ function drawMetricTiles(
 }
 
 function drawSectionHeading(doc: Doc, y: number, text: string): number {
-  const match = text.match(/^(\d+)\.\s*(.*)$/);
-  doc.save().roundedRect(PAGE.margin, y, CONTENT_WIDTH, 24, 4).fill("#123F63");
-  if (match) doc.rect(PAGE.margin, y, 29, 24).fill(COLORS.brandDark);
+  // Headings read as titles alone, with a red edge in place of a number.
+  const title = text.replace(/^\d+\.\s*/, "");
+  doc.save().roundedRect(PAGE.margin, y, CONTENT_WIDTH, 24, 4).clip();
+  doc.rect(PAGE.margin, y, CONTENT_WIDTH, 24).fill("#123F63");
+  doc.rect(PAGE.margin, y, 6, 24).fill(COLORS.brandDark);
   doc.restore();
-  if (match) doc.fillColor(COLORS.white).font("Helvetica-Bold").fontSize(16)
-    .text(match[1], PAGE.margin, y + 4, { width: 29, align: "center", lineBreak: false });
-  const left = PAGE.margin + (match ? 40 : 12);
+  const left = PAGE.margin + 16;
   doc.font("Helvetica-Bold").fontSize(10).fillColor(COLORS.white)
-    .text((match?.[2] ?? text).toUpperCase(), left, y + 8, { width: CONTENT_WIDTH - (left - PAGE.margin) - 8, lineBreak: false });
+    .text(title.toUpperCase(), left, y + 8, { width: CONTENT_WIDTH - 24, lineBreak: false });
   return y + 30;
 }
 
@@ -497,11 +506,12 @@ function drawSignatureBlock(doc: Doc, y: number, context: MunicipalPdfContext, n
     .text("AUTHORIZED OFFICER SIGNATURE", signatureX, lineY + 10 + nameLines.length * 12, { width: 190, align: "center", lineBreak: false });
 }
 
-/** Page numbers are stamped last so the total count is known. */
-function stampPageNumbers(doc: Doc): void {
+/** Page numbers and the watermark are stamped last, once every page is complete. */
+function stampPageNumbers(doc: Doc, emblems: Emblems): void {
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(range.start + i);
+    drawWatermark(doc, emblems);
     // Absolute footer drawing must not trigger PDFKit's automatic text flow
     // below the page margin (which used to create a footer-only extra page).
     const previousBottom = doc.page.margins.bottom;
@@ -878,7 +888,7 @@ export async function buildMunicipalReportPdf(context: MunicipalPdfContext): Pro
     renderBarangayBreakdown(doc, context, emblems);
   }
 
-  stampPageNumbers(doc);
+  stampPageNumbers(doc, emblems);
   doc.end();
   await finished;
 
