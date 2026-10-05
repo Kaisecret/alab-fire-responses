@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
 import { watermarkImage, watermarkTime } from "../media/watermark";
+import { originalPhotoKey } from "../media/legacy-photo-watermark.mjs";
 
 const bucket = "fire-report-photos";
 
@@ -58,11 +59,7 @@ async function storeWatermarkedPhoto(folder: string, file: File, watermark: Phot
 }
 
 /** Where the untouched original of a watermarked photo is kept. */
-export function originalPhotoKey(storageKey: string) {
-  const slash = storageKey.lastIndexOf("/");
-  const name = storageKey.slice(slash + 1).replace(/\.[^.]+$/, "");
-  return `${storageKey.slice(0, slash)}/original/${name}`;
-}
+export { originalPhotoKey };
 
 export async function uploadFireReportPhoto(reportId: string, file: File, watermark: PhotoWatermark = { label: "Fire report evidence" }) {
   return storeWatermarkedPhoto(reportId, file, watermark, "Unable to securely upload the incident photo.");
