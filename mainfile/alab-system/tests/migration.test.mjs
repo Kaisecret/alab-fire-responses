@@ -81,7 +81,7 @@ test("landing content preserves the complete source structure", () => {
     assert.match(content, new RegExp(`id=\\\\?"${id}\\\\?"`));
   }
 
-  assert.match(content, /Provincial Fire Response/);
+  assert.match(content, /A GIS-Based Provincial Inter-Municipal Fire Response and Decision Support System for BFP Antique/);
   assert.equal(content.includes("/images/phone.webp"), true);
   assert.equal(content.includes("/images/BFPBACK.webp"), true);
   assert.equal(content.includes('url(\\"/images/bg images.webp\\")'), true);

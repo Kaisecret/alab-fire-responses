@@ -9,6 +9,7 @@ import {
 import { landingMobileStyles } from "../_content/landing-mobile-styles";
 import { heroEmergencyMarkup, heroEmergencyStyles } from "../_content/emergency-call";
 import { OPEN_BFP_HOTLINES, ResidentOfflineEmergency } from "./resident-offline-emergency";
+import { LandingHowToUse, OPEN_HOW_TO_USE } from "./landing-how-to-use";
 
 // The hero's second action is the emergency call (it replaces "View active
 // incidents"), so anyone, with or without an account, can call BFP.
@@ -28,6 +29,17 @@ export function LandingPage() {
     const openHotlines = () => window.dispatchEvent(new Event(OPEN_BFP_HOTLINES));
     button?.addEventListener("click", openHotlines);
     return () => button?.removeEventListener("click", openHotlines);
+  }, []);
+
+  // "How to use" (hero, report section, footer) opens the resident guide dialog.
+  useEffect(() => {
+    const triggers = Array.from(rootRef.current?.querySelectorAll("[data-how-to-use]") ?? []);
+    const openGuide = (event: Event) => {
+      event.preventDefault();
+      window.dispatchEvent(new Event(OPEN_HOW_TO_USE));
+    };
+    triggers.forEach((trigger) => trigger.addEventListener("click", openGuide));
+    return () => triggers.forEach((trigger) => trigger.removeEventListener("click", openGuide));
   }, []);
 
 
@@ -130,6 +142,7 @@ export function LandingPage() {
         dangerouslySetInnerHTML={{ __html: markup }}
       />
       <ResidentOfflineEmergency />
+      <LandingHowToUse />
     </>
   );
 }

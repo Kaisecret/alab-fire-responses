@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { LandingPage } from "./_components/landing-page";
 
 export const metadata: Metadata = {
-  title: "ALAB | Provincial Fire Response",
+  title: "ALAB | A GIS-Based Provincial Inter-Municipal Fire Response and Decision Support System for BFP Antique",
   description:
     "ALAB connects communities and the Bureau of Fire Protection through fast, coordinated emergency response across Antique.",
 };
