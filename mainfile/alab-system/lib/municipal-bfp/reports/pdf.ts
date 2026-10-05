@@ -114,18 +114,20 @@ interface Emblems {
  * Emblems are optional: a missing or unreadable file must never fail an
  * official export, so the letterhead falls back to a drawn monogram instead.
  */
-async function loadEmblem(fileName: string): Promise<Buffer | null> {
+async function loadEmblem(filePath: string): Promise<Buffer | null> {
   try {
-    return await readFile(path.join(process.cwd(), "public", "images", fileName));
+    return await readFile(filePath);
   } catch {
     return null;
   }
 }
 
 async function loadEmblems(): Promise<Emblems> {
+  // Spell each path out in full. A variable file name makes output tracing
+  // copy all of public/images (16 MB) into the export functions on every deploy.
   const [bfp, alab] = await Promise.all([
-    loadEmblem("bfp logo.png"),
-    loadEmblem("logo alab.png"),
+    loadEmblem(path.join(process.cwd(), "public", "images", "bfp logo.png")),
+    loadEmblem(path.join(process.cwd(), "public", "images", "logo alab.png")),
   ]);
   return { bfp, alab };
 }

@@ -4,5 +4,6 @@
     { "path": "/api/cron/resident-correction-deliveries", "schedule": "0 0 * * *" },
     { "path": "/api/cron/backup-escalations", "schedule": "1 0 * * *" }
   ],
-  "installCommand": "npm install --include=optional"
+  "installCommand": "npm install --include=optional",
+  "ignoreCommand": "[ -n \"$VERCEL_GIT_PREVIOUS_SHA\" ] && git diff --quiet \"$VERCEL_GIT_PREVIOUS_SHA\" HEAD -- ."
 }
