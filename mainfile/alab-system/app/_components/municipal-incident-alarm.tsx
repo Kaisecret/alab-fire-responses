@@ -6,6 +6,7 @@ import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
 import { useMunicipalIncidentFeed, type MunicipalIncident } from "./use-municipal-incident-feed";
 import { getFireTypeLabel, getSeverityLabel } from "../../lib/municipal-bfp/reports/formatters";
 import { EmergencyAlertCard } from "./emergency-alert-card";
+import { startSiren } from "./alarm-siren";
 
 /*
  * Incidents that still need a duty officer to look at them. Anything already
@@ -43,52 +44,6 @@ function writeAcknowledged(ids: Set<string>): void {
   } catch {
     // A full or blocked storage must never stop the alarm from being dismissed.
   }
-}
-
-/**
- * Two-tone emergency siren, synthesised rather than loaded, so the alarm needs
- * no audio asset and starts instantly. Returns a stop function.
- */
-function startSiren(context: AudioContext): () => void {
-  const master = context.createGain();
-  master.gain.value = 0.0001;
-  master.connect(context.destination);
-
-  const oscillator = context.createOscillator();
-  oscillator.type = "sawtooth";
-  oscillator.connect(master);
-
-  // Alternate between two pitches, the way a fire alarm sweeps.
-  const LOW = 620;
-  const HIGH = 880;
-  const STEP_SECONDS = 0.55;
-
-  const now = context.currentTime;
-  oscillator.frequency.setValueAtTime(LOW, now);
-  master.gain.exponentialRampToValueAtTime(0.16, now + 0.05);
-
-  let step = 0;
-  const schedule = () => {
-    const at = context.currentTime + 0.02;
-    step += 1;
-    oscillator.frequency.setValueAtTime(step % 2 === 0 ? LOW : HIGH, at);
-  };
-  const timer = window.setInterval(schedule, STEP_SECONDS * 1000);
-
-  oscillator.start();
-
-  return () => {
-    window.clearInterval(timer);
-    try {
-      const stopAt = context.currentTime;
-      master.gain.cancelScheduledValues(stopAt);
-      master.gain.setValueAtTime(master.gain.value, stopAt);
-      master.gain.exponentialRampToValueAtTime(0.0001, stopAt + 0.12);
-      oscillator.stop(stopAt + 0.15);
-    } catch {
-      // Already stopped.
-    }
-  };
 }
 
 const styles = `

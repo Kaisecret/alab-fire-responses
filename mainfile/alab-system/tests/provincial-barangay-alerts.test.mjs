@@ -9,7 +9,7 @@ import * as state from '../lib/intermunicipality/assistance-state.ts';
 const id = n => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const origin=id(1), near=id(2), far=id(3), brgy=id(10), otherBrgy=id(11), officer=id(20), nearOfficer=id(21);
 const migration = name => readFileSync(`supabase/migrations/${name}.sql`, 'utf8');
-async function fixture() {
+async function fixture(beforeMunicipalAlerts) {
   const db=new PGlite();
   await db.exec(`create role anon; create role authenticated;
     create table users(id uuid primary key, role text, account_status text);
@@ -35,6 +35,8 @@ async function fixture() {
   await db.exec('create table incident_alarm_summons(assistance_request_id uuid)');
   await db.exec(migration('20260920130000_enforce_provincial_assistance_commands'));
   await db.exec(migration('20261004133956_add_provincial_barangay_alerts'));
+  await beforeMunicipalAlerts?.(db);
+  await db.exec(migration('20261006090000_municipal_incident_alerts'));
   const notifications=[], queries=[];
   const withTransaction=work=>db.transaction(tx=>work({query:(sql,params)=>{
     queries.push(sql);
@@ -60,27 +62,49 @@ async function fixture() {
   return {db,api,report,notifications,queries};
 }
 
-test('the third canonical active incident raises exactly one barangay alert; duplicates and other groups do not inflate it',async()=>{
+test('three active reports anywhere in one municipality raise exactly one alert; duplicates and closed reports do not count',async()=>{
   const {db,api,report}=await fixture();
   try {
-    await report(100); await report(101);
+    await report(100);
     await report(110,{status:'DUPLICATE',duplicate:id(100)}); await report(111,{status:'RESPONDING',duplicate:id(100)});
-    await report(112,{status:'RESOLVED'}); await report(113,{barangay:otherBrgy}); await report(114,{barangay:null});
+    await report(112,{status:'RESOLVED'}); await report(113,{barangay:otherBrgy});
     assert.equal((await api.listProvincialBarangayAlerts()).length,0);
-    await report(102,{dispatched:true});
+    await report(114,{barangay:null,dispatched:true});
     const [alert]=await api.listProvincialBarangayAlerts();
-    assert.equal(alert.incidentCount,3); assert.equal(alert.barangay,'Same'); assert.equal(alert.municipalityId,origin);
-    assert.equal(alert.acknowledgedAt,null); assert.deepEqual(alert.incidentIds,[id(100),id(101),id(102)]);
-    assert.equal(alert.incidents.find(r=>r.id===id(102)).dispatched,true);
+    assert.equal(alert.incidentCount,3,'three barangays (one unknown) in one municipality are one cluster');
+    assert.equal(alert.municipalityId,origin); assert.equal(alert.municipalityName,'Origin');
+    assert.equal(alert.acknowledgedAt,null); assert.deepEqual(alert.incidentIds,[id(100),id(113),id(114)]);
+    assert.deepEqual(alert.incidents.map(r=>r.barangay),['Same','Other',null]);
+    assert.equal(alert.incidents.find(r=>r.id===id(114)).dispatched,true);
     assert.deepEqual(alert.incidents[0].nearbyMunicipalities.map(m=>m.municipalityId),[near,far]);
-    assert.equal((await api.listProvincialBarangayAlerts())[0].id,alert.id);
+    await report(101); await report(102);
+    const grown=await api.listProvincialBarangayAlerts();
+    assert.equal(grown.length,1,'three reports in one barangay never ring a second alert for the same municipality');
+    assert.equal(grown[0].id,alert.id); assert.equal(grown[0].incidentCount,5);
     const permissions=await db.query("select has_table_privilege('anon','provincial_barangay_alerts','SELECT') as exposed");
     assert.equal(permissions.rows[0].exposed,false);
     await db.query('insert into barangays values ($1,$2,$3)',[id(12),far,'Same']);
     for(const n of [200,201,202])await report(n,{municipality:far,barangay:id(12)});
     const separated=await api.listProvincialBarangayAlerts();
-    assert.equal(separated.length,2,'equal barangay names in different municipalities remain separate');
-    assert.ok(separated.every(a=>a.incidentCount===3));
+    assert.equal(separated.length,2,'each municipality has its own alert');
+    assert.deepEqual(separated.map(a=>a.incidentCount),[5,3]);
+  }finally{await db.close();}
+});
+
+test('the release closes per-barangay alerts so they reopen once per municipality',async()=>{
+  let legacy;
+  const {db,api,report}=await fixture(async db=>{
+    const inserted=await db.query(`insert into provincial_barangay_alerts(municipality_id,barangay_id,incident_ids,acknowledged_at)
+      values ($1,$2,$3::uuid[],now()) returning id`,[origin,brgy,[id(100),id(101),id(102)]]);
+    legacy=inserted.rows[0].id;
+  });
+  try {
+    for(const n of [100,101,102])await report(n);
+    const closed=await db.query('select closed_at from provincial_barangay_alerts where id=$1',[legacy]);
+    assert.ok(closed.rows[0].closed_at);
+    const [alert]=await api.listProvincialBarangayAlerts();
+    assert.notEqual(alert.id,legacy);
+    assert.equal(alert.acknowledgedAt,null,'the province hears the municipality alarm once after the release');
   }finally{await db.close();}
 });
 

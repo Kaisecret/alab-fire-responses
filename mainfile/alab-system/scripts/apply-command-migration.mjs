@@ -94,6 +94,11 @@ const releaseMigrations = [
     appliedCheck: `select to_regclass('public.municipal_bfp_stations') is null
       or coalesce(obj_description(to_regclass('public.municipal_bfp_stations'), 'pg_class'), '') like '%Release 20261005150000%' as applied`,
   },
+  {
+    version: "20261006090000",
+    name: "municipal_incident_alerts",
+    appliedCheck: `select to_regclass('public.provincial_barangay_alerts_open_municipality_idx') is not null as applied`,
+  },
 ];
 
 const client = new pg.Client({

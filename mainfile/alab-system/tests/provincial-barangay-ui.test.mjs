@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import * as jsxRuntime from 'react/jsx-runtime';
 import { loadServerModule } from './helpers/load-server-module.mjs';
@@ -7,13 +8,12 @@ import { loadServerModule } from './helpers/load-server-module.mjs';
 // submitting the wrong incident/municipality; dispatching before municipal dispatch;
 // navigating/dismissing before acknowledgment succeeds; accepting an aborted poll.
 const fixture = () => ({
-  id: 'alert-1', municipalityId: 'source', municipalityName: 'San Jose',
-  barangayId: 'barangay-1', barangay: 'Poblacion', incidentCount: 3,
+  id: 'alert-1', municipalityId: 'source', municipalityName: 'San Jose', incidentCount: 3,
   openedAt: '2026-10-04T01:00:00Z', updatedAt: '2026-10-04T01:00:00Z',
   acknowledgedAt: null, incidentIds: ['fire-1', 'fire-2', 'fire-3'],
   incidents: [1, 2, 3].map(n => ({
     id: `fire-${n}`, referenceNumber: `ALAB-${n}`, status: 'ON_GOING', fireType: 'STRUCTURAL',
-    dispatched: n !== 3,
+    barangay: 'Poblacion', dispatched: n !== 3,
     nearbyMunicipalities: [
       { municipalityId: 'near', municipalityName: 'Sibalom', stationId: 'station-near', stationName: 'Sibalom BFP', distanceMeters: 2100 },
       { municipalityId: 'far', municipalityName: 'Hamtic', stationId: 'station-far', stationName: 'Hamtic BFP', distanceMeters: 4200 },
@@ -139,15 +139,19 @@ test('the feed ignores late aborted polls and clears private alerts on session d
   } finally { globalThis.fetch = originalFetch; globalThis.document = originalDocument; }
 });
 
-function componentDependencies(harness, feed) {
+function componentDependencies(harness, feed, siren = []) {
   const card = loadServerModule('app/_components/emergency-alert-card.tsx', { 'react/jsx-runtime': jsxRuntime });
   return {
     react: harness.react, 'react/jsx-runtime': jsxRuntime,
     './emergency-alert-card': card,
+    '../../lib/intermunicipality/barangay-clusters': loadServerModule('lib/intermunicipality/barangay-clusters.ts', {}),
+    './alarm-siren': { useAlarmSiren: on => { siren.push(on); return { audioBlocked: false }; } },
+    './fire-command-header': { FireCommandHeader: () => null },
     './use-provincial-barangay-alerts': { useProvincialBarangayAlerts: () => feed },
-    'next/navigation': { useSearchParams: () => new URLSearchParams('barangayAlert=alert-1') },
+    'next/navigation': { useSearchParams: () => new URLSearchParams('alert=alert-1') },
   };
 }
+const coordinationCard = section => elements(section).find(el => el.type?.name === 'MunicipalCoordinationCard');
 
 test('the popup opens the first unacknowledged group and navigates only after acknowledgment', async () => {
   const originalWindow = globalThis.window;
@@ -162,14 +166,14 @@ test('the popup opens the first unacknowledged group and navigates only after ac
     assert.ok(elements(tree).some(el => el.type === 'dialog' && el.props.role === 'alertdialog'));
     const cardElement = elements(tree).find(el => typeof el.type === 'function');
     const card = cardElement.type(cardElement.props);
-    const manage = elements(card).find(el => el.type === 'button' && /Manage Coordination/.test(textOf(el)));
+    const manage = elements(card).find(el => el.type === 'button' && /Open Coordination/.test(textOf(el)));
     assert.ok(manage);
     const action = manage.props.onClick();
     await Promise.resolve();
     assert.deepEqual(navigate, []);
     pending.resolve();
     await action;
-    assert.deepEqual(navigate, ['/provincial-bfp/assistance-requests?barangayAlert=alert-2']);
+    assert.deepEqual(navigate, ['/provincial-bfp/incident-clusters?alert=alert-2']);
   } finally { globalThis.window = originalWindow; }
 });
 
@@ -179,7 +183,7 @@ test('coordination keeps acknowledged cards and submits selected incident, munic
   const feed = { alerts: [alert], loading: false, checking: false, error: '', lastCheckedAt: new Date(), refresh: async () => {}, submitCommand: async payload => submissions.push(payload) };
   const mod = loadServerModule('app/_components/provincial-barangay-coordination.tsx', componentDependencies(harness, feed));
   const section = mod.ProvincialBarangayCoordination();
-  const card = elements(section).find(el => typeof el.type === 'function');
+  const card = coordinationCard(section);
   assert.ok(card, 'acknowledgment must not hide the coordination card');
   const render = () => harness.render(() => card.type(card.props));
   let tree = render();
@@ -240,7 +244,7 @@ test('resource command validation refuses excessive resources and shows receivin
   alert.incidents[1].commands = [{ id: 'command-1', recipientMunicipalityId: 'near', recipientMunicipalityName: 'Sibalom', status: 'PARTIALLY_ACCEPTED' }];
   const feed = { alerts: [alert], loading: false, checking: false, error: '', lastCheckedAt: new Date(), refresh: async () => {}, submitCommand: async payload => submissions.push(payload) };
   const mod = loadServerModule('app/_components/provincial-barangay-coordination.tsx', componentDependencies(harness, feed));
-  const card = elements(mod.ProvincialBarangayCoordination()).find(el => typeof el.type === 'function');
+  const card = coordinationCard(mod.ProvincialBarangayCoordination());
   const render = () => harness.render(() => card.type(card.props));
   let tree = render();
   assert.match(textOf(tree), /Sibalom Partially accepted/);
@@ -306,11 +310,75 @@ test('a refused server acknowledgment keeps the popup visible and prevents navig
   try {
     globalThis.window = { location: { assign() { navigated = true; } } };
     let card = elements(render()).find(el => typeof el.type === 'function');
-    await elements(card.type(card.props)).find(el => el.type === 'button' && /Manage Coordination/.test(textOf(el))).props.onClick();
+    await elements(card.type(card.props)).find(el => el.type === 'button' && /Open Coordination/.test(textOf(el))).props.onClick();
     assert.equal(navigated, false);
     const tree = render();
     assert.ok(elements(tree).some(el => el.type === 'dialog'));
     card = elements(tree).find(el => typeof el.type === 'function');
     assert.match(textOf(card.type(card.props)), /Server rejected acknowledgment/);
   } finally { globalThis.window = originalWindow; }
+});
+
+test('the popup sounds the shared siren only while an alert waits for acknowledgment', () => {
+  const harness = hooks(), siren = [], unread = fixture();
+  const feed = { alerts: [unread], acknowledge: async () => {} };
+  const mod = loadServerModule('app/_components/provincial-barangay-alert.tsx', componentDependencies(harness, feed, siren));
+  const tree = harness.render(() => mod.ProvincialBarangayAlert());
+  assert.ok(tree);
+  assert.equal(siren.at(-1), true);
+  feed.alerts = [{ ...unread, acknowledgedAt: '2026-10-04T01:05:00Z' }];
+  assert.equal(harness.render(() => mod.ProvincialBarangayAlert()), null);
+  assert.equal(siren.at(-1), false, 'acknowledging silences the siren');
+});
+
+test('the shared siren starts when turned on and stops when turned off', async () => {
+  const originalWindow = globalThis.window;
+  const harness = hooks();
+  let started = 0, stopped = 0;
+  const param = () => ({ value: 0.0001, setValueAtTime() {}, exponentialRampToValueAtTime() {}, cancelScheduledValues() {} });
+  class FakeAudioContext {
+    state = 'running'; currentTime = 0; destination = {};
+    async resume() {}
+    createGain() { return { gain: param(), connect() {} }; }
+    createOscillator() { return { type: '', frequency: param(), connect() {}, start() { started++; }, stop() { stopped++; } }; }
+  }
+  try {
+    globalThis.window = { AudioContext: FakeAudioContext, setInterval: () => 1, clearInterval() {}, addEventListener() {}, removeEventListener() {} };
+    const mod = loadServerModule('app/_components/alarm-siren.ts', { react: harness.react });
+    harness.render(() => mod.useAlarmSiren(true));
+    harness.commit();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(started, 1);
+    harness.render(() => mod.useAlarmSiren(true));
+    harness.commit();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(started, 1, 'a running siren is not started twice');
+    harness.render(() => mod.useAlarmSiren(false));
+    harness.commit();
+    assert.equal(stopped, 1);
+  } finally { harness.cleanup(); globalThis.window = originalWindow; }
+});
+
+test('coordination puts incidents ready for support first, folds the rest, and flags a barangay with three or more reports', () => {
+  const harness = hooks(), alert = fixture();
+  alert.incidents[0].dispatched = false;
+  alert.incidents[2].dispatched = true;
+  const feed = { alerts: [alert], loading: false, checking: false, error: '', lastCheckedAt: new Date(), refresh: async () => {}, submitCommand: async () => {} };
+  const mod = loadServerModule('app/_components/provincial-barangay-coordination.tsx', componentDependencies(harness, feed));
+  const card = coordinationCard(mod.ProvincialBarangayCoordination());
+  const tree = harness.render(() => card.type(card.props));
+  const incident = elements(tree).find(el => el.type === 'select' && el.props.id?.endsWith('-incident'));
+  assert.equal(incident.props.value, 'fire-2', 'the form starts on the first incident the province can support');
+  assert.match(textOf(tree), /Poblacion · 3 reports/);
+  const folded = elements(tree).find(el => el.type === 'details');
+  assert.ok(folded, 'incidents waiting for dispatch are folded away');
+  assert.match(textOf(folded), /1 waiting for verification or dispatch/);
+  assert.match(textOf(folded), /ALAB-1/);
+});
+
+test('coordination lives on its own screen instead of the Assistance Requests page', () => {
+  assert.doesNotMatch(readFileSync('app/provincial-bfp/assistance-requests/page.tsx', 'utf8'), /ProvincialBarangayCoordination/);
+  assert.ok(existsSync('app/provincial-bfp/incident-clusters/page.tsx'));
+  assert.match(readFileSync('app/provincial-bfp/incident-clusters/page.tsx', 'utf8'), /ProvincialBarangayCoordination/);
+  assert.match(readFileSync('app/_components/provincial-bfp-layout.tsx', 'utf8'), /href: '\/provincial-bfp\/incident-clusters'/);
 });

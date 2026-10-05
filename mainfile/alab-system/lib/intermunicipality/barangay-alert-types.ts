@@ -18,17 +18,17 @@ export type BarangayAlertIncident = {
   referenceNumber: string;
   status: string;
   fireType: string | null;
+  barangay: string | null;
   dispatched: boolean;
   nearbyMunicipalities: BarangayNearbyMunicipality[];
   commands: BarangayAlertCommand[];
 };
 
+// One alert per municipality with three or more active reports in any barangays.
 export type BarangayAlert = {
   id: string;
   municipalityId: string;
   municipalityName: string;
-  barangayId: string;
-  barangay: string;
   incidentCount: number;
   openedAt: string;
   updatedAt: string;

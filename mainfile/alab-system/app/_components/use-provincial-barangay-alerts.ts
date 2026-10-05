@@ -6,6 +6,14 @@ import type { BarangayAlert, BarangayResourceCommand } from "../../lib/intermuni
 const ENDPOINT = "/api/provincial-bfp/barangay-alerts";
 const POLL_INTERVAL_MS = 5_000;
 const UPDATE_EVENT = "provincial-barangay-alerts-updated";
+// The provincial sidebar listens for this to count open alerts.
+const COUNT_EVENT = "provincial-incident-clusters";
+
+function announceCount(count: number) {
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+    window.dispatchEvent(new CustomEvent(COUNT_EVENT, { detail: count }));
+  }
+}
 
 export function useProvincialBarangayAlerts() {
   // Protected records live only for this mounted session.
@@ -30,13 +38,16 @@ export function useProvincialBarangayAlerts() {
         if (res.status === 401 || res.status === 403) {
           setAlerts([]);
           setLastCheckedAt(null);
+          announceCount(0);
         }
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Unable to refresh barangay coordination.");
+        throw new Error(data.error || "Unable to refresh multiple incident alerts.");
       }
       const data = await res.json();
       if (!mounted.current || controller.signal.aborted) return;
-      setAlerts(Array.isArray(data.alerts) ? data.alerts : []);
+      const next: BarangayAlert[] = Array.isArray(data.alerts) ? data.alerts : [];
+      setAlerts(next);
+      announceCount(next.length);
       setLastCheckedAt(new Date());
       setError("");
     } catch (cause) {

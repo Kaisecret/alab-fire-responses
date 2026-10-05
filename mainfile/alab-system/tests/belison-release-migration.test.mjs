@@ -63,6 +63,8 @@ test("deployment build applies Belison coordinates before the app is built", asy
     assert.equal(permissions.rows[0].authenticated_select, false);
     const alerts = await db.query("select relrowsecurity from pg_class where oid='public.provincial_barangay_alerts'::regclass");
     assert.equal(alerts.rows[0].relrowsecurity, true);
+    const municipalAlerts = await db.query("select indexdef from pg_indexes where indexname='provincial_barangay_alerts_open_municipality_idx'");
+    assert.match(municipalAlerts.rows[0]?.indexdef ?? '', /\(municipality_id\)/, 'the release keeps one open alert per municipality');
   } finally {
     pg.Client = originalClient;
     if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;

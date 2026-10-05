@@ -10,29 +10,33 @@ import type { StationCandidate } from "./types";
 import type { BarangayAlert, BarangayAlertIncident } from "./barangay-alert-types";
 
 const ACTIVE = "fr.duplicate_of_report_id is null and fr.status not in ('RESOLVED','CLOSED','REJECTED','FALSE_REPORT','DUPLICATE')";
-type Group = { municipality_id: string; barangay_id: string; incident_ids: string[] };
-type AlertRow = Group & { id: string; municipality_name: string; barangay: string; opened_at: Date | string; updated_at: Date | string; acknowledged_at: Date | string | null };
+type Group = { municipality_id: string; incident_ids: string[] };
+type AlertRow = Group & { id: string; municipality_name: string; opened_at: Date | string; updated_at: Date | string; acknowledged_at: Date | string | null };
 
+/*
+ * One alert per municipality with three or more active reports, in any of its
+ * barangays. Three in one barangay are already three in the municipality, so a
+ * separate barangay alert would only ring twice for the same reports.
+ */
 async function synchronize(client: PoolClient) {
   // GET, acknowledgment and assignment take this lock first, in the same order.
   await client.query("select pg_advisory_xact_lock(hashtext('provincial-barangay-alerts'))");
-  const groups = await client.query<Group>(`select fr.municipality_id, fr.barangay_id, array_agg(fr.id order by fr.id) as incident_ids
-    from fire_reports fr join barangays b on b.id=fr.barangay_id and b.municipality_id=fr.municipality_id
-    where ${ACTIVE} group by fr.municipality_id, fr.barangay_id having count(*) >= 3`);
-  const open = await client.query<Group & { id: string }>("select id, municipality_id, barangay_id from provincial_barangay_alerts where closed_at is null");
-  const keys = new Set(groups.rows.map(g => `${g.municipality_id}:${g.barangay_id}`));
-  const closedIds = open.rows.filter(g => !keys.has(`${g.municipality_id}:${g.barangay_id}`)).map(g => g.id);
+  const groups = await client.query<Group>(`select fr.municipality_id, array_agg(fr.id order by fr.id) as incident_ids
+    from fire_reports fr where ${ACTIVE} group by fr.municipality_id having count(*) >= 3`);
+  const open = await client.query<Group & { id: string }>("select id, municipality_id from provincial_barangay_alerts where closed_at is null");
+  const keys = new Set(groups.rows.map(g => g.municipality_id));
+  const closedIds = open.rows.filter(g => !keys.has(g.municipality_id)).map(g => g.id);
   if (closedIds.length) await client.query("update provincial_barangay_alerts set closed_at=now(), updated_at=now() where id=any($1::uuid[])", [closedIds]);
   for (const group of groups.rows) {
-    await client.query(`insert into provincial_barangay_alerts (municipality_id,barangay_id,incident_ids)
-      values ($1,$2,$3::uuid[]) on conflict (municipality_id,barangay_id) where closed_at is null
+    await client.query(`insert into provincial_barangay_alerts (municipality_id,incident_ids)
+      values ($1,$2::uuid[]) on conflict (municipality_id) where closed_at is null
       do update set incident_ids=excluded.incident_ids, updated_at=now(),
         acknowledged_at=case when provincial_barangay_alerts.incident_ids @> excluded.incident_ids
           then provincial_barangay_alerts.acknowledged_at else null end,
         acknowledged_by_user_id=case when provincial_barangay_alerts.incident_ids @> excluded.incident_ids
           then provincial_barangay_alerts.acknowledged_by_user_id else null end
       where provincial_barangay_alerts.incident_ids is distinct from excluded.incident_ids`,
-    [group.municipality_id, group.barangay_id, group.incident_ids]);
+    [group.municipality_id, group.incident_ids]);
   }
 }
 
@@ -57,27 +61,28 @@ function nearby(stations: StationCandidate[], incident: { latitude: number; long
 export async function listProvincialBarangayAlerts(): Promise<BarangayAlert[]> {
   return withTransaction(async client => {
     await synchronize(client);
-    const alerts = await client.query<AlertRow>(`select a.*, m.name as municipality_name, b.name as barangay
+    const alerts = await client.query<AlertRow>(`select a.*, m.name as municipality_name
       from provincial_barangay_alerts a join municipalities m on m.id=a.municipality_id
-      join barangays b on b.id=a.barangay_id where a.closed_at is null order by a.opened_at, a.id`);
+      where a.closed_at is null order by a.opened_at, a.id`);
     if (!alerts.rows.length) return [];
     const ids = alerts.rows.flatMap(a => a.incident_ids);
-    const reports = await client.query<{ id: string; reference_number: string; status: string; fire_type: string; latitude: number; longitude: number; municipality_id: string; dispatched: boolean }>(
-      `select fr.id, fr.reference_number, fr.status, fr.fire_type, fr.latitude::float8 as latitude, fr.longitude::float8 as longitude, fr.municipality_id,
+    const reports = await client.query<{ id: string; reference_number: string; status: string; fire_type: string; barangay: string | null; latitude: number; longitude: number; municipality_id: string; dispatched: boolean }>(
+      `select fr.id, fr.reference_number, fr.status, fr.fire_type, b.name as barangay, fr.latitude::float8 as latitude, fr.longitude::float8 as longitude, fr.municipality_id,
         exists(select 1 from incident_dispatches d where d.fire_report_id=fr.id and d.status='ACTIVE') as dispatched
-       from fire_reports fr where fr.id=any($1::uuid[]) order by fr.submitted_at, fr.id`, [ids]);
+       from fire_reports fr left join barangays b on b.id=fr.barangay_id
+       where fr.id=any($1::uuid[]) order by fr.submitted_at, fr.id`, [ids]);
     const stations = await eligibleStations(client);
     const commands = await client.query<{ id: string; fire_report_id: string; recipient_municipality_id: string; recipient_municipality_name: string; status: string }>(
       `select r.id,r.fire_report_id,r.recipient_municipality_id,m.name as recipient_municipality_name,r.status
         from intermunicipal_assistance_requests r join municipalities m on m.id=r.recipient_municipality_id
         where r.fire_report_id=any($1::uuid[]) and r.is_provincial_command order by r.requested_at`, [ids]);
     const incidents = new Map<string, BarangayAlertIncident>(reports.rows.map(r => [r.id, {
-      id:r.id, referenceNumber:r.reference_number, status:r.status, fireType:r.fire_type, dispatched:r.dispatched,
+      id:r.id, referenceNumber:r.reference_number, status:r.status, fireType:r.fire_type, barangay:r.barangay, dispatched:r.dispatched,
       nearbyMunicipalities:nearby(stations,r),
       commands:commands.rows.filter(c=>c.fire_report_id===r.id).map(c=>({id:c.id,recipientMunicipalityId:c.recipient_municipality_id,recipientMunicipalityName:c.recipient_municipality_name,status:c.status})),
     }]));
     return alerts.rows.map(a => ({id:a.id,municipalityId:a.municipality_id,municipalityName:a.municipality_name,
-      barangayId:a.barangay_id,barangay:a.barangay,incidentIds:a.incident_ids,incidentCount:a.incident_ids.length,
+      incidentIds:a.incident_ids,incidentCount:a.incident_ids.length,
       openedAt:new Date(a.opened_at).toISOString(),updatedAt:new Date(a.updated_at).toISOString(),
       acknowledgedAt:a.acknowledged_at ? new Date(a.acknowledged_at).toISOString() : null,
       incidents:a.incident_ids.flatMap(id=>incidents.has(id)?[incidents.get(id)!]:[])}));
@@ -102,15 +107,15 @@ export async function assignBarangayIncidentAssistance(input: {
   const resources = validateRequestedResources(input.requestedFiretrucks,input.requestedPersonnel);
   return withTransaction(async client => {
     await synchronize(client);
-    const alerts = await client.query<AlertRow>(`select a.*,b.name as barangay from provincial_barangay_alerts a
-      join barangays b on b.id=a.barangay_id where a.id=$1 and a.closed_at is null for update of a`, [input.alertId]);
+    const alerts = await client.query<AlertRow>(`select a.*,m.name as municipality_name from provincial_barangay_alerts a
+      join municipalities m on m.id=a.municipality_id where a.id=$1 and a.closed_at is null for update of a`, [input.alertId]);
     const alert=alerts.rows[0];
     if (!alert || !alert.incident_ids.includes(input.fireReportId)) throw new Error("BARANGAY_ALERT_CHANGED");
     // Protect lifecycle changes until commit while allowing foreign-key checks
     // from concurrent alarm enrollment before we acquire the selected observer.
     const reports = await client.query<{id:string;latitude:number;longitude:number;municipality_id:string}>(
       `select fr.id,fr.latitude::float8 as latitude,fr.longitude::float8 as longitude,fr.municipality_id from fire_reports fr
-        where fr.municipality_id=$1 and fr.barangay_id=$2 and ${ACTIVE} order by fr.id for no key update of fr`, [alert.municipality_id,alert.barangay_id]);
+        where fr.municipality_id=$1 and ${ACTIVE} order by fr.id for no key update of fr`, [alert.municipality_id]);
     const incident=reports.rows.find(r=>r.id===input.fireReportId);
     if (reports.rows.length < 3 || !incident) throw new Error("BARANGAY_ALERT_CHANGED");
     const dispatches=await client.query<{id:string}>("select id from incident_dispatches where fire_report_id=$1 and status='ACTIVE' order by created_at desc limit 1 for no key update",[input.fireReportId]);
@@ -124,7 +129,7 @@ export async function assignBarangayIncidentAssistance(input: {
     [randomUUID(),input.fireReportId,dispatchId,alert.municipality_id,selected.municipalityId,selected.stationId,selected.latitude,selected.longitude,selected.distanceMeters]);
     const requests=await createAssistanceRequests({fireReportId:input.fireReportId,requesterMunicipalityId:alert.municipality_id,
       actorUserId:input.actorUserId,recipientMunicipalityIds:[selected.municipalityId],...resources,
-      requestNote:`Provincial coordination: three or more active incidents in ${alert.barangay}.`,
+      requestNote:`Provincial coordination: three or more active incidents in ${alert.municipality_name}.`,
       allowProvincialReach:true,isProvincialCommand:true},client);
     // A command does not acknowledge other incidents the officer has not read.
     return requests;

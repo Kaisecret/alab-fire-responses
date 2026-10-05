@@ -80,6 +80,11 @@ const navigationGroups: NavGroup[] = [
         icon: 'fa-solid fa-handshake-angle',
       },
       {
+        label: 'Multiple Incidents',
+        href: '/provincial-bfp/incident-clusters',
+        icon: 'fa-solid fa-fire-flame-curved',
+      },
+      {
         label: 'Provincial GIS Map',
         href: '/provincial-bfp/gis-map',
         icon: 'fa-solid fa-map-location-dot',
@@ -1351,6 +1356,18 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
     };
   }, [isAuthenticationPage]);
 
+  // Municipalities with three or more active reports, announced by the
+  // multiple-incident alert feed after each poll.
+  const [clusterAlertCount, setClusterAlertCount] = useState(0);
+  useEffect(() => {
+    const onCount = (event: Event) => {
+      const count = (event as CustomEvent<unknown>).detail;
+      setClusterAlertCount(typeof count === 'number' ? count : 0);
+    };
+    window.addEventListener('provincial-incident-clusters', onCount);
+    return () => window.removeEventListener('provincial-incident-clusters', onCount);
+  }, []);
+
   if (isAuthenticationPage) {
     return <>{children}</>;
   }
@@ -1413,6 +1430,7 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                 <div className="pbfp-nav-group-title">{group.groupTitle}</div>
                 {group.items.map((item) => {
                   const active = isActive(item);
+                  const badge = item.href === '/provincial-bfp/incident-clusters' && clusterAlertCount > 0 ? clusterAlertCount : item.badge;
                   return (
                     <Link
                       key={item.href}
@@ -1441,8 +1459,8 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
                         <i className={`${item.icon} pbfp-nav-icon`} />
                       )}
                       <span className="pbfp-nav-label">{item.label}</span>
-                      {item.badge !== undefined && (
-                        <span className="pbfp-nav-badge">{item.badge}</span>
+                      {badge !== undefined && (
+                        <span className="pbfp-nav-badge">{badge}</span>
                       )}
                       {/* Tooltip for collapsed view */}
                       {isCollapsed && <span className="pbfp-tooltip">{item.label}</span>}
