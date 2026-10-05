@@ -1,11 +1,13 @@
 'use client';
 
-import React, { Suspense, useMemo } from 'react';
+import React, { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useProvincialAssistanceFeed } from '../../_components/use-provincial-assistance-feed';
 import { SkeletonPage } from '../../_components/skeleton-loader';
 import { ProvincialAlarmPanel } from '../../_components/provincial-alarm-panel';
 import { StatCards } from "../../_components/municipal-stat-cards";
 import { FireCommandHeader } from '../../_components/fire-command-header';
+import { ProvincialBarangayCoordination } from '../../_components/provincial-barangay-coordination';
 
 const pageStyles = `
   .pbfp-aid-page {
@@ -549,7 +551,7 @@ const pageStyles = `
   }
 `;
 
-function AssistanceRequestsContent() {
+function AssistanceRequestsContent({ topTabs }: { topTabs?: ReactNode }) {
   const {
     requests,
     checking,
@@ -588,7 +590,7 @@ function AssistanceRequestsContent() {
           ]}
         />
 
-
+        {topTabs}
 
         {/*
           Escalations the province has to answer, above the feed of what has
@@ -612,10 +614,92 @@ function AssistanceRequestsContent() {
   );
 }
 
+const viewTabStyles = `
+  .pbfp-aid-tabs { display:inline-flex; align-self:flex-start; gap:.2rem; margin:0; padding:.28rem; border:1px solid #cbd9e8; border-radius:12px; background:#fff; box-shadow:0 5px 14px rgba(15,23,42,.06); font-family:'Plus Jakarta Sans',sans-serif; max-width:100%; overflow-x:auto; }
+  .pbfp-aid-tab { display:inline-flex; align-items:center; gap:.48rem; min-height:2.55rem; padding:.55rem 1rem; border:0; border-radius:9px; background:transparent; color:#52627a; font:inherit; font-size:.82rem; font-weight:800; white-space:nowrap; cursor:pointer; touch-action:manipulation; }
+  .pbfp-aid-tab:hover { color:#172033; }
+  .pbfp-aid-tab[aria-selected="true"] { background:#fef3f2; color:#b42318; }
+  .pbfp-aid-tab:focus-visible { outline:3px solid rgba(37,99,235,.35); outline-offset:2px; }
+  .pbfp-aid-tab-count { display:inline-grid; place-items:center; min-width:1.25rem; height:1.25rem; padding:0 .35rem; border-radius:999px; background:#DC2626; color:#fff; font-size:.68rem; font-weight:800; }
+`;
+
+type AidView = 'requests' | 'incidents';
+
+/*
+ * Assistance Requests and Multiple Incidents share this page as two tabs under
+ * the stat cards, the way Fire trucks and Stations do.
+ */
+function AssistanceViews() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const view: AidView = searchParams.get('view') === 'incidents' ? 'incidents' : 'requests';
+
+  // Open multiple-incident alerts, announced by the alert feed after each poll.
+  const [clusterCount, setClusterCount] = useState(0);
+  useEffect(() => {
+    const onCount = (event: Event) => {
+      const count = (event as CustomEvent<unknown>).detail;
+      setClusterCount(typeof count === 'number' ? count : 0);
+    };
+    window.addEventListener('provincial-incident-clusters', onCount);
+    return () => window.removeEventListener('provincial-incident-clusters', onCount);
+  }, []);
+
+  function select(next: AidView) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('view', next);
+    params.delete('alert');
+    params.delete('request');
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
+  const tabs = (
+    <div className="pbfp-aid-tabs" role="tablist" aria-label="Assistance views">
+      <button
+        type="button"
+        role="tab"
+        id="pbfp-aid-tab-requests"
+        aria-controls="pbfp-aid-panel"
+        aria-selected={view === 'requests'}
+        className="pbfp-aid-tab"
+        onClick={() => select('requests')}
+      >
+        <i className="fa-solid fa-handshake-angle" aria-hidden="true" />
+        Assistance Requests
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="pbfp-aid-tab-incidents"
+        aria-controls="pbfp-aid-panel"
+        aria-selected={view === 'incidents'}
+        className="pbfp-aid-tab"
+        onClick={() => select('incidents')}
+      >
+        <i className="fa-solid fa-fire-flame-curved" aria-hidden="true" />
+        Multiple Incidents
+        {clusterCount > 0 && <span className="pbfp-aid-tab-count" aria-label={`${clusterCount} open`}>{clusterCount}</span>}
+      </button>
+    </div>
+  );
+
+  return (
+    <>
+      <style>{viewTabStyles}</style>
+      <div id="pbfp-aid-panel" role="tabpanel" aria-labelledby={view === 'incidents' ? 'pbfp-aid-tab-incidents' : 'pbfp-aid-tab-requests'}>
+        {view === 'incidents'
+          ? <ProvincialBarangayCoordination topTabs={tabs} />
+          : <AssistanceRequestsContent topTabs={tabs} />}
+      </div>
+    </>
+  );
+}
+
 export default function AssistanceRequestsPage() {
   return (
     <Suspense fallback={<SkeletonPage label="Loading assistance requests" style={{ padding: '10px 1.5rem 2.5rem' }} />}>
-      <AssistanceRequestsContent />
+      <AssistanceViews />
     </Suspense>
   );
 }

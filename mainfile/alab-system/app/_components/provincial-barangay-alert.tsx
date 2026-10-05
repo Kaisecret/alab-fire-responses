@@ -53,7 +53,7 @@ export function ProvincialBarangayAlert() {
     setError("");
     try {
       await acknowledge(active);
-      if (manage) window.location.assign(`/provincial-bfp/incident-clusters?alert=${encodeURIComponent(active.id)}`);
+      if (manage) window.location.assign(`/provincial-bfp/assistance-requests?view=incidents&alert=${encodeURIComponent(active.id)}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to acknowledge this alert.");
     } finally {

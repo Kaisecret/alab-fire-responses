@@ -33,3 +33,7 @@
 - `tsc --noEmit` passed. Changed-file ESLint: no errors (three existing `<img>` warnings in the layout).
 - `npm run build` passed and lists `/provincial-bfp/incident-clusters`.
 - Visual check: the screen and popup were rendered with mock data shaped like the live Hamtic case (13 reports, 9 in Mapatag) and captured in headless Chrome at 1600px and 390px. No horizontal scroll at 390px. The signed-in live app was not checked: that needs the migration on the live database and a provincial login.
+
+## Update: tab instead of sidebar item (same day)
+
+On request, Multiple Incidents is no longer a sidebar item. It is a second tab under the stat cards on Assistance Requests (`?view=incidents`), the same way Fire trucks and Stations share a page. The tab uses the shared stat cards and icons like the other provincial pages. `/provincial-bfp/incident-clusters` redirects to the tab. `npm test`: 842 tests, 841 passed, 0 failed, 1 skipped. Build passed.

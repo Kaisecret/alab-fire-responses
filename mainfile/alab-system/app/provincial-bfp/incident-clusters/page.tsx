@@ -1,13 +1,13 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { Suspense } from 'react';
-import { SkeletonPage } from '../../_components/skeleton-loader';
-import { ProvincialBarangayCoordination } from '../../_components/provincial-barangay-coordination';
-
-export default function IncidentClustersPage() {
-  return (
-    <Suspense fallback={<SkeletonPage label="Loading multiple incident coordination" style={{ padding: '10px 1.5rem 2.5rem' }} />}>
-      <ProvincialBarangayCoordination />
-    </Suspense>
-  );
+// Multiple Incidents moved into Assistance Requests as a tab; old links land there.
+export default async function IncidentClustersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { alert } = await searchParams;
+  const params = new URLSearchParams({ view: 'incidents' });
+  if (typeof alert === 'string') params.set('alert', alert);
+  redirect(`/provincial-bfp/assistance-requests?${params.toString()}`);
 }

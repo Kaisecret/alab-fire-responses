@@ -139,6 +139,7 @@ test('the feed ignores late aborted polls and clears private alerts on session d
   } finally { globalThis.fetch = originalFetch; globalThis.document = originalDocument; }
 });
 
+function MockStatCards() { return null; }
 function componentDependencies(harness, feed, siren = []) {
   const card = loadServerModule('app/_components/emergency-alert-card.tsx', { 'react/jsx-runtime': jsxRuntime });
   return {
@@ -147,6 +148,7 @@ function componentDependencies(harness, feed, siren = []) {
     '../../lib/intermunicipality/barangay-clusters': loadServerModule('lib/intermunicipality/barangay-clusters.ts', {}),
     './alarm-siren': { useAlarmSiren: on => { siren.push(on); return { audioBlocked: false }; } },
     './fire-command-header': { FireCommandHeader: () => null },
+    './municipal-stat-cards': { StatCards: MockStatCards },
     './use-provincial-barangay-alerts': { useProvincialBarangayAlerts: () => feed },
     'next/navigation': { useSearchParams: () => new URLSearchParams('alert=alert-1') },
   };
@@ -173,7 +175,7 @@ test('the popup opens the first unacknowledged group and navigates only after ac
     assert.deepEqual(navigate, []);
     pending.resolve();
     await action;
-    assert.deepEqual(navigate, ['/provincial-bfp/incident-clusters?alert=alert-2']);
+    assert.deepEqual(navigate, ['/provincial-bfp/assistance-requests?view=incidents&alert=alert-2']);
   } finally { globalThis.window = originalWindow; }
 });
 
@@ -376,9 +378,26 @@ test('coordination puts incidents ready for support first, folds the rest, and f
   assert.match(textOf(folded), /ALAB-1/);
 });
 
-test('coordination lives on its own screen instead of the Assistance Requests page', () => {
-  assert.doesNotMatch(readFileSync('app/provincial-bfp/assistance-requests/page.tsx', 'utf8'), /ProvincialBarangayCoordination/);
-  assert.ok(existsSync('app/provincial-bfp/incident-clusters/page.tsx'));
-  assert.match(readFileSync('app/provincial-bfp/incident-clusters/page.tsx', 'utf8'), /ProvincialBarangayCoordination/);
-  assert.match(readFileSync('app/_components/provincial-bfp-layout.tsx', 'utf8'), /href: '\/provincial-bfp\/incident-clusters'/);
+test('Multiple Incidents is a tab under the Assistance Requests cards, not a sidebar item', () => {
+  const page = readFileSync('app/provincial-bfp/assistance-requests/page.tsx', 'utf8');
+  assert.match(page, /role="tablist"/);
+  assert.match(page, /<ProvincialBarangayCoordination topTabs=\{tabs\} \/>/);
+  assert.match(page, /<AssistanceRequestsContent topTabs=\{tabs\} \/>/);
+  assert.doesNotMatch(readFileSync('app/_components/provincial-bfp-layout.tsx', 'utf8'), /incident-clusters|Multiple Incidents/);
+  assert.match(readFileSync('app/provincial-bfp/incident-clusters/page.tsx', 'utf8'), /redirect\(/, 'old links still land on the tab');
+});
+
+test('the Multiple Incidents view uses the shared stat cards with the tabs right under them', () => {
+  const harness = hooks(), alert = fixture();
+  alert.incidents[0].commands = [{ id: 'command-1', recipientMunicipalityId: 'near', recipientMunicipalityName: 'Sibalom', status: 'REQUESTED' }];
+  const feed = { alerts: [alert], loading: false, checking: false, error: '', lastCheckedAt: new Date(), refresh: async () => {}, submitCommand: async () => {} };
+  const mod = loadServerModule('app/_components/provincial-barangay-coordination.tsx', componentDependencies(harness, feed));
+  const tabs = jsxRuntime.jsx('div', { id: 'view-tabs' });
+  const all = elements(mod.ProvincialBarangayCoordination({ topTabs: tabs }));
+  const statsAt = all.findIndex(el => el.type === MockStatCards);
+  const tabsAt = all.findIndex(el => el.props?.id === 'view-tabs');
+  assert.ok(statsAt >= 0 && tabsAt > statsAt, 'tabs sit under the stat cards');
+  const values = Object.fromEntries(all[statsAt].props.items.map(item => [item.key, item.value]));
+  assert.deepEqual(values, { municipalities: 1, reports: 3, ready: 2, commands: 1 });
+  assert.ok(all[statsAt].props.items.every(item => item.icon && item.tone));
 });
