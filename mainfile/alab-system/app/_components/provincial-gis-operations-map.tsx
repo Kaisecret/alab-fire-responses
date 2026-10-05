@@ -1303,7 +1303,7 @@ export function ProvincialGisOperationsMap() {
       }).setView(DEFAULT_PROVINCE_CENTER, 9);
 
       L.control.zoom({ position: "bottomright" }).addTo(map);
-      L.tileLayer("https://tile.openstreetmap.de/{z}/{x}/{y}.png", {
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
         maxZoom: 19,
         keepBuffer: 4,
