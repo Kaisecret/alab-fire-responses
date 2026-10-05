@@ -179,35 +179,6 @@ test('the popup opens the first unacknowledged group and navigates only after ac
   } finally { globalThis.window = originalWindow; }
 });
 
-test('coordination keeps acknowledged cards and submits selected incident, municipality and resources', async () => {
-  const harness = hooks(), alert = fixture(), submissions = [];
-  alert.acknowledgedAt = '2026-10-04T01:05:00Z';
-  const feed = { alerts: [alert], loading: false, checking: false, error: '', lastCheckedAt: new Date(), refresh: async () => {}, submitCommand: async payload => submissions.push(payload) };
-  const mod = loadServerModule('app/_components/provincial-barangay-coordination.tsx', componentDependencies(harness, feed));
-  const section = mod.ProvincialBarangayCoordination();
-  const card = coordinationCard(section);
-  assert.ok(card, 'acknowledgment must not hide the coordination card');
-  const render = () => harness.render(() => card.type(card.props));
-  let tree = render();
-  const select = id => elements(tree).find(el => el.type === 'select' && el.props.id?.endsWith(id));
-  select('-incident').props.onChange({ target: { value: 'fire-2' } });
-  tree = render();
-  select('-municipality').props.onChange({ target: { value: 'far' } });
-  tree = render();
-  const trucks = elements(tree).find(el => el.type === 'input' && el.props.id?.endsWith('-trucks'));
-  const personnel = elements(tree).find(el => el.type === 'input' && el.props.id?.endsWith('-personnel'));
-  trucks.props.onChange({ target: { value: '2' } });
-  personnel.props.onChange({ target: { value: '4' } });
-  tree = render();
-  await elements(tree).find(el => el.type === 'form').props.onSubmit({ preventDefault() {} });
-  assert.deepEqual(submissions, [{ alertId: 'alert-1', fireReportId: 'fire-2', recipientMunicipalityId: 'far', requestedFiretrucks: 2, requestedPersonnel: 4 }]);
-  tree = render();
-  select('-incident').props.onChange({ target: { value: 'fire-3' } });
-  tree = render();
-  assert.ok(/Waiting for municipal dispatch/.test(textOf(tree)));
-  assert.equal(elements(tree).find(el => el.type === 'button' && el.props.type === 'submit').props.disabled, true);
-});
-
 test('the native popup traps focus, acknowledges Escape, and restores focus after confirmed closure', async () => {
   const originalDocument = globalThis.document, originalHTMLElement = globalThis.HTMLElement;
   const harness = hooks(), alert = fixture(), pending = deferred();
@@ -239,23 +210,6 @@ test('the native popup traps focus, acknowledges Escape, and restores focus afte
     assert.equal(closed, 1);
     assert.equal(focused, 2, 'the officer returns to the control used before the alert');
   } finally { harness.cleanup(); globalThis.document = originalDocument; globalThis.HTMLElement = originalHTMLElement; }
-});
-
-test('resource command validation refuses excessive resources and shows receiving-municipality status', async () => {
-  const harness = hooks(), alert = fixture(), submissions = [];
-  alert.incidents[1].commands = [{ id: 'command-1', recipientMunicipalityId: 'near', recipientMunicipalityName: 'Sibalom', status: 'PARTIALLY_ACCEPTED' }];
-  const feed = { alerts: [alert], loading: false, checking: false, error: '', lastCheckedAt: new Date(), refresh: async () => {}, submitCommand: async payload => submissions.push(payload) };
-  const mod = loadServerModule('app/_components/provincial-barangay-coordination.tsx', componentDependencies(harness, feed));
-  const card = coordinationCard(mod.ProvincialBarangayCoordination());
-  const render = () => harness.render(() => card.type(card.props));
-  let tree = render();
-  assert.match(textOf(tree), /Sibalom Partially accepted/);
-  const input = elements(tree).find(el => el.type === 'input' && el.props.id.endsWith('-trucks'));
-  input.props.onChange({ target: { value: '501' } });
-  tree = render();
-  await elements(tree).find(el => el.type === 'form').props.onSubmit({ preventDefault() {} });
-  assert.deepEqual(submissions, []);
-  assert.ok(elements(render()).some(el => el.props?.role === 'alert'));
 });
 
 test('five-second polling cancels hidden and unmounted requests without retaining private records', async () => {
@@ -361,23 +315,6 @@ test('the shared siren starts when turned on and stops when turned off', async (
   } finally { harness.cleanup(); globalThis.window = originalWindow; }
 });
 
-test('coordination puts incidents ready for support first, folds the rest, and flags a barangay with three or more reports', () => {
-  const harness = hooks(), alert = fixture();
-  alert.incidents[0].dispatched = false;
-  alert.incidents[2].dispatched = true;
-  const feed = { alerts: [alert], loading: false, checking: false, error: '', lastCheckedAt: new Date(), refresh: async () => {}, submitCommand: async () => {} };
-  const mod = loadServerModule('app/_components/provincial-barangay-coordination.tsx', componentDependencies(harness, feed));
-  const card = coordinationCard(mod.ProvincialBarangayCoordination());
-  const tree = harness.render(() => card.type(card.props));
-  const incident = elements(tree).find(el => el.type === 'select' && el.props.id?.endsWith('-incident'));
-  assert.equal(incident.props.value, 'fire-2', 'the form starts on the first incident the province can support');
-  assert.match(textOf(tree), /Poblacion · 3 reports/);
-  const folded = elements(tree).find(el => el.type === 'details');
-  assert.ok(folded, 'incidents waiting for dispatch are folded away');
-  assert.match(textOf(folded), /1 waiting for verification or dispatch/);
-  assert.match(textOf(folded), /ALAB-1/);
-});
-
 test('Multiple Incidents is a tab under the Assistance Requests cards, not a sidebar item', () => {
   const page = readFileSync('app/provincial-bfp/assistance-requests/page.tsx', 'utf8');
   assert.match(page, /role="tablist"/);
@@ -400,4 +337,79 @@ test('the Multiple Incidents view uses the shared stat cards with the tabs right
   const values = Object.fromEntries(all[statsAt].props.items.map(item => [item.key, item.value]));
   assert.deepEqual(values, { municipalities: 1, reports: 3, ready: 2, commands: 1 });
   assert.ok(all[statsAt].props.items.every(item => item.icon && item.tone));
+});
+
+const tileFor = (tree, id) => elements(tree).find(el => el.type === 'li' && el.props['data-incident'] === id);
+const segment = (tree, filter) => elements(tree).find(el => el.type === 'button' && el.props['data-filter'] === filter);
+const radio = (tree, value) => elements(tree).find(el => el.type === 'input' && el.props.type === 'radio' && el.props.value === value);
+const field = (tree, suffix) => elements(tree).find(el => el.type === 'input' && el.props.id?.endsWith(suffix));
+function cardHarness(alert, submissions = []) {
+  const harness = hooks();
+  const feed = { alerts: [alert], loading: false, checking: false, error: '', lastCheckedAt: new Date(), refresh: async () => {}, submitCommand: async payload => submissions.push(payload) };
+  const mod = loadServerModule('app/_components/provincial-barangay-coordination.tsx', componentDependencies(harness, feed));
+  const card = coordinationCard(mod.ProvincialBarangayCoordination());
+  assert.ok(card, 'every open alert keeps its card');
+  return () => harness.render(() => card.type(card.props));
+}
+
+test('Send support opens a popup that submits the chosen incident, municipality and resources', async () => {
+  const alert = fixture(), submissions = [];
+  alert.acknowledgedAt = '2026-10-04T01:05:00Z';
+  const render = cardHarness(alert, submissions);
+  let tree = render();
+  assert.equal(elements(tree).some(el => el.type === 'dialog'), false, 'the popup opens only on request');
+  elements(tileFor(tree, 'fire-2')).find(el => el.type === 'button').props.onClick();
+  tree = render();
+  const dialog = elements(tree).find(el => el.type === 'dialog');
+  assert.ok(dialog);
+  assert.match(textOf(dialog), /ALAB-2/);
+  assert.equal(radio(tree, 'near').props.checked, true, 'the nearest municipality is chosen first');
+  radio(tree, 'far').props.onChange({ target: { value: 'far' } });
+  tree = render();
+  field(tree, '-trucks').props.onChange({ target: { value: '2' } });
+  field(tree, '-personnel').props.onChange({ target: { value: '4' } });
+  tree = render();
+  await elements(tree).find(el => el.type === 'form').props.onSubmit({ preventDefault() {} });
+  assert.deepEqual(submissions, [{ alertId: 'alert-1', fireReportId: 'fire-2', recipientMunicipalityId: 'far', requestedFiretrucks: 2, requestedPersonnel: 4 }]);
+  tree = render();
+  assert.equal(elements(tree).some(el => el.type === 'dialog'), false, 'the popup closes after the command is sent');
+  assert.match(textOf(tree), /Resource command sent to Hamtic/);
+  segment(tree, 'waiting').props.onClick();
+  tree = render();
+  const waitingAction = elements(tileFor(tree, 'fire-3')).find(el => el.type === 'button');
+  assert.equal(waitingAction.props.disabled, true, 'an undispatched incident cannot receive support');
+  assert.match(textOf(waitingAction), /Waiting for dispatch/);
+});
+
+test('the popup refuses excessive resources and skips a municipality already asked', async () => {
+  const alert = fixture(), submissions = [];
+  alert.incidents[1].commands = [{ id: 'command-1', recipientMunicipalityId: 'near', recipientMunicipalityName: 'Sibalom', status: 'PARTIALLY_ACCEPTED' }];
+  const render = cardHarness(alert, submissions);
+  let tree = render();
+  assert.match(textOf(tileFor(tree, 'fire-2')), /Sibalom Partially accepted/);
+  elements(tileFor(tree, 'fire-2')).find(el => el.type === 'button').props.onClick();
+  tree = render();
+  assert.equal(radio(tree, 'near').props.disabled, true);
+  assert.equal(radio(tree, 'far').props.checked, true, 'the next nearest free municipality is chosen');
+  field(tree, '-trucks').props.onChange({ target: { value: '501' } });
+  tree = render();
+  await elements(tree).find(el => el.type === 'form').props.onSubmit({ preventDefault() {} });
+  assert.deepEqual(submissions, []);
+  assert.ok(elements(render()).some(el => el.props?.role === 'alert'));
+});
+
+test('the board shows ready incidents first, keeps waiting ones a tap away, and flags a barangay cluster', () => {
+  const alert = fixture();
+  alert.incidents[0].dispatched = false;
+  alert.incidents[2].dispatched = true;
+  const render = cardHarness(alert);
+  let tree = render();
+  assert.ok(tileFor(tree, 'fire-2') && tileFor(tree, 'fire-3'));
+  assert.equal(tileFor(tree, 'fire-1'), undefined, 'waiting incidents are not mixed into the ready list');
+  assert.match(textOf(segment(tree, 'waiting')), /1/);
+  assert.match(textOf(tree), /Poblacion · 3 reports/);
+  segment(tree, 'waiting').props.onClick();
+  tree = render();
+  assert.ok(tileFor(tree, 'fire-1'));
+  assert.equal(tileFor(tree, 'fire-2'), undefined);
 });
