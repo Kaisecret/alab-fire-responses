@@ -9,3 +9,12 @@
 ~$*
 tmp/
 output/
+/outputs/
+
+# Thesis docs, slides and images stay local; only the code tests are shared
+/tests/*
+!/tests/*.test.mjs
+!/tests/AHP Answers Entry Template.csv
+
+# Flutter mobile app is not part of the website deploy and stays local
+/apps/
