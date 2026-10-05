@@ -12,6 +12,7 @@ import { IntermunicipalityCoordinationPanel } from "./intermunicipality-coordina
 import { IncidentMutualAidBoard, type IncidentAlarmStatus } from "./incident-mutual-aid-board";
 import type { NearbyObserver, AssistanceRequestSummary } from "../../lib/intermunicipality/types";
 import { shouldShowMutualAidBoard, shouldShowStationAssignment } from "../../lib/municipal-bfp/alarm-alert.mjs";
+import { respondFromButton } from "./municipal-dispatch-choice";
 
 type Incident = {
   id: string;
@@ -1835,6 +1836,7 @@ export function MunicipalIncidentDetail({
   const [progressAt, setProgressAt] = useState<number | null>(null);
   const pendingLoad = useRef<AbortController | null>(null);
   const assignmentOpened = useRef(false);
+  const respondingRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -1938,22 +1940,36 @@ export function MunicipalIncidentDetail({
     void fetch(`/api/municipal-bfp/incidents/${encodeURIComponent(loadedIncidentId)}/acknowledge`, { method: "POST" }).catch(() => undefined);
   }, [loadedIncidentId, loadedScope]);
 
+  const fetchDispatchStations = useCallback(async (): Promise<DispatchStation[]> => {
+    const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}/respond`, { cache: "no-store" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Unable to load station choices");
+    return Array.isArray(data.stations) ? data.stations : [];
+  }, [incidentId]);
+
+  const postDispatch = useCallback(async (stationIds: string[], selectAllStations: boolean) => {
+    const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}/respond`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stationIds, selectAllStations }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to start response");
+  }, [incidentId]);
+
   const openDispatch = useCallback(async () => {
     setDispatchOpen(true);
     setDispatchError("");
     setSelectedStationIds([]);
     setStationsLoading(true);
     try {
-      const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}/respond`, { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Unable to load station choices");
-      setDispatchStations(Array.isArray(data.stations) ? data.stations : []);
+      setDispatchStations(await fetchDispatchStations());
     } catch (e) {
       setDispatchError(e instanceof Error ? e.message : "Unable to load station choices.");
     } finally {
       setStationsLoading(false);
     }
-  }, [incidentId]);
+  }, [fetchDispatchStations]);
 
   useEffect(() => {
     if (!autoOpenAssignment || !incident || assignmentOpened.current) return;
@@ -1987,19 +2003,41 @@ export function MunicipalIncidentDetail({
     try {
       const staffedIds = dispatchStations.filter((station) => station.activePersonnelCount > 0).map((station) => station.id);
       const selectAllStations = staffedIds.length > 0 && selectedStationIds.length === staffedIds.length;
-      const res = await fetch(`/api/municipal-bfp/incidents/${incidentId}/respond`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stationIds: selectedStationIds, selectAllStations }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to start response");
+      await postDispatch(selectedStationIds, selectAllStations);
       await load();
       setDispatchOpen(false);
       onResponded?.();
     } catch (e) {
       setDispatchError(e instanceof Error ? e.message : "Unable to start response.");
     } finally {
+      setSending(false);
+    }
+  };
+
+  // One active station leaves nothing to choose, so the click itself
+  // dispatches it. Anything else, including a refused dispatch, opens the
+  // station picker with the reason shown.
+  const acknowledgeAndRespond = async () => {
+    if (respondingRef.current) return;
+    respondingRef.current = true;
+    setSending(true);
+    setDispatchError("");
+    try {
+      const outcome = await respondFromButton({
+        loadStations: fetchDispatchStations,
+        dispatchStation: (stationId) => postDispatch([stationId], false),
+      });
+      if (outcome.kind === "DISPATCHED") {
+        await load();
+        onResponded?.();
+        return;
+      }
+      setDispatchStations(outcome.stations);
+      setSelectedStationIds(outcome.kind === "FAILED" && outcome.preselectedStationId ? [outcome.preselectedStationId] : []);
+      setDispatchError(outcome.kind === "FAILED" ? outcome.message : "");
+      setDispatchOpen(true);
+    } finally {
+      respondingRef.current = false;
       setSending(false);
     }
   };
@@ -2157,13 +2195,13 @@ export function MunicipalIncidentDetail({
             <button
               className={`mbfp-respond-btn ${localDispatchUnderway ? "active-responding" : ""}`}
               disabled={sending}
-              onClick={() => void openDispatch()}
-              aria-label={localDispatchUnderway ? "View active BFP dispatch status" : "Choose station teams for BFP response"}
+              onClick={() => void (localDispatchUnderway ? openDispatch() : acknowledgeAndRespond())}
+              aria-label={localDispatchUnderway ? "View active BFP dispatch status" : "Acknowledge and dispatch BFP station teams"}
             >
               {sending ? (
                 <>
                   <i className="fa-solid fa-arrows-rotate spin" />
-                  <span>Dispatching Response…</span>
+                  <span>Responding…</span>
                 </>
               ) : localDispatchUnderway ? (
                 <>

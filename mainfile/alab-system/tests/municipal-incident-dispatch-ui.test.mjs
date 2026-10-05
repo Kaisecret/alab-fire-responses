@@ -17,7 +17,7 @@ test("municipal incident response opens a station-team dispatch sheet", () => {
 test("an active response keeps its green status control available for inspection", () => {
   const component = readFileSync(join(process.cwd(), "app", "_components", "municipal-incident-detail.tsx"), "utf8");
   assert.match(component, /VIEW DISPATCH STATUS/);
-  assert.match(component, /onClick=\{\(\) => void openDispatch\(\)\}/);
+  assert.match(component, /onClick=\{\(\) => void \(localDispatchUnderway \? openDispatch\(\) : acknowledgeAndRespond\(\)\)\}/);
   assert.doesNotMatch(component, /disabled=\{sending \|\| isResponding\}/);
 });
 
@@ -28,4 +28,20 @@ test("resident emergency profile cards keep a seven-pixel gap at every breakpoin
   ) ?? [];
 
   assert.equal(sevenPixelProfileGrids.length, 2);
+});
+
+test("Acknowledge & Respond dispatches a lone station in one click and keeps the picker otherwise", () => {
+  const component = readFileSync(join(process.cwd(), "app", "_components", "municipal-incident-detail.tsx"), "utf8");
+  assert.match(component, /from "\.\/municipal-dispatch-choice"/);
+  assert.match(component, /const acknowledgeAndRespond = async \(\) =>/);
+  // The one-click path names its station; selectAllStations would sweep in
+  // any station staffed after the list was loaded.
+  assert.match(component, /dispatchStation: \(stationId\) => postDispatch\(\[stationId\], false\)/);
+  // A double click must not start a second request.
+  assert.match(component, /if \(respondingRef\.current\) return;/);
+  // A refused or unloadable dispatch falls back to the picker with its reason.
+  assert.match(component, /setDispatchError\(outcome\.kind === "FAILED" \? outcome\.message : ""\)/);
+  // Opening an incident on its own still only shows the picker.
+  assert.match(component, /const opener = window\.setTimeout\(\(\) => void openDispatch\(\), 0\);/);
+  assert.match(component, /<span>Responding…<\/span>/);
 });
