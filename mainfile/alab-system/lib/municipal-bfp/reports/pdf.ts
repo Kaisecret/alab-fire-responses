@@ -133,6 +133,9 @@ async function loadEmblems(): Promise<Emblems> {
 /** Letterhead geometry. The masthead runs from the top margin to its rule. */
 const LETTERHEAD_HEIGHT = 84;
 const WATERMARK_OPACITY = 0.06;
+/** Rises from the lower left to the upper right, like a stamped watermark. */
+const WATERMARK_ANGLE = -38;
+const WATERMARK_SIZE = 540;
 
 function fittedText(doc: Doc, text: string, x: number, y: number, width: number, size: number, font = "Helvetica-Bold", color: string = COLORS.ink) {
   doc.font(font).fontSize(size);
@@ -145,12 +148,14 @@ function fittedText(doc: Doc, text: string, x: number, y: number, width: number,
  * drawn underneath, the white tables and cards hid most of it.
  */
 function drawWatermark(doc: Doc, emblems: Emblems): void {
-  const size = CONTENT_WIDTH * 0.74;
-  const x = (PAGE.width - size) / 2;
-  const y = (PAGE.height - size) / 2 + 24;
-  doc.save().opacity(WATERMARK_OPACITY);
+  const size = WATERMARK_SIZE;
+  const centerX = PAGE.width / 2;
+  const centerY = PAGE.height / 2 + 10;
+  const x = centerX - size / 2;
+  const y = centerY - size / 2;
+  doc.save().opacity(WATERMARK_OPACITY).rotate(WATERMARK_ANGLE, { origin: [centerX, centerY] });
   if (emblems.alab) doc.image(emblems.alab, x, y, { fit: [size, size], align: "center", valign: "center" });
-  else doc.font("Helvetica-Bold").fontSize(110).fillColor(COLORS.brandDark).text("ALAB", x, y + size / 2 - 55, { width: size, align: "center", lineBreak: false });
+  else doc.font("Helvetica-Bold").fontSize(150).fillColor(COLORS.brandDark).text("ALAB", x, centerY - 75, { width: size, align: "center", lineBreak: false });
   doc.restore();
 }
 

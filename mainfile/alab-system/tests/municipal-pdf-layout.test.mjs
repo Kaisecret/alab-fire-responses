@@ -50,5 +50,12 @@ test('exports drop the motto list and section numbers and carry a faint ALAB wat
   const raw = pdf.toString('latin1');
   const faint = [...raw.matchAll(/\/ca (0?\.\d+)/g)].map(match => Number(match[1])).filter(value => value > 0 && value <= 0.12);
   assert.ok(faint.length > 0, 'the watermark is drawn faintly');
-  for (const page of pages) assert.match(page.body, /\/Gs\d+ gs[\s\S]*?\/I\d+ Do/, 'every page draws the faint ALAB mark');
+  for (const page of pages) {
+    const mark = page.body.match(/\/Gs\d+ gs\s+(-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+) -?[\d.]+ -?[\d.]+ cm\s+(?:q\s+)?([\d.]+) 0 0 -?[\d.]+ -?[\d.]+ -?[\d.]+ cm\s+\/I\d+ Do/);
+    assert.ok(mark, 'every page draws the faint ALAB mark');
+    const [, a, b] = mark.slice(0, 3).map(Number);
+    const degrees = Math.atan2(b, a) * 180 / Math.PI;
+    assert.ok(Math.abs(degrees) >= 30 && Math.abs(degrees) <= 50, `the mark runs on a slant (${degrees.toFixed(1)}°)`);
+    assert.ok(Number(mark[5]) >= 500, 'the mark spans most of the page');
+  }
 });
