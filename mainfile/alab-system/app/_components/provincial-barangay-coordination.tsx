@@ -66,6 +66,7 @@ const styles = `
   .pbc-empty-row { margin:0 1.25rem 1.25rem; padding:1.4rem; border:1px dashed #CBD5E1; border-radius:14px; color:var(--pbc-muted); font-size:.8rem; text-align:center; }
 
   .pbc-modal { width:min(560px,calc(100% - 2rem)); max-height:calc(100dvh - 2rem); margin:auto; padding:0; border:0; border-radius:22px; background:transparent; overflow:visible; }
+  body.pbc-scroll-locked { overflow:hidden; }
   .pbc-modal::backdrop { background:rgba(15,23,42,.55); backdrop-filter:blur(6px); }
   .pbc-modal[open] .pbc-modal-card { animation:pbcRise .2s ease-out both; }
   .pbc-modal-card { display:flex; flex-direction:column; max-height:calc(100dvh - 2rem); overflow:hidden; border-radius:22px; background:#fff; box-shadow:0 30px 70px rgba(15,23,42,.35); font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:#0F172A; }
@@ -75,10 +76,10 @@ const styles = `
   .pbc-modal-head p { margin:.15rem 0 0; color:rgba(255,255,255,.85); font-size:.75rem; }
   .pbc-modal-close { margin-left:auto; display:grid; place-items:center; width:36px; height:36px; flex-shrink:0; border:0; border-radius:50%; background:rgba(255,255,255,.16); color:#fff; cursor:pointer; }
   .pbc-modal-close:hover:not(:disabled) { background:rgba(255,255,255,.28); }
-  .pbc-modal-body { display:grid; gap:1rem; padding:1.15rem 1.2rem; overflow-y:auto; }
+  .pbc-modal-body { display:grid; gap:1rem; padding:1.15rem 1.2rem; overflow-y:auto; overscroll-behavior:contain; }
   .pbc-step-title { margin:0 0 .5rem; display:flex; align-items:center; gap:.45rem; color:#475569; font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
   .pbc-step-title span { display:inline-grid; place-items:center; width:1.35rem; height:1.35rem; border-radius:50%; background:#FEE2E2; color:#B42318; font-size:.68rem; }
-  .pbc-choices { margin:0; padding:0; border:0; display:grid; gap:.45rem; max-height:248px; overflow-y:auto; }
+  .pbc-choices { margin:0; padding:0; border:0; display:grid; gap:.45rem; max-height:248px; overflow-y:auto; overscroll-behavior:contain; }
   .pbc-choice { position:relative; display:flex; align-items:center; gap:.7rem; padding:.7rem .8rem; border:1.5px solid #E2E8F0; border-radius:13px; background:#fff; cursor:pointer; transition:border-color .15s ease, background .15s ease; }
   .pbc-choice:hover { border-color:#FCA5A5; }
   .pbc-choice.checked { border-color:#DC2626; background:#FFF5F5; box-shadow:0 0 0 3px rgba(220,38,38,.1); }
@@ -197,7 +198,16 @@ function MunicipalCoordinationCard({ alert, highlighted, submitCommand }: {
     const dialog = dialogRef.current;
     if (!incidentId || !dialog) return;
     if (!dialog.open) dialog.showModal();
-    return () => { if (dialog.open) dialog.close(); };
+    // The page behind the popup stays still, without jumping when its scrollbar hides.
+    const body = document.body;
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+    body.classList.add("pbc-scroll-locked");
+    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
+    return () => {
+      if (dialog.open) dialog.close();
+      body.classList.remove("pbc-scroll-locked");
+      body.style.paddingRight = "";
+    };
   }, [incidentId]);
 
   const openSupport = (row: BarangayAlertIncident) => {

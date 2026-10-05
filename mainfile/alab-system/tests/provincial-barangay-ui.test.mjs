@@ -413,3 +413,34 @@ test('the board shows ready incidents first, keeps waiting ones a tap away, and 
   assert.ok(tileFor(tree, 'fire-1'));
   assert.equal(tileFor(tree, 'fire-2'), undefined);
 });
+
+test('the page behind the Send support popup cannot scroll while it is open', () => {
+  const originalDocument = globalThis.document, originalWindow = globalThis.window;
+  const harness = hooks(), alert = fixture();
+  const classes = new Set();
+  const body = { classList: { add: name => classes.add(name), remove: name => classes.delete(name) }, style: {} };
+  try {
+    globalThis.document = { body, documentElement: { clientWidth: 1585 } };
+    globalThis.window = { innerWidth: 1600 };
+    const feed = { alerts: [alert], loading: false, checking: false, error: '', lastCheckedAt: new Date(), refresh: async () => {}, submitCommand: async () => {} };
+    const mod = loadServerModule('app/_components/provincial-barangay-coordination.tsx', componentDependencies(harness, feed));
+    const card = coordinationCard(mod.ProvincialBarangayCoordination());
+    const render = () => harness.render(() => card.type(card.props));
+    let tree = render();
+    harness.commit();
+    elements(tileFor(tree, 'fire-1')).find(el => el.type === 'button').props.onClick();
+    tree = render();
+    const dialog = elements(tree).find(el => el.type === 'dialog');
+    dialog.props.ref.current = { open: false, showModal() { this.open = true; }, close() { this.open = false; } };
+    harness.commit();
+    assert.equal(dialog.props.ref.current.open, true);
+    assert.ok(classes.has('pbc-scroll-locked'), 'background scrolling stops while the popup is open');
+    assert.equal(body.style.paddingRight, '15px', 'the page does not jump when its scrollbar hides');
+    elements(tree).find(el => el.type === 'button' && /Cancel/.test(textOf(el))).props.onClick();
+    render();
+    harness.commit();
+    assert.equal(classes.has('pbc-scroll-locked'), false, 'closing the popup gives scrolling back');
+    assert.equal(body.style.paddingRight, '');
+    assert.equal(dialog.props.ref.current.open, false);
+  } finally { harness.cleanup(); globalThis.document = originalDocument; globalThis.window = originalWindow; }
+});
