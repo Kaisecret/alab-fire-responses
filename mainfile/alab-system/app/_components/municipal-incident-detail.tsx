@@ -14,6 +14,8 @@ import type { NearbyObserver, AssistanceRequestSummary } from "../../lib/intermu
 import { shouldShowMutualAidBoard, shouldShowStationAssignment } from "../../lib/municipal-bfp/alarm-alert.mjs";
 import { respondFromButton } from "./municipal-dispatch-choice";
 import { buildResponseGuidance } from "../../lib/fire-reports/response-guidance";
+import { formatStationDistance, rankStationsForIncident } from "../../lib/municipal-bfp/nearest-station";
+import type { RankedStation } from "../../lib/municipal-bfp/nearest-station";
 
 type Incident = {
   id: string;
@@ -584,6 +586,154 @@ const detailStyles = `
     margin: 1rem 0 0;
     color: #475569;
     font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  /* Nearest station: the municipality's stations ranked by distance. */
+  .mbfp-nearest {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid #BBF7D0;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%);
+  }
+  .mbfp-nearest-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+  }
+  .mbfp-nearest-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #166534;
+    font-size: 0.72rem;
+    font-weight: 850;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .mbfp-nearest-note {
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 650;
+  }
+  .mbfp-nearest-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .mbfp-nearest-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    background: #FFFFFF;
+  }
+  .mbfp-nearest-row.is-recommended {
+    border-color: #4ADE80;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.14);
+  }
+  .mbfp-nearest-row.is-unstaffed {
+    background: #F8FAFC;
+    color: #64748B;
+  }
+  .mbfp-nearest-icon {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border-radius: 8px;
+    background: #F1F5F9;
+    color: #475569;
+    font-size: 0.85rem;
+  }
+  .is-recommended .mbfp-nearest-icon {
+    background: #16A34A;
+    color: #FFFFFF;
+  }
+  .mbfp-nearest-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+  .mbfp-nearest-name {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+  .mbfp-nearest-name strong {
+    color: #0F172A;
+    font-size: 0.88rem;
+    font-weight: 800;
+  }
+  .is-unstaffed .mbfp-nearest-name strong {
+    color: #475569;
+  }
+  .mbfp-nearest-badge {
+    display: inline-flex;
+    margin-left: 0.4rem;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    background: #DCFCE7;
+    color: #166534;
+    font-size: 0.66rem;
+    font-weight: 850;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    vertical-align: middle;
+  }
+  .mbfp-nearest-name .mbfp-nearest-badge {
+    margin-left: 0;
+  }
+  .mbfp-nearest-sub {
+    color: #475569;
+    font-size: 0.74rem;
+    font-weight: 650;
+  }
+  .mbfp-nearest-bar {
+    display: block;
+    height: 4px;
+    margin-top: 0.3rem;
+    border-radius: 999px;
+    background: #E2E8F0;
+    overflow: hidden;
+  }
+  .mbfp-nearest-bar span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: #94A3B8;
+  }
+  .is-recommended .mbfp-nearest-bar span {
+    background: #22C55E;
+  }
+  .mbfp-nearest-figures {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .mbfp-nearest-figures strong {
+    color: #0F172A;
+    font-size: 0.92rem;
+    font-weight: 850;
+  }
+  .mbfp-nearest-figures span {
+    color: #475569;
+    font-size: 0.72rem;
     font-weight: 700;
   }
 
@@ -1900,6 +2050,8 @@ export function MunicipalIncidentDetail({
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [dispatchStations, setDispatchStations] = useState<DispatchStation[]>([]);
+  /** The municipality's stations, read once for the nearest-station advice. */
+  const [stationOptions, setStationOptions] = useState<DispatchStation[]>([]);
   const [selectedStationIds, setSelectedStationIds] = useState<string[]>([]);
   const [stationsLoading, setStationsLoading] = useState(false);
   const [dispatchError, setDispatchError] = useState("");
@@ -2030,19 +2182,41 @@ export function MunicipalIncidentDetail({
     if (!res.ok) throw new Error(data.error || "Failed to start response");
   }, [incidentId]);
 
+  // With two or more stations the picker opens with the nearest staffed one
+  // ticked. Ticking only prepares the choice; the officer still dispatches.
+  const incidentLatitude = incident?.latitude;
+  const incidentLongitude = incident?.longitude;
+  const recommendedStationIds = useCallback((stations: DispatchStation[]) => {
+    if (incidentLatitude === undefined || incidentLongitude === undefined) return [];
+    const pick = rankStationsForIncident({ latitude: incidentLatitude, longitude: incidentLongitude }, stations)
+      ?.find((station) => station.recommended);
+    return pick ? [pick.id] : [];
+  }, [incidentLatitude, incidentLongitude]);
+
   const openDispatch = useCallback(async () => {
     setDispatchOpen(true);
     setDispatchError("");
     setSelectedStationIds([]);
     setStationsLoading(true);
     try {
-      setDispatchStations(await fetchDispatchStations());
+      const stations = await fetchDispatchStations();
+      setDispatchStations(stations);
+      setSelectedStationIds(recommendedStationIds(stations));
     } catch (e) {
       setDispatchError(e instanceof Error ? e.message : "Unable to load station choices.");
     } finally {
       setStationsLoading(false);
     }
-  }, [fetchDispatchStations]);
+  }, [fetchDispatchStations, recommendedStationIds]);
+
+  useEffect(() => {
+    if (!loadedIncidentId) return;
+    let cancelled = false;
+    fetchDispatchStations()
+      .then((stations) => { if (!cancelled) setStationOptions(stations); })
+      .catch(() => { /* The advice is optional; the picker shows its own errors. */ });
+    return () => { cancelled = true; };
+  }, [loadedIncidentId, fetchDispatchStations]);
 
   useEffect(() => {
     if (!autoOpenAssignment || !incident || assignmentOpened.current) return;
@@ -2106,7 +2280,9 @@ export function MunicipalIncidentDetail({
         return;
       }
       setDispatchStations(outcome.stations);
-      setSelectedStationIds(outcome.kind === "FAILED" && outcome.preselectedStationId ? [outcome.preselectedStationId] : []);
+      setSelectedStationIds(outcome.kind === "FAILED"
+        ? (outcome.preselectedStationId ? [outcome.preselectedStationId] : [])
+        : recommendedStationIds(outcome.stations));
       setDispatchError(outcome.kind === "FAILED" ? outcome.message : "");
       setDispatchOpen(true);
     } finally {
@@ -2200,6 +2376,9 @@ export function MunicipalIncidentDetail({
     humidity: incident.weatherHumidity,
     factors: incident.severityFactors,
   });
+  const rankedStations = rankStationsForIncident(incident, stationOptions);
+  const farthestStation = Math.max(1, ...(rankedStations ?? []).map((station) => station.distanceMeters ?? 0));
+  const pickerStations = rankStationsForIncident(incident, dispatchStations) ?? dispatchStations;
   /*
    * A response is under way from the moment stations are dispatched until the
    * incident closes. Testing for RESPONDING alone meant an incident whose crews
@@ -2450,6 +2629,44 @@ export function MunicipalIncidentDetail({
                 </h2>
                 <span className="mbfp-guidance-badge">Decision support</span>
               </div>
+              {rankedStations && (
+                <div className="mbfp-nearest">
+                  <div className="mbfp-nearest-head">
+                    <span className="mbfp-nearest-title">
+                      <i className="fa-solid fa-location-crosshairs" aria-hidden="true" /> Nearest station to the fire
+                    </span>
+                    <span className="mbfp-nearest-note">Straight-line distance from the report location</span>
+                  </div>
+                  <ul className="mbfp-nearest-list">
+                    {rankedStations.map((station) => {
+                      const staffed = station.activePersonnelCount > 0;
+                      const width = station.distanceMeters === null ? 0 : Math.max(6, (station.distanceMeters / farthestStation) * 100);
+                      return (
+                        <li
+                          key={station.id}
+                          className={`mbfp-nearest-row${station.recommended ? " is-recommended" : ""}${staffed ? "" : " is-unstaffed"}`}
+                        >
+                          <span className="mbfp-nearest-icon" aria-hidden="true">
+                            <i className={`fa-solid ${station.recommended ? "fa-star" : "fa-building-shield"}`} />
+                          </span>
+                          <div className="mbfp-nearest-main">
+                            <div className="mbfp-nearest-name">
+                              <strong>{station.displayName}</strong>
+                              {station.recommended && <span className="mbfp-nearest-badge">Recommended</span>}
+                            </div>
+                            {station.head && <span className="mbfp-nearest-sub">Head: {station.head}</span>}
+                            <span className="mbfp-nearest-bar" aria-hidden="true"><span style={{ width: `${width}%` }} /></span>
+                          </div>
+                          <div className="mbfp-nearest-figures">
+                            <strong>{formatStationDistance(station.distanceMeters)}</strong>
+                            <span>{staffed ? `${station.activePersonnelCount} on duty` : "No one on duty"}</span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
               <ol className="mbfp-guidance-list">
                 {guidance.map((action, index) => (
                   <li key={action.key} className="mbfp-guidance-item">
@@ -2849,9 +3066,10 @@ export function MunicipalIncidentDetail({
                   </button>
 
                   <div className="mbfp-dispatch-stations">
-                    {dispatchStations.map((station) => {
+                    {pickerStations.map((station) => {
                       const selected = selectedStationIds.includes(station.id);
                       const staffed = station.activePersonnelCount > 0;
+                      const ranked = "recommended" in station ? (station as RankedStation<DispatchStation>) : null;
                       return (
                         <button
                           key={station.id}
@@ -2866,8 +3084,12 @@ export function MunicipalIncidentDetail({
                               <i className="fa-solid fa-building-shield" />
                             </div>
                             <div className="mbfp-station-info">
-                              <span className="mbfp-dispatch-station-name">{station.stationName}</span>
+                              <span className="mbfp-dispatch-station-name">
+                                {ranked ? ranked.displayName : station.stationName}
+                                {ranked?.recommended && <span className="mbfp-nearest-badge">Nearest</span>}
+                              </span>
                               <span className="mbfp-dispatch-station-meta">
+                                {ranked && <>{formatStationDistance(ranked.distanceMeters)} away · </>}
                                 {staffed ? "Ready for live dispatch" : "Unavailable · No personnel on duty"}
                               </span>
                             </div>

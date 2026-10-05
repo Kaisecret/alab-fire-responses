@@ -22,3 +22,18 @@ test("both card columns use the same 16px gap and the cell grids use 12px", () =
   assert.match(source, /\.mbfp-intel-column,\s*\.mbfp-map-card-wrapper \{[^}]*gap: 16px;/);
   assert.match(source, /\.mbfp-tactical-metrics-grid \{[^}]*gap: 12px;/);
 });
+
+test("a municipality with several stations sees the nearest one recommended and pre-ticked", () => {
+  const source = component();
+  assert.match(source, /import \{ formatStationDistance, rankStationsForIncident \} from "\.\.\/\.\.\/lib\/municipal-bfp\/nearest-station";/);
+  // The ranking block sits inside Recommended BFP Actions.
+  const guidance = source.indexOf('aria-labelledby="mbfp-guidance-heading"');
+  const nearest = source.indexOf("Nearest station to the fire");
+  const profile = source.indexOf('aria-labelledby="mbfp-resident-heading"');
+  assert.ok(guidance > 0 && guidance < nearest && nearest < profile);
+  assert.match(source, /Straight-line distance from the report location/);
+  // The picker lists stations nearest first and ticks the recommended one;
+  // ticking never dispatches on its own.
+  assert.match(source, /const pickerStations = rankStationsForIncident\(incident, dispatchStations\) \?\? dispatchStations;/);
+  assert.match(source, /setSelectedStationIds\(recommendedStationIds\(stations\)\)/);
+});
