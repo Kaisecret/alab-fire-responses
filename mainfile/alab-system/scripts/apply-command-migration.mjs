@@ -99,6 +99,17 @@ const releaseMigrations = [
     name: "municipal_incident_alerts",
     appliedCheck: `select to_regclass('public.provincial_barangay_alerts_open_municipality_idx') is not null as applied`,
   },
+  {
+    // Without it every backup and alarm-declaration notification is rejected,
+    // so a municipality called by a provincial alarm never hears the alarm.
+    version: "20261007090000",
+    name: "allow_backup_alarm_notifications",
+    appliedCheck: `select coalesce((
+      select pg_get_constraintdef(oid) like '%ALARM_DECLARED%'
+        from pg_constraint
+       where conname = 'account_notifications_event_type_check'
+    ), false) as applied`,
+  },
 ];
 
 const client = new pg.Client({

@@ -32,6 +32,12 @@ test("deployment build applies Belison coordinates before the app is built", asy
       );
       insert into public.fire_trucks
         select 'BFP_FIRETRUCK_INVENTORY' from generate_series(1, 29);
+      -- As production has it: the event list from before backups and alarms.
+      create table public.account_notifications (
+        id uuid primary key default gen_random_uuid(),
+        event_type text not null,
+        constraint account_notifications_event_type_check check (event_type in ('FIRE_REPORT_CREATED', 'ASSISTANCE_REQUESTED'))
+      );
     `);
     const names = ["Anini-y", "Barbaza", "Belison", "Bugasong", "Caluya", "Culasi", "Hamtic", "Laua-an", "Libertad", "Pandan", "Patnongon", "San Jose de Buenavista", "San Remigio", "Sebaste", "Sibalom", "Tibiao", "Tobias Fornier", "Valderrama"];
     for (const name of names) {
@@ -65,6 +71,8 @@ test("deployment build applies Belison coordinates before the app is built", asy
     assert.equal(alerts.rows[0].relrowsecurity, true);
     const municipalAlerts = await db.query("select indexdef from pg_indexes where indexname='provincial_barangay_alerts_open_municipality_idx'");
     assert.match(municipalAlerts.rows[0]?.indexdef ?? '', /\(municipality_id\)/, 'the release keeps one open alert per municipality');
+    // A municipality called by a provincial alarm gets its alarm notice saved.
+    await db.query("insert into public.account_notifications (event_type) values ('ALARM_DECLARED'), ('BACKUP_REQUESTED'), ('BACKUP_FORWARDED')");
   } finally {
     pg.Client = originalClient;
     if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
