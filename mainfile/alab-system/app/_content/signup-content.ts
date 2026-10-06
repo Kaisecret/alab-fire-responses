@@ -705,6 +705,12 @@ export const signupStyles = `
         }
 
         .upload-section.has-file {
+            border-color: #e2e8f0;
+            background: transparent;
+        }
+
+        /* Green only once the ID scan has passed. */
+        .upload-section.has-file.id-verified {
             border-color: #22c55e;
             background: rgba(34, 197, 94, 0.04);
         }
@@ -774,8 +780,13 @@ export const signupStyles = `
         }
 
         .upload-dropzone.has-file {
-            border-color: #22c55e;
+            border-color: #cbd5e1;
             border-style: solid;
+            background: #fafbfc;
+        }
+
+        .upload-dropzone.has-file.id-verified {
+            border-color: #22c55e;
             background: rgba(34, 197, 94, 0.04);
         }
 
@@ -810,10 +821,11 @@ export const signupStyles = `
             gap: 0.5rem;
             font-size: 0.82rem;
             font-weight: 600;
-            color: #16a34a;
+            color: var(--text-muted);
         }
 
         .upload-dropzone .file-preview svg {
+            display: none;
             width: 1.2rem;
             height: 1.2rem;
             color: #22c55e;
@@ -994,15 +1006,19 @@ export const signupStyles = `
             transform: none;
         }
 
-        /* Until the scan passes, an uploaded ID is not shown as done. */
-        .upload-section.has-file.id-pending {
-            border-color: #e2e8f0;
-            background: transparent;
+        .id-accepted-note {
+            margin: 0 0 0.8rem;
+            padding: 0.65rem 0.8rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: var(--text-muted);
+            font-size: 0.76rem;
+            line-height: 1.5;
         }
 
-        .upload-dropzone.has-file.id-pending {
-            border-color: #cbd5e1;
-            background: #fafbfc;
+        .id-accepted-note strong {
+            color: #334155;
         }
 
         .upload-section.has-file.id-failed {
@@ -1015,18 +1031,17 @@ export const signupStyles = `
             background: #ffffff;
         }
 
-        .upload-dropzone.id-pending .file-preview {
-            color: var(--text-muted);
-        }
-
         .upload-dropzone.id-failed .file-preview {
             color: #b91c1c;
         }
 
         /* The tick means "verified", so it waits for the scan to pass. */
-        .upload-dropzone.id-pending .file-preview svg,
-        .upload-dropzone.id-failed .file-preview svg {
-            display: none;
+        .upload-dropzone.id-verified .file-preview {
+            color: #16a34a;
+        }
+
+        .upload-dropzone.id-verified .file-preview svg {
+            display: block;
         }
 
         @keyframes idScanSpin {
@@ -1571,6 +1586,8 @@ export const signupMarkup = `<main class="signup-container">
 
                 <!-- STEP 3: Identity Verification -->
                 <div class="step-panel" id="step3">
+                    <p class="id-accepted-note"><strong>Government IDs only:</strong> PhilSys ID or ePhilID, passport, driver's license, UMID, PRC, SSS, GSIS, postal, voter's, senior citizen, PWD, TIN, OFW or IBP ID, or seafarer's record book. School and student IDs are not accepted. The name on the ID must match the name you entered.</p>
+
                     <!-- Upload Front of Valid ID -->
                     <div class="upload-section" id="uploadFrontSection">
                         <div class="upload-header">

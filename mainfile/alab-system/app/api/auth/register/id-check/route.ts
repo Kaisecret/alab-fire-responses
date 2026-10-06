@@ -101,20 +101,37 @@ export async function POST(request: Request) {
     return { data, mimeType: file.type };
   };
 
-  let front: { data: Buffer; mimeType: string } | null;
-  let back: { data: Buffer; mimeType: string } | null;
-  try {
-    front = await readSide("frontId", "front");
-    back = await readSide("backId", "back");
-  } catch (error) {
+  const refuseFile = (error: unknown) => {
     const detail = error as Error & { side?: string; code?: string };
     return NextResponse.json({ verified: false, side: detail.side ?? "front", code: detail.code ?? "INVALID_FILE", message: detail.message }, { status: detail.code === "UNREADABLE" ? 422 : 400 });
+  };
+  let front: { data: Buffer; mimeType: string } | null;
+  try {
+    front = await readSide("frontId", "front");
+  } catch (error) {
+    return refuseFile(error);
   }
   if (!front) {
     return NextResponse.json({ verified: false, side: "front", code: "FRONT_REQUIRED", message: "Upload the front of your ID first." }, { status: 400 });
   }
+  // A back photo that is too dark or not an image is reported only after the
+  // front is judged, so the front never sits there looking accepted unchecked.
+  let back: { data: Buffer; mimeType: string } | null = null;
+  let backProblem: unknown = null;
+  try {
+    back = await readSide("backId", "back");
+  } catch (error) {
+    backProblem = error;
+  }
 
   const outcome = await checkIdWithGemini({ front, back, firstName, lastName });
+  if (backProblem && (outcome.ok || outcome.side === "back")) {
+    const detail = backProblem as Error & { code?: string };
+    return NextResponse.json(
+      { verified: false, side: "back", code: detail.code ?? "INVALID_FILE", message: detail.message, detectedName: outcome.detectedName ?? null, frontVerified: true },
+      { status: detail.code === "UNREADABLE" ? 422 : 400 },
+    );
+  }
   if (!outcome.ok) {
     return NextResponse.json(
       {

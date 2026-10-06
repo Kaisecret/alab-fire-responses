@@ -1,9 +1,9 @@
-import { interpretIdCheck } from "./id-check-result.mjs";
+import { ACCEPTED_ID_TYPES, REFUSED_ID_TYPES, interpretIdCheck } from "./id-check-result.mjs";
 
 /*
  * Reads an uploaded ID with Gemini. The model only describes the image (is it
- * an ID, is it readable, what name is printed); interpretIdCheck makes the
- * decision. The key stays on the server in GEMINI_API_KEY.
+ * an ID, which kind, is it readable, what name is printed); interpretIdCheck
+ * makes the decision. The key stays on the server in GEMINI_API_KEY.
  */
 
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -15,7 +15,7 @@ const ATTEMPT_TIMEOUT_MS = 30_000;
 const TOTAL_BUDGET_MS = 55_000;
 
 export type IdCheckCode =
-  | "VERIFIED" | "NOT_AN_ID" | "UNREADABLE" | "NAME_NOT_FOUND" | "NAME_MISMATCH" | "TAMPERED"
+  | "VERIFIED" | "NOT_AN_ID" | "ID_NOT_ACCEPTED" | "UNREADABLE" | "NAME_NOT_FOUND" | "NAME_MISMATCH" | "TAMPERED"
   | "BACK_REQUIRED" | "BACK_NOT_ID" | "BACK_MISMATCH" | "SERVICE_UNAVAILABLE";
 
 export type IdCheckOutcome =
@@ -26,21 +26,24 @@ const INSTRUCTIONS = `You check identification documents uploaded during a resid
 Image 1 is the FRONT of the uploaded ID. Image 2, when present, is the BACK. Report only what you see; do not guess or invent text.
 
 For "front":
-- is_identification_document: true only for an identification card that identifies a person, such as a PhilSys/national ID, driver's license, passport, UMID, SSS, PhilHealth, Pag-IBIG, postal ID, voter's ID, PRC ID, senior citizen or PWD ID, barangay ID, company or school ID card. False for certificates, receipts, school records, medical documents, letters, screenshots of apps, random photos, or anything that is not an ID.
-- image_quality: GOOD when the card is in focus, well lit, fully inside the frame and the name, ID number and other printed details are easy to read. Slight phone-camera grain, mild softness or a small tilt are still GOOD. Use TOO_DARK for an underexposed or dim photo even if some text can still be made out, BLURRY when blur makes the text hard to read, CROPPED if any edge of the card is cut off, GLARE if reflections hide details, otherwise UNREADABLE.
+- is_identification_document: true only when Image 1 is a real photo or scan of one person's identification document (a card, a passport or seaman's book data page, or a paper ePhilID or voter's certification). False for screenshots of apps or websites, dashboards, UI designs, collages, posters, mock-ups, drawings, AI-generated or illustrated images, selfies, people, objects, scenery, receipts, certificates of other kinds, letters, school or medical records, and anything else that is not an ID.
+- id_type: which ID it is. Accepted government IDs:
+  PHILSYS_ID (PhilSys / Philippine National ID, including the paper ePhilID and the Digital National ID from the eGovPH app), PASSPORT (DFA Philippine passport), DRIVERS_LICENSE (LTO driver's license or student permit), UMID (Unified Multi-Purpose ID), PRC_ID (Professional Regulation Commission ID), SSS_ID, GSIS_ID, POSTAL_ID (PHLPost postal ID), VOTERS_ID (COMELEC voter's ID or voter's certification), SENIOR_CITIZEN_ID (OSCA / LGU senior citizen ID), PWD_ID (NCDA / LGU persons with disability ID), TIN_ID (BIR taxpayer ID), OFW_ID (OWWA / iDOLE / OFW e-card), IBP_ID (Integrated Bar of the Philippines ID), SEAFARERS_BOOK (MARINA seafarer's record book).
+  Other IDs: STUDENT_ID (any school, college or university ID, including student IDs), COMPANY_ID (employee or office ID), BARANGAY_ID, PHILHEALTH_ID, PAGIBIG_ID, OTHER_ID (any other ID card).
+  NOT_AN_ID whenever is_identification_document is false.
+- image_quality: GOOD only when the document is in focus, well lit, fully inside the frame and the name, ID number and other printed details are sharp and easy to read. Slight phone-camera grain or a small tilt are still GOOD. BLURRY when blur, motion or soft focus makes any letters fuzzy or smeared. TOO_DARK for an underexposed or dim photo even if some text can still be made out. CROPPED if any edge of the document is cut off. GLARE if reflections hide details. Otherwise UNREADABLE.
 - name_readable: true only if the holder's name can be read with confidence.
 - full_name, first_name, middle_name, last_name: the holder's name exactly as printed (empty strings if not readable). For "SURNAME, GIVEN NAMES" formats, split accordingly.
-- id_number: the ID or card number exactly as printed, or an empty string.
-- document_type: a short label such as "PhilSys ID" or "Driver's License".
-- edit_suspected: true when there are visible signs the card was edited or forged: a name, number or date in a different font, size, weight, spacing or colour than the rest of the card; text that is misaligned, floating, pasted over or overlapping the printed design; smudged, blurred or blocky patches around the name, number or photo; a background pattern that breaks around a field; a photo pasted onto the card; a digital template, mock-up, "SAMPLE"/"SPECIMEN" card, screenshot or a photo of a screen or printout instead of a physical card. False when the card looks like an untouched original. Normal wear, scratches, fading, laminate texture, glare, camera grain, JPEG compression, resizing and a tilted angle are NOT signs of editing. Only report clear visible evidence.
+- id_number: the ID, card, license, passport or PCN number exactly as printed, or an empty string if it cannot be read with confidence.
+- edit_suspected: true when there are visible signs the document was edited or forged: a name, number or date in a different font, size, weight, spacing or colour than the rest; text that is misaligned, floating, pasted over or overlapping the printed design; smudged, blurred or blocky patches around the name, number or photo; a background pattern that breaks around a field; a photo pasted onto the card; a digital template, mock-up, "SAMPLE"/"SPECIMEN" card, screenshot or a photo of a screen or printout instead of the original. The official paper ePhilID and the Digital National ID shown in the eGovPH app are originals in that form and are not signs of editing by themselves. False when the document looks like an untouched original. Normal wear, scratches, fading, laminate texture, glare, camera grain, JPEG compression, resizing and a tilted angle are NOT signs of editing. Only report clear visible evidence.
 - edit_evidence: one short sentence describing what looks edited, or an empty string.
 
 For "back" (when Image 2 is present; otherwise set booleans to false and strings to empty):
-- is_back_of_identification_document: true only if Image 2 is the reverse side of an identification card.
+- is_back_of_identification_document: true only if Image 2 is the reverse side of an identification card, or for a passport, seafarer's record book or paper document, another page or the reverse of the same document.
 - image_quality, edit_suspected and edit_evidence: as for the front.
 - id_number and name: as printed on the back, or empty strings.
 
-back_matches_front: true only when Image 2 is the back of the same card as Image 1: the same card type and issuer design, and any ID number, name or birth date printed on both sides agree. False if they look like different cards or any shared detail differs. False when there is no Image 2.
+back_matches_front: true only when Image 2 is the back of the same document as Image 1: the same ID type and issuer design, and any ID number, name or birth date printed on both sides agree. False if they look like different documents or any shared detail differs. False when there is no Image 2.
 reason: one short sentence explaining the overall result.`;
 
 const SIDE_PROPERTIES = {
@@ -57,7 +60,7 @@ const RESPONSE_SCHEMA = {
       type: "OBJECT",
       properties: {
         is_identification_document: { type: "BOOLEAN" },
-        document_type: { type: "STRING" },
+        id_type: { type: "STRING", enum: [...Object.keys(ACCEPTED_ID_TYPES), ...REFUSED_ID_TYPES, "NOT_AN_ID"] },
         ...SIDE_PROPERTIES,
         name_readable: { type: "BOOLEAN" },
         full_name: { type: "STRING" },
@@ -65,7 +68,7 @@ const RESPONSE_SCHEMA = {
         middle_name: { type: "STRING" },
         last_name: { type: "STRING" },
       },
-      required: ["is_identification_document", "document_type", "image_quality", "edit_suspected", "edit_evidence", "id_number", "name_readable", "full_name", "first_name", "middle_name", "last_name"],
+      required: ["is_identification_document", "id_type", "image_quality", "edit_suspected", "edit_evidence", "id_number", "name_readable", "full_name", "first_name", "middle_name", "last_name"],
     },
     back: {
       type: "OBJECT",

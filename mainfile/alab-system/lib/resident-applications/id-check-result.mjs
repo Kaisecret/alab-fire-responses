@@ -22,6 +22,37 @@ const BACK_QUALITY_MESSAGES = {
 
 const TAMPERED_MESSAGE = "This ID looks edited or altered. Upload a photo of your original, unedited ID card.";
 
+// The only IDs accepted at registration, with the label saved on the account.
+// The model names the type; whether it is accepted is decided here.
+export const ACCEPTED_ID_TYPES = {
+  PHILSYS_ID: "PhilSys National ID",
+  PASSPORT: "Philippine Passport",
+  DRIVERS_LICENSE: "LTO Driver's License",
+  UMID: "UMID Card",
+  PRC_ID: "PRC ID",
+  SSS_ID: "SSS ID",
+  GSIS_ID: "GSIS ID",
+  POSTAL_ID: "Postal ID",
+  VOTERS_ID: "Voter's ID",
+  SENIOR_CITIZEN_ID: "Senior Citizen ID",
+  PWD_ID: "PWD ID",
+  TIN_ID: "TIN ID",
+  OFW_ID: "OWWA / OFW ID",
+  IBP_ID: "IBP ID",
+  SEAFARERS_BOOK: "Seafarer's Record Book",
+};
+
+// Types the model can name that are real IDs but not on the accepted list.
+export const REFUSED_ID_TYPES = ["STUDENT_ID", "COMPANY_ID", "BARANGAY_ID", "PHILHEALTH_ID", "PAGIBIG_ID", "OTHER_ID"];
+
+const ACCEPTED_LIST = "a PhilSys ID, passport, driver's license, UMID, PRC, SSS, GSIS, postal, voter's, senior citizen, PWD, TIN, OFW or IBP ID";
+
+const REFUSED_MESSAGES = {
+  STUDENT_ID: `School and student IDs are not accepted. Upload a government ID such as ${ACCEPTED_LIST}.`,
+  COMPANY_ID: `Company IDs are not accepted. Upload a government ID such as ${ACCEPTED_LIST}.`,
+};
+const REFUSED_MESSAGE = `This type of ID is not accepted. Upload a government ID such as ${ACCEPTED_LIST}.`;
+
 function display(parts) {
   return parts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 }
@@ -40,20 +71,32 @@ export function interpretIdCheck(result, registered, options = {}) {
   if (!result || typeof result !== "object" || !front || typeof front !== "object") {
     return { ok: false, side: "front", code: "SERVICE_UNAVAILABLE", message: "ID checking is unavailable right now. Please try again in a moment." };
   }
-  if (front.is_identification_document !== true) {
+  const idType = String(front.id_type ?? "").toUpperCase();
+  const frontQuality = quality(front.image_quality);
+  if (front.is_identification_document !== true || idType === "NOT_AN_ID") {
+    // Too blurry, dark or glary to tell what it is: ask for a better photo first.
+    if (["BLURRY", "TOO_DARK", "GLARE"].includes(frontQuality)) {
+      return { ok: false, side: "front", code: "UNREADABLE", message: QUALITY_MESSAGES[frontQuality] };
+    }
     return {
       ok: false,
       side: "front",
       code: "NOT_AN_ID",
-      message: "This file is not a valid ID. Upload a photo of your ID card, such as a PhilSys ID, driver's license, passport or UMID.",
+      message: "This photo is not an ID. Upload a clear photo of your government ID, such as a PhilSys ID, driver's license, passport or UMID.",
     };
+  }
+  if (!Object.hasOwn(ACCEPTED_ID_TYPES, idType)) {
+    return { ok: false, side: "front", code: "ID_NOT_ACCEPTED", message: REFUSED_MESSAGES[idType] ?? REFUSED_MESSAGE };
   }
   if (front.edit_suspected === true) {
     return { ok: false, side: "front", code: "TAMPERED", message: TAMPERED_MESSAGE };
   }
-  const frontQuality = quality(front.image_quality);
   if (frontQuality !== "GOOD" || front.name_readable !== true) {
     return { ok: false, side: "front", code: "UNREADABLE", message: QUALITY_MESSAGES[frontQuality] ?? QUALITY_MESSAGES.UNREADABLE };
+  }
+  // Every accepted ID carries a number; one that cannot be read means the photo is too blurry.
+  if (!String(front.id_number ?? "").trim()) {
+    return { ok: false, side: "front", code: "UNREADABLE", message: "We could not read the ID number. Retake a sharp, close photo of your ID and upload again." };
   }
   const detected = {
     fullName: String(front.full_name ?? ""),
@@ -74,7 +117,7 @@ export function interpretIdCheck(result, registered, options = {}) {
       message: `The name on your ID (${detectedName}) does not match the name you entered (${display([registered?.firstName, registered?.lastName])}).`,
     };
   }
-  const documentType = String(front.document_type ?? "ID").slice(0, 80);
+  const documentType = ACCEPTED_ID_TYPES[idType];
 
   // The front passed. The back is required and must belong to the same card.
   if (!options.hasBack) {

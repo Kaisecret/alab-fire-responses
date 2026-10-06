@@ -290,6 +290,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const nameValue = (id: string) => root.querySelector<HTMLInputElement>(`#${id}`)?.value.trim() ?? "";
     const ID_SCAN_TITLES: Record<string, string> = {
       NOT_AN_ID: "Not a valid ID",
+      ID_NOT_ACCEPTED: "ID not accepted",
       UNREADABLE: "Photo is not clear",
       NAME_NOT_FOUND: "Name not found on ID",
       NAME_MISMATCH: "Name does not match",
@@ -323,10 +324,10 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
 
     function renderSide(side: "front" | "back", look: ScanLook | null, title = "", text = "", action?: { label: string; onClick: () => void }) {
       const { status, section, dropzone } = sideParts[side];
-      section?.classList.toggle("id-pending", look === "scanning");
       section?.classList.toggle("id-failed", look === "failed");
-      dropzone?.classList.toggle("id-pending", look === "scanning");
       dropzone?.classList.toggle("id-failed", look === "failed");
+      section?.classList.toggle("id-verified", look === "verified");
+      dropzone?.classList.toggle("id-verified", look === "verified");
       if (!status) return;
       status.replaceChildren();
       status.hidden = !look;
@@ -441,7 +442,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         const message = result.message ?? "We could not verify this ID. Upload another photo.";
         if (failedSide === "back") {
           if (result.frontVerified) renderSide("front", "verified", "Front checked", nameLine);
-          else renderSide("front", null);
+          else renderSide("front", "info", "Front not checked yet", "Both sides are checked together once the back photo is fixed.");
           renderSide("back", "failed", title, message, action);
         } else {
           renderSide("front", "failed", title, message, action);
