@@ -1586,7 +1586,7 @@ export const signupMarkup = `<main class="signup-container">
 
                 <!-- STEP 3: Identity Verification -->
                 <div class="step-panel" id="step3">
-                    <p class="id-accepted-note"><strong>Government IDs only:</strong> PhilSys ID or ePhilID, passport, driver's license, UMID, PRC, SSS, GSIS, postal, voter's, senior citizen, PWD, TIN, OFW or IBP ID, or seafarer's record book. School and student IDs are not accepted. The name on the ID must match the name you entered.</p>
+                    <p class="id-accepted-note" id="idAcceptedNote"><strong>Government IDs only:</strong> PhilSys ID or ePhilID, passport, driver's license, UMID, PRC, SSS, GSIS, postal, voter's, senior citizen, PWD, TIN, OFW or IBP ID, or seafarer's record book. School and student IDs are not accepted. The name on the ID must match the name you entered.</p>
 
                     <!-- Upload Front of Valid ID -->
                     <div class="upload-section" id="uploadFrontSection">

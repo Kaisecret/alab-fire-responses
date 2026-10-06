@@ -178,6 +178,44 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     municipalitySelect?.addEventListener("change", handleMunicipalityChange);
     handleMunicipalityChange();
 
+    // A refresh keeps what the resident typed. Only this tab keeps it
+    // (sessionStorage), and passwords and ID photos are never stored.
+    const DRAFT_KEY = "alab_signup_draft";
+    const DRAFT_FIELDS = ["firstName", "lastName", "email", "phone", "municipality", "barangay", "sitio", "landmark", "username"];
+    const saveDraft = () => {
+      try {
+        const draft: Record<string, string | number> = { step: currentStep };
+        DRAFT_FIELDS.forEach((id) => { draft[id] = fieldValue(id); });
+        sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      } catch {
+        // Storage is blocked; the form still works, it is just not kept.
+      }
+    };
+    const clearDraft = () => {
+      try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* nothing kept */ }
+    };
+    const restoreDraft = () => {
+      let draft: Record<string, unknown> | null = null;
+      try { draft = JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? "null"); } catch { draft = null; }
+      if (!draft || typeof draft !== "object") return;
+      for (const id of ["firstName", "lastName", "email", "phone", "sitio", "landmark", "username"]) {
+        const field = root.querySelector<HTMLInputElement>(`#${id}`);
+        const value = draft[id];
+        if (field && !field.value && typeof value === "string") field.value = value;
+      }
+      if (municipalitySelect && typeof draft.municipality === "string" && draft.municipality) {
+        municipalitySelect.value = draft.municipality;
+        handleMunicipalityChange();
+        if (barangaySelect && typeof draft.barangay === "string") barangaySelect.value = draft.barangay;
+      }
+      updateAddressPreview();
+      // ID photos are not kept, so a resident past the ID step returns to it.
+      const step = Number(draft.step);
+      if (step >= 2) goToStep(Math.min(step, 3));
+    };
+    form?.addEventListener("input", saveDraft);
+    form?.addEventListener("change", saveDraft);
+
     const loadGooglePrefill = async () => {
       try {
         const response = await fetch("/api/auth/google/prefill/", { cache: "no-store" });
@@ -214,6 +252,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
 
     function goToStep(step: number) {
       currentStep = step;
+      saveDraft();
       panels.forEach((p, i) => {
         if (p) {
           p.classList.toggle("active", i === step - 1);
@@ -316,7 +355,10 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       back: { status: idScanBack, section: uploadBackSection, dropzone: dropzoneBack, input: fileBackInput },
     };
 
+    // The list of accepted IDs is only needed until the ID passes.
+    const idAcceptedNote = root.querySelector<HTMLElement>("#idAcceptedNote");
     function updateContinueState() {
+      if (idAcceptedNote) idAcceptedNote.hidden = Boolean(idVerificationToken);
       if (toStep4) {
         toStep4.disabled = !idVerificationToken;
         toStep4.title = idVerificationToken ? "" : "Verify both sides of your ID to continue";
@@ -968,6 +1010,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
             status.textContent = failed.error ?? "Unable to create your account.";
             return;
           }
+          clearDraft();
           window.location.assign("/resident/application");
         } catch {
           completeButton.disabled = false;
@@ -1109,8 +1152,11 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     passwordField?.addEventListener("input", handlePasswordInput);
     form?.addEventListener("submit", handleSubmit);
     googleBtn?.addEventListener("click", handleGoogleSignup);
+    restoreDraft();
 
     return () => {
+      form?.removeEventListener("input", saveDraft);
+      form?.removeEventListener("change", saveDraft);
       toStep2?.removeEventListener("click", handleToStep2);
       toStep3?.removeEventListener("click", handleToStep3);
       toStep4?.removeEventListener("click", handleToStep4);

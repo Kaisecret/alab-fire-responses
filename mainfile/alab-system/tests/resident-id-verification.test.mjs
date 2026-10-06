@@ -160,6 +160,9 @@ test("a bad back photo never leaves the front unjudged or shown as accepted", ()
   assert.match(markup, /\.upload-dropzone\.has-file\.id-verified/);
   const page = readFileSync(new URL("../app/_components/signup-page.tsx", import.meta.url), "utf8");
   assert.match(page, /classList\.toggle\("id-verified", look === "verified"\)/);
+  // The accepted-ID list goes away once both sides pass, and returns if the ID is reset.
+  assert.match(markup, /class="id-accepted-note" id="idAcceptedNote"/);
+  assert.match(page, /idAcceptedNote\.hidden = Boolean\(idVerificationToken\)/);
 });
 
 test("registration refuses to save anything until the ID verification token checks out", () => {

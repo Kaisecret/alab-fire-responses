@@ -93,3 +93,18 @@ test("Google login starts OAuth and pre-fills a new resident signup without skip
   assert.match(signup, /frontFile/);
   assert.match(signup, /selfieTaken/);
 });
+
+test("a refresh keeps the typed sign-up details, never the password or ID photos", () => {
+  const page = readFileSync(new URL("../app/_components/signup-page.tsx", import.meta.url), "utf8");
+  const fields = page.match(/const DRAFT_FIELDS = \[([^\]]+)\]/)?.[1] ?? "";
+  for (const id of ["firstName", "lastName", "email", "phone", "municipality", "barangay", "sitio", "landmark", "username"]) {
+    assert.match(fields, new RegExp(`"${id}"`), `${id} is kept`);
+  }
+  assert.doesNotMatch(fields, /assword|file|selfie/i, "passwords and photos are never stored");
+  // Only this tab keeps it, and it is removed once the account is created.
+  assert.match(page, /sessionStorage\.setItem\(DRAFT_KEY/);
+  assert.doesNotMatch(page, /localStorage\.setItem\(DRAFT_KEY/);
+  assert.ok(page.indexOf("sessionStorage.removeItem(DRAFT_KEY)") < page.indexOf('window.location.assign("/resident/application")'), "cleared before leaving for the application page");
+  // The barangay list is rebuilt for the saved municipality before the barangay is put back.
+  assert.match(page, /handleMunicipalityChange\(\);\s*if \(barangaySelect && typeof draft\.barangay === "string"\) barangaySelect\.value = draft\.barangay;/);
+});
