@@ -84,8 +84,13 @@ test("only the listed government IDs pass; school, company and barangay IDs are 
     assert.equal(check({ id_type: idType }).code, "ID_NOT_ACCEPTED", `${idType} is refused`);
   }
   assert.match(check({ id_type: "STUDENT_ID" }).message, /School and student IDs are not accepted/);
+  // The back of an accepted ID in the front slot is named as the wrong side.
+  assert.equal(check({ shows_back_side: true, name_readable: false }).code, "WRONG_SIDE");
+  assert.match(check({ shows_back_side: true }).message, /back of your ID/);
   // A screenshot, dashboard or random photo classed as "not an ID" never reaches the type check.
   assert.equal(check({ id_type: "NOT_AN_ID" }).code, "NOT_AN_ID");
+  // The name shown is built from the separate fields, whatever order full_name came in.
+  assert.equal(check({ full_name: "JUAN DELA CRUZ SANTOS", first_name: "JUAN", middle_name: "SANTOS", last_name: "DELA CRUZ" }).detectedName, "JUAN SANTOS DELA CRUZ");
   // The label saved with the account comes from code, not from the model.
   assert.equal(check({ id_type: "PHILSYS_ID" }).documentType, "PhilSys National ID");
 });

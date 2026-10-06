@@ -15,7 +15,7 @@ const ATTEMPT_TIMEOUT_MS = 30_000;
 const TOTAL_BUDGET_MS = 55_000;
 
 export type IdCheckCode =
-  | "VERIFIED" | "NOT_AN_ID" | "ID_NOT_ACCEPTED" | "UNREADABLE" | "NAME_NOT_FOUND" | "NAME_MISMATCH" | "TAMPERED"
+  | "VERIFIED" | "NOT_AN_ID" | "ID_NOT_ACCEPTED" | "WRONG_SIDE" | "UNREADABLE" | "NAME_NOT_FOUND" | "NAME_MISMATCH" | "TAMPERED"
   | "BACK_REQUIRED" | "BACK_NOT_ID" | "BACK_MISMATCH" | "SERVICE_UNAVAILABLE";
 
 export type IdCheckOutcome =
@@ -31,6 +31,7 @@ For "front":
   PHILSYS_ID (PhilSys / Philippine National ID, including the paper ePhilID and the Digital National ID from the eGovPH app), PASSPORT (DFA Philippine passport), DRIVERS_LICENSE (LTO driver's license or student permit), UMID (Unified Multi-Purpose ID), PRC_ID (Professional Regulation Commission ID), SSS_ID, GSIS_ID, POSTAL_ID (PHLPost postal ID), VOTERS_ID (COMELEC voter's ID or voter's certification), SENIOR_CITIZEN_ID (OSCA / LGU senior citizen ID), PWD_ID (NCDA / LGU persons with disability ID), TIN_ID (BIR taxpayer ID), OFW_ID (OWWA / iDOLE / OFW e-card), IBP_ID (Integrated Bar of the Philippines ID), SEAFARERS_BOOK (MARINA seafarer's record book).
   Other IDs: STUDENT_ID (any school, college or university ID, including student IDs), COMPANY_ID (employee or office ID), BARANGAY_ID, PHILHEALTH_ID, PAGIBIG_ID, OTHER_ID (any other ID card).
   NOT_AN_ID whenever is_identification_document is false.
+- shows_back_side: true when Image 1 is the back of an ID (for example a QR code, issue date or return address with no holder photo and name) instead of the front.
 - image_quality: GOOD only when the document is in focus, well lit, fully inside the frame and the name, ID number and other printed details are sharp and easy to read. Slight phone-camera grain or a small tilt are still GOOD. BLURRY when blur, motion or soft focus makes any letters fuzzy or smeared. TOO_DARK for an underexposed or dim photo even if some text can still be made out. CROPPED if any edge of the document is cut off. GLARE if reflections hide details. Otherwise UNREADABLE.
 - name_readable: true only if the holder's name can be read with confidence.
 - full_name, first_name, middle_name, last_name: the holder's name exactly as printed (empty strings if not readable). For "SURNAME, GIVEN NAMES" formats, split accordingly.
@@ -61,6 +62,7 @@ const RESPONSE_SCHEMA = {
       properties: {
         is_identification_document: { type: "BOOLEAN" },
         id_type: { type: "STRING", enum: [...Object.keys(ACCEPTED_ID_TYPES), ...REFUSED_ID_TYPES, "NOT_AN_ID"] },
+        shows_back_side: { type: "BOOLEAN" },
         ...SIDE_PROPERTIES,
         name_readable: { type: "BOOLEAN" },
         full_name: { type: "STRING" },
@@ -68,7 +70,7 @@ const RESPONSE_SCHEMA = {
         middle_name: { type: "STRING" },
         last_name: { type: "STRING" },
       },
-      required: ["is_identification_document", "id_type", "image_quality", "edit_suspected", "edit_evidence", "id_number", "name_readable", "full_name", "first_name", "middle_name", "last_name"],
+      required: ["is_identification_document", "id_type", "shows_back_side", "image_quality", "edit_suspected", "edit_evidence", "id_number", "name_readable", "full_name", "first_name", "middle_name", "last_name"],
     },
     back: {
       type: "OBJECT",

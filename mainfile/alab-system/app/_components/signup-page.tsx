@@ -291,6 +291,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const ID_SCAN_TITLES: Record<string, string> = {
       NOT_AN_ID: "Not a valid ID",
       ID_NOT_ACCEPTED: "ID not accepted",
+      WRONG_SIDE: "This is the back of the ID",
       UNREADABLE: "Photo is not clear",
       NAME_NOT_FOUND: "Name not found on ID",
       NAME_MISMATCH: "Name does not match",

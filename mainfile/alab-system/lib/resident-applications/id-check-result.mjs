@@ -73,6 +73,9 @@ export function interpretIdCheck(result, registered, options = {}) {
   }
   const idType = String(front.id_type ?? "").toUpperCase();
   const frontQuality = quality(front.image_quality);
+  if (front.shows_back_side === true && idType && idType !== "NOT_AN_ID") {
+    return { ok: false, side: "front", code: "WRONG_SIDE", message: "This is the back of your ID. Upload the front, with your photo and name, here." };
+  }
   if (front.is_identification_document !== true || idType === "NOT_AN_ID") {
     // Too blurry, dark or glary to tell what it is: ask for a better photo first.
     if (["BLURRY", "TOO_DARK", "GLARE"].includes(frontQuality)) {
@@ -104,7 +107,8 @@ export function interpretIdCheck(result, registered, options = {}) {
     middleName: String(front.middle_name ?? ""),
     lastName: String(front.last_name ?? ""),
   };
-  const detectedName = detected.fullName.trim() || display([detected.firstName, detected.middleName, detected.lastName]);
+  // Shown as "given middle surname" from the separate fields; the model's full_name order varies.
+  const detectedName = (detected.lastName.trim() && display([detected.firstName, detected.middleName, detected.lastName])) || detected.fullName.trim() || display([detected.firstName, detected.middleName, detected.lastName]);
   if (!detectedName) {
     return { ok: false, side: "front", code: "NAME_NOT_FOUND", message: "We could not find a name on this ID. Upload a clearer photo of the front of your ID." };
   }
