@@ -45,5 +45,6 @@ test("offline residents can call their own station, 911, or any BFP Antique numb
 
   const page = readFileSync(join(appRoot, "app", "resident", "report-fire", "page.tsx"), "utf8");
   assert.match(page, /OPEN_BFP_HOTLINES/, "the report form opens the hotlines when a send fails");
-  assert.match(readFileSync(join(appRoot, "app", "_content", "resident-report-fire-content.ts"), "utf8"), /data-call-bfp/);
+  // The form no longer carries its own "No signal? Call BFP" link at the bottom.
+  assert.doesNotMatch(readFileSync(join(appRoot, "app", "_content", "resident-report-fire-content.ts"), "utf8"), /data-call-bfp|No signal\? Call BFP/);
 });

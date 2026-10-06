@@ -714,12 +714,8 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     await executeFinalSubmission();
   };
   const cancel = () => window.location.assign('/resident');
-  // With no signal a report cannot be sent; a call to BFP still goes through.
-  const callBfpButton = root.querySelector<HTMLButtonElement>('[data-call-bfp]');
-  const openHotlines = () => window.dispatchEvent(new Event(OPEN_BFP_HOTLINES));
   submitButton.addEventListener('click', submit);
   cancelButton?.addEventListener('click', cancel);
-  callBfpButton?.addEventListener('click', openHotlines);
 
   return () => {
     typeHandlers.forEach((handler, button) => button.removeEventListener('click', handler));
@@ -727,7 +723,6 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     routeButton?.removeEventListener('click', handleRouteClick);
     submitButton.removeEventListener('click', submit);
     cancelButton?.removeEventListener('click', cancel);
-    callBfpButton?.removeEventListener('click', openHotlines);
     root.removeEventListener('resident-report:photos-updated', handlePhotosUpdated);
     photoReqCloseBtn?.removeEventListener('click', hidePhotoWarning);
     photoRequiredDialog?.removeEventListener('click', handleDialogBackdropClick);
