@@ -57,6 +57,18 @@ function display(parts) {
   return parts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 }
 
+function digits(value) {
+  return String(value ?? "").replace(/\D/g, "");
+}
+
+/** Two card numbers from different cards; one or two misread digits are allowed. */
+function differentNumbers(a, b) {
+  if (a.length < 12 || a.length !== b.length) return false;
+  let differ = 0;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) differ++;
+  return differ > 2;
+}
+
 function quality(value) {
   return String(value ?? "UNREADABLE").toUpperCase();
 }
@@ -64,7 +76,8 @@ function quality(value) {
 /**
  * @param result  the model's JSON reading ({ front, back, back_matches_front })
  * @param registered  { firstName, lastName } typed by the resident
- * @param options  { hasBack } whether a back photo was uploaded
+ * @param options  { hasBack, qr } whether a back photo was uploaded, and the
+ *                 PhilSys QR holder read from the back or front ({ back, front })
  */
 export function interpretIdCheck(result, registered, options = {}) {
   const front = result?.front;
@@ -128,6 +141,9 @@ export function interpretIdCheck(result, registered, options = {}) {
     return { ok: false, side: "back", code: "BACK_REQUIRED", frontVerified: true, detectedName, documentType, message: "Front checked. Now upload the back of the same ID." };
   }
   const back = result.back;
+  if (back && typeof back === "object" && back.shows_front_side === true) {
+    return { ok: false, side: "back", code: "BACK_NOT_ID", frontVerified: true, detectedName, message: "This is the front of an ID. Upload the back of the same ID here." };
+  }
   if (!back || typeof back !== "object" || back.is_back_of_identification_document !== true) {
     return { ok: false, side: "back", code: "BACK_NOT_ID", frontVerified: true, detectedName, message: "This photo is not the back of an ID card. Upload the back of the same ID." };
   }
@@ -138,7 +154,22 @@ export function interpretIdCheck(result, registered, options = {}) {
   if (backQuality !== "GOOD") {
     return { ok: false, side: "back", code: "UNREADABLE", frontVerified: true, detectedName, message: BACK_QUALITY_MESSAGES[backQuality] ?? BACK_QUALITY_MESSAGES.UNREADABLE };
   }
-  if (result.back_matches_front !== true) {
+  // A PhilSys back prints no name or number, so its QR has to prove the card.
+  let qrProvesBack = false;
+  if (idType === "PHILSYS_ID") {
+    const qr = options.qr?.back ?? options.qr?.front ?? null;
+    if (!qr) {
+      return { ok: false, side: "back", code: "UNREADABLE", frontVerified: true, detectedName, message: "We could not read the QR code on your PhilSys ID. Retake the back closer and in focus, with the whole QR code showing." };
+    }
+    if (!matchRegisteredName(registered, qr).match) {
+      return { ok: false, side: "back", code: "BACK_MISMATCH", frontVerified: true, detectedName, message: "The QR code on this back belongs to a different person. Upload the back of your own ID." };
+    }
+    if (differentNumbers(digits(front.id_number), digits(qr.pcn))) {
+      return { ok: false, side: "back", code: "BACK_MISMATCH", frontVerified: true, detectedName, message: "The back is from a different card than the front. Upload both sides of one card." };
+    }
+    qrProvesBack = Boolean(options.qr?.back);
+  }
+  if (result.back_matches_front !== true && !qrProvesBack) {
     return {
       ok: false,
       side: "back",

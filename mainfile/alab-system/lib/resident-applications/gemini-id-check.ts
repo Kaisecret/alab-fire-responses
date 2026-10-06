@@ -1,4 +1,5 @@
 import { ACCEPTED_ID_TYPES, REFUSED_ID_TYPES, interpretIdCheck } from "./id-check-result.mjs";
+import { readPhilSysQr } from "./philsys-qr.mjs";
 
 /*
  * Reads an uploaded ID with Gemini. The model only describes the image (is it
@@ -41,6 +42,7 @@ For "front":
 
 For "back" (when Image 2 is present; otherwise set booleans to false and strings to empty):
 - is_back_of_identification_document: true only if Image 2 is the reverse side of an identification card, or for a passport, seafarer's record book or paper document, another page or the reverse of the same document.
+- shows_front_side: true when Image 2 is the front of an ID card (the holder's portrait photo with the name fields) instead of its back.
 - image_quality, edit_suspected and edit_evidence: as for the front.
 - id_number and name: as printed on the back, or empty strings.
 
@@ -76,10 +78,11 @@ const RESPONSE_SCHEMA = {
       type: "OBJECT",
       properties: {
         is_back_of_identification_document: { type: "BOOLEAN" },
+        shows_front_side: { type: "BOOLEAN" },
         ...SIDE_PROPERTIES,
         name: { type: "STRING" },
       },
-      required: ["is_back_of_identification_document", "image_quality", "edit_suspected", "edit_evidence", "id_number", "name"],
+      required: ["is_back_of_identification_document", "shows_front_side", "image_quality", "edit_suspected", "edit_evidence", "id_number", "name"],
     },
     back_matches_front: { type: "BOOLEAN" },
     reason: { type: "STRING" },
@@ -154,14 +157,22 @@ async function readIdImages(front: IdImage, back: IdImage | null): Promise<Recor
   return null;
 }
 
+// A PhilSys card has its QR on the back; an ePhilID has it on the front.
+async function readQrCodes(front: IdImage, back: IdImage | null) {
+  if (!back) return { back: null, front: null };
+  const fromBack = await readPhilSysQr(back.data);
+  return { back: fromBack, front: fromBack ? null : await readPhilSysQr(front.data) };
+}
+
 export async function checkIdWithGemini(input: {
   front: IdImage;
   back: IdImage | null;
   firstName: string;
   lastName: string;
 }): Promise<IdCheckOutcome> {
-  const reading = await readIdImages(input.front, input.back);
-  const outcome = interpretIdCheck(reading, { firstName: input.firstName, lastName: input.lastName }, { hasBack: Boolean(input.back) }) as IdCheckOutcome;
+  // The QR is read while the model looks at the photos, so it adds no wait.
+  const [reading, qr] = await Promise.all([readIdImages(input.front, input.back), readQrCodes(input.front, input.back)]);
+  const outcome = interpretIdCheck(reading, { firstName: input.firstName, lastName: input.lastName }, { hasBack: Boolean(input.back), qr }) as IdCheckOutcome;
   if (!outcome.ok && outcome.code === "TAMPERED") {
     // What the model saw, so a wrongly rejected genuine ID can be investigated.
     const side = (reading?.[outcome.side] ?? {}) as { edit_evidence?: unknown };

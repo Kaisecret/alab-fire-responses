@@ -5,6 +5,7 @@ import test from "node:test";
 import { matchRegisteredName } from "../lib/resident-applications/id-name-match.mjs";
 import { signIdVerification, readIdVerification } from "../lib/resident-applications/id-verification-token.mjs";
 import { interpretIdCheck } from "../lib/resident-applications/id-check-result.mjs";
+import { parsePhilSysQr } from "../lib/resident-applications/philsys-qr.mjs";
 
 const SECRET = "id-verification-test-secret-with-more-than-32-characters";
 
@@ -76,7 +77,8 @@ test("the ID check needs a readable, unedited front whose name matches and a mat
 test("only the listed government IDs pass; school, company and barangay IDs are refused", () => {
   const front = { is_identification_document: true, id_type: "PHILSYS_ID", id_number: "1234-5678-9012-3456", image_quality: "GOOD", name_readable: true, full_name: "JUAN DELA CRUZ", first_name: "JUAN", middle_name: "", last_name: "DELA CRUZ", edit_suspected: false };
   const back = { is_back_of_identification_document: true, image_quality: "GOOD", edit_suspected: false };
-  const check = (overrides) => interpretIdCheck({ front: { ...front, ...overrides }, back, back_matches_front: true }, { firstName: "Juan", lastName: "Dela Cruz" }, { hasBack: true });
+  const qr = { back: { firstName: "JUAN", middleName: "", lastName: "DELA CRUZ", pcn: "1234567890123456" }, front: null };
+  const check = (overrides) => interpretIdCheck({ front: { ...front, ...overrides }, back, back_matches_front: true }, { firstName: "Juan", lastName: "Dela Cruz" }, { hasBack: true, qr });
   for (const idType of ["PHILSYS_ID", "PASSPORT", "DRIVERS_LICENSE", "UMID", "PRC_ID", "SSS_ID", "GSIS_ID", "POSTAL_ID", "VOTERS_ID", "SENIOR_CITIZEN_ID", "PWD_ID", "TIN_ID", "OFW_ID", "IBP_ID", "SEAFARERS_BOOK"]) {
     assert.equal(check({ id_type: idType }).ok, true, `${idType} is accepted`);
   }
@@ -93,6 +95,45 @@ test("only the listed government IDs pass; school, company and barangay IDs are 
   assert.equal(check({ full_name: "JUAN DELA CRUZ SANTOS", first_name: "JUAN", middle_name: "SANTOS", last_name: "DELA CRUZ" }).detectedName, "JUAN SANTOS DELA CRUZ");
   // The label saved with the account comes from code, not from the model.
   assert.equal(check({ id_type: "PHILSYS_ID" }).documentType, "PhilSys National ID");
+});
+
+test("a PhilSys back must carry the QR of the same holder and card", () => {
+  // Shape of the QR on the back of a PhilSys card (made-up holder).
+  const payload = JSON.stringify({ DateIssued: "01 January 2022", Issuer: "PSA", subject: { Suffix: "", lName: "DELA CRUZ", fName: "JUAN", mName: "SANTOS", sex: "Male", DOB: "January 01, 1990", POB: "San Jose,Antique", PCN: "1234-5678-9012-3456" }, alg: "EDDSA", signature: "x" });
+  const holder = parsePhilSysQr(payload);
+  assert.deepEqual(holder, { firstName: "JUAN", middleName: "SANTOS", lastName: "DELA CRUZ", pcn: "1234567890123456" });
+  assert.equal(parsePhilSysQr("https://example.com"), null);
+  assert.equal(parsePhilSysQr(JSON.stringify({ subject: { fName: "JUAN" } })), null);
+
+  const front = { is_identification_document: true, id_type: "PHILSYS_ID", id_number: "1234-5678-9012-3456", image_quality: "GOOD", name_readable: true, full_name: "JUAN SANTOS DELA CRUZ", first_name: "JUAN", middle_name: "SANTOS", last_name: "DELA CRUZ", edit_suspected: false };
+  const back = { is_back_of_identification_document: true, image_quality: "GOOD", edit_suspected: false };
+  const registered = { firstName: "Juan", lastName: "Dela Cruz" };
+  const check = (qr, extra = {}) => interpretIdCheck({ front, back: { ...back, ...extra.back }, back_matches_front: extra.match ?? true }, registered, { hasBack: true, qr });
+
+  assert.equal(check({ back: holder }).ok, true);
+  // The QR proves the same card even when the model was unsure.
+  assert.equal(check({ back: holder }, { match: false }).ok, true);
+  // Another person's PhilSys back: same design, different QR holder.
+  const other = check({ back: { ...holder, firstName: "MARIA", lastName: "SANTOS", pcn: "9999888877776666" } });
+  assert.equal(other.code, "BACK_MISMATCH");
+  assert.equal(other.side, "back");
+  assert.match(other.message, /different person/);
+  // Same name, another card number.
+  assert.equal(check({ back: { ...holder, pcn: "1111222233334444" } }).code, "BACK_MISMATCH");
+  // One misread digit on the front number is not a different card.
+  assert.equal(check({ back: { ...holder, pcn: "1234567890123457" } }).ok, true);
+  // No readable QR on a PhilSys back: retake it.
+  const noQr = check({ back: null, front: null });
+  assert.equal(noQr.code, "UNREADABLE");
+  assert.equal(noQr.side, "back");
+  assert.match(noQr.message, /QR code/);
+  // An ePhilID carries the QR on the front; that still binds the name.
+  assert.equal(check({ back: null, front: holder }).ok, true);
+  assert.equal(check({ back: null, front: holder }, { match: false }).code, "BACK_MISMATCH");
+  // The front of another ID in the back slot is named as such.
+  const frontAsBack = check({ back: holder }, { back: { shows_front_side: true } });
+  assert.equal(frontAsBack.code, "BACK_NOT_ID");
+  assert.match(frontAsBack.message, /front of an ID/);
 });
 
 test("a blurry ID whose number cannot be read is refused", () => {
