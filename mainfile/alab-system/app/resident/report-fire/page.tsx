@@ -115,17 +115,30 @@ function LegacyResidentReportFirePage() {
 function initializeScrollDownIndicator(root: HTMLElement): () => void {
   const scrollDownBtn = root.querySelector<HTMLButtonElement>('[data-scroll-down-btn]');
   if (!scrollDownBtn) return () => {};
+  const label = scrollDownBtn.querySelector<HTMLElement>('[data-scroll-down-label]');
+  const defaultLabel = label?.textContent ?? '';
+  // Picking a fire type opens "Situation at the scene" below the fold on a
+  // phone; the arrow then points at it so responders get those answers.
+  const situationRow = root.querySelector<HTMLElement>('[data-quick-tactical-row]');
+  const situationBelowFold = () => {
+    if (!situationRow || situationRow.hidden) return false;
+    return situationRow.getBoundingClientRect().top > window.innerHeight - 180;
+  };
 
-  const handleScroll = () => {
+  const update = () => {
+    const pointToSituation = situationBelowFold();
+    scrollDownBtn.dataset.target = pointToSituation ? 'situation' : '';
+    if (label) label.textContent = pointToSituation ? 'Situation at the scene' : defaultLabel;
+    scrollDownBtn.setAttribute('aria-label', pointToSituation ? 'Scroll to situation at the scene' : 'Scroll down to complete report');
     const scrollY = window.scrollY || document.documentElement.scrollTop;
-    if (scrollY > 50) {
-      scrollDownBtn.classList.add('is-hidden');
-    } else {
-      scrollDownBtn.classList.remove('is-hidden');
-    }
+    scrollDownBtn.classList.toggle('is-hidden', !pointToSituation && scrollY > 50);
   };
 
   const handleScrollDownClick = () => {
+    if (scrollDownBtn.dataset.target === 'situation' && situationRow) {
+      situationRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     const target = root.querySelector('.landmark-box') || root.querySelector('.tactical-grid-3') || root.querySelector('.photo-field');
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -134,11 +147,16 @@ function initializeScrollDownIndicator(root: HTMLElement): () => void {
     }
   };
 
-  window.addEventListener('scroll', handleScroll, { passive: true });
+  const situationWatcher = situationRow ? new MutationObserver(update) : null;
+  if (situationRow) situationWatcher?.observe(situationRow, { attributes: true, attributeFilter: ['hidden'] });
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
   scrollDownBtn.addEventListener('click', handleScrollDownClick);
 
   return () => {
-    window.removeEventListener('scroll', handleScroll);
+    situationWatcher?.disconnect();
+    window.removeEventListener('scroll', update);
+    window.removeEventListener('resize', update);
     scrollDownBtn.removeEventListener('click', handleScrollDownClick);
   };
 }

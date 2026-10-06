@@ -268,8 +268,19 @@ export const reportFireStyles = `
     box-shadow: 0 0 0 1px #DB1B0D, 0 6px 18px rgba(219, 27, 13, 0.12);
   }
   .quick-pill-icon {
-    font-size: 1.4rem;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.7rem;
+    background: #FFF1F0;
+    color: #DB1B0D;
+    font-size: 0.95rem;
     flex-shrink: 0;
+  }
+  .quick-pill-toggle.is-active .quick-pill-icon {
+    background: #DB1B0D;
+    color: #FFFFFF;
   }
   .quick-pill-body {
     display: flex;
@@ -477,6 +488,7 @@ export const reportFireStyles = `
   .scroll-down-btn:active {
     transform: translateX(-50%) translateY(0);
   }
+  .scroll-down-btn [data-scroll-down-label] { white-space: nowrap; }
   .scroll-down-btn.is-hidden {
     opacity: 0;
     visibility: hidden;
@@ -977,7 +989,7 @@ export const reportFireMarkup = `
           <span class="quick-tactical-label">SITUATION AT THE SCENE:</span>
           <div class="quick-pills-container">
             <button type="button" class="quick-pill-toggle" data-quick-density="PACKED_MAGKAKADIKIT" aria-pressed="false">
-              <span class="quick-pill-icon" aria-hidden="true">🏘️</span>
+              <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-city"></i></span>
               <span class="quick-pill-body">
                 <strong>Houses are close together</strong>
                 <small>Flames may spread between nearby houses</small>
@@ -985,7 +997,7 @@ export const reportFireMarkup = `
               <span class="quick-pill-check" aria-hidden="true">✓</span>
             </button>
             <button type="button" class="quick-pill-toggle" data-quick-route="INTERIOR_ALLEY_ESKINITA" aria-pressed="false">
-              <span class="quick-pill-icon" aria-hidden="true">🚶</span>
+              <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-person-walking"></i></span>
               <span class="quick-pill-body">
                 <strong>Narrow alley or interior road</strong>
                 <small>A fire truck may not fit</small>
@@ -1039,7 +1051,7 @@ export const reportFireMarkup = `
 
     <!-- Floating Animated Scroll-Down Button (vanishes when scrolled) -->
     <button type="button" class="scroll-down-btn" data-scroll-down-btn aria-label="Scroll down to complete report">
-      <span>Scroll down to continue</span>
+      <span data-scroll-down-label>Scroll down to continue</span>
       <span class="scroll-arrow-box" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <path d="M7 11l5 5 5-5M7 4l5 5 5-5"/>

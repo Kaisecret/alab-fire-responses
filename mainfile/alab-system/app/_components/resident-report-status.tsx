@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
-import { useResidentLanguage, getLocalizedStatusLabel, type ResidentLanguage } from "../_lib/resident-i18n";
+import { useResidentLanguage, type ResidentLanguage } from "../_lib/resident-i18n";
 import { situationForFireTypes } from "../../lib/fire-reports/fire-type-situation";
 import { SharedIncidentCard, SharedIncidentPopup, type SharedIncident } from "./resident-shared-incident";
 
@@ -316,7 +316,8 @@ const detailStyles = `
   }
   .tactical-btn-text {
     white-space: normal;
-    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
     line-height: 1.2;
     text-align: center;
     font-size: 0.8rem;
@@ -690,14 +691,112 @@ const detailStyles = `
   }
   @media (min-width:760px) { .resident-report-detail { padding-top:2rem; }.resident-detail-card { padding:1.25rem; } }
   @media (max-width:420px) { .resident-report-detail { padding-inline:.75rem; }.resident-detail-info { gap:.8rem .6rem; }.resident-detail-info-item strong { font-size:.78rem; }.resident-detail-reference { font-size:.95rem; }.resident-status-pill { font-size:.67rem; padding:.35rem .55rem; } }
+  /* ---- Report detail: status first, icons over paragraphs ---- */
+  .resident-detail-heading > div { min-width:0; }
+  .resident-detail-back { font-size:.95rem; }
+  .resident-detail-back:focus-visible, .rrs-jump:focus-visible, .resident-photo-preview-thumb:focus-visible { outline:3px solid rgba(227,33,24,.35); outline-offset:2px; }
+  .resident-detail-sub { margin:.15rem 0 0; color:#64748b; font-size:.76rem; font-weight:650; font-variant-numeric:tabular-nums; }
+  .resident-detail-card h2 > i { color:#e32118; font-size:.9rem; }
+
+  .rrs-status { --tone:#B45309; --tone-soft:#FEF3C7; --tone-line:#FDE68A; margin-bottom:1rem; padding:1.05rem 1.05rem 1.1rem; border:1px solid var(--tone-line); border-radius:1.15rem; background:#fff; box-shadow:0 4px 16px rgba(15,23,42,.05), 0 1px 3px rgba(15,23,42,.03); }
+  .rrs-status.tone-good { --tone:#047857; --tone-soft:#D1FAE5; --tone-line:#A7F3D0; }
+  .rrs-status.tone-stop { --tone:#475569; --tone-soft:#E2E8F0; --tone-line:#CBD5E1; }
+  .rrs-status.tone-info { --tone:#1D4ED8; --tone-soft:#DBEAFE; --tone-line:#BFDBFE; }
+  .rrs-status-top { display:flex; align-items:flex-start; gap:.85rem; }
+  .rrs-status-icon { flex:none; width:3rem; height:3rem; display:grid; place-items:center; border-radius:.95rem; background:var(--tone-soft); color:var(--tone); font-size:1.3rem; }
+  .rrs-status-text { min-width:0; }
+  .rrs-status h2 { margin:.1rem 0 0; color:#0f172a; font-size:1.12rem; font-weight:800; letter-spacing:-.015em; line-height:1.25; text-wrap:balance; }
+  .rrs-status p { margin:.3rem 0 0; color:#334155; font-size:.84rem; line-height:1.45; }
+  .rrs-live { display:inline-flex; align-items:center; gap:.4rem; margin-top:.5rem; color:#64748b; font-size:.7rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  .rrs-live::before { content:''; width:.45rem; height:.45rem; border-radius:50%; background:var(--tone); box-shadow:0 0 0 0 var(--tone); animation:rrsLive 2.4s ease-out infinite; }
+  @keyframes rrsLive { 0% { box-shadow:0 0 0 0 color-mix(in srgb, var(--tone) 45%, transparent); } 80%, 100% { box-shadow:0 0 0 .45rem transparent; } }
+
+  .rrs-track { list-style:none; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); margin:1.05rem 0 0; padding:0; }
+  .rrs-step { position:relative; display:flex; flex-direction:column; align-items:center; gap:.32rem; color:#94a3b8; font-size:.66rem; font-weight:750; line-height:1.15; text-align:center; }
+  .rrs-step::before { content:''; position:absolute; top:1.02rem; right:50%; width:100%; height:3px; border-radius:99px; background:#e2e8f0; }
+  .rrs-step:first-child::before { display:none; }
+  .rrs-step.done::before, .rrs-step.current::before { background:#10B981; }
+  .rrs-step-dot { position:relative; z-index:1; width:2.1rem; height:2.1rem; display:grid; place-items:center; border:2px solid #e2e8f0; border-radius:50%; background:#f8fafc; color:#94a3b8; font-size:.78rem; transition:background-color .2s ease, border-color .2s ease; }
+  .rrs-step.done { color:#047857; }
+  .rrs-step.done .rrs-step-dot { border-color:#10B981; background:#10B981; color:#fff; }
+  .rrs-step.current { color:#0f172a; }
+  .rrs-step.current .rrs-step-dot { border-color:var(--tone); background:#fff; color:var(--tone); box-shadow:0 0 0 4px color-mix(in srgb, var(--tone) 18%, transparent); }
+  .rrs-step time { color:#64748b; font-size:.6rem; font-weight:650; font-variant-numeric:tabular-nums; }
+
+  .rrs-jump { display:flex; align-items:center; gap:.7rem; width:100%; margin-top:1rem; padding:.65rem .75rem; border:1px solid #fecaca; border-radius:.9rem; background:#fff5f4; color:#7f1d1d; font:inherit; text-align:left; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; transition:background-color .18s ease, transform .18s ease; }
+  .rrs-jump:hover { background:#ffeceb; }
+  .rrs-jump:active { transform:scale(.99); }
+  .rrs-jump-lead { flex:none; width:2.1rem; height:2.1rem; display:grid; place-items:center; border-radius:.65rem; background:#e32118; color:#fff; font-size:.85rem; }
+  .rrs-jump-text { flex:1; min-width:0; display:flex; flex-direction:column; gap:.05rem; }
+  .rrs-jump-text strong { font-size:.86rem; font-weight:800; }
+  .rrs-jump-text small { color:#9f1239; font-size:.72rem; font-weight:650; }
+  .rrs-jump-arrow { flex:none; width:2rem; height:2rem; display:grid; place-items:center; border-radius:50%; background:#fff; color:#e32118; box-shadow:0 2px 6px rgba(227,33,24,.18); animation:rrsNudge 1.8s cubic-bezier(.16,1,.3,1) infinite; }
+  @keyframes rrsNudge { 0%, 100% { transform:translateY(0); } 45% { transform:translateY(3px); } }
+
+  .wind-hazard-icon { flex:none; width:2.3rem; height:2.3rem; display:grid; place-items:center; border-radius:.75rem; background:#FDE68A; color:#92400E; font-size:1rem; }
+  .wind-hazard-body strong { font-size:.84rem; }
+  .wind-hazard-body p { font-size:.78rem; }
+
+  .rrs-danger { --lv:#DC2626; --lv-soft:#FEF2F2; }
+  .rrs-danger.LOW { --lv:#047857; --lv-soft:#ECFDF5; }
+  .rrs-danger.MODERATE { --lv:#B45309; --lv-soft:#FFFBEB; }
+  .rrs-danger.CRITICAL { --lv:#7F1D1D; --lv-soft:#FEE2E2; }
+  .rrs-danger-head { display:flex; align-items:center; gap:.85rem; }
+  .rrs-danger-icon { flex:none; width:3rem; height:3rem; display:grid; place-items:center; border-radius:.95rem; background:var(--lv); color:#fff; font-size:1.3rem; box-shadow:0 6px 14px color-mix(in srgb, var(--lv) 28%, transparent); }
+  .rrs-danger-title { flex:1; min-width:0; }
+  .rrs-danger-title small { display:block; color:#64748b; font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+  .resident-detail-card.rrs-danger h2 { margin:.1rem 0 0; color:var(--lv); font-size:1.15rem; letter-spacing:-.015em; }
+  .rrs-danger-score { flex:none; padding:.3rem .55rem; border-radius:99px; background:var(--lv-soft); color:var(--lv); font-size:.74rem; font-weight:800; font-variant-numeric:tabular-nums; }
+  .rrs-danger-score:empty { display:none; }
+  .rrs-meter { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.3rem; margin:.95rem 0 .3rem; }
+  .rrs-meter span { height:.42rem; border-radius:99px; background:#e2e8f0; }
+  .rrs-meter span.on { background:var(--lv); }
+  .rrs-meter-labels { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.3rem; color:#94a3b8; font-size:.62rem; font-weight:750; }
+  .rrs-meter-labels .is-current { color:var(--lv); font-weight:850; }
+  .rrs-factors { list-style:none; display:flex; flex-wrap:wrap; gap:.45rem; margin:.95rem 0 0; padding:0; }
+  .rrs-factor { display:inline-flex; align-items:center; gap:.45rem; max-width:100%; padding:.32rem .65rem .32rem .32rem; border:1px solid #e2e8f0; border-radius:99px; background:#f8fafc; color:#1e293b; font-size:.76rem; font-weight:700; line-height:1.25; }
+  .rrs-factor i { flex:none; width:1.55rem; height:1.55rem; display:grid; place-items:center; border-radius:50%; background:var(--lv-soft); color:var(--lv); font-size:.72rem; }
+  .rrs-danger-note { display:flex; align-items:center; gap:.45rem; margin:.85rem 0 0; color:#64748b; font-size:.74rem; font-weight:600; }
+
+  .tactical-enrichment-card:focus { outline:none; }
+  .tactical-enrichment-card:focus-visible { outline:3px solid rgba(227,33,24,.3); outline-offset:3px; }
+  .rrs-help-count { margin-left:auto; padding:.2rem .55rem; border-radius:99px; background:#fee2e2; color:#b91c1c; font-size:.72rem; font-weight:850; font-variant-numeric:tabular-nums; }
+  .rrs-help-count.is-done { background:#d1fae5; color:#047857; }
+
+  .rrs-details { list-style:none; display:grid; margin:0; padding:0; }
+  .rrs-details li { display:flex; align-items:center; gap:.75rem; padding:.6rem 0; border-bottom:1px solid #f1f5f9; }
+  .rrs-details li:first-child { padding-top:0; }
+  .rrs-details li:last-child { padding-bottom:0; border-bottom:0; }
+  .rrs-details li > i { flex:none; width:2rem; height:2rem; display:grid; place-items:center; border-radius:.6rem; background:#fff1f0; color:#e32118; font-size:.8rem; }
+  .rrs-details span { min-width:0; display:flex; flex-direction:column; gap:.08rem; }
+  .rrs-details small { color:#64748b; font-size:.67rem; font-weight:750; text-transform:uppercase; letter-spacing:.035em; }
+  .rrs-details strong { color:#0f172a; font-size:.86rem; font-weight:750; overflow-wrap:anywhere; }
+
+  .resident-photos-preview-grid.rrs-photos { grid-template-columns:repeat(3,minmax(0,1fr)); margin:0; }
+  .rrs-photos .resident-photo-preview-thumb { aspect-ratio:1; }
+  .rrs-photos .resident-photo-preview-img { object-fit:cover; }
+  .rrs-photo-zoom { position:absolute; right:.35rem; bottom:.35rem; width:1.6rem; height:1.6rem; display:grid; place-items:center; border-radius:50%; background:rgba(15,23,42,.72); color:#fff; font-size:.66rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rrs-live::before, .rrs-jump-arrow { animation:none; }
+  }
+  @media (max-width:420px) {
+    .rrs-status { padding:.95rem .85rem 1rem; }
+    .rrs-status-icon, .rrs-danger-icon { width:2.7rem; height:2.7rem; font-size:1.15rem; }
+    .rrs-track { margin-inline:-.45rem; }
+    .rrs-step { font-size:.58rem; letter-spacing:-.01em; }
+    .rrs-step-dot { width:1.9rem; height:1.9rem; font-size:.72rem; }
+    .rrs-step::before { top:.92rem; }
+  }
+
 `;
 
 const timeline = [
-  { status: "PENDING_VERIFICATION", label: "Submitted" },
-  { status: "VERIFIED", label: "Verified" },
-  { status: "RESPONDING", label: "Responding" },
-  { status: "FIRETRUCK_DISPATCHED", label: "Dispatched" },
-  { status: "RESOLVED", label: "Resolved" },
+  { status: "PENDING_VERIFICATION", label: "Submitted", icon: "fa-paper-plane" },
+  { status: "VERIFIED", label: "Verified", icon: "fa-shield-halved" },
+  { status: "RESPONDING", label: "Responding", icon: "fa-person-running" },
+  { status: "FIRETRUCK_DISPATCHED", label: "Dispatched", icon: "fa-truck-fast" },
+  { status: "RESOLVED", label: "Resolved", icon: "fa-circle-check" },
 ] as const;
 
 export function ResidentReportStatus({ reportId }: { reportId: string }) {
@@ -895,18 +994,43 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   const currentPhoto = photos[activePhotoIndex] ?? photos[0];
   const photoUrl = currentPhoto?.url || "";
   const windSpeed = Number(report.weather_wind_speed) || 0;
-  const severity = report.calculated_severity || "UNASSESSED";
   const fireTypes = report.fire_types?.length ? report.fire_types : [report.fire_type];
   const situationChoices = situationForFireTypes(fireTypes);
   const hasPhotos = photos.length > 0;
+
+  const view = statusView(timelineStatus ?? report.status, lang);
+  const showTracker = view.tone !== "stop" && view.tone !== "info";
+  const statusMessage = latest?.resident_message || view.message;
+  const helpGroups = [
+    fireTypes.includes("HOUSE_BUILDING") ? Boolean(report.structure_material) : null,
+    situationChoices.density ? Boolean(report.house_density || report.reported_house_density) : null,
+    situationChoices.route ? Boolean(report.route_accessibility) : null,
+  ].filter((answered): answered is boolean => answered !== null);
+  const helpAnswered = helpGroups.filter(Boolean).length;
+  // A rejected or duplicate report has nothing left for responders to prepare.
+  const helpOpen = report.can_edit !== false && showTracker && helpGroups.length > helpAnswered;
+  const lastStep = timeline.length - 1;
+  const goToHelp = () => {
+    const target = document.getElementById("help-responders");
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    target.focus({ preventScroll: true });
+  };
+  const level = report.calculated_severity ?? null;
+  const ruleBased = report.fire_type === "VEHICLE" || report.fire_type === "OTHER";
+  const factors = Array.isArray(report.severity_factors) ? report.severity_factors : [];
+  const pick = (en: string, hil: string, tl: string) => (lang === "en" ? en : lang === "hil" ? hil : tl);
 
   return (
     <Shell>
       <div className="resident-detail-heading">
         <a className="resident-detail-back" href="/resident/reports" aria-label="Back to reports">
-          ‹
+          <i className="fa-solid fa-chevron-left" aria-hidden="true" />
         </a>
-        <h1>Report Details</h1>
+        <div>
+          <h1>Report Details</h1>
+          <p className="resident-detail-sub">#{report.reference_number || report.id.slice(0, 8)} · {formatDate(report.submitted_at)}</p>
+        </div>
       </div>
 
       {alreadyNotice && (
@@ -929,58 +1053,113 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
         </div>
       )}
 
-      <section className="resident-detail-hero">
-        <div className="resident-hero-main">
-          <p className="resident-ref-badge">REPORT #{report.reference_number || report.id.slice(0, 8)}</p>
-          <p className="resident-hero-time">Reported on {formatDate(report.submitted_at)}</p>
+      {/* Where the report stands comes first, so a worried resident sees it at once. */}
+      <section className={`rrs-status tone-${view.tone}`} aria-live="polite" aria-label={pick("Report status", "Status sang report", "Katayuan ng ulat")}>
+        <div className="rrs-status-top">
+          <span className="rrs-status-icon" aria-hidden="true"><i className={`fa-solid ${view.icon}`} /></span>
+          <div className="rrs-status-text">
+            <h2>{view.title}</h2>
+            <p>{statusMessage}</p>
+            <span className="rrs-live">
+              {pick("Updates by itself", "Kusa nga nagaupdate", "Kusang nag-a-update")} · {formatTime(latest ? latest.created_at : report.submitted_at)}
+            </span>
+          </div>
         </div>
-        <div className="resident-hero-badges">
-          <span className={`severity-pill ${severity}`}>
-            {severity} {lang === "en" ? "Danger" : lang === "hil" ? "Kadilikado" : "Panganib"}
-          </span>
-          <span className="resident-status-pill">{getLocalizedStatusLabel(timelineStatus ?? report.status, lang)}</span>
-        </div>
+
+        {showTracker && (
+          <ol className="rrs-track">
+            {timeline.map((item, index) => {
+              // The last step is finished once reached, not "in progress".
+              const isComplete = index < activeTimelineIndex || (index === lastStep && activeTimelineIndex === lastStep);
+              const isCurrent = index === activeTimelineIndex && !isComplete;
+              const historyItem = timelineHistory.find((entry) => entry.next_status === item.status);
+              return (
+                <li
+                  key={item.status}
+                  className={`rrs-step ${isComplete ? "done" : ""} ${isCurrent ? "current" : ""}`}
+                  aria-current={isCurrent ? "step" : undefined}
+                >
+                  <span className="rrs-step-dot" aria-hidden="true">
+                    <i className={`fa-solid ${isComplete ? "fa-check" : item.icon}`} />
+                  </span>
+                  <span className="rrs-step-label">{getTimelineLabel(item.status, item.label)}</span>
+                  {historyItem && (isComplete || isCurrent) && <time dateTime={historyItem.created_at}>{formatTime(historyItem.created_at)}</time>}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+
+        {helpOpen && (
+          <button type="button" className="rrs-jump" onClick={goToHelp}>
+            <span className="rrs-jump-lead" aria-hidden="true"><i className="fa-solid fa-hand-holding-heart" /></span>
+            <span className="rrs-jump-text">
+              <strong>{pick("Help responders", "Bulig sa mga responder", "Tulungan ang mga responder")}</strong>
+              <small>{pick(`${helpGroups.length - helpAnswered} quick taps left`, `${helpGroups.length - helpAnswered} ka pili nalang`, `${helpGroups.length - helpAnswered} pang mabilis na pili`)}</small>
+            </span>
+            <span className="rrs-jump-arrow" aria-hidden="true"><i className="fa-solid fa-arrow-down" /></span>
+          </button>
+        )}
       </section>
-
-      {report.incident && <SharedIncidentCard incident={report.incident} lang={lang} />}
-      {report.incident && <SharedIncidentPopup reportId={report.id} incident={report.incident} lang={lang} />}
-
-      {report.calculated_severity && (
-        <section className="resident-detail-card" aria-label="Level of Danger details">
-          <h2>Level of Danger {report.fire_type === "VEHICLE" || report.fire_type === "OTHER"
-            ? "(Rule-based)" : report.severity_score == null ? "" : `(${report.severity_score}/100)`}</h2>
-          <p>This level describes conditions that could affect spread or access. BFP will assess the fire size at the scene.</p>
-          {Array.isArray(report.severity_factors) && report.severity_factors.length > 0 && (
-            <ul>{report.severity_factors.map((factor, index) => <li key={`${index}-${factor}`}>{factor}</li>)}</ul>
-          )}
-        </section>
-      )}
 
       {windSpeed >= 25 && (
         <section className="wind-hazard-banner" role="alert">
-          <span className="wind-hazard-icon" aria-hidden="true">💨</span>
+          <span className="wind-hazard-icon" aria-hidden="true"><i className="fa-solid fa-wind" /></span>
           <div className="wind-hazard-body">
-            <strong>Malakas ang Hangin ({Math.round(windSpeed)} km/h {report.weather_wind_condition})</strong>
-            <p>
-              Mabilis kumalat ang apoy sa direksyon ng hangin. Lumikas patungong <strong>UPWIND</strong> (salungat sa direksyon ng hangin at usok) upang manatiling ligtas.
-            </p>
+            <strong>{pick("Strong wind", "Mabaskog nga hangin", "Malakas ang hangin")} · {Math.round(windSpeed)} km/h {report.weather_wind_condition}</strong>
+            <p>{pick("Fire spreads fast with the wind. Move upwind, away from the smoke.", "Madasig maglapta ang kalayo. Magpalayo pakontra sa hangin kag sa aso.", "Mabilis kumalat ang apoy. Lumikas pasalungat sa hangin, palayo sa usok.")}</p>
           </div>
         </section>
       )}
 
+      {report.incident && <SharedIncidentCard incident={report.incident} lang={lang} />}
+      {report.incident && <SharedIncidentPopup reportId={report.id} incident={report.incident} lang={lang} />}
+
       <div className="resident-detail-grid">
         <div className="resident-grid-col">
-          {report.can_edit !== false && <section className="resident-detail-card tactical-enrichment-card">
+          {level && (
+            <section className={`resident-detail-card rrs-danger ${level}`} aria-label={pick("Level of Danger", "Lebel sang Kadilikado", "Antas ng Panganib")}>
+              <div className="rrs-danger-head">
+                <span className="rrs-danger-icon" aria-hidden="true"><i className={`fa-solid ${DANGER_ICONS[level]}`} /></span>
+                <div className="rrs-danger-title">
+                  <small>{pick("Level of Danger", "Lebel sang Kadilikado", "Antas ng Panganib")}</small>
+                  <h2>{dangerTitle(level, lang)}</h2>
+                </div>
+                <span className="rrs-danger-score">{ruleBased ? pick("Rule-based", "Base sa rule", "Batay sa patakaran") : report.severity_score == null ? "" : `${report.severity_score}/100`}</span>
+              </div>
+              <div className="rrs-meter" role="img" aria-label={`${DANGER_ORDER.indexOf(level) + 1} / 4`}>
+                {DANGER_ORDER.map((step, index) => (
+                  <span key={step} className={index <= DANGER_ORDER.indexOf(level) ? "on" : ""} />
+                ))}
+              </div>
+              <div className="rrs-meter-labels" aria-hidden="true">
+                {DANGER_ORDER.map((step) => <span key={step} className={step === level ? "is-current" : ""}>{dangerWord(step, lang)}</span>)}
+              </div>
+              {factors.length > 0 && (
+                <ul className="rrs-factors">
+                  {factors.map((factor, index) => (
+                    <li key={`${index}-${factor}`} className="rrs-factor" title={factor}>
+                      <i className={`fa-solid ${factorIcon(factor)}`} aria-hidden="true" />
+                      <span>{shortFactor(factor)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="rrs-danger-note">
+                <i className="fa-solid fa-circle-info" aria-hidden="true" />
+                {pick("BFP checks the actual fire size at the scene.", "Ang BFP ang magasukat sang kadako sang sunog sa lugar.", "Susuriin ng BFP ang laki ng sunog sa lugar.")}
+              </p>
+            </section>
+          )}
+
+          {report.can_edit !== false && <section id="help-responders" tabIndex={-1} className="resident-detail-card tactical-enrichment-card">
             <h2>
-              <i className="fa-solid fa-bolt" style={{ color: "#DC2626", marginRight: "0.4rem" }} />{" "}
-              {lang === "en" ? "Help Responders" : lang === "hil" ? "Bulig sa mga Responders" : "Tulong sa Responders"}
+              <i className="fa-solid fa-hand-holding-heart" aria-hidden="true" />
+              {pick("Help Responders", "Bulig sa mga Responders", "Tulong sa Responders")}
+              {helpGroups.length > 0 && <span className={`rrs-help-count ${helpAnswered === helpGroups.length ? "is-done" : ""}`}>{helpAnswered}/{helpGroups.length}</span>}
             </h2>
             <p className="tactical-header-desc">
-              {lang === "en"
-                ? "Select to help BFP prepare appropriate equipment while en route:"
-                : lang === "hil"
-                ? "Pilia agud mahanda sang BFP ang insakto nga kagamitan samtang nagapadulong:"
-                : "Piliin para maihanda ang angkop na kagamitan ng BFP habang papunta:"}
+              {pick("Tap one per row. BFP gets it right away.", "Pili isa kada linya. Makadto dayon sa BFP.", "Pumili ng isa bawat hanay. Agad itong makikita ng BFP.")}
             </p>
 
             {showOnboarding && (
@@ -1137,117 +1316,62 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
 
             {savedFeedback && <span className="tactical-saved-pill">{savedFeedback}</span>}
           </section>}
-
-          <section className="resident-detail-card">
-            <h2>
-              <span>⏱</span> {lang === "en" ? "Status Timeline" : lang === "hil" ? "Timeline sang Status" : "Timeline ng Katayuan"}
-            </h2>
-            <div className="resident-timeline">
-              {timeline.map((item, index) => {
-                const isComplete = index < activeTimelineIndex;
-                const isCurrent = index === activeTimelineIndex;
-                const historyItem = timelineHistory.find((entry) => entry.next_status === item.status);
-                return (
-                  <div
-                    key={item.status}
-                    className={`resident-timeline-step ${isComplete ? "complete" : ""} ${isCurrent ? "current" : ""}`}
-                  >
-                    <div className="resident-timeline-dot">{isComplete ? "✓" : index + 1}</div>
-                    {getTimelineLabel(item.status, item.label)}
-                    {historyItem && (
-                      <span className="resident-timeline-date">{formatDate(historyItem.created_at)}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="resident-detail-card">
-            <h2>
-              <span>▣</span> {lang === "en" ? "Latest Update from Municipal BFP" : lang === "hil" ? "Pinakabag-o nga Update halin sa BFP" : "Pinakabagong Update mula sa BFP"}
-            </h2>
-            <p className="resident-bfp-update">
-              {report.status === "RESPONDING"
-                ? (lang === "hil"
-                    ? "Nagaresponde na ang BFP sa imo report sang sunog. Magpabilin sa luwas nga lugar kag sunda ang mga panudlo."
-                    : lang === "tl"
-                    ? "Tumutugon na ang BFP sa iyong ulat ng sunog. Manatili sa ligtas na lugar at sundin ang mga tagubilin."
-                    : "BFP is responding to your fire report. Please stay in a safe location and follow responder instructions.")
-                : latest?.resident_message || (lang === "hil" ? "Nabaton na ang imo report kag ginaproseso na ini." : lang === "tl" ? "Natanggap na ang iyong ulat at kasalukuyan itong pinoproseso." : "Your report has been received and is being processed.")}
-            </p>
-            <p className="resident-update-time">
-              {latest ? formatDate(latest.created_at) : formatDate(report.submitted_at)}
-            </p>
-          </section>
         </div>
 
         <div className="resident-grid-col">
           <section className="resident-detail-card">
             <h2>
-              <span>⌖</span> {lang === "en" ? "Incident Information" : lang === "hil" ? "Impormasyon sang Insidente" : "Impormasyon ng Insidente"}
+              <i className="fa-solid fa-file-lines" aria-hidden="true" /> {pick("Report Information", "Impormasyon sang Report", "Impormasyon ng Ulat")}
             </h2>
-            <div className="resident-detail-info">
-              <Info label={lang === "en" ? "Location" : "Lokasyon"} value={`${report.barangay}, ${report.municipality}`} icon="pin" />
-              <Info
-                label={lang === "en" ? "Nearest Landmark" : lang === "hil" ? "Pinakamalapit nga Landmark" : "Pinakamalapit na Landmark"}
-                value={report.nearest_landmark || (lang === "en" ? "Not provided" : "Hindi tinukoy")}
-                icon="home"
-              />
-              <Info label={t("thDateReported")} value={formatDate(report.submitted_at)} icon="calendar" />
-              <Info label={lang === "en" ? "Fire Type" : lang === "hil" ? "Klase sang Kalayo" : "Uri ng Sunog"} value={fireTypes.map(formatFireType).join(" + ")} icon="fire" />
-            </div>
-          </section>
-
-          <section className="resident-detail-card">
-            <h2>
-              <span>▧</span> {lang === "en" ? "Report Information" : lang === "hil" ? "Impormasyon sang Report" : "Impormasyon ng Ulat"}
-            </h2>
-            <div className="resident-detail-info">
-              <Info label={lang === "en" ? "Report ID" : lang === "hil" ? "Report ID" : "ID ng Ulat"} value={report.id} icon="file" />
-              <Info label={t("thStatus")} value={getLocalizedStatusLabel(report.status, lang)} icon="file" status />
-              <Info label={lang === "en" ? "Municipality" : lang === "hil" ? "Munisipyo" : "Munisipalidad"} value={report.municipality} icon="pin" />
-              <Info label="Barangay" value={report.barangay} icon="pin" />
-            </div>
+            <ul className="rrs-details">
+              <li>
+                <i className="fa-solid fa-location-dot" aria-hidden="true" />
+                <span><small>{pick("Location", "Lokasyon", "Lokasyon")}</small><strong>{`${report.barangay}, ${report.municipality}`}</strong></span>
+              </li>
+              {report.nearest_landmark && (
+                <li>
+                  <i className="fa-solid fa-landmark" aria-hidden="true" />
+                  <span><small>{pick("Nearest Landmark", "Pinakamalapit nga Landmark", "Pinakamalapit na Landmark")}</small><strong>{report.nearest_landmark}</strong></span>
+                </li>
+              )}
+              <li>
+                <i className="fa-solid fa-fire" aria-hidden="true" />
+                <span><small>{pick("Fire Type", "Klase sang Kalayo", "Uri ng Sunog")}</small><strong>{fireTypes.map(formatFireType).join(" + ")}</strong></span>
+              </li>
+              <li>
+                <i className="fa-solid fa-clock" aria-hidden="true" />
+                <span><small>{t("thDateReported")}</small><strong>{formatDate(report.submitted_at)}</strong></span>
+              </li>
+              <li>
+                <i className="fa-solid fa-hashtag" aria-hidden="true" />
+                <span><small>{pick("Report No.", "Report No.", "Numero ng Ulat")}</small><strong>{report.reference_number || report.id.slice(0, 8)}</strong></span>
+              </li>
+            </ul>
           </section>
 
           {hasPhotos && (
             <section className="resident-detail-card">
               <h2>
-                <span>📷</span> {lang === "en" ? "Incident Photos" : lang === "hil" ? "Mga Litrato sang Insidente" : "Mga Litrato ng Insidente"} ({photos.length})
+                <i className="fa-solid fa-camera" aria-hidden="true" /> {pick("Incident Photos", "Mga Litrato sang Insidente", "Mga Litrato ng Insidente")} ({photos.length})
               </h2>
-
-              {photos.length > 0 && (
-                <div className={`resident-photos-preview-grid count-${Math.min(photos.length, 3)}`}>
-                  {photos.map((p, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      className="resident-photo-preview-thumb"
-                      onClick={() => {
-                        setActivePhotoIndex(idx);
-                        setIsPhotoDialogOpen(true);
-                      }}
-                      aria-label={`Open photo ${idx + 1}`}
-                    >
-                      <img src={p.url} alt={`Fire incident ${idx + 1}`} className="resident-photo-preview-img" />
-                      <span className="resident-photo-preview-badge">Photo {idx + 1}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <button
-                type="button"
-                className="resident-photo-button"
-                onClick={() => {
-                  setActivePhotoIndex(0);
-                  setIsPhotoDialogOpen(true);
-                }}
-                aria-haspopup="dialog"
-              >
-                <span>{lang === "en" ? "View incident photo" : lang === "hil" ? "Tan-awon ang litrato" : "Tingnan ang litrato"} {photos.length > 1 ? `slideshow (${photos.length} photos)` : ""}</span>
-              </button>
+              <div className="resident-photos-preview-grid rrs-photos">
+                {photos.map((p, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className="resident-photo-preview-thumb"
+                    onClick={() => {
+                      setActivePhotoIndex(idx);
+                      setIsPhotoDialogOpen(true);
+                    }}
+                    aria-haspopup="dialog"
+                    aria-label={`Open photo ${idx + 1}`}
+                  >
+                    <img src={p.url} alt={`Fire incident ${idx + 1}`} className="resident-photo-preview-img" />
+                    <span className="rrs-photo-zoom" aria-hidden="true"><i className="fa-solid fa-expand" /></span>
+                  </button>
+                ))}
+              </div>
             </section>
           )}
 
@@ -1356,72 +1480,95 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Info({
-  label,
-  value,
-  icon,
-  status = false,
-  extra,
-}: {
-  label: string;
-  value: string;
-  icon: "pin" | "home" | "calendar" | "fire" | "file" | "person" | "phone";
-  status?: boolean;
-  extra?: React.ReactNode;
-}) {
-  return (
-    <div className="resident-detail-info-item">
-      <InfoIcon icon={icon} />
-      <span>
-        <small>{label}</small>
-        <strong className={status ? "status" : undefined}>{value}</strong>
-        {extra}
-      </span>
-    </div>
-  );
+type StatusTone = "wait" | "good" | "stop" | "info";
+
+/** Plain words for where the report stands, so a resident does not have to read the tracker. */
+function statusView(status: string, lang: ResidentLanguage): { tone: StatusTone; icon: string; title: string; message: string } {
+  const pick = (en: string, hil: string, tl: string) => (lang === "en" ? en : lang === "hil" ? hil : tl);
+  const keepSafe = pick("Stay in a safe place. This page updates by itself.", "Magpabilin sa luwas nga lugar. Kusa nga nagaupdate ini nga pahina.", "Manatili sa ligtas na lugar. Kusang nag-a-update ang pahinang ito.");
+  const followResponders = pick("Stay in a safe place and follow responder instructions.", "Magpabilin sa luwas nga lugar kag sunda ang mga responder.", "Manatili sa ligtas na lugar at sundin ang mga responder.");
+  switch (status) {
+    case "NEEDS_MORE_INFO":
+      return { tone: "wait", icon: "fa-circle-question", title: pick("BFP needs more details", "Kinahanglan sang BFP sang dugang nga detalye", "Kailangan ng BFP ng dagdag na detalye"), message: keepSafe };
+    case "VERIFIED":
+    case "CONFIRMED":
+      return { tone: "good", icon: "fa-shield-halved", title: pick("BFP verified your report", "Nakumpirma sang BFP ang imo report", "Kinumpirma ng BFP ang iyong ulat"), message: keepSafe };
+    case "RESPONDING":
+      return { tone: "good", icon: "fa-person-running", title: pick("BFP is responding", "Nagaresponde na ang BFP", "Tumutugon na ang BFP"), message: followResponders };
+    case "FIRETRUCK_DISPATCHED":
+      return { tone: "good", icon: "fa-truck-fast", title: pick("A fire truck is on the way", "Nagapadulong na ang fire truck", "Papunta na ang fire truck"), message: followResponders };
+    case "RESPONDER_ARRIVED":
+      return { tone: "good", icon: "fa-helmet-safety", title: pick("Responders are at the scene", "Ara na ang mga responder sa lugar", "Nasa lugar na ang mga responder"), message: followResponders };
+    case "UNDER_CONTROL":
+      return { tone: "good", icon: "fa-fire-extinguisher", title: pick("The fire is under control", "Kontrolado na ang sunog", "Kontrolado na ang sunog"), message: followResponders };
+    case "RESOLVED":
+    case "CLOSED":
+      return { tone: "good", icon: "fa-circle-check", title: pick("The fire is out", "Naapula na ang sunog", "Naapula na ang sunog"), message: pick("Thank you for reporting.", "Salamat sa imo pagreport.", "Salamat sa iyong pag-uulat.") };
+    case "REJECTED":
+    case "FALSE_REPORT":
+      return { tone: "stop", icon: "fa-circle-xmark", title: pick("BFP could not verify this report", "Wala nakumpirma sang BFP ini nga report", "Hindi nakumpirma ng BFP ang ulat na ito"), message: pick("Call BFP or 911 if there is still a fire.", "Tawagi ang BFP ukon 911 kon may sunog pa.", "Tumawag sa BFP o 911 kung may sunog pa.") };
+    case "DUPLICATE":
+      return { tone: "info", icon: "fa-link", title: pick("This fire was already reported", "Nareport na ini nga sunog", "Naiulat na ang sunog na ito"), message: pick("BFP is following the first report.", "Ginasunod sang BFP ang nauna nga report.", "Sinusubaybayan ng BFP ang naunang ulat.") };
+    default:
+      return { tone: "wait", icon: "fa-paper-plane", title: pick("Report sent. BFP is checking it.", "Napadala na. Ginacheck na sang BFP.", "Naipadala na. Sinusuri na ng BFP."), message: keepSafe };
+  }
 }
 
-function InfoIcon({ icon }: { icon: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      {icon === "pin" && (
-        <>
-          <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0Z" />
-          <circle cx="12" cy="10" r="3" />
-        </>
-      )}
-      {icon === "home" && (
-        <>
-          <path d="m3 11 9-8 9 8" />
-          <path d="M5 10v10h14V10" />
-        </>
-      )}
-      {icon === "calendar" && (
-        <>
-          <rect x="3" y="4" width="18" height="17" rx="2" />
-          <path d="M16 2v4M8 2v4M3 10h18" />
-        </>
-      )}
-      {icon === "fire" && (
-        <path d="M12 22c4 0 7-2.8 7-6.6 0-3.1-1.9-5.1-4.1-7.8-.4 2.3-1.4 3.7-2.9 4.6.1-3-1.1-5.3-3.2-7.3.2 3-1.6 5-2.8 6.8C4.7 13.7 5 22 12 22Z" />
-      )}
-      {icon === "file" && (
-        <>
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-          <path d="M14 2v6h6" />
-        </>
-      )}
-      {icon === "person" && (
-        <>
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 21a8 8 0 0 1 16 0" />
-        </>
-      )}
-      {icon === "phone" && (
-        <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7A2 2 0 0 1 22 16.9Z" />
-      )}
-    </svg>
-  );
+const DANGER_ORDER = ["LOW", "MODERATE", "HIGH", "CRITICAL"] as const;
+type DangerLevel = (typeof DANGER_ORDER)[number];
+
+const DANGER_ICONS: Record<DangerLevel, string> = {
+  LOW: "fa-temperature-low",
+  MODERATE: "fa-triangle-exclamation",
+  HIGH: "fa-fire",
+  CRITICAL: "fa-fire-flame-curved",
+};
+
+function dangerWord(level: DangerLevel, lang: ResidentLanguage) {
+  const words: Record<DangerLevel, [string, string, string]> = {
+    LOW: ["Low", "Nubo", "Mababa"],
+    MODERATE: ["Moderate", "Tunga-tunga", "Katamtaman"],
+    HIGH: ["High", "Mataas", "Mataas"],
+    CRITICAL: ["Critical", "Kritikal", "Kritikal"],
+  };
+  const [en, hil, tl] = words[level];
+  return lang === "en" ? en : lang === "hil" ? hil : tl;
+}
+
+function dangerTitle(level: DangerLevel, lang: ResidentLanguage) {
+  const word = dangerWord(level, lang);
+  return lang === "en" ? `${word} danger` : lang === "hil" ? `${word} nga kadilikado` : `${word} na panganib`;
+}
+
+/** An icon for each reason the level was raised. */
+function factorIcon(factor: string) {
+  const text = factor.toLowerCase();
+  if (text.includes("vehicle")) return "fa-car-burst";
+  if (text.includes("rubbish")) return "fa-trash-can";
+  if (text.includes("sets the level") || text.includes("also burning")) return "fa-fire";
+  if (/hangin|wind|gale/.test(text)) return "fa-wind";
+  if (/init|°c|tuyong|heat|dry/.test(text)) return "fa-temperature-high";
+  if (/eskinita|alley|looban|off-road|malayo sa kalsada/.test(text)) return "fa-person-walking";
+  if (/kalsada|daan|road|dead-end/.test(text)) return "fa-road";
+  if (/dikit|close together|closely built/.test(text)) return "fa-city";
+  if (/magkakalayo|far apart/.test(text)) return "fa-house";
+  if (/kahoy|kawayan|nipa|light combustible/.test(text)) return "fa-tree";
+  if (/commercial|storage|flammable/.test(text)) return "fa-warehouse";
+  if (/semi-concrete/.test(text)) return "fa-house-chimney";
+  if (/building/.test(text)) return "fa-building";
+  return "fa-circle-exclamation";
+}
+
+/** "Malakas ang hangin (28 km/h - mabilis kumalat ang apoy)" becomes "Malakas ang hangin · 28 km/h". */
+function shortFactor(factor: string) {
+  const match = factor.match(/^(.*?)\s*\((.*)\)\s*$/);
+  if (!match) return factor;
+  const measure = match[2].match(/^[\d.]+\s*(?:km\/h|°C)/);
+  return measure ? `${match[1]} · ${measure[0]}` : match[1];
+}
+
+function formatTime(value: string) {
+  return new Intl.DateTimeFormat("en-PH", { hour: "numeric", minute: "2-digit" }).format(new Date(value));
 }
 
 function timelineIndex(status: FireReportStatus) {

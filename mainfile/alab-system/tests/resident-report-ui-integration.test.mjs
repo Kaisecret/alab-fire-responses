@@ -20,9 +20,15 @@ test("resident report status uses the established report detail screen for live 
   const status = readFileSync(join(root, "app", "_components", "resident-report-status.tsx"), "utf8");
 
   assert.match(status, /resident-report-detail/);
-  assert.match(status, /Status Timeline/);
-  assert.match(status, /Latest Update from Municipal BFP/);
   assert.match(status, /\/images\/fire logo\.webp/);
+  // Where the report stands is the first card, before the danger level and Help Responders,
+  // and BFP's latest message is shown inside it.
+  const statusAt = status.indexOf('className={`rrs-status tone-');
+  assert.ok(statusAt > 0, "status card exists");
+  assert.ok(statusAt < status.indexOf("rrs-danger ${level}"), "status comes before the danger level");
+  assert.ok(statusAt < status.indexOf('id="help-responders"'), "status comes before Help Responders");
+  assert.match(status, /latest\?\.resident_message \|\| view\.message/);
+  assert.match(status, /className="rrs-track"/);
 });
 
 test("resident reports keep the established report cards while loading live API data", () => {
@@ -56,7 +62,8 @@ test("incident photos open in a controlled dialog instead of expanding in the re
   const status = read("app/_components/resident-report-status.tsx");
 
   assert.match(status, /useState\(false\)/);
-  assert.match(status, /View incident photo/);
+  // Tapping a thumbnail opens the viewer.
+  assert.match(status, /aria-haspopup="dialog"\s*aria-label=\{`Open photo \$\{idx \+ 1\}`\}/);
   assert.match(status, /role="dialog"/);
   assert.match(status, /className="resident-photo-dialog"/);
   assert.match(status, /resident-photo-dialog-image/);
@@ -98,3 +105,24 @@ test("resident fire report triggers confirmation popup with false alarm warning 
   assert.match(page, /data-confirm-alert-cancel/);
 });
 
+
+test("the report detail shows the danger level with icons and points residents to Help Responders", () => {
+  const status = read("app/_components/resident-report-status.tsx");
+  // One icon per level, a four-step meter and an icon for each reason.
+  for (const level of ["LOW", "MODERATE", "HIGH", "CRITICAL"]) assert.match(status, new RegExp(`${level}: "fa-`));
+  assert.match(status, /className="rrs-meter"/);
+  assert.match(status, /factorIcon\(factor\)/);
+  // An arrow at the top scrolls to Help Responders while answers are missing.
+  assert.match(status, /document\.getElementById\("help-responders"\)/);
+  assert.match(status, /className="rrs-jump"/);
+});
+
+test("the report form points to Situation at the scene when it opens below the fold", () => {
+  const page = read("app/resident/report-fire/page.tsx");
+  assert.match(page, /'\[data-quick-tactical-row\]'/);
+  assert.match(page, /new MutationObserver\(update\)/);
+  assert.match(page, /'Situation at the scene'/);
+  assert.match(page, /situationRow\.scrollIntoView\(\{ behavior: 'smooth', block: 'center' \}\)/);
+  const content = read("app/_content/resident-report-fire-content.ts");
+  assert.doesNotMatch(content, /🏘️|🚶/, "drawn icons, not emoji, in the situation choices");
+});
