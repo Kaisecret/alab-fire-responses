@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
+import { EmergencyAlertCard } from "./emergency-alert-card";
 import { PhotoLightbox } from "./photo-lightbox";
 
 interface BackupRequest {
@@ -330,99 +331,58 @@ export function MunicipalBackupAlarm() {
     <>
       <style>{styles}</style>
       <div className="mba-backdrop" role="alertdialog" aria-modal="true" aria-labelledby="mba-title">
-        <div className="mba-card">
-          <div className="mba-head">
-            <span className="mba-icon" aria-hidden="true">
-              <i className="fa-solid fa-tower-broadcast" />
-            </span>
+        <EmergencyAlertCard
+          theme={{ primary: "#EA580C", dark: "#C2410C", soft: "#FFF7ED", softBorder: "#FED7AA" }}
+          titleId="mba-title"
+          title="Responder requested backup"
+          subtitle={`${active.requestedByName} is asking for support on scene`}
+          heroBadge="fa-tower-broadcast"
+          code={{ label: "Report code", value: active.referenceNumber }}
+          facts={[
+            { icon: "fa-location-dot", label: "Barangay", value: active.barangay || "Not specified" },
+            { icon: "fa-user-shield", label: "Requested by", value: active.requestedByName },
+            ...(active.requestedFiretrucks > 0 ? [{ icon: "fa-truck-droplet", label: "Firetrucks", value: String(active.requestedFiretrucks) }] : []),
+            ...(active.requestedPersonnel > 0 ? [{ icon: "fa-people-group", label: "Personnel", value: String(active.requestedPersonnel) }] : []),
+          ]}
+          actions={[
+            { label: "Acknowledge", icon: "fa-circle-check", variant: "secondary", disabled: busy, onClick: () => void act(active.id, "ACKNOWLEDGE") },
+            { label: busy ? "Working..." : "Forward to Provincial", icon: "fa-arrow-up-right-from-square", variant: "primary", disabled: busy, autoFocus: true, onClick: () => void act(active.id, "FORWARD") },
+          ]}
+        >
+          {active.reason && <div className="mba-reason">{active.reason}</div>}
+
+          {active.photos?.length > 0 && (
             <div>
-              <div className="mba-title" id="mba-title">Responder requested backup</div>
-              <div className="mba-sub">{active.requestedByName} is asking for support on scene</div>
+              <div className="mba-photos-head">
+                <i className="fa-solid fa-camera" />
+                From the scene ({active.photos.length})
+              </div>
+              <div className="mba-photos">
+                {active.photos.map((photo, index) => (
+                  <button
+                    key={photo}
+                    type="button"
+                    className="mba-photo"
+                    onClick={() => setPhotoIndex(index)}
+                    title="View photo"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo} alt={`Scene photograph ${index + 1} from the responder`} />
+                  </button>
+                ))}
+              </div>
             </div>
+          )}
+
+          <div className={`mba-countdown${secondsLeft === 0 ? " is-elapsed" : ""}`} role="status">
+            <i className="fa-regular fa-clock" />
+            {secondsLeft > 0
+              ? `Forwards to the province in ${secondsLeft}s if not sent on`
+              : "Forwarding to the province now"}
           </div>
 
-          <div className="mba-body">
-            <div className="mba-ref">{active.referenceNumber}</div>
-
-            <div className="mba-grid">
-              <div>
-                <span className="mba-key">Barangay</span>
-                <div className="mba-val">{active.barangay || "Not specified"}</div>
-              </div>
-              <div>
-                <span className="mba-key">Requested by</span>
-                <div className="mba-val">{active.requestedByName}</div>
-              </div>
-              {active.requestedFiretrucks > 0 && (
-                <div>
-                  <span className="mba-key">Firetrucks</span>
-                  <div className="mba-val">{active.requestedFiretrucks}</div>
-                </div>
-              )}
-              {active.requestedPersonnel > 0 && (
-                <div>
-                  <span className="mba-key">Personnel</span>
-                  <div className="mba-val">{active.requestedPersonnel}</div>
-                </div>
-              )}
-            </div>
-
-            {active.reason && <div className="mba-reason">{active.reason}</div>}
-
-            {active.photos?.length > 0 && (
-              <div>
-                <div className="mba-photos-head">
-                  <i className="fa-solid fa-camera" />
-                  From the scene ({active.photos.length})
-                </div>
-                <div className="mba-photos">
-                  {active.photos.map((photo, index) => (
-                    <button
-                      key={photo}
-                      type="button"
-                      className="mba-photo"
-                      onClick={() => setPhotoIndex(index)}
-                      title="View photo"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={photo} alt={`Scene photograph ${index + 1} from the responder`} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className={`mba-countdown${secondsLeft === 0 ? " is-elapsed" : ""}`} role="status">
-              <i className="fa-regular fa-clock" />
-              {secondsLeft > 0
-                ? `Forwards to the province in ${secondsLeft}s if not sent on`
-                : "Forwarding to the province now"}
-            </div>
-
-            {error && <div className="mba-err">{error}</div>}
-          </div>
-
-          <div className="mba-foot">
-            <button
-              type="button"
-              className="mba-btn"
-              disabled={busy}
-              onClick={() => void act(active.id, "ACKNOWLEDGE")}
-            >
-              Acknowledge
-            </button>
-            <button
-              type="button"
-              className="mba-btn primary"
-              disabled={busy}
-              onClick={() => void act(active.id, "FORWARD")}
-              autoFocus
-            >
-              <i className="fa-solid fa-arrow-up-right-from-square" />
-              {busy ? "Working..." : "Forward to Provincial"}
-            </button>
-          </div>
-        </div>
+          {error && <div className="mba-err">{error}</div>}
+        </EmergencyAlertCard>
       </div>
 
       {photoIndex !== null && (

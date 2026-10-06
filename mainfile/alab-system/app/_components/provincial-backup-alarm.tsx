@@ -148,6 +148,7 @@ const styles = `
 export function ProvincialBackupAlarm() {
   const [requests, setRequests] = useState<BackupRequest[]>([]);
   const [busy, setBusy] = useState(false);
+  const [declaringLevel, setDeclaringLevel] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [photoIndex, setPhotoIndex] = useState<number | null>(null);
 
@@ -363,17 +364,19 @@ export function ProvincialBackupAlarm() {
     }
   }, [active, pending, load]);
 
-  const declare = useCallback(async (alarmLevel: number) => {
-    if (!active) return;
+  const declare = useCallback(async (request: BackupRequest, alarmLevel: number) => {
+    const fireReportId = request.fireReportId;
     setBusy(true);
+    setDeclaringLevel(alarmLevel);
     setError(null);
+    let declared = false;
     try {
       const res = await fetch("/api/provincial-bfp/backup-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fireReportId: active.fireReportId,
-          backupRequestId: active.id,
+          fireReportId,
+          backupRequestId: request.id,
           alarmLevel,
         }),
       });
@@ -385,17 +388,23 @@ export function ProvincialBackupAlarm() {
       await fetch("/api/provincial-bfp/backup-requests", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backupRequestId: active.id }),
+        body: JSON.stringify({ backupRequestId: request.id }),
       }).catch(() => undefined);
       stopToneRef.current?.();
       stopToneRef.current = null;
-      await load();
+      declared = true;
+      // The officer who raised the alarm goes straight to the incident to follow it.
+      window.location.assign(`/provincial-bfp/incidents?incident=${encodeURIComponent(fireReportId)}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Something went wrong.");
     } finally {
-      setBusy(false);
+      // Left busy while the incident page loads, so a second level cannot be pressed.
+      if (!declared) {
+        setBusy(false);
+        setDeclaringLevel(null);
+      }
     }
-  }, [active, load]);
+  }, []);
 
   if (!active) return <ProvincialBarangayAlert />;
 
@@ -451,11 +460,12 @@ export function ProvincialBackupAlarm() {
                 className="pba-level"
                 // A level only ever goes up: the fire does not get smaller.
                 disabled={busy || entry.level <= (active.alarmLevel ?? 0)}
-                onClick={() => void declare(entry.level)}
+                onClick={() => void declare(active, entry.level)}
                 title={entry.summons}
               >
-                <strong>{entry.label}</strong>
-                <small>Alarm</small>
+                {declaringLevel === entry.level
+                  ? <><i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" /><small>Declaring…</small></>
+                  : <><strong>{entry.label}</strong><small>Alarm</small></>}
               </button>)}
             </div>
           </div>

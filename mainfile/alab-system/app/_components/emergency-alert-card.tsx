@@ -56,6 +56,7 @@ const styles = `
   .eac-fact strong { display:block; margin-top:.1rem; color:#0F172A; font-size:.9rem; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .eac-extra { display:grid; gap:.6rem; margin-top:.75rem; }
   .eac-foot { display:grid; grid-template-columns:1fr 1fr; gap:.65rem; margin-top:.95rem; padding-top:.95rem; border-top:1px solid #EDF1F6; }
+  .eac-foot > .eac-btn:only-child { grid-column:1 / -1; }
   .eac-btn { min-height:50px; display:inline-flex; align-items:center; justify-content:center; gap:.55rem; border-radius:14px; font:inherit; font-size:.9rem; font-weight:800; cursor:pointer; transition:transform .14s ease, box-shadow .14s ease, background .14s ease; }
   .eac-btn:disabled { opacity:.6; cursor:not-allowed; }
   .eac-btn.secondary { border:1.5px solid #D5DDE7; background:#fff; color:#1E293B; }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
 import type { AccountNotification } from "../../lib/notifications/types";
+import { EmergencyAlertCard } from "./emergency-alert-card";
 import { ensureAlertTone, getMunicipalAlarmAction, selectPendingMunicipalAlarm } from "../../lib/municipal-bfp/alarm-alert.mjs";
 
 const POLL_INTERVAL_MS = 5_000;
@@ -232,63 +233,52 @@ export function MunicipalAlarmDeclaration() {
     <>
       <style>{styles}</style>
       <div className="mad-backdrop" role="alertdialog" aria-modal="true" aria-labelledby="mad-title">
-        <section className="mad-card">
-          <header className="mad-head">
-            <span className="mad-icon" aria-hidden="true"><i className="fa-solid fa-tower-broadcast" /></span>
-            <div>
-              <div className="mad-title" id="mad-title">
-                {isAssistance ? "Backup assistance requested" : `${ORDINAL[alarmLevel] ?? alarmLevel} alarm declared`}
-              </div>
-              <div className="mad-sub">
-                {isAssistance
-                  ? `${String(context.requesterMunicipalityName ?? "A nearby municipality")} is calling your municipality`
-                  : audience === "SUMMONED"
-                    ? "Provincial BFP is calling your municipality"
-                    : "Provincial BFP has acted on your backup request"}
-              </div>
+        <EmergencyAlertCard
+          theme={{ primary: "#DC2626", dark: "#991B1B", soft: "#FEF2F2", softBorder: "#FECACA" }}
+          titleId="mad-title"
+          title={isAssistance ? "Backup assistance requested" : `${ORDINAL[alarmLevel] ?? alarmLevel} alarm declared`}
+          subtitle={isAssistance
+            ? `${String(context.requesterMunicipalityName ?? "A nearby municipality")} is calling your municipality`
+            : audience === "SUMMONED"
+              ? "Provincial BFP is calling your municipality"
+              : "Provincial BFP has acted on your backup request"}
+          heroBadge={isAssistance ? "fa-handshake-angle" : "fa-tower-broadcast"}
+          code={{ label: "Report code", value: String(context.referenceNumber ?? "Incident") }}
+          facts={[
+            { icon: "fa-location-dot", label: "Incident location", value: String(context.location ?? "Not specified") },
+            ...(!isAssistance ? [{ icon: "fa-bell", label: "Alarm level", value: `${ORDINAL[alarmLevel] ?? alarmLevel} alarm` }] : []),
+            ...((audience === "SUMMONED" || isAssistance) && Number(context.requestedFiretrucks) > 0
+              ? [{ icon: "fa-truck-droplet", label: "Firetrucks requested", value: String(Number(context.requestedFiretrucks)) }] : []),
+            ...((audience === "SUMMONED" || isAssistance) && Number(context.requestedPersonnel) > 0
+              ? [{ icon: "fa-people-group", label: "Personnel requested", value: String(Number(context.requestedPersonnel)) }] : []),
+          ]}
+          actions={[{
+            label: busy
+              ? "Working…"
+              : audience === "SUMMONED"
+                ? "Acknowledge & Assign BFP"
+                : isAssistance
+                  ? "Acknowledge & Respond"
+                  : "Acknowledge & View Status",
+            icon: audience === "SUMMONED" || isAssistance ? "fa-truck-fast" : "fa-list-check",
+            variant: "primary",
+            disabled: busy,
+            autoFocus: true,
+            onClick: () => void acknowledge(),
+          }]}
+        >
+          {isAssistance && typeof context.requestNote === "string" && context.requestNote.trim() && (
+            <div className="mad-called"><strong>Request note:</strong> {context.requestNote}</div>
+          )}
+          {audience === "ORIGIN" && (
+            <div className="mad-called">
+              <strong>Municipalities called:</strong>{" "}
+              {called.length > 0 ? called.join(", ") : "No additional municipality was within this alarm's reach."}
             </div>
-          </header>
-
-          <div className="mad-body">
-            <div className="mad-ref">{String(context.referenceNumber ?? "Incident")}</div>
-            <div className="mad-grid">
-              <div><span className="mad-key">Incident location</span><div className="mad-value">{String(context.location ?? "Not specified")}</div></div>
-              {!isAssistance && <div><span className="mad-key">Alarm level</span><div className="mad-value">{ORDINAL[alarmLevel] ?? alarmLevel} alarm</div></div>}
-              {(audience === "SUMMONED" || isAssistance) && Number(context.requestedFiretrucks) > 0 && (
-                <div><span className="mad-key">Firetrucks requested</span><div className="mad-value">{Number(context.requestedFiretrucks)}</div></div>
-              )}
-              {(audience === "SUMMONED" || isAssistance) && Number(context.requestedPersonnel) > 0 && (
-                <div><span className="mad-key">Personnel requested</span><div className="mad-value">{Number(context.requestedPersonnel)}</div></div>
-              )}
-            </div>
-
-            {isAssistance && typeof context.requestNote === "string" && context.requestNote.trim() && (
-              <div className="mad-called"><strong>Request note:</strong> {context.requestNote}</div>
-            )}
-
-            {audience === "ORIGIN" && (
-              <div className="mad-called">
-                <strong>Municipalities called:</strong>{" "}
-                {called.length > 0 ? called.join(", ") : "No additional municipality was within this alarm's reach."}
-              </div>
-            )}
-            {audioBlocked && <div className="mad-note">Click anywhere to allow the alarm sound in this browser.</div>}
-            {error && <div className="mad-error" role="status">{error}</div>}
-          </div>
-
-          <footer className="mad-foot">
-            <button type="button" className="mad-action" disabled={busy} onClick={() => void acknowledge()} autoFocus>
-              <i className={`fa-solid ${audience === "SUMMONED" || isAssistance ? "fa-truck-fast" : "fa-list-check"}`} aria-hidden="true" />{" "}
-              {busy
-                ? "Working…"
-                : audience === "SUMMONED"
-                  ? "Acknowledge & Assign BFP"
-                  : isAssistance
-                    ? "Acknowledge & Respond"
-                    : "Acknowledge & View Status"}
-            </button>
-          </footer>
-        </section>
+          )}
+          {audioBlocked && <div className="mad-note">Click anywhere to allow the alarm sound in this browser.</div>}
+          {error && <div className="mad-error" role="status">{error}</div>}
+        </EmergencyAlertCard>
       </div>
     </>
   );
