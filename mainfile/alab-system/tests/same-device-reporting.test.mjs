@@ -74,6 +74,7 @@ async function serviceFor(db, client) {
     },
     './validation': await import('../lib/fire-reports/validation.ts'),
     './duplicates': await import('../lib/fire-reports/duplicates.ts'),
+    './stored-danger': await import('../lib/fire-reports/stored-danger.ts'),
     './rate-limiter': await import('../lib/fire-reports/rate-limiter.ts'),
     './device-sharing': sharing,
     '../notifications/service': {}, '../weather/service': {}, './building-density': {}, './danger-assessment': {},

@@ -16,13 +16,10 @@ import {
   listProvincialNotificationRecipients,
 } from "../notifications/service";
 import { fetchLiveWeather } from "../weather/service";
-import {
-  assessBuildingDensity,
-  type BuildingDensityConfidence,
-  type BuildingDensityStatus,
-} from "./building-density";
+import { assessBuildingDensity } from "./building-density";
 import { assessMultiTypeDanger } from "./danger-assessment";
-import { findOpenIncidentNear, findOwnOpenReportNear } from "./duplicates";
+import { addFireTypesToIncident, findOpenIncidentNear, findOwnOpenReportNear } from "./duplicates";
+import { rescoreStoredReport, STORED_DANGER_COLUMNS, storedFireTypes, type StoredDangerRow } from "./stored-danger";
 import { checkResidentSosRateLimit, SosRateLimitError } from "./rate-limiter";
 import { followSameDeviceIncident, recordResidentIncidentFollow } from "./device-sharing";
 
@@ -107,8 +104,8 @@ export async function createResidentFireReport(userId: string, input: FireReport
     const reference = referenceNumber();
     const now = new Date();
 
-    // A second report of the same fire types within 100 m joins that incident instead
-    // of raising another alarm. The lock makes simultaneous reports in one
+    // A second report within 100 m that shares a fire type joins that incident
+    // instead of raising another alarm. The lock makes simultaneous reports in one
     // municipality take turns, so they cannot both become the first report.
     await client.query("select pg_advisory_xact_lock(hashtext($1))", [`fire-report-area:${municipalityId}`]);
     const linkedIncident = await findOpenIncidentNear(client, input.latitude, input.longitude, input.fireTypes);
@@ -166,6 +163,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
     if (linkedIncident) {
       // BFP already has this fire open; the extra report shows on that
       // incident without sounding a second alarm.
+      await addFireTypesToIncident(client, linkedIncident.id, input.fireTypes);
       return {
         id: reportId,
         referenceNumber: reference,
@@ -243,22 +241,8 @@ export async function updateResidentReportTacticalDetails(
   updates: { structureMaterial?: string | null; houseDensity?: string | null; routeAccessibility?: string | null }
 ) {
   return withTransaction(async (client) => {
-    const current = await client.query<{
-      id: string; fire_type: string; fire_types: string[] | null; structure_material: string | null; house_density: string | null;
-      latitude: string; longitude: string;
-      reported_house_density: string | null; detected_building_density: BuildingDensityStatus;
-      building_density_confidence: BuildingDensityConfidence; building_density_building_count: number | null;
-      building_density_minimum_gap_meters: string | null; building_density_source: string | null;
-      building_density_assessed_at: Date | string | null;
-      route_accessibility: string | null; weather_wind_speed: string | null; weather_wind_direction: string | null;
-      weather_temperature: string | null; weather_humidity: string | null;
-    }>(
-      `select fr.id, fr.fire_type, fr.fire_types, fr.structure_material, fr.reported_house_density, fr.house_density,
-              fr.latitude, fr.longitude,
-              fr.detected_building_density, fr.building_density_confidence, fr.building_density_building_count,
-              fr.building_density_minimum_gap_meters, fr.building_density_source, fr.building_density_assessed_at,
-              fr.route_accessibility,
-              fr.weather_wind_speed, fr.weather_wind_direction, fr.weather_temperature, fr.weather_humidity
+    const current = await client.query<StoredDangerRow & { id: string }>(
+      `select fr.id, ${STORED_DANGER_COLUMNS}
          from fire_reports fr
          join resident_profiles rp on rp.id = fr.resident_profile_id
         where fr.id = $1 and rp.user_id = $2 limit 1`,
@@ -274,26 +258,12 @@ export async function updateResidentReportTacticalDetails(
       : (row.reported_house_density ?? row.house_density);
     const newRoute = updates.routeAccessibility !== undefined ? updates.routeAccessibility : row.route_accessibility;
 
-    const densityAssessment: import("./building-density").BuildingDensityAssessment = {
-      status: row.detected_building_density ?? "INSUFFICIENT_DATA" as BuildingDensityStatus,
-      confidence: row.building_density_confidence ?? "UNAVAILABLE" as BuildingDensityConfidence,
-      buildingCount: row.building_density_building_count ?? 0,
-      minimumGapMeters: row.building_density_minimum_gap_meters == null ? null : Number(row.building_density_minimum_gap_meters),
-      source: row.building_density_source === "GOOGLE_OPEN_BUILDINGS_V3_2023_05"
-        ? "GOOGLE_OPEN_BUILDINGS_V3_2023_05"
-        : null,
-      assessedAt: row.building_density_assessed_at ? new Date(row.building_density_assessed_at) : new Date(),
-      evidence: [],
-    };
-    const { primaryFireType, densityContext, assessment: reassessment } = await assessMultiTypeDanger(client, {
+    const { primaryFireType, densityContext, assessment: reassessment } = await rescoreStoredReport(client, row, {
       structureMaterial: newMaterial,
       houseDensity: reportedDensity,
       routeAccessibility: newRoute,
-      windSpeedKph: row.weather_wind_speed != null ? Number(row.weather_wind_speed) : undefined,
-      windDirectionDeg: row.weather_wind_direction != null ? Number(row.weather_wind_direction) : undefined,
-      temperatureC: row.weather_temperature != null ? Number(row.weather_temperature) : undefined,
-      relativeHumidity: row.weather_humidity != null ? Number(row.weather_humidity) : undefined,
-    }, row.fire_types?.length ? row.fire_types : [row.fire_type], densityAssessment, Number(row.latitude), Number(row.longitude));
+      fireTypes: storedFireTypes(row),
+    });
 
     await client.query(
       `update fire_reports

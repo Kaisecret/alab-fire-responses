@@ -8,24 +8,29 @@ import {
   incidentStage,
   searchBox,
 } from "./duplicate-rules.mjs";
+import { MAX_FIRE_TYPES } from "./fire-type-situation.ts";
+import { rescoreStoredReport, STORED_DANGER_COLUMNS, storedFireTypes, type StoredDangerRow } from "./stored-danger.ts";
 import type { FireReportStatus, FireType } from "./types";
 
-export type OpenIncident = { id: string; referenceNumber: string; status: FireReportStatus; residentProfileId: string | null };
+export type OpenIncident = {
+  id: string; referenceNumber: string; status: FireReportStatus; residentProfileId: string | null; fireTypes: string[];
+};
 
 /**
- * The earliest open, unlinked report with the same fire types within 100 m, submitted in the last
- * 12 hours. Callers hold a lock so two simultaneous reports cannot both miss
- * each other.
+ * The earliest open, unlinked report within 100 m that shares at least one
+ * fire type, submitted in the last 12 hours. A house fire reported again as
+ * "house + grass" is the same fire. Callers hold a lock so two simultaneous
+ * reports cannot both miss each other.
  */
 export async function findOpenIncidentNear(client: Pick<PoolClient, "query">, latitude: number, longitude: number, fireTypes: FireType[]): Promise<OpenIncident | null> {
   if (fireTypes.length === 0) return null;
   const { latitudeDelta, longitudeDelta } = searchBox(latitude);
   const result = await client.query<OpenIncident>(
-    `select fr.id, fr.reference_number as "referenceNumber", fr.status, fr.resident_profile_id as "residentProfileId"
+    `select fr.id, fr.reference_number as "referenceNumber", fr.status, fr.resident_profile_id as "residentProfileId",
+            coalesce(fr.fire_types, array[fr.fire_type]) as "fireTypes"
        from fire_reports fr
       where fr.duplicate_of_report_id is null
-        and coalesce(fr.fire_types, array[fr.fire_type]) @> $8::text[]
-        and coalesce(fr.fire_types, array[fr.fire_type]) <@ $8::text[]
+        and coalesce(fr.fire_types, array[fr.fire_type]) && $8::text[]
         and fr.status <> all($5::text[])
         and fr.submitted_at > now() - make_interval(hours => $6::int)
         and fr.latitude between $1::float8 - $3::float8 and $1::float8 + $3::float8
@@ -40,6 +45,47 @@ export async function findOpenIncidentNear(client: Pick<PoolClient, "query">, la
     [latitude, longitude, latitudeDelta, longitudeDelta, CLOSED_INCIDENT_STATUSES, DUPLICATE_WINDOW_HOURS, DUPLICATE_RADIUS_METERS, fireTypes],
   );
   return result.rows[0] ?? null;
+}
+
+/**
+ * Adds the fire types a linked report saw that the incident does not list yet,
+ * up to the 3-type limit, and scores the incident's Level of Danger again
+ * from its own saved details. The linked report adds no alarm, so this is how
+ * BFP learns the grass around the house is burning too.
+ */
+export async function addFireTypesToIncident(client: Pick<PoolClient, "query">, incidentId: string, fireTypes: readonly string[]) {
+  const current = await client.query<StoredDangerRow>(
+    `select ${STORED_DANGER_COLUMNS} from fire_reports fr where fr.id = $1 for update`,
+    [incidentId],
+  );
+  const row = current.rows[0];
+  if (!row) return;
+  const existing = storedFireTypes(row);
+  const added = fireTypes.filter((type) => !existing.includes(type));
+  const merged = [...existing, ...added].slice(0, MAX_FIRE_TYPES);
+  if (merged.length === existing.length) return;
+
+  const { primaryFireType, densityContext, assessment } = await rescoreStoredReport(client, row, {
+    structureMaterial: row.structure_material,
+    houseDensity: row.reported_house_density ?? row.house_density,
+    routeAccessibility: row.route_accessibility,
+    fireTypes: merged,
+  });
+  await client.query(
+    `update fire_reports
+        set fire_types = $2::text[],
+            fire_type = $3,
+            calculated_severity = $4,
+            severity_score = $5,
+            severity_factors = $6,
+            house_density = $7,
+            updated_at = now()
+      where id = $1`,
+    [
+      incidentId, merged, primaryFireType, assessment.level, assessment.score, JSON.stringify(assessment.factors),
+      densityContext.effectiveHouseDensity,
+    ],
+  );
 }
 
 export type OwnOpenReport = { id: string; referenceNumber: string };

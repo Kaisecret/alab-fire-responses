@@ -94,7 +94,7 @@ test("the open-incident search finds only open, recent, unlinked reports within 
   }
 });
 
-test("another account's same fire type at 80 meters links to the existing responding incident", async () => {
+test("another account's report sharing a fire type at 80 meters links to the existing responding incident", async () => {
   const { PGlite } = await import('@electric-sql/pglite');
   const { findOpenIncidentNear } = await import('../lib/fire-reports/duplicates.ts');
   const db = new PGlite();
@@ -110,15 +110,54 @@ test("another account's same fire type at 80 meters links to the existing respon
     const found = await findOpenIncidentNear(client, 10.7431, 121.9394, ['HOUSE_BUILDING']);
     assert.equal(found?.referenceNumber, 'HOUSE-A');
     assert.equal(found?.status, 'RESPONDING');
+    assert.deepEqual(found?.fireTypes, ['HOUSE_BUILDING']);
     assert.equal(await findOpenIncidentNear(client, 10.7431, 121.9394, ['GRASS']), null,
-      'grass at the same location is a separate report');
-    assert.equal(await findOpenIncidentNear(client, 10.7431, 121.9394, ['HOUSE_BUILDING', 'GRASS']), null,
-      'a new selected fire type must not be swallowed by a house-only incident');
+      'grass alone at the same location is a separate report');
+    assert.equal((await findOpenIncidentNear(client, 10.7431, 121.9394, ['HOUSE_BUILDING', 'GRASS']))?.referenceNumber, 'HOUSE-A',
+      'a house fire that also reports grass is the same fire as the open house incident');
 
     await db.query(`update fire_reports set fire_type = 'GRASS', fire_types = array['GRASS', 'HOUSE_BUILDING']`);
     assert.equal((await findOpenIncidentNear(client, 10.7431, 121.9394, ['HOUSE_BUILDING', 'GRASS']))?.referenceNumber, 'HOUSE-A',
       'the same selections match regardless of order or primary severity type');
-    assert.equal(await findOpenIncidentNear(client, 10.7431, 121.9394, ['HOUSE_BUILDING']), null);
+    assert.equal((await findOpenIncidentNear(client, 10.7431, 121.9394, ['HOUSE_BUILDING']))?.referenceNumber, 'HOUSE-A');
+    assert.equal(await findOpenIncidentNear(client, 10.7431, 121.9394, ['VEHICLE']), null);
+  } finally {
+    await db.close();
+  }
+});
+
+test("a linked report's new fire types are added to the incident and its danger is re-scored", async () => {
+  const { PGlite } = await import('@electric-sql/pglite');
+  const { addFireTypesToIncident } = await import('../lib/fire-reports/duplicates.ts');
+  const db = new PGlite();
+  try {
+    await db.exec(`create table fire_reports (
+      id uuid primary key default gen_random_uuid(), reference_number text, status text,
+      latitude float8, longitude float8, fire_type text, fire_types text[],
+      structure_material text, reported_house_density text, house_density text, route_accessibility text,
+      weather_temperature float8, weather_humidity float8, weather_wind_speed float8, weather_wind_direction float8,
+      detected_building_density text, building_density_confidence text, building_density_building_count integer,
+      building_density_minimum_gap_meters float8, building_density_source text, building_density_assessed_at timestamptz,
+      calculated_severity text, severity_score float8, severity_factors jsonb, updated_at timestamptz
+    )`);
+    const client = { query: (sql, params) => db.query(sql, params) };
+    const inserted = await db.query(`insert into fire_reports (reference_number, status, latitude, longitude, fire_type,
+        structure_material, reported_house_density, route_accessibility, weather_wind_speed, weather_temperature, weather_humidity,
+        detected_building_density, building_density_confidence, calculated_severity, severity_score)
+      values ('HOUSE-A', 'PENDING_VERIFICATION', 10.7431, 121.9394, 'HOUSE_BUILDING',
+        'LIGHT_MATERIALS', 'VERY_CLOSE', 'NARROW_STREET', 4, 26, 96, 'INSUFFICIENT_DATA', 'UNAVAILABLE', 'HIGH', 66)
+      returning id`);
+    const incidentId = inserted.rows[0].id;
+
+    await addFireTypesToIncident(client, incidentId, ['HOUSE_BUILDING']);
+    assert.equal((await db.query('select fire_types from fire_reports')).rows[0].fire_types, null,
+      'nothing changes when the linked report adds no new fire type');
+
+    await addFireTypesToIncident(client, incidentId, ['VEHICLE', 'HOUSE_BUILDING']);
+    const incident = (await db.query('select fire_types, severity_factors from fire_reports')).rows[0];
+    assert.deepEqual(incident.fire_types, ['HOUSE_BUILDING', 'VEHICLE']);
+    assert.ok(incident.severity_factors.some((factor) => /Vehicle/.test(factor)),
+      'the incident danger now accounts for the added fire type');
   } finally {
     await db.close();
   }
