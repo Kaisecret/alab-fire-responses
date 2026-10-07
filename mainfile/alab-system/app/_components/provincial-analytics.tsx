@@ -111,24 +111,11 @@ function useAnalytics(range: AnalyticsRange, municipalityId: string) {
   return { data, error, loading, refresh };
 }
 
-function useUpdatedLabel(generatedAt: string | undefined) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 15_000);
-    return () => window.clearInterval(timer);
-  }, []);
-  if (!generatedAt) return { text: 'Loading…', stale: true };
-  const minutes = Math.floor((now - new Date(generatedAt).getTime()) / 60000);
-  return { text: minutes < 1 ? 'Live · updated just now' : `Live · updated ${minutes} min ago`, stale: minutes >= 3 };
-}
-
 export function ProvincialAnalyticsPage() {
   const router = useRouter();
   const [range, setRange] = useState<AnalyticsRange>('30d');
   const [municipalityId, setMunicipalityId] = useState('');
-  const [tableView, setTableView] = useState(false);
   const { data, error, loading, refresh } = useAnalytics(range, municipalityId);
-  const updated = useUpdatedLabel(data?.generatedAt);
   const compare = RANGES.find((item) => item.value === range)!.compare;
 
   // Restore the filters from a shared or reloaded link.
@@ -187,14 +174,6 @@ export function ProvincialAnalyticsPage() {
               {data?.allMunicipalities.map((municipality) => <option key={municipality.id} value={municipality.id}>{municipality.name}</option>)}
             </select>
           </label>
-          <span className={styles.spacer} />
-          <span className={`${styles.live} ${updated.stale ? styles.stale : ''}`} aria-live="polite">{updated.text}</span>
-          <button type="button" className={styles.button} aria-pressed={tableView} onClick={() => setTableView((value) => !value)}>
-            <i className="fa-solid fa-table" aria-hidden="true" /> Table view
-          </button>
-          <Link className={`${styles.button} ${styles.primary}`} href="/provincial-bfp/reports">
-            <i className="fa-solid fa-file-export" aria-hidden="true" /> Export report
-          </Link>
         </div>
 
         {error && (
@@ -222,14 +201,7 @@ export function ProvincialAnalyticsPage() {
               </div>
               <div className={styles.card}>
                 <SectionHead icon="fa-chart-column" title="Incident trend" sub={`Fire incidents per ${data.bucket} · hover a ${data.bucket} for details`} />
-                {noIncidents ? <p className={styles.empty}>No fire incidents in this period.</p> : tableView ? (
-                  <table className={styles.table}>
-                    <thead><tr><th>{data.bucket}</th><th>Incidents</th><th>High or critical</th></tr></thead>
-                    <tbody>{data.trend.filter((point) => point.incidents > 0).map((point) => (
-                      <tr key={point.bucket}><td>{point.bucket}</td><td>{point.incidents}</td><td>{point.highDanger}</td></tr>
-                    ))}</tbody>
-                  </table>
-                ) : <TrendBars points={data.trend} bucket={data.bucket} />}
+                {noIncidents ? <p className={styles.empty}>No fire incidents in this period.</p> : <TrendBars points={data.trend} bucket={data.bucket} />}
                 {!noIncidents && (() => {
                   const busiest = data.trend.reduce((best, point) => (point.incidents > best.incidents ? point : best), data.trend[0]);
                   return (
@@ -276,14 +248,7 @@ export function ProvincialAnalyticsPage() {
             <section className={styles.grid21}>
               <div className={styles.card}>
                 <SectionHead icon="fa-calendar-week" title="When fires happen" sub="Day of week and hour, in Antique time" />
-                {noIncidents ? <p className={styles.empty}>No fire incidents in this period.</p> : tableView ? (
-                  <table className={styles.table}>
-                    <thead><tr><th>Day</th><th>Hour</th><th>Incidents</th></tr></thead>
-                    <tbody>{[...data.heatmap].sort((a, b) => b.incidents - a.incidents).map((cell) => (
-                      <tr key={`${cell.day}-${cell.hour}`}><td>{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][cell.day - 1]}</td><td>{cell.hour}:00</td><td>{cell.incidents}</td></tr>
-                    ))}</tbody>
-                  </table>
-                ) : (
+                {noIncidents ? <p className={styles.empty}>No fire incidents in this period.</p> : (
                   <>
                     <Heatmap cells={data.heatmap} />
                     <div className={styles.scale}>Fewer <div>{HEAT_RAMP.slice(1).map((color) => <i key={color} style={{ background: color }} />)}</div> More</div>

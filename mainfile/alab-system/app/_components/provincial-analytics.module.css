@@ -25,10 +25,6 @@
   color: var(--ink);
 }
 
-.page .live { display: inline-flex; align-items: center; gap: .5rem; font-size: .74rem; font-weight: 700; color: #047857; background: #ECFDF5; border: 1px solid #A7F3D0; padding: .4rem .75rem; border-radius: 999px; white-space: nowrap; }
-.page .live::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #10B981; box-shadow: 0 0 0 4px rgba(16, 185, 129, .18); }
-.page .live.stale { color: var(--muted); background: var(--wash); border-color: var(--border); }
-.page .live.stale::before { background: var(--faint); box-shadow: none; }
 
 .page .filters { display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
 .page .segment { display: flex; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 4px; box-shadow: var(--shadow); }
@@ -38,11 +34,8 @@
 .page .select { display: flex; align-items: center; gap: .5rem; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 0 .4rem 0 .85rem; box-shadow: var(--shadow); }
 .page .select span { font-size: .72rem; font-weight: 700; color: var(--muted); }
 .page .select select { border: 0; background: transparent; font: inherit; font-size: .8rem; font-weight: 700; color: var(--ink-2); padding: .65rem .3rem; cursor: pointer; outline: none; }
-.page .spacer { flex: 1; }
 .page .button { display: inline-flex; align-items: center; gap: .45rem; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: .62rem 1rem; font: inherit; font-size: .78rem; font-weight: 800; color: var(--ink); box-shadow: var(--shadow); cursor: pointer; text-decoration: none; transition: all .18s cubic-bezier(.4, 0, .2, 1); }
 .page .button:hover { transform: translateY(-1px); box-shadow: 0 8px 26px rgba(15, 23, 42, .08); }
-.page .button[aria-pressed='true'] { background: #FFF1F2; border-color: #FECDD3; color: var(--brand); }
-.page .primary { background: var(--brand); border-color: var(--brand); color: #fff; }
 
 .page .card { position: relative; background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); padding: 1.1rem 1.25rem 1.2rem; min-width: 0; }
 .page .card h2 { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.3; }
