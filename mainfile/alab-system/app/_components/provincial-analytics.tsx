@@ -123,11 +123,6 @@ export function ProvincialAnalyticsPage() {
     <>
       <FireCommandHeader slotId="provincial-fire-command-header" title="Provincial Fire Response Intelligence & Analytics" icon="fa-chart-pie" />
       <div className={styles.page}>
-        <div className={styles.intro}>
-          <p>Response-time analytics and fire-incident trends across Antique. For monitoring only: response authority stays with each municipality.</p>
-          <span className={`${styles.live} ${updated.stale ? styles.stale : ''}`} aria-live="polite">{updated.text}</span>
-        </div>
-
         <div className={styles.filters}>
           <div className={styles.segment} role="group" aria-label="Period">
             {RANGES.map((item) => (
@@ -142,6 +137,7 @@ export function ProvincialAnalyticsPage() {
             </select>
           </label>
           <span className={styles.spacer} />
+          <span className={`${styles.live} ${updated.stale ? styles.stale : ''}`} aria-live="polite">{updated.text}</span>
           <button type="button" className={styles.button} aria-pressed={tableView} onClick={() => setTableView((value) => !value)}>
             <i className="fa-solid fa-table" aria-hidden="true" /> Table view
           </button>
@@ -179,6 +175,7 @@ export function ProvincialAnalyticsPage() {
               </div>
               <div className={`${styles.card} ${styles.kpi}`}>
                 <span className={styles.label}>Median response time</span>
+                <span className={styles.kpiIcon} style={{ background: '#EFF6FF', color: '#2563EB' }} aria-hidden="true"><i className="fa-solid fa-stopwatch" /></span>
                 <div className={styles.value}>{headline.medianArrivalMinutes ?? '—'}{headline.medianArrivalMinutes != null && <small>min</small>}</div>
                 <div className={styles.meta}>
                   <Delta
@@ -195,6 +192,7 @@ export function ProvincialAnalyticsPage() {
               </div>
               <div className={`${styles.card} ${styles.kpi}`}>
                 <span className={styles.label}>High &amp; critical danger</span>
+                <span className={styles.kpiIcon} style={{ background: '#FEF2F2', color: '#DC2626' }} aria-hidden="true"><i className="fa-solid fa-triangle-exclamation" /></span>
                 <div className={styles.value}>{headline.highDangerShare == null ? '—' : Math.round(headline.highDangerShare * 100)}{headline.highDangerShare != null && <small>%</small>}</div>
                 <div className={styles.meta}>
                   <Delta change={headline.highDangerChangePoints} unit=" pts" label={`Compared with ${compare}`} />
@@ -206,6 +204,7 @@ export function ProvincialAnalyticsPage() {
               </div>
               <div className={`${styles.card} ${styles.kpi}`}>
                 <span className={styles.label}>False or rejected reports</span>
+                <span className={styles.kpiIcon} style={{ background: '#F1F5F9', color: '#475569' }} aria-hidden="true"><i className="fa-solid fa-ban" /></span>
                 <div className={styles.value}>{headline.falseReportShare == null ? '—' : Math.round(headline.falseReportShare * 100)}{headline.falseReportShare != null && <small>%</small>}</div>
                 <div className={styles.meta}>
                   <Delta change={headline.falseReportChangePoints} unit=" pts" label={`Compared with ${compare}`} />
@@ -217,16 +216,14 @@ export function ProvincialAnalyticsPage() {
 
             <section className={styles.grid21}>
               <div className={styles.card}>
-                <h2>Response time by stage <span className={styles.tag}>Incident timeline</span></h2>
-                <p className={styles.sub}>Median minutes between status changes. Shows where time is spent from report to resolution.</p>
+                <SectionHead icon="fa-stopwatch" title="Response time by stage" tag="Incident timeline" sub="Median minutes between status changes, from report to resolution" />
                 {data.responseStages.some((stage) => stage.medianMinutes != null)
                   ? <StageBar stages={data.responseStages} />
                   : <p className={styles.empty}>No status changes were recorded for incidents in this period.</p>}
                 <MunicipalityStageRows rows={data.municipalities} />
               </div>
               <div className={styles.card}>
-                <h2>Incident trend</h2>
-                <p className={styles.sub}>Fire incidents per {data.bucket} · hover a {data.bucket} for details</p>
+                <SectionHead icon="fa-chart-column" title="Incident trend" sub={`Fire incidents per ${data.bucket} · hover a ${data.bucket} for details`} />
                 {noIncidents ? <p className={styles.empty}>No fire incidents in this period.</p> : tableView ? (
                   <table className={styles.table}>
                     <thead><tr><th>{data.bucket}</th><th>Incidents</th><th>High or critical</th></tr></thead>
@@ -247,10 +244,9 @@ export function ProvincialAnalyticsPage() {
               </div>
             </section>
 
-            <section className={styles.grid21}>
+            <section>
               <div className={styles.card}>
-                <h2>Where fires happen <span className={styles.tag}>Municipal summary</span></h2>
-                <p className={styles.sub}>Sorted by incidents. Select a row to open that municipality&apos;s incident reports.</p>
+                <SectionHead icon="fa-map-location-dot" title="Where fires happen" tag="Municipal summary" sub={"Select a row to open that municipality's incident reports"} />
                 {data.municipalities.length === 0 ? <p className={styles.empty}>No fire incidents in this period.</p> : (
                   <table className={styles.table}>
                     <thead><tr><th>Municipality</th><th>Incidents</th><th>High &amp; critical</th><th>Median arrival</th><th>Active now</th><th>Assistance asked</th></tr></thead>
@@ -277,27 +273,11 @@ export function ProvincialAnalyticsPage() {
                   </table>
                 )}
               </div>
-              <div className={styles.card}>
-                <h2>Top barangays</h2>
-                <p className={styles.sub}>Barangays with the most incidents (PSA boundaries)</p>
-                {data.barangays.length === 0 ? <p className={styles.empty}>No incidents with a barangay in this period.</p> : (
-                  <div className={styles.ranked}>
-                    {data.barangays.map((row, index) => (
-                      <div key={`${row.municipality}-${row.barangay}`}>
-                        <span className={styles.rank}>{index + 1}</span>
-                        <span>{row.barangay}<em>{row.municipality}</em></span>
-                        <b className={styles.right}>{row.incidents}</b>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </section>
 
-            <section className={styles.grid11}>
+            <section className={styles.grid21}>
               <div className={styles.card}>
-                <h2>When fires happen</h2>
-                <p className={styles.sub}>Incidents by day of week and hour, in Antique time</p>
+                <SectionHead icon="fa-calendar-week" title="When fires happen" sub="Day of week and hour, in Antique time" />
                 {noIncidents ? <p className={styles.empty}>No fire incidents in this period.</p> : tableView ? (
                   <table className={styles.table}>
                     <thead><tr><th>Day</th><th>Hour</th><th>Incidents</th></tr></thead>
@@ -314,8 +294,24 @@ export function ProvincialAnalyticsPage() {
                 {!noIncidents && <WhenSummary cells={data.heatmap} />}
               </div>
               <div className={styles.card}>
-                <h2>Level of Danger <span className={styles.tag}>AHP + rules</span></h2>
-                <p className={styles.sub}>How dangerous reported fires were, and the conditions that raised the level</p>
+                <SectionHead icon="fa-location-dot" title="Top barangays" sub="Most incidents, by PSA barangay boundary" />
+                {data.barangays.length === 0 ? <p className={styles.empty}>No incidents with a barangay in this period.</p> : (
+                  <div className={styles.ranked}>
+                    {data.barangays.map((row, index) => (
+                      <div key={`${row.municipality}-${row.barangay}`}>
+                        <span className={styles.rank}>{index + 1}</span>
+                        <span>{row.barangay}<em>{row.municipality}</em></span>
+                        <b className={styles.right}>{row.incidents}</b>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section className={styles.grid11}>
+              <div className={styles.card}>
+                <SectionHead icon="fa-shield-halved" title="Level of Danger" tag="AHP + rules" sub="Danger mix and the conditions that raised the level" />
                 {noIncidents ? <p className={styles.empty}>No fire incidents in this period.</p> : (
                   <>
                     <div className={styles.dangerBar} aria-hidden="true">
@@ -345,57 +341,8 @@ export function ProvincialAnalyticsPage() {
                   </>
                 )}
               </div>
-            </section>
-
-            <section className={styles.grid3}>
               <div className={styles.card}>
-                <h2>Fire type</h2>
-                <p className={styles.sub}>Incidents per kind of fire reported (one incident can have up to 3)</p>
-                {data.fireTypes.counts.length === 0 ? <p className={styles.empty}>No fire incidents in this period.</p> : (
-                  <div className={styles.bars}>
-                    {data.fireTypes.counts.map((row) => {
-                      const most = data.fireTypes.counts[0].incidents;
-                      const type = FIRE_TYPES[row.type] ?? { label: row.type, color: 'var(--faint)' };
-                      return (
-                        <div key={row.type} className={styles.bar}>
-                          <span>{type.label}</span>
-                          <div style={{ width: `${(row.incidents / most) * 100}%`, background: type.color }} />
-                          <b>{row.incidents}</b>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {data.fireTypes.multiType > 0 && (
-                  <p className={styles.note}>
-                    {plural(data.fireTypes.multiType, 'incident')} had more than one fire type
-                    {data.fireTypes.topCombination && `, most often ${data.fireTypes.topCombination.types.map((type) => FIRE_TYPES[type]?.label ?? type).join(' + ')}`}.
-                  </p>
-                )}
-              </div>
-              <div className={styles.card}>
-                <h2>How fires are reported</h2>
-                <p className={styles.sub}>Resident app reports vs phone calls logged by Municipal BFP</p>
-                {data.reporting.app + data.reporting.phone === 0 ? <p className={styles.empty}>No fire incidents in this period.</p> : (
-                  <>
-                    <div className={styles.split} aria-hidden="true">
-                      {data.reporting.app > 0 && <div style={{ flex: data.reporting.app, background: 'var(--series-1)' }} />}
-                      {data.reporting.phone > 0 && <div style={{ flex: data.reporting.phone, background: 'var(--series-2)' }} />}
-                    </div>
-                    <div className={styles.legendRow}><span><i className={styles.swatch} style={{ background: 'var(--series-1)' }} />Resident app</span><b>{data.reporting.app}</b></div>
-                    <div className={styles.legendRow}><span><i className={styles.swatch} style={{ background: 'var(--series-2)' }} />Phone call</span><b>{data.reporting.phone}</b></div>
-                  </>
-                )}
-                <div className={styles.minis}>
-                  <div className={styles.mini}><small>Reports per incident</small><b>{data.reporting.reportsPerIncident ?? '—'}</b></div>
-                  <div className={styles.mini}><small>App reports with photos</small><b>{percent(data.reporting.photoShare)}</b></div>
-                  <div className={styles.mini}><small>GPS within 50 m</small><b>{percent(data.reporting.preciseGpsShare)}</b></div>
-                  <div className={styles.mini}><small>Median time to verify</small><b>{formatMinutes(data.reporting.medianVerifyMinutes)}</b></div>
-                </div>
-              </div>
-              <div className={styles.card}>
-                <h2>Inter-municipality coordination</h2>
-                <p className={styles.sub}>Assistance requests, backup calls and alarm levels</p>
+                <SectionHead icon="fa-handshake-angle" title="Inter-municipality coordination" sub="Assistance requests, backup calls and alarm levels" />
                 <div className={styles.minis}>
                   <div className={styles.mini}>
                     <small>Assistance requests</small><b>{data.coordination.assistanceRequests}</b>
@@ -421,6 +368,52 @@ export function ProvincialAnalyticsPage() {
               </div>
             </section>
 
+            <section className={styles.grid11}>
+              <div className={styles.card}>
+                <SectionHead icon="fa-fire" title="Fire type" sub="One incident can have up to 3 kinds of fire" />
+                {data.fireTypes.counts.length === 0 ? <p className={styles.empty}>No fire incidents in this period.</p> : (
+                  <div className={styles.bars}>
+                    {data.fireTypes.counts.map((row) => {
+                      const most = data.fireTypes.counts[0].incidents;
+                      const type = FIRE_TYPES[row.type] ?? { label: row.type, color: 'var(--faint)' };
+                      return (
+                        <div key={row.type} className={styles.bar}>
+                          <span>{type.label}</span>
+                          <div style={{ width: `${(row.incidents / most) * 100}%`, background: type.color }} />
+                          <b>{row.incidents}</b>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {data.fireTypes.multiType > 0 && (
+                  <p className={styles.note}>
+                    {plural(data.fireTypes.multiType, 'incident')} had more than one fire type
+                    {data.fireTypes.topCombination && `, most often ${data.fireTypes.topCombination.types.map((type) => FIRE_TYPES[type]?.label ?? type).join(' + ')}`}.
+                  </p>
+                )}
+              </div>
+              <div className={styles.card}>
+                <SectionHead icon="fa-mobile-screen-button" title="How fires are reported" sub="Resident app vs phone calls logged by Municipal BFP" />
+                {data.reporting.app + data.reporting.phone === 0 ? <p className={styles.empty}>No fire incidents in this period.</p> : (
+                  <>
+                    <div className={styles.split} aria-hidden="true">
+                      {data.reporting.app > 0 && <div style={{ flex: data.reporting.app, background: 'var(--series-1)' }} />}
+                      {data.reporting.phone > 0 && <div style={{ flex: data.reporting.phone, background: 'var(--series-2)' }} />}
+                    </div>
+                    <div className={styles.legendRow}><span><i className={styles.swatch} style={{ background: 'var(--series-1)' }} />Resident app</span><b>{data.reporting.app}</b></div>
+                    <div className={styles.legendRow}><span><i className={styles.swatch} style={{ background: 'var(--series-2)' }} />Phone call</span><b>{data.reporting.phone}</b></div>
+                  </>
+                )}
+                <div className={styles.minis}>
+                  <div className={styles.mini}><small>Reports per incident</small><b>{data.reporting.reportsPerIncident ?? '—'}</b></div>
+                  <div className={styles.mini}><small>App reports with photos</small><b>{percent(data.reporting.photoShare)}</b></div>
+                  <div className={styles.mini}><small>GPS within 50 m</small><b>{percent(data.reporting.preciseGpsShare)}</b></div>
+                  <div className={styles.mini}><small>Median time to verify</small><b>{formatMinutes(data.reporting.medianVerifyMinutes)}</b></div>
+                </div>
+              </div>
+            </section>
+
             <p className={styles.footnote}>
               Analytics summarize recorded data. Verification, dispatch and response decisions stay with BFP personnel.
             </p>
@@ -428,6 +421,18 @@ export function ProvincialAnalyticsPage() {
         )}
       </div>
     </>
+  );
+}
+
+function SectionHead({ icon, title, tag, sub }: { icon: string; title: string; tag?: string; sub: string }) {
+  return (
+    <header className={styles.head}>
+      <span className={styles.icon} aria-hidden="true"><i className={`fa-solid ${icon}`} /></span>
+      <div>
+        <h2>{title}{tag && <span className={styles.tag}>{tag}</span>}</h2>
+        <p className={styles.sub}>{sub}</p>
+      </div>
+    </header>
   );
 }
 
