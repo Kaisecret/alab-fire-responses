@@ -2,7 +2,7 @@
 // database code so the thresholds and stage mapping are unit-tested.
 
 /** Reports this close together are treated as the same fire. */
-export const DUPLICATE_RADIUS_METERS = 100;
+export const DUPLICATE_RADIUS_METERS = 50;
 
 /** A report only joins an incident that is still open and this recent. */
 export const DUPLICATE_WINDOW_HOURS = 12;

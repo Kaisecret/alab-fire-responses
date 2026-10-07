@@ -17,7 +17,7 @@ export type OpenIncident = {
 };
 
 /**
- * The earliest open, unlinked report within 100 m that shares at least one
+ * The earliest open, unlinked report within 50 m that shares at least one
  * fire type, submitted in the last 12 hours. A house fire reported again as
  * "house + grass" is the same fire. Callers hold a lock so two simultaneous
  * reports cannot both miss each other.
@@ -54,6 +54,13 @@ export async function findOpenIncidentNear(client: Pick<PoolClient, "query">, la
  * BFP learns the grass around the house is burning too.
  */
 export async function addFireTypesToIncident(client: Pick<PoolClient, "query">, incidentId: string, fireTypes: readonly string[]) {
+  const listed = await client.query<{ fireTypes: string[] }>(
+    `select coalesce(fr.fire_types, array[fr.fire_type]) as "fireTypes" from fire_reports fr where fr.id = $1`,
+    [incidentId],
+  );
+  const known = listed.rows[0]?.fireTypes;
+  if (!known || fireTypes.every((type) => known.includes(type))) return;
+
   const current = await client.query<StoredDangerRow>(
     `select ${STORED_DANGER_COLUMNS} from fire_reports fr where fr.id = $1 for update`,
     [incidentId],
@@ -88,12 +95,13 @@ export async function addFireTypesToIncident(client: Pick<PoolClient, "query">, 
   );
 }
 
-export type OwnOpenReport = { id: string; referenceNumber: string };
+export type OwnOpenReport = { id: string; referenceNumber: string; incidentId: string; incidentFireTypes: string[] };
 
 /**
- * The resident's own latest report with the same fire types within 100 m whose fire is still open, so
- * reporting the same place again opens that report instead of a new one. A
- * report linked to another resident's follows that incident's status.
+ * The resident's own latest report within 50 m that shares a fire type and
+ * whose fire is still open, so reporting the same place again opens that
+ * report instead of a new one. A report linked to another resident's follows
+ * that incident's status; incidentId is the report BFP works from.
  */
 export async function findOwnOpenReportNear(
   client: Pick<PoolClient, "query">,
@@ -105,13 +113,14 @@ export async function findOwnOpenReportNear(
   if (fireTypes.length === 0) return null;
   const { latitudeDelta, longitudeDelta } = searchBox(latitude);
   const result = await client.query<OwnOpenReport>(
-    `select fr.id, fr.reference_number as "referenceNumber"
+    `select fr.id, fr.reference_number as "referenceNumber", coalesce(root.id, fr.id) as "incidentId",
+            case when root.id is null then coalesce(fr.fire_types, array[fr.fire_type])
+                 else coalesce(root.fire_types, array[root.fire_type]) end as "incidentFireTypes"
        from fire_reports fr
        join resident_profiles rp on rp.id = fr.resident_profile_id
        left join fire_reports root on root.id = fr.duplicate_of_report_id
       where rp.user_id = $8
-        and coalesce(fr.fire_types, array[fr.fire_type]) @> $9::text[]
-        and coalesce(fr.fire_types, array[fr.fire_type]) <@ $9::text[]
+        and coalesce(fr.fire_types, array[fr.fire_type]) && $9::text[]
         and coalesce(root.status, fr.status) <> all($5::text[])
         and fr.submitted_at > now() - make_interval(hours => $6::int)
         and fr.latitude between $1::float8 - $3::float8 and $1::float8 + $3::float8
@@ -126,6 +135,19 @@ export async function findOwnOpenReportNear(
     [latitude, longitude, latitudeDelta, longitudeDelta, CLOSED_INCIDENT_STATUSES, DUPLICATE_WINDOW_HOURS, DUPLICATE_RADIUS_METERS, userId, fireTypes],
   );
   return result.rows[0] ?? null;
+}
+
+/** Opens the resident's own open report here, adding any newly seen fire type to its incident. */
+export async function joinOwnOpenReport(
+  client: Pick<PoolClient, "query">,
+  userId: string,
+  latitude: number,
+  longitude: number,
+  fireTypes: FireType[],
+): Promise<OwnOpenReport | null> {
+  const report = await findOwnOpenReportNear(client, userId, latitude, longitude, fireTypes);
+  if (report) await addFireTypesToIncident(client, report.incidentId, fireTypes);
+  return report;
 }
 
 export type SharedIncidentReport = {

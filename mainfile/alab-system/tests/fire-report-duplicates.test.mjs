@@ -10,16 +10,16 @@ import {
   searchBox,
 } from "../lib/fire-reports/duplicate-rules.mjs";
 
-test("reports within 100 meters count as the same fire", () => {
-  assert.equal(DUPLICATE_RADIUS_METERS, 100);
-  assert.ok(distanceMeters(10.7431, 121.9394, 10.7439, 121.9394) < 100);
-  assert.ok(distanceMeters(10.7431, 121.9394, 10.7441, 121.9394) > 100);
+test("reports within 50 meters count as the same fire", () => {
+  assert.equal(DUPLICATE_RADIUS_METERS, 50);
+  assert.ok(distanceMeters(10.7431, 121.9394, 10.7435, 121.9394) < 50);
+  assert.ok(distanceMeters(10.7431, 121.9394, 10.7436, 121.9394) > 50);
 });
 
-test("the search box contains the whole 100 meter circle", () => {
+test("the search box contains the whole 50 meter circle", () => {
   const { latitudeDelta, longitudeDelta } = searchBox(10.7431);
-  assert.ok(distanceMeters(10.7431, 121.9394, 10.7431 + latitudeDelta, 121.9394) >= 99.999);
-  assert.ok(distanceMeters(10.7431, 121.9394, 10.7431, 121.9394 + longitudeDelta) >= 99.999);
+  assert.ok(distanceMeters(10.7431, 121.9394, 10.7431 + latitudeDelta, 121.9394) >= 49.999);
+  assert.ok(distanceMeters(10.7431, 121.9394, 10.7431, 121.9394 + longitudeDelta) >= 49.999);
 });
 
 test("shared incident stages follow the BFP response", () => {
@@ -49,7 +49,7 @@ test("new reports near an open incident are linked instead of raising a second a
   assert.match(migration, /link_duplicate_fire_reports/);
 });
 
-test("the open-incident search finds only open, recent, unlinked reports within 100 meters", async () => {
+test("the open-incident search finds only open, recent, unlinked reports within 50 meters", async () => {
   const { PGlite } = await import("@electric-sql/pglite");
   const { findOpenIncidentNear } = await import("../lib/fire-reports/duplicates.ts");
   const db = new PGlite();
@@ -74,7 +74,7 @@ test("the open-incident search finds only open, recent, unlinked reports within 
        values ($1, $2, $3, $4, now() - ($5::text || ' hours')::interval)`,
       [reference, status, latitude, longitude, hoursAgo],
     );
-    await insert("FAR", "PENDING_VERIFICATION", 10.7441, 121.9394);          // ~111 m away
+    await insert("FAR", "PENDING_VERIFICATION", 10.7437, 121.9394);          // ~67 m away
     await insert("CLOSED", "RESOLVED", 10.7432, 121.9394);                  // ~11 m, but over
     await insert("STALE", "RESPONDING", 10.7432, 121.9395, 13);             // ~15 m, but 13 h old
     assert.equal(await findOpenIncidentNear(client, 10.7431, 121.9394, ['HOUSE_BUILDING']), null);
@@ -94,7 +94,7 @@ test("the open-incident search finds only open, recent, unlinked reports within 
   }
 });
 
-test("another account's report sharing a fire type at 80 meters links to the existing responding incident", async () => {
+test("another account's report sharing a fire type at 40 meters links to the existing responding incident", async () => {
   const { PGlite } = await import('@electric-sql/pglite');
   const { findOpenIncidentNear } = await import('../lib/fire-reports/duplicates.ts');
   const db = new PGlite();
@@ -106,7 +106,7 @@ test("another account's report sharing a fire type at 80 meters links to the exi
     )`);
     const client = { query: (sql, params) => db.query(sql, params) };
     await db.query(`insert into fire_reports (reference_number, resident_profile_id, status, latitude, longitude, fire_type)
-      values ('HOUSE-A', '11111111-1111-4111-8111-111111111111', 'RESPONDING', 10.74382, 121.9394, 'HOUSE_BUILDING')`);
+      values ('HOUSE-A', '11111111-1111-4111-8111-111111111111', 'RESPONDING', 10.74346, 121.9394, 'HOUSE_BUILDING')`);
     const found = await findOpenIncidentNear(client, 10.7431, 121.9394, ['HOUSE_BUILDING']);
     assert.equal(found?.referenceNumber, 'HOUSE-A');
     assert.equal(found?.status, 'RESPONDING');
@@ -121,6 +121,7 @@ test("another account's report sharing a fire type at 80 meters links to the exi
       'the same selections match regardless of order or primary severity type');
     assert.equal((await findOpenIncidentNear(client, 10.7431, 121.9394, ['HOUSE_BUILDING']))?.referenceNumber, 'HOUSE-A');
     assert.equal(await findOpenIncidentNear(client, 10.7431, 121.9394, ['VEHICLE']), null);
+    assert.equal(await findOpenIncidentNear(client, 10.7427, 121.9394, ['HOUSE_BUILDING']), null, 'about 84 m away is another fire');
   } finally {
     await db.close();
   }

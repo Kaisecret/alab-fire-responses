@@ -35,7 +35,7 @@ type Report = {
   severity_factors?: string[] | null;
   history: Array<{ next_status: FireReportStatus; resident_message: string | null; created_at: string }>;
   photos: Array<{ url: string | null }>;
-  /** Present when other residents reported the same fire within 100 m. */
+  /** Present when other residents reported the same fire within 50 m. */
   incident?: SharedIncident | null;
 };
 

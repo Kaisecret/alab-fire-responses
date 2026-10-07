@@ -1,6 +1,7 @@
 import type { PoolClient } from "pg";
 
 import { CLOSED_INCIDENT_STATUSES, DUPLICATE_RADIUS_METERS, searchBox } from "./duplicate-rules.mjs";
+import { addFireTypesToIncident } from "./duplicates.ts";
 import type { FireReportStatus, FireType } from "./types";
 
 export const SAME_DEVICE_WINDOW_SECONDS = 300;
@@ -28,8 +29,7 @@ export async function findSameDeviceIncident(
         and rp.id = fr.resident_profile_id
         and follow.created_at > now() - make_interval(secs => $10::int)
         and coalesce(root.status, fr.status) <> all($5::text[])
-        and coalesce(fr.fire_types, array[fr.fire_type]) @> $6::text[]
-        and coalesce(fr.fire_types, array[fr.fire_type]) <@ $6::text[]
+        and coalesce(fr.fire_types, array[fr.fire_type]) && $6::text[]
         and fr.latitude between $1::float8 - $3::float8 and $1::float8 + $3::float8
         and fr.longitude between $2::float8 - $4::float8 and $2::float8 + $4::float8
         and 6371000 * 2 * asin(sqrt(
@@ -53,7 +53,10 @@ export async function recordResidentIncidentFollow(client: QueryClient, userId: 
   );
 }
 
-/** Grants read-only status access; no fire report, photos, or BFP alarm are created. */
+/**
+ * Grants read-only status access; no fire report, photos, or BFP alarm are
+ * created. A fire type the incident does not list yet is added to it.
+ */
 export async function followSameDeviceIncident(
   client: QueryClient, userId: string, deviceId: string | null | undefined,
   latitude: number, longitude: number, fireTypes: FireType[],
@@ -62,5 +65,6 @@ export async function followSameDeviceIncident(
   const incident = await findSameDeviceIncident(client, userId, deviceId, latitude, longitude, fireTypes);
   if (!incident) return null;
   await recordResidentIncidentFollow(client, userId, incident.id, deviceId);
+  await addFireTypesToIncident(client, incident.id, fireTypes);
   return { ...incident, sameDeviceDuplicate: true as const, existing: true as const };
 }

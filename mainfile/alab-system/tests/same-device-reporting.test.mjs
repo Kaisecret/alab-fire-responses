@@ -42,10 +42,10 @@ async function databaseFixture() {
       structure_material text, reported_house_density text, house_density text, route_accessibility text,
       weather_temperature float8, weather_humidity float8, weather_wind_speed float8,
       weather_wind_direction float8, weather_wind_condition text, calculated_severity text,
-      severity_score float8, severity_factors text[], detected_building_density text,
+      severity_score float8, severity_factors jsonb, detected_building_density text,
       building_density_confidence text, building_density_building_count integer,
       building_density_minimum_gap_meters float8, building_density_source text,
-      building_density_assessed_at timestamptz
+      building_density_assessed_at timestamptz, updated_at timestamptz
     );
     create table fire_report_photos (fire_report_id uuid, storage_key text, uploaded_at timestamptz);
     create table fire_report_status_history (fire_report_id uuid, next_status text, resident_message text, created_at timestamptz);
@@ -54,7 +54,7 @@ async function databaseFixture() {
   await db.query('insert into users values ($1, null), ($2, null)', [accountA, accountB]);
   await db.query('insert into resident_profiles values ($1, $2, null, null), ($3, $4, null, null)', [profileA, accountA, profileB, accountB]);
   await db.query(`insert into fire_reports (id, reference_number, resident_profile_id, status, fire_type, latitude, longitude)
-    values ($1, 'HOUSE-PRIMARY', $2, 'RESPONDING', 'HOUSE_BUILDING', 10.74382, 121.9394)`, [reportId, profileA]);
+    values ($1, 'HOUSE-PRIMARY', $2, 'RESPONDING', 'HOUSE_BUILDING', 10.74346, 121.9394)`, [reportId, profileA]);
   await db.query('insert into resident_fire_report_follows (fire_report_id, resident_profile_id, reporting_device_id) values ($1, $2, $3)', [reportId, profileA, deviceId]);
   await db.query(`insert into fire_report_status_history values ($1, 'RESPONDING', 'BFP is responding.', now())`, [reportId]);
   const client = { query: (sql, params) => /pg_advisory_xact_lock/.test(sql) ? Promise.resolve({ rows: [] }) : db.query(sql, params) };
@@ -109,6 +109,17 @@ test('same phone and same recent fire creates only a follower link for the secon
     assert.equal((await db.query('select count(*)::int as count from resident_fire_report_follows where resident_profile_id = $1', [profileB])).rows[0].count, 1);
     await sharing.followSameDeviceIncident(client, accountB, deviceId, 10.7431, 121.9394, ['HOUSE_BUILDING']);
     assert.equal((await db.query('select count(*)::int as count from resident_fire_report_follows where resident_profile_id = $1', [profileB])).rows[0].count, 1, 'retries are idempotent');
+  } finally { await db.close(); }
+});
+
+test('same phone reporting the fire with an added type follows it and adds the type to the incident', async () => {
+  const sharing = await moduleFor('../lib/fire-reports/device-sharing.ts');
+  const { db, client } = await databaseFixture();
+  try {
+    const result = await sharing.followSameDeviceIncident(client, accountB, deviceId, 10.7431, 121.9394, ['HOUSE_BUILDING', 'VEHICLE']);
+    assert.equal(result?.id, reportId);
+    assert.equal((await db.query('select count(*)::int as count from fire_reports')).rows[0].count, 1);
+    assert.deepEqual((await db.query('select fire_types from fire_reports')).rows[0].fire_types, ['HOUSE_BUILDING', 'VEHICLE']);
   } finally { await db.close(); }
 });
 

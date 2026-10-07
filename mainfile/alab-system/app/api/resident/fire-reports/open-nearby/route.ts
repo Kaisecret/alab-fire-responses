@@ -8,8 +8,10 @@ import { validateFireReportInput } from "../../../../../lib/fire-reports/validat
 export const runtime = "nodejs";
 
 /**
- * The resident's own open report with the same fire types within 100 m, so the report form
- * can open it instead of sending the same fire twice.
+ * The resident's own open report within 50 m, so the report form can open it
+ * instead of sending the same fire twice. When the resident now also sees a
+ * fire type the incident does not list, the form submits instead, and the
+ * submission adds that type to the incident.
  */
 export async function GET(request: NextRequest) {
   const session = verifyResidentSession(request.cookies.get(RESIDENT_SESSION_COOKIE)?.value);
@@ -27,7 +29,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "A valid location and fire type are required." }, { status: 400 });
   }
   try {
-    const report = await findOwnOpenReportNear(getDatabase(), session.userId, input.latitude, input.longitude, input.fireTypes);
+    const found = await findOwnOpenReportNear(getDatabase(), session.userId, input.latitude, input.longitude, input.fireTypes);
+    const report = found && input.fireTypes.every((type) => found.incidentFireTypes.includes(type))
+      ? { id: found.id, referenceNumber: found.referenceNumber }
+      : null;
     return NextResponse.json({ report }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Own open report lookup failed", error);

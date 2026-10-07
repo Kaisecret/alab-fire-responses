@@ -124,7 +124,7 @@ test('same-phone submission returns the popup and existing status without saving
     ]);
     const client = { query: (sql, params) => db.query(sql, params) };
     const route = loadRoute('../app/api/resident/fire-reports/route.ts', {
-      'auth/session': sessions, db: { getDatabase: () => client }, 'fire-reports/duplicates': duplicates,
+      'auth/session': sessions, db: { getDatabase: () => client, withTransaction: (work) => work(client) }, 'fire-reports/duplicates': duplicates,
       'fire-reports/service': { createResidentFireReport: async () => { newReportCount += 1; throw new Error('must not save another fire report'); } },
       'media/watermark': {}, 'fire-reports/submission-audit': audit, 'fire-reports/validation': validation,
       'supabase/server-storage': { uploadFireReportPhoto: async () => { photoCount += 1; } },
@@ -167,8 +167,8 @@ test('submission forwards all fire types and returns 429 when the transaction fi
   let successfulRecordCount = 0;
   const route = loadRoute('../app/api/resident/fire-reports/route.ts', {
     'auth/session': sessions,
-    db: { getDatabase: () => ({}) },
-    'fire-reports/duplicates': { findOwnOpenReportNear: async (_client, _user, _lat, _lon, fireTypes) => {
+    db: { getDatabase: () => ({}), withTransaction: (work) => work({}) },
+    'fire-reports/duplicates': { joinOwnOpenReport: async (_client, _user, _lat, _lon, fireTypes) => {
       submittedTypes = fireTypes;
       return null;
     } },
@@ -212,4 +212,21 @@ test('the nearby-report API rejects missing or invalid types and preserves valid
   assert.equal(response.status, 200);
   assert.deepEqual(lookedUpTypes, ['GRASS', 'HOUSE_BUILDING']);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
+});
+
+test('the report form submits instead of opening the own report when a new fire type is selected', async () => {
+  const route = loadRoute('../app/api/resident/fire-reports/open-nearby/route.ts', {
+    'auth/session': sessions,
+    db: { getDatabase: () => ({}) },
+    'fire-reports/validation': validation,
+    'fire-reports/duplicates': { findOwnOpenReportNear: async () => ({
+      id: 'r1', referenceNumber: 'HOUSE-1', incidentId: 'r1', incidentFireTypes: ['HOUSE_BUILDING'],
+    }) },
+  });
+  const query = '/api/resident/fire-reports/open-nearby?latitude=10.7431&longitude=121.9394&municipality=Hamtic&barangay=Mapatag';
+  const account = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const same = await (await route.GET(requestFor(`${query}&fireTypes=HOUSE_BUILDING`, account))).json();
+  assert.deepEqual(same.report, { id: 'r1', referenceNumber: 'HOUSE-1' });
+  const added = await (await route.GET(requestFor(`${query}&fireTypes=HOUSE_BUILDING&fireTypes=GRASS`, account))).json();
+  assert.equal(added.report, null, 'the submission adds grass to the incident');
 });

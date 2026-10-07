@@ -18,7 +18,7 @@ import {
 import { fetchLiveWeather } from "../weather/service";
 import { assessBuildingDensity } from "./building-density";
 import { assessMultiTypeDanger } from "./danger-assessment";
-import { addFireTypesToIncident, findOpenIncidentNear, findOwnOpenReportNear } from "./duplicates";
+import { addFireTypesToIncident, findOpenIncidentNear, joinOwnOpenReport } from "./duplicates";
 import { rescoreStoredReport, STORED_DANGER_COLUMNS, storedFireTypes, type StoredDangerRow } from "./stored-danger";
 import { checkResidentSosRateLimit, SosRateLimitError } from "./rate-limiter";
 import { followSameDeviceIncident, recordResidentIncidentFollow } from "./device-sharing";
@@ -46,7 +46,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
     if (audit.deviceId) {
       await client.query("select pg_advisory_xact_lock(hashtext($1))", [`fire-report-device:${audit.deviceId}`]);
     }
-    const ownReport = await findOwnOpenReportNear(client, userId, input.latitude, input.longitude, input.fireTypes);
+    const ownReport = await joinOwnOpenReport(client, userId, input.latitude, input.longitude, input.fireTypes);
     if (ownReport) return { id: ownReport.id, referenceNumber: ownReport.referenceNumber, existing: true as const };
     const sameDeviceIncident = await followSameDeviceIncident(client, userId, audit.deviceId, input.latitude, input.longitude, input.fireTypes);
     if (sameDeviceIncident) return sameDeviceIncident;
@@ -108,7 +108,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
     const reference = referenceNumber();
     const now = new Date();
 
-    // A second report within 100 m that shares a fire type joins that incident
+    // A second report within 50 m that shares a fire type joins that incident
     // instead of raising another alarm. The lock makes simultaneous reports in one
     // municipality take turns, so they cannot both become the first report.
     await client.query("select pg_advisory_xact_lock(hashtext($1))", [`fire-report-area:${municipalityId}`]);

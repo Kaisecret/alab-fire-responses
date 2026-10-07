@@ -43,7 +43,7 @@ test("a resident reporting the same place again gets their own open report back"
     );
 
     await insert("NEIGHBOUR", theirs, "PENDING_VERIFICATION", 10.7432, 121.9394);
-    await insert("MINE-FAR", mine, "PENDING_VERIFICATION", 10.7441, 121.9394);    // ~111 m away
+    await insert("MINE-FAR", mine, "PENDING_VERIFICATION", 10.7437, 121.9394);    // ~67 m away
     await insert("MINE-DONE", mine, "RESOLVED", 10.7432, 121.9394);               // over
     await insert("MINE-OLD", mine, "RESPONDING", 10.7432, 121.9394, 13);          // 13 h old
     assert.equal(await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['HOUSE_BUILDING']), null, "another resident's report is not mine");
@@ -52,12 +52,17 @@ test("a resident reporting the same place again gets their own open report back"
     assert.equal((await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['HOUSE_BUILDING']))?.referenceNumber, "MINE-OPEN");
     assert.equal(await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['GRASS']), null,
       'another fire type must not open the resident\'s house report');
+    const sharesType = await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['HOUSE_BUILDING', 'GRASS']);
+    assert.equal(sharesType?.referenceNumber, "MINE-OPEN", 'house + grass is the same fire as the house report');
+    assert.deepEqual(sharesType?.incidentFireTypes, ['HOUSE_BUILDING']);
 
     // A report linked to a neighbour's fire follows that fire's status.
     await db.query("update fire_reports set status = 'RESOLVED' where reference_number = 'MINE-OPEN'");
     const root = (await insert("ROOT", theirs, "RESPONDING", 10.7500, 121.9500)).rows[0].id;
     await insert("MINE-LINKED", mine, "DUPLICATE", 10.7431, 121.9395, 0.05, root);
-    assert.equal((await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['HOUSE_BUILDING']))?.referenceNumber, "MINE-LINKED");
+    const linked = await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['HOUSE_BUILDING']);
+    assert.equal(linked?.referenceNumber, "MINE-LINKED");
+    assert.equal(linked?.incidentId, root, 'new fire types go to the incident BFP works from');
     await db.query("update fire_reports set status = 'RESOLVED' where id = $1", [root]);
     assert.equal(await findOwnOpenReportNear(client, me, 10.7431, 121.9394, ['HOUSE_BUILDING']), null, "the linked fire is over");
   } finally {
@@ -106,10 +111,10 @@ test("one report per account every 5 minutes without blocking other accounts on 
 test("the report form opens the resident's own report instead of sending the same fire twice", () => {
   const route = read("../app/api/resident/fire-reports/route.ts");
   const post = route.slice(route.indexOf('export async function POST'));
-  const ownAt = post.indexOf("findOwnOpenReportNear(");
+  const ownAt = post.indexOf("joinOwnOpenReport(");
   assert.ok(ownAt > 0 && ownAt < post.indexOf("checkResidentSosRateLimit("), "checked before the cooldown");
   assert.match(route, /existing: true/);
-  assert.match(read("../lib/fire-reports/service.ts"), /findOwnOpenReportNear\(client, userId/);
+  assert.match(read("../lib/fire-reports/service.ts"), /joinOwnOpenReport\(client, userId/);
   const page = read("../app/resident/report-fire/page.tsx");
   assert.match(page, /open-nearby/);
   assert.match(page, /already=1/);

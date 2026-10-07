@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { RESIDENT_SESSION_COOKIE, verifyResidentSession } from "../../../../lib/auth/session";
 import { REPORTING_DEVICE_COOKIE, createReportingDeviceToken, reportingDeviceCookieOptions, verifyReportingDeviceToken } from "../../../../lib/auth/reporting-device";
-import { getDatabase } from "../../../../lib/db";
-import { findOwnOpenReportNear } from "../../../../lib/fire-reports/duplicates";
+import { getDatabase, withTransaction } from "../../../../lib/db";
+import { joinOwnOpenReport } from "../../../../lib/fire-reports/duplicates";
 import { findSameDeviceIncident, followSameDeviceIncident, SAME_DEVICE_DUPLICATE_MESSAGE } from "../../../../lib/fire-reports/device-sharing";
 import { attachFireReportPhoto, createResidentFireReport, listResidentReports } from "../../../../lib/fire-reports/service";
 import { watermarkTime } from "../../../../lib/media/watermark";
@@ -97,15 +97,16 @@ export async function POST(request: NextRequest) {
   // Reporting the same place again opens the resident's open report instead
   // of a second alarm, even inside the cooldown.
   try {
-    const ownReport = await findOwnOpenReportNear(getDatabase(), session.userId, input.latitude, input.longitude, input.fireTypes);
-    if (ownReport) return NextResponse.json({ report: ownReport, existing: true });
+    const ownReport = await withTransaction((client) => joinOwnOpenReport(client, session.userId, input.latitude, input.longitude, input.fireTypes));
+    if (ownReport) return NextResponse.json({ report: { id: ownReport.id, referenceNumber: ownReport.referenceNumber }, existing: true });
   } catch (error) {
     console.warn("Own report lookup failed; continuing with a new report", error);
   }
 
   if (submissionAudit.deviceId) {
     try {
-      const incident = await followSameDeviceIncident(getDatabase(), session.userId, submissionAudit.deviceId, input.latitude, input.longitude, input.fireTypes);
+      const deviceId = submissionAudit.deviceId;
+      const incident = await withTransaction((client) => followSameDeviceIncident(client, session.userId, deviceId, input.latitude, input.longitude, input.fireTypes));
       if (incident) return sameDeviceResponse(incident);
     } catch (error) {
       console.warn("Same-phone lookup failed; checking again in the submission transaction", error);
