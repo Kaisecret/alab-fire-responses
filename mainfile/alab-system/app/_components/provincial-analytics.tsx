@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import type { AnalyticsRange, ProvincialAnalytics } from '../../lib/provincial-bfp/analytics';
 import { ProvincialRequestError, requestProvincialJson } from '../../lib/provincial-bfp/client-request';
 import { FireCommandHeader } from './fire-command-header';
-import { Heatmap, HEAT_RAMP, MunicipalityArrivalRows, StageSteps, TrendBars, bucketLabel, formatMinutes } from './provincial-analytics-charts';
+import { DangerDonut, Heatmap, HEAT_RAMP, MunicipalityArrivalRows, StageSteps, TrendBars, bucketLabel, formatMinutes } from './provincial-analytics-charts';
 import styles from './provincial-analytics.module.css';
 
 const RANGES: Array<{ value: AnalyticsRange; label: string; compare: string }> = [
@@ -25,11 +25,21 @@ const FIRE_TYPES: Record<string, { label: string; color: string }> = {
   FOREST: { label: 'Forest', color: 'var(--series-5)' },
 };
 
-const LEVELS: Record<string, { label: string; color: string; icon: string }> = {
-  LOW: { label: 'Low', color: 'var(--good)', icon: 'fa-circle-check' },
-  MODERATE: { label: 'Moderate', color: 'var(--warning)', icon: 'fa-circle-exclamation' },
-  HIGH: { label: 'High', color: 'var(--serious)', icon: 'fa-triangle-exclamation' },
-  CRITICAL: { label: 'Critical', color: 'var(--critical)', icon: 'fa-fire' },
+const LEVELS: Record<string, { label: string; color: string; soft: string; icon: string }> = {
+  LOW: { label: 'Low', color: '#0ca30c', soft: '#E7F6E7', icon: 'fa-circle-check' },
+  MODERATE: { label: 'Moderate', color: '#E0A008', soft: '#FEF6E1', icon: 'fa-circle-exclamation' },
+  HIGH: { label: 'High', color: '#E5703F', soft: '#FDEEE7', icon: 'fa-triangle-exclamation' },
+  CRITICAL: { label: 'Critical', color: '#d03b3b', soft: '#FBE9E9', icon: 'fa-fire' },
+};
+
+/** One icon per Level of Danger criterion from the paper. */
+const CONDITION_ICONS: Record<string, string> = {
+  HOUSE_DENSITY: 'fa-house-chimney',
+  STRUCTURE_MATERIAL: 'fa-cubes-stacked',
+  ROUTE_ACCESS: 'fa-road',
+  WIND: 'fa-wind',
+  WEATHER: 'fa-temperature-high',
+  NEAR_HOUSES: 'fa-house-fire',
 };
 
 const percent = (value: number | null) => (value == null ? '—' : `${Math.round(value * 100)}%`);
@@ -299,30 +309,43 @@ export function ProvincialAnalyticsPage() {
 
             <section className={styles.grid11}>
               <div className={styles.card}>
-                <SectionHead icon="fa-shield-halved" title="Level of Danger" tag="AHP + rules" sub="Danger mix and the conditions that raised the level" />
+                <SectionHead icon="fa-shield-halved" title="Level of Danger" tag="AHP + rules" sub="How dangerous reported fires were, and why" />
                 {noIncidents ? <p className={styles.empty}>No fire incidents in this period.</p> : (
                   <>
-                    <div className={styles.dangerBar} aria-hidden="true">
-                      {data.danger.levels.map((level) => (level.incidents ? <div key={level.level} style={{ flex: level.incidents, background: LEVELS[level.level].color }} /> : null))}
-                    </div>
-                    <div className={styles.levels}>
-                      {data.danger.levels.map((level) => (
-                        <div key={level.level}>
-                          <span><i className={`fa-solid ${LEVELS[level.level].icon}`} style={{ color: LEVELS[level.level].color }} aria-hidden="true" />{LEVELS[level.level].label}</span>
-                          <b>{level.incidents}</b>
-                          <small>{percent(level.incidents / Math.max(headline.incidents, 1))}</small>
+                    {(() => {
+                      const rated = data.danger.levels.reduce((sum, level) => sum + level.incidents, 0);
+                      return (
+                        <div className={styles.dangerTop}>
+                          <DangerDonut total={rated} segments={data.danger.levels.map((level) => ({
+                            key: level.level, label: LEVELS[level.level].label, value: level.incidents, color: LEVELS[level.level].color,
+                          }))} />
+                          <ul className={styles.levelList}>
+                            {data.danger.levels.map((level) => (
+                              <li key={level.level} style={{ '--level': LEVELS[level.level].color, '--level-soft': LEVELS[level.level].soft } as React.CSSProperties}>
+                                <span className={styles.levelIcon} aria-hidden="true"><i className={`fa-solid ${LEVELS[level.level].icon}`} /></span>
+                                <span className={styles.levelName}>{LEVELS[level.level].label}</span>
+                                <b>{level.incidents}</b>
+                                <small>{percent(rated ? level.incidents / rated : null)}</small>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })()}
                     <div className={styles.factors}>
-                      <span className={styles.label}>Conditions in High &amp; critical incidents</span>
+                      <span className={styles.label}>What raised the danger <em>· in {plural(data.danger.highDangerIncidents, 'High or Critical fire')}</em></span>
                       {data.danger.conditions.length === 0
                         ? <p className={styles.empty}>No High or Critical incidents in this period.</p>
                         : data.danger.conditions.map((condition) => (
                           <div key={condition.key} className={styles.factor}>
-                            <span>{condition.label} <em>· {condition.criterion}</em></span>
-                            <b>{percent(condition.share)}</b>
-                            <div className={styles.factorTrack}><div style={{ width: `${condition.share * 100}%` }} /></div>
+                            <span className={styles.factorIcon} aria-hidden="true"><i className={`fa-solid ${CONDITION_ICONS[condition.key] ?? 'fa-circle-info'}`} /></span>
+                            <div>
+                              <div className={styles.factorHead}>
+                                <span>{condition.label} <em>· {condition.criterion}</em></span>
+                                <b>{condition.incidents} of {data.danger.highDangerIncidents}</b>
+                              </div>
+                              <div className={styles.factorTrack}><div style={{ width: `${condition.share * 100}%` }} /></div>
+                            </div>
                           </div>
                         ))}
                     </div>

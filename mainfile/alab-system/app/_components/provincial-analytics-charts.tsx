@@ -201,3 +201,36 @@ export function Heatmap({ cells }: { cells: ProvincialAnalytics['heatmap'] }) {
     </div>
   );
 }
+
+/** Share of incidents per Level of Danger, as a ring with the total in the middle. */
+export function DangerDonut({ total, segments }: {
+  total: number; segments: Array<{ key: string; label: string; value: number; color: string }>;
+}) {
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const gap = segments.filter((segment) => segment.value > 0).length > 1 ? 3 : 0;
+  let offset = 0;
+  return (
+    <div className={styles.donut}>
+      <svg viewBox="0 0 140 140" role="img" aria-label={segments.map((segment) => `${segment.label}: ${segment.value}`).join(', ')}>
+        <circle cx="70" cy="70" r={radius} fill="none" stroke="#F1F5F9" strokeWidth="16" />
+        {total > 0 && segments.map((segment) => {
+          const length = (segment.value / total) * circumference;
+          const dash = Math.max(0, length - gap);
+          const arc = (
+            <circle key={segment.key} cx="70" cy="70" r={radius} fill="none" stroke={segment.color} strokeWidth="16"
+              strokeDasharray={`${dash} ${circumference - dash}`} strokeDashoffset={-offset} transform="rotate(-90 70 70)">
+              <title>{`${segment.label}: ${segment.value}`}</title>
+            </circle>
+          );
+          offset += length;
+          return segment.value > 0 ? arc : null;
+        })}
+      </svg>
+      <div className={styles.donutCenter}>
+        <b>{total}</b>
+        <small>{total === 1 ? 'incident' : 'incidents'}</small>
+      </div>
+    </div>
+  );
+}

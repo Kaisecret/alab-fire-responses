@@ -100,19 +100,6 @@
 .page .scale div { display: flex; gap: 2px; }
 .page .scale i { width: 22px; height: 10px; border-radius: 3px; display: block; }
 
-.page .dangerBar { display: flex; height: 40px; gap: 2px; margin-top: 1rem; }
-.page .dangerBar div { border-radius: 4px; }
-.page .levels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; margin-top: .75rem; }
-.page .levels div { border: 1px solid var(--border); border-radius: 12px; padding: .6rem .7rem; }
-.page .levels span { display: flex; align-items: center; gap: .35rem; font-size: .72rem; font-weight: 800; color: var(--ink-2); }
-.page .levels b { display: block; font-size: 1.15rem; font-weight: 800; margin-top: .2rem; }
-.page .levels small { font-size: .7rem; color: var(--muted); font-weight: 600; }
-.page .factors { display: flex; flex-direction: column; gap: .7rem; margin-top: .85rem; }
-.page .factor { display: grid; grid-template-columns: minmax(0, 1fr) 2.75rem; gap: .35rem .6rem; font-size: .78rem; font-weight: 700; color: var(--ink-2); }
-.page .factor em { font-style: normal; color: var(--muted); font-weight: 600; }
-.page .factor b { text-align: right; color: var(--ink); }
-.page .factorTrack { grid-column: 1 / -1; height: 8px; background: var(--soft); border-radius: 4px; }
-.page .factorTrack div { height: 8px; border-radius: 4px; background: var(--critical); }
 
 .page .bars { display: flex; flex-direction: column; gap: .6rem; margin-top: .85rem; }
 .page .bar { display: grid; grid-template-columns: 7rem minmax(0, 1fr) 2.5rem; align-items: center; gap: .6rem; font-size: .78rem; font-weight: 700; color: var(--ink-2); }
@@ -147,7 +134,6 @@
 @media (max-width: 640px) {
   .page.page { padding: 1rem 1rem 2rem; }
   .page .kpis { grid-template-columns: minmax(0, 1fr); }
-  .page .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .page .muniRow { grid-template-columns: 6.5rem minmax(0, 1fr) 4rem; }
   .page .heat { grid-template-columns: 1.8rem repeat(24, minmax(0, 1fr)); gap: 2px; }
   .page .table { display: block; overflow-x: auto; }
@@ -188,5 +174,34 @@
 .page .arrivalTrack { height: 10px; border-radius: 5px; background: var(--soft); }
 .page .arrivalTrack div { height: 10px; border-radius: 5px; background: var(--series-1); }
 
+.page .dangerTop { display: grid; grid-template-columns: 8.75rem minmax(0, 1fr); gap: 1.1rem; align-items: center; }
+.page .donut { position: relative; width: 8.75rem; height: 8.75rem; }
+.page .donut svg { display: block; width: 100%; height: 100%; }
+.page .donutCenter { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.page .donutCenter b { font-size: 1.7rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+.page .donutCenter small { margin-top: .2rem; font-size: .66rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.page .levelList { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+.page .levelList li { position: relative; overflow: hidden; display: grid; grid-template-columns: 2.1rem minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: .6rem; align-items: center; padding: .55rem .7rem .55rem .8rem; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+.page .levelList li::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--level); }
+.page .levelIcon { grid-row: 1 / span 2; width: 2.1rem; height: 2.1rem; border-radius: 10px; display: grid; place-items: center; background: var(--level-soft); color: var(--level); font-size: .85rem; }
+.page .levelName { font-size: .72rem; font-weight: 700; color: var(--muted); }
+.page .levelList b { grid-column: 2; font-size: 1.2rem; font-weight: 800; line-height: 1.1; color: var(--ink); }
+.page .levelList small { grid-column: 3; grid-row: 1 / span 2; font-size: .78rem; font-weight: 800; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.page .factors { display: flex; flex-direction: column; gap: .7rem; margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--soft); }
+.page .factors .label em { font-style: normal; text-transform: none; letter-spacing: 0; font-weight: 600; }
+.page .factor { display: grid; grid-template-columns: 2.1rem minmax(0, 1fr); gap: .65rem; align-items: center; }
+.page .factorIcon { width: 2.1rem; height: 2.1rem; border-radius: 10px; display: grid; place-items: center; background: #FEF2F2; color: var(--critical); font-size: .8rem; }
+.page .factorHead { display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; font-size: .78rem; font-weight: 700; color: var(--ink-2); }
+.page .factorHead em { font-style: normal; font-weight: 600; color: var(--muted); }
+.page .factorHead b { flex: none; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.page .factorTrack { height: 6px; margin-top: .35rem; border-radius: 3px; background: var(--soft); }
+.page .factorTrack div { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #F87171, #D03B3B); }
+
 /* The section header already separates the content, so the first block under it starts flush. */
 .page .head + * { margin-top: 0; }
+
+/* Narrow screens: after the base rules above, so these win. */
+@media (max-width: 640px) {
+  .page .dangerTop { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  .page .levelList { width: 100%; }
+}
