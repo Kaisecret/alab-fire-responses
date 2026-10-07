@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import type { AnalyticsRange, ProvincialAnalytics } from '../../lib/provincial-bfp/analytics';
 import { ProvincialRequestError, requestProvincialJson } from '../../lib/provincial-bfp/client-request';
 import { FireCommandHeader } from './fire-command-header';
-import { Heatmap, HEAT_RAMP, MunicipalityStageRows, Sparkline, StageBar, TrendBars, bucketLabel, formatMinutes } from './provincial-analytics-charts';
+import { Heatmap, HEAT_RAMP, MunicipalityArrivalRows, StageSteps, TrendBars, bucketLabel, formatMinutes } from './provincial-analytics-charts';
 import styles from './provincial-analytics.module.css';
 
 const RANGES: Array<{ value: AnalyticsRange; label: string; compare: string }> = [
@@ -35,12 +35,35 @@ const LEVELS: Record<string, { label: string; color: string; icon: string }> = {
 const percent = (value: number | null) => (value == null ? '—' : `${Math.round(value * 100)}%`);
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
-/** A change pill. Lower is better for every headline here, so up reads as worse. */
-function Delta({ change, unit, label }: { change: number | null; unit: string; label: string }) {
-  if (change == null) return null;
-  const tone = change === 0 ? styles.same : change < 0 ? styles.better : styles.worse;
-  const arrow = change === 0 ? '=' : change < 0 ? '▼' : '▲';
-  return <span className={`${styles.delta} ${tone}`} title={label}>{arrow} {Math.abs(change)}{unit}</span>;
+/** The incident count compared with the previous period, for the card badge. */
+function incidentChange(current: number, previous: number) {
+  if (current === previous) return 'Same as before';
+  return `${current > previous ? '▲' : '▼'} ${Math.abs(current - previous)} vs before`;
+}
+
+function KpiCard({ tone, icon, badge, badgeTitle, value, unit, label, footer, href }: {
+  tone: 'red' | 'blue' | 'orange' | 'violet'; icon: string; badge: string; badgeTitle?: string;
+  value: React.ReactNode; unit?: string; label: string; footer: string; href?: string;
+}) {
+  const body = (
+    <>
+      <div className={styles.kpiTop}>
+        <span className={styles.kpiChip} aria-hidden="true"><i className={`fa-solid ${icon}`} /></span>
+        <span className={styles.kpiBadge} title={badgeTitle}>{badge}</span>
+      </div>
+      <div className={styles.kpiValue}>{value}{unit && <small>{unit}</small>}</div>
+      <span className={styles.kpiLabel}>{label}</span>
+      <div className={styles.kpiFooter}>
+        <span>{footer}</span>
+        {href && <i className="fa-solid fa-arrow-right" aria-hidden="true" />}
+      </div>
+      <svg className={styles.wave} viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 30 C 40 30, 50 8, 90 14 S 150 34, 200 6" fill="none" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    </>
+  );
+  const className = `${styles.kpi} ${styles[tone]}`;
+  return href ? <Link href={href} className={className}>{body}</Link> : <div className={className}>{body}</div>;
 }
 
 function useAnalytics(range: AnalyticsRange, municipalityId: string) {
@@ -123,6 +146,24 @@ export function ProvincialAnalyticsPage() {
     <>
       <FireCommandHeader slotId="provincial-fire-command-header" title="Provincial Fire Response Intelligence & Analytics" icon="fa-chart-pie" />
       <div className={styles.page}>
+        {data && headline ? (
+          <section className={styles.kpis} aria-label="Headline numbers">
+            <KpiCard tone="red" icon="fa-fire" href="/provincial-bfp/incidents"
+              badge={incidentChange(headline.incidents, headline.previousIncidents)} badgeTitle={`Compared with ${compare}`}
+              value={headline.incidents} label="Fire incidents"
+              footer={`${headline.activeNow} active now · ${headline.pendingVerification} pending`} />
+            <KpiCard tone="blue" icon="fa-stopwatch" badge="Report → arrival"
+              value={headline.medianArrivalMinutes ?? '—'} unit={headline.medianArrivalMinutes != null ? 'min' : undefined}
+              label="Median response time" footer={plural(headline.arrivalsMeasured, 'arrival') + ' recorded'} />
+            <KpiCard tone="orange" icon="fa-triangle-exclamation" badge="Level of Danger"
+              value={headline.highDangerShare == null ? '—' : Math.round(headline.highDangerShare * 100)} unit={headline.highDangerShare != null ? '%' : undefined}
+              label="High & critical danger" footer={`${headline.highDangerIncidents} of ${plural(headline.incidents, 'incident')}`} />
+            <KpiCard tone="violet" icon="fa-ban" badge="Verification"
+              value={headline.falseReportShare == null ? '—' : Math.round(headline.falseReportShare * 100)} unit={headline.falseReportShare != null ? '%' : undefined}
+              label="False or rejected reports" footer={`${headline.falseReports} of ${plural(headline.uniqueReports, 'report')}`} />
+          </section>
+        ) : loading && <div className={styles.kpis}>{[0, 1, 2, 3].map((key) => <div key={key} className={styles.skeleton} />)}</div>}
+
         <div className={styles.filters}>
           <div className={styles.segment} role="group" aria-label="Period">
             {RANGES.map((item) => (
@@ -155,72 +196,19 @@ export function ProvincialAnalyticsPage() {
 
         {!data && loading && (
           <>
-            <div className={styles.kpis}>{[0, 1, 2, 3].map((key) => <div key={key} className={styles.skeleton} />)}</div>
             <div className={styles.grid21}><div className={styles.skeleton} style={{ height: 320 }} /><div className={styles.skeleton} style={{ height: 320 }} /></div>
           </>
         )}
 
         {data && headline && (
           <>
-            <section className={styles.kpis} aria-label="Headline numbers">
-              <div className={`${styles.card} ${styles.kpi}`}>
-                <span className={styles.label}>Fire incidents</span>
-                <div className={styles.value}>{headline.incidents}<small>{headline.incidents === 1 ? 'incident' : 'incidents'}</small></div>
-                <div className={styles.meta}>
-                  <Delta change={headline.incidents - headline.previousIncidents} unit="" label={`Compared with ${compare}`} />
-                  vs {compare}
-                </div>
-                <div className={styles.meta}>{headline.activeNow} active now · {headline.pendingVerification} pending verification</div>
-                <Sparkline values={data.trend.map((point) => point.incidents)} />
-              </div>
-              <div className={`${styles.card} ${styles.kpi}`}>
-                <span className={styles.label}>Median response time</span>
-                <span className={styles.kpiIcon} style={{ background: '#EFF6FF', color: '#2563EB' }} aria-hidden="true"><i className="fa-solid fa-stopwatch" /></span>
-                <div className={styles.value}>{headline.medianArrivalMinutes ?? '—'}{headline.medianArrivalMinutes != null && <small>min</small>}</div>
-                <div className={styles.meta}>
-                  <Delta
-                    change={headline.medianArrivalMinutes != null && headline.previousMedianArrivalMinutes != null
-                      ? Math.round((headline.medianArrivalMinutes - headline.previousMedianArrivalMinutes) * 10) / 10 : null}
-                    unit=" min" label={`Compared with ${compare}`} />
-                  report → responder arrived
-                </div>
-                <div className={styles.meta}>
-                  {headline.arrivalsMeasured
-                    ? `Slowest 10%: ${formatMinutes(headline.slowestTenthArrivalMinutes)} · ${plural(headline.arrivalsMeasured, 'arrival')} recorded`
-                    : 'No responder arrivals recorded yet'}
-                </div>
-              </div>
-              <div className={`${styles.card} ${styles.kpi}`}>
-                <span className={styles.label}>High &amp; critical danger</span>
-                <span className={styles.kpiIcon} style={{ background: '#FEF2F2', color: '#DC2626' }} aria-hidden="true"><i className="fa-solid fa-triangle-exclamation" /></span>
-                <div className={styles.value}>{headline.highDangerShare == null ? '—' : Math.round(headline.highDangerShare * 100)}{headline.highDangerShare != null && <small>%</small>}</div>
-                <div className={styles.meta}>
-                  <Delta change={headline.highDangerChangePoints} unit=" pts" label={`Compared with ${compare}`} />
-                  {headline.highDangerIncidents} of {plural(headline.incidents, 'incident')}
-                </div>
-                <div className={styles.split} style={{ height: 10 }} aria-hidden="true">
-                  {data.danger.levels.map((level) => (level.incidents ? <div key={level.level} style={{ flex: level.incidents, background: LEVELS[level.level].color }} /> : null))}
-                </div>
-              </div>
-              <div className={`${styles.card} ${styles.kpi}`}>
-                <span className={styles.label}>False or rejected reports</span>
-                <span className={styles.kpiIcon} style={{ background: '#F1F5F9', color: '#475569' }} aria-hidden="true"><i className="fa-solid fa-ban" /></span>
-                <div className={styles.value}>{headline.falseReportShare == null ? '—' : Math.round(headline.falseReportShare * 100)}{headline.falseReportShare != null && <small>%</small>}</div>
-                <div className={styles.meta}>
-                  <Delta change={headline.falseReportChangePoints} unit=" pts" label={`Compared with ${compare}`} />
-                  {headline.falseReports} of {plural(headline.uniqueReports, 'report')}
-                </div>
-                <div className={styles.meta}>+ {plural(headline.duplicatesMerged, 'duplicate')} merged into existing incidents</div>
-              </div>
-            </section>
-
             <section className={styles.grid21}>
               <div className={styles.card}>
-                <SectionHead icon="fa-stopwatch" title="Response time by stage" tag="Incident timeline" sub="Median minutes between status changes, from report to resolution" />
+                <SectionHead icon="fa-stopwatch" title="Response time by stage" tag="Incident timeline" sub="Median minutes each step took, from report to resolution" />
                 {data.responseStages.some((stage) => stage.medianMinutes != null)
-                  ? <StageBar stages={data.responseStages} />
+                  ? <StageSteps stages={data.responseStages} />
                   : <p className={styles.empty}>No status changes were recorded for incidents in this period.</p>}
-                <MunicipalityStageRows rows={data.municipalities} />
+                <MunicipalityArrivalRows rows={data.municipalities} />
               </div>
               <div className={styles.card}>
                 <SectionHead icon="fa-chart-column" title="Incident trend" sub={`Fire incidents per ${data.bucket} · hover a ${data.bucket} for details`} />

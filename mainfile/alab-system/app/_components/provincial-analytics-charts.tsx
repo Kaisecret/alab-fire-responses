@@ -5,65 +5,79 @@ import React, { useState } from 'react';
 import type { ProvincialAnalytics } from '../../lib/provincial-bfp/analytics';
 import styles from './provincial-analytics.module.css';
 
-export const STAGE_COLORS = ['var(--stage-1)', 'var(--stage-2)', 'var(--stage-3)', 'var(--stage-4)', 'var(--stage-5)'];
-
 export function formatMinutes(minutes: number | null) {
   if (minutes == null) return '—';
   if (minutes >= 120) return `${Math.round((minutes / 60) * 10) / 10} h`;
   return `${minutes} min`;
 }
 
-/** One bar split into the Incident Timeline stages, sized by median minutes. */
-export function StageBar({ stages }: { stages: ProvincialAnalytics['responseStages'] }) {
-  const total = stages.reduce((sum, stage) => sum + (stage.medianMinutes ?? 0), 0);
+const STEP_NODES = [
+  { label: 'Reported', icon: 'fa-bell' },
+  { label: 'Verified', icon: 'fa-circle-check' },
+  { label: 'Dispatched', icon: 'fa-truck' },
+  { label: 'Arrived', icon: 'fa-location-dot' },
+  { label: 'Under control', icon: 'fa-fire-extinguisher' },
+  { label: 'Resolved', icon: 'fa-flag-checkered' },
+];
+
+/**
+ * The Incident Timeline as steps, with the median minutes each step took
+ * between them. The slowest step is marked so the delay stands out.
+ */
+export function StageSteps({ stages }: { stages: ProvincialAnalytics['responseStages'] }) {
+  const measured = stages.filter((stage) => stage.medianMinutes != null);
+  const slowest = measured.reduce<(typeof stages)[number] | null>(
+    (worst, stage) => (worst == null || (stage.medianMinutes ?? 0) > (worst.medianMinutes ?? 0) ? stage : worst), null);
   return (
     <>
-      <div className={styles.stageBar} role="img" aria-label={stages.map((stage) => `${stage.label}: ${formatMinutes(stage.medianMinutes)}`).join('; ')}>
-        {stages.map((stage, index) => (stage.medianMinutes ? (
-          <div key={stage.key} title={`${stage.label}: ${formatMinutes(stage.medianMinutes)}`}
-            style={{ flex: stage.medianMinutes, background: STAGE_COLORS[index], color: index === 0 ? '#0d366b' : '#fff' }}>
-            {stage.medianMinutes / total > 0.07 ? formatMinutes(stage.medianMinutes) : ''}
-          </div>
-        ) : null))}
-      </div>
-      <div className={styles.stageLegend}>
-        {stages.map((stage, index) => (
-          <div key={stage.key}>
-            <span><i className={styles.swatch} style={{ background: STAGE_COLORS[index] }} />{stage.label}</span>
-            <b>{formatMinutes(stage.medianMinutes)}</b>
-            <small>{stage.incidents} {stage.incidents === 1 ? 'incident' : 'incidents'}</small>
-          </div>
-        ))}
-      </div>
+      <ol className={styles.steps}>
+        {STEP_NODES.map((node, index) => {
+          const reached = index === 0 || stages[index - 1].medianMinutes != null;
+          const next = stages[index];
+          return (
+            <React.Fragment key={node.label}>
+              <li className={styles.step}>
+                <span className={`${styles.stepDot} ${reached ? '' : styles.stepMuted}`} aria-hidden="true"><i className={`fa-solid ${node.icon}`} /></span>
+                <span>{node.label}</span>
+              </li>
+              {next && (
+                <li className={`${styles.stepLink} ${next.medianMinutes == null ? styles.stepMissing : ''}`}
+                  aria-label={`${next.label}: ${next.medianMinutes == null ? 'not recorded' : formatMinutes(next.medianMinutes)}`}>
+                  <span className={`${styles.chip} ${next === slowest && measured.length > 1 ? styles.chipSlow : ''}`}>
+                    {next.medianMinutes == null ? 'No data' : formatMinutes(next.medianMinutes)}
+                  </span>
+                </li>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </ol>
+      {slowest && measured.length > 1 && (
+        <p className={styles.slowNote}>
+          <i className="fa-solid fa-hourglass-half" aria-hidden="true" />
+          <span>Slowest step: <b>{slowest.label}</b> ({formatMinutes(slowest.medianMinutes)} median)</span>
+        </p>
+      )}
     </>
   );
 }
 
-/** Report → arrival per municipality, split into verify, dispatch and travel. */
-export function MunicipalityStageRows({ rows }: { rows: ProvincialAnalytics['municipalities'] }) {
-  const measured = rows.filter((row) => row.medianArrivalMinutes != null);
-  // Stage medians do not add up to the arrival median, so each bar is scaled
-  // by its own stages and the label carries the arrival median.
-  const shownMinutes = (row: (typeof rows)[number]) =>
-    row.stageMinutes.reduce<number>((sum, value) => sum + (value ?? 0), 0) || row.medianArrivalMinutes || 0;
-  const longest = Math.max(1, ...measured.map(shownMinutes));
+/** Median minutes from report to responder arrival, per municipality. */
+export function MunicipalityArrivalRows({ rows }: { rows: ProvincialAnalytics['municipalities'] }) {
+  const measured = rows.filter((row) => row.medianArrivalMinutes != null)
+    .sort((a, b) => (b.medianArrivalMinutes ?? 0) - (a.medianArrivalMinutes ?? 0));
   if (!measured.length) return <p className={styles.empty}>No responder arrivals were recorded in this period.</p>;
+  const longest = Math.max(1, ...measured.map((row) => row.medianArrivalMinutes ?? 0));
   return (
     <div className={styles.muniRows}>
-      <span className={styles.label}>Report → responder arrived, by municipality</span>
-      {measured.slice(0, 8).map((row) => {
-        const parts = row.stageMinutes.map((value) => value ?? 0);
-        const shown = shownMinutes(row);
-        return (
-          <div key={row.id} className={styles.muniRow}>
-            <span title={row.name}>{row.name}</span>
-            <div className={styles.track} style={{ width: `${(shown / longest) * 100}%` }}>
-              {parts.map((value, index) => (value ? <div key={index} style={{ flex: value, background: STAGE_COLORS[index] }} /> : null))}
-            </div>
-            <span className={styles.right}>{formatMinutes(row.medianArrivalMinutes)}</span>
-          </div>
-        );
-      })}
+      <span className={styles.label}>Report → arrival, by municipality</span>
+      {measured.slice(0, 8).map((row) => (
+        <div key={row.id} className={styles.muniRow}>
+          <span title={row.name}>{row.name}</span>
+          <div className={styles.arrivalTrack}><div style={{ width: `${((row.medianArrivalMinutes ?? 0) / longest) * 100}%` }} /></div>
+          <span className={styles.right}>{formatMinutes(row.medianArrivalMinutes)}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -185,19 +199,5 @@ export function Heatmap({ cells }: { cells: ProvincialAnalytics['heatmap'] }) {
         </div>
       )}
     </div>
-  );
-}
-
-/** A small single-series line for a headline card. */
-export function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2 || values.every((value) => value === 0)) return null;
-  const max = Math.max(...values, 1);
-  const points = values.map((value, index) => `${(index / (values.length - 1)) * 92 + 2},${30 - (value / max) * 24}`);
-  const [lastX, lastY] = points[points.length - 1].split(',');
-  return (
-    <svg className={styles.spark} width="96" height="34" viewBox="0 0 96 34" aria-hidden="true">
-      <polyline fill="none" stroke="var(--series-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" points={points.join(' ')} />
-      <circle cx={lastX} cy={lastY} r="3" fill="var(--series-1)" />
-    </svg>
   );
 }
