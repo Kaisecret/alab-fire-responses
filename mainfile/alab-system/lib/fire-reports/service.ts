@@ -22,6 +22,7 @@ import { addFireTypesToIncident, findOpenIncidentNear, findOwnOpenReportNear } f
 import { rescoreStoredReport, STORED_DANGER_COLUMNS, storedFireTypes, type StoredDangerRow } from "./stored-danger";
 import { checkResidentSosRateLimit, SosRateLimitError } from "./rate-limiter";
 import { followSameDeviceIncident, recordResidentIncidentFollow } from "./device-sharing";
+import { locateAntiqueBarangay } from "../locations/barangay-locator";
 
 export type PhotoMetadata = { storageKey: string; originalFileName: string; mimeType: string; fileSizeBytes: number };
 
@@ -51,8 +52,11 @@ export async function createResidentFireReport(userId: string, input: FireReport
     if (sameDeviceIncident) return sameDeviceIncident;
     const rateLimit = await checkResidentSosRateLimit(userId, null, client);
     if (!rateLimit.allowed) throw new SosRateLimitError(rateLimit.retryAfterSeconds);
-    const detectedMunicipality = normalizeDetectedMunicipality(input.municipality);
-    const detectedBarangay = normalizeDetectedBarangay(input.barangay);
+    // The PSA boundary at the pin decides the barangay; the phone's reverse
+    // geocode is only a fallback (OpenStreetMap often names the wrong one).
+    const located = locateAntiqueBarangay(input.latitude, input.longitude);
+    const detectedMunicipality = located?.municipality ?? normalizeDetectedMunicipality(input.municipality);
+    const detectedBarangay = located?.barangay ?? normalizeDetectedBarangay(input.barangay);
     const localities = await client.query<{ municipality_id: string; barangay_id: string | null; barangay_name: string | null }>(
       `select m.id as municipality_id, b.id as barangay_id, b.name as barangay_name
        from municipalities m left join barangays b on b.municipality_id = m.id

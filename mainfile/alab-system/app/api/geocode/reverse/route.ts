@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { locateAntiqueBarangay, type LocatedBarangay } from '../../../../lib/locations/barangay-locator';
+
 const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +49,28 @@ function getNearestAntiqueMunicipality(lat: number, lon: number): string {
   return closest;
 }
 
+// OpenStreetMap's barangay is a guess from the nearest barangay point. The PSA
+// boundary is the real answer, so it replaces every barangay-level field.
+const OSM_AREA_FIELDS = ['village', 'quarter', 'suburb', 'city_district', 'district', 'hamlet', 'neighbourhood', 'residential', 'city'];
+
+function withOfficialBarangay(payload: { address?: Record<string, string>; [key: string]: unknown }, located: LocatedBarangay | null) {
+  if (!located) return payload;
+  const address = { ...(payload.address ?? {}) };
+  for (const field of OSM_AREA_FIELDS) delete address[field];
+  return {
+    ...payload,
+    address: {
+      ...address,
+      village: located.barangay,
+      town: located.municipality,
+      municipality: located.municipality,
+      state: 'Antique',
+      'ISO3166-2-lvl4': 'PH-ANT',
+      country: address.country ?? 'Philippines',
+    },
+  };
+}
+
 type CachedGeocode = {
   payload: Record<string, unknown>;
   timestamp: number;
@@ -74,6 +98,7 @@ export async function GET(request: Request) {
     });
   }
 
+  const located = locateAntiqueBarangay(latitude, longitude);
   const isAntique = latitude >= ANTIQUE_BOUNDS.south
     && latitude <= ANTIQUE_BOUNDS.north
     && longitude >= ANTIQUE_BOUNDS.west
@@ -151,8 +176,9 @@ export async function GET(request: Request) {
       if (geocodeCache.size > MAX_CACHE_SIZE) {
         geocodeCache.clear();
       }
-      geocodeCache.set(cacheKey, { payload, timestamp: now });
-      return NextResponse.json(payload, {
+      const official = withOfficialBarangay(payload, located);
+      geocodeCache.set(cacheKey, { payload: official, timestamp: now });
+      return NextResponse.json(official, {
         headers: { 'Cache-Control': 'public, max-age=1800, stale-while-revalidate=86400' },
       });
     }
@@ -160,9 +186,9 @@ export async function GET(request: Request) {
     clearTimeout(timeoutId);
   }
 
-  if (isAntique) {
-    const nearestMuni = getNearestAntiqueMunicipality(latitude, longitude);
-    const fallbackPayload = {
+  if (isAntique || located) {
+    const nearestMuni = located?.municipality ?? getNearestAntiqueMunicipality(latitude, longitude);
+    const fallbackPayload = withOfficialBarangay({
       name: nearestMuni,
       display_name: `${nearestMuni}, Antique, Philippines`,
       address: {
@@ -172,7 +198,7 @@ export async function GET(request: Request) {
         'ISO3166-2-lvl4': 'PH-ANT',
         country: 'Philippines',
       },
-    };
+    }, located);
     geocodeCache.set(cacheKey, { payload: fallbackPayload, timestamp: now });
     return NextResponse.json(fallbackPayload, {
       headers: { 'Cache-Control': 'public, max-age=1800, stale-while-revalidate=86400' },
