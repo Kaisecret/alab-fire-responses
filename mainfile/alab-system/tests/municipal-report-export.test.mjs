@@ -35,6 +35,17 @@ test("export API route enforces municipal admin actor, blocks preview account in
   assert.match(route, /export async function POST/);
 });
 
+test("the preview block names the preview email, not the real San Jose admin it borrows an id from", () => {
+  // The local preview identity reuses the user id of a real San Jose administrator
+  // account, so blocking that id refused every official export that admin made.
+  const sanJoseAdminId = "afbc9f03-312c-4208-a15c-05f87a3ad6fe";
+  for (const path of ["app/api/municipal-bfp/reports/export/route.ts", "lib/municipal-bfp/reports/exports.ts"]) {
+    const guard = source(path);
+    assert.match(guard, /preview@municipal-bfp\.local/, `${path} still refuses the preview identity`);
+    assert.ok(!guard.includes(sanJoseAdminId), `${path} must not refuse the real San Jose administrator`);
+  }
+});
+
 test("export modal component supports datasets, scopes, preview, and download state", () => {
   const modal = source("app/_components/municipal-report-export-dialog.tsx");
 

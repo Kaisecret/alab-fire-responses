@@ -95,7 +95,8 @@ export async function exportMunicipalDataset(
     throw new Error("PASSWORD_CHANGE_REQUIRED: You must update your password before exporting official records.");
   }
 
-  if (actor.accountStatus !== "ACTIVE" || !actor.municipalityId || actor.email === "preview@municipal-bfp.local" || actor.userId === "afbc9f03-312c-4208-a15c-05f87a3ad6fe") {
+  // The preview identity is known by its email: its user id is a real San Jose administrator's.
+  if (actor.accountStatus !== "ACTIVE" || !actor.municipalityId || actor.email === "preview@municipal-bfp.local") {
     throw new Error("UNAUTHORIZED: An active assigned account is required.");
   }
   if (!["CSV", "PDF", "XLSX"].includes(options.format)) {

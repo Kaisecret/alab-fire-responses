@@ -47,11 +47,9 @@ async function handleExport(
     return admin;
   }
 
-  // Reject preview synthetic identity in production export operations
-  if (
-    admin.email === "preview@municipal-bfp.local" ||
-    admin.userId === "afbc9f03-312c-4208-a15c-05f87a3ad6fe"
-  ) {
+  // Reject the local preview identity. It is known by its email alone: its user
+  // id belongs to a real San Jose administrator, who must be able to export.
+  if (admin.email === "preview@municipal-bfp.local") {
     return NextResponse.json(
       {
         error:
