@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FeatureCollection } from "geojson";
-import type { Map as LeafletMap, LayerGroup, LatLngBounds } from "leaflet";
+import type { Map as LeafletMap, LayerGroup } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { ProvincialIncidentSummary } from "../../lib/intermunicipality/provincial";
 import { groupAntiqueDashboardIncidents, isPointInAntique } from "../../lib/provincial-bfp/dashboard-map";
@@ -20,7 +20,6 @@ export function ProvincialDashboardIncidentMap({ incidents, loading, error }: Pr
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const layerRef = useRef<LayerGroup | null>(null);
-  const boundsRef = useRef<LatLngBounds | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const focusedIncidentsRef = useRef(false);
   const [boundary, setBoundary] = useState<FeatureCollection | null>(null);
@@ -57,7 +56,6 @@ export function ProvincialDashboardIncidentMap({ incidents, loading, error }: Pr
         map = L.map(container, { scrollWheelZoom: false, zoomSnap: 0.1, maxBounds: bounds.pad(0.06), maxBoundsViscosity: 1 });
         mapRef.current = map;
         leafletRef.current = L;
-        boundsRef.current = bounds;
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
           maxZoom: 19,
@@ -155,10 +153,7 @@ export function ProvincialDashboardIncidentMap({ incidents, loading, error }: Pr
         <div className={styles.toolbar}>
           <span className={styles.scope}><span />Antique only</span>
           <div className={styles.actions}>
-            <button type="button" disabled={!ready} onClick={() => {
-              focusedIncidentsRef.current = true;
-              if (boundsRef.current) mapRef.current?.stop().fitBounds(boundsRef.current, { padding: [18, 18], animate: false });
-            }}><i className="fa-solid fa-expand" aria-hidden="true" />Show all Antique</button>
+            <Link href="/provincial-bfp/gis-map"><i className="fa-solid fa-map-location-dot" aria-hidden="true" />GIS</Link>
           </div>
         </div>
       </header>
