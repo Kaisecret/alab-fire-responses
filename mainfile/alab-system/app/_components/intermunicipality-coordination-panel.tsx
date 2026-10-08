@@ -3,7 +3,89 @@
 import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
 
 import React, { useState } from "react";
-import type { AssistanceRequestSummary, NearbyObserver } from "../../lib/intermunicipality/types";
+import type { AssistanceRequestSummary, AssistanceStatus, NearbyObserver } from "../../lib/intermunicipality/types";
+
+type Tone = "coming" | "partial" | "waiting" | "declined" | "muted" | "seen" | "unseen";
+type RowState = { label: string; tone: Tone; icon: string; pulse?: boolean };
+
+/** A request's answer, in the same words the alarm board above uses. */
+const REQUEST_STATE: Record<AssistanceStatus, RowState> = {
+  REQUESTED: { label: "Waiting on them", tone: "waiting", icon: "fa-hourglass-half", pulse: true },
+  ACCEPTED: { label: "Coming", tone: "coming", icon: "fa-check" },
+  PARTIALLY_ACCEPTED: { label: "Sending what they can", tone: "partial", icon: "fa-check" },
+  REJECTED: { label: "Cannot come", tone: "declined", icon: "fa-xmark" },
+  CANCELLED: { label: "Cancelled", tone: "muted", icon: "fa-ban" },
+  COMPLETED: { label: "Returned", tone: "muted", icon: "fa-flag-checkered" },
+};
+
+/** A neighbour with no request yet is only being kept informed. */
+const MONITORING_STATE: Record<NearbyObserver["monitoringState"], RowState> = {
+  BACKUP_REQUESTED: { label: "Backup requested", tone: "waiting", icon: "fa-bullhorn", pulse: true },
+  SEEN: { label: "Seen", tone: "seen", icon: "fa-eye" },
+  WAITING: { label: "Not seen yet", tone: "unseen", icon: "fa-satellite-dish", pulse: true },
+};
+
+type NeighbourRow = {
+  key: string;
+  municipalityName: string;
+  observer: NearbyObserver | null;
+  request: AssistanceRequestSummary | null;
+};
+
+/**
+ * One row per neighbouring station, carrying its latest request. Showing the
+ * station and its request apart let a station read "Backup requested" after it
+ * had already answered "Coming".
+ */
+function neighbourRows(observers: NearbyObserver[], requests: AssistanceRequestSummary[]): NeighbourRow[] {
+  const latest = new Map<string, AssistanceRequestSummary>();
+  for (const request of requests) {
+    const current = latest.get(request.recipientMunicipalityId);
+    if (!current || Date.parse(request.requestedAt) > Date.parse(current.requestedAt)) {
+      latest.set(request.recipientMunicipalityId, request);
+    }
+  }
+  const rows: NeighbourRow[] = observers.map((observer) => ({
+    key: observer.observerId,
+    municipalityName: observer.municipalityName,
+    observer,
+    request: latest.get(observer.municipalityId) ?? null,
+  }));
+  const observed = new Set(observers.map((observer) => observer.municipalityId));
+  for (const [municipalityId, request] of latest) {
+    if (!observed.has(municipalityId)) {
+      rows.push({ key: request.id, municipalityName: request.recipientMunicipalityName, observer: null, request });
+    }
+  }
+  return rows;
+}
+
+function rowState(row: NeighbourRow): RowState {
+  if (row.request) return REQUEST_STATE[row.request.status] ?? REQUEST_STATE.REQUESTED;
+  return MONITORING_STATE[row.observer?.monitoringState ?? "WAITING"] ?? MONITORING_STATE.WAITING;
+}
+
+function units(firetrucks: number | null, personnel: number | null): string {
+  const parts: string[] = [];
+  if (firetrucks) parts.push(`${firetrucks} truck${firetrucks === 1 ? "" : "s"}`);
+  if (personnel) parts.push(`${personnel} personnel`);
+  return parts.join(" + ") || "no units";
+}
+
+/** Station names are stored as "<station> · Head: <rank name>". */
+function stationParts(stationName: string | null | undefined) {
+  const [station = "", head = ""] = (stationName ?? "").split(" · Head: ");
+  const name = station.trim();
+  // Some stations were typed in capitals; read them like the others.
+  const readable = name.length > 3 && name === name.toUpperCase()
+    ? name.toLowerCase().replace(/(^|\s)(\S)/g, (_, space: string, letter: string) => space + letter.toUpperCase())
+    : name;
+  return { station: readable || null, head: head.trim() || null };
+}
+
+function clockTime(value: string) {
+  return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 
 interface Props {
   incidentId: string;
@@ -53,6 +135,7 @@ export function IntermunicipalityCoordinationPanel({
   const [responseNote, setResponseNote] = useState("");
 
   const isOrigin = accessScope === "ORIGIN";
+  const neighbours = isOrigin ? neighbourRows(observers, assistanceRequests) : [];
   const myObserver = observers[0]; // For observer, only 1 is scoped
 
   // Find active assistance request for observer
@@ -386,11 +469,145 @@ export function IntermunicipalityCoordinationPanel({
           margin-top: 0.15rem;
           line-height: 1.4;
         }
-        .mbfp-coord-grid {
+        .mbfp-coord-list {
+          list-style: none;
+          margin: 0.35rem 0 0;
+          padding: 0;
+        }
+        .mbfp-coord-row {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 12px;
-          margin-top: 0.85rem;
+          grid-template-columns: 34px minmax(0, 1fr) auto;
+          gap: 0.85rem;
+          align-items: start;
+          padding: 0.9rem 0.25rem;
+          border-top: 1px solid #F1F5F9;
+        }
+        .mbfp-coord-row:first-child { border-top: none; }
+        .mbfp-coord-mark {
+          display: grid;
+          place-items: center;
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+          font-size: 0.8rem;
+        }
+        .mbfp-coord-who { min-width: 0; }
+        .mbfp-coord-name-line {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .mbfp-coord-muni-name {
+          font-size: 0.92rem;
+          font-weight: 800;
+          color: #0F172A;
+          margin: 0;
+          letter-spacing: -0.01em;
+        }
+        .mbfp-coord-chip {
+          font-size: 0.66rem;
+          font-weight: 800;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+          color: #9A3412;
+          background: #FFF7ED;
+          border: 1px solid #FED7AA;
+          border-radius: 6px;
+          padding: 0.1rem 0.4rem;
+        }
+        .mbfp-coord-station {
+          margin: 0.15rem 0 0;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: #334155;
+          overflow-wrap: anywhere;
+        }
+        .mbfp-coord-station span { color: #64748B; font-weight: 500; }
+        .mbfp-coord-facts {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem 0.9rem;
+          margin: 0.35rem 0 0;
+          font-size: 0.74rem;
+          color: #64748B;
+        }
+        .mbfp-coord-facts span { display: inline-flex; align-items: center; gap: 0.35rem; }
+        .mbfp-coord-facts i { font-size: 0.7rem; color: #94A3B8; }
+        .mbfp-coord-facts strong { color: #334155; font-weight: 700; }
+        .mbfp-coord-ask {
+          margin: 0.45rem 0 0;
+          font-size: 0.78rem;
+          color: #475569;
+        }
+        .mbfp-coord-ask strong { color: #0F172A; font-weight: 750; }
+        .mbfp-coord-note {
+          margin: 0.4rem 0 0;
+          padding: 0.4rem 0.65rem;
+          background: #F8FAFC;
+          border: 1px solid #EEF2F6;
+          border-radius: 8px;
+          font-size: 0.76rem;
+          color: #475569;
+          font-style: italic;
+          max-width: 62ch;
+        }
+        .mbfp-coord-side {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 0.45rem;
+        }
+        .mbfp-coord-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.28rem 0.7rem;
+          border-radius: 999px;
+          font-size: 0.74rem;
+          font-weight: 800;
+          white-space: nowrap;
+          border: 1px solid transparent;
+        }
+        .mbfp-coord-mark.coming { background: #DCFCE7; color: #15803D; }
+        .mbfp-coord-pill.coming { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
+        .mbfp-coord-mark.partial { background: #E0F2FE; color: #0369A1; }
+        .mbfp-coord-pill.partial { background: #F0F9FF; color: #0369A1; border-color: #BAE6FD; }
+        .mbfp-coord-mark.waiting { background: #FEF3C7; color: #B45309; }
+        .mbfp-coord-pill.waiting { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
+        .mbfp-coord-mark.declined { background: #FEE2E2; color: #B91C1C; }
+        .mbfp-coord-pill.declined { background: #FEF2F2; color: #B91C1C; border-color: #FECACA; }
+        .mbfp-coord-mark.muted { background: #F1F5F9; color: #64748B; }
+        .mbfp-coord-pill.muted { background: #F8FAFC; color: #475569; border-color: #E2E8F0; }
+        .mbfp-coord-mark.seen { background: #DBEAFE; color: #1D4ED8; }
+        .mbfp-coord-pill.seen { background: #EFF6FF; color: #1D4ED8; border-color: #BFDBFE; }
+        .mbfp-coord-mark.unseen { background: #F1F5F9; color: #475569; }
+        .mbfp-coord-pill.unseen { background: #F8FAFC; color: #475569; border-color: #CBD5E1; }
+        .mbfp-coord-cancel {
+          background: #FFFFFF;
+          border: 1px solid #FECACA;
+          color: #BE123C;
+          border-radius: 8px;
+          padding: 0.3rem 0.7rem;
+          font-size: 0.74rem;
+          font-weight: 750;
+          font-family: inherit;
+          cursor: pointer;
+          transition: background 0.18s ease, border-color 0.18s ease;
+        }
+        .mbfp-coord-cancel:hover:not(:disabled) { background: #FEF2F2; border-color: #FDA4AF; }
+        .mbfp-coord-cancel:disabled { opacity: 0.55; cursor: not-allowed; }
+        .mbfp-coord-cancel:focus-visible,
+        .mbfp-coord-btn:focus-visible {
+          outline: 2px solid #EA580C;
+          outline-offset: 2px;
+        }
+        @media (max-width: 560px) {
+          .mbfp-coord-row { grid-template-columns: 34px minmax(0, 1fr); }
+          .mbfp-coord-side { grid-column: 2; flex-direction: row; align-items: center; flex-wrap: wrap; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .mbfp-coord-pulse-dot { animation: none; }
         }
         .mbfp-coord-card {
           background: #F8FAFC;
@@ -403,24 +620,6 @@ export function IntermunicipalityCoordinationPanel({
           background: #FFFFFF;
           border-color: #CBD5E1;
           box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
-        }
-        .mbfp-coord-card-top {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 0.75rem;
-        }
-        .mbfp-coord-muni-name {
-          font-size: 0.9rem;
-          font-weight: 800;
-          color: #0F172A;
-          margin: 0;
-        }
-        .mbfp-coord-muni-sub {
-          font-size: 0.76rem;
-          color: #64748B;
-          margin: 0.2rem 0 0 0;
-          font-weight: 500;
         }
         .mbfp-coord-status-badge {
           display: inline-flex;
@@ -443,11 +642,6 @@ export function IntermunicipalityCoordinationPanel({
           color: #1D4ED8;
           border: 1px solid #BFDBFE;
         }
-        .mbfp-coord-status-badge.backup-requested {
-          background: #EEF2FF;
-          color: #4338CA;
-          border: 1px solid #C7D2FE;
-        }
         .mbfp-coord-pulse-dot {
           width: 6px;
           height: 6px;
@@ -458,40 +652,6 @@ export function IntermunicipalityCoordinationPanel({
         @keyframes mbfpCoordPulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.4; transform: scale(1.3); }
-        }
-        .mbfp-coord-ack-meta {
-          margin-top: 0.75rem;
-          padding-top: 0.5rem;
-          border-top: 1px solid #E2E8F0;
-          font-size: 0.72rem;
-          color: #64748B;
-        }
-        .mbfp-coord-table-wrap {
-          margin-top: 1rem;
-          background: #F8FAFC;
-          border: 1px solid #E2E8F0;
-          border-radius: 12px;
-          padding: 0.85rem 1.1rem;
-        }
-        .mbfp-coord-table-title {
-          font-size: 0.72rem;
-          font-weight: 850;
-          color: #475569;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-bottom: 0.65rem;
-        }
-        .mbfp-coord-req-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.65rem 0;
-          border-bottom: 1px solid #EEF2F6;
-          gap: 0.85rem;
-          flex-wrap: wrap;
-        }
-        .mbfp-coord-req-row:last-child {
-          border-bottom: none;
         }
         .mbfp-coord-modal-backdrop {
           position: fixed;
@@ -603,7 +763,7 @@ export function IntermunicipalityCoordinationPanel({
       {/* Origin View: List Observers and Ongoing Requests */}
       {isOrigin && (
         <>
-          {observers.length === 0 ? (
+          {neighbours.length === 0 ? (
             <div className="mbfp-coord-standby-banner">
               <div className="mbfp-coord-standby-icon">
                 <i className="fa-solid fa-satellite-dish" />
@@ -618,134 +778,83 @@ export function IntermunicipalityCoordinationPanel({
               </div>
             </div>
           ) : (
-            <div className="mbfp-coord-grid">
-              {observers.map((observer) => {
-                const km = (observer.distanceMeters / 1000).toFixed(1);
+            <ul className="mbfp-coord-list" aria-label="Neighbouring stations and backup requests">
+              {neighbours.map((row) => {
+                const state = rowState(row);
+                const { station, head } = stationParts(row.observer?.stationName);
+                const request = row.request;
+                const sending = request && (request.status === "ACCEPTED" || request.status === "PARTIALLY_ACCEPTED" || request.status === "COMPLETED")
+                  ? units(request.offeredFiretrucks, request.offeredPersonnel)
+                  : null;
                 return (
-                  <div key={observer.observerId} className="mbfp-coord-card">
-                    <div className="mbfp-coord-card-top">
-                      <div>
-                        <h4 className="mbfp-coord-muni-name">{observer.municipalityName}</h4>
-                        <p className="mbfp-coord-muni-sub">
-                          {observer.stationName} · {km} km away
+                  <li key={row.key} className="mbfp-coord-row">
+                    <span className={`mbfp-coord-mark ${state.tone}`} aria-hidden="true">
+                      <i className={`fa-solid ${state.icon}`} />
+                    </span>
+                    <div className="mbfp-coord-who">
+                      <div className="mbfp-coord-name-line">
+                        <h4 className="mbfp-coord-muni-name">{row.municipalityName}</h4>
+                        {request?.isProvincialCommand && <span className="mbfp-coord-chip">Province order</span>}
+                      </div>
+                      {station && (
+                        <p className="mbfp-coord-station">
+                          {station}
+                          {head && <span> · Head: {head}</span>}
                         </p>
-                      </div>
-                      <div>
-                        {observer.monitoringState === "BACKUP_REQUESTED" ? (
-                          <span className="mbfp-coord-status-badge backup-requested">
-                            <span className="mbfp-coord-pulse-dot" />
-                            <span>Backup requested</span>
-                          </span>
-                        ) : observer.monitoringState === "SEEN" ? (
-                          <span className="mbfp-coord-status-badge seen">
-                            <i className="fa-solid fa-check" />
-                            <span>Seen</span>
-                          </span>
-                        ) : (
-                          <span className="mbfp-coord-status-badge waiting">
-                            <span className="mbfp-coord-pulse-dot" />
-                            <span>Waiting</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {observer.acknowledgedAt && (
-                      <div className="mbfp-coord-ack-meta">
-                        <i className="fa-regular fa-clock" style={{ marginRight: 4 }} />
-                        Acknowledged by <strong>{observer.acknowledgedByDisplayName || "Municipal Officer"}</strong> at {new Date(observer.acknowledgedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Assistance Requests Activity Table */}
-          {assistanceRequests.length > 0 && (
-            <div className="mbfp-coord-table-wrap">
-              <div className="mbfp-coord-table-title">
-                <i className="fa-solid fa-handshake-angle" style={{ marginRight: 5 }} />
-                Assistance Requests &amp; Status
-              </div>
-              <div>
-                {assistanceRequests.map((req) => (
-                  <div key={req.id} className="mbfp-coord-req-row">
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: "0.85rem", fontWeight: 750 }}>
-                          To: {req.recipientMunicipalityName}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "0.72rem",
-                            fontWeight: 800,
-                            padding: "0.15rem 0.5rem",
-                            borderRadius: 6,
-                            background:
-                              req.status === "ACCEPTED"
-                                ? "#ECFDF5"
-                                : req.status === "PARTIALLY_ACCEPTED"
-                                ? "#F0F9FF"
-                                : req.status === "REJECTED"
-                                ? "#FEF2F2"
-                                : req.status === "CANCELLED"
-                                ? "#F1F5F9"
-                                : "#FFFBEB",
-                            color:
-                              req.status === "ACCEPTED"
-                                ? "#047857"
-                                : req.status === "PARTIALLY_ACCEPTED"
-                                ? "#0369A1"
-                                : req.status === "REJECTED"
-                                ? "#991B1B"
-                                : req.status === "CANCELLED"
-                                ? "#64748B"
-                                : "#B45309",
-                            border: "1px solid rgba(0,0,0,0.06)",
-                          }}
-                        >
-                          {req.status}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: "0.76rem", color: "#64748B", marginTop: 2 }}>
-                        Requested: {req.requestedFiretrucks} firetruck(s), {req.requestedPersonnel} personnel
-                        {(req.offeredFiretrucks !== null || req.offeredPersonnel !== null) && (
-                          <strong style={{ color: "#0F172A", marginLeft: 6 }}>
-                            · Offered: {req.offeredFiretrucks ?? 0} firetruck(s), {req.offeredPersonnel ?? 0} personnel
-                          </strong>
-                        )}
-                      </div>
-                      {req.responseNote && (
-                        <div style={{ fontSize: "0.74rem", fontStyle: "italic", color: "#475569", marginTop: 3 }}>
-                          &ldquo;{req.responseNote}&rdquo;
-                        </div>
+                      )}
+                      {(row.observer || request) && (
+                        <p className="mbfp-coord-facts">
+                          {row.observer && Number.isFinite(row.observer.distanceMeters) && (
+                            <span>
+                              <i className="fa-solid fa-location-dot" aria-hidden="true" />
+                              {(row.observer.distanceMeters / 1000).toFixed(1)} km away
+                            </span>
+                          )}
+                          {row.observer?.acknowledgedAt && (
+                            <span>
+                              <i className="fa-solid fa-eye" aria-hidden="true" />
+                              Seen by <strong>{row.observer.acknowledgedByDisplayName || "Municipal Officer"}</strong> at {clockTime(row.observer.acknowledgedAt)}
+                            </span>
+                          )}
+                          {request && (
+                            <span>
+                              <i className="fa-solid fa-truck-droplet" aria-hidden="true" />
+                              Asked for {units(request.requestedFiretrucks, request.requestedPersonnel)} at {clockTime(request.requestedAt)}
+                            </span>
+                          )}
+                        </p>
+                      )}
+                      {sending && (
+                        <p className="mbfp-coord-ask">
+                          Sending <strong>{sending}</strong>
+                        </p>
+                      )}
+                      {request?.responseNote && (
+                        <p className="mbfp-coord-note">&ldquo;{request.responseNote}&rdquo;</p>
                       )}
                     </div>
-                    {req.status === "REQUESTED" && !req.isProvincialCommand && (
-                      <button
-                        type="button"
-                        onClick={() => handleCancelRequest(req.id)}
-                        disabled={submitting}
-                        style={{
-                          background: "#FEF2F2",
-                          border: "1px solid #FECACA",
-                          color: "#BE123C",
-                          borderRadius: 6,
-                          padding: "0.3rem 0.75rem",
-                          fontSize: "0.76rem",
-                          fontWeight: 750,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+                    <div className="mbfp-coord-side">
+                      <span className={`mbfp-coord-pill ${state.tone}`}>
+                        {state.pulse
+                          ? <span className="mbfp-coord-pulse-dot" aria-hidden="true" />
+                          : <i className={`fa-solid ${state.icon}`} aria-hidden="true" />}
+                        <span>{state.label}</span>
+                      </span>
+                      {request?.status === "REQUESTED" && !request.isProvincialCommand && (
+                        <button
+                          type="button"
+                          className="mbfp-coord-cancel"
+                          onClick={() => handleCancelRequest(request.id)}
+                          disabled={submitting}
+                        >
+                          Cancel request
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </>
       )}
