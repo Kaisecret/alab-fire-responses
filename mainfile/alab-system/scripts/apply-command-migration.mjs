@@ -110,6 +110,17 @@ const releaseMigrations = [
        where conname = 'account_notifications_event_type_check'
     ), false) as applied`,
   },
+  {
+    // Caluya's seat point was in the sea, so its station pin sat in the water.
+    version: "20261008090000",
+    name: "move_caluya_station_onto_island",
+    appliedCheck: `select to_regclass('public.municipal_bfp_stations') is null or exists(
+      select 1 from pg_attribute
+       where attrelid = to_regclass('public.municipal_bfp_stations')
+         and attname = 'latitude'
+         and coalesce(col_description(attrelid, attnum), '') like '%Release 20261008090000%'
+    ) as applied`,
+  },
 ];
 
 const client = new pg.Client({
