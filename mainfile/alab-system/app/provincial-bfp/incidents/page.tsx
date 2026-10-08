@@ -2,7 +2,7 @@
 
 import React, { Suspense, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useProvincialIncidentFeed } from '../../_components/use-provincial-incident-feed';
 import { SkeletonDetail, SkeletonPage, SkeletonTableRows } from '../../_components/skeleton-loader';
 import type { ProvincialIncidentDetail } from '../../../lib/intermunicipality/provincial';
@@ -612,6 +612,8 @@ const pageStyles = `
 `;
 
 function ProvincialIncidentsContent() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const deepLinkedIncidentId = searchParams.get("incident");
 
@@ -636,6 +638,14 @@ function ProvincialIncidentsContent() {
   const handleCloseModal = () => {
     setSelectedIncidentId(null);
     setIncidentDetail(null);
+    // A link opens its incident once. Left in the address bar, ?incident=
+    // reopened that incident on every refresh or return to this page.
+    if (deepLinkedIncidentId) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("incident");
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    }
   };
 
   useEffect(() => {
