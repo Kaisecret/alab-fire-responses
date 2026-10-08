@@ -23,6 +23,9 @@ export const NOTIFICATION_EVENTS = [
   "BACKUP_REQUESTED",
   "BACKUP_FORWARDED",
   "ALARM_DECLARED",
+  "LOCAL_BACKUP_REQUESTED",
+  "LOCAL_BACKUP_SENT",
+  "LOCAL_BACKUP_DECLINED",
 ] as const;
 export type NotificationEvent = typeof NOTIFICATION_EVENTS[number];
 

@@ -143,6 +143,12 @@ const releaseMigrations = [
          and coalesce(col_description(attrelid, attnum), '') like '%Release 20261008110000%'
     ) as applied`,
   },
+  {
+    // A responder can ask for another station from their own town.
+    version: "20261009090000",
+    name: "add_local_backup_requests",
+    appliedCheck: `select to_regclass('public.incident_local_backup_requests') is not null as applied`,
+  },
 ];
 
 const client = new pg.Client({

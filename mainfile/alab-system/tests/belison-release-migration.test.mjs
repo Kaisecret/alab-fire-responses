@@ -30,6 +30,7 @@ test("deployment build applies Belison coordinates before the app is built", asy
         submitted_at timestamptz not null default now()
         , municipality_id uuid, barangay_id uuid
       );
+      create table public.incident_dispatches (id uuid primary key, fire_report_id uuid, status text);
       insert into public.fire_trucks
         select 'BFP_FIRETRUCK_INVENTORY' from generate_series(1, 29);
       -- As production has it: the event list from before backups and alarms.
@@ -73,6 +74,10 @@ test("deployment build applies Belison coordinates before the app is built", asy
     assert.match(municipalAlerts.rows[0]?.indexdef ?? '', /\(municipality_id\)/, 'the release keeps one open alert per municipality');
     // A municipality called by a provincial alarm gets its alarm notice saved.
     await db.query("insert into public.account_notifications (event_type) values ('ALARM_DECLARED'), ('BACKUP_REQUESTED'), ('BACKUP_FORWARDED')");
+    // Local backup requests are installed, closed to the public API, and notify.
+    const local = await db.query("select relrowsecurity from pg_class where oid = 'public.incident_local_backup_requests'::regclass");
+    assert.equal(local.rows[0].relrowsecurity, true);
+    await db.query("insert into public.account_notifications (event_type) values ('LOCAL_BACKUP_REQUESTED'), ('LOCAL_BACKUP_SENT'), ('LOCAL_BACKUP_DECLINED')");
   } finally {
     pg.Client = originalClient;
     if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;

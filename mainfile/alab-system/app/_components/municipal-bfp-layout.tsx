@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { NotificationBell } from './notifications/notification-bell';
 import { MunicipalIncidentAlarm } from './municipal-incident-alarm';
 import { MunicipalBackupAlarm } from './municipal-backup-alarm';
+import { MunicipalLocalBackupAlarm } from './municipal-local-backup-alarm';
 import { MunicipalAlarmDeclaration } from './municipal-alarm-declaration';
 import { useMunicipalIncidentFeed } from './use-municipal-incident-feed';
 import { BfpLogoutDialog, confirmBfpSignedOut } from './bfp-logout-dialog';
@@ -1561,6 +1562,8 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
 
           {/* Backup called for by a responder in the field. */}
           <MunicipalBackupAlarm />
+          {/* A responder asking for another station from this town. */}
+          <MunicipalLocalBackupAlarm />
           {/* Provincial alarm declarations require an explicit municipal response. */}
           <MunicipalAlarmDeclaration />
         </>
