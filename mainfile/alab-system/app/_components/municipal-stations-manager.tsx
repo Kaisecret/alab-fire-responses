@@ -412,11 +412,7 @@ export function MunicipalStationsManager() {
       const response = await fetch("/api/municipal-bfp/stations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          stationName: formattedName,
-          latitude: 10.7442,
-          longitude: 121.9422,
-        }),
+        body: JSON.stringify({ stationName: formattedName }),
       });
 
       const result = (await response.json()) as { error?: string; station?: Station };

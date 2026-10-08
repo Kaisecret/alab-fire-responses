@@ -121,6 +121,28 @@ const releaseMigrations = [
          and coalesce(col_description(attrelid, attnum), '') like '%Release 20261008090000%'
     ) as applied`,
   },
+  {
+    // Laua-an, Patnongon, Sebaste and Tobias Fornier pins were also offshore.
+    version: "20261008100000",
+    name: "move_station_pins_onto_land",
+    appliedCheck: `select to_regclass('public.municipal_bfp_stations') is null or exists(
+      select 1 from pg_attribute
+       where attrelid = to_regclass('public.municipal_bfp_stations')
+         and attname = 'longitude'
+         and coalesce(col_description(attrelid, attnum), '') like '%Release 20261008100000%'
+    ) as applied`,
+  },
+  {
+    // Belison station and seat move to Poblacion; Anini-y station beside the church.
+    version: "20261008110000",
+    name: "place_belison_and_anini_y_stations",
+    appliedCheck: `select to_regclass('public.municipal_bfp_stations') is null or exists(
+      select 1 from pg_attribute
+       where attrelid = to_regclass('public.municipalities')
+         and attname = 'latitude'
+         and coalesce(col_description(attrelid, attnum), '') like '%Release 20261008110000%'
+    ) as applied`,
+  },
 ];
 
 const client = new pg.Client({

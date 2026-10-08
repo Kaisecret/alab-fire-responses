@@ -65,9 +65,19 @@ export async function listMunicipalStations(municipalityId: string) {
 }
 
 export async function createMunicipalStation(actorUserId: string, municipalityId: string, raw: StationInput) {
-  const input = stationValues(raw);
   const now = new Date();
   return withTransaction(async (client) => {
+    // A station added without a position starts at its municipality's seat, so
+    // the pin lands in its own town until the exact spot is recorded.
+    let position = raw;
+    if (raw.latitude == null && raw.longitude == null) {
+      const seat = await client.query<{ latitude: number | null; longitude: number | null }>(
+        `select latitude::float as latitude, longitude::float as longitude from municipalities where id = $1`,
+        [municipalityId],
+      );
+      position = { ...raw, latitude: seat.rows[0]?.latitude, longitude: seat.rows[0]?.longitude };
+    }
+    const input = stationValues(position);
     const created = await client.query<Station>(
       `insert into municipal_bfp_stations (municipality_id, station_name, latitude, longitude, status, created_at, updated_at)
        values ($1, $2, $3, $4, 'ACTIVE', $5, $5)
