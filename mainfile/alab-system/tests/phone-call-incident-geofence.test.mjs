@@ -11,11 +11,24 @@ test("municipal barangays route returns both municipality name and barangay list
   assert.match(route, /barangays/);
 });
 
-test("phone call intake reverse geocodes map pin to auto-select barangays", () => {
+test("phone call intake picks the barangay from the PSA boundary at the map pin", () => {
   const intake = source("app/_components/municipal-phone-call-incident-intake.tsx");
-  assert.match(intake, /\/api\/geocode\/reverse/);
+  // OpenStreetMap's reverse geocode names the wrong barangay in Antique towns.
+  assert.match(intake, /\/api\/geocode\/barangay/);
+  assert.doesNotMatch(intake, /\/api\/geocode\/reverse/);
   assert.match(intake, /setBarangayId/);
-  assert.match(intake, /Detected Barangay|Auto-detected|detectedBarangay/i);
+  // A slow answer for an old pin must not overwrite the answer for the new one.
+  assert.match(intake, /lookupSequenceRef/);
+  // Pins near a border offer the barangay across it, and the map shows the outline.
+  assert.match(intake, /nearbyBarangays/);
+  assert.match(intake, /L\.polygon/);
+});
+
+test("barangay route answers from PSA boundaries with border alternatives", () => {
+  const route = source("app/api/geocode/barangay/route.ts");
+  assert.match(route, /locateAntiqueBarangay/);
+  assert.match(route, /nearbyAntiqueBarangays/);
+  assert.doesNotMatch(route, /nominatim/i);
 });
 
 test("phone call intake provides a pre-dispatch confirmation summary modal with non-destructive back", () => {

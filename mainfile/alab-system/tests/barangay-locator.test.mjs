@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-const { locateAntiqueBarangay } = await import("../lib/locations/barangay-locator.ts");
+const { locateAntiqueBarangay, nearbyAntiqueBarangays, antiqueBarangayOutline } = await import("../lib/locations/barangay-locator.ts");
 const { ANTIQUE_BARANGAY_BOUNDARIES } = await import("../lib/locations/antique-barangay-boundaries.ts");
 const { antiqueBarangays } = await import("../app/_content/antique-barangays.ts");
 
@@ -25,4 +25,28 @@ test("every official barangay has a boundary under its official name", () => {
 test("points outside Antique have no barangay", () => {
   assert.equal(locateAntiqueBarangay(10.6969, 122.5644), null); // Iloilo City
   assert.equal(locateAntiqueBarangay(Number.NaN, 121.94), null);
+});
+
+test("a pin near a barangay border also offers the barangay across it", () => {
+  // Hamtic town proper: inside Caridad, about 70 m south of the Poblacion 2 line.
+  assert.deepEqual(locateAntiqueBarangay(10.697961, 121.982), { municipality: "Hamtic", barangay: "Caridad" });
+  const nearby = nearbyAntiqueBarangays(10.697961, 121.982, 150);
+  assert.equal(nearby[0]?.barangay, "Poblacion 2");
+  assert.equal(nearby[0]?.municipality, "Hamtic");
+  assert.ok(nearby[0].meters > 0 && nearby[0].meters < 150, `${nearby[0].meters} m`);
+  assert.ok(!nearby.some((choice) => choice.barangay === "Caridad"), "the containing barangay is not repeated");
+  for (let i = 1; i < nearby.length; i++) assert.ok(nearby[i - 1].meters <= nearby[i].meters, "closest first");
+});
+
+test("a pin deep inside a barangay offers no border alternatives", () => {
+  assert.deepEqual(nearbyAntiqueBarangays(10.7395836, 121.9498675, 25), []);
+  assert.deepEqual(nearbyAntiqueBarangays(10.6969, 122.5644, 150), []); // Iloilo City
+});
+
+test("a barangay outline is its PSA polygon as [lat, lng] rings", () => {
+  const outline = antiqueBarangayOutline("Hamtic", "Poblacion 2");
+  assert.ok(outline && outline.length >= 1);
+  const [lat, lng] = outline[0][0];
+  assert.ok(lat > 10.69 && lat < 10.71 && lng > 121.97 && lng < 121.99, `${lat}, ${lng}`);
+  assert.equal(antiqueBarangayOutline("Hamtic", "Not a barangay"), null);
 });

@@ -12,6 +12,14 @@ type Coordinates = { latitude: number; longitude: number };
 type Station = { id: string; stationName: string; latitude: number; longitude: number; status: "ACTIVE" | "INACTIVE" };
 type Responder = { id: string; displayName: string };
 type Barangay = { id: string; name: string };
+type PinPlace = { municipality: string; barangay: string };
+type BorderBarangay = Barangay & { meters: number };
+type BarangayOutline = [number, number][][];
+type BarangayLookup = {
+  located: PinPlace | null;
+  nearby: (PinPlace & { meters: number })[];
+  outlines: (PinPlace & { outline: BarangayOutline })[];
+};
 
 const fireTypes = [
   ["HOUSE_BUILDING", "House / building fire"],
@@ -32,6 +40,11 @@ function normalizePlace(value: string) {
     .toLowerCase()
     .replace(/^(brgy\.?|barangay)\s*/gi, "")
     .replace(/[^a-z0-9]/g, "");
+}
+
+/** "Brgy. Caridad", but San Jose's "Barangay 8" stays as it is. */
+function barangayLabel(name: string) {
+  return /^(brgy\.?|barangay)\s/i.test(name) ? name : `Brgy. ${name}`;
 }
 
 function localDateTimeValue() {
@@ -60,7 +73,11 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [pinPlaced, setPinPlaced] = useState(false);
-  const [detectedBarangay, setDetectedBarangay] = useState("");
+  const [pinBarangay, setPinBarangay] = useState<Barangay | null>(null);
+  const [nearbyBarangays, setNearbyBarangays] = useState<BorderBarangay[]>([]);
+  const [barangayOutlines, setBarangayOutlines] = useState<Record<string, BarangayOutline>>({});
+  const [lookupFailed, setLookupFailed] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [showOutOfBoundsModal, setShowOutOfBoundsModal] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
 
@@ -87,15 +104,18 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
   const dialogRef = useRef<HTMLElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
+  const leafletRef = useRef<typeof import("leaflet") | null>(null);
+  const outlineLayerRef = useRef<import("leaflet").Polygon | null>(null);
   const markerRef = useRef<Marker | null>(null);
-  const streetLayerRef = useRef<any>(null);
-  const satelliteLayerRef = useRef<any>(null);
-  const referenceLayerRef = useRef<any>(null);
+  const streetLayerRef = useRef<import("leaflet").TileLayer | null>(null);
+  const satelliteLayerRef = useRef<import("leaflet").TileLayer | null>(null);
+  const referenceLayerRef = useRef<import("leaflet").TileLayer | null>(null);
   const [mapLayer, setMapLayer] = useState<"street" | "satellite">("street");
   const locationRef = useRef<Coordinates | null>(null);
   const barangaysRef = useRef<Barangay[]>([]);
   const municipalityRef = useRef<string>("");
   const lastWarnedMuniRef = useRef<string>("");
+  const lookupSequenceRef = useRef(0);
 
   useEffect(() => {
     barangaysRef.current = barangays;
@@ -105,94 +125,56 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
     municipalityRef.current = municipalityName;
   }, [municipalityName]);
 
-  // Robust Reverse Geocoding & Municipal Boundary Verification
+  // The barangay comes from the PSA boundary at the pin. OpenStreetMap only has
+  // scattered barangay points in Antique, so its guess is often the wrong one.
   const checkCoordinatesLocation = useCallback(async (coords: Coordinates) => {
+    const sequence = ++lookupSequenceRef.current;
+    const current = () => sequence === lookupSequenceRef.current;
     setIsGeocoding(true);
+    setLookupFailed(false);
     try {
-      const response = await fetch(`/api/geocode/reverse?lat=${coords.latitude}&lon=${coords.longitude}`);
-      if (!response.ok) return;
-      const data = await response.json() as {
-        display_name?: string;
-        address?: {
-          village?: string;
-          hamlet?: string;
-          suburb?: string;
-          quarter?: string;
-          neighbourhood?: string;
-          municipality?: string;
-          town?: string;
-          city?: string;
-          county?: string;
-        };
-      };
-      const address = data.address;
-      if (!address) return;
+      const response = await fetch(`/api/geocode/barangay?lat=${coords.latitude}&lon=${coords.longitude}`);
+      if (!response.ok) throw new Error("Barangay lookup failed.");
+      const data = await response.json() as BarangayLookup;
+      // A slower answer for an earlier pin must not replace the latest one.
+      if (!current()) return;
 
-      // 1. Municipal Territory Boundary Detection
-      const detectedMuni = address.municipality || address.town || address.city || "";
       const currentMuni = municipalityRef.current;
-      setDetectedMunicipality(detectedMuni);
+      const inOwnTown = (place: PinPlace | null) => Boolean(place && currentMuni && normalizePlace(place.municipality) === normalizePlace(currentMuni));
+      const findBarangay = (name: string) => barangaysRef.current.find((b) => b.name === name)
+        ?? barangaysRef.current.find((b) => normalizePlace(b.name) === normalizePlace(name));
 
-      if (detectedMuni && currentMuni) {
-        const normDetected = normalizePlace(detectedMuni);
-        const normCurrent = normalizePlace(currentMuni);
-        if (normDetected && normCurrent && !normDetected.includes(normCurrent) && !normCurrent.includes(normDetected)) {
-          // Trigger immediate pop-up modal if dragged to a foreign municipality
-          if (lastWarnedMuniRef.current !== detectedMuni) {
-            lastWarnedMuniRef.current = detectedMuni;
-            setShowOutOfBoundsModal(true);
-          }
-        } else {
-          lastWarnedMuniRef.current = "";
+      const located = data.located;
+      setDetectedMunicipality(located?.municipality ?? "outside Antique province");
+      if (currentMuni && !inOwnTown(located)) {
+        const warnKey = located?.municipality ?? "outside";
+        if (lastWarnedMuniRef.current !== warnKey) {
+          lastWarnedMuniRef.current = warnKey;
+          setShowOutOfBoundsModal(true);
         }
+      } else {
+        lastWarnedMuniRef.current = "";
       }
 
-      // 2. High-Accuracy Barangay Detection from OSM Reverse Geocoding
-      const candidates = [
-        address.village,
-        address.hamlet,
-        address.suburb,
-        address.quarter,
-        address.neighbourhood,
-        ...(data.display_name ? data.display_name.split(",").map((s) => s.trim()) : []),
-      ].filter((p): p is string => Boolean(p && p.trim()));
-
-      const availableBarangays = barangaysRef.current;
-      let matchedBarangay: Barangay | undefined;
-
-      for (const candidate of candidates) {
-        const normCandidate = normalizePlace(candidate);
-        if (!normCandidate || normCandidate.length < 2) continue;
-
-        matchedBarangay = availableBarangays.find((b) => {
-          const normB = normalizePlace(b.name);
-          return normB === normCandidate;
-        });
-        if (matchedBarangay) break;
-      }
-
-      // Fallback substring matching for compound names
-      if (!matchedBarangay) {
-        for (const candidate of candidates) {
-          const normCandidate = normalizePlace(candidate);
-          if (!normCandidate || normCandidate.length < 4) continue;
-
-          matchedBarangay = availableBarangays.find((b) => {
-            const normB = normalizePlace(b.name);
-            return normB.length >= 4 && (normB.includes(normCandidate) || normCandidate.includes(normB));
-          });
-          if (matchedBarangay) break;
-        }
-      }
-
-      if (matchedBarangay) {
-        setBarangayId(matchedBarangay.id);
-        setDetectedBarangay(matchedBarangay.name);
-      }
+      const matched = located && inOwnTown(located) ? findBarangay(located.barangay) ?? null : null;
+      setPinBarangay(matched);
+      setNearbyBarangays(data.nearby.filter(inOwnTown).flatMap((place) => {
+        const barangay = findBarangay(place.barangay);
+        return barangay ? [{ ...barangay, meters: place.meters }] : [];
+      }));
+      setBarangayOutlines(Object.fromEntries(data.outlines.filter(inOwnTown).flatMap((place) => {
+        const barangay = findBarangay(place.barangay);
+        return barangay ? [[barangay.id, place.outline]] : [];
+      })));
+      if (matched) setBarangayId(matched.id);
     } catch {
-      // Graceful fallback
+      if (!current()) return;
+      setLookupFailed(true);
+      setPinBarangay(null);
+      setNearbyBarangays([]);
+      setBarangayOutlines({});
     } finally {
-      setIsGeocoding(false);
+      if (current()) setIsGeocoding(false);
     }
   }, []);
 
@@ -243,11 +225,25 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
 
   const handleBarangaySelect = (newBarangayId: string) => {
     setBarangayId(newBarangayId);
-    const selected = barangays.find((b) => b.id === newBarangayId);
-    if (selected) {
-      setDetectedBarangay(selected.name);
-    }
   };
+
+  // Outline the selected barangay so the dispatcher can check it against the imagery.
+  useEffect(() => {
+    outlineLayerRef.current?.remove();
+    outlineLayerRef.current = null;
+    const L = leafletRef.current;
+    const map = mapRef.current;
+    const outline = barangayOutlines[barangayId];
+    if (!mapReady || !L || !map || !outline) return;
+    outlineLayerRef.current = L.polygon(outline, {
+      color: "#dc2626",
+      weight: 2.5,
+      dashArray: "7 5",
+      fillColor: "#dc2626",
+      fillOpacity: 0.07,
+      interactive: false,
+    }).addTo(map);
+  }, [barangayId, barangayOutlines, mapReady]);
 
   useEffect(() => { firstFieldRef.current?.focus(); }, []);
 
@@ -379,6 +375,7 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
 
       const map = L.map(mapContainerRef.current, { center: [mapStart.latitude, mapStart.longitude], zoom: 14, zoomControl: true });
       mapRef.current = map;
+      leafletRef.current = L;
 
       const streetLayer = L.tileLayer(OSM_TILE_URL, {
         maxZoom: 19,
@@ -420,9 +417,13 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
         updatePin(event.latlng);
       });
       window.setTimeout(() => map.invalidateSize(), 0);
+      setMapReady(true);
     })();
     return () => {
       active = false;
+      setMapReady(false);
+      outlineLayerRef.current = null;
+      leafletRef.current = null;
       streetLayerRef.current = null;
       satelliteLayerRef.current = null;
       referenceLayerRef.current = null;
@@ -504,6 +505,17 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
   const selectedBarangayObj = barangays.find((b) => b.id === barangayId);
   const selectedFireTypeObj = fireTypes.find(([val]) => val === fireType);
   const selectedResponderObjs = responders.filter((r) => responderIds.includes(r.id));
+  const borderChoices = nearbyBarangays.filter((choice) => choice.id !== barangayId);
+  const selectedBorder = nearbyBarangays.find((choice) => choice.id === barangayId);
+  const town = municipalityName || "your municipality";
+  const pinStatus: { tone: "idle" | "ok" | "warn"; icon: string; title: string; detail?: string } =
+    !pinPlaced ? { tone: "idle", icon: "fa-location-crosshairs", title: "Barangay is detected from the map pin", detail: "Place the red fire pin in step 03." }
+    : isGeocoding ? { tone: "idle", icon: "fa-circle-notch fa-spin", title: "Checking barangay boundaries…" }
+    : lookupFailed ? { tone: "warn", icon: "fa-triangle-exclamation", title: "Barangay check failed", detail: "Select the barangay from the list." }
+    : !pinBarangay ? { tone: "warn", icon: "fa-triangle-exclamation", title: `Pin is outside ${town}`, detail: "Move the pin, or select the barangay from the list." }
+    : selectedBarangayObj?.id === pinBarangay.id ? { tone: "ok", icon: "fa-location-dot", title: `Pin is in ${barangayLabel(pinBarangay.name)}`, detail: "Detected from the PSA barangay boundary, shown as a dashed line on the map." }
+    : selectedBorder ? { tone: "ok", icon: "fa-location-dot", title: `${barangayLabel(selectedBorder.name)} selected`, detail: `The pin is ${selectedBorder.meters} m from its boundary.` }
+    : { tone: "warn", icon: "fa-triangle-exclamation", title: selectedBarangayObj ? `${barangayLabel(selectedBarangayObj.name)} selected` : "No barangay selected", detail: `The pin is in ${barangayLabel(pinBarangay.name)}.` };
 
   return createPortal(
     <div ref={portalRootRef} className="mbfp-phone-intake-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !submitting) onClose(); }}>
@@ -594,6 +606,9 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
                     <div className="mbfp-summary-item">
                       <label>Barangay</label>
                       <strong className="mbfp-tag-brgy">Brgy. {selectedBarangayObj?.name || "—"}</strong>
+                      {pinBarangay && pinBarangay.id !== selectedBarangayObj?.id && (
+                        <span>Map pin is in {barangayLabel(pinBarangay.name)}</span>
+                      )}
                     </div>
                     <div className="mbfp-summary-item">
                       <label>Municipality</label>
@@ -766,12 +781,34 @@ export function MunicipalPhoneCallIncidentIntake({ onClose, onCreated }: { onClo
                       </label>
                     </div>
 
-                    {detectedBarangay && (
-                      <div className="mbfp-detected-badge" aria-live="polite">
-                        <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" />
-                        <span>Auto-detected: <strong>Brgy. {detectedBarangay}</strong></span>
+                    <div className={`mbfp-pin-barangay ${pinStatus.tone}`} aria-live="polite">
+                      <div className="mbfp-pin-barangay-main">
+                        <i className={`fa-solid ${pinStatus.icon}`} aria-hidden="true" />
+                        <div>
+                          <strong>{pinStatus.title}</strong>
+                          {pinStatus.detail && <span>{pinStatus.detail}</span>}
+                        </div>
+                        {pinBarangay && selectedBarangayObj?.id !== pinBarangay.id && !isGeocoding && (
+                          <button type="button" className="mbfp-pin-barangay-use" onClick={() => handleBarangaySelect(pinBarangay.id)}>
+                            Use {pinBarangay.name}
+                          </button>
+                        )}
                       </div>
-                    )}
+                      {borderChoices.length > 0 && !isGeocoding && (
+                        <div className="mbfp-pin-barangay-border">
+                          <span>Near the border. If the caller names another barangay:</span>
+                          <div className="mbfp-pin-barangay-chips">
+                            {borderChoices.map((choice) => (
+                              <button key={choice.id} type="button" onClick={() => handleBarangaySelect(choice.id)}>
+                                <i className="fa-solid fa-arrow-right-arrow-left" aria-hidden="true" />
+                                {choice.name}
+                                <small>{choice.meters} m away</small>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     <label className="mbfp-phone-label-full">
                       Description
@@ -1233,23 +1270,131 @@ const phoneIntakeStyles = `
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.08);
   }
 
-  .mbfp-detected-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: -0.25rem;
-    margin-bottom: 0.85rem;
-    padding: 0.45rem 0.8rem;
-    border: 1px solid #bbf7d0;
-    border-radius: 8px;
-    background: #f0fdf4;
-    color: #166534;
-    font-size: 0.76rem;
-    font-weight: 600;
+  .mbfp-pin-barangay {
+    display: grid;
+    gap: 0.6rem;
+    margin: -0.15rem 0 0.95rem;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.78rem;
+    transition: background 0.16s ease, border-color 0.16s ease;
   }
 
-  .mbfp-detected-badge i {
-    color: #16a34a;
+  .mbfp-pin-barangay.ok {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    color: #14532d;
+  }
+
+  .mbfp-pin-barangay.warn {
+    border-color: #fde68a;
+    background: #fffbeb;
+    color: #78350f;
+  }
+
+  .mbfp-pin-barangay-main {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .mbfp-pin-barangay-main > i {
+    flex: none;
+    width: 1.9rem;
+    height: 1.9rem;
+    display: grid;
+    place-items: center;
+    border-radius: 9999px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.85rem;
+  }
+
+  .mbfp-pin-barangay.ok .mbfp-pin-barangay-main > i { background: #dcfce7; color: #15803d; }
+  .mbfp-pin-barangay.warn .mbfp-pin-barangay-main > i { background: #fef3c7; color: #b45309; }
+
+  .mbfp-pin-barangay-main > div {
+    display: grid;
+    gap: 0.1rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mbfp-pin-barangay-main strong {
+    font-size: 0.84rem;
+    font-weight: 800;
+    color: inherit;
+  }
+
+  .mbfp-pin-barangay-main span {
+    font-size: 0.74rem;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+
+  .mbfp-pin-barangay-use {
+    flex: none;
+    padding: 0.42rem 0.75rem;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #92400e;
+    font: inherit;
+    font-size: 0.74rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .mbfp-pin-barangay-use:hover { background: #fef3c7; }
+
+  .mbfp-pin-barangay-border {
+    display: grid;
+    gap: 0.4rem;
+    padding-top: 0.55rem;
+    border-top: 1px dashed currentColor;
+    border-top-color: rgba(100, 116, 139, 0.35);
+  }
+
+  .mbfp-pin-barangay-border > span {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .mbfp-pin-barangay-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .mbfp-pin-barangay-chips button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 32px;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 9999px;
+    background: #ffffff;
+    color: #0f172a;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .mbfp-pin-barangay-chips button:hover { border-color: #dc2626; background: #fef2f2; }
+  .mbfp-pin-barangay-chips button i { color: #dc2626; font-size: 0.7rem; }
+  .mbfp-pin-barangay-chips small { color: #64748b; font-size: 0.68rem; font-weight: 600; }
+
+  .mbfp-pin-barangay-use:focus-visible,
+  .mbfp-pin-barangay-chips button:focus-visible {
+    outline: 3px solid #93b4f1;
+    outline-offset: 2px;
   }
 
   .mbfp-phone-grid {
@@ -1511,9 +1656,10 @@ const phoneIntakeStyles = `
 
   .mbfp-map-floating-switcher {
     position: absolute;
-    bottom: 10px;
+    /* Sit above Leaflet's attribution strip instead of under it. */
+    bottom: 32px;
     left: 10px;
-    z-index: 500;
+    z-index: 1001;
     display: flex;
     align-items: center;
     background: rgba(255, 255, 255, 0.96);
@@ -1559,7 +1705,7 @@ const phoneIntakeStyles = `
 
   @media (max-width: 520px) {
     .mbfp-map-floating-switcher {
-      bottom: 8px;
+      bottom: 30px;
       left: 8px;
       padding: 2px;
     }
@@ -1917,7 +2063,8 @@ const phoneIntakeStyles = `
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 999;
+    /* Above Leaflet's controls (z-index 1000) and the map layer switcher. */
+    z-index: 2000;
     display: grid;
     place-items: center;
     padding: 1.5rem;

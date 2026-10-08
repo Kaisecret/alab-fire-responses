@@ -61,3 +61,36 @@ export function locateAntiqueBarangay(latitude: number, longitude: number): Loca
   }
   return nearest;
 }
+
+export type NearbyBarangay = LocatedBarangay & { meters: number };
+
+/**
+ * Other barangays whose PSA boundary lies within `radiusMeters` of the point,
+ * closest first. The boundaries are simplified, so a pin this close to a line
+ * may really be on the other side of it.
+ */
+export function nearbyAntiqueBarangays(latitude: number, longitude: number, radiusMeters: number): NearbyBarangay[] {
+  const located = locateAntiqueBarangay(latitude, longitude);
+  if (!located) return [];
+  const latMargin = radiusMeters / METERS_PER_DEGREE;
+  const lonMargin = latMargin / Math.cos((latitude * Math.PI) / 180);
+  const nearby: NearbyBarangay[] = [];
+  for (const [municipality, barangay, [west, south, east, north], polygons] of ANTIQUE_BARANGAY_BOUNDARIES) {
+    if (municipality === located.municipality && barangay === located.barangay) continue;
+    if (longitude < west - lonMargin || longitude > east + lonMargin || latitude < south - latMargin || latitude > north + latMargin) continue;
+    const meters = Math.min(...polygons.map((rings) => distanceToRing(longitude, latitude, rings[0])));
+    if (meters <= radiusMeters) nearby.push({ municipality, barangay, meters: Math.round(meters) });
+  }
+  return nearby.sort((a, b) => a.meters - b.meters);
+}
+
+/** The outer ring of each polygon of a barangay, as [latitude, longitude] points. */
+export function antiqueBarangayOutline(municipality: string, barangay: string): [number, number][][] | null {
+  const boundary = ANTIQUE_BARANGAY_BOUNDARIES.find(([m, b]) => m === municipality && b === barangay);
+  if (!boundary) return null;
+  return boundary[3].map(([outer]) => {
+    const points: [number, number][] = [];
+    for (let i = 0; i + 1 < outer.length; i += 2) points.push([outer[i + 1], outer[i]]);
+    return points;
+  });
+}
