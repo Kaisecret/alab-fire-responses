@@ -12,6 +12,7 @@ import {
 import { recordCoordinationEvent } from "./audit";
 import { findObserverForAcknowledgment } from "./observer-acknowledgment-query.mjs";
 import { rankNearbyMunicipalities } from "./proximity";
+import { keepStationsInOwnMunicipality } from "./station-placement";
 import type {
   NearbyObserver,
   StationCandidate,
@@ -68,7 +69,7 @@ export async function createNearbyIncidentObservers(
   );
 
   const ranked = rankNearbyMunicipalities(
-    candidateResult.rows,
+    keepStationsInOwnMunicipality(candidateResult.rows),
     {
       latitude: input.latitude,
       longitude: input.longitude,

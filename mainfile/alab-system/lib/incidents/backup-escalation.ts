@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 
 import { getDatabase } from "../db";
 import { createAssistanceRequests } from "../intermunicipality/assistance";
+import { keepStationsInOwnMunicipality } from "../intermunicipality/station-placement";
 import type { StationCandidate } from "../intermunicipality/types";
 import { createAccountNotifications } from "../notifications/service";
 import { buildAlarmNotificationContext } from "../municipal-bfp/alarm-alert.mjs";
@@ -509,8 +510,9 @@ async function summonForAlarmLevel(input: {
   if (!isDeclarableAlarmLevel(input.alarmLevel)) return [];
 
   /*
-   * Every municipality but the origin, positioned by its nearest active
-   * station where it has one and by its seat where it does not.
+   * Every municipality but the origin, positioned by each of its active
+   * stations, so the doctrine measures from whichever is nearest the fire, and
+   * by its seat where it has no station in its own town.
    *
    * Requiring a registered station and assigned personnel meant most of the
    * province could not be reached at all: a second alarm in Hamtic skipped San
@@ -518,33 +520,44 @@ async function summonForAlarmLevel(input: {
    * nobody had entered a station for them. An alarm is a call to a
    * municipality, and a municipality that has not finished filling in its
    * stations is still there to answer it.
+   *
+   * Only each town's oldest station used to count, and Hamtic's oldest was
+   * pinned in San Jose, so Hamtic looked 2.7 km from every San Jose fire.
    */
-  const stations = await db.query<StationCandidate>(
-    `select coalesce(nearest.station_id, municipality.id) as "stationId",
-            coalesce(nearest.station_name, municipality.name) as "stationName",
+  const stationRows = await db.query<StationCandidate>(
+    `select station.id as "stationId",
+            station.station_name as "stationName",
             municipality.id as "municipalityId",
             municipality.name as "municipalityName",
-            coalesce(nearest.latitude, municipality.latitude)::float as latitude,
-            coalesce(nearest.longitude, municipality.longitude)::float as longitude
-       from public.municipalities municipality
-       left join lateral (
-         select station.id as station_id,
-                station.station_name,
-                station.latitude,
-                station.longitude
-           from public.municipal_bfp_stations station
-          where station.municipality_id = municipality.id
-            and station.status = 'ACTIVE'
-            and station.latitude is not null
-            and station.longitude is not null
-          order by station.created_at asc
-          limit 1
-       ) nearest on true
-      where municipality.id <> $1
-        and coalesce(nearest.latitude, municipality.latitude) is not null
-        and coalesce(nearest.longitude, municipality.longitude) is not null`,
+            station.latitude::float as latitude,
+            station.longitude::float as longitude
+       from public.municipal_bfp_stations station
+       join public.municipalities municipality on municipality.id = station.municipality_id
+      where station.municipality_id <> $1
+        and station.status = 'ACTIVE'
+        and station.latitude is not null
+        and station.longitude is not null`,
     [origin.municipalityId],
   );
+  const seatRows = await db.query<StationCandidate>(
+    `select municipality.id as "stationId",
+            municipality.name as "stationName",
+            municipality.id as "municipalityId",
+            municipality.name as "municipalityName",
+            municipality.latitude::float as latitude,
+            municipality.longitude::float as longitude
+       from public.municipalities municipality
+      where municipality.id <> $1
+        and municipality.latitude is not null
+        and municipality.longitude is not null`,
+    [origin.municipalityId],
+  );
+  const placedStations = keepStationsInOwnMunicipality(stationRows.rows);
+  const townsWithStation = new Set(placedStations.map((station) => station.municipalityId));
+  const stations = [
+    ...placedStations,
+    ...seatRows.rows.filter((seat) => !townsWithStation.has(seat.municipalityId)),
+  ];
 
   const alreadySummoned = await db.query<{ municipalityId: string }>(
     `select summoned_municipality_id as "municipalityId"
@@ -560,7 +573,7 @@ async function summonForAlarmLevel(input: {
       latitude: origin.latitude,
       longitude: origin.longitude,
       originMunicipalityId: origin.municipalityId,
-      stations: stations.rows,
+      stations,
       alreadySummonedMunicipalityIds: alreadySummoned.rows.map((row) => row.municipalityId),
     });
   } catch {

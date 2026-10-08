@@ -4,11 +4,12 @@ import { readFileSync } from 'node:fs';
 import * as crypto from 'node:crypto';
 import ts from 'typescript';
 import { PGlite } from '@electric-sql/pglite';
+import { passThroughStationPlacement } from './helpers/load-server-module.mjs';
 function load(name, deps = {}) {
  const exports = {};
  const source = readFileSync(`lib/provincial-bfp/management/${name}.ts`, 'utf8');
  const code = ts.transpileModule(source, { compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}}).outputText;
- new Function('require', 'exports', code)(id => { if (id === 'server-only') return {}; if(id === 'node:crypto') return crypto; if(id in deps) return deps[id]; throw Error(id); }, exports);
+ new Function('require', 'exports', code)(id => { if (id === 'server-only') return {}; if(id === 'node:crypto') return crypto; if(id in deps) return deps[id]; if (id === '../../intermunicipality/station-placement') return passThroughStationPlacement; throw Error(id); }, exports);
  return exports;
 }
 const actor = { userId: '00000000-0000-0000-0000-000000000001', role: 'PROVINCIAL_BFP', province: 'Antique' };

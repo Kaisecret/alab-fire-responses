@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { withTransaction, getDatabase } from "../db";
 import { hashPassword } from "../auth/password";
 import { createAccountNotifications } from "../notifications/service";
+import { assertStationInMunicipality } from "../intermunicipality/station-placement";
 
 type StationInput = { stationName?: unknown; latitude?: unknown; longitude?: unknown };
 type PersonnelInput = {
@@ -78,6 +79,10 @@ export async function createMunicipalStation(actorUserId: string, municipalityId
       position = { ...raw, latitude: seat.rows[0]?.latitude, longitude: seat.rows[0]?.longitude };
     }
     const input = stationValues(position);
+    // A station pinned in another town makes its own town look next door to
+    // every fire there when neighbours are chosen by distance.
+    const town = await client.query<{ name: string }>("select name from municipalities where id = $1", [municipalityId]);
+    assertStationInMunicipality(input.latitude, input.longitude, town.rows[0]?.name ?? "");
     const created = await client.query<Station>(
       `insert into municipal_bfp_stations (municipality_id, station_name, latitude, longitude, status, created_at, updated_at)
        values ($1, $2, $3, $4, 'ACTIVE', $5, $5)
@@ -101,6 +106,16 @@ export async function updateMunicipalStation(actorUserId: string, municipalityId
   if (!stationId) throw new Error("INVALID_STATION");
   const now = new Date();
   return withTransaction(async (client) => {
+    const current = await client.query<{ latitude: number; longitude: number; municipalityName: string }>(
+      `select station.latitude::float as latitude, station.longitude::float as longitude, municipality.name as "municipalityName"
+         from municipal_bfp_stations station join municipalities municipality on municipality.id = station.municipality_id
+        where station.id = $1 and station.municipality_id = $2`,
+      [stationId, municipalityId],
+    );
+    const before = current.rows[0];
+    if (before && (before.latitude !== input.latitude || before.longitude !== input.longitude)) {
+      assertStationInMunicipality(input.latitude, input.longitude, before.municipalityName);
+    }
     const updated = await client.query<Station>(
       `update municipal_bfp_stations
           set station_name = $1, latitude = $2, longitude = $3, updated_at = $4

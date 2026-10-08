@@ -5,6 +5,8 @@ import { createMunicipalStation, listMunicipalStations } from "../../../../lib/m
 
 export const runtime = "nodejs";
 
+const STATION_OUTSIDE_MUNICIPALITY = "That pin is outside your municipality. Place the station inside your own town.";
+
 export async function GET(request: NextRequest) {
   try {
     const identity = await requireMunicipalAdmin(request);
@@ -26,6 +28,9 @@ export async function POST(request: NextRequest) {
     const station = await createMunicipalStation(identity.userId, identity.municipalityId, body);
     return NextResponse.json({ station }, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_STATION_OUTSIDE_MUNICIPALITY") {
+      return NextResponse.json({ error: STATION_OUTSIDE_MUNICIPALITY }, { status: 400 });
+    }
     const duplicate = typeof error === "object" && error && "code" in error && error.code === "23505";
     if (!duplicate) console.error("Municipal station create failed", error);
     return NextResponse.json({ error: duplicate ? "An active station with that name already exists." : "Enter a station name and valid Philippine coordinates." }, { status: duplicate ? 409 : 400 });

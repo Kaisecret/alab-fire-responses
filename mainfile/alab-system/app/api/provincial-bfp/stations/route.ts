@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     let status = message.startsWith("INVALID_") ? 400 : 500;
     if (error instanceof SyntaxError) status = 400;
     if (message === "OPERATION_IDEMPOTENCY_CONFLICT") status = 409;
-    return NextResponse.json({ error: status >= 500 ? "Unable to complete this request. Please try again." : message }, { status });
+    return NextResponse.json({ error: status >= 500 ? "Unable to complete this request. Please try again." : message === "INVALID_STATION_OUTSIDE_MUNICIPALITY" ? "That pin is outside the station's municipality. Place the station inside its own town." : message }, { status });
   }
 }
 
@@ -69,6 +69,6 @@ export async function POST(request: NextRequest) {
         : 500;
     if (error instanceof SyntaxError) status = 400;
     if (message === "OPERATION_IDEMPOTENCY_CONFLICT") status = 409;
-    return NextResponse.json({ error: status >= 500 ? "Unable to complete this request. Please try again." : message }, { status });
+    return NextResponse.json({ error: status >= 500 ? "Unable to complete this request. Please try again." : message === "INVALID_STATION_OUTSIDE_MUNICIPALITY" ? "That pin is outside the station's municipality. Place the station inside its own town." : message }, { status });
   }
 }

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { getDatabase, withTransaction } from "../../db";
+import { assertStationInMunicipality } from "../../intermunicipality/station-placement";
 import {
   assertManagementActor,
   assertAntiqueMunicipality,
@@ -218,6 +219,7 @@ export async function createManagedStation(
     }
 
     const municipality = await assertAntiqueMunicipality(client, municipalityId);
+    assertStationInMunicipality(latitude, longitude, municipality.name);
 
     const now = new Date();
     const insertRes = await client.query<{
@@ -379,6 +381,10 @@ export async function updateManagedStation(
 
       if (stationName.length < 2 || latitude === null || longitude === null) {
         throw new Error("INVALID_STATION_INPUT");
+      }
+      if (latitude !== existing.latitude || longitude !== existing.longitude) {
+        const town = await client.query<{ name: string }>("select name from municipalities where id = $1", [existing.municipality_id]);
+        assertStationInMunicipality(latitude, longitude, town.rows[0]?.name ?? "");
       }
       nextName = stationName;
       nextLat = latitude;

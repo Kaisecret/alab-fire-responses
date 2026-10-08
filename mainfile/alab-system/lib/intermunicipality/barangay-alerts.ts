@@ -6,6 +6,7 @@ import { withTransaction } from "../db";
 import { createAssistanceRequests } from "./assistance";
 import { validateRequestedResources } from "./assistance-state";
 import { rankNearbyMunicipalities } from "./proximity";
+import { keepStationsInOwnMunicipality } from "./station-placement";
 import type { StationCandidate } from "./types";
 import type { BarangayAlert, BarangayAlertIncident } from "./barangay-alert-types";
 
@@ -50,7 +51,7 @@ async function eligibleStations(client: PoolClient) {
         join bfp_municipality_assignments a on a.personnel_profile_id=p.id
         where a.municipality_id=station.municipality_id and a.status='ACTIVE'
           and u.role='MUNICIPAL_BFP' and u.account_status='ACTIVE')`);
-  return stations.rows;
+  return keepStationsInOwnMunicipality(stations.rows);
 }
 
 function nearby(stations: StationCandidate[], incident: { latitude: number; longitude: number; municipality_id: string }) {
