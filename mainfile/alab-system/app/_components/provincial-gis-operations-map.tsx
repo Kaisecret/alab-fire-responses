@@ -16,6 +16,7 @@ import { flyToWaterSource, WaterSourceMapPopup } from "./water-source-map-popup"
 
 const DEFAULT_PROVINCE_CENTER: [number, number] = [11.18, 122.05];
 const TERMINAL_STATUSES = new Set(["RESOLVED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "CLOSED"]);
+const RESOLVED_STATUSES = new Set(["RESOLVED", "CLOSED"]);
 
 const MUNICIPAL_CENTERS: Record<string, [number, number]> = {
   "Anini-y": [10.431, 121.926],
@@ -460,6 +461,15 @@ const styles = `
     background: #64748b;
     box-shadow: 0 5px 12px rgba(51, 65, 85, 0.35);
   }
+  .mbfp-ops-marker-ring.is-resolved {
+    border-color: rgba(22, 163, 74, 0.45);
+    background: rgba(240, 253, 244, 0.7);
+    box-shadow: 0 0 0 6px rgba(22, 163, 74, 0.12);
+  }
+  .is-resolved .mbfp-ops-fire-marker {
+    background: #16a34a;
+    box-shadow: 0 5px 12px rgba(21, 128, 61, 0.4);
+  }
   .mbfp-ops-fire-marker i {
     color: #ffffff;
     font-size: 0.84rem;
@@ -564,6 +574,9 @@ const styles = `
   }
   .mbfp-ops-key.key-active {
     background: #dc2626;
+  }
+  .mbfp-ops-key.key-resolved {
+    background: #16a34a;
   }
   .mbfp-ops-key.key-history {
     background: #64748b;
@@ -1013,12 +1026,14 @@ function drawIncidents(
       const point: [number, number] = [cluster.latitude, cluster.longitude];
       points.push(point);
       const historyOnly = cluster.activeCount === 0;
-      const count = cluster.incidents.length > 1 ? `<b class="mbfp-ops-marker-count">${cluster.incidents.length}</b>` : "";
+      // A fire that was put out reads green; a rejected or false report stays grey.
+      const resolved = historyOnly && cluster.incidents.some((incident) => RESOLVED_STATUSES.has(incident.status));
+      const count =cluster.incidents.length > 1 ? `<b class="mbfp-ops-marker-count">${cluster.incidents.length}</b>` : "";
 
       const marker = L.marker(point, {
         icon: L.divIcon({
           className: "mbfp-ops-marker-wrapper",
-          html: `<span class="mbfp-ops-marker-ring ${historyOnly ? "is-history" : ""}"><span class="mbfp-ops-fire-marker"><i class="fa-solid fa-fire" aria-hidden="true"></i></span>${count}</span>`,
+          html: `<span class="mbfp-ops-marker-ring ${historyOnly ? "is-history" : ""} ${resolved ? "is-resolved" : ""}"><span class="mbfp-ops-fire-marker"><i class="fa-solid fa-fire" aria-hidden="true"></i></span>${count}</span>`,
           iconSize: [58, 58],
           iconAnchor: [29, 48],
         }),
@@ -1437,8 +1452,12 @@ export function ProvincialGisOperationsMap() {
               Active incident
             </span>}
             {mapMode === "INCIDENTS" && <span className="mbfp-ops-legend-row">
-              <i className="mbfp-ops-key key-history" aria-hidden="true" />
+              <i className="mbfp-ops-key key-resolved" aria-hidden="true" />
               Resolved or closed
+            </span>}
+            {mapMode === "INCIDENTS" && <span className="mbfp-ops-legend-row">
+              <i className="mbfp-ops-key key-history" aria-hidden="true" />
+              Rejected, duplicate or false report
             </span>}
             {mapMode === "INCIDENTS" && showStations && (
               <span className="mbfp-ops-legend-row">
