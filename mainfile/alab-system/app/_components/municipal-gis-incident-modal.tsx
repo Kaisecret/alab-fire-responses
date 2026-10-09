@@ -185,7 +185,7 @@ export function MunicipalGisIncidentModal({ incidents, onClose, onSelectedIncide
 
         {loading ? <div className="mbfp-gis-modal-loading" role="status">Loading protected incident record…</div> : error ? <p className="mbfp-gis-modal-error" role="alert">{error}</p> : detail && (
           <div className="mbfp-gis-modal-body">
-            <section className="mbfp-gis-modal-hero">
+            <section className={`mbfp-gis-modal-hero ${detail.status === "RESOLVED" || detail.status === "CLOSED" ? "is-resolved" : ""}`}>
               <span className="mbfp-gis-modal-fire"><i className="fa-solid fa-fire" aria-hidden="true" /></span>
               <div><strong>{detail.referenceNumber}</strong>{detail.reportSource === "PHONE_CALL" && <span>From Phone Caller</span>}<span className={`mbfp-gis-status status-${detail.status.toLowerCase()}`}>{humanize(detail.status)}</span></div>
               <p><i className="fa-regular fa-clock" aria-hidden="true" /> Reported {formatDate(detail.submittedAt)}</p>

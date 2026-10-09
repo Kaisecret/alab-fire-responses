@@ -794,15 +794,28 @@ const styles = `
     color: #17213a;
     font-size: 1.05rem;
   }
+  /* A fire that was put out reads green, the same as its pin on the map. */
+  .pbfp-gis-modal-hero.is-resolved {
+    border-color: #bbf7d0;
+    background: linear-gradient(120deg, #f0fdf4, #f7fef9);
+  }
+  .pbfp-gis-modal-hero.is-resolved .pbfp-gis-modal-fire {
+    background: #16a34a;
+    box-shadow: 0 8px 18px rgba(22, 163, 74, 0.25);
+  }
   .pbfp-gis-status {
     display: inline-flex;
     padding: 0.22rem 0.55rem;
     border-radius: 999px;
-    background: #dcfce7;
-    color: #047857;
+    background: #fee2e2;
+    color: #b91c1c;
     font-size: 0.68rem;
     font-weight: 850;
     text-transform: uppercase;
+  }
+  .pbfp-gis-status.status-resolved {
+    background: #dcfce7;
+    color: #047857;
   }
   .pbfp-gis-status.status-closed {
     background: #e2e8f0;
@@ -1577,7 +1590,11 @@ export function ProvincialGisOperationsMap() {
             )}
 
             <div className="pbfp-gis-modal-body">
-              <section className="pbfp-gis-modal-hero">
+              <section
+                className={`pbfp-gis-modal-hero ${
+                  RESOLVED_STATUSES.has(selectedIncident.status) ? "is-resolved" : ""
+                }`}
+              >
                 <span className="pbfp-gis-modal-fire">
                   <i className="fa-solid fa-fire" aria-hidden="true" />
                 </span>
@@ -1585,7 +1602,11 @@ export function ProvincialGisOperationsMap() {
                   <strong>{selectedIncident.referenceNumber}</strong>
                   <span
                     className={`pbfp-gis-status ${
-                      TERMINAL_STATUSES.has(selectedIncident.status) ? "status-closed" : ""
+                      RESOLVED_STATUSES.has(selectedIncident.status)
+                        ? "status-resolved"
+                        : TERMINAL_STATUSES.has(selectedIncident.status)
+                          ? "status-closed"
+                          : ""
                     }`}
                   >
                     {humanize(selectedIncident.status)}
