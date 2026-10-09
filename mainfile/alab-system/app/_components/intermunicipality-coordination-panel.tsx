@@ -773,7 +773,7 @@ export function IntermunicipalityCoordinationPanel({
                   Proximity Monitoring On Standby
                 </div>
                 <div className="mbfp-coord-standby-desc">
-                  When responder units are dispatched to this incident, ALAB will automatically calculate Haversine distance and link the 2 closest neighboring municipal BFP stations for live mutual-aid monitoring.
+                  When responder units are dispatched to this incident, ALAB will automatically link 2 neighboring municipal BFP stations for live mutual-aid monitoring: the municipality's paired towns where set (San Jose: Hamtic and Sibalom), otherwise the 2 closest by Haversine distance.
                 </div>
               </div>
             </div>

@@ -59,6 +59,7 @@ test("municipal acknowledgment waits for the incident lock before taking an obse
     "../notifications/service": {},
     "./audit": { recordCoordinationEvent: async (_, event) => events.push(event) },
     "./proximity": {},
+    "./observer-pairing": {},
     "./observer-acknowledgment-query.mjs": {
       findObserverForAcknowledgment: async () => {
         observerReads++;

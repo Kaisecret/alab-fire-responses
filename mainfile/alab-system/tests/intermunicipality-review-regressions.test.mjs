@@ -3,6 +3,7 @@ import test from 'node:test';
 import { loadServerModule as load } from './helpers/load-server-module.mjs';
 import * as state from '../lib/intermunicipality/assistance-state.ts';
 import { rankNearbyMunicipalities } from '../lib/intermunicipality/proximity.ts';
+import * as observerPairing from '../lib/intermunicipality/observer-pairing.ts';
 
 const origin = '11111111-1111-4111-8111-111111111111';
 const recipient = '22222222-2222-4222-8222-222222222222';
@@ -186,7 +187,7 @@ test('observer API does not return resident history notes and maps ended access 
 test('degraded monitoring links each role to its portal and ending monitoring notifies observers', async () => {
   const notifications = [];
   const api = load('lib/intermunicipality/observers.ts', {
-    '../db': {}, './proximity': { rankNearbyMunicipalities }, './audit': { recordCoordinationEvent: async () => {} },
+    '../db': {}, './proximity': { rankNearbyMunicipalities }, './observer-pairing': observerPairing, './audit': { recordCoordinationEvent: async () => {} },
     './observer-acknowledgment-query.mjs': { findObserverForAcknowledgment: async () => null },
     '../notifications/service': {
       listMunicipalNotificationRecipients: async (_client, municipality) => [municipality],
