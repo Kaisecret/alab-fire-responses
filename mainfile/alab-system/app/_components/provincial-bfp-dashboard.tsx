@@ -137,27 +137,47 @@ const dashboardStyles = `
     opacity: 0.8;
   }
 
+  /* Incidents keep their own height and stack from the top; a short list
+     leaves room for the summary rather than stretching one card to fill it. */
   .pbfp-incidents-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
     flex: 1;
-    justify-content: space-between;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
   }
 
   .pbfp-incident-box {
+    --tone: #D97706;
+    --tone-soft: #FFF7ED;
+    position: relative;
+    flex: none;
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
     border-radius: 14px;
-    padding: 1.05rem 1.25rem;
+    padding: 0.95rem 1.1rem 0.85rem 1.25rem;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 0.45rem;
-    flex: 1;
+    gap: 0.6rem;
+    overflow: hidden;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
     transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s;
   }
+
+  .pbfp-incident-box::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: var(--tone);
+  }
+
+  .pbfp-incident-box.tone-red { --tone: #E23632; --tone-soft: #FEF2F2; }
+  .pbfp-incident-box.tone-orange { --tone: #EA580C; --tone-soft: #FFF7ED; }
+  .pbfp-incident-box.tone-amber { --tone: #D97706; --tone-soft: #FFFBEB; }
+  .pbfp-incident-box.tone-green { --tone: #16A34A; --tone-soft: #F0FDF4; }
 
   .pbfp-incident-box:hover {
     transform: translateY(-2px);
@@ -165,42 +185,195 @@ const dashboardStyles = `
     border-color: #CBD5E1;
   }
 
+  .pbfp-incident-box:focus-visible {
+    outline: 3px solid #93B4F1;
+    outline-offset: 2px;
+  }
+
   .pbfp-incident-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.75rem;
+  }
+
+  .pbfp-incident-icon {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: var(--tone-soft);
+    color: var(--tone);
+    font-size: 1rem;
+  }
+
+  .pbfp-incident-heading {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 0.12rem;
   }
 
   .pbfp-incident-name {
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     font-weight: 800;
     color: #0F172A;
+    line-height: 1.3;
+  }
+
+  .pbfp-incident-ref {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748B;
+    font-variant-numeric: tabular-nums;
   }
 
   .pbfp-alarm-pill {
+    flex: none;
     color: #FFFFFF;
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     font-weight: 800;
-    padding: 0.2rem 0.65rem;
+    padding: 0.22rem 0.65rem;
     border-radius: 999px;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
+    background: var(--tone);
   }
 
-  .pbfp-alarm-pill.red {
-    background: #E23632;
+  .pbfp-incident-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
   }
 
-  .pbfp-alarm-pill.orange {
-    background: #D97706;
+  .pbfp-incident-chips span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.6rem;
+    border-radius: 999px;
+    background: #F1F5F9;
+    color: #334155;
+    font-size: 0.71rem;
+    font-weight: 700;
   }
 
-  .pbfp-incident-desc {
-    font-size: 0.78rem;
+  .pbfp-incident-chips span i { color: #64748B; font-size: 0.7rem; }
+  .pbfp-incident-chips span.aid { background: #EFF6FF; color: #1D4ED8; }
+  .pbfp-incident-chips span.aid i { color: #2563EB; }
+
+  .pbfp-clear-panel {
+    flex: 1;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    border-radius: 14px;
+    border: 1px dashed #BBF7D0;
+    background: linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%);
+  }
+
+  .pbfp-clear-head {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .pbfp-clear-icon {
+    flex: none;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: #DCFCE7;
+    color: #15803D;
+  }
+
+  .pbfp-clear-head strong {
+    display: block;
+    font-size: 0.86rem;
+    font-weight: 800;
+    color: #14532D;
+  }
+
+  .pbfp-clear-head span {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #4D7C5F;
+  }
+
+  .pbfp-clear-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pbfp-clear-list li {
+    padding: 0.26rem 0.6rem;
+    border-radius: 999px;
+    background: #FFFFFF;
+    border: 1px solid #D1FAE5;
+    color: #166534;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  .pbfp-incidents-summary {
+    flex: none;
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .pbfp-summary-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .pbfp-summary-stats div {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    padding: 0.5rem 0.7rem;
+    border-radius: 10px;
+    background: #F8FAFC;
+    border: 1px solid #E8EDF3;
+  }
+
+  .pbfp-summary-stats strong {
+    font-size: 1.05rem;
+    font-weight: 850;
+    color: #0F172A;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pbfp-summary-stats span {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .pbfp-summary-note {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 0.74rem;
     color: #475569;
-    font-weight: 500;
-    line-height: 1.45;
+    font-weight: 600;
   }
+
+  .pbfp-summary-note i { color: #64748B; }
+  .pbfp-summary-note a { color: #DC2626; font-weight: 800; text-decoration: none; }
+  .pbfp-summary-note a:hover { text-decoration: underline; }
 
   .pbfp-incident-bottom-meta {
     display: flex;
@@ -305,6 +478,41 @@ function FastNumber({ value, duration = 650 }: { value: string | number; duratio
   return <span>{String(value).match(/\d+/g) ? display : String(value)}</span>;
 }
 
+const FIRE_TYPE_LABELS: Record<string, string> = {
+  HOUSE_BUILDING: 'House / building',
+  VEHICLE: 'Vehicle',
+  GRASS: 'Grass',
+  FOREST: 'Forest',
+  OTHER: 'Rubbish',
+};
+
+const FIRE_TYPE_ICONS: Record<string, string> = {
+  HOUSE_BUILDING: 'fa-house-fire',
+  VEHICLE: 'fa-car-burst',
+  GRASS: 'fa-seedling',
+  FOREST: 'fa-tree',
+  OTHER: 'fa-dumpster-fire',
+};
+
+/** Colour and label for an incident's Level of Danger. */
+function dangerTone(level: string | null, status: string): { tone: 'red' | 'orange' | 'amber' | 'green'; label: string } {
+  switch (level) {
+    case 'CRITICAL':
+    case 'ALARM_3':
+    case 'ALARM_2':
+      return { tone: 'red', label: level.replace(/_/g, ' ') };
+    case 'HIGH':
+      return { tone: 'orange', label: 'HIGH' };
+    case 'MODERATE':
+    case 'ALARM_1':
+      return { tone: 'amber', label: level.replace(/_/g, ' ') };
+    case 'LOW':
+      return { tone: 'green', label: 'LOW' };
+    default:
+      return { tone: 'amber', label: status.replace(/_/g, ' ') };
+  }
+}
+
 function formatTimeAgo(isoString: string): string {
   const diffMs = Date.now() - new Date(isoString).getTime();
   const mins = Math.max(1, Math.floor(diffMs / 60000));
@@ -333,6 +541,8 @@ export function ProvincialBfpDashboard() {
   const { requests: assistanceRequests } = useProvincialAssistanceFeed({ includeClosed: false });
 
   const activeIncidentCount = incidents.length;
+  const burningTowns = new Set(incidents.map((incident) => incident.originMunicipality));
+  const clearMunicipalities = municipalities.map(({ name }) => name).filter((name) => !burningTowns.has(name)).sort();
   const [backupCount, setBackupCount] = useState(0);
 
   useEffect(() => {
@@ -485,43 +695,108 @@ export function ProvincialBfpDashboard() {
                   </div>
                 </div>
               ) : (
-                incidents.slice(0, 3).map((inc) => (
-                  <Link
-                    key={inc.id}
-                    href={`/provincial-bfp/incidents?incident=${encodeURIComponent(inc.id)}`}
-                    className="pbfp-incident-box"
-                    style={{ textDecoration: 'none', color: 'inherit' }}
-                  >
-                    <div className="pbfp-incident-header">
-                      <span className="pbfp-incident-name">
-                        {inc.barangay ? `Brgy. ${inc.barangay}, ` : ''}{inc.originMunicipality}
-                      </span>
-                      <span
-                        className={`pbfp-alarm-pill ${
-                          inc.calculatedSeverity === 'ALARM_3' || inc.calculatedSeverity === 'ALARM_2' ? 'red' : 'orange'
-                        }`}
+                <>
+                  {incidents.slice(0, 3).map((inc) => {
+                    const danger = dangerTone(inc.calculatedSeverity, inc.status);
+                    return (
+                      <Link
+                        key={inc.id}
+                        href={`/provincial-bfp/incidents?incident=${encodeURIComponent(inc.id)}`}
+                        className={`pbfp-incident-box tone-${danger.tone}`}
+                        style={{ textDecoration: 'none', color: 'inherit' }}
                       >
-                        {inc.calculatedSeverity ? inc.calculatedSeverity.replace(/_/g, ' ') : inc.status.replace(/_/g, ' ')}
-                      </span>
+                        <div className="pbfp-incident-header">
+                          <span className="pbfp-incident-icon" aria-hidden="true">
+                            <i className={`fa-solid ${FIRE_TYPE_ICONS[inc.fireType] ?? 'fa-fire'}`} />
+                          </span>
+                          <span className="pbfp-incident-heading">
+                            <span className="pbfp-incident-name">
+                              {inc.barangay ? `Brgy. ${inc.barangay}, ` : ''}{inc.originMunicipality}
+                            </span>
+                            <span className="pbfp-incident-ref">
+                              #{inc.referenceNumber} · {FIRE_TYPE_LABELS[inc.fireType] ?? 'Fire'}
+                            </span>
+                          </span>
+                          <span className="pbfp-alarm-pill">{danger.label}</span>
+                        </div>
+                        <div className="pbfp-incident-chips">
+                          <span>
+                            <i className="fa-solid fa-truck-droplet" aria-hidden="true" />
+                            {inc.assignedStationCount} station{inc.assignedStationCount === 1 ? '' : 's'} responding
+                          </span>
+                          {inc.observers.length > 0 && (
+                            <span>
+                              <i className="fa-solid fa-eye" aria-hidden="true" />
+                              {inc.observers.length} observing
+                            </span>
+                          )}
+                          {inc.openAssistanceCount > 0 && (
+                            <span className="aid">
+                              <i className="fa-solid fa-handshake-angle" aria-hidden="true" />
+                              {inc.openAssistanceCount} mutual aid
+                            </span>
+                          )}
+                        </div>
+                        <div className="pbfp-incident-bottom-meta">
+                          <span className="pbfp-meta-item">
+                            <i className="fa-solid fa-location-dot" /> {inc.originMunicipality} BFP
+                          </span>
+                          <span className="pbfp-meta-item">
+                            <i className="fa-regular fa-clock" /> {formatTimeAgo(inc.submittedAt)}
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                  {/* A short list leaves room to show which towns are clear. */}
+                  {incidents.length < 3 && (
+                    <div className="pbfp-clear-panel">
+                      <div className="pbfp-clear-head">
+                        <span className="pbfp-clear-icon" aria-hidden="true"><i className="fa-solid fa-shield-halved" /></span>
+                        <div>
+                          <strong>
+                            {clearMunicipalities.length > 0
+                              ? `All clear in ${clearMunicipalities.length} municipalities`
+                              : 'No other active incidents in Antique'}
+                          </strong>
+                          <span>No active fire reported</span>
+                        </div>
+                      </div>
+                      {clearMunicipalities.length > 0 && (
+                        <ul className="pbfp-clear-list">
+                          {clearMunicipalities.map((name) => <li key={name}>{name}</li>)}
+                        </ul>
+                      )}
                     </div>
-                    <p className="pbfp-incident-desc">
-                      Ref #{inc.referenceNumber} • {inc.fireType}
-                      {inc.assignedStationCount > 0 && ` • ${inc.assignedStationCount} responding station${inc.assignedStationCount === 1 ? '' : 's'}`}
-                      {inc.observers.length > 0 && ` • ${inc.observers.length} observer${inc.observers.length === 1 ? '' : 's'}`}
-                      {inc.openAssistanceCount > 0 && ` • ${inc.openAssistanceCount} mutual aid`}
-                    </p>
-                    <div className="pbfp-incident-bottom-meta">
-                      <span className="pbfp-meta-item">
-                        <i className="fa-solid fa-location-dot" /> Origin: {inc.originMunicipality} BFP
-                      </span>
-                      <span className="pbfp-meta-item">
-                        <i className="fa-regular fa-clock" /> {formatTimeAgo(inc.submittedAt)}
-                      </span>
-                    </div>
-                  </Link>
-                ))
+                  )}
+                </>
               )}
             </div>
+
+            {incidents.length > 0 && (
+              <div className="pbfp-incidents-summary">
+                <div className="pbfp-summary-stats">
+                  <div>
+                    <strong>{incidents.length}</strong>
+                    <span>Active</span>
+                  </div>
+                  <div>
+                    <strong>{incidents.reduce((sum, inc) => sum + inc.assignedStationCount, 0)}</strong>
+                    <span>Stations out</span>
+                  </div>
+                  <div>
+                    <strong>{incidents.reduce((sum, inc) => sum + inc.openAssistanceCount, 0)}</strong>
+                    <span>Mutual aid</span>
+                  </div>
+                </div>
+                {incidents.length > 3 && (
+                  <p className="pbfp-summary-note">
+                    <i className="fa-solid fa-list" aria-hidden="true" />
+                    Showing the 3 newest of {incidents.length}. <Link href="/provincial-bfp/incidents" prefetch={true}>See all</Link>
+                  </p>
+                )}
+              </div>
+            )}
           </section>
         </div>
         <ProvincialIncidentAnalytics municipalities={municipalities.map(({ id, name }) => ({ id, name }))} />
