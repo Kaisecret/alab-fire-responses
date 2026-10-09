@@ -86,11 +86,13 @@ test("resident fire report requires user selection for burning type and requires
 
   // The house material is asked in "Situation at the scene", only for a
   // burning house, and sent with the report; nothing is asked afterwards.
-  assert.match(content, /data-quick-material="LIGHT_MATERIALS"/);
-  assert.match(content, /data-quick-material="MIXED_SEMI_CONCRETE"/);
-  assert.match(content, /data-quick-material="COMMERCIAL_STORAGE"/);
-  assert.match(page, /materialGroup\.hidden = !houseBurning/);
-  assert.match(page, /form\.set\('structureMaterial', selectedMaterial\)/);
+  // It is its own box, apart from "Situation at the scene".
+  assert.match(content, /data-house-material-box hidden/);
+  assert.match(content, /data-house-material="LIGHT_MATERIALS"/);
+  assert.match(content, /data-house-material="MIXED_SEMI_CONCRETE"/);
+  assert.match(content, /data-house-material="FLAMMABLE_GOODS"/);
+  assert.match(page, /materialBox\.hidden = !houseBurning/);
+  assert.match(page, /form\.set\('structureMaterial', material\)/);
   assert.doesNotMatch(status, /Tulong sa Responders|help-responders/);
 });
 

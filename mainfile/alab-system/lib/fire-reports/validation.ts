@@ -103,6 +103,8 @@ export function resolveDetectedBarangay(officialBarangays: OfficialBarangay[], d
 export function normalizeStructureMaterial(value: unknown): StructureMaterial | null {
   const clean = text(value, 60).toUpperCase();
   if (!clean) return null;
+  // Combined values first: they also contain the words of the single ones.
+  if (clean === "LIGHT_WITH_FLAMMABLE" || clean === "MIXED_WITH_FLAMMABLE") return clean;
   if (clean.includes("LIGHT") || clean.includes("WOOD") || clean.includes("KAHOY")) {
     return "LIGHT_MATERIALS";
   }

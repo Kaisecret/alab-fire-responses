@@ -129,7 +129,16 @@ function structuralSeverity(input: SeverityInput): SeverityAssessment {
   }
   const windScore = windCriterion(input, factors);
   let structureScore = 40;
-  if (input.structureMaterial === "LIGHT_MATERIALS"
+  if (input.structureMaterial === "LIGHT_WITH_FLAMMABLE") {
+    // Two reported hazards score as the worse of them; both are named.
+    structureScore = 100;
+    factors.push("Light combustible materials (Kahoy/Kawayan/Nipa)");
+    factors.push("Commercial / Storage / Flammable materials");
+  } else if (input.structureMaterial === "MIXED_WITH_FLAMMABLE") {
+    structureScore = 90;
+    factors.push("Semi-concrete structure");
+    factors.push("Commercial / Storage / Flammable materials");
+  } else if (input.structureMaterial === "LIGHT_MATERIALS"
     || (!input.structureMaterial && input.houseDensity === "PACKED_MAGKAKADIKIT")) {
     structureScore = 100;
     factors.push("Light combustible materials (Kahoy/Kawayan/Nipa)");

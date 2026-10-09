@@ -2570,7 +2570,11 @@ export function MunicipalIncidentDetail({
                     <span>Structure Material</span>
                   </div>
                   <strong className="mbfp-metric-val">
-                    {incident.structureMaterial === "LIGHT_MATERIALS"
+                    {incident.structureMaterial === "LIGHT_WITH_FLAMMABLE"
+                      ? "Light Combustible + Flammable Goods"
+                      : incident.structureMaterial === "MIXED_WITH_FLAMMABLE"
+                      ? "Semi-Concrete + Flammable Goods"
+                      : incident.structureMaterial === "LIGHT_MATERIALS"
                       ? "Light Combustible (Kahoy / Bamboo / Nipa)"
                       : incident.structureMaterial === "COMMERCIAL_STORAGE"
                         ? "Commercial / Flammable Storage"

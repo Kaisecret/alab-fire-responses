@@ -91,21 +91,26 @@ export function buildResponseGuidance(input: ResponseGuidanceInput): GuidanceAct
   }
 
   if (structural) {
-    if (input.structureMaterial === "LIGHT_MATERIALS" || (!input.structureMaterial && packed)) {
+    const lightHouse = input.structureMaterial === "LIGHT_MATERIALS" || input.structureMaterial === "LIGHT_WITH_FLAMMABLE";
+    const flammableGoods = input.structureMaterial === "COMMERCIAL_STORAGE"
+      || input.structureMaterial === "LIGHT_WITH_FLAMMABLE"
+      || input.structureMaterial === "MIXED_WITH_FLAMMABLE";
+    if (lightHouse || (!input.structureMaterial && packed)) {
       actions.push({
         key: "fast-spread",
         title: "Expect fast spread: lay 2 hose lines early",
         detail: "Put one line on the fire and one on the nearest exposed house.",
-        reason: input.structureMaterial === "LIGHT_MATERIALS"
+        reason: lightHouse
           ? "Light materials reported (kahoy / kawayan / nipa)"
           : "Light materials assumed (houses close together, material not reported)",
       });
-    } else if (input.structureMaterial === "COMMERCIAL_STORAGE") {
+    }
+    if (flammableGoods) {
       actions.push({
         key: "stored-hazard",
         title: "Ask what is stored before going in",
         detail: "Fuel, chemicals or LPG tanks may be inside. Keep a safe distance and use foam on fuel fires.",
-        reason: "Commercial / storage building",
+        reason: input.structureMaterial === "COMMERCIAL_STORAGE" ? "Commercial / storage building" : "Flammable goods reported inside",
       });
     }
   }

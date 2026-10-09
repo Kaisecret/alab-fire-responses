@@ -105,7 +105,7 @@ test("resident report status contains AHP severity badge and asks for scene deta
   assert.match(status, /severity-pill/);
   assert.match(status, /fetch\(`\/api\/resident\/fire-reports\/\$\{reportId\}`, \{/);
   assert.doesNotMatch(status, /tactical-enrichment-card|updateTacticalDetail/);
-  assert.match(page, /form\.set\('structureMaterial', selectedMaterial\)/);
+  assert.match(page, /form\.set\('structureMaterial', material\)/);
 });
 
 test("municipal incident detail displays the AHP severity badge and localized incident site weather", () => {
@@ -151,10 +151,38 @@ test("validateTacticalDetailsUpdate and validateFireReportInput normalize alias 
 test("the report form sends the canonical scene enums the report detail reads", () => {
   const status = read("app/_components/resident-report-status.tsx");
   const content = read("app/_content/resident-report-fire-content.ts");
+  const page = read("app/resident/report-fire/page.tsx");
 
   assert.match(content, /PACKED_MAGKAKADIKIT/);
   assert.match(content, /LIGHT_MATERIALS/);
   assert.match(content, /MIXED_SEMI_CONCRETE/);
-  assert.match(content, /COMMERCIAL_STORAGE/);
+  // Flammable goods alone is stored as the storage value.
+  assert.match(page, /return flammableGoods \? 'COMMERCIAL_STORAGE' : null;/);
   assert.match(status, /reported_house_density/);
+});
+
+test("a house can be wood or mixed and also hold flammable goods", async () => {
+  const { calculateFireSeverity } = await import("../lib/fire-reports/severity.ts");
+  const { normalizeStructureMaterial } = await import("../lib/fire-reports/validation.ts");
+  const base = { fireType: "HOUSE_BUILDING", houseDensity: "MODERATE_SPACING", routeAccessibility: "WIDE_ROAD" };
+
+  // The combined values survive validation instead of collapsing to one material.
+  assert.equal(normalizeStructureMaterial("LIGHT_WITH_FLAMMABLE"), "LIGHT_WITH_FLAMMABLE");
+  assert.equal(normalizeStructureMaterial("MIXED_WITH_FLAMMABLE"), "MIXED_WITH_FLAMMABLE");
+
+  const woodAndGoods = calculateFireSeverity({ ...base, structureMaterial: "LIGHT_WITH_FLAMMABLE" });
+  assert.ok(woodAndGoods.factors.some((factor) => /Light combustible/.test(factor)));
+  assert.ok(woodAndGoods.factors.some((factor) => /Flammable/.test(factor)));
+
+  // Flammable goods raise a mixed house to the storage score, never lower it.
+  const mixed = calculateFireSeverity({ ...base, structureMaterial: "MIXED_SEMI_CONCRETE" });
+  const mixedAndGoods = calculateFireSeverity({ ...base, structureMaterial: "MIXED_WITH_FLAMMABLE" });
+  const storage = calculateFireSeverity({ ...base, structureMaterial: "COMMERCIAL_STORAGE" });
+  assert.ok(mixedAndGoods.score > mixed.score);
+  assert.equal(mixedAndGoods.score, storage.score);
+
+  // The form sends one value for the pair, and the form never lets wood and mixed sit together.
+  const page = read("app/resident/report-fire/page.tsx");
+  assert.match(page, /return flammableGoods \? 'LIGHT_WITH_FLAMMABLE' : 'LIGHT_MATERIALS';/);
+  assert.match(page, /houseBase = houseBase === value \? null : value;/);
 });

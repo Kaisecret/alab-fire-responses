@@ -23,7 +23,15 @@ export type RoadRoute = {
   coordinates: Coordinate[];
 };
 
-export type StructureMaterial = "LIGHT_MATERIALS" | "MIXED_SEMI_CONCRETE" | "CONCRETE" | "COMMERCIAL_STORAGE" | "OTHER";
+export type StructureMaterial =
+  | "LIGHT_MATERIALS"
+  | "MIXED_SEMI_CONCRETE"
+  | "CONCRETE"
+  | "COMMERCIAL_STORAGE"
+  | "OTHER"
+  // A wood or mixed house that also holds storage / flammable goods.
+  | "LIGHT_WITH_FLAMMABLE"
+  | "MIXED_WITH_FLAMMABLE";
 export type HouseDensity = "PACKED_MAGKAKADIKIT" | "MODERATE_SPACING" | "ISOLATED_FAR";
 export type RouteAccessibility = "WIDE_ROAD" | "NARROW_STREET" | "INTERIOR_ALLEY_ESKINITA" | "DEAD_END_OR_BLOCKED";
 export type CalculatedSeverityLevel = "LOW" | "MODERATE" | "HIGH" | "CRITICAL";

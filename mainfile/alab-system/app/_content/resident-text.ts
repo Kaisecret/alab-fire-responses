@@ -213,6 +213,8 @@ const rows: Array<[string, string, string]> = [
   ["Rubbish", "Basura", "Basura"],
   ["SITUATION AT THE SCENE:", "SITWASYON SA LUGAR:", "SITWASYON SA LUGAR:"],
   ["What is the house made of?", "Ano ang gawa ng bahay?", "Ano ang ginhimo sang balay?"],
+  ["HOUSE MATERIAL:", "MATERYAL NG BAHAY:", "MATERYALES SANG BALAY:"],
+  ["Pick wood or mixed. Add flammable goods if they are stored inside.", "Pumili ng kahoy o halo. Idagdag ang madaling masunog na gamit kung may nakaimbak sa loob.", "Magpili sang kahoy ukon sinagol. Idugang ang dali masunog nga butang kon may natipon sa sulod."],
   ["House material", "Materyal ng bahay", "Materyales sang balay"],
   ["Wood / Light materials", "Kahoy / Magagaang materyales", "Kahoy / Magaan nga materyales"],
   ["Mixed / Semi-concrete", "Halo / Semi-konkreto", "Sinagol / Semi-konkreto"],

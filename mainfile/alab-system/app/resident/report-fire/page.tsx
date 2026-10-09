@@ -179,8 +179,8 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const densityButton = root.querySelector<HTMLButtonElement>('[data-quick-density]');
   const routeButton = root.querySelector<HTMLButtonElement>('[data-quick-route]');
   const quickSituationRow = root.querySelector<HTMLElement>('[data-quick-tactical-row]');
-  const materialGroup = root.querySelector<HTMLElement>('[data-quick-material-group]');
-  const materialButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-quick-material]'));
+  const materialBox = root.querySelector<HTMLElement>('[data-house-material-box]');
+  const materialButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-house-material]'));
   const photoRequiredDialog = root.querySelector<HTMLElement>('[data-photo-required-dialog]');
   const photoReqTakeBtn = root.querySelector<HTMLButtonElement>('[data-photo-req-take]');
   const photoReqCloseBtn = root.querySelector<HTMLButtonElement>('[data-photo-req-close]');
@@ -205,7 +205,15 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   let selectedRoute: string | null = null;
   // What a burning house is made of. Asked here, with the report, rather than
   // after it, so the resident is not handed more buttons once help is coming.
-  let selectedMaterial: string | null = null;
+  // A house is wood or mixed, never both; flammable goods can sit beside either.
+  let houseBase: 'LIGHT_MATERIALS' | 'MIXED_SEMI_CONCRETE' | null = null;
+  let flammableGoods = false;
+  // One stored value for the pair the resident chose.
+  const selectedMaterial = (): string | null => {
+    if (houseBase === 'LIGHT_MATERIALS') return flammableGoods ? 'LIGHT_WITH_FLAMMABLE' : 'LIGHT_MATERIALS';
+    if (houseBase === 'MIXED_SEMI_CONCRETE') return flammableGoods ? 'MIXED_WITH_FLAMMABLE' : 'MIXED_SEMI_CONCRETE';
+    return flammableGoods ? 'COMMERCIAL_STORAGE' : null;
+  };
   let submitting = false;
   let attachedPhotos: File[] = [];
   let samePhoneReportId: string | null = null;
@@ -230,10 +238,14 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     selectedRoute = filtered.route;
     if (quickSituationRow) quickSituationRow.hidden = fireTypes.length === 0;
     const houseBurning = fireTypes.includes('HOUSE_BUILDING');
-    if (!houseBurning) selectedMaterial = null;
-    if (materialGroup) materialGroup.hidden = !houseBurning;
+    if (!houseBurning) {
+      houseBase = null;
+      flammableGoods = false;
+    }
+    if (materialBox) materialBox.hidden = !houseBurning;
     materialButtons.forEach((button) => {
-      const active = button.dataset.quickMaterial === selectedMaterial;
+      const value = button.dataset.houseMaterial;
+      const active = value === 'FLAMMABLE_GOODS' ? flammableGoods : value === houseBase;
       button.classList.toggle('is-active', active);
       button.setAttribute('aria-pressed', String(active));
     });
@@ -470,16 +482,20 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       if (strong) strong.textContent = dict.tacticalPacked;
       if (small) small.textContent = dict.tacticalPackedSub;
     }
-    const materialLabel = root.querySelector<HTMLElement>('[data-quick-material-label]');
+    const materialHeading = root.querySelector<HTMLElement>('[data-house-material-heading]');
+    if (materialHeading) materialHeading.textContent = dict.materialHeading;
+    const materialLabel = root.querySelector<HTMLElement>('[data-house-material-question]');
     if (materialLabel) materialLabel.textContent = dict.materialQuestion;
+    const materialHint = root.querySelector<HTMLElement>('[data-house-material-hint]');
+    if (materialHint) materialHint.textContent = dict.materialHint;
     const materialNames: Record<string, string> = {
       LIGHT_MATERIALS: dict.materialLight,
       MIXED_SEMI_CONCRETE: dict.materialMixed,
-      COMMERCIAL_STORAGE: dict.materialStorage,
+      FLAMMABLE_GOODS: dict.materialStorage,
     };
     materialButtons.forEach((button) => {
       const strong = button.querySelector('strong');
-      const name = materialNames[button.dataset.quickMaterial ?? ''];
+      const name = materialNames[button.dataset.houseMaterial ?? ''];
       if (strong && name) strong.textContent = name;
     });
     if (routeButton) {
@@ -608,10 +624,15 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     selectedRoute = active ? (routeButton.dataset.quickRoute || 'INTERIOR_ALLEY_ESKINITA') : null;
   };
 
-  // One material at a time; tapping the chosen one again clears it.
+  // Wood and mixed replace each other; flammable goods toggles on its own,
+  // so at most two are chosen. Tapping a chosen one again clears it.
   const handleMaterialClick = (event: Event) => {
-    const value = (event.currentTarget as HTMLButtonElement).dataset.quickMaterial ?? null;
-    selectedMaterial = selectedMaterial === value ? null : value;
+    const value = (event.currentTarget as HTMLButtonElement).dataset.houseMaterial;
+    if (value === 'FLAMMABLE_GOODS') {
+      flammableGoods = !flammableGoods;
+    } else if (value === 'LIGHT_MATERIALS' || value === 'MIXED_SEMI_CONCRETE') {
+      houseBase = houseBase === value ? null : value;
+    }
     renderSituation();
   };
 
@@ -643,7 +664,8 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     const situation = filterSituationForFireTypes(fireTypes, selectedDensity, selectedRoute);
     if (situation.density) form.set('houseDensity', situation.density);
     if (situation.route) form.set('routeAccessibility', situation.route);
-    if (selectedMaterial && fireTypes.includes('HOUSE_BUILDING')) form.set('structureMaterial', selectedMaterial);
+    const material = selectedMaterial();
+    if (material && fireTypes.includes('HOUSE_BUILDING')) form.set('structureMaterial', material);
     if (locationCard.dataset.weatherTemperature) form.set('weatherTemperature', locationCard.dataset.weatherTemperature);
     if (locationCard.dataset.weatherHumidity) form.set('weatherHumidity', locationCard.dataset.weatherHumidity);
     if (locationCard.dataset.weatherWindSpeed) form.set('weatherWindSpeed', locationCard.dataset.weatherWindSpeed);

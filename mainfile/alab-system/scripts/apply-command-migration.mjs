@@ -149,6 +149,19 @@ const releaseMigrations = [
     name: "add_local_backup_requests",
     appliedCheck: `select to_regclass('public.incident_local_backup_requests') is not null as applied`,
   },
+  {
+    // A house may be wood or mixed and also hold flammable goods.
+    version: "20261009100000",
+    name: "allow_combined_structure_materials",
+    appliedCheck: `select not exists(
+      select 1 from information_schema.columns
+       where table_schema = 'public' and table_name = 'fire_reports' and column_name = 'structure_material'
+    ) or coalesce((
+      select pg_get_constraintdef(oid) like '%LIGHT_WITH_FLAMMABLE%'
+        from pg_constraint
+       where conname = 'fire_reports_structure_material_check'
+    ), false) as applied`,
+  },
 ];
 
 const client = new pg.Client({

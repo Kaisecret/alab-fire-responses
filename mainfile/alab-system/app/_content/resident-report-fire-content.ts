@@ -226,14 +226,19 @@ export const reportFireStyles = `
     border-radius: 1rem;
     background: #F8FAFC;
   }
-  .quick-tactical-row[hidden], .quick-pill-toggle[hidden], .quick-material[hidden] { display: none !important; }
-  .quick-material { margin-bottom: 0.9rem; }
+  .quick-tactical-row[hidden], .quick-pill-toggle[hidden] { display: none !important; }
+  .house-material-box { margin-top: 0.85rem; }
   .quick-material-label {
     display: block;
-    font-size: 0.78rem;
+    font-size: 0.86rem;
     font-weight: 800;
     color: #0F172A;
-    margin-bottom: 0.5rem;
+  }
+  .quick-material-hint {
+    margin: 0.2rem 0 0.7rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748B;
   }
   .quick-material-options {
     display: grid;
@@ -1002,26 +1007,6 @@ export const reportFireMarkup = `
 
         <div class="quick-tactical-row" data-quick-tactical-row hidden>
           <span class="quick-tactical-label">SITUATION AT THE SCENE:</span>
-          <div class="quick-material" data-quick-material-group hidden>
-            <span class="quick-material-label" data-quick-material-label>What is the house made of?</span>
-            <div class="quick-material-options" role="group" aria-label="House material">
-              <button type="button" class="quick-pill-toggle" data-quick-material="LIGHT_MATERIALS" aria-pressed="false">
-                <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-tree"></i></span>
-                <span class="quick-pill-body"><strong>Wood / Light materials</strong></span>
-                <span class="quick-pill-check" aria-hidden="true">✓</span>
-              </button>
-              <button type="button" class="quick-pill-toggle" data-quick-material="MIXED_SEMI_CONCRETE" aria-pressed="false">
-                <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-house-chimney"></i></span>
-                <span class="quick-pill-body"><strong>Mixed / Semi-concrete</strong></span>
-                <span class="quick-pill-check" aria-hidden="true">✓</span>
-              </button>
-              <button type="button" class="quick-pill-toggle" data-quick-material="COMMERCIAL_STORAGE" aria-pressed="false">
-                <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-building"></i></span>
-                <span class="quick-pill-body"><strong>Storage / Flammable goods</strong></span>
-                <span class="quick-pill-check" aria-hidden="true">✓</span>
-              </button>
-            </div>
-          </div>
           <div class="quick-pills-container">
             <button type="button" class="quick-pill-toggle" data-quick-density="PACKED_MAGKAKADIKIT" aria-pressed="false">
               <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-city"></i></span>
@@ -1037,6 +1022,29 @@ export const reportFireMarkup = `
                 <strong>Narrow alley or interior road</strong>
                 <small>A fire truck may not fit</small>
               </span>
+              <span class="quick-pill-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="quick-tactical-row house-material-box" data-house-material-box hidden>
+          <span class="quick-tactical-label" data-house-material-heading>HOUSE MATERIAL:</span>
+          <span class="quick-material-label" data-house-material-question>What is the house made of?</span>
+          <p class="quick-material-hint" data-house-material-hint>Pick wood or mixed. Add flammable goods if they are stored inside.</p>
+          <div class="quick-material-options" role="group" aria-label="House material">
+            <button type="button" class="quick-pill-toggle" data-house-material="LIGHT_MATERIALS" aria-pressed="false">
+              <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-tree"></i></span>
+              <span class="quick-pill-body"><strong>Wood / Light materials</strong></span>
+              <span class="quick-pill-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="quick-pill-toggle" data-house-material="MIXED_SEMI_CONCRETE" aria-pressed="false">
+              <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-house-chimney"></i></span>
+              <span class="quick-pill-body"><strong>Mixed / Semi-concrete</strong></span>
+              <span class="quick-pill-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="quick-pill-toggle" data-house-material="FLAMMABLE_GOODS" aria-pressed="false">
+              <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-building"></i></span>
+              <span class="quick-pill-body"><strong>Storage / Flammable goods</strong></span>
               <span class="quick-pill-check" aria-hidden="true">✓</span>
             </button>
           </div>
