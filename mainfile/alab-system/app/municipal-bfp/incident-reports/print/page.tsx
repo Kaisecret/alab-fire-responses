@@ -4,6 +4,7 @@ import { municipalTabFetch } from "../../../../lib/auth/municipal-tab-fetch";
 import { BfpDataLoader } from "../../../_components/bfp-data-loader";
 
 import React, { useEffect, useState } from "react";
+import { reportDescription } from "../../../../lib/fire-reports/description";
 import type {
   MunicipalBarangaySummary,
   MunicipalDispatchRecipient,
@@ -641,13 +642,13 @@ export default function IncidentReportsPrintPage() {
                   </span>
                 </div>
 
-                {report.description && (
+                {reportDescription(report.description) && (
                   <div style={{ gridColumn: "span 2", background: "#FFFFFF", padding: "0.6rem 0.8rem", borderRadius: 4, border: "1px solid #FECACA", marginTop: 2 }}>
                     <span style={{ color: "#991B1B", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 800, display: "block", marginBottom: 2 }}>
                       Citizen Eyewitness Narrative & Intake Remarks
                     </span>
                     <p style={{ margin: 0, color: "#1E293B", fontSize: "0.83rem", lineHeight: 1.45, fontStyle: "italic" }}>
-                      &ldquo;{report.description}&rdquo;
+                      &ldquo;{reportDescription(report.description)}&rdquo;
                     </p>
                   </div>
                 )}

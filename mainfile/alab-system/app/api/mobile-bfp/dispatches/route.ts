@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isMobileBfpAuthorization, requireMobileMunicipalBfp } from "../../../../lib/auth/mobile-bfp";
 import { getMobileResolvedCount, listMobileDispatchAssignments } from "../../../../lib/municipal-bfp/dispatch";
+import { addMobileDecisionSupport } from "../../../../lib/municipal-bfp/mobile-decision-support";
 
 export const runtime = "nodejs";
 
@@ -10,7 +11,7 @@ export async function GET(request: Request) {
   if (isMobileBfpAuthorization(session)) return session;
   try {
     const [assignments, resolvedCount] = await Promise.all([
-      listMobileDispatchAssignments(session.userId),
+      listMobileDispatchAssignments(session.userId).then(addMobileDecisionSupport),
       getMobileResolvedCount(session.userId),
     ]);
     return NextResponse.json({ assignments, resolvedCount });

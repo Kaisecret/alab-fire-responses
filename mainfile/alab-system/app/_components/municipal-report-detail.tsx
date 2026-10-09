@@ -5,6 +5,7 @@ import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { BfpDataLoader } from "./bfp-data-loader";
+import { reportDescription } from "../../lib/fire-reports/description";
 import type {
   MunicipalReportDetail as MunicipalReportDetailType,
   MunicipalDispatchRecord,
@@ -247,8 +248,8 @@ export function MunicipalReportDetail({ reportId, onClose }: MunicipalReportDeta
                   <Fact icon="fa-crosshairs" label="Coordinates"><span className="mrd-num">{report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}</span></Fact>
                   <Fact icon="fa-truck-fast" label="Dispatch">{report.latestDispatchSummary || "No active dispatch"}</Fact>
                 </div>
-                {report.description && (
-                  <p className="mrd-notes"><i className="fa-regular fa-note-sticky" aria-hidden="true" />{report.description}</p>
+                {reportDescription(report.description) && (
+                  <p className="mrd-notes"><i className="fa-regular fa-note-sticky" aria-hidden="true" />{reportDescription(report.description)}</p>
                 )}
               </section>
 

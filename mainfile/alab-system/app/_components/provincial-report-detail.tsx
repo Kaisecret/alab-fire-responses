@@ -5,6 +5,7 @@ import { useManagementDialog } from './use-management-dialog';
 import { PhotoLightbox } from './photo-lightbox';
 import { ProvincialIncidentMiniMap, provincialMiniMapStyles } from './provincial-incident-mini-map';
 import { DangerFactors } from './danger-factors';
+import { reportDescription } from '../../lib/fire-reports/description';
 import type { ProvincialReportDetail as ReportDetailType } from '../../lib/provincial-bfp/management/types';
 import {
   getFireTypeLabel,
@@ -1213,22 +1214,18 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                   </div>
                 </div>
 
-                {/* Incident Description & Context */}
-                <div className="pid-card">
-                  <div className="pid-card-header">
-                    <h3 className="pid-card-title">
-                      <i className="fa-solid fa-align-left" />
-                      <span>Incident Description & Context</span>
-                    </h3>
+                {/* Incident Description & Context: only a report with its own words. */}
+                {reportDescription(report.description) && (
+                  <div className="pid-card">
+                    <div className="pid-card-header">
+                      <h3 className="pid-card-title">
+                        <i className="fa-solid fa-align-left" />
+                        <span>Incident Description & Context</span>
+                      </h3>
+                    </div>
+                    <div className="pid-description">{reportDescription(report.description)}</div>
                   </div>
-                  <div className="pid-description">
-                    {report.description ? (
-                      report.description
-                    ) : (
-                      <span className="pid-description-empty">No descriptive narrative provided by the reporter.</span>
-                    )}
-                  </div>
-                </div>
+                )}
 
                 {/* Incident Scene Photos */}
                 <div className="pid-card">

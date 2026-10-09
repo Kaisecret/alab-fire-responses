@@ -876,28 +876,6 @@ const detailStyles = `
   }
 
 
-  /*
-   * Narrative account of the incident. The measure is capped so long reports
-   * stay readable instead of running the full width of the column.
-   */
-  .mbfp-desc-box {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 10px;
-    padding: 1.1rem 1.25rem;
-    font-size: 0.92rem;
-    line-height: 1.65;
-    color: #334155;
-    font-weight: 500;
-    margin: 0;
-    max-width: 68ch;
-  }
-
-  .mbfp-desc-box.is-empty {
-    color: #64748B;
-    font-style: italic;
-  }
-
   /* Photo Evidence Card & Lightbox Trigger */
   .mbfp-photo-showcase {
     position: relative;
@@ -2820,18 +2798,8 @@ export function MunicipalIncidentDetail({
               )}
             </section>
 
-            {/* Incident Details / Situation Report */}
-            <section className="mbfp-card" aria-labelledby="mbfp-details-heading">
-              <div className="mbfp-card-header">
-                <h2 id="mbfp-details-heading" className="mbfp-card-title">
-                  <i className="fa-solid fa-file-waveform" />
-                  <span>Situation Report &amp; Description</span>
-                </h2>
-              </div>
-              <p className={`mbfp-desc-box${incident.description ? "" : " is-empty"}`}>
-                {incident.description || "No written description provided with initial transmission."}
-              </p>
-            </section>
+            {/* Residents no longer write a description, so there is no
+                description card: the scene details are reported as choices. */}
           </div>
 
           {/* Right Column: Incident Location Map, Evidence Photos, and Status Logs */}

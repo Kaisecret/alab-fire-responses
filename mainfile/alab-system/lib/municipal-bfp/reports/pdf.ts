@@ -3,6 +3,7 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import PDFDocument from "pdfkit";
+import { reportDescription } from "../../fire-reports/description";
 
 import {
   formatMinutes,
@@ -819,7 +820,9 @@ function renderDossier(doc: Doc, context: MunicipalPdfContext, emblems: Emblems)
     label: "Geolocation coordinates & verification accuracy",
     value: [coordinates, report.locationAccuracyMeters != null ? `GPS accuracy \u00b1${report.locationAccuracyMeters} m` : null, report.locationMethod ? `Method: ${report.locationMethod}` : null].filter(Boolean).join("  \u2022  "),
   }], context, emblems);
-  y = dossierFields(doc, y, [{ label: "Citizen eyewitness narrative & intake remarks", value: report.description || "No description provided." }], context, emblems);
+  // Residents report by choices, so only a report with its own words gets this field.
+  const narrative = reportDescription(report.description);
+  if (narrative) y = dossierFields(doc, y, [{ label: "Citizen eyewitness narrative & intake remarks", value: narrative }], context, emblems);
   y = ensureSpace(doc, y + 13, 111, context, emblems, null);
   y = drawSectionHeading(doc, y, "2. Operational response benchmarks & incident milestones");
   const milestones = [

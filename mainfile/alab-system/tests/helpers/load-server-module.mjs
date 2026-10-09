@@ -29,6 +29,8 @@ export function loadServerModule(path, dependencies) {
     if (name in dependencies) return dependencies[name];
     // Resident screens route their words through the language helper; tests read English.
     if (name.endsWith('_lib/resident-text')) return residentTextInEnglish;
+    // A pure helper with no dependencies of its own: use the real one.
+    if (name.endsWith('fire-reports/description')) return loadServerModule('lib/fire-reports/description.ts', {});
     if (/_content\/resident-(guide-)?text$/.test(name)) return { RESIDENT_TEXT: {}, RESIDENT_GUIDE_TEXT: {}, RESIDENT_TEXT_PATTERNS: [] };
     if (name.endsWith('intermunicipality/station-placement') || name === './station-placement') return passThroughStationPlacement;
     throw Error(`Unexpected dependency: ${name}`);

@@ -3,6 +3,7 @@
 import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { reportDescription } from "../../lib/fire-reports/description";
 import { createPortal } from "react-dom";
 
 import type { MunicipalIncident } from "./use-municipal-incident-feed";
@@ -205,7 +206,7 @@ export function MunicipalGisIncidentModal({ incidents, onClose, onSelectedIncide
               <GisFact icon="fa-house-chimney" tone="amber" label="Effective house density">{humanize(detail.houseDensity)}</GisFact>
             </div>
 
-            <section className="mbfp-gis-modal-section"><h3><i className="fa-solid fa-file-lines" aria-hidden="true" />Reported cause / description</h3><p>{detail.description || (detail.reportSource === "PHONE_CALL" ? "No caller description was provided. This is a phone-call report, not a confirmed fire-cause assessment." : "No resident description was provided. This is a resident report, not a confirmed fire-cause assessment.")}</p></section>
+            {reportDescription(detail.description) && <section className="mbfp-gis-modal-section"><h3><i className="fa-solid fa-file-lines" aria-hidden="true" />Reported cause / description</h3><p>{reportDescription(detail.description)}</p></section>}
 
             <section className="mbfp-gis-modal-section"><h3><i className="fa-solid fa-clock-rotate-left" aria-hidden="true" />Status timeline</h3><ol className="mbfp-gis-timeline">{detail.history.length ? detail.history.map((event, index) => <li key={`${event.status}-${event.createdAt}-${index}`}><span /><div><strong>{humanize(event.status)}</strong><small>{formatDate(event.createdAt)}</small>{event.message && <p>{event.message}</p>}</div></li>) : <li><span /><div><strong>{humanize(detail.status)}</strong><small>{formatDate(detail.submittedAt)}</small></div></li>}</ol></section>
 
