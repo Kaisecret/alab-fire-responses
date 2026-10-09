@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useResidentText } from "../_lib/resident-text";
+import { RESIDENT_TEXT } from "../_content/resident-text";
 /*
  * Camera-only selfie capture for resident correction resubmission.
  * Mirrors the capture mechanism in signup-page.tsx (getUserMedia with a
@@ -160,6 +162,7 @@ export type ResidentSelfieCaptureProps = {
 };
 
 export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCaptureProps) {
+  const tx = useResidentText(RESIDENT_TEXT);
   const [state, setState] = useState<CaptureState>("idle");
   const [errorKind, setErrorKind] = useState<ErrorKind | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -371,12 +374,12 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
 
   return (
     <div ref={rootRef} className="selfie-capture">
-      <div aria-live="polite" className="sr-only">{announcement}</div>
+      <div aria-live="polite" className="sr-only">{tx(announcement)}</div>
 
       {state === "idle" && !previewUrl && (
         <button type="button" className="selfie-open-btn" onClick={() => void openCamera()} disabled={disabled}>
           <span className="selfie-camera-icon" aria-hidden="true">📷</span>
-          Open camera
+          {tx("Open camera")}
         </button>
       )}
 
@@ -384,17 +387,17 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
           form as a chip, so the resident can see and retake what they sent. */}
       {state === "idle" && previewUrl && (
         <div className="selfie-ready-row">
-          <img src={previewUrl} alt="Confirmed selfie" className="selfie-thumb-img" />
+          <img src={previewUrl} alt={tx("Confirmed selfie")} className="selfie-thumb-img" />
           <span className="selfie-thumb-meta">
-            <span className="selfie-thumb-ok"><span aria-hidden="true">✓</span> Selfie ready</span>
-            <span className="selfie-thumb-hint">Ready to submit</span>
+            <span className="selfie-thumb-ok"><span aria-hidden="true">✓</span>{" "}{tx("Selfie ready")}</span>
+            <span className="selfie-thumb-hint">{tx("Ready to submit")}</span>
           </span>
-          <button type="button" className="selfie-retake-btn" onClick={retake} disabled={disabled}>Retake</button>
+          <button type="button" className="selfie-retake-btn" onClick={retake} disabled={disabled}>{tx("Retake")}</button>
         </div>
       )}
 
       {overlayOpen && (
-        <div ref={overlayRef} className="selfie-overlay" role="dialog" aria-modal="true" aria-label="Take a new selfie">
+        <div ref={overlayRef} className="selfie-overlay" role="dialog" aria-modal="true" aria-label={tx("Take a new selfie")}>
           <div className="selfie-overlay-stage">
             {state !== "captured" && (
               <video
@@ -409,13 +412,13 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
               />
             )}
             {state === "captured" && previewUrl && (
-              <img src={previewUrl} alt="Captured selfie preview" className="selfie-overlay-video" />
+              <img src={previewUrl} alt={tx("Captured selfie preview")} className="selfie-overlay-video" />
             )}
 
             {state === "requesting" && (
               <div className="selfie-overlay-waiting">
                 <span className="selfie-spinner" aria-hidden="true" />
-                Requesting camera access…
+                {tx("Requesting camera access…")}
               </div>
             )}
 
@@ -424,12 +427,12 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
             <div className="selfie-overlay-top">
               <p className="selfie-overlay-title">
                 {state === "captured"
-                  ? "Use this photo?"
+                  ? tx("Use this photo?")
                   : state === "requesting"
-                    ? "Waiting for camera permission…"
-                    : "Center your face in the oval"}
+                    ? tx("Waiting for camera permission…")
+                    : tx("Center your face in the oval")}
               </p>
-              <button ref={closeButtonRef} type="button" className="selfie-close" onClick={cancel} aria-label="Close camera">✕</button>
+              <button ref={closeButtonRef} type="button" className="selfie-close" onClick={cancel} aria-label={tx("Close camera")}>✕</button>
             </div>
           </div>
 
@@ -441,16 +444,16 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
                   type="button"
                   className="selfie-shutter"
                   onClick={takePhoto}
-                  aria-label={encoding ? "Processing photo" : frameReady ? "Take photo" : "Camera preview is loading"}
+                  aria-label={encoding ? tx("Processing photo") : frameReady ? tx("Take photo") : tx("Camera preview is loading")}
                   disabled={!frameReady || encoding || disabled}
                 />
-                <span className="selfie-bar-side selfie-bar-text">Camera only</span>
+                <span className="selfie-bar-side selfie-bar-text">{tx("Camera only")}</span>
               </>
             )}
             {state === "captured" && (
               <>
-                <button type="button" className="selfie-ghost-btn" onClick={retake} disabled={disabled}>Retake</button>
-                <button type="button" className="selfie-use-btn" onClick={confirmPhoto} disabled={disabled}>Use this photo</button>
+                <button type="button" className="selfie-ghost-btn" onClick={retake} disabled={disabled}>{tx("Retake")}</button>
+                <button type="button" className="selfie-use-btn" onClick={confirmPhoto} disabled={disabled}>{tx("Use this photo")}</button>
               </>
             )}
           </div>
@@ -459,9 +462,9 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
 
       {state === "error" && errorKind && (
         <div className="selfie-error" role="alert">
-          <p className="selfie-error-title">{ERROR_COPY[errorKind].title}</p>
-          <p className="selfie-error-hint">{ERROR_COPY[errorKind].hint}</p>
-          <button type="button" className="selfie-primary-btn" onClick={() => void openCamera()} disabled={disabled}>Try again</button>
+          <p className="selfie-error-title">{tx(ERROR_COPY[errorKind].title)}</p>
+          <p className="selfie-error-hint">{tx(ERROR_COPY[errorKind].hint)}</p>
+          <button type="button" className="selfie-primary-btn" onClick={() => void openCamera()} disabled={disabled}>{tx("Try again")}</button>
         </div>
       )}
     </div>

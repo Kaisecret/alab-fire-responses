@@ -4,6 +4,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useResidentLanguage, type ResidentLanguage } from "../_lib/resident-i18n";
 
+import { useResidentText } from "../_lib/resident-text";
+import { RESIDENT_GUIDE_TEXT } from "../_content/resident-guide-text";
 // Category type definitions
 type CategoryId = "all" | "prevention" | "reporting" | "evacuation" | "first-aid" | "electrical" | "gas";
 
@@ -289,6 +291,7 @@ function getLocalizedGuides(lang: ResidentLanguage): GuideItem[] {
 }
 
 export function ResidentGuidePage() {
+  const tx = useResidentText(RESIDENT_GUIDE_TEXT);
   const { lang, t } = useResidentLanguage();
   const searchParams = useSearchParams();
 
@@ -474,7 +477,7 @@ export function ResidentGuidePage() {
             <div className="rg-main-col">
               {/* Hero Section */}
               <div className="rg-hero-section">
-                <img src="/images/burning-house.webp" alt="Burning House" className="rg-hero-img" />
+                <img src="/images/burning-house.webp" alt={tx("Burning House")} className="rg-hero-img" />
                 <div className="rg-hero-content">
                   <h2 className="rg-desktop-only">{t("guideHeroTitle")}</h2>
                   <h2 className="rg-mobile-only">{t("guideHeroStepsTitle")}</h2>
@@ -485,7 +488,7 @@ export function ResidentGuidePage() {
                     <div className="rg-step" onClick={() => handleOpenGuide("how-to-report-a-fire-correctly")}>
                       <div className="rg-step-icon-wrapper">
                         <div className="rg-step-number">1</div>
-                        <img src="/images/step1_calm.webp" alt="Stay Calm" />
+                        <img src="/images/step1_calm.webp" alt={tx("Stay Calm")} />
                       </div>
                       <h3>{lang === "en" ? "Stay Calm" : lang === "hil" ? "Mangin Kalmado" : "Maging Kalmado"}</h3>
                       <p>{lang === "en" ? "Keep yourself calm and think clearly." : lang === "hil" ? "Magpabilin nga kalmado kag maghuna-huna sing maathag." : "Manatiling kalmado at mag-isip nang malinaw."}</p>
@@ -493,7 +496,7 @@ export function ResidentGuidePage() {
                     <div className="rg-step" onClick={() => handleOpenGuide("evacuation-safety-guide")}>
                       <div className="rg-step-icon-wrapper">
                         <div className="rg-step-number">2</div>
-                        <img src="/images/step2_exit.webp" alt="Move to Safety" />
+                        <img src="/images/step2_exit.webp" alt={tx("Move to Safety")} />
                       </div>
                       <h3>{lang === "en" ? "Move to Safety" : lang === "hil" ? "Magkadto sa Luwas nga Lugar" : "Pumunta sa Ligtas na Lugar"}</h3>
                       <p>{lang === "en" ? "Exit the building using safe routes." : lang === "hil" ? "Maggwa sa bilding gamit ang luwas nga dalan." : "Lumabas ng gusali gamit ang ligtas na daan."}</p>
@@ -501,7 +504,7 @@ export function ResidentGuidePage() {
                     <div className="rg-step" onClick={() => handleOpenGuide("how-to-report-a-fire-correctly")}>
                       <div className="rg-step-icon-wrapper">
                         <div className="rg-step-number">3</div>
-                        <img src="/images/step3_phone.webp" alt="Send Fire Alert" />
+                        <img src="/images/step3_phone.webp" alt={tx("Send Fire Alert")} />
                       </div>
                       <h3>{lang === "en" ? "Send Fire Alert" : lang === "hil" ? "Magpadala sang Fire Alert" : "Magpadala ng Fire Alert"}</h3>
                       <p>{lang === "en" ? "Report the fire immediately." : lang === "hil" ? "I-report dayon ang kalayo sa BFP." : "I-report agad ang sunog sa BFP."}</p>
@@ -509,7 +512,7 @@ export function ResidentGuidePage() {
                     <div className="rg-step" onClick={() => handleOpenGuide("how-to-report-a-fire-correctly")}>
                       <div className="rg-step-icon-wrapper">
                         <div className="rg-step-number">4</div>
-                        <img src="/images/step4_firefighter.webp" alt="Wait for Responders" />
+                        <img src="/images/step4_firefighter.webp" alt={tx("Wait for Responders")} />
                       </div>
                       <h3>{lang === "en" ? "Wait for Responders" : lang === "hil" ? "Hulata ang mga Bombero" : "Hintayin ang mga Bumbero"}</h3>
                       <p>{lang === "en" ? "Stay in a safe area and follow instructions." : lang === "hil" ? "Magpabilin sa luwas nga lugar kag sunda ang panudlo." : "Manatili sa ligtas na lugar at sundin ang tagubilin."}</p>
@@ -650,8 +653,8 @@ export function ResidentGuidePage() {
                       </svg>
                     </div>
                     <div className="rg-contact-info">
-                      <div className="rg-contact-label">BFP Hotline</div>
-                      <div className="rg-contact-desc">Bureau of Fire Protection</div>
+                      <div className="rg-contact-label">{tx("BFP Hotline")}</div>
+                      <div className="rg-contact-desc">{tx("Bureau of Fire Protection")}</div>
                     </div>
                     <a href="tel:0365404222" className="rg-contact-number">(036) 540-4222</a>
                   </div>
@@ -678,7 +681,7 @@ export function ResidentGuidePage() {
                     </div>
                     <div className="rg-contact-info">
                       <div className="rg-contact-label">{t("bfpStationLabel")}</div>
-                      <div className="rg-contact-desc">San Jose Fire Station</div>
+                      <div className="rg-contact-desc">{tx("San Jose Fire Station")}</div>
                     </div>
                     <a href="tel:0365411111" className="rg-contact-number">(036) 541-1111</a>
                   </div>
@@ -697,19 +700,20 @@ export function ResidentGuidePage() {
    ========================================================================= */
 
 function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
+  const tx = useResidentText(RESIDENT_GUIDE_TEXT);
   return (
     <div className="rgd-detail-container">
       {/* Top Header with Back Button */}
       <div className="rgd-header">
-        <button onClick={onBack} className="rgd-back-btn" aria-label="Back to Guides">
+        <button onClick={onBack} className="rgd-back-btn" aria-label={tx("Back to Guides")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
         </button>
         <div className="rgd-header-text">
-          <h1 className="rgd-title">How to Report a Fire Correctly</h1>
-          <p className="rgd-subtitle">Follow these steps to send a clear fire report through ALAB.</p>
+          <h1 className="rgd-title">{tx("How to Report a Fire Correctly")}</h1>
+          <p className="rgd-subtitle">{tx("Follow these steps to send a clear fire report through ALAB.")}</p>
         </div>
       </div>
 
@@ -721,16 +725,16 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
           </svg>
         </div>
         <div className="rgd-callout-content">
-          <h3 className="rgd-callout-title">Life-threatening emergency? Call 911 first.</h3>
+          <h3 className="rgd-callout-title">{tx("Life-threatening emergency? Call 911 first.")}</h3>
           <p className="rgd-callout-desc">
-            ALAB reports help responders with more details, but 911 is the fastest way to get help.
+            {tx("ALAB reports help responders with more details, but 911 is the fastest way to get help.")}
           </p>
         </div>
         <a href="tel:911" className="rgd-call-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.053 15.053 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1.01A11.36 11.36 0 0 1 8.57 3.9c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.52c0-.55-.45-1-.99-1z" />
           </svg>
-          <span>Call 911</span>
+          <span>{tx("Call 911")}</span>
         </a>
       </div>
 
@@ -747,11 +751,11 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
               </svg>
             </div>
             <div className="rgd-step-info">
-              <h2 className="rgd-step-title">Move to Safety First</h2>
-              <p className="rgd-step-text">Move yourself and others to a safe place away from the fire before reporting.</p>
+              <h2 className="rgd-step-title">{tx("Move to Safety First")}</h2>
+              <p className="rgd-step-text">{tx("Move yourself and others to a safe place away from the fire before reporting.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-safety">
-              <img src="/images/guide-safety-exit.jpg" alt="Move to safety" className="rgd-safety-img" />
+              <img src="/images/guide-safety-exit.jpg" alt={tx("Move to safety")} className="rgd-safety-img" />
             </div>
           </div>
         </div>
@@ -772,8 +776,8 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
               </svg>
             </div>
             <div className="rgd-step-info">
-              <h2 className="rgd-step-title">Tap the Report Fire Button</h2>
-              <p className="rgd-step-text">From the home screen, tap the large Report Fire button to begin.</p>
+              <h2 className="rgd-step-title">{tx("Tap the Report Fire Button")}</h2>
+              <p className="rgd-step-text">{tx("From the home screen, tap the large Report Fire button to begin.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-preview-fab">
@@ -783,7 +787,7 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
                     <path d="M12 23c-4.97 0-9-4.03-9-9 0-3.32 1.83-6.22 4.54-7.75.43-.24.96.06.96.55 0 .28-.15.54-.39.68C6.18 8.6 5 10.66 5 13c0 3.87 3.13 7 7 7s7-3.13 7-7c0-2.34-1.18-4.4-3.11-5.52-.24-.14-.39-.4-.39-.68 0-.49.53-.79.96-.55C19.17 7.78 21 10.68 21 14c0 4.97-4.03 9-9 9z" />
                     <path d="M12 6.5c-2.48 0-4.5 2.02-4.5 4.5 0 1.66 1.34 3 3 3 .83 0 1.5-.67 1.5-1.5 0-.41-.34-.75-.75-.75-.41 0-.75-.34-.75-.75 0-.83.67-1.5 1.5-1.5.41 0 .75-.34.75-.75 0-.41-.34-.75-.75-.75z" />
                   </svg>
-                  <span>REPORT FIRE</span>
+                  <span>{tx("REPORT FIRE")}</span>
                 </div>
               </div>
             </div>
@@ -807,8 +811,8 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
               </svg>
             </div>
             <div className="rgd-step-info">
-              <h2 className="rgd-step-title">Confirm Your Location</h2>
-              <p className="rgd-step-text">Allow location access or tap &ldquo;Detect my location&rdquo; to confirm your current address.</p>
+              <h2 className="rgd-step-title">{tx("Confirm Your Location")}</h2>
+              <p className="rgd-step-text">{tx("Allow location access or tap “Detect my location” to confirm your current address.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-preview-map">
@@ -847,27 +851,27 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
               </svg>
             </div>
             <div className="rgd-step-info">
-              <h2 className="rgd-step-title">Choose What Is Burning</h2>
-              <p className="rgd-step-text">Select the type of fire from the options that best matches the situation.</p>
+              <h2 className="rgd-step-title">{tx("Choose What Is Burning")}</h2>
+              <p className="rgd-step-text">{tx("Select the type of fire from the options that best matches the situation.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-preview-categories-grid">
-                <div className="rgd-cat-mini rgd-cat-house" title="Building / House">
+                <div className="rgd-cat-mini rgd-cat-house" title={tx("Building / House")}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="#d91b10" strokeWidth="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                   </svg>
                 </div>
-                <div className="rgd-cat-mini rgd-cat-grass" title="Grass / Wildfire">
+                <div className="rgd-cat-mini rgd-cat-grass" title={tx("Grass / Wildfire")}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2">
                     <path d="M4 20h16M7 20V10M12 20V6M17 20V12" />
                   </svg>
                 </div>
-                <div className="rgd-cat-mini rgd-cat-forest" title="Forest / Trees">
+                <div className="rgd-cat-mini rgd-cat-forest" title={tx("Forest / Trees")}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2">
                     <path d="M12 2L6 12h3l-4 7h14l-4-7h3z" />
                   </svg>
                 </div>
-                <div className="rgd-cat-mini rgd-cat-vehicle" title="Vehicle / Car">
+                <div className="rgd-cat-mini rgd-cat-vehicle" title={tx("Vehicle / Car")}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
                     <path d="M5 17h14v-5l-2-4H7L5 12v5z" />
                     <circle cx="7.5" cy="17.5" r="2.5" />
@@ -896,8 +900,8 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
               </svg>
             </div>
             <div className="rgd-step-info">
-              <h2 className="rgd-step-title">Add Photo (Optional)</h2>
-              <p className="rgd-step-text">Take a photo only if it&apos;s safe to do so. This helps responders understand quickly.</p>
+              <h2 className="rgd-step-title">{tx("Add Photo (Optional)")}</h2>
+              <p className="rgd-step-text">{tx("Take a photo only if it's safe to do so. This helps responders understand quickly.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-preview-photo-box">
@@ -927,15 +931,15 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
               </svg>
             </div>
             <div className="rgd-step-info">
-              <h2 className="rgd-step-title">Send Fire Alert</h2>
-              <p className="rgd-step-text">Review your details and tap Send Fire Alert to notify responders.</p>
+              <h2 className="rgd-step-title">{tx("Send Fire Alert")}</h2>
+              <p className="rgd-step-text">{tx("Review your details and tap Send Fire Alert to notify responders.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-preview-alert-btn">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
                 </svg>
-                <span>SEND FIRE ALERT</span>
+                <span>{tx("SEND FIRE ALERT")}</span>
               </div>
             </div>
           </div>
@@ -960,11 +964,11 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
               </svg>
             </div>
             <div className="rgd-step-info">
-              <h2 className="rgd-step-title">Wait for Responders</h2>
-              <p className="rgd-step-text">Stay reachable. Responders may contact you for more details or updates.</p>
+              <h2 className="rgd-step-title">{tx("Wait for Responders")}</h2>
+              <p className="rgd-step-text">{tx("Stay reachable. Responders may contact you for more details or updates.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-truck">
-              <img src="/images/guide-firefighter-truck.jpg" alt="Firefighter &amp; truck" className="rgd-truck-img" />
+              <img src="/images/guide-firefighter-truck.jpg" alt={tx("Firefighter & truck")} className="rgd-truck-img" />
             </div>
           </div>
         </div>
@@ -982,8 +986,8 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
             </svg>
           </div>
           <div>
-            <h3 className="rgd-checklist-title">What to Tell Responders</h3>
-            <p className="rgd-checklist-subtitle">Be ready to share these key details clearly.</p>
+            <h3 className="rgd-checklist-title">{tx("What to Tell Responders")}</h3>
+            <p className="rgd-checklist-subtitle">{tx("Be ready to share these key details clearly.")}</p>
           </div>
         </div>
 
@@ -994,7 +998,7 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Exact location (address or GPS)</span>
+            <span>{tx("Exact location (address or GPS)")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1003,7 +1007,7 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>People trapped or injured</span>
+            <span>{tx("People trapped or injured")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1012,7 +1016,7 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Nearest landmark or road name</span>
+            <span>{tx("Nearest landmark or road name")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1021,7 +1025,7 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Known hazards (e.g., gas, chemicals)</span>
+            <span>{tx("Known hazards (e.g., gas, chemicals)")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1030,7 +1034,7 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>What is burning</span>
+            <span>{tx("What is burning")}</span>
           </div>
         </div>
       </div>
@@ -1041,10 +1045,10 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
-          Report a Fire Now
+          {tx("Report a Fire Now")}
         </a>
         <button onClick={onBack} className="rgd-back-to-list-btn">
-          Back to All Guides
+          {tx("Back to All Guides")}
         </button>
       </div>
     </div>
@@ -1057,19 +1061,20 @@ function ReportFireGuideDetail({ onBack }: { onBack: () => void }) {
    ========================================================================= */
 
 function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
+  const tx = useResidentText(RESIDENT_GUIDE_TEXT);
   return (
     <div className="rgd-detail-container">
       {/* Top Header with Back Button */}
       <div className="rgd-header">
-        <button onClick={onBack} className="rgd-back-btn" aria-label="Back to Guides">
+        <button onClick={onBack} className="rgd-back-btn" aria-label={tx("Back to Guides")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
         </button>
         <div className="rgd-header-text">
-          <h1 className="rgd-title">Evacuation Safety Guide</h1>
-          <p className="rgd-subtitle">Follow these steps to leave the area safely during a fire emergency.</p>
+          <h1 className="rgd-title">{tx("Evacuation Safety Guide")}</h1>
+          <p className="rgd-subtitle">{tx("Follow these steps to leave the area safely during a fire emergency.")}</p>
         </div>
       </div>
 
@@ -1086,14 +1091,14 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
         </div>
         <div className="rgd-callout-content">
           <h3 className="rgd-callout-title rgd-callout-title-green">
-            If the fire is spreading quickly or someone is trapped, call 911 first.
+            {tx("If the fire is spreading quickly or someone is trapped, call 911 first.")}
           </h3>
         </div>
         <a href="tel:911" className="rgd-call-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.053 15.053 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1.01A11.36 11.36 0 0 1 8.57 3.9c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.52c0-.55-.45-1-.99-1z" />
           </svg>
-          <span>Call 911</span>
+          <span>{tx("Call 911")}</span>
         </a>
       </div>
 
@@ -1104,11 +1109,11 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">1</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Stay Calm</h2>
-              <p className="rgd-step-text">Keep calm and think clearly.</p>
+              <h2 className="rgd-step-title">{tx("Stay Calm")}</h2>
+              <p className="rgd-step-text">{tx("Keep calm and think clearly.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-circle-img">
-              <img src="/images/evac-stay-calm.jpg" alt="Stay calm" className="rgd-circle-graphic" />
+              <img src="/images/evac-stay-calm.jpg" alt={tx("Stay calm")} className="rgd-circle-graphic" />
             </div>
           </div>
         </div>
@@ -1124,11 +1129,11 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">2</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Alert Others Nearby</h2>
-              <p className="rgd-step-text">Warn family, coworkers, or nearby people.</p>
+              <h2 className="rgd-step-title">{tx("Alert Others Nearby")}</h2>
+              <p className="rgd-step-text">{tx("Warn family, coworkers, or nearby people.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-circle-img">
-              <img src="/images/evac-alert-others.jpg" alt="Alert others nearby" className="rgd-circle-graphic" />
+              <img src="/images/evac-alert-others.jpg" alt={tx("Alert others nearby")} className="rgd-circle-graphic" />
             </div>
           </div>
         </div>
@@ -1144,11 +1149,11 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">3</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Leave Immediately</h2>
-              <p className="rgd-step-text">Do not delay or collect unnecessary belongings.</p>
+              <h2 className="rgd-step-title">{tx("Leave Immediately")}</h2>
+              <p className="rgd-step-text">{tx("Do not delay or collect unnecessary belongings.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-safety">
-              <img src="/images/guide-safety-exit.jpg" alt="Leave immediately" className="rgd-safety-img" />
+              <img src="/images/guide-safety-exit.jpg" alt={tx("Leave immediately")} className="rgd-safety-img" />
             </div>
           </div>
         </div>
@@ -1164,12 +1169,12 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">4</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Use the Nearest Safe Exit</h2>
-              <p className="rgd-step-text">Follow marked exits and safe routes.</p>
+              <h2 className="rgd-step-title">{tx("Use the Nearest Safe Exit")}</h2>
+              <p className="rgd-step-text">{tx("Follow marked exits and safe routes.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-exit-sign-badge">
-                <span className="rgd-exit-text">EXIT</span>
+                <span className="rgd-exit-text">{tx("EXIT")}</span>
                 <svg viewBox="0 0 24 24" fill="currentColor" className="rgd-exit-runner">
                   <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z" />
                 </svg>
@@ -1190,11 +1195,11 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">5</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Stay Low if There Is Smoke</h2>
-              <p className="rgd-step-text">Crawl low to avoid inhaling smoke.</p>
+              <h2 className="rgd-step-title">{tx("Stay Low if There Is Smoke")}</h2>
+              <p className="rgd-step-text">{tx("Crawl low to avoid inhaling smoke.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-smoke">
-              <img src="/images/evac-stay-low-smoke.jpg" alt="Stay low smoke" className="rgd-smoke-img" />
+              <img src="/images/evac-stay-low-smoke.jpg" alt={tx("Stay low smoke")} className="rgd-smoke-img" />
             </div>
           </div>
         </div>
@@ -1210,8 +1215,8 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">6</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Do Not Use Elevators</h2>
-              <p className="rgd-step-text">Use stairs whenever possible.</p>
+              <h2 className="rgd-step-title">{tx("Do Not Use Elevators")}</h2>
+              <p className="rgd-step-text">{tx("Use stairs whenever possible.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-no-elevator-badge">
@@ -1239,8 +1244,8 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">7</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Go to the Assembly Area</h2>
-              <p className="rgd-step-text">Move to an open safe meeting point outside.</p>
+              <h2 className="rgd-step-title">{tx("Go to the Assembly Area")}</h2>
+              <p className="rgd-step-text">{tx("Move to an open safe meeting point outside.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-assembly-sign-badge">
@@ -1269,11 +1274,11 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">8</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Wait for Responders</h2>
-              <p className="rgd-step-text">Stay outside and follow instructions.</p>
+              <h2 className="rgd-step-title">{tx("Wait for Responders")}</h2>
+              <p className="rgd-step-text">{tx("Stay outside and follow instructions.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-truck">
-              <img src="/images/guide-firefighter-truck.jpg" alt="Firefighter &amp; truck" className="rgd-truck-img" />
+              <img src="/images/guide-firefighter-truck.jpg" alt={tx("Firefighter & truck")} className="rgd-truck-img" />
             </div>
           </div>
         </div>
@@ -1289,7 +1294,7 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
             </svg>
           </div>
           <div>
-            <h3 className="rgd-checklist-title rgd-checklist-title-red">What to Remember</h3>
+            <h3 className="rgd-checklist-title rgd-checklist-title-red">{tx("What to Remember")}</h3>
           </div>
         </div>
 
@@ -1300,7 +1305,7 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Follow exit signs</span>
+            <span>{tx("Follow exit signs")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1309,7 +1314,7 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Cover nose and mouth if needed</span>
+            <span>{tx("Cover nose and mouth if needed")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1318,7 +1323,7 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Help children, elderly, or persons with disabilities</span>
+            <span>{tx("Help children, elderly, or persons with disabilities")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1327,7 +1332,7 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Call 911 for urgent danger</span>
+            <span>{tx("Call 911 for urgent danger")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1336,7 +1341,7 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Never go back inside</span>
+            <span>{tx("Never go back inside")}</span>
           </div>
         </div>
       </div>
@@ -1347,10 +1352,10 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
-          Report a Fire Now
+          {tx("Report a Fire Now")}
         </a>
         <button onClick={onBack} className="rgd-back-to-list-btn">
-          Back to All Guides
+          {tx("Back to All Guides")}
         </button>
       </div>
     </div>
@@ -1362,19 +1367,20 @@ function EvacuationSafetyGuideDetail({ onBack }: { onBack: () => void }) {
    ========================================================================= */
 
 function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
+  const tx = useResidentText(RESIDENT_GUIDE_TEXT);
   return (
     <div className="rgd-detail-container">
       {/* Header */}
       <div className="rgd-header">
-        <button onClick={onBack} className="rgd-back-btn" aria-label="Back to Guides">
+        <button onClick={onBack} className="rgd-back-btn" aria-label={tx("Back to Guides")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
         </button>
         <div className="rgd-header-text">
-          <h1 className="rgd-title">Kitchen Fire Safety Guide</h1>
-          <p className="rgd-subtitle">Follow these steps to stay safe during a kitchen fire emergency.</p>
+          <h1 className="rgd-title">{tx("Kitchen Fire Safety Guide")}</h1>
+          <p className="rgd-subtitle">{tx("Follow these steps to stay safe during a kitchen fire emergency.")}</p>
         </div>
       </div>
 
@@ -1393,17 +1399,17 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
         </div>
         <div className="rgd-callout-content">
           <div className="rgd-callout-title rgd-callout-title-orange">
-            If the fire is spreading or someone is in danger, call 911 first.
+            {tx("If the fire is spreading or someone is in danger, call 911 first.")}
           </div>
           <div className="rgd-callout-sub-orange">
-            Use ALAB if reporting a fire.
+            {tx("Use ALAB if reporting a fire.")}
           </div>
         </div>
         <a href="tel:911" className="rgd-call-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
           </svg>
-          Call 911
+          {tx("Call 911")}
         </a>
       </div>
 
@@ -1414,11 +1420,11 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">1</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Stay Calm</h2>
-              <p className="rgd-step-text">Do not panic and assess the situation quickly.</p>
+              <h2 className="rgd-step-title">{tx("Stay Calm")}</h2>
+              <p className="rgd-step-text">{tx("Do not panic and assess the situation quickly.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-circle-img">
-              <img src="/images/evac-stay-calm.jpg" alt="Stay Calm" className="rgd-circle-graphic" />
+              <img src="/images/evac-stay-calm.jpg" alt={tx("Stay Calm")} className="rgd-circle-graphic" />
             </div>
           </div>
         </div>
@@ -1434,11 +1440,11 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">2</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Turn Off the Heat</h2>
-              <p className="rgd-step-text">If it is safe, turn off the stove or appliance.</p>
+              <h2 className="rgd-step-title">{tx("Turn Off the Heat")}</h2>
+              <p className="rgd-step-text">{tx("If it is safe, turn off the stove or appliance.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-safety">
-              <img src="/images/kitchen-turn-off-stove.jpg" alt="Turn Off Stove" className="rgd-safety-img" />
+              <img src="/images/kitchen-turn-off-stove.jpg" alt={tx("Turn Off Stove")} className="rgd-safety-img" />
             </div>
           </div>
         </div>
@@ -1454,11 +1460,11 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">3</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Do Not Use Water on Oil Fires</h2>
-              <p className="rgd-step-text">Never pour water on grease or oil fires.</p>
+              <h2 className="rgd-step-title">{tx("Do Not Use Water on Oil Fires")}</h2>
+              <p className="rgd-step-text">{tx("Never pour water on grease or oil fires.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-circle-img">
-              <img src="/images/kitchen-no-water-oil.jpg" alt="No Water on Oil Fires" className="rgd-circle-graphic" />
+              <img src="/images/kitchen-no-water-oil.jpg" alt={tx("No Water on Oil Fires")} className="rgd-circle-graphic" />
             </div>
           </div>
         </div>
@@ -1474,11 +1480,11 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">4</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Cover Small Pan Fires</h2>
-              <p className="rgd-step-text">Use a lid or metal tray to smother the flames.</p>
+              <h2 className="rgd-step-title">{tx("Cover Small Pan Fires")}</h2>
+              <p className="rgd-step-text">{tx("Use a lid or metal tray to smother the flames.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-safety">
-              <img src="/images/kitchen-cover-pan-lid.jpg" alt="Cover Pan Fire" className="rgd-safety-img" />
+              <img src="/images/kitchen-cover-pan-lid.jpg" alt={tx("Cover Pan Fire")} className="rgd-safety-img" />
             </div>
           </div>
         </div>
@@ -1494,8 +1500,8 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">5</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Use a Fire Extinguisher</h2>
-              <p className="rgd-step-text">Use the correct extinguisher if you know how to operate it.</p>
+              <h2 className="rgd-step-title">{tx("Use a Fire Extinguisher")}</h2>
+              <p className="rgd-step-text">{tx("Use the correct extinguisher if you know how to operate it.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-kitchen-extinguisher-badge">
@@ -1524,11 +1530,11 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">6</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Evacuate If the Fire Spreads</h2>
-              <p className="rgd-step-text">Leave the kitchen immediately if the fire grows.</p>
+              <h2 className="rgd-step-title">{tx("Evacuate If the Fire Spreads")}</h2>
+              <p className="rgd-step-text">{tx("Leave the kitchen immediately if the fire grows.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-safety">
-              <img src="/images/kitchen-evacuate-spread.jpg" alt="Evacuate Kitchen" className="rgd-safety-img" />
+              <img src="/images/kitchen-evacuate-spread.jpg" alt={tx("Evacuate Kitchen")} className="rgd-safety-img" />
             </div>
           </div>
         </div>
@@ -1544,14 +1550,14 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">7</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Report the Fire</h2>
-              <p className="rgd-step-text">Call 911 for urgent danger, then use ALAB to report the fire and provide clear details.</p>
+              <h2 className="rgd-step-title">{tx("Report the Fire")}</h2>
+              <p className="rgd-step-text">{tx("Call 911 for urgent danger, then use ALAB to report the fire and provide clear details.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-kitchen-phone-badge">
                 <div className="rgd-phone-screen">
                   <span className="rgd-phone-num">911</span>
-                  <span className="rgd-phone-brand">ALAB</span>
+                  <span className="rgd-phone-brand">{tx("ALAB")}</span>
                   <div className="rgd-phone-call-icon">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -1574,11 +1580,11 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">8</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Wait for Responders</h2>
-              <p className="rgd-step-text">Stay in a safe place and follow instructions.</p>
+              <h2 className="rgd-step-title">{tx("Wait for Responders")}</h2>
+              <p className="rgd-step-text">{tx("Stay in a safe place and follow instructions.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-truck">
-              <img src="/images/guide-firefighter-truck.jpg" alt="Firefighter &amp; truck" className="rgd-truck-img" />
+              <img src="/images/guide-firefighter-truck.jpg" alt={tx("Firefighter & truck")} className="rgd-truck-img" />
             </div>
           </div>
         </div>
@@ -1594,7 +1600,7 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
             </svg>
           </div>
           <div>
-            <h3 className="rgd-checklist-title rgd-checklist-title-red">What to Remember</h3>
+            <h3 className="rgd-checklist-title rgd-checklist-title-red">{tx("What to Remember")}</h3>
           </div>
         </div>
 
@@ -1605,7 +1611,7 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Never leave cooking unattended</span>
+            <span>{tx("Never leave cooking unattended")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1614,7 +1620,7 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Use the proper extinguisher</span>
+            <span>{tx("Use the proper extinguisher")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1623,7 +1629,7 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Keep flammable items away from heat</span>
+            <span>{tx("Keep flammable items away from heat")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1632,7 +1638,7 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Evacuate early if unsure</span>
+            <span>{tx("Evacuate early if unsure")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1641,7 +1647,7 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Do not use water on grease fires</span>
+            <span>{tx("Do not use water on grease fires")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1650,7 +1656,7 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Call 911 for urgent danger</span>
+            <span>{tx("Call 911 for urgent danger")}</span>
           </div>
         </div>
       </div>
@@ -1661,10 +1667,10 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
-          Report a Fire Now
+          {tx("Report a Fire Now")}
         </a>
         <button onClick={onBack} className="rgd-back-to-list-btn">
-          Back to All Guides
+          {tx("Back to All Guides")}
         </button>
       </div>
     </div>
@@ -1676,19 +1682,20 @@ function KitchenFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
    ========================================================================= */
 
 function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void }) {
+  const tx = useResidentText(RESIDENT_GUIDE_TEXT);
   return (
     <div className="rgd-detail-container">
       {/* Header */}
       <div className="rgd-header">
-        <button onClick={onBack} className="rgd-back-btn" aria-label="Back to Guides">
+        <button onClick={onBack} className="rgd-back-btn" aria-label={tx("Back to Guides")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
         </button>
         <div className="rgd-header-text">
-          <h1 className="rgd-title">Grass and Forest Fire Safety Guide</h1>
-          <p className="rgd-subtitle">Follow these steps to stay safe during a grass or forest fire emergency.</p>
+          <h1 className="rgd-title">{tx("Grass and Forest Fire Safety Guide")}</h1>
+          <p className="rgd-subtitle">{tx("Follow these steps to stay safe during a grass or forest fire emergency.")}</p>
         </div>
       </div>
 
@@ -1702,17 +1709,17 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
         </div>
         <div className="rgd-callout-content">
           <div className="rgd-callout-title rgd-callout-title-green">
-            If the fire is spreading or someone is in danger, call 911 first.
+            {tx("If the fire is spreading or someone is in danger, call 911 first.")}
           </div>
           <div className="rgd-callout-sub-green">
-            Use ALAB if reporting a fire.
+            {tx("Use ALAB if reporting a fire.")}
           </div>
         </div>
         <a href="tel:911" className="rgd-call-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
           </svg>
-          Call 911
+          {tx("Call 911")}
         </a>
       </div>
 
@@ -1723,11 +1730,11 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">1</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Stay Calm</h2>
-              <p className="rgd-step-text">Do not panic and assess the fire from a safe distance.</p>
+              <h2 className="rgd-step-title">{tx("Stay Calm")}</h2>
+              <p className="rgd-step-text">{tx("Do not panic and assess the fire from a safe distance.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-circle-img">
-              <img src="/images/evac-stay-calm.jpg" alt="Stay Calm" className="rgd-circle-graphic" />
+              <img src="/images/evac-stay-calm.jpg" alt={tx("Stay Calm")} className="rgd-circle-graphic" />
             </div>
           </div>
         </div>
@@ -1743,11 +1750,11 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">2</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Move Away from Smoke</h2>
-              <p className="rgd-step-text">Go to a safer area and move away from smoke and flames.</p>
+              <h2 className="rgd-step-title">{tx("Move Away from Smoke")}</h2>
+              <p className="rgd-step-text">{tx("Go to a safer area and move away from smoke and flames.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-safety">
-              <img src="/images/forest-move-away-smoke.jpg" alt="Move Away from Smoke" className="rgd-safety-img" />
+              <img src="/images/forest-move-away-smoke.jpg" alt={tx("Move Away from Smoke")} className="rgd-safety-img" />
             </div>
           </div>
         </div>
@@ -1763,11 +1770,11 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">3</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Warn Others Nearby</h2>
-              <p className="rgd-step-text">Alert people in the area so they can leave safely.</p>
+              <h2 className="rgd-step-title">{tx("Warn Others Nearby")}</h2>
+              <p className="rgd-step-text">{tx("Alert people in the area so they can leave safely.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-safety">
-              <img src="/images/forest-warn-others-nearby.jpg" alt="Warn Others Nearby" className="rgd-safety-img" />
+              <img src="/images/forest-warn-others-nearby.jpg" alt={tx("Warn Others Nearby")} className="rgd-safety-img" />
             </div>
           </div>
         </div>
@@ -1783,11 +1790,11 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">4</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Avoid Fighting Large Fires</h2>
-              <p className="rgd-step-text">Do not try to stop a fast-moving grass or forest fire by yourself.</p>
+              <h2 className="rgd-step-title">{tx("Avoid Fighting Large Fires")}</h2>
+              <p className="rgd-step-text">{tx("Do not try to stop a fast-moving grass or forest fire by yourself.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-safety">
-              <img src="/images/forest-wildfire-trees.jpg" alt="Wildfire Burning Trees" className="rgd-safety-img" />
+              <img src="/images/forest-wildfire-trees.jpg" alt={tx("Wildfire Burning Trees")} className="rgd-safety-img" />
             </div>
           </div>
         </div>
@@ -1803,14 +1810,14 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">5</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Call 911</h2>
-              <p className="rgd-step-text">Report urgent danger and provide the nearest location or landmark.</p>
+              <h2 className="rgd-step-title">{tx("Call 911")}</h2>
+              <p className="rgd-step-text">{tx("Report urgent danger and provide the nearest location or landmark.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-phone-calling-badge">
                 <div className="rgd-calling-screen">
                   <span className="rgd-calling-num">911</span>
-                  <span className="rgd-calling-status">Calling...</span>
+                  <span className="rgd-calling-status">{tx("Calling...")}</span>
                   <div className="rgd-calling-dialer">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -1833,12 +1840,12 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">6</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Report in ALAB</h2>
-              <p className="rgd-step-text">Use ALAB to send the fire location and details clearly.</p>
+              <h2 className="rgd-step-title">{tx("Report in ALAB")}</h2>
+              <p className="rgd-step-text">{tx("Use ALAB to send the fire location and details clearly.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-phone-alab-app-badge">
-                <div className="rgd-alab-app-header">ALAB</div>
+                <div className="rgd-alab-app-header">{tx("ALAB")}</div>
                 <div className="rgd-alab-app-map">
                   <div className="rgd-map-pin-mini">
                     <svg viewBox="0 0 24 24" fill="#dc2626">
@@ -1863,8 +1870,8 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">7</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Follow Evacuation Advice</h2>
-              <p className="rgd-step-text">Use safe routes and follow responder or local instructions.</p>
+              <h2 className="rgd-step-title">{tx("Follow Evacuation Advice")}</h2>
+              <p className="rgd-step-text">{tx("Use safe routes and follow responder or local instructions.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-forest-evac-preview">
@@ -1894,11 +1901,11 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">8</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Wait for Responders</h2>
-              <p className="rgd-step-text">Stay in a safe place and keep access roads clear.</p>
+              <h2 className="rgd-step-title">{tx("Wait for Responders")}</h2>
+              <p className="rgd-step-text">{tx("Stay in a safe place and keep access roads clear.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-truck">
-              <img src="/images/guide-firefighter-truck.jpg" alt="Firefighter &amp; truck" className="rgd-truck-img" />
+              <img src="/images/guide-firefighter-truck.jpg" alt={tx("Firefighter & truck")} className="rgd-truck-img" />
             </div>
           </div>
         </div>
@@ -1914,7 +1921,7 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
             </svg>
           </div>
           <div>
-            <h3 className="rgd-checklist-title rgd-checklist-title-red">What to Remember</h3>
+            <h3 className="rgd-checklist-title rgd-checklist-title-red">{tx("What to Remember")}</h3>
           </div>
         </div>
 
@@ -1925,7 +1932,7 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Do not burn dry grass or leaves</span>
+            <span>{tx("Do not burn dry grass or leaves")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1934,7 +1941,7 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Report exact location if possible</span>
+            <span>{tx("Report exact location if possible")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1943,7 +1950,7 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Do not throw cigarettes outdoors</span>
+            <span>{tx("Do not throw cigarettes outdoors")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1952,7 +1959,7 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Use ALAB if reporting a fire</span>
+            <span>{tx("Use ALAB if reporting a fire")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1961,7 +1968,7 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Stay upwind and avoid smoke</span>
+            <span>{tx("Stay upwind and avoid smoke")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -1970,7 +1977,7 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Call 911 for urgent danger</span>
+            <span>{tx("Call 911 for urgent danger")}</span>
           </div>
         </div>
       </div>
@@ -1981,10 +1988,10 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
-          Report a Fire Now
+          {tx("Report a Fire Now")}
         </a>
         <button onClick={onBack} className="rgd-back-to-list-btn">
-          Back to All Guides
+          {tx("Back to All Guides")}
         </button>
       </div>
     </div>
@@ -1996,19 +2003,20 @@ function GrassAndForestFireSafetyGuideDetail({ onBack }: { onBack: () => void })
    ========================================================================= */
 
 function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => void }) {
+  const tx = useResidentText(RESIDENT_GUIDE_TEXT);
   return (
     <div className="rgd-detail-container">
       {/* Header */}
       <div className="rgd-header">
-        <button onClick={onBack} className="rgd-back-btn" aria-label="Back to Guides">
+        <button onClick={onBack} className="rgd-back-btn" aria-label={tx("Back to Guides")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
         </button>
         <div className="rgd-header-text">
-          <h1 className="rgd-title">Proper Use of Fire Extinguishers</h1>
-          <p className="rgd-subtitle">Learn the correct steps to use a fire extinguisher safely during an emergency.</p>
+          <h1 className="rgd-title">{tx("Proper Use of Fire Extinguishers")}</h1>
+          <p className="rgd-subtitle">{tx("Learn the correct steps to use a fire extinguisher safely during an emergency.")}</p>
         </div>
       </div>
 
@@ -2021,17 +2029,17 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
         </div>
         <div className="rgd-callout-content">
           <div className="rgd-callout-title">
-            In an urgent danger, call 911 first.
+            {tx("In an urgent danger, call 911 first.")}
           </div>
           <div className="rgd-callout-desc">
-            Use ALAB if you are reporting a fire.
+            {tx("Use ALAB if you are reporting a fire.")}
           </div>
         </div>
         <a href="tel:911" className="rgd-call-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
           </svg>
-          Call 911
+          {tx("Call 911")}
         </a>
       </div>
 
@@ -2042,11 +2050,11 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">1</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Stay Calm</h2>
-              <p className="rgd-step-text">Do not panic and assess the fire quickly.</p>
+              <h2 className="rgd-step-title">{tx("Stay Calm")}</h2>
+              <p className="rgd-step-text">{tx("Do not panic and assess the fire quickly.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-circle-img">
-              <img src="/images/evac-stay-calm.jpg" alt="Stay Calm" className="rgd-circle-graphic" />
+              <img src="/images/evac-stay-calm.jpg" alt={tx("Stay Calm")} className="rgd-circle-graphic" />
             </div>
           </div>
         </div>
@@ -2062,8 +2070,8 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">2</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Check the Fire Size</h2>
-              <p className="rgd-step-text">Only use an extinguisher for a small, controllable fire.</p>
+              <h2 className="rgd-step-title">{tx("Check the Fire Size")}</h2>
+              <p className="rgd-step-text">{tx("Only use an extinguisher for a small, controllable fire.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-ext-flame-graphic">
@@ -2093,11 +2101,11 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">3</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Get the Right Extinguisher</h2>
-              <p className="rgd-step-text">Use the proper extinguisher type for the fire.</p>
+              <h2 className="rgd-step-title">{tx("Get the Right Extinguisher")}</h2>
+              <p className="rgd-step-text">{tx("Use the proper extinguisher type for the fire.")}</p>
             </div>
             <div className="rgd-step-preview rgd-preview-safety">
-              <img src="/images/extinguisher-types-row.jpg" alt="Extinguisher Types" className="rgd-safety-img" />
+              <img src="/images/extinguisher-types-row.jpg" alt={tx("Extinguisher Types")} className="rgd-safety-img" />
             </div>
           </div>
         </div>
@@ -2113,8 +2121,8 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">4</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Pull the Pin</h2>
-              <p className="rgd-step-text">Pull the safety pin to unlock the extinguisher.</p>
+              <h2 className="rgd-step-title">{tx("Pull the Pin")}</h2>
+              <p className="rgd-step-text">{tx("Pull the safety pin to unlock the extinguisher.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-pass-step-preview">
@@ -2145,8 +2153,8 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">5</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Aim at the Base</h2>
-              <p className="rgd-step-text">Point the nozzle at the base of the fire.</p>
+              <h2 className="rgd-step-title">{tx("Aim at the Base")}</h2>
+              <p className="rgd-step-text">{tx("Point the nozzle at the base of the fire.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-pass-step-preview">
@@ -2176,8 +2184,8 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">6</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Squeeze the Handle</h2>
-              <p className="rgd-step-text">Press the handle to release the agent.</p>
+              <h2 className="rgd-step-title">{tx("Squeeze the Handle")}</h2>
+              <p className="rgd-step-text">{tx("Press the handle to release the agent.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-pass-step-preview">
@@ -2207,8 +2215,8 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">7</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Sweep Side to Side</h2>
-              <p className="rgd-step-text">Move the nozzle side to side until the fire is out.</p>
+              <h2 className="rgd-step-title">{tx("Sweep Side to Side")}</h2>
+              <p className="rgd-step-text">{tx("Move the nozzle side to side until the fire is out.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-pass-step-preview">
@@ -2241,8 +2249,8 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">8</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Evacuate if Needed</h2>
-              <p className="rgd-step-text">If the fire spreads or smoke builds up, leave and call 911.</p>
+              <h2 className="rgd-step-title">{tx("Evacuate if Needed")}</h2>
+              <p className="rgd-step-text">{tx("If the fire spreads or smoke builds up, leave and call 911.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-pass-step-preview">
@@ -2250,7 +2258,7 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
                   {/* Exit Door */}
                   <rect x="10" y="16" width="24" height="48" fill="#475569" rx="2" />
                   <rect x="10" y="8" width="24" height="8" fill="#16a34a" rx="1" />
-                  <text x="14" y="14" fill="white" fontSize="5" fontWeight="900" letterSpacing="0.5">EXIT</text>
+                  <text x="14" y="14" fill="white" fontSize="5" fontWeight="900" letterSpacing="0.5">{tx("EXIT")}</text>
                   {/* Running Person */}
                   <path d="M42 35 A3 3 0 1 1 42 29 A3 3 0 1 1 42 35 Z M39 42 L48 38 L43 55 M44 45 L50 62" stroke="#0f172a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                   {/* Smoke Cloud */}
@@ -2271,39 +2279,39 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
             </svg>
           </div>
           <div>
-            <h3 className="rgd-checklist-title" style={{ color: "#1e293b" }}>What to Remember</h3>
+            <h3 className="rgd-checklist-title" style={{ color: "#1e293b" }}>{tx("What to Remember")}</h3>
           </div>
         </div>
 
         <div className="rgd-checklist-grid">
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Keep an exit behind you</span>
+            <span>{tx("Keep an exit behind you")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>If unsure, evacuate</span>
+            <span>{tx("If unsure, evacuate")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Never fight a large fire alone</span>
+            <span>{tx("Never fight a large fire alone")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Call 911 for urgent danger</span>
+            <span>{tx("Call 911 for urgent danger")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Use PASS: Pull, Aim, Squeeze, Sweep</span>
+            <span>{tx("Use PASS: Pull, Aim, Squeeze, Sweep")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Use ALAB if reporting a fire</span>
+            <span>{tx("Use ALAB if reporting a fire")}</span>
           </div>
         </div>
       </div>
@@ -2314,10 +2322,10 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
-          Report a Fire Now
+          {tx("Report a Fire Now")}
         </a>
         <button onClick={onBack} className="rgd-back-to-list-btn">
-          Back to All Guides
+          {tx("Back to All Guides")}
         </button>
       </div>
     </div>
@@ -2329,19 +2337,20 @@ function ProperUseOfFireExtinguishersGuideDetail({ onBack }: { onBack: () => voi
    ========================================================================= */
 
 function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
+  const tx = useResidentText(RESIDENT_GUIDE_TEXT);
   return (
     <div className="rgd-detail-container">
       {/* Header */}
       <div className="rgd-header">
-        <button onClick={onBack} className="rgd-back-btn" aria-label="Back to Guides">
+        <button onClick={onBack} className="rgd-back-btn" aria-label={tx("Back to Guides")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
         </button>
         <div className="rgd-header-text">
-          <h1 className="rgd-title">Family Fire Safety Plan</h1>
-          <p className="rgd-subtitle">Create a plan, practice it, and keep your family safe during a fire emergency.</p>
+          <h1 className="rgd-title">{tx("Family Fire Safety Plan")}</h1>
+          <p className="rgd-subtitle">{tx("Create a plan, practice it, and keep your family safe during a fire emergency.")}</p>
         </div>
       </div>
 
@@ -2354,17 +2363,17 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
         </div>
         <div className="rgd-callout-content">
           <div className="rgd-callout-title">
-            In an urgent danger, call 911 first.
+            {tx("In an urgent danger, call 911 first.")}
           </div>
           <div className="rgd-callout-desc">
-            Use ALAB if you are reporting a fire.
+            {tx("Use ALAB if you are reporting a fire.")}
           </div>
         </div>
         <a href="tel:911" className="rgd-call-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
           </svg>
-          Call 911
+          {tx("Call 911")}
         </a>
       </div>
 
@@ -2375,8 +2384,8 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">1</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Make a Plan Together</h2>
-              <p className="rgd-step-text">Sit down with your family and discuss what to do in case of a fire.</p>
+              <h2 className="rgd-step-title">{tx("Make a Plan Together")}</h2>
+              <p className="rgd-step-text">{tx("Sit down with your family and discuss what to do in case of a fire.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-family-plan-badge">
@@ -2390,7 +2399,7 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
                   <circle cx="72" cy="18" r="6" fill="#fed7aa" />
                   {/* Floor Plan Blueprint */}
                   <rect x="20" y="40" width="60" height="34" fill="#ffffff" stroke="#94a3b8" strokeWidth="1.5" rx="2" />
-                  <text x="25" y="48" fill="#dc2626" fontSize="4.5" fontWeight="900" letterSpacing="0.2">FIRE ESCAPE PLAN</text>
+                  <text x="25" y="48" fill="#dc2626" fontSize="4.5" fontWeight="900" letterSpacing="0.2">{tx("FIRE ESCAPE PLAN")}</text>
                   <rect x="25" y="52" width="22" height="18" fill="none" stroke="#cbd5e1" strokeWidth="1" />
                   <rect x="53" y="52" width="22" height="18" fill="none" stroke="#cbd5e1" strokeWidth="1" />
                   <line x1="36" y1="52" x2="36" y2="70" stroke="#cbd5e1" strokeWidth="1" />
@@ -2412,8 +2421,8 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">2</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Identify Two Exits</h2>
-              <p className="rgd-step-text">Find and mark two ways out of every room.</p>
+              <h2 className="rgd-step-title">{tx("Identify Two Exits")}</h2>
+              <p className="rgd-step-text">{tx("Find and mark two ways out of every room.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-family-plan-badge">
@@ -2449,8 +2458,8 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">3</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Choose a Meeting Place</h2>
-              <p className="rgd-step-text">Pick a safe place outside where everyone can meet.</p>
+              <h2 className="rgd-step-title">{tx("Choose a Meeting Place")}</h2>
+              <p className="rgd-step-text">{tx("Pick a safe place outside where everyone can meet.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-family-plan-badge">
@@ -2485,8 +2494,8 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">4</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Assign Responsibilities</h2>
-              <p className="rgd-step-text">Give each family member a role, like helping kids or calling 911.</p>
+              <h2 className="rgd-step-title">{tx("Assign Responsibilities")}</h2>
+              <p className="rgd-step-text">{tx("Give each family member a role, like helping kids or calling 911.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-family-plan-badge">
@@ -2494,7 +2503,7 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
                   {/* Clipboard */}
                   <rect x="15" y="16" width="40" height="54" fill="#ffffff" stroke="#94a3b8" strokeWidth="1.5" rx="3" />
                   <rect x="27" y="12" width="16" height="7" fill="#64748b" rx="2" />
-                  <text x="24" y="28" fill="#0f172a" fontSize="5" fontWeight="900">ROLES</text>
+                  <text x="24" y="28" fill="#0f172a" fontSize="5" fontWeight="900">{tx("ROLES")}</text>
                   {/* Checks */}
                   <path d="M22 36 L24 38 L27 34" stroke="#ea580c" strokeWidth="1.5" fill="none" />
                   <line x1="30" y1="36" x2="48" y2="36" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" />
@@ -2524,8 +2533,8 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">5</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Practice Your Plan</h2>
-              <p className="rgd-step-text">Do a fire drill regularly so everyone knows what to do.</p>
+              <h2 className="rgd-step-title">{tx("Practice Your Plan")}</h2>
+              <p className="rgd-step-text">{tx("Do a fire drill regularly so everyone knows what to do.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-family-plan-badge">
@@ -2540,7 +2549,7 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
                   {/* Exit Door */}
                   <rect x="76" y="24" width="20" height="46" fill="#78350f" rx="1" />
                   <rect x="76" y="17" width="20" height="7" fill="#16a34a" rx="1" />
-                  <text x="80" y="22" fill="white" fontSize="4.2" fontWeight="900">EXIT</text>
+                  <text x="80" y="22" fill="white" fontSize="4.2" fontWeight="900">{tx("EXIT")}</text>
                 </svg>
               </div>
             </div>
@@ -2558,8 +2567,8 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">6</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Keep It Updated</h2>
-              <p className="rgd-step-text">Review and update your plan when changes happen.</p>
+              <h2 className="rgd-step-title">{tx("Keep It Updated")}</h2>
+              <p className="rgd-step-text">{tx("Review and update your plan when changes happen.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-family-plan-badge">
@@ -2595,7 +2604,7 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
             </svg>
           </div>
           <div>
-            <h3 className="rgd-checklist-title rgd-checklist-title-red">What to Remember</h3>
+            <h3 className="rgd-checklist-title rgd-checklist-title-red">{tx("What to Remember")}</h3>
           </div>
         </div>
 
@@ -2606,7 +2615,7 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Practice your plan at least twice a year</span>
+            <span>{tx("Practice your plan at least twice a year")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -2615,7 +2624,7 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Never go back inside a burning building</span>
+            <span>{tx("Never go back inside a burning building")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -2624,7 +2633,7 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Make sure everyone knows the emergency number</span>
+            <span>{tx("Make sure everyone knows the emergency number")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -2633,7 +2642,7 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Stay low under smoke</span>
+            <span>{tx("Stay low under smoke")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -2642,7 +2651,7 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Keep doors and exits clear at all times</span>
+            <span>{tx("Keep doors and exits clear at all times")}</span>
           </div>
 
           <div className="rgd-check-item">
@@ -2651,7 +2660,7 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
-            <span>Use ALAB if reporting a fire</span>
+            <span>{tx("Use ALAB if reporting a fire")}</span>
           </div>
         </div>
       </div>
@@ -2662,10 +2671,10 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
-          Report a Fire Now
+          {tx("Report a Fire Now")}
         </a>
         <button onClick={onBack} className="rgd-back-to-list-btn">
-          Back to All Guides
+          {tx("Back to All Guides")}
         </button>
       </div>
     </div>
@@ -2677,19 +2686,20 @@ function FamilyFireSafetyPlanGuideDetail({ onBack }: { onBack: () => void }) {
    ========================================================================= */
 
 function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
+  const tx = useResidentText(RESIDENT_GUIDE_TEXT);
   return (
     <div className="rgd-detail-container">
       {/* Header */}
       <div className="rgd-header">
-        <button onClick={onBack} className="rgd-back-btn" aria-label="Back to Guides">
+        <button onClick={onBack} className="rgd-back-btn" aria-label={tx("Back to Guides")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
         </button>
         <div className="rgd-header-text">
-          <h1 className="rgd-title">Smoke Alarm Guide</h1>
-          <p className="rgd-subtitle">Learn how to use, maintain, and respond to smoke alarms properly.</p>
+          <h1 className="rgd-title">{tx("Smoke Alarm Guide")}</h1>
+          <p className="rgd-subtitle">{tx("Learn how to use, maintain, and respond to smoke alarms properly.")}</p>
         </div>
       </div>
 
@@ -2702,17 +2712,17 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
         </div>
         <div className="rgd-callout-content">
           <div className="rgd-callout-title">
-            If there is smoke or fire, call 911 first.
+            {tx("If there is smoke or fire, call 911 first.")}
           </div>
           <div className="rgd-callout-desc">
-            Use ALAB if you are reporting a fire.
+            {tx("Use ALAB if you are reporting a fire.")}
           </div>
         </div>
         <a href="tel:911" className="rgd-call-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
           </svg>
-          Call 911
+          {tx("Call 911")}
         </a>
       </div>
 
@@ -2723,8 +2733,8 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">1</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Install Smoke Alarms</h2>
-              <p className="rgd-step-text">Install alarms in bedrooms, hallways, and on every level.</p>
+              <h2 className="rgd-step-title">{tx("Install Smoke Alarms")}</h2>
+              <p className="rgd-step-text">{tx("Install alarms in bedrooms, hallways, and on every level.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-alarm-preview-box">
@@ -2757,8 +2767,8 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">2</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Test Monthly</h2>
-              <p className="rgd-step-text">Press the test button every month to make sure it works.</p>
+              <h2 className="rgd-step-title">{tx("Test Monthly")}</h2>
+              <p className="rgd-step-text">{tx("Press the test button every month to make sure it works.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-alarm-preview-box">
@@ -2788,8 +2798,8 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">3</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Replace Batteries</h2>
-              <p className="rgd-step-text">Change batteries when needed or when the alarm chirps.</p>
+              <h2 className="rgd-step-title">{tx("Replace Batteries")}</h2>
+              <p className="rgd-step-text">{tx("Change batteries when needed or when the alarm chirps.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-alarm-preview-box">
@@ -2822,8 +2832,8 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">4</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Keep It Clean</h2>
-              <p className="rgd-step-text">Remove dust gently so the sensor works properly.</p>
+              <h2 className="rgd-step-title">{tx("Keep It Clean")}</h2>
+              <p className="rgd-step-text">{tx("Remove dust gently so the sensor works properly.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-alarm-preview-box">
@@ -2854,8 +2864,8 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">5</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Do Not Disable It</h2>
-              <p className="rgd-step-text">Never remove batteries unless replacing them.</p>
+              <h2 className="rgd-step-title">{tx("Do Not Disable It")}</h2>
+              <p className="rgd-step-text">{tx("Never remove batteries unless replacing them.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-alarm-preview-box">
@@ -2883,8 +2893,8 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">6</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Know the Alarm Sound</h2>
-              <p className="rgd-step-text">Treat every alarm as real and respond immediately.</p>
+              <h2 className="rgd-step-title">{tx("Know the Alarm Sound")}</h2>
+              <p className="rgd-step-text">{tx("Treat every alarm as real and respond immediately.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-alarm-preview-box">
@@ -2917,8 +2927,8 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">7</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Evacuate and Call 911</h2>
-              <p className="rgd-step-text">Leave the area quickly and call 911 if there is fire or smoke.</p>
+              <h2 className="rgd-step-title">{tx("Evacuate and Call 911")}</h2>
+              <p className="rgd-step-text">{tx("Leave the area quickly and call 911 if there is fire or smoke.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-alarm-preview-box">
@@ -2926,7 +2936,7 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
                   {/* Exit Door */}
                   <rect x="8" y="20" width="18" height="42" fill="#475569" rx="1" />
                   <rect x="8" y="14" width="18" height="6" fill="#16a34a" rx="1" />
-                  <text x="10.5" y="18.5" fill="white" fontSize="3.8" fontWeight="900">EXIT</text>
+                  <text x="10.5" y="18.5" fill="white" fontSize="3.8" fontWeight="900">{tx("EXIT")}</text>
                   {/* Running Person */}
                   <path d="M35 34 A2.5 2.5 0 1 1 35 29 A2.5 2.5 0 1 1 35 34 Z M32 40 L40 37 L36 50 M37 42 L42 56" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                   {/* Phone 911 */}
@@ -2953,8 +2963,8 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">8</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Report in ALAB</h2>
-              <p className="rgd-step-text">Use ALAB to report the incident and provide details if safe.</p>
+              <h2 className="rgd-step-title">{tx("Report in ALAB")}</h2>
+              <p className="rgd-step-text">{tx("Use ALAB to report the incident and provide details if safe.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-alarm-preview-box">
@@ -2965,9 +2975,9 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
                   <rect x="44" y="20" width="30" height="48" rx="2" fill="#ffffff" />
                   {/* App Screen */}
                   <path d="M59 26 Q55 31 59 36 Q63 31 59 26 Z" fill="#dc2626" />
-                  <text x="50" y="44" fill="#0f172a" fontSize="5.5" fontWeight="900">ALAB</text>
+                  <text x="50" y="44" fill="#0f172a" fontSize="5.5" fontWeight="900">{tx("ALAB")}</text>
                   <rect x="48" y="49" width="22" height="9" rx="4.5" fill="#dc2626" />
-                  <text x="51" y="55" fill="#ffffff" fontSize="3.2" fontWeight="800">Report Fire</text>
+                  <text x="51" y="55" fill="#ffffff" fontSize="3.2" fontWeight="800">{tx("Report Fire")}</text>
                 </svg>
               </div>
             </div>
@@ -2984,39 +2994,39 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
             </svg>
           </div>
           <div>
-            <h3 className="rgd-checklist-title" style={{ color: "#1e293b" }}>What to Remember</h3>
+            <h3 className="rgd-checklist-title" style={{ color: "#1e293b" }}>{tx("What to Remember")}</h3>
           </div>
         </div>
 
         <div className="rgd-checklist-grid">
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Test alarms monthly</span>
+            <span>{tx("Test alarms monthly")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Have a family escape plan</span>
+            <span>{tx("Have a family escape plan")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Replace old alarms every 10 years</span>
+            <span>{tx("Replace old alarms every 10 years")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Call 911 for urgent danger</span>
+            <span>{tx("Call 911 for urgent danger")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Keep alarms on every floor</span>
+            <span>{tx("Keep alarms on every floor")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Use ALAB if reporting a fire</span>
+            <span>{tx("Use ALAB if reporting a fire")}</span>
           </div>
         </div>
       </div>
@@ -3027,10 +3037,10 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
-          Report a Fire Now
+          {tx("Report a Fire Now")}
         </a>
         <button onClick={onBack} className="rgd-back-to-list-btn">
-          Back to All Guides
+          {tx("Back to All Guides")}
         </button>
       </div>
     </div>
@@ -3042,19 +3052,20 @@ function SmokeAlarmGuideDetail({ onBack }: { onBack: () => void }) {
    ========================================================================= */
 
 function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
+  const tx = useResidentText(RESIDENT_GUIDE_TEXT);
   return (
     <div className="rgd-detail-container">
       {/* Header */}
       <div className="rgd-header">
-        <button onClick={onBack} className="rgd-back-btn" aria-label="Back to Guides">
+        <button onClick={onBack} className="rgd-back-btn" aria-label={tx("Back to Guides")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
         </button>
         <div className="rgd-header-text">
-          <h1 className="rgd-title">After a Fire: What to Do</h1>
-          <p className="rgd-subtitle">Follow these steps to stay safe after a fire incident.</p>
+          <h1 className="rgd-title">{tx("After a Fire: What to Do")}</h1>
+          <p className="rgd-subtitle">{tx("Follow these steps to stay safe after a fire incident.")}</p>
         </div>
       </div>
 
@@ -3067,17 +3078,17 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
         </div>
         <div className="rgd-callout-content">
           <div className="rgd-callout-title">
-            If anyone is injured or there is danger, call 911 first.
+            {tx("If anyone is injured or there is danger, call 911 first.")}
           </div>
           <div className="rgd-callout-desc">
-            Use ALAB if reporting a fire.
+            {tx("Use ALAB if reporting a fire.")}
           </div>
         </div>
         <a href="tel:911" className="rgd-call-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
           </svg>
-          Call 911
+          {tx("Call 911")}
         </a>
       </div>
 
@@ -3088,8 +3099,8 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">1</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Check for Injuries</h2>
-              <p className="rgd-step-text">Check yourself and others for injuries and call for help if needed.</p>
+              <h2 className="rgd-step-title">{tx("Check for Injuries")}</h2>
+              <p className="rgd-step-text">{tx("Check yourself and others for injuries and call for help if needed.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-after-fire-box">
@@ -3120,8 +3131,8 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">2</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Stay Outside Until Cleared</h2>
-              <p className="rgd-step-text">Never re-enter the building until authorities say it is safe.</p>
+              <h2 className="rgd-step-title">{tx("Stay Outside Until Cleared")}</h2>
+              <p className="rgd-step-text">{tx("Never re-enter the building until authorities say it is safe.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-after-fire-box">
@@ -3138,8 +3149,8 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
                   <path d="M12 52 L18 60 M26 52 L32 60 M40 52 L46 60 M54 52 L60 60 M68 52 L74 60 M82 52 L88 60" stroke="#000000" strokeWidth="2.5" />
                   {/* DO NOT ENTER Sign */}
                   <rect x="32" y="42" width="36" height="18" fill="#dc2626" rx="2" stroke="#ffffff" strokeWidth="1.5" />
-                  <text x="35" y="49" fill="#ffffff" fontSize="4.2" fontWeight="900" letterSpacing="0.2">DO NOT</text>
-                  <text x="37" y="56" fill="#ffffff" fontSize="4.2" fontWeight="900" letterSpacing="0.2">ENTER</text>
+                  <text x="35" y="49" fill="#ffffff" fontSize="4.2" fontWeight="900" letterSpacing="0.2">{tx("DO NOT")}</text>
+                  <text x="37" y="56" fill="#ffffff" fontSize="4.2" fontWeight="900" letterSpacing="0.2">{tx("ENTER")}</text>
                 </svg>
               </div>
             </div>
@@ -3157,8 +3168,8 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">3</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Contact Fire Responders</h2>
-              <p className="rgd-step-text">Follow instructions from firefighters or emergency personnel.</p>
+              <h2 className="rgd-step-title">{tx("Contact Fire Responders")}</h2>
+              <p className="rgd-step-text">{tx("Follow instructions from firefighters or emergency personnel.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-after-fire-box">
@@ -3195,8 +3206,8 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">4</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Watch for Hidden Hazards</h2>
-              <p className="rgd-step-text">Be careful of smoke, hot surfaces, damaged wires, or weak structures.</p>
+              <h2 className="rgd-step-title">{tx("Watch for Hidden Hazards")}</h2>
+              <p className="rgd-step-text">{tx("Be careful of smoke, hot surfaces, damaged wires, or weak structures.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-after-fire-box">
@@ -3230,8 +3241,8 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">5</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Report the Incident in ALAB</h2>
-              <p className="rgd-step-text">Use ALAB to record the fire details, location, and updates.</p>
+              <h2 className="rgd-step-title">{tx("Report the Incident in ALAB")}</h2>
+              <p className="rgd-step-text">{tx("Use ALAB to record the fire details, location, and updates.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-after-fire-box">
@@ -3242,7 +3253,7 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
                   <rect x="48" y="18" width="30" height="50" rx="2" fill="#ffffff" />
                   {/* ALAB Fire & Checkmark */}
                   <path d="M63 26 Q59 31 63 36 Q67 31 63 26 Z" fill="#dc2626" />
-                  <text x="54" y="44" fill="#0f172a" fontSize="5.2" fontWeight="900">ALAB</text>
+                  <text x="54" y="44" fill="#0f172a" fontSize="5.2" fontWeight="900">{tx("ALAB")}</text>
                   <circle cx="63" cy="54" r="5" fill="#16a34a" />
                   <path d="M60.5 54 L62 55.5 L65.5 52" stroke="#ffffff" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -3262,8 +3273,8 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">6</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Contact Family or Neighbors</h2>
-              <p className="rgd-step-text">Let loved ones know you are safe and inform nearby people if needed.</p>
+              <h2 className="rgd-step-title">{tx("Contact Family or Neighbors")}</h2>
+              <p className="rgd-step-text">{tx("Let loved ones know you are safe and inform nearby people if needed.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-after-fire-box">
@@ -3298,8 +3309,8 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">7</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Document Damage Safely</h2>
-              <p className="rgd-step-text">Take photos only when the area is safe and accessible.</p>
+              <h2 className="rgd-step-title">{tx("Document Damage Safely")}</h2>
+              <p className="rgd-step-text">{tx("Take photos only when the area is safe and accessible.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-after-fire-box">
@@ -3332,8 +3343,8 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
           <div className="rgd-step-card">
             <div className="rgd-step-number-badge">8</div>
             <div className="rgd-step-info rgd-step-info-no-left-icon">
-              <h2 className="rgd-step-title">Arrange Temporary Safety</h2>
-              <p className="rgd-step-text">Move to a safe place and wait for further guidance or assistance.</p>
+              <h2 className="rgd-step-title">{tx("Arrange Temporary Safety")}</h2>
+              <p className="rgd-step-text">{tx("Move to a safe place and wait for further guidance or assistance.")}</p>
             </div>
             <div className="rgd-step-preview">
               <div className="rgd-after-fire-box">
@@ -3366,39 +3377,39 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
             </svg>
           </div>
           <div>
-            <h3 className="rgd-checklist-title" style={{ color: "#1e293b" }}>What to Remember</h3>
+            <h3 className="rgd-checklist-title" style={{ color: "#1e293b" }}>{tx("What to Remember")}</h3>
           </div>
         </div>
 
         <div className="rgd-checklist-grid">
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Do not re-enter damaged buildings</span>
+            <span>{tx("Do not re-enter damaged buildings")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Follow responder instructions</span>
+            <span>{tx("Follow responder instructions")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Call 911 for urgent danger</span>
+            <span>{tx("Call 911 for urgent danger")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Use ALAB if reporting a fire</span>
+            <span>{tx("Use ALAB if reporting a fire")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Avoid electrical and structural hazards</span>
+            <span>{tx("Avoid electrical and structural hazards")}</span>
           </div>
 
           <div className="rgd-check-item">
             <span style={{ color: "var(--primary-red)", fontSize: "1.1rem", lineHeight: 1, marginRight: "0.2rem" }}>•</span>
-            <span>Document damage only when safe</span>
+            <span>{tx("Document damage only when safe")}</span>
           </div>
         </div>
       </div>
@@ -3409,10 +3420,10 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2.5c.6 2.8 3.8 5.4 3.8 9.2a5.8 5.8 0 1 1-11.6 0c0-3.4 2.5-6 3.8-8.8 1.1 1.8 2.2 2.4 4-.4zm0 9.8c-.8 0-1.7.7-1.7 1.9a1.9 1.9 0 0 0 3.8 0c0-1.1-.9-1.9-2.1-1.9z" />
           </svg>
-          Report a Fire Now
+          {tx("Report a Fire Now")}
         </a>
         <button onClick={onBack} className="rgd-back-to-list-btn">
-          Back to All Guides
+          {tx("Back to All Guides")}
         </button>
       </div>
     </div>
@@ -3424,13 +3435,14 @@ function AfterFireWhatToDoGuideDetail({ onBack }: { onBack: () => void }) {
    ========================================================================= */
 
 function GenericGuideDetail({ slug, onBack }: { slug: string; onBack: () => void }) {
+  const tx = useResidentText(RESIDENT_GUIDE_TEXT);
   const guide = GUIDES_LIST.find((g) => g.slug === slug);
-  const title = guide ? guide.title : "Emergency Guide";
+  const title = guide ? guide.title : tx("Emergency Guide");
 
   return (
     <div className="rgd-detail-container">
       <div className="rgd-header">
-        <button onClick={onBack} className="rgd-back-btn" aria-label="Back to Guides">
+        <button onClick={onBack} className="rgd-back-btn" aria-label={tx("Back to Guides")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
@@ -3438,7 +3450,7 @@ function GenericGuideDetail({ slug, onBack }: { slug: string; onBack: () => void
         </button>
         <div className="rgd-header-text">
           <h1 className="rgd-title">{title}</h1>
-          <p className="rgd-subtitle">Official Fire Safety &amp; Emergency Guidance</p>
+          <p className="rgd-subtitle">{tx("Official Fire Safety & Emergency Guidance")}</p>
         </div>
       </div>
 
@@ -3450,19 +3462,19 @@ function GenericGuideDetail({ slug, onBack }: { slug: string; onBack: () => void
         <p className="rgd-generic-desc">{guide?.desc}</p>
 
         <div className="rgd-generic-content">
-          <h3>Key Safety Rules &amp; Instructions:</h3>
+          <h3>{tx("Key Safety Rules & Instructions:")}</h3>
           <ul className="rgd-generic-list">
-            <li><strong>Stay Alert:</strong> Recognize early signs of danger including smoke, strange odors, and heat buildup.</li>
-            <li><strong>Sound the Alarm:</strong> Notify all household members and neighbors immediately.</li>
-            <li><strong>Evacuate First:</strong> Never delay your evacuation to collect personal belongings or pets if conditions are deteriorating.</li>
-            <li><strong>Crawl Low Under Smoke:</strong> Cleaner, cooler air is closer to the ground. Cover your mouth with a damp cloth if available.</li>
-            <li><strong>Never Re-enter:</strong> Once you are outside, stay outside and wait for official firefighters to clear the area.</li>
+            <li><strong>{tx("Stay Alert:")}</strong>{" "}{tx("Recognize early signs of danger including smoke, strange odors, and heat buildup.")}</li>
+            <li><strong>{tx("Sound the Alarm:")}</strong>{" "}{tx("Notify all household members and neighbors immediately.")}</li>
+            <li><strong>{tx("Evacuate First:")}</strong>{" "}{tx("Never delay your evacuation to collect personal belongings or pets if conditions are deteriorating.")}</li>
+            <li><strong>{tx("Crawl Low Under Smoke:")}</strong>{" "}{tx("Cleaner, cooler air is closer to the ground. Cover your mouth with a damp cloth if available.")}</li>
+            <li><strong>{tx("Never Re-enter:")}</strong>{" "}{tx("Once you are outside, stay outside and wait for official firefighters to clear the area.")}</li>
           </ul>
         </div>
 
         <div className="rgd-footer-actions" style={{ marginTop: "2rem" }}>
           <button onClick={onBack} className="rgd-report-now-btn" style={{ background: "#1e293b" }}>
-            ← Back to Guide Catalog
+            {tx("← Back to Guide Catalog")}
           </button>
         </div>
       </div>

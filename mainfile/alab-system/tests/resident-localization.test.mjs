@@ -139,8 +139,8 @@ test("resident reports page dynamically adapts table headers, filter tabs, and s
   assert.match(reportsPageSource, /t\("btnViewDetails"\)/);
   assert.match(reportsPageSource, /getLocalizedStatusLabel/);
 
-  // Tab filter names stay strictly in English per user request
-  assert.match(reportsPageSource, /item === "ALL" \? "All" : item === "ACTIVE" \? "Active" : "Closed"/);
+  // Filter tabs follow the chosen language like the rest of the screen.
+  assert.match(reportsPageSource, /item === "ALL" \? t\("filterAll"\) : item === "ACTIVE" \? t\("filterActive"\) : t\("filterClosed"\)/);
 });
 
 test("resident report status contains restored FontAwesome tactical icons and English Report Details header", () => {
@@ -149,8 +149,8 @@ test("resident report status contains restored FontAwesome tactical icons and En
 
   const statusSource = readFileSync(statusPath, "utf8");
 
-  // Header remains English
-  assert.match(statusSource, /<h1>Report Details<\/h1>/);
+  // The header follows the chosen language too.
+  assert.match(statusSource, /<h1>\{tx\("Report Details"\)\}<\/h1>/);
 
   // Nothing is asked of the resident after reporting: the scene questions,
   // house material included, are part of the report form itself.

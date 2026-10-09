@@ -26,6 +26,8 @@ function loadSelfieModule() {
   new Function("require", "exports", code)((name) => {
     if (name === "react") return reactStub;
     if (name === "react/jsx-runtime") return { jsx: () => null, jsxs: () => null };
+    if (name === "../_lib/resident-text") return { useResidentText: () => (english) => english };
+    if (name === "../_content/resident-text") return { RESIDENT_TEXT: {} };
     throw new Error(`Unexpected dependency: ${name}`);
   }, exports);
   return exports;

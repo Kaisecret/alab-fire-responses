@@ -7,6 +7,8 @@ import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-re
 import { useResidentLanguage, type ResidentLanguage } from "../_lib/resident-i18n";
 import { SharedIncidentCard, SharedIncidentPopup, type SharedIncident } from "./resident-shared-incident";
 
+import { useResidentText } from "../_lib/resident-text";
+import { RESIDENT_TEXT } from "../_content/resident-text";
 type Report = {
   id: string;
   reference_number: string;
@@ -436,6 +438,7 @@ const timeline = [
 ] as const;
 
 export function ResidentReportStatus({ reportId }: { reportId: string }) {
+  const tx = useResidentText(RESIDENT_TEXT);
   const { lang, t } = useResidentLanguage();
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState("");
@@ -540,7 +543,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
     return (
       <Shell>
         <p className="resident-report-detail-loading" role={error ? "alert" : undefined}>
-          {error || "Loading your fire report…"}
+          {error ? tx(error) : tx("Loading your fire report…")}
         </p>
       </Shell>
     );
@@ -565,11 +568,11 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   return (
     <Shell>
       <div className="resident-detail-heading">
-        <a className="resident-detail-back" href="/resident/reports" aria-label="Back to reports">
+        <a className="resident-detail-back" href="/resident/reports" aria-label={tx("Back to reports")}>
           <i className="fa-solid fa-chevron-left" aria-hidden="true" />
         </a>
         <div>
-          <h1>Report Details</h1>
+          <h1>{tx("Report Details")}</h1>
           <p className="resident-detail-sub">#{report.reference_number || report.id.slice(0, 8)} · {formatDate(report.submitted_at)}</p>
         </div>
       </div>
@@ -669,9 +672,9 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
               {factors.length > 0 && (
                 <ul className="rrs-factors">
                   {factors.map((factor, index) => (
-                    <li key={`${index}-${factor}`} className="rrs-factor" title={factor}>
+                    <li key={`${index}-${factor}`} className="rrs-factor" title={localFactor(factor, lang)}>
                       <i className={`fa-solid ${factorIcon(factor)}`} aria-hidden="true" />
-                      <span>{shortFactor(factor)}</span>
+                      <span>{localFactor(factor, lang)}</span>
                     </li>
                   ))}
                 </ul>
@@ -703,7 +706,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
               )}
               <li>
                 <i className="fa-solid fa-fire" aria-hidden="true" />
-                <span><small>{pick("Fire Type", "Klase sang Kalayo", "Uri ng Sunog")}</small><strong>{fireTypes.map(formatFireType).join(" + ")}</strong></span>
+                <span><small>{pick("Fire Type", "Klase sang Kalayo", "Uri ng Sunog")}</small><strong>{fireTypes.map((type) => formatFireType(type, lang)).join(" + ")}</strong></span>
               </li>
               <li>
                 <i className="fa-solid fa-clock" aria-hidden="true" />
@@ -764,18 +767,20 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
             className="resident-photo-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label="Submitted incident photo gallery"
+            aria-label={tx("Submitted incident photo gallery")}
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="resident-photo-dialog-header">
               <span className="resident-photo-counter-pill">
-                📷 {photos.length > 1 ? `Photo ${activePhotoIndex + 1} of ${photos.length}` : "Incident Photo"}
+                📷 {photos.length > 1
+                  ? pick(`Photo ${activePhotoIndex + 1} of ${photos.length}`, `Litrato ${activePhotoIndex + 1} sa ${photos.length}`, `Litrato ${activePhotoIndex + 1} sa ${photos.length}`)
+                  : pick("Incident Photo", "Litrato sang Insidente", "Litrato ng Insidente")}
               </span>
               <button
                 type="button"
                 className="resident-photo-close"
                 onClick={() => setIsPhotoDialogOpen(false)}
-                aria-label="Close photo"
+                aria-label={tx("Close photo")}
               >
                 ×
               </button>
@@ -791,7 +796,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   type="button"
                   className="photo-nav-arrow prev"
                   onClick={() => setActivePhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1))}
-                  aria-label="Previous photo"
+                  aria-label={tx("Previous photo")}
                 >
                   ‹
                 </button>
@@ -809,7 +814,7 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
                   type="button"
                   className="photo-nav-arrow next"
                   onClick={() => setActivePhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0))}
-                  aria-label="Next photo"
+                  aria-label={tx("Next photo")}
                 >
                   ›
                 </button>
@@ -926,6 +931,41 @@ function factorIcon(factor: string) {
   return "fa-circle-exclamation";
 }
 
+/*
+ * The danger reasons are stored as the scorer wrote them, in a mix of Tagalog
+ * and English. Each known reason is shown in the resident's language; anything
+ * else falls back to its short form.
+ */
+const FACTOR_TEXT: Array<[RegExp, (m: RegExpMatchArray) => Record<ResidentLanguage, string>]> = [
+  [/^Napakalakas na hangin \/ gale \((\d+) km\/h\)/, (m) => ({ en: `Gale-force wind · ${m[1]} km/h`, tl: `Napakalakas na hangin · ${m[1]} km/h`, hil: `Puwerte kabaskog nga hangin · ${m[1]} km/h` })],
+  [/^Malakas ang hangin \((\d+) km\/h/, (m) => ({ en: `Strong wind · ${m[1]} km/h`, tl: `Malakas ang hangin · ${m[1]} km/h`, hil: `Mabaskog nga hangin · ${m[1]} km/h` })],
+  [/^Matinding init at tuyong panahon \((\d+)°C/, (m) => ({ en: `Extreme heat and dry weather · ${m[1]}°C`, tl: `Matinding init at tuyong panahon · ${m[1]}°C`, hil: `Puwerte kainit kag mamala nga panahon · ${m[1]}°C` })],
+  [/^Malayo sa kalsada/, () => ({ en: "Far from the road · long hose needed", tl: "Malayo sa kalsada · kailangan ng mahabang hose", hil: "Malayo sa dalan · kinahanglan malaba nga hose" })],
+  [/^Eskinita/, () => ({ en: "Narrow alley · fire truck cannot enter", tl: "Eskinita · hindi mapasok ng fire truck", hil: "Eskinita · indi masudlan sang fire truck" })],
+  [/^Dead-end o baradong daan/, () => ({ en: "Dead-end or blocked road", tl: "Dead-end o baradong daan", hil: "Dead-end ukon nabara nga dalan" })],
+  [/^Makipot na kalsada/, () => ({ en: "Narrow road (one lane)", tl: "Makipot na kalsada (isang linya)", hil: "Masiot nga dalan (isa ka linya)" })],
+  [/^Dikit-dikit na kabahayan/, () => ({ en: "Houses built close together", tl: "Dikit-dikit na kabahayan", hil: "Dikit-dikit nga kabalayan" })],
+  [/^Magkakalayo na bahay/, () => ({ en: "Houses far apart (over 15 m)", tl: "Magkakalayo ang mga bahay (higit 15 m)", hil: "Malayo-layo ang mga balay (sobra 15 m)" })],
+  [/^Light combustible materials/, () => ({ en: "Light materials (wood, bamboo, nipa)", tl: "Magagaang materyales (kahoy, kawayan, nipa)", hil: "Magaan nga materyales (kahoy, kawayan, nipa)" })],
+  [/^Commercial \/ Storage \/ Flammable/, () => ({ en: "Storage or flammable goods", tl: "Bodega o madaling masunog na gamit", hil: "Bodega ukon dali masunog nga butang" })],
+  [/^Semi-concrete structure/, () => ({ en: "Semi-concrete structure", tl: "Semi-konkretong istruktura", hil: "Semi-konkreto nga istruktura" })],
+  [/^Nearest mapped building (\d+) m away/, (m) => ({ en: `Nearest building ${m[1]} m away`, tl: `Pinakamalapit na gusali: ${m[1]} m ang layo`, hil: `Pinakamalapit nga bilding: ${m[1]} m ang kalayuon` })],
+  [/^Nearest mapped building distance unavailable/, () => ({ en: "Distance to nearest building unknown", tl: "Hindi alam ang layo ng pinakamalapit na gusali", hil: "Wala nahibaluan ang kalayuon sang pinakamalapit nga bilding" })],
+  [/^Vehicle fire among closely built houses/, () => ({ en: "Vehicle fire among closely built houses", tl: "Sunog ng sasakyan sa gitna ng dikit-dikit na bahay", hil: "Kalayo sang salakyan sa tunga sang dikit-dikit nga balay" })],
+  [/^Vehicle fire on a narrow or blocked road/, () => ({ en: "Vehicle fire on a narrow or blocked road", tl: "Sunog ng sasakyan sa makipot o baradong daan", hil: "Kalayo sang salakyan sa masiot ukon nabara nga dalan" })],
+  [/^Rubbish fire beside closely built houses/, () => ({ en: "Rubbish fire beside closely built houses", tl: "Sunog ng basura malapit sa dikit-dikit na bahay", hil: "Kalayo sang basura malapit sa dikit-dikit nga balay" })],
+  [/^Rubbish fire with wind (\d+) km\/h/, (m) => ({ en: `Rubbish fire with wind · ${m[1]} km/h`, tl: `Sunog ng basura na may hangin · ${m[1]} km/h`, hil: `Kalayo sang basura nga may hangin · ${m[1]} km/h` })],
+  [/^Standard localized incident/, () => ({ en: "Ordinary local incident", tl: "Karaniwang lokal na insidente", hil: "Kinaandan nga lokal nga insidente" })],
+];
+
+function localFactor(factor: string, lang: ResidentLanguage) {
+  for (const [pattern, words] of FACTOR_TEXT) {
+    const match = factor.match(pattern);
+    if (match) return words(match)[lang];
+  }
+  return shortFactor(factor);
+}
+
 /** "Malakas ang hangin (28 km/h - mabilis kumalat ang apoy)" becomes "Malakas ang hangin · 28 km/h". */
 function shortFactor(factor: string) {
   const match = factor.match(/^(.*?)\s*\((.*)\)\s*$/);
@@ -956,14 +996,14 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function formatFireType(value: string) {
-  return (
-    ({
-      HOUSE_BUILDING: "House/Building Fire",
-      GRASS: "Grass Fire",
-      FOREST: "Forest Fire",
-      VEHICLE: "Vehicle Fire",
-      OTHER: "Rubbish Fire",
-    } as Record<string, string>)[value] || "Fire incident"
-  );
+const FIRE_TYPE_TEXT: Record<string, Record<ResidentLanguage, string>> = {
+  HOUSE_BUILDING: { en: "House/Building Fire", tl: "Sunog sa Bahay/Gusali", hil: "Kalayo sa Balay/Bilding" },
+  GRASS: { en: "Grass Fire", tl: "Sunog sa Damuhan", hil: "Kalayo sa Hilamon" },
+  FOREST: { en: "Forest Fire", tl: "Sunog sa Gubat", hil: "Kalayo sa Kagulangan" },
+  VEHICLE: { en: "Vehicle Fire", tl: "Sunog ng Sasakyan", hil: "Kalayo sang Salakyan" },
+  OTHER: { en: "Rubbish Fire", tl: "Sunog ng Basura", hil: "Kalayo sang Basura" },
+};
+
+function formatFireType(value: string, lang: ResidentLanguage) {
+  return FIRE_TYPE_TEXT[value]?.[lang] ?? ({ en: "Fire incident", tl: "Insidente ng sunog", hil: "Insidente sang kalayo" } as const)[lang];
 }

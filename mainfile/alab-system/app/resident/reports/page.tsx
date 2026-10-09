@@ -6,6 +6,8 @@ import { reportsStyles } from "../../_content/resident-reports-content";
 import type { FireReportStatus } from "../../../lib/fire-reports/types";
 import { useResidentLanguage, getLocalizedStatusLabel, type ResidentLanguage, type TranslationKeys } from "../../_lib/resident-i18n";
 
+import { useResidentText } from "../../_lib/resident-text";
+import { RESIDENT_TEXT } from "../../_content/resident-text";
 type Report = { id: string; reference_number: string; status: FireReportStatus; fire_type: string; submitted_at: string; municipality: string | null; barangay: string | null; };
 type Filter = "ALL" | "ACTIVE" | "CLOSED";
 
@@ -37,6 +39,7 @@ const liveReportsStyles = `
 `;
 
 export default function ReportsPage() {
+  const tx = useResidentText(RESIDENT_TEXT);
   const { lang, t } = useResidentLanguage();
   const [reports, setReports] = useState<Report[]>([]);
   const [error, setError] = useState("");
@@ -88,8 +91,8 @@ export default function ReportsPage() {
             </div>
             <span className="reports-count-note">{reports.length} {reports.length === 1 ? t("reportsCountSingular") : t("reportsCountPlural")}</span>
           </div>
-          {error && <p className="reports-load-error" role="alert">{error}</p>}
-          <div className="status-summary-row" aria-label="Report status summary">
+          {error && <p className="reports-load-error" role="alert">{tx(error)}</p>}
+          <div className="status-summary-row" aria-label={tx("Report status summary")}>
             <SummaryCard label={t("statusSubmitted")} count={submittedCount} tone="submitted" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
             <SummaryCard label={t("statusVerifying")} count={verifyingCount} tone="verifying" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
             <SummaryCard label={t("statusResponding")} count={respondingCount} tone="responding" onClick={() => setFilter("ACTIVE")} active={filter === "ACTIVE"} />
@@ -98,12 +101,12 @@ export default function ReportsPage() {
           <div className="reports-controls">
             <div className="reports-search-wrapper">
               <SearchIcon />
-              <input className="reports-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("reportsSearchPlaceholder")} aria-label="Search fire reports" />
+              <input className="reports-search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("reportsSearchPlaceholder")} aria-label={tx("Search fire reports")} />
             </div>
-            <div className="reports-filter-tabs" aria-label="Report filters">
+            <div className="reports-filter-tabs" aria-label={tx("Report filters")}>
               {(["ALL", "ACTIVE", "CLOSED"] as Filter[]).map((item) => (
                 <button key={item} type="button" className={`filter-tab${filter === item ? " active" : ""}`} onClick={() => setFilter(item)}>
-                  {item === "ALL" ? "All" : item === "ACTIVE" ? "Active" : "Closed"}
+                  {item === "ALL" ? t("filterAll") : item === "ACTIVE" ? t("filterActive") : t("filterClosed")}
                 </button>
               ))}
             </div>
@@ -188,13 +191,14 @@ function StatusBadge({ status, lang }: { status: FireReportStatus; lang: Residen
 }
 
 function LocationCell({ report }: { report: Report }) {
+  const tx = useResidentText(RESIDENT_TEXT);
   return (
     <span className="location-cell">
       <PinIcon />
       <span className="location-text">
-        {report.barangay || "Barangay not available"}
+        {report.barangay || tx("Barangay not available")}
         <br />
-        {report.municipality || "Municipality not available"}
+        {report.municipality || tx("Municipality not available")}
       </span>
     </span>
   );

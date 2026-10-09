@@ -1109,10 +1109,10 @@ export const reportFireMarkup = `
         <div class="photo-req-actions">
           <button type="button" class="photo-req-btn photo-req-take" data-photo-req-take>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            Kumuha ng Larawan
+            Take a Photo
           </button>
           <button type="button" class="photo-req-btn photo-req-close" data-photo-req-close>
-            Isara
+            Close
           </button>
         </div>
       </div>
@@ -1142,7 +1142,7 @@ export const reportFireMarkup = `
             Oo, Ipadala ang Alert
           </button>
           <button type="button" class="confirm-btn-cancel" data-confirm-alert-cancel>
-            Kanselahin / Cancel
+            Cancel
           </button>
         </div>
       </div>

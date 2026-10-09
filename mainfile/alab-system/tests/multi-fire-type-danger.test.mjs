@@ -84,7 +84,7 @@ test("every selected type is stored and shown", () => {
   assert.match(page, /form\.append\('fireTypes', kind\)/);
   assert.match(page, /MAX_FIRE_TYPES/);
   assert.match(read("../app/_content/resident-report-fire-content.ts"), /data-fire-type-note/);
-  assert.match(read("../app/_components/resident-report-status.tsx"), /fireTypes\.map\(formatFireType\)\.join\(" \+ "\)/);
+  assert.match(read("../app/_components/resident-report-status.tsx"), /fireTypes\.map\(\(type\) => formatFireType\(type, lang\)\)\.join\(" \+ "\)/);
   assert.match(read("../app/_components/municipal-incident-detail.tsx"), /reportedFireTypes/);
   const migration = read("../supabase/migrations/20261002120000_add_fire_report_fire_types.sql");
   assert.match(migration, /add column if not exists fire_types text\[\]/);

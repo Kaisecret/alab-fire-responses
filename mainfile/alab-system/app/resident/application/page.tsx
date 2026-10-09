@@ -12,6 +12,8 @@ import { shrinkPhoto } from "../../_lib/shrink-photo";
 import { EMERGENCY_CALL_LABEL, PHONE_ICON_PATH, emergencyCallStyles } from "../../_content/emergency-call";
 import { OPEN_BFP_HOTLINES } from "../../_components/resident-offline-emergency";
 
+import { useResidentText } from "../../_lib/resident-text";
+import { RESIDENT_TEXT } from "../../_content/resident-text";
 type Application = {
   reference: string;
   status: "PENDING" | "VERIFIED" | "CHANGES_REQUESTED";
@@ -54,6 +56,7 @@ function isUncertainStatus(status: number) {
 }
 
 export default function ResidentApplicationPage() {
+  const tx = useResidentText(RESIDENT_TEXT);
   const [application, setApplication] = useState<Application | null>(null);
   const [initialError, setInitialError] = useState("");
   const [initialLoading, setInitialLoading] = useState(true);
@@ -151,7 +154,7 @@ export default function ResidentApplicationPage() {
       setApplication(result.application);
       if (result.application.status === "CHANGES_REQUESTED") {
         setRecoveryIssue(null);
-        setStatusMessage("Corrections are still requested. You can try submitting again.");
+        setStatusMessage(tx("Corrections are still requested. You can try submitting again."));
       } else {
         setRecoveryIssue(null);
         setStatusMessage("");
@@ -178,7 +181,7 @@ export default function ResidentApplicationPage() {
     event.preventDefault();
     if (operationRef.current || recoveryIssue?.requiresStatusCheck || recoveryIssue?.sessionExpired) return;
     if (!selfieFile) {
-      setValidationError("Take a new selfie using your camera before resubmitting.");
+      setValidationError(tx("Take a new selfie using your camera before resubmitting."));
       return;
     }
 
@@ -223,7 +226,7 @@ export default function ResidentApplicationPage() {
       const details = requestDetails(error);
       if (details.status === 400) {
         setValidationError(error instanceof Error && error.message === "Enter a valid barangay in your registered municipality."
-          ? error.message : "Check your details and choose readable JPG, PNG or WebP images, up to 6 MB each.");
+          ? error.message : tx("Check your details and choose readable JPG, PNG or WebP images, up to 6 MB each."));
         return;
       }
       setRecoveryIssue({
@@ -245,12 +248,12 @@ export default function ResidentApplicationPage() {
   const isApproved = application?.status === "VERIFIED" && application.accountStatus === "ACTIVE";
   const needsChanges = application?.status === "CHANGES_REQUESTED";
   const recoveryCopy = recoveryIssue?.sessionExpired
-    ? "Your session has expired. Sign in again to continue. Leaving this page means you will need to select your photos again."
+    ? tx("Your session has expired. Sign in again to continue. Leaving this page means you will need to select your photos again.")
     : recoveryIssue?.kind === "status-check"
-      ? "We couldn't check your status. Try checking again. Your details and photos are still here."
+      ? tx("We couldn't check your status. Try checking again. Your details and photos are still here.")
       : recoveryIssue?.requiresStatusCheck
-        ? "Your details and photos are still here. Check your application status before trying again."
-        : "Review your details and photos, then try submitting again.";
+        ? tx("Your details and photos are still here. Check your application status before trying again.")
+        : tx("Review your details and photos, then try submitting again.");
 
   function renderUpload(kind: "front" | "back", selection: IdSelection | null, fieldError: string) {
     const isFront = kind === "front";
@@ -260,9 +263,9 @@ export default function ResidentApplicationPage() {
     return (
       <div className="id-field">
         <div className="id-label-row">
-          <label className="id-label" htmlFor={inputId}>{isFront ? "Front of ID · Required" : "Back of ID · Optional"}</label>
+          <label className="id-label" htmlFor={inputId}>{isFront ? tx("Front of ID · Required") : tx("Back of ID · Optional")}</label>
         </div>
-        <p id={helpId} className="id-help">JPG, PNG or WebP. Up to 6 MB per photo.</p>
+        <p id={helpId} className="id-help">{tx("JPG, PNG or WebP. Up to 6 MB per photo.")}</p>
         <div className={`id-upload-row ${fieldError ? "has-error" : ""}`}>
           {selection ? (
             <>
@@ -273,11 +276,11 @@ export default function ResidentApplicationPage() {
               </div>
             </>
           ) : (
-            <div className="id-empty-copy"><strong>No photo selected</strong><span>{isFront ? "Show the complete front side" : "Add the back if it contains details"}</span></div>
+            <div className="id-empty-copy"><strong>{tx("No photo selected")}</strong><span>{isFront ? tx("Show the complete front side") : tx("Add the back if it contains details")}</span></div>
           )}
           <div className="id-actions">
             <label className="file-action" htmlFor={inputId}>
-              {selection ? "Change photo" : isFront ? "Choose front photo" : "Choose back photo"}
+              {selection ? tx("Change photo") : isFront ? tx("Choose front photo") : tx("Choose back photo")}
               <input
                 ref={isFront ? frontInputRef : backInputRef}
                 id={inputId}
@@ -291,10 +294,10 @@ export default function ResidentApplicationPage() {
                 onChange={event => selectId(kind, event)}
               />
             </label>
-            {!isFront && selection && <button type="button" className="remove-action" onClick={removeBackId}>Remove</button>}
+            {!isFront && selection && <button type="button" className="remove-action" onClick={removeBackId}>{tx("Remove")}</button>}
           </div>
         </div>
-        {fieldError && <p id={errorId} className="field-error" role="alert">{fieldError}</p>}
+        {fieldError && <p id={errorId} className="field-error" role="alert">{tx(fieldError)}</p>}
       </div>
     );
   }
@@ -305,15 +308,15 @@ export default function ResidentApplicationPage() {
       <style>{residentSelfieCaptureStyles}</style>
       <style>{emergencyCallStyles}</style>
       <section className="approval-shell">
-        <header className="approval-brand"><img src="/images/Logo.webp" alt="ALAB" /><span>Resident identity review</span></header>
+        <header className="approval-brand"><img src="/images/Logo.webp" alt={tx("ALAB")} /><span>{tx("Resident identity review")}</span></header>
 
-        {!application && initialLoading && <div className="approval-loading" role="status"><span />Loading your secure application…</div>}
+        {!application && initialLoading && <div className="approval-loading" role="status"><span />{tx("Loading your secure application…")}</div>}
         {!application && initialError && (
           <div className="approval-error">
-            <h1>We could not open your application</h1>
-            <p role="alert">{initialError}</p>
-            <button type="button" onClick={() => void loadInitial()}>Retry loading</button>
-            <Link href="/resident/login">Return to resident login</Link>
+            <h1>{tx("We could not open your application")}</h1>
+            <p role="alert">{tx(initialError)}</p>
+            <button type="button" onClick={() => void loadInitial()}>{tx("Retry loading")}</button>
+            <Link href="/resident/login">{tx("Return to resident login")}</Link>
           </div>
         )}
 
@@ -323,47 +326,47 @@ export default function ResidentApplicationPage() {
               <div className="approval-symbol" aria-hidden="true">{needsChanges ? "!" : isApproved ? "✓" : "·"}</div>
               <div>
                 <p className="eyebrow">{application.reference}</p>
-                <h1>{needsChanges ? "Changes requested" : isApproved ? "Application approved" : "Under review"}</h1>
-                <p>{needsChanges ? "Please correct the items identified by your Municipal BFP and resubmit." : isApproved ? "Your identity is approved. You can now sign in to the resident application." : `Your application is safely queued with ${application.municipality} Municipal BFP.`}</p>
+                <h1>{needsChanges ? tx("Changes requested") : isApproved ? tx("Application approved") : tx("Under review")}</h1>
+                <p>{needsChanges ? tx("Please correct the items identified by your Municipal BFP and resubmit.") : isApproved ? tx("Your identity is approved. You can now sign in to the resident application.") : tx("Your application is safely queued with {municipality} Municipal BFP.").replace("{municipality}", application.municipality)}</p>
               </div>
             </div>
 
             <div className="approval-summary">
-              <div><small>Applicant</small><strong>{application.firstName} {application.lastName}</strong></div>
-              <div><small>Municipality</small><strong>{application.municipality}</strong></div>
-              <div><small>Submitted</small><strong>{new Date(application.submittedAt).toLocaleString("en-PH")}</strong></div>
+              <div><small>{tx("Applicant")}</small><strong>{application.firstName} {application.lastName}</strong></div>
+              <div><small>{tx("Municipality")}</small><strong>{application.municipality}</strong></div>
+              <div><small>{tx("Submitted")}</small><strong>{new Date(application.submittedAt).toLocaleString("en-PH")}</strong></div>
             </div>
 
-            {isApproved && <Link className="primary-action" href="/resident/login">Continue to resident login</Link>}
+            {isApproved && <Link className="primary-action" href="/resident/login">{tx("Continue to resident login")}</Link>}
             {!isApproved && (
               <div className="approval-emergency">
                 <button type="button" className="alab-emergency-call" aria-haspopup="dialog" onClick={() => window.dispatchEvent(new Event(OPEN_BFP_HOTLINES))}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={PHONE_ICON_PATH} /></svg>
                   <span>{EMERGENCY_CALL_LABEL}</span>
                 </button>
-                <p>In-app fire reports open once your account is approved. A call reaches BFP right away.</p>
+                <p>{tx("In-app fire reports open once your account is approved. A call reaches BFP right away.")}</p>
               </div>
             )}
-            {!isApproved && !needsChanges && <div className="review-note"><strong>What happens next?</strong><p>Authorized Municipal BFP personnel will compare your registration details with your protected, watermarked ID copies. You can return to this page after signing in to check the result.</p></div>}
+            {!isApproved && !needsChanges && <div className="review-note"><strong>{tx("What happens next?")}</strong><p>{tx("Authorized Municipal BFP personnel will compare your registration details with your protected, watermarked ID copies. You can return to this page after signing in to check the result.")}</p></div>}
 
             {needsChanges && (
               <form className="correction-form" onSubmit={resubmit}>
-                <div className="correction-reason"><strong>Municipal BFP note</strong><p>{application.correctionReason}</p></div>
-                <div className="form-intro"><h2>Correct and resubmit</h2><p className="form-help">Update the requested details and provide clear replacement photos. Review copies receive an ALAB privacy watermark.</p></div>
+                <div className="correction-reason"><strong>{tx("Municipal BFP note")}</strong><p>{application.correctionReason}</p></div>
+                <div className="form-intro"><h2>{tx("Correct and resubmit")}</h2><p className="form-help">{tx("Update the requested details and provide clear replacement photos. Review copies receive an ALAB privacy watermark.")}</p></div>
 
                 <fieldset className="form-fields" disabled={busy}>
                   <section className="form-section" aria-labelledby="details-heading">
-                    <h3 id="details-heading" className="form-section-title">Your details</h3>
+                    <h3 id="details-heading" className="form-section-title">{tx("Your details")}</h3>
                     <div className="field-grid">
-                      <label>First name<input name="firstName" defaultValue={application.firstName} required /></label>
-                      <label>Last name<input name="lastName" defaultValue={application.lastName} required /></label>
-                      <label>Barangay<input name="barangay" defaultValue={application.barangay} required /></label>
-                      <label className="wide">Complete address<input name="address" defaultValue={application.address} required /></label>
+                      <label>{tx("First name")}<input name="firstName" defaultValue={application.firstName} required /></label>
+                      <label>{tx("Last name")}<input name="lastName" defaultValue={application.lastName} required /></label>
+                      <label>{tx("Barangay")}<input name="barangay" defaultValue={application.barangay} required /></label>
+                      <label className="wide">{tx("Complete address")}<input name="address" defaultValue={application.address} required /></label>
                     </div>
                   </section>
 
                   <section className="form-section" aria-labelledby="id-heading">
-                    <h3 id="id-heading" className="form-section-title">Valid ID</h3>
+                    <h3 id="id-heading" className="form-section-title">{tx("Valid ID")}</h3>
                     <div className="id-grid">
                       {renderUpload("front", frontId, frontIdError)}
                       {renderUpload("back", backId, backIdError)}
@@ -371,39 +374,39 @@ export default function ResidentApplicationPage() {
                   </section>
 
                   <section className="form-section" aria-labelledby="selfie-heading">
-                    <h3 id="selfie-heading" className="form-section-title">New selfie</h3>
-                    <p className="form-help small">Take a clear photo with your camera so we can review your identity.</p>
+                    <h3 id="selfie-heading" className="form-section-title">{tx("New selfie")}</h3>
+                    <p className="form-help small">{tx("Take a clear photo with your camera so we can review your identity.")}</p>
                     <ResidentSelfieCapture onCapture={setSelfieFile} disabled={busy} />
                   </section>
                 </fieldset>
 
-                {validationError && <p className="field-error form-validation-error" role="alert">{validationError}</p>}
+                {validationError && <p className="field-error form-validation-error" role="alert">{tx(validationError)}</p>}
 
                 {recoveryIssue && (
                   <div className="recovery-panel" role="alert">
-                    <h3><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 8v5m0 3.5v.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>{recoveryIssue.sessionExpired ? "Sign in to continue" : "We couldn't confirm your submission"}</h3>
+                    <h3><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 8v5m0 3.5v.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>{recoveryIssue.sessionExpired ? tx("Sign in to continue") : tx("We couldn't confirm your submission")}</h3>
                     <p>{recoveryCopy}</p>
                     {!recoveryIssue.sessionExpired && (recoveryIssue.requiresStatusCheck || recoveryIssue.kind === "status-check") && (
                       <button className="status-check-action" type="button" disabled={busy} onClick={() => checkApplicationStatus()}>
-                        {checking ? "Checking status…" : "Check application status"}
+                        {checking ? tx("Checking status…") : tx("Check application status")}
                       </button>
                     )}
-                    {recoveryIssue.sessionExpired && <Link className="status-check-action" href="/resident/login">Sign in again</Link>}
+                    {recoveryIssue.sessionExpired && <Link className="status-check-action" href="/resident/login">{tx("Sign in again")}</Link>}
                     {(recoveryIssue.status > 0 || recoveryIssue.requestId) && (
                       <details className="technical-details">
-                        <summary>Technical details</summary>
-                        {recoveryIssue.status > 0 && <p>HTTP status: {recoveryIssue.status}</p>}
-                        {recoveryIssue.requestId && <p>Request reference: {recoveryIssue.requestId}</p>}
+                        <summary>{tx("Technical details")}</summary>
+                        {recoveryIssue.status > 0 && <p>{tx("HTTP status:")}{" "}{recoveryIssue.status}</p>}
+                        {recoveryIssue.requestId && <p>{tx("Request reference:")}{" "}{recoveryIssue.requestId}</p>}
                       </details>
                     )}
                   </div>
                 )}
 
-                {statusMessage && <p className="status-message" role="status">{statusMessage}</p>}
-                {busy && <p className="progress-message" role="status"><span aria-hidden="true" />{checking ? "Checking application status…" : "Submitting corrections…"}</p>}
+                {statusMessage && <p className="status-message" role="status">{tx(statusMessage)}</p>}
+                {busy && <p className="progress-message" role="status"><span aria-hidden="true" />{checking ? tx("Checking application status…") : tx("Submitting corrections…")}</p>}
 
                 <button className="primary-action" disabled={busy || !selfieFile || Boolean(recoveryIssue?.requiresStatusCheck || recoveryIssue?.sessionExpired)}>
-                  {saving ? <><span className="button-spinner" aria-hidden="true" />Submitting corrections…</> : "Resubmit for review"}
+                  {saving ? <><span className="button-spinner" aria-hidden="true" />{tx("Submitting corrections…")}</> : tx("Resubmit for review")}
                 </button>
               </form>
             )}

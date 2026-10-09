@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 
 import { profileStyles, profileMarkup } from "../../_content/resident-profile-content";
 import { getStoredLanguage, setStoredLanguage, applyResidentTranslations, type ResidentLanguage } from "../../_lib/resident-i18n";
+import { watchResidentMarkup } from "../../_lib/resident-text";
+import { RESIDENT_TEXT, RESIDENT_TEXT_PATTERNS } from "../../_content/resident-text";
 
 export default function ProfilePage() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -268,8 +270,11 @@ export default function ProfilePage() {
       }
     };
     window.addEventListener("alab:resident-language-changed", onLanguageChange);
+    // Text without a data-i18n key, and messages written later, follow too.
+    const stopLanguage = watchResidentMarkup(root, RESIDENT_TEXT, RESIDENT_TEXT_PATTERNS);
 
     return () => {
+      stopLanguage();
       closeDialogs();
       root.removeEventListener("click", onClick);
       root.removeEventListener("submit", onSubmit);

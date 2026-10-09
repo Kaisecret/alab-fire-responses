@@ -7,6 +7,8 @@ import { ResidentFireLoader } from '../../_components/resident-fire-loader';
 import { OPEN_BFP_HOTLINES } from '../../_components/resident-offline-emergency';
 import { reportFireMarkup, reportFireStyles } from '../../_content/resident-report-fire-content';
 import { getStoredLanguage, RESIDENT_TRANSLATIONS, type ResidentLanguage } from '../../_lib/resident-i18n';
+import { useResidentText, watchResidentMarkup } from '../../_lib/resident-text';
+import { RESIDENT_TEXT, RESIDENT_TEXT_PATTERNS } from '../../_content/resident-text';
 import { filterSituationForFireTypes, MAX_FIRE_TYPES, situationForFireTypes } from '../../../lib/fire-reports/fire-type-situation';
 import {
   REFINEMENT_WINDOW_MS,
@@ -78,6 +80,7 @@ export default function ResidentReportFirePage() {
 
 function LegacyResidentReportFirePage() {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const tx = useResidentText(RESIDENT_TEXT);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -89,6 +92,9 @@ function LegacyResidentReportFirePage() {
     };
     root.addEventListener('resident-report:submission-state', handleSubmissionState);
 
+    // Every word the form shows, including what its scripts write later,
+    // follows the language the resident chose.
+    const disposeLanguage = watchResidentMarkup(root, RESIDENT_TEXT, RESIDENT_TEXT_PATTERNS);
     const disposeLocation = initializeLocationLogic(root);
     const disposePhotoCapture = initializePhotoCapture(root);
     const disposeSubmission = initializeReportSubmission(root);
@@ -99,6 +105,7 @@ function LegacyResidentReportFirePage() {
       disposeSubmission();
       disposePhotoCapture();
       disposeLocation();
+      disposeLanguage();
       root.removeEventListener('resident-report:submission-state', handleSubmissionState);
     };
   }, []);
@@ -107,7 +114,7 @@ function LegacyResidentReportFirePage() {
     <>
       <style>{reportFireStyles}</style>
       <ReportFireForm rootRef={rootRef} />
-      {isSubmitting && <ResidentFireLoader label="Sending your fire alert…" />}
+      {isSubmitting && <ResidentFireLoader label={tx("Sending your fire alert…")} />}
     </>
   );
 }
@@ -717,7 +724,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       if (fireTypeSection) {
         fireTypeSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-      showError('Pumili kung anong nasusunog (Select at least 1 fire type).');
+      showError('Select at least 1 fire type.');
       resetSubmission();
       return;
     }
@@ -730,7 +737,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       if (photoUploadSection) {
         photoUploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-      showError('Kailangan mag-attach ng kahit 1 larawan ng insidente (At least 1 photo required).');
+      showError('Attach at least 1 photo of the incident.');
       resetSubmission();
       return;
     }

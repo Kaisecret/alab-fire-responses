@@ -12,6 +12,12 @@ export const passThroughStationPlacement = {
   assertStationInMunicipality: () => {},
 };
 
+const residentTextInEnglish = {
+  useResidentText: () => (english) => english,
+  translateResidentText: (_dictionary, english) => english,
+  watchResidentMarkup: () => () => {},
+};
+
 export function loadServerModule(path, dependencies) {
   const code = ts.transpileModule(readFileSync(path, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
@@ -21,6 +27,9 @@ export function loadServerModule(path, dependencies) {
     if (name === 'server-only') return {};
     if (name === 'node:crypto') return { randomUUID };
     if (name in dependencies) return dependencies[name];
+    // Resident screens route their words through the language helper; tests read English.
+    if (name.endsWith('_lib/resident-text')) return residentTextInEnglish;
+    if (/_content\/resident-(guide-)?text$/.test(name)) return { RESIDENT_TEXT: {}, RESIDENT_GUIDE_TEXT: {}, RESIDENT_TEXT_PATTERNS: [] };
     if (name.endsWith('intermunicipality/station-placement') || name === './station-placement') return passThroughStationPlacement;
     throw Error(`Unexpected dependency: ${name}`);
   }, exports);

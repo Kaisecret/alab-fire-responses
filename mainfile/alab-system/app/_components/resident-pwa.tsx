@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useResidentText } from "../_lib/resident-text";
+import { RESIDENT_TEXT } from "../_content/resident-text";
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -25,6 +27,7 @@ async function registerResidentWorker() {
 }
 
 export function ResidentInstallPrompt() {
+  const tx = useResidentText(RESIDENT_TEXT);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isInstalled, setIsInstalled] = useState(() => {
@@ -57,7 +60,7 @@ export function ResidentInstallPrompt() {
   if (isDismissed) return null;
 
   return (
-    <aside className="resident-chrome-install-sheet" aria-label="ALAB app options">
+    <aside className="resident-chrome-install-sheet" aria-label={tx("ALAB app options")}>
       <style>{`
         .resident-chrome-install-sheet {
           position: fixed;
@@ -189,10 +192,10 @@ export function ResidentInstallPrompt() {
         }
       `}</style>
       <div className="chrome-sheet-header">
-        <img className="chrome-sheet-icon" src="/images/resident-pwa-192.png" alt="ALAB" />
+        <img className="chrome-sheet-icon" src="/images/resident-pwa-192.png" alt={tx("ALAB")} />
         <div className="chrome-sheet-info">
-          <span className="chrome-sheet-title">ALAB Emergency</span>
-          <span className="chrome-sheet-badge">Official</span>
+          <span className="chrome-sheet-title">{tx("ALAB Emergency")}</span>
+          <span className="chrome-sheet-badge">{tx("Official")}</span>
         </div>
       </div>
       <div className="chrome-sheet-actions">
@@ -200,16 +203,16 @@ export function ResidentInstallPrompt() {
           type="button"
           className="chrome-btn-cancel"
           onClick={() => setIsDismissed(true)}
-          aria-label="Dismiss"
+          aria-label={tx("Dismiss")}
         >
-          Hindi muna
+          {tx("Not now")}
         </button>
         <button
           type="button"
           className="chrome-btn-install"
           onClick={() => void install()}
         >
-          Install
+          {tx("Install")}
         </button>
       </div>
     </aside>

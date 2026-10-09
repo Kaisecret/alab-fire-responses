@@ -19,7 +19,7 @@ test('correction page implements accessible selected ID previews and optional ba
   assert.match(page, /Choose front photo/);
   assert.match(page, /Choose back photo/);
   assert.match(page, /Change photo/);
-  assert.match(page, />Remove</);
+  assert.match(page, /tx\("Remove"\)/);
   assert.match(page, /URL\.revokeObjectURL/);
   assert.match(page, /backInputRef\.current\.value = ""/);
   assert.match(page, /shrinkPhoto\(frontId\.file\)/);

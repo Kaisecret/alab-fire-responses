@@ -1170,7 +1170,7 @@ export const profileMarkup = `
             </div>
             
             <div style="text-align: center; margin-top: 2rem; color: var(--text-muted); font-size: 0.8rem;" class="desktop-only">
-                © 2024 ALAB - BFP Antique. All rights reserved. &nbsp;&nbsp;&nbsp; Privacy Policy &nbsp;·&nbsp; Terms of Service &nbsp;·&nbsp; Help Center
+                © 2024 ALAB - BFP Antique. <span>All rights reserved.</span> &nbsp;&nbsp;&nbsp; <span>Privacy Policy</span> &nbsp;·&nbsp; <span>Terms of Service</span> &nbsp;·&nbsp; <span>Help Center</span>
             </div>
         </main>
         <div class="profile-dialog-backdrop" data-profile-dialog="edit-profile" hidden><form class="profile-dialog" data-profile-form="contact"><h2 data-i18n="editContactDetailsTitle">Edit contact details</h2><p data-i18n="nameBarangayNotice">Name and barangay are verified details and cannot be changed here.</p><label><span data-i18n="fullName">Full name</span><input name="name" readonly></label><label><span data-i18n="barangay">Barangay</span><input name="barangay" readonly></label><label><span data-i18n="mobileNumber">Mobile number</span><input name="phone" inputmode="tel" required></label><label><span data-i18n="emailAddress">Email address</span><input name="email" type="email" required></label><p data-profile-feedback></p><button type="button" data-profile-close data-i18n="cancelBtn">Cancel</button><button class="btn-primary" type="submit" data-i18n="saveChanges">Save changes</button></form></div>

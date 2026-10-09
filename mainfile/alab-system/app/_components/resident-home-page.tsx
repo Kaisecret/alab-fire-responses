@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { homeMarkup, homeStyles } from "../_content/resident-home-content";
+import { RESIDENT_TEXT, RESIDENT_TEXT_PATTERNS } from "../_content/resident-text";
 import { getStoredLanguage, RESIDENT_TRANSLATIONS, type ResidentLanguage } from "../_lib/resident-i18n";
+import { watchResidentMarkup } from "../_lib/resident-text";
 
 type Dashboard = {
   resident: { name: string; municipality: string; barangay: string };
@@ -11,15 +13,25 @@ type Dashboard = {
 };
 
 export function ResidentHomePage() {
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Every word in the home screen follows the chosen language, including
+  // what the script below writes into it later.
+  useEffect(() => {
+    if (!rootRef.current) return;
+    return watchResidentMarkup(rootRef.current, RESIDENT_TEXT, RESIDENT_TEXT_PATTERNS);
+  }, []);
+
   useEffect(() => {
     // Dynamic date and time
     const updateDateTime = () => {
       const now = new Date();
+      const locale = getStoredLanguage() === "en" ? "en-US" : "fil-PH";
       const dateEl = document.getElementById("currentDate");
       const timeEl = document.getElementById("currentTime");
 
       if (dateEl) {
-        dateEl.textContent = now.toLocaleDateString("en-US", {
+        dateEl.textContent = now.toLocaleDateString(locale, {
           month: "short",
           day: "numeric",
           year: "numeric",
@@ -27,7 +39,7 @@ export function ResidentHomePage() {
       }
       
       if (timeEl) {
-        timeEl.textContent = now.toLocaleTimeString("en-US", {
+        timeEl.textContent = now.toLocaleTimeString(locale, {
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
@@ -69,6 +81,7 @@ export function ResidentHomePage() {
       const detail = (e as CustomEvent<{ lang?: ResidentLanguage }>).detail;
       if (detail?.lang) {
         applyHomeLanguage(detail.lang);
+        updateDateTime();
         const cached = localStorage.getItem("alab_cache_resident_dashboard");
         if (cached) {
           try {
@@ -151,7 +164,7 @@ export function ResidentHomePage() {
   return (
     <>
       <style>{homeStyles}</style>
-      <div dangerouslySetInnerHTML={{ __html: homeMarkup }} />
+      <div ref={rootRef} dangerouslySetInnerHTML={{ __html: homeMarkup }} />
     </>
   );
 }
