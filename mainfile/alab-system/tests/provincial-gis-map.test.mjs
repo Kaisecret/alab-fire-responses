@@ -59,7 +59,8 @@ test("Provincial GIS operations map matches the municipal operational design acr
   assert.match(comp, /Incidents/);
   assert.match(comp, /Water sources/);
   assert.match(comp, /Hydrant/);
-  assert.match(comp, /Water source details/);
+  assert.match(comp, /<WaterSourceMapPopup/);
+  assert.match(readFileSync(join(root, "app", "_components", "water-source-map-popup.tsx"), "utf8"), /Water source details/);
 });
 
 test("Provincial incident service selects coordinates for live mapping", () => {
@@ -88,6 +89,7 @@ test("clusterProvincialIncidents groups coincident coordinates and counts active
     "./fire-command-header": {},
     "./municipal-stat-cards": { StatCards: () => null, MunicipalStatCards: () => null },
     "../../lib/water-sources/map-positions": mapPositions,
+    "./water-source-map-popup": {},
     "./use-provincial-incident-feed": {
       useProvincialIncidentFeed: () => ({ incidents: [], loading: false, checking: false, error: "", refresh: async () => {} }),
     },
@@ -181,6 +183,7 @@ test("provincial GIS loads the province-wide water-source registry and honors di
     "./fire-command-header": {},
     "./municipal-stat-cards": { StatCards: () => null, MunicipalStatCards: () => null },
     "../../lib/water-sources/map-positions": mapPositions,
+    "./water-source-map-popup": {},
     "./use-provincial-incident-feed": {
       useProvincialIncidentFeed: () => ({ incidents: [], loading: false, checking: false, error: "", refresh: async () => {} }),
     },

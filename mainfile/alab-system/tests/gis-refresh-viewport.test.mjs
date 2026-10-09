@@ -63,10 +63,13 @@ for (const scope of ['municipal', 'provincial']) {
   test(`${scope} refreshing a focused water source keeps zoom, while initial deep links still focus`, () => {
     const fixture = leaflet();
     const groups = [{ point: [10.744, 121.942], approximate: false, sources: [{ id: 'hydrant', sourceKind: 'FIRE_HYDRANT' }] }];
-    drawing.drawWaterSources(fixture.L, fixture.map, fixture.layer, groups, 'hydrant', () => {}, false);
+    const focused = [];
+    const focus = (source, group) => focused.push([source.id, group.point]);
+    drawing.drawWaterSources(fixture.L, fixture.map, fixture.layer, groups, 'hydrant', focus, false);
     assert.equal(fixture.layer.markers.length, 1);
     assert.equal(fixture.moves.length, 0);
-    drawing.drawWaterSources(fixture.L, fixture.map, fixture.layer, groups, 'hydrant', () => {}, true);
-    assert.deepEqual(fixture.moves[0].slice(0, 2), [[10.744, 121.942], 17]);
+    assert.equal(focused.length, 0, 'a refresh must not fly the map back to the deep-linked source');
+    drawing.drawWaterSources(fixture.L, fixture.map, fixture.layer, groups, 'hydrant', focus, true);
+    assert.deepEqual(focused, [['hydrant', [10.744, 121.942]]], 'the deep-linked source is focused once');
   });
 }
