@@ -4,7 +4,9 @@ import { distanceMeters } from "../intermunicipality/proximity.ts";
 // municipality with two or more stations has a choice to make; one station is
 // dispatched by the button itself. Distance is straight-line from the report's
 // GPS point, since road distance is not known. The recommendation is the
-// nearest station with someone on duty, and it is advice: the officer decides.
+// nearest staffed station for low/moderate/high danger, and all staffed local
+// stations for critical danger. Truck quantities use the serviceable inventory;
+// the officer confirms availability and decides what to dispatch.
 
 export type NearestStationCandidate = {
   id: string;
@@ -12,11 +14,14 @@ export type NearestStationCandidate = {
   latitude: number;
   longitude: number;
   activePersonnelCount: number;
+  serviceableTruckCount?: number | null;
 };
 
 export type RankedStation<S extends NearestStationCandidate> = S & {
   distanceMeters: number | null;
   recommended: boolean;
+  /** null means the inventory is unknown; zero means no truck is recommended. */
+  recommendedTruckCount: number | null;
   /** The station name without the "· Head: …" suffix it is stored with. */
   displayName: string;
   head: string | null;
@@ -34,7 +39,7 @@ function usable(latitude: number, longitude: number) {
 }
 
 export function rankStationsForIncident<S extends NearestStationCandidate>(
-  incident: { latitude: number; longitude: number },
+  incident: { latitude: number; longitude: number; calculatedSeverity?: "LOW" | "MODERATE" | "HIGH" | "CRITICAL" | null },
   stations: readonly S[],
 ): RankedStation<S>[] | null {
   if (stations.length < 2) return null;
@@ -48,13 +53,24 @@ export function rankStationsForIncident<S extends NearestStationCandidate>(
         : null,
     }))
     .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity) || a.index - b.index);
-  const recommendedId = ranked.find((entry) => entry.distance !== null && entry.station.activePersonnelCount > 0)?.station.id;
-  return ranked.map(({ station, distance }) => ({
-    ...station,
-    ...splitHead(station.stationName),
-    distanceMeters: distance,
-    recommended: station.id === recommendedId,
-  }));
+  const crewOnly = incident.calculatedSeverity === "LOW";
+  const allStations = incident.calculatedSeverity === "CRITICAL";
+  const eligible = (station: S) => station.activePersonnelCount > 0
+    && (crewOnly || station.serviceableTruckCount == null || station.serviceableTruckCount > 0);
+  const recommendedId = ranked.find((entry) => entry.distance !== null && eligible(entry.station))?.station.id;
+  return ranked.map(({ station, distance }) => {
+    const recommended = allStations ? eligible(station) : station.id === recommendedId;
+    const recommendedTruckCount = !recommended || crewOnly ? 0
+      : station.serviceableTruckCount == null ? null
+      : incident.calculatedSeverity === "HIGH" || allStations ? station.serviceableTruckCount : 1;
+    return {
+      ...station,
+      ...splitHead(station.stationName),
+      distanceMeters: distance,
+      recommended,
+      recommendedTruckCount,
+    };
+  });
 }
 
 export function formatStationDistance(meters: number | null) {

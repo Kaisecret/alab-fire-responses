@@ -41,6 +41,7 @@ test('open incident detail polls visible tabs, retains data on refresh failure, 
       './municipal-dispatch-choice': { respondFromButton: async () => ({ kind: 'PICK', stations: [] }) },
       '../../lib/fire-reports/response-guidance': { buildResponseGuidance: () => [] },
       '../../lib/municipal-bfp/nearest-station': { rankStationsForIncident: () => null, formatStationDistance: () => '' },
+      './municipal-station-recommendation': { MunicipalStationRecommendation() {} },
     });
     module.MunicipalIncidentDetail({ incidentId: 'incident-a' });
     cleanup = effects.map(effect => effect()).filter(fn => typeof fn === 'function');

@@ -16,6 +16,7 @@ import { respondFromButton } from "./municipal-dispatch-choice";
 import { buildResponseGuidance } from "../../lib/fire-reports/response-guidance";
 import { formatStationDistance, rankStationsForIncident } from "../../lib/municipal-bfp/nearest-station";
 import type { RankedStation } from "../../lib/municipal-bfp/nearest-station";
+import { MunicipalStationRecommendation } from "./municipal-station-recommendation";
 
 type Incident = {
   id: string;
@@ -73,6 +74,7 @@ type DispatchStation = {
   latitude: number;
   longitude: number;
   activePersonnelCount: number;
+  serviceableTruckCount?: number | null;
 };
 
 type ResponderStage = "ASSIGNED" | "ACKNOWLEDGED" | "EN_ROUTE" | "ON_SCENE" | "COMPLETED";
@@ -2028,7 +2030,7 @@ export function MunicipalIncidentDetail({
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [dispatchStations, setDispatchStations] = useState<DispatchStation[]>([]);
-  /** The municipality's stations, read once for the nearest-station advice. */
+  /** The municipality's stations and inventory for the danger-based advice. */
   const [stationOptions, setStationOptions] = useState<DispatchStation[]>([]);
   const [selectedStationIds, setSelectedStationIds] = useState<string[]>([]);
   const [stationsLoading, setStationsLoading] = useState(false);
@@ -2160,16 +2162,16 @@ export function MunicipalIncidentDetail({
     if (!res.ok) throw new Error(data.error || "Failed to start response");
   }, [incidentId]);
 
-  // With two or more stations the picker opens with the nearest staffed one
-  // ticked. Ticking only prepares the choice; the officer still dispatches.
+  // Preselect the danger-based advice. Critical incidents can recommend more
+  // than one local station; the officer still confirms the dispatch.
   const incidentLatitude = incident?.latitude;
   const incidentLongitude = incident?.longitude;
+  const incidentDanger = incident?.calculatedSeverity;
   const recommendedStationIds = useCallback((stations: DispatchStation[]) => {
     if (incidentLatitude === undefined || incidentLongitude === undefined) return [];
-    const pick = rankStationsForIncident({ latitude: incidentLatitude, longitude: incidentLongitude }, stations)
-      ?.find((station) => station.recommended);
-    return pick ? [pick.id] : [];
-  }, [incidentLatitude, incidentLongitude]);
+    return rankStationsForIncident({ latitude: incidentLatitude, longitude: incidentLongitude, calculatedSeverity: incidentDanger }, stations)
+      ?.filter((station) => station.recommended).map((station) => station.id) ?? [];
+  }, [incidentLatitude, incidentLongitude, incidentDanger]);
 
   const openDispatch = useCallback(async () => {
     setDispatchOpen(true);
@@ -2179,6 +2181,7 @@ export function MunicipalIncidentDetail({
     try {
       const stations = await fetchDispatchStations();
       setDispatchStations(stations);
+      setStationOptions(stations);
       setSelectedStationIds(recommendedStationIds(stations));
     } catch (e) {
       setDispatchError(e instanceof Error ? e.message : "Unable to load station choices.");
@@ -2258,6 +2261,7 @@ export function MunicipalIncidentDetail({
         return;
       }
       setDispatchStations(outcome.stations);
+      setStationOptions(outcome.stations);
       setSelectedStationIds(outcome.kind === "FAILED"
         ? (outcome.preselectedStationId ? [outcome.preselectedStationId] : [])
         : recommendedStationIds(outcome.stations));
@@ -2355,7 +2359,6 @@ export function MunicipalIncidentDetail({
     factors: incident.severityFactors,
   });
   const rankedStations = rankStationsForIncident(incident, stationOptions);
-  const farthestStation = Math.max(1, ...(rankedStations ?? []).map((station) => station.distanceMeters ?? 0));
   const pickerStations = rankStationsForIncident(incident, dispatchStations) ?? dispatchStations;
   /*
    * A response is under way from the moment stations are dispatched until the
@@ -2612,42 +2615,7 @@ export function MunicipalIncidentDetail({
                 <span className="mbfp-guidance-badge">Decision support</span>
               </div>
               {rankedStations && (
-                <div className="mbfp-nearest">
-                  <div className="mbfp-nearest-head">
-                    <span className="mbfp-nearest-title">
-                      <i className="fa-solid fa-location-crosshairs" aria-hidden="true" /> Nearest station to the fire
-                    </span>
-                    <span className="mbfp-nearest-note">Straight-line distance from the report location</span>
-                  </div>
-                  <ul className="mbfp-nearest-list">
-                    {rankedStations.map((station) => {
-                      const staffed = station.activePersonnelCount > 0;
-                      const width = station.distanceMeters === null ? 0 : Math.max(6, (station.distanceMeters / farthestStation) * 100);
-                      return (
-                        <li
-                          key={station.id}
-                          className={`mbfp-nearest-row${station.recommended ? " is-recommended" : ""}${staffed ? "" : " is-unstaffed"}`}
-                        >
-                          <span className="mbfp-nearest-icon" aria-hidden="true">
-                            <i className={`fa-solid ${station.recommended ? "fa-star" : "fa-building-shield"}`} />
-                          </span>
-                          <div className="mbfp-nearest-main">
-                            <div className="mbfp-nearest-name">
-                              <strong>{station.displayName}</strong>
-                              {station.recommended && <span className="mbfp-nearest-badge">Recommended</span>}
-                            </div>
-                            {station.head && <span className="mbfp-nearest-sub">Head: {station.head}</span>}
-                            <span className="mbfp-nearest-bar" aria-hidden="true"><span style={{ width: `${width}%` }} /></span>
-                          </div>
-                          <div className="mbfp-nearest-figures">
-                            <strong>{formatStationDistance(station.distanceMeters)}</strong>
-                            <span>{staffed ? `${station.activePersonnelCount} on duty` : "No one on duty"}</span>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
+                <MunicipalStationRecommendation level={incident.calculatedSeverity} stations={rankedStations} />
               )}
               <ol className="mbfp-guidance-list">
                 {guidance.map((action, index) => (
@@ -3017,6 +2985,10 @@ export function MunicipalIncidentDetail({
                 <BfpDataLoader theme="municipal" size="sm" title="Loading available stations" minHeight="190px" />
               ) : (
                 <>
+                  <p className="mbfp-nearest-note">
+                    {incident.calculatedSeverity ? `${incident.calculatedSeverity} danger` : "Danger not assessed"}: {guidance[0].title}.
+                    {" "}Recommended stations are preselected. Confirm truck and crew availability before dispatch.
+                  </p>
                   <button
                     className={`mbfp-dispatch-all ${selectedStationIds.length === dispatchStations.filter((station) => station.activePersonnelCount > 0).length && selectedStationIds.length > 0 ? "is-active" : ""}`}
                     type="button"
@@ -3058,11 +3030,18 @@ export function MunicipalIncidentDetail({
                             <div className="mbfp-station-info">
                               <span className="mbfp-dispatch-station-name">
                                 {ranked ? ranked.displayName : station.stationName}
-                                {ranked?.recommended && <span className="mbfp-nearest-badge">Nearest</span>}
+                                {ranked?.recommended && <span className="mbfp-nearest-badge">Recommended</span>}
                               </span>
                               <span className="mbfp-dispatch-station-meta">
                                 {ranked && <>{formatStationDistance(ranked.distanceMeters)} away · </>}
                                 {staffed ? "Ready for live dispatch" : "Unavailable · No personnel on duty"}
+                              </span>
+                              <span className="mbfp-dispatch-station-meta">
+                                {station.serviceableTruckCount == null ? "Truck inventory unknown"
+                                  : `${station.serviceableTruckCount} serviceable ${station.serviceableTruckCount === 1 ? "truck" : "trucks"}`}
+                                {ranked?.recommended && (incident.calculatedSeverity === "LOW" ? " · Crew verification"
+                                  : ranked.recommendedTruckCount === null ? " · Confirm truck count"
+                                    : ` · Recommend ${ranked.recommendedTruckCount} ${ranked.recommendedTruckCount === 1 ? "truck" : "trucks"}`)}
                               </span>
                             </div>
                           </div>

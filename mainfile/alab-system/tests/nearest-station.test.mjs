@@ -53,3 +53,65 @@ test("distances read in metres under 1 km and kilometres above", () => {
   assert.equal(formatStationDistance(2440), "2.4 km");
   assert.equal(formatStationDistance(null), "Distance unknown");
 });
+
+// San Jose's inventory has three serviceable trucks at the main station,
+// one at San Angel, and two at Dalipe. The fourth main-station truck is FOR_BER.
+const stockedStations = [
+  { ...sanJose, serviceableTruckCount: 3 },
+  { ...sanAngel, serviceableTruckCount: 1 },
+  { ...dalipe, activePersonnelCount: 3, serviceableTruckCount: 2 },
+];
+
+test("moderate danger recommends one truck from the nearest staffed station", () => {
+  const ranked = rankStationsForIncident({ ...fire, calculatedSeverity: "MODERATE" }, stockedStations);
+  assert.deepEqual(ranked.filter((s) => s.recommended).map((s) => [s.id, s.recommendedTruckCount]), [["angel", 1]]);
+});
+
+test("high danger recommends all serviceable trucks at the nearest staffed station", () => {
+  const ranked = rankStationsForIncident({ ...sanJose, calculatedSeverity: "HIGH" }, stockedStations);
+  assert.deepEqual(ranked.filter((s) => s.recommended).map((s) => [s.id, s.recommendedTruckCount]), [["main", 3]]);
+});
+
+test("critical danger recommends trucks from all three San Jose stations", () => {
+  const ranked = rankStationsForIncident({ ...fire, calculatedSeverity: "CRITICAL" }, stockedStations);
+  assert.deepEqual(ranked.filter((s) => s.recommended).map((s) => [s.id, s.recommendedTruckCount]),
+    [["angel", 1], ["main", 3], ["dalipe", 2]]);
+});
+
+test("critical danger excludes stations without personnel or serviceable trucks", () => {
+  const ranked = rankStationsForIncident({ ...fire, calculatedSeverity: "CRITICAL" }, [
+    { ...stockedStations[0], activePersonnelCount: 0 },
+    { ...stockedStations[1], serviceableTruckCount: 0 },
+    stockedStations[2],
+  ]);
+  assert.deepEqual(ranked.filter((s) => s.recommended).map((s) => s.id), ["dalipe"]);
+  assert.equal(ranked.find((s) => s.id === "angel").recommendedTruckCount, 0);
+});
+
+test("moderate and high danger skip a closer station with no serviceable truck", () => {
+  for (const calculatedSeverity of ["MODERATE", "HIGH"]) {
+    const ranked = rankStationsForIncident({ ...fire, calculatedSeverity }, [
+      stockedStations[0], { ...stockedStations[1], serviceableTruckCount: 0 }, stockedStations[2],
+    ]);
+    assert.deepEqual(ranked.filter((s) => s.recommended).map((s) => [s.id, s.recommendedTruckCount]),
+      [["main", calculatedSeverity === "HIGH" ? 3 : 1]]);
+  }
+});
+
+test("low danger recommends crew verification even when the nearest station has no truck", () => {
+  const ranked = rankStationsForIncident({ ...fire, calculatedSeverity: "LOW" }, [
+    stockedStations[0], { ...stockedStations[1], serviceableTruckCount: 0 }, stockedStations[2],
+  ]);
+  assert.deepEqual(ranked.filter((s) => s.recommended).map((s) => [s.id, s.recommendedTruckCount]), [["angel", 0]]);
+});
+
+test("missing inventory never invents a recommended truck count", () => {
+  const ranked = rankStationsForIncident({ ...fire, calculatedSeverity: "HIGH" }, [sanJose, sanAngel]);
+  assert.equal(ranked.find((s) => s.recommended).recommendedTruckCount, null);
+});
+
+test("critical danger does not need distance to recommend all stocked staffed stations", () => {
+  const ranked = rankStationsForIncident({ latitude: Number.NaN, longitude: 121.9, calculatedSeverity: "CRITICAL" }, stockedStations);
+  assert.equal(ranked.filter((s) => s.recommended).length, 3);
+  assert.ok(ranked.every((s) => s.distanceMeters === null));
+});

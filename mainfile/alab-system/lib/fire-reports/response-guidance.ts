@@ -26,11 +26,11 @@ export type GuidanceAction = {
 
 const INITIAL_RESPONSE: Record<NonNullable<ResponseGuidanceInput["level"]>, Pick<GuidanceAction, "title" | "detail">> = {
   CRITICAL: {
-    title: "Send every available truck now",
+    title: "Send every available truck from all staffed local stations",
     detail: "Ask Provincial BFP to declare a 2nd alarm before the first truck arrives.",
   },
   HIGH: {
-    title: "Send all available trucks from the station",
+    title: "Send all available trucks from the nearest staffed station",
     detail: "Keep the backup request ready. Ask Provincial BFP for a 2nd alarm if the fire reaches the next house.",
   },
   MODERATE: {

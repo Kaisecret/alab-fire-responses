@@ -21,6 +21,7 @@ export type DispatchableStation = {
   latitude: number;
   longitude: number;
   activePersonnelCount: number;
+  serviceableTruckCount: number;
 };
 
 export type DispatchableResponder = {
@@ -70,7 +71,10 @@ function uniqueIds(values: string[]) {
 async function queryDispatchableStations(queryable: Queryable, municipalityId: string) {
   const result = await queryable.query<DispatchableStation>(
     `select s.id, s.station_name as "stationName", s.latitude::float as latitude, s.longitude::float as longitude,
-            count(u.id)::int as "activePersonnelCount"
+            count(u.id)::int as "activePersonnelCount",
+            (select count(*)::int from fire_trucks truck
+              where truck.station_id = s.id and truck.municipality_id = $1
+                and truck.operational_status = 'SERVICEABLE') as "serviceableTruckCount"
        from municipal_bfp_stations s
        left join bfp_station_assignments station_assignment
          on station_assignment.station_id = s.id and station_assignment.status = 'ACTIVE'
