@@ -6,6 +6,7 @@ import type { BarangayAlert, BarangayAlertIncident, BarangayResourceCommand } fr
 import { BARANGAY_CLUSTER_SIZE, groupByBarangay } from "../../lib/intermunicipality/barangay-clusters";
 import { FireCommandHeader } from "./fire-command-header";
 import { StatCards } from "./municipal-stat-cards";
+import { showSuccessToast } from "./success-toast";
 import { useProvincialBarangayAlerts } from "./use-provincial-barangay-alerts";
 
 const styles = `
@@ -38,7 +39,6 @@ const styles = `
   .pbc-segment-count { display:inline-grid; place-items:center; min-width:1.3rem; height:1.3rem; padding:0 .35rem; border-radius:999px; background:#E2E8F0; color:#334155; font-size:.66rem; font-weight:800; }
   .pbc-segment[aria-pressed="true"] .pbc-segment-count { background:#FEE2E2; color:#B42318; }
   .pbc-toolbar-hint { display:inline-flex; align-items:center; gap:.4rem; color:var(--pbc-muted); font-size:.72rem; }
-  .pbc-success { margin:0 1.25rem; display:flex; align-items:center; gap:.5rem; padding:.65rem .85rem; border-radius:12px; background:#ECFDF5; border:1px solid #A7F3D0; color:#065F46; font-size:.78rem; font-weight:700; }
 
   .pbc-grid { margin:0; padding:0 1.25rem 1.25rem; list-style:none; display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:.8rem; }
   .pbc-tile { display:flex; flex-direction:column; gap:.55rem; min-width:0; padding:.95rem; border:1px solid var(--pbc-border); border-radius:14px; background:#fff; transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
@@ -121,7 +121,7 @@ const styles = `
   @keyframes pbcPulse { 0% { opacity:.9; transform:scale(.92); } 80%,100% { opacity:0; transform:scale(1.18); } }
   @keyframes pbcRise { from { opacity:0; transform:translateY(12px) scale(.98); } to { opacity:1; transform:none; } }
   @media(prefers-reduced-motion:reduce) { .pbc-card-icon::after,.pbc-modal[open] .pbc-modal-card { animation:none; } .pbc-tile { transition:none; } }
-  @media(max-width:760px) { .pbc-section { padding:12px 1rem 2.5rem; } .pbc-hero,.pbc-toolbar { padding-inline:1rem; } .pbc-grid { padding:0 1rem 1rem; } .pbc-success { margin:0 1rem; } }
+  @media(max-width:760px) { .pbc-section { padding:12px 1rem 2.5rem; } .pbc-hero,.pbc-toolbar { padding-inline:1rem; } .pbc-grid { padding:0 1rem 1rem; } }
   @media(max-width:480px) { .pbc-resources { grid-template-columns:1fr; } .pbc-modal-foot { flex-direction:column-reverse; } .pbc-modal-foot .pbc-button { width:100%; } .pbc-segments { width:100%; } .pbc-segment { flex:1; justify-content:center; padding-inline:.5rem; } }
 `;
 
@@ -173,7 +173,6 @@ function MunicipalCoordinationCard({ alert, highlighted, submitCommand }: {
   const [personnel, setPersonnel] = useState("0");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const busyRef = useRef(false);
   const dialogRef = useRef<HTMLDialogElement | null>(null);
 
@@ -216,7 +215,6 @@ function MunicipalCoordinationCard({ alert, highlighted, submitCommand }: {
     setTrucks("1");
     setPersonnel("0");
     setError("");
-    setSuccess("");
   };
   const closeSupport = () => {
     if (!busyRef.current) setIncidentId("");
@@ -237,7 +235,7 @@ function MunicipalCoordinationCard({ alert, highlighted, submitCommand }: {
     setError("");
     try {
       await submitCommand({ alertId: alert.id, fireReportId: incident.id, recipientMunicipalityId: recipient.municipalityId, requestedFiretrucks, requestedPersonnel });
-      setSuccess(`Resource command sent to ${recipient.municipalityName} for ${incident.referenceNumber}.`);
+      showSuccessToast(`Resource command sent to ${recipient.municipalityName} for ${incident.referenceNumber}.`);
       setIncidentId("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to send this resource command.");
@@ -312,7 +310,6 @@ function MunicipalCoordinationCard({ alert, highlighted, submitCommand }: {
       </div>
       <span className="pbc-toolbar-hint"><i className="fa-solid fa-circle-info" aria-hidden="true" />Support opens once the municipality dispatches its units.</span>
     </div>
-    {success && <p className="pbc-success" role="status"><i className="fa-solid fa-circle-check" aria-hidden="true" />{success}</p>}
     {shown.length > 0
       ? <ul className="pbc-grid" aria-label={`${FILTERS.find(option => option.id === activeFilter)?.label} incidents`}>{shown.map(tile)}</ul>
       : <p className="pbc-empty-row">{activeFilter === "ready" ? "No incident is dispatched yet." : "No incident is waiting for verification or dispatch."}</p>}

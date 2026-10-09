@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
 import { EmergencyAlertCard } from "./emergency-alert-card";
+import { showSuccessToast } from "./success-toast";
 
 type StationCard = {
   id: string;
@@ -185,6 +186,9 @@ export function MunicipalLocalBackupAlarm() {
       stopToneRef.current?.();
       stopToneRef.current = null;
       setPicked(null);
+      showSuccessToast(action === "DECLINE"
+        ? "Local backup request declined."
+        : selected.length === 1 ? "Station sent to the fire." : `${selected.length} stations sent to the fire.`);
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Something went wrong.");

@@ -9,6 +9,7 @@ import {
 } from "../_lib/local-photo-cache";
 import { PhotoLightbox } from "./photo-lightbox";
 import { ProvincialReportDetail } from "./provincial-report-detail";
+import { showSuccessToast } from "./success-toast";
 
 
 interface BackupRequest {
@@ -667,6 +668,7 @@ export function ProvincialAlarmPanel() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Unable to declare that alarm level.");
       }
+      showSuccessToast(`${ORDINALS[alarmLevel] ?? alarmLevel} alarm declared. The municipalities are being called.`);
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Something went wrong.");

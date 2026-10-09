@@ -81,6 +81,7 @@ test('backup form opens from the external flag and allows deselecting every reci
   const module = loadServerModule('app/_components/intermunicipality-coordination-panel.tsx', {
     react: { ...react, default: react }, 'react/jsx-runtime': jsx,
     '../../lib/auth/municipal-tab-fetch': {},
+    './success-toast': { showSuccessToast() {} },
   });
   const props = { incidentId: 'incident', accessScope: 'ORIGIN', showRequestModal: true,
     observers: [{ municipalityId: 'recipient', municipalityName: 'Recipient', distanceMeters: 100, status: 'ACTIVE' }],

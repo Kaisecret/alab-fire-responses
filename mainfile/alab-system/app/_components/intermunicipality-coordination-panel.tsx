@@ -3,6 +3,7 @@
 import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
 
 import React, { useState } from "react";
+import { showSuccessToast } from "./success-toast";
 import type { AssistanceRequestSummary, AssistanceStatus, NearbyObserver } from "../../lib/intermunicipality/types";
 
 type Tone = "coming" | "partial" | "waiting" | "declined" | "muted" | "seen" | "unseen";
@@ -108,7 +109,6 @@ export function IntermunicipalityCoordinationPanel({
 }: Props): React.ReactElement | null {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Request Backup Form State (ORIGIN)
   const [internalShowRequestModal, setInternalShowRequestModal] = useState(false);
@@ -146,7 +146,6 @@ export function IntermunicipalityCoordinationPanel({
   async function handleAcknowledgeAlert() {
     setSubmitting(true);
     setErrorMessage(null);
-    setSuccessMessage(null);
     try {
       const res = await fetch(
         `/api/municipal-bfp/incidents/${encodeURIComponent(incidentId)}/observer-acknowledgment`,
@@ -159,7 +158,7 @@ export function IntermunicipalityCoordinationPanel({
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to acknowledge alert");
       }
-      setSuccessMessage("Alert acknowledged. Seen status updated.");
+      showSuccessToast("Fire coordination accepted.");
       await onChanged();
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Failed to acknowledge alert");
@@ -181,7 +180,6 @@ export function IntermunicipalityCoordinationPanel({
 
     setSubmitting(true);
     setErrorMessage(null);
-    setSuccessMessage(null);
 
     try {
       const res = await fetch(
@@ -203,7 +201,7 @@ export function IntermunicipalityCoordinationPanel({
         throw new Error(data.error || "Failed to create backup request");
       }
 
-      setSuccessMessage("Backup request sent successfully to selected observers.");
+      showSuccessToast("Backup request sent to the selected municipalities.");
       closeRequestModal();
       setRequestNote("");
       await onChanged();
@@ -218,7 +216,6 @@ export function IntermunicipalityCoordinationPanel({
     if (!confirm("Are you sure you want to cancel this backup request?")) return;
     setSubmitting(true);
     setErrorMessage(null);
-    setSuccessMessage(null);
 
     try {
       const res = await fetch(
@@ -233,7 +230,7 @@ export function IntermunicipalityCoordinationPanel({
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to cancel assistance request");
       }
-      setSuccessMessage("Assistance request cancelled.");
+      showSuccessToast("Backup request cancelled.");
       await onChanged();
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Failed to cancel request");
@@ -265,7 +262,6 @@ export function IntermunicipalityCoordinationPanel({
 
     setSubmitting(true);
     setErrorMessage(null);
-    setSuccessMessage(null);
 
     try {
       const res = await fetch(
@@ -287,10 +283,12 @@ export function IntermunicipalityCoordinationPanel({
         throw new Error(data.error || "Failed to respond to assistance request");
       }
 
-      setSuccessMessage(
+      showSuccessToast(
         action === "REJECT"
-          ? "Backup request declined."
-          : `Backup request responded (${action === "ACCEPT" ? "Accepted" : "Partially Accepted"}).`,
+          ? "Response sent. You declined the backup request."
+          : action === "ACCEPT"
+            ? "Response sent. You accepted the backup request."
+            : "Response sent. You partly accepted the backup request.",
       );
       setRespondingToRequestId(null);
       setResponseNote("");
@@ -429,11 +427,6 @@ export function IntermunicipalityCoordinationPanel({
           background: #FEF2F2;
           border: 1px solid #FECACA;
           color: #991B1B;
-        }
-        .mbfp-coord-feedback.success {
-          background: #ECFDF5;
-          border: 1px solid #A7F3D0;
-          color: #047857;
         }
         .mbfp-coord-standby-banner {
           margin-top: 0.85rem;
@@ -751,12 +744,6 @@ export function IntermunicipalityCoordinationPanel({
         <div className="mbfp-coord-feedback error">
           <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: 6 }} />
           {errorMessage}
-        </div>
-      )}
-      {successMessage && (
-        <div className="mbfp-coord-feedback success">
-          <i className="fa-solid fa-circle-check" style={{ marginRight: 6 }} />
-          {successMessage}
         </div>
       )}
 

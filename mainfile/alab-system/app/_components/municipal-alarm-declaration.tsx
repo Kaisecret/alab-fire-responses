@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
 import type { AccountNotification } from "../../lib/notifications/types";
 import { EmergencyAlertCard } from "./emergency-alert-card";
+import { flashSuccessToast } from "./success-toast";
 import { ensureAlertTone, getMunicipalAlarmAction, selectPendingMunicipalAlarm } from "../../lib/municipal-bfp/alarm-alert.mjs";
 
 const POLL_INTERVAL_MS = 5_000;
@@ -216,6 +217,11 @@ export function MunicipalAlarmDeclaration() {
       });
       if (!marked.ok) throw new Error("The alert was acknowledged, but its notification could not be cleared.");
       stopTone();
+      flashSuccessToast(action.audience === "SUMMONED"
+        ? "Fire coordination accepted. Assign your BFP units."
+        : action.audience === "ASSISTANCE"
+          ? "Backup call acknowledged. Send your response."
+          : "Alarm acknowledged.");
       window.location.assign(action.destination);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to acknowledge this alert.");

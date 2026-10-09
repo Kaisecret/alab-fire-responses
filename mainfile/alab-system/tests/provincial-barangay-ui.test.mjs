@@ -140,6 +140,8 @@ test('the feed ignores late aborted polls and clears private alerts on session d
 });
 
 function MockStatCards() { return null; }
+// Success toasts raised by the components under test, newest last.
+const toasts = [];
 function componentDependencies(harness, feed, siren = []) {
   const card = loadServerModule('app/_components/emergency-alert-card.tsx', { 'react/jsx-runtime': jsxRuntime });
   return {
@@ -150,6 +152,7 @@ function componentDependencies(harness, feed, siren = []) {
     './fire-command-header': { FireCommandHeader: () => null },
     './municipal-stat-cards': { StatCards: MockStatCards },
     './use-provincial-barangay-alerts': { useProvincialBarangayAlerts: () => feed },
+    './success-toast': { showSuccessToast: message => toasts.push(message) },
     'next/navigation': { useSearchParams: () => new URLSearchParams('alert=alert-1') },
   };
 }
@@ -373,7 +376,7 @@ test('Send support opens a popup that submits the chosen incident, municipality 
   assert.deepEqual(submissions, [{ alertId: 'alert-1', fireReportId: 'fire-2', recipientMunicipalityId: 'far', requestedFiretrucks: 2, requestedPersonnel: 4 }]);
   tree = render();
   assert.equal(elements(tree).some(el => el.type === 'dialog'), false, 'the popup closes after the command is sent');
-  assert.match(textOf(tree), /Resource command sent to Hamtic/);
+  assert.match(toasts.at(-1) ?? '', /Resource command sent to Hamtic/, 'a green toast confirms the command');
   segment(tree, 'waiting').props.onClick();
   tree = render();
   const waitingAction = elements(tileFor(tree, 'fire-3')).find(el => el.type === 'button');

@@ -32,6 +32,7 @@ function harness(path, name) {
     './provincial-account-dialog': { ProvincialAccountDialog: 'account-dialog' },
     './provincial-profile-popover': { ProvincialProfilePopover: 'profile-popover' },
     './provincial-backup-alarm': { ProvincialBackupAlarm: 'backup-alarm' },
+    './success-toast-host': { SuccessToastHost: 'success-toast' },
     './bfp-logout-dialog': { BfpLogoutDialog: 'logout-dialog', confirmBfpSignedOut: async () => {} },
     './skeleton-loader': { SkeletonBar: 'skeleton-bar', SkeletonTableRows: 'skeleton-table-rows' },
     './municipal-stat-cards': { StatCards: 'stat-cards', MunicipalStatCards: 'stat-cards' },

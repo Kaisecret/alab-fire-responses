@@ -7,6 +7,7 @@ import { NotificationBell } from './notifications/notification-bell';
 import { ProvincialRequestError, requestProvincialJson } from '../../lib/provincial-bfp/client-request';
 import { ProvincialProfilePopover } from './provincial-profile-popover';
 import { ProvincialBackupAlarm } from './provincial-backup-alarm';
+import { SuccessToastHost } from './success-toast-host';
 import { BfpLogoutDialog, confirmBfpSignedOut } from './bfp-logout-dialog';
 import { SkeletonBar } from './skeleton-loader';
 
@@ -1611,6 +1612,9 @@ export function ProvincialBfpLayout({ children }: { children: React.ReactNode })
       {/* Escalated backup has to reach the duty officer on whatever page they
           are on, so the alarm lives in the shell rather than on one screen. */}
       <ProvincialBackupAlarm />
+
+      {/* Green confirmation after a command is sent or an alarm is declared. */}
+      <SuccessToastHost />
 
       <BfpLogoutDialog
         open={isLogoutOpen}

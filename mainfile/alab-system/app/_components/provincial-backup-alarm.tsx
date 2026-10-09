@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { EmergencyAlertCard } from "./emergency-alert-card";
 import { PhotoLightbox } from "./photo-lightbox";
 import { ProvincialBarangayAlert } from "./provincial-barangay-alert";
+import { flashSuccessToast, showSuccessToast } from "./success-toast";
 
 interface BackupRequest {
   id: string;
@@ -311,6 +312,7 @@ export function ProvincialBackupAlarm() {
       }
       stopToneRef.current?.();
       stopToneRef.current = null;
+      showSuccessToast(pending.length > 1 ? `${pending.length} backup requests acknowledged.` : "Backup request acknowledged.");
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Something went wrong.");
@@ -393,6 +395,7 @@ export function ProvincialBackupAlarm() {
       stopToneRef.current?.();
       stopToneRef.current = null;
       declared = true;
+      flashSuccessToast(`${ORDINALS[alarmLevel] ?? alarmLevel} alarm declared. The municipalities are being called.`);
       // The officer who raised the alarm goes straight to the incident to follow it.
       window.location.assign(`/provincial-bfp/incidents?incident=${encodeURIComponent(fireReportId)}`);
     } catch (cause) {

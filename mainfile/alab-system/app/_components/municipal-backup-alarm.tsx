@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { municipalTabFetch } from "../../lib/auth/municipal-tab-fetch";
 import { EmergencyAlertCard } from "./emergency-alert-card";
 import { PhotoLightbox } from "./photo-lightbox";
+import { showSuccessToast } from "./success-toast";
 
 interface BackupRequest {
   id: string;
@@ -315,6 +316,7 @@ export function MunicipalBackupAlarm() {
       }
       stopToneRef.current?.();
       stopToneRef.current = null;
+      showSuccessToast(action === "FORWARD" ? "Backup request sent to Provincial BFP." : "Backup request acknowledged.");
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Something went wrong.");

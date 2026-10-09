@@ -10,6 +10,7 @@ import { MunicipalIncidentAlarm } from './municipal-incident-alarm';
 import { MunicipalBackupAlarm } from './municipal-backup-alarm';
 import { MunicipalLocalBackupAlarm } from './municipal-local-backup-alarm';
 import { MunicipalAlarmDeclaration } from './municipal-alarm-declaration';
+import { SuccessToastHost } from './success-toast-host';
 import { useMunicipalIncidentFeed } from './use-municipal-incident-feed';
 import { BfpLogoutDialog, confirmBfpSignedOut } from './bfp-logout-dialog';
 
@@ -1568,6 +1569,9 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
           <MunicipalAlarmDeclaration />
         </>
       )}
+
+      {/* Green confirmation after a response is sent or a call is accepted. */}
+      <SuccessToastHost />
 
       <BfpLogoutDialog
         open={isLogoutOpen}
