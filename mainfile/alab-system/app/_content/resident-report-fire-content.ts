@@ -226,7 +226,22 @@ export const reportFireStyles = `
     border-radius: 1rem;
     background: #F8FAFC;
   }
-  .quick-tactical-row[hidden], .quick-pill-toggle[hidden] { display: none !important; }
+  .quick-tactical-row[hidden], .quick-pill-toggle[hidden], .quick-material[hidden] { display: none !important; }
+  .quick-material { margin-bottom: 0.9rem; }
+  .quick-material-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #0F172A;
+    margin-bottom: 0.5rem;
+  }
+  .quick-material-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+  .quick-material-options .quick-pill-toggle { padding: 0.65rem 0.75rem; gap: 0.6rem; }
+  .quick-material-options .quick-pill-icon { width: 2rem; height: 2rem; font-size: 0.85rem; }
   .quick-tactical-label {
     display: block;
     font-size: 0.68rem;
@@ -902,7 +917,7 @@ export const reportFireStyles = `
     .photo-upload { min-height: 7rem; }
   }
   @media (max-width: 640px) {
-    .quick-pills-container { grid-template-columns: 1fr; gap: 0.55rem; }
+    .quick-pills-container, .quick-material-options { grid-template-columns: 1fr; gap: 0.55rem; }
   }
   @media (max-width: 540px) {
     .report-page-root { padding: 0 0 calc(6rem + env(safe-area-inset-bottom)); }
@@ -987,6 +1002,26 @@ export const reportFireMarkup = `
 
         <div class="quick-tactical-row" data-quick-tactical-row hidden>
           <span class="quick-tactical-label">SITUATION AT THE SCENE:</span>
+          <div class="quick-material" data-quick-material-group hidden>
+            <span class="quick-material-label" data-quick-material-label>What is the house made of?</span>
+            <div class="quick-material-options" role="group" aria-label="House material">
+              <button type="button" class="quick-pill-toggle" data-quick-material="LIGHT_MATERIALS" aria-pressed="false">
+                <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-tree"></i></span>
+                <span class="quick-pill-body"><strong>Wood / Light materials</strong></span>
+                <span class="quick-pill-check" aria-hidden="true">✓</span>
+              </button>
+              <button type="button" class="quick-pill-toggle" data-quick-material="MIXED_SEMI_CONCRETE" aria-pressed="false">
+                <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-house-chimney"></i></span>
+                <span class="quick-pill-body"><strong>Mixed / Semi-concrete</strong></span>
+                <span class="quick-pill-check" aria-hidden="true">✓</span>
+              </button>
+              <button type="button" class="quick-pill-toggle" data-quick-material="COMMERCIAL_STORAGE" aria-pressed="false">
+                <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-building"></i></span>
+                <span class="quick-pill-body"><strong>Storage / Flammable goods</strong></span>
+                <span class="quick-pill-check" aria-hidden="true">✓</span>
+              </button>
+            </div>
+          </div>
           <div class="quick-pills-container">
             <button type="button" class="quick-pill-toggle" data-quick-density="PACKED_MAGKAKADIKIT" aria-pressed="false">
               <span class="quick-pill-icon" aria-hidden="true"><i class="fa-solid fa-city"></i></span>

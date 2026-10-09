@@ -152,16 +152,15 @@ test("resident report status contains restored FontAwesome tactical icons and En
   // Header remains English
   assert.match(statusSource, /<h1>Report Details<\/h1>/);
 
-  // Tactical enrichment card has BFP help title and all tactical button icons
-  assert.match(statusSource, /tactical-enrichment-card/);
-  assert.match(statusSource, /Tulong sa Responders/);
-  assert.match(statusSource, /fa-solid fa-tree/);
-  assert.match(statusSource, /fa-solid fa-house-chimney/);
-  assert.match(statusSource, /fa-solid fa-building/);
-  assert.match(statusSource, /fa-solid fa-house/);
-  assert.match(statusSource, /fa-solid fa-city/);
-  assert.match(statusSource, /fa-solid fa-truck-fast/);
-  assert.match(statusSource, /fa-solid fa-person-walking/);
+  // Nothing is asked of the resident after reporting: the scene questions,
+  // house material included, are part of the report form itself.
+  assert.doesNotMatch(statusSource, /help-responders|tactical-enrichment-card/);
+  const formSource = readFileSync(join(appRoot, "app", "_content", "resident-report-fire-content.ts"), "utf8");
+  assert.match(formSource, /fa-solid fa-tree/);
+  assert.match(formSource, /fa-solid fa-house-chimney/);
+  assert.match(formSource, /fa-solid fa-building/);
+  assert.match(formSource, /fa-solid fa-city/);
+  assert.match(formSource, /fa-solid fa-person-walking/);
 });
 
 test("resident guide page dynamically translates categories, hero emergency steps, and articles to selected language", () => {

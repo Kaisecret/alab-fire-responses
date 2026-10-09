@@ -172,6 +172,8 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   const densityButton = root.querySelector<HTMLButtonElement>('[data-quick-density]');
   const routeButton = root.querySelector<HTMLButtonElement>('[data-quick-route]');
   const quickSituationRow = root.querySelector<HTMLElement>('[data-quick-tactical-row]');
+  const materialGroup = root.querySelector<HTMLElement>('[data-quick-material-group]');
+  const materialButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-quick-material]'));
   const photoRequiredDialog = root.querySelector<HTMLElement>('[data-photo-required-dialog]');
   const photoReqTakeBtn = root.querySelector<HTMLButtonElement>('[data-photo-req-take]');
   const photoReqCloseBtn = root.querySelector<HTMLButtonElement>('[data-photo-req-close]');
@@ -194,6 +196,9 @@ function initializeReportSubmission(root: HTMLElement): () => void {
   let fireTypes: string[] = typeButtons.filter((button) => button.classList.contains('selected')).map((button) => button.dataset.fireType ?? '').filter(Boolean);
   let selectedDensity: string | null = null;
   let selectedRoute: string | null = null;
+  // What a burning house is made of. Asked here, with the report, rather than
+  // after it, so the resident is not handed more buttons once help is coming.
+  let selectedMaterial: string | null = null;
   let submitting = false;
   let attachedPhotos: File[] = [];
   let samePhoneReportId: string | null = null;
@@ -217,6 +222,14 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     selectedDensity = filtered.density;
     selectedRoute = filtered.route;
     if (quickSituationRow) quickSituationRow.hidden = fireTypes.length === 0;
+    const houseBurning = fireTypes.includes('HOUSE_BUILDING');
+    if (!houseBurning) selectedMaterial = null;
+    if (materialGroup) materialGroup.hidden = !houseBurning;
+    materialButtons.forEach((button) => {
+      const active = button.dataset.quickMaterial === selectedMaterial;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
     if (densityButton) {
       densityButton.hidden = !options.density;
       densityButton.classList.toggle('is-active', Boolean(selectedDensity));
@@ -227,7 +240,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
       routeButton.dataset.quickRoute = options.route ?? '';
       routeButton.classList.toggle('is-active', Boolean(selectedRoute));
       routeButton.setAttribute('aria-pressed', String(Boolean(selectedRoute)));
-      const dict = RESIDENT_TRANSLATIONS.en;
+      const dict = RESIDENT_TRANSLATIONS[getStoredLanguage()] || RESIDENT_TRANSLATIONS.tl;
       const label = options.route === 'DEAD_END_OR_BLOCKED'
         ? [dict.tacticalRemote, dict.tacticalRemoteSub]
         : options.route === 'NARROW_STREET'
@@ -442,14 +455,26 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     });
 
     const tacticalLabel = root.querySelector<HTMLElement>('.quick-tactical-label');
-    if (tacticalLabel) tacticalLabel.textContent = RESIDENT_TRANSLATIONS.en.tacticalSituation;
+    if (tacticalLabel) tacticalLabel.textContent = dict.tacticalSituation;
 
     if (densityButton) {
       const strong = densityButton.querySelector('strong');
       const small = densityButton.querySelector('small');
-      if (strong) strong.textContent = RESIDENT_TRANSLATIONS.en.tacticalPacked;
-      if (small) small.textContent = RESIDENT_TRANSLATIONS.en.tacticalPackedSub;
+      if (strong) strong.textContent = dict.tacticalPacked;
+      if (small) small.textContent = dict.tacticalPackedSub;
     }
+    const materialLabel = root.querySelector<HTMLElement>('[data-quick-material-label]');
+    if (materialLabel) materialLabel.textContent = dict.materialQuestion;
+    const materialNames: Record<string, string> = {
+      LIGHT_MATERIALS: dict.materialLight,
+      MIXED_SEMI_CONCRETE: dict.materialMixed,
+      COMMERCIAL_STORAGE: dict.materialStorage,
+    };
+    materialButtons.forEach((button) => {
+      const strong = button.querySelector('strong');
+      const name = materialNames[button.dataset.quickMaterial ?? ''];
+      if (strong && name) strong.textContent = name;
+    });
     if (routeButton) {
       renderSituation();
     }
@@ -576,8 +601,16 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     selectedRoute = active ? (routeButton.dataset.quickRoute || 'INTERIOR_ALLEY_ESKINITA') : null;
   };
 
+  // One material at a time; tapping the chosen one again clears it.
+  const handleMaterialClick = (event: Event) => {
+    const value = (event.currentTarget as HTMLButtonElement).dataset.quickMaterial ?? null;
+    selectedMaterial = selectedMaterial === value ? null : value;
+    renderSituation();
+  };
+
   densityButton?.addEventListener('click', handleDensityClick);
   routeButton?.addEventListener('click', handleRouteClick);
+  materialButtons.forEach((button) => button.addEventListener('click', handleMaterialClick));
 
   const executeFinalSubmission = async () => {
     const { locationLatitude, locationLongitude, locationAccuracy, locationMunicipality, locationBarangay } = locationCard.dataset;
@@ -603,6 +636,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     const situation = filterSituationForFireTypes(fireTypes, selectedDensity, selectedRoute);
     if (situation.density) form.set('houseDensity', situation.density);
     if (situation.route) form.set('routeAccessibility', situation.route);
+    if (selectedMaterial && fireTypes.includes('HOUSE_BUILDING')) form.set('structureMaterial', selectedMaterial);
     if (locationCard.dataset.weatherTemperature) form.set('weatherTemperature', locationCard.dataset.weatherTemperature);
     if (locationCard.dataset.weatherHumidity) form.set('weatherHumidity', locationCard.dataset.weatherHumidity);
     if (locationCard.dataset.weatherWindSpeed) form.set('weatherWindSpeed', locationCard.dataset.weatherWindSpeed);
@@ -739,6 +773,7 @@ function initializeReportSubmission(root: HTMLElement): () => void {
     typeHandlers.forEach((handler, button) => button.removeEventListener('click', handler));
     densityButton?.removeEventListener('click', handleDensityClick);
     routeButton?.removeEventListener('click', handleRouteClick);
+    materialButtons.forEach((button) => button.removeEventListener('click', handleMaterialClick));
     submitButton.removeEventListener('click', submit);
     cancelButton?.removeEventListener('click', cancel);
     root.removeEventListener('resident-report:photos-updated', handlePhotosUpdated);

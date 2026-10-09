@@ -21,12 +21,11 @@ test("resident report status uses the established report detail screen for live 
 
   assert.match(status, /resident-report-detail/);
   assert.match(status, /\/images\/fire logo\.webp/);
-  // Where the report stands is the first card, before the danger level and Help Responders,
+  // Where the report stands is the first card, before the danger level,
   // and BFP's latest message is shown inside it.
   const statusAt = status.indexOf('className={`rrs-status tone-');
   assert.ok(statusAt > 0, "status card exists");
   assert.ok(statusAt < status.indexOf("rrs-danger ${level}"), "status comes before the danger level");
-  assert.ok(statusAt < status.indexOf('id="help-responders"'), "status comes before Help Responders");
   assert.match(status, /latest\?\.resident_message \|\| view\.message/);
   assert.match(status, /className="rrs-track"/);
 });
@@ -85,9 +84,14 @@ test("resident fire report requires user selection for burning type and requires
   assert.match(page, /totalPhotos === 0/);
   assert.match(page, /showPhotoWarning\(\)/);
 
-  // Tulong sa responders: Opsyonal word removed and localized
-  assert.match(status, /Tulong sa Responders/);
-  assert.doesNotMatch(status, /Tulong sa Responders \(Opsyonal\)/);
+  // The house material is asked in "Situation at the scene", only for a
+  // burning house, and sent with the report; nothing is asked afterwards.
+  assert.match(content, /data-quick-material="LIGHT_MATERIALS"/);
+  assert.match(content, /data-quick-material="MIXED_SEMI_CONCRETE"/);
+  assert.match(content, /data-quick-material="COMMERCIAL_STORAGE"/);
+  assert.match(page, /materialGroup\.hidden = !houseBurning/);
+  assert.match(page, /form\.set\('structureMaterial', selectedMaterial\)/);
+  assert.doesNotMatch(status, /Tulong sa Responders|help-responders/);
 });
 
 test("resident fire report triggers confirmation popup with false alarm warning before sending alert", () => {
@@ -106,15 +110,14 @@ test("resident fire report triggers confirmation popup with false alarm warning 
 });
 
 
-test("the report detail shows the danger level with icons and points residents to Help Responders", () => {
+test("the report detail shows the danger level with icons and asks nothing more of the resident", () => {
   const status = read("app/_components/resident-report-status.tsx");
   // One icon per level, a four-step meter and an icon for each reason.
   for (const level of ["LOW", "MODERATE", "HIGH", "CRITICAL"]) assert.match(status, new RegExp(`${level}: "fa-`));
   assert.match(status, /className="rrs-meter"/);
   assert.match(status, /factorIcon\(factor\)/);
-  // An arrow at the top scrolls to Help Responders while answers are missing.
-  assert.match(status, /document\.getElementById\("help-responders"\)/);
-  assert.match(status, /className="rrs-jump"/);
+  // No "Help responders" prompt or buttons once the report is sent.
+  assert.doesNotMatch(status, /help-responders|rrs-jump/);
 });
 
 test("the report form points to Situation at the scene when it opens below the fold", () => {

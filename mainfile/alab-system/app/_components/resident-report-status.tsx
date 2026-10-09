@@ -5,7 +5,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fireReportStatusLabels, type FireReportStatus } from "../../lib/fire-reports/types";
 import { useResidentLanguage, type ResidentLanguage } from "../_lib/resident-i18n";
-import { situationForFireTypes } from "../../lib/fire-reports/fire-type-situation";
 import { SharedIncidentCard, SharedIncidentPopup, type SharedIncident } from "./resident-shared-incident";
 
 type Report = {
@@ -76,356 +75,6 @@ const detailStyles = `
   .resident-detail-info-item small { color:#64748b; font-size:.73rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
   .resident-detail-info-item strong { color:#1e293b; font-size:.88rem; font-weight:750; word-break:break-word; }
   .resident-detail-info-item strong.status { color:#e32118; }
-
-  /* Phase 2 Tactical Enrichment Styling */
-  .tactical-enrichment-card {
-    border: 1.5px solid #FED7AA;
-    background: #FFFDFB;
-  }
-  .tactical-header-desc {
-    margin: -0.3rem 0 0.65rem;
-    font-size: 0.76rem;
-    color: #64748B;
-    line-height: 1.4;
-  }
-  .tactical-group {
-    margin-bottom: 0.75rem;
-  }
-  .tactical-group:last-child {
-    margin-bottom: 0;
-  }
-  .tactical-group-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin-bottom: 0.45rem;
-  }
-  .tactical-label {
-    display: inline-block;
-    font-size: 0.72rem;
-    font-weight: 850;
-    color: #475569;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  .tactical-select-guide {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.69rem;
-    font-weight: 800;
-    color: #DC2626;
-    background: #FEF2F2;
-    border: 1px solid #FCA5A5;
-    padding: 0.16rem 0.5rem;
-    border-radius: 999px;
-    letter-spacing: 0.01em;
-  }
-  .tactical-select-guide.is-done {
-    color: #15803D;
-    background: #F0FDF4;
-    border-color: #86EFAC;
-  }
-
-  /* Interactive Animated Onboarding Guide */
-  @keyframes onboardingSlideIn {
-    0% {
-      opacity: 0;
-      transform: translateY(-8px) scale(0.97);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-  @keyframes onboardingFadeOut {
-    0% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-    100% {
-      opacity: 0;
-      transform: translateY(-8px) scale(0.97);
-      pointer-events: none;
-    }
-  }
-  @keyframes pulseSubtleGlow {
-    0%, 100% {
-      box-shadow: 0 4px 16px rgba(220, 38, 38, 0.08), 0 0 0 0 rgba(220, 38, 38, 0.2);
-    }
-    50% {
-      box-shadow: 0 6px 22px rgba(220, 38, 38, 0.16), 0 0 0 6px rgba(220, 38, 38, 0);
-    }
-  }
-
-  .interactive-onboarding-toast {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.85rem 1rem;
-    border-radius: 0.85rem;
-    background: #FFFFFF;
-    border: 1.5px solid #FCA5A5;
-    box-shadow: 0 4px 18px rgba(220, 38, 38, 0.12);
-    margin-bottom: 1rem;
-    animation: onboardingSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards, pulseSubtleGlow 3s infinite;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-  }
-  .interactive-onboarding-toast.is-dismissing {
-    animation: onboardingFadeOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  .onboarding-icon {
-    font-size: 1.35rem;
-    line-height: 1;
-    flex-shrink: 0;
-    margin-top: 0.1rem;
-  }
-  .onboarding-content {
-    flex: 1;
-    min-width: 0;
-  }
-  .onboarding-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    margin-bottom: 0.25rem;
-  }
-  .onboarding-title strong {
-    font-size: 0.82rem;
-    font-weight: 850;
-    color: #991B1B;
-  }
-  .onboarding-close-btn {
-    border: 0;
-    background: transparent;
-    color: #94A3B8;
-    cursor: pointer;
-    font-size: 1rem;
-    padding: 0;
-    line-height: 1;
-    display: grid;
-    place-items: center;
-    width: 1.4rem;
-    height: 1.4rem;
-    border-radius: 50%;
-    transition: all 0.15s ease;
-  }
-  .onboarding-close-btn:hover {
-    background: #FEE2E2;
-    color: #DC2626;
-  }
-  .onboarding-desc {
-    margin: 0 0 0.55rem;
-    font-size: 0.74rem;
-    color: #475569;
-    line-height: 1.4;
-    font-weight: 550;
-  }
-  .onboarding-dismiss-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.25rem 0.65rem;
-    border-radius: 999px;
-    background: #FEF2F2;
-    border: 1px solid #FECACA;
-    color: #DC2626;
-    font-size: 0.7rem;
-    font-weight: 800;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-  .onboarding-dismiss-pill:hover {
-    background: #DC2626;
-    color: #FFFFFF;
-    border-color: #DC2626;
-  }
-
-  /* Equal-width grid rows */
-  .tactical-grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.55rem;
-  }
-  .tactical-grid-2 {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
-  }
-
-  .tactical-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    padding: 0.75rem 0.65rem;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 0.85rem;
-    background: #F8FAFC;
-    color: #1E293B;
-    font-size: 0.82rem;
-    font-weight: 750;
-    cursor: pointer;
-    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-    min-height: 48px;
-    width: 100%;
-    box-sizing: border-box;
-    text-align: center;
-  }
-  .tactical-btn:hover {
-    border-color: #CBD5E1;
-    background: #F1F5F9;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.05);
-  }
-  .tactical-btn:active {
-    transform: scale(0.98);
-  }
-  .tactical-btn.is-selected {
-    border-color: #DB1B0D;
-    background: #DB1B0D;
-    color: #FFFFFF;
-    box-shadow: 0 4px 14px rgba(219, 27, 13, 0.28);
-  }
-  .tactical-btn-icon {
-    font-size: 1.15rem;
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.85rem;
-    height: 1.85rem;
-    border-radius: 0.5rem;
-    background: rgba(15, 23, 42, 0.05);
-    transition: all 0.15s ease;
-  }
-  .tactical-btn-icon.icon-wood { color: #854D0E; }
-  .tactical-btn-icon.icon-semi { color: #EA580C; }
-  .tactical-btn-icon.icon-concrete { color: #475569; }
-  .tactical-btn-icon.icon-packed { color: #DC2626; }
-  .tactical-btn-icon.icon-spaced { color: #0284C7; }
-  .tactical-btn-icon.icon-alley { color: #D97706; }
-  .tactical-btn-icon.icon-truck { color: #DC2626; }
-
-  .tactical-btn.is-selected .tactical-btn-icon {
-    background: rgba(255, 255, 255, 0.22);
-    color: #FFFFFF !important;
-  }
-  .tactical-btn-text {
-    white-space: normal;
-    overflow-wrap: break-word;
-    hyphens: auto;
-    line-height: 1.2;
-    text-align: center;
-    font-size: 0.8rem;
-  }
-
-  /* Radio dot indicators */
-  .tactical-radio-dot {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 1.8px solid #94A3B8;
-    background: #FFFFFF;
-    margin-left: auto;
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .tactical-btn.is-selected .tactical-radio-dot {
-    border-color: #FFFFFF;
-    background: #FFFFFF;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
-  }
-  .tactical-btn.is-selected .tactical-radio-dot::after {
-    content: "";
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #DB1B0D;
-  }
-
-  /* Stacked card buttons for accessibility */
-  .tactical-btn.tactical-btn-stacked {
-    padding: 0.75rem 0.85rem;
-    text-align: left;
-    justify-content: flex-start;
-    gap: 0.65rem;
-  }
-  .tactical-btn-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    min-width: 0;
-    flex: 1;
-  }
-  .tactical-btn-content strong {
-    font-size: 0.82rem;
-    font-weight: 800;
-    line-height: 1.25;
-    color: inherit;
-  }
-  .tactical-btn-content small {
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: #64748B;
-    line-height: 1.3;
-  }
-  .tactical-btn.is-selected .tactical-btn-content small {
-    color: rgba(255, 255, 255, 0.88);
-  }
-
-  .tactical-saved-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    color: #047857;
-    background: #ECFDF5;
-    border: 1px solid #A7F3D0;
-    padding: 0.4rem 0.85rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 800;
-    margin-top: 0.75rem;
-    animation: fadeIn 0.2s ease-in;
-  }
-
-
-  @media (max-width: 580px) {
-    .tactical-grid-2 {
-      grid-template-columns: 1fr;
-    }
-    .tactical-grid-3 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.45rem;
-    }
-    .tactical-grid-3 .tactical-btn {
-      flex-direction: column;
-      gap: 0.25rem;
-      padding: 0.55rem 0.25rem;
-      font-size: 0.72rem;
-      min-height: 64px;
-    }
-    .tactical-grid-3 .tactical-btn-text {
-      font-size: 0.71rem;
-      line-height: 1.15;
-    }
-    .tactical-grid-3 .tactical-radio-dot {
-      margin-left: 0;
-      margin-top: 0.15rem;
-      width: 14px;
-      height: 14px;
-    }
-    .tactical-grid-3 .tactical-radio-dot::after {
-      width: 6px;
-      height: 6px;
-    }
-  }
 
   /* Environmental Wind Hazard Alert */
   .wind-hazard-banner { display:flex; align-items:flex-start; gap:.8rem; padding:.9rem 1rem; border-radius:.85rem; background:#FEF3C7; border:1px solid #FDE68A; margin-bottom:.9rem; }
@@ -694,7 +343,7 @@ const detailStyles = `
   /* ---- Report detail: status first, icons over paragraphs ---- */
   .resident-detail-heading > div { min-width:0; }
   .resident-detail-back { font-size:.95rem; }
-  .resident-detail-back:focus-visible, .rrs-jump:focus-visible, .resident-photo-preview-thumb:focus-visible { outline:3px solid rgba(227,33,24,.35); outline-offset:2px; }
+  .resident-detail-back:focus-visible, .resident-photo-preview-thumb:focus-visible { outline:3px solid rgba(227,33,24,.35); outline-offset:2px; }
   .resident-detail-sub { margin:.15rem 0 0; color:#64748b; font-size:.76rem; font-weight:650; font-variant-numeric:tabular-nums; }
   .resident-detail-card h2 > i { color:#e32118; font-size:.9rem; }
 
@@ -723,15 +372,6 @@ const detailStyles = `
   .rrs-step.current .rrs-step-dot { border-color:var(--tone); background:#fff; color:var(--tone); box-shadow:0 0 0 4px color-mix(in srgb, var(--tone) 18%, transparent); }
   .rrs-step time { color:#64748b; font-size:.6rem; font-weight:650; font-variant-numeric:tabular-nums; }
 
-  .rrs-jump { display:flex; align-items:center; gap:.7rem; width:100%; margin-top:1rem; padding:.65rem .75rem; border:1px solid #fecaca; border-radius:.9rem; background:#fff5f4; color:#7f1d1d; font:inherit; text-align:left; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; transition:background-color .18s ease, transform .18s ease; }
-  .rrs-jump:hover { background:#ffeceb; }
-  .rrs-jump:active { transform:scale(.99); }
-  .rrs-jump-lead { flex:none; width:2.1rem; height:2.1rem; display:grid; place-items:center; border-radius:.65rem; background:#e32118; color:#fff; font-size:.85rem; }
-  .rrs-jump-text { flex:1; min-width:0; display:flex; flex-direction:column; gap:.05rem; }
-  .rrs-jump-text strong { font-size:.86rem; font-weight:800; }
-  .rrs-jump-text small { color:#9f1239; font-size:.72rem; font-weight:650; }
-  .rrs-jump-arrow { flex:none; width:2rem; height:2rem; display:grid; place-items:center; border-radius:50%; background:#fff; color:#e32118; box-shadow:0 2px 6px rgba(227,33,24,.18); animation:rrsNudge 1.8s cubic-bezier(.16,1,.3,1) infinite; }
-  @keyframes rrsNudge { 0%, 100% { transform:translateY(0); } 45% { transform:translateY(3px); } }
 
   .wind-hazard-icon { flex:none; width:2.3rem; height:2.3rem; display:grid; place-items:center; border-radius:.75rem; background:#FDE68A; color:#92400E; font-size:1rem; }
   .wind-hazard-body strong { font-size:.84rem; }
@@ -758,10 +398,6 @@ const detailStyles = `
   .rrs-factor i { flex:none; width:1.55rem; height:1.55rem; display:grid; place-items:center; border-radius:50%; background:var(--lv-soft); color:var(--lv); font-size:.72rem; }
   .rrs-danger-note { display:flex; align-items:center; gap:.45rem; margin:.85rem 0 0; color:#64748b; font-size:.74rem; font-weight:600; }
 
-  .tactical-enrichment-card:focus { outline:none; }
-  .tactical-enrichment-card:focus-visible { outline:3px solid rgba(227,33,24,.3); outline-offset:3px; }
-  .rrs-help-count { margin-left:auto; padding:.2rem .55rem; border-radius:99px; background:#fee2e2; color:#b91c1c; font-size:.72rem; font-weight:850; font-variant-numeric:tabular-nums; }
-  .rrs-help-count.is-done { background:#d1fae5; color:#047857; }
 
   .rrs-details { list-style:none; display:grid; margin:0; padding:0; }
   .rrs-details li { display:flex; align-items:center; gap:.75rem; padding:.6rem 0; border-bottom:1px solid #f1f5f9; }
@@ -778,7 +414,7 @@ const detailStyles = `
   .rrs-photo-zoom { position:absolute; right:.35rem; bottom:.35rem; width:1.6rem; height:1.6rem; display:grid; place-items:center; border-radius:50%; background:rgba(15,23,42,.72); color:#fff; font-size:.66rem; }
 
   @media (prefers-reduced-motion: reduce) {
-    .rrs-live::before, .rrs-jump-arrow { animation:none; }
+    .rrs-live::before { animation:none; }
   }
   @media (max-width:420px) {
     .rrs-status { padding:.95rem .85rem 1rem; }
@@ -815,10 +451,6 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [updatingField, setUpdatingField] = useState<string | null>(null);
-  const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isDismissingOnboarding, setIsDismissingOnboarding] = useState(false);
 
   const getTimelineLabel = (status: FireReportStatus, defaultLabel: string) => {
     if (lang === "hil") {
@@ -842,25 +474,6 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
       }
     }
     return defaultLabel;
-  };
-
-  useEffect(() => {
-    try {
-      const alreadyOnboarded = localStorage.getItem("alab_tactical_onboarded") === "true";
-      if (!alreadyOnboarded && report && (!report.structure_material || !report.house_density || !report.route_accessibility)) {
-        queueMicrotask(() => setShowOnboarding(true));
-      }
-    } catch {
-      // Ignore storage errors in restricted contexts
-    }
-  }, [report]);
-
-  const dismissOnboarding = () => {
-    setIsDismissingOnboarding(true);
-    setTimeout(() => setShowOnboarding(false), 320);
-    try {
-      localStorage.setItem("alab_tactical_onboarded", "true");
-    } catch {}
   };
 
   useEffect(() => {
@@ -923,63 +536,6 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
     setTouchStart(null);
   };
 
-  const updateTacticalDetail = async (key: "structureMaterial" | "houseDensity" | "routeAccessibility", val: string) => {
-    if (!report) return;
-
-    // Auto-vanish interactive onboarding wizard as soon as the user selects any option!
-    if (showOnboarding) {
-      dismissOnboarding();
-    }
-
-    const fieldMap = {
-      structureMaterial: "structure_material",
-      houseDensity: "house_density",
-      routeAccessibility: "route_accessibility",
-    } as const;
-
-    const mappedField = fieldMap[key];
-
-    // 1. INSTANT OPTIMISTIC UI: Fill red in 0ms immediately on tap!
-    setReport((prev) => {
-      if (!prev) return prev;
-      const updated = { ...prev, [mappedField]: val };
-      if (key === "houseDensity") {
-        updated.reported_house_density = val;
-      }
-      return updated;
-    });
-    setSavedFeedback("✓ Na-save agad (Sent to BFP)");
-    setTimeout(() => setSavedFeedback(null), 2500);
-
-    // 2. Background persistence to PostgreSQL
-    try {
-      const response = await fetch(`/api/resident/fire-reports/${reportId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [key]: val }),
-      });
-      const data = await response.json();
-      if (response.ok && data.report) {
-        setReport((prev) => {
-          if (!prev) return prev;
-          const r = data.report;
-          return {
-            ...prev,
-            structure_material: r.structure_material ?? r.structureMaterial ?? prev.structure_material,
-            reported_house_density: r.reported_house_density ?? r.reportedHouseDensity ?? prev.reported_house_density,
-            house_density: r.house_density ?? r.houseDensity ?? prev.house_density,
-            route_accessibility: r.route_accessibility ?? r.routeAccessibility ?? prev.route_accessibility,
-            calculated_severity: r.calculated_severity ?? r.calculatedSeverity ?? prev.calculated_severity,
-            severity_score: r.severity_score ?? r.severityScore ?? prev.severity_score,
-            severity_factors: r.severity_factors ?? r.severityFactors ?? prev.severity_factors,
-          };
-        });
-      }
-    } catch {
-      // Non-blocking background sync
-    }
-  };
-
   if (!report) {
     return (
       <Shell>
@@ -995,27 +551,12 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
   const photoUrl = currentPhoto?.url || "";
   const windSpeed = Number(report.weather_wind_speed) || 0;
   const fireTypes = report.fire_types?.length ? report.fire_types : [report.fire_type];
-  const situationChoices = situationForFireTypes(fireTypes);
   const hasPhotos = photos.length > 0;
 
   const view = statusView(timelineStatus ?? report.status, lang);
   const showTracker = view.tone !== "stop" && view.tone !== "info";
   const statusMessage = latest?.resident_message || view.message;
-  const helpGroups = [
-    fireTypes.includes("HOUSE_BUILDING") ? Boolean(report.structure_material) : null,
-    situationChoices.density ? Boolean(report.house_density || report.reported_house_density) : null,
-    situationChoices.route ? Boolean(report.route_accessibility) : null,
-  ].filter((answered): answered is boolean => answered !== null);
-  const helpAnswered = helpGroups.filter(Boolean).length;
-  // A rejected or duplicate report has nothing left for responders to prepare.
-  const helpOpen = report.can_edit !== false && showTracker && helpGroups.length > helpAnswered;
   const lastStep = timeline.length - 1;
-  const goToHelp = () => {
-    const target = document.getElementById("help-responders");
-    if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
-    target.focus({ preventScroll: true });
-  };
   const level = report.calculated_severity ?? null;
   const ruleBased = report.fire_type === "VEHICLE" || report.fire_type === "OTHER";
   const factors = Array.isArray(report.severity_factors) ? report.severity_factors : [];
@@ -1090,16 +631,6 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
           </ol>
         )}
 
-        {helpOpen && (
-          <button type="button" className="rrs-jump" onClick={goToHelp}>
-            <span className="rrs-jump-lead" aria-hidden="true"><i className="fa-solid fa-hand-holding-heart" /></span>
-            <span className="rrs-jump-text">
-              <strong>{pick("Help responders", "Bulig sa mga responder", "Tulungan ang mga responder")}</strong>
-              <small>{pick(`${helpGroups.length - helpAnswered} quick taps left`, `${helpGroups.length - helpAnswered} ka pili nalang`, `${helpGroups.length - helpAnswered} pang mabilis na pili`)}</small>
-            </span>
-            <span className="rrs-jump-arrow" aria-hidden="true"><i className="fa-solid fa-arrow-down" /></span>
-          </button>
-        )}
       </section>
 
       {windSpeed >= 25 && (
@@ -1152,170 +683,6 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
             </section>
           )}
 
-          {report.can_edit !== false && <section id="help-responders" tabIndex={-1} className="resident-detail-card tactical-enrichment-card">
-            <h2>
-              <i className="fa-solid fa-hand-holding-heart" aria-hidden="true" />
-              {pick("Help Responders", "Bulig sa mga Responders", "Tulong sa Responders")}
-              {helpGroups.length > 0 && <span className={`rrs-help-count ${helpAnswered === helpGroups.length ? "is-done" : ""}`}>{helpAnswered}/{helpGroups.length}</span>}
-            </h2>
-            <p className="tactical-header-desc">
-              {pick("Tap one per row. BFP gets it right away.", "Pili isa kada linya. Makadto dayon sa BFP.", "Pumili ng isa bawat hanay. Agad itong makikita ng BFP.")}
-            </p>
-
-            {showOnboarding && (
-              <div
-                className={`interactive-onboarding-toast ${isDismissingOnboarding ? "is-dismissing" : ""}`}
-                role="status"
-                aria-live="polite"
-              >
-                <div className="onboarding-icon" aria-hidden="true">✨</div>
-                <div className="onboarding-content">
-                  <div className="onboarding-title">
-                    <strong>Gabay sa Pagpili (Interactive Guide)</strong>
-                    <button
-                      type="button"
-                      className="onboarding-close-btn"
-                      onClick={dismissOnboarding}
-                      aria-label="Isara ang gabay"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <p className="onboarding-desc">
-                    Pumili ng isa sa bawat kahon sa ibaba. Awtomatiko itong maipapadala agad sa BFP responders nang hindi na kailangang mag-submit muli!
-                  </p>
-                  <button
-                    type="button"
-                    className="onboarding-dismiss-pill"
-                    onClick={dismissOnboarding}
-                  >
-                    <span>✓ Naintindihan ko</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {fireTypes.includes("HOUSE_BUILDING") && <div className="tactical-group">
-              <div className="tactical-group-header">
-                <span className="tactical-label">Building material:</span>
-                <span className={`tactical-select-guide ${report.structure_material ? "is-done" : ""}`}>
-                  {report.structure_material ? "✓ Napili" : "Pumili ng 1"}
-                </span>
-              </div>
-              <div className="tactical-grid-3">
-                <button
-                  type="button"
-                  className={`tactical-btn ${report.structure_material === "LIGHT_MATERIALS" || report.structure_material === "LIGHT_WOOD" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("structureMaterial", "LIGHT_MATERIALS")}
-                  aria-pressed={report.structure_material === "LIGHT_MATERIALS" || report.structure_material === "LIGHT_WOOD"}
-                >
-                  <span className="tactical-btn-icon icon-wood"><i className="fa-solid fa-tree" /></span>
-                  <span className="tactical-btn-text">Wood / Light materials</span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className={`tactical-btn ${report.structure_material === "MIXED_SEMI_CONCRETE" || report.structure_material === "CONCRETE_MIXED" || report.structure_material === "CONCRETE" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("structureMaterial", "MIXED_SEMI_CONCRETE")}
-                  aria-pressed={report.structure_material === "MIXED_SEMI_CONCRETE" || report.structure_material === "CONCRETE_MIXED" || report.structure_material === "CONCRETE"}
-                >
-                  <span className="tactical-btn-icon icon-semi"><i className="fa-solid fa-house-chimney" /></span>
-                  <span className="tactical-btn-text">Mixed / Semi-concrete</span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className={`tactical-btn ${report.structure_material === "COMMERCIAL_STORAGE" || report.structure_material === "COMMERCIAL_STEEL" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("structureMaterial", "COMMERCIAL_STORAGE")}
-                  aria-pressed={report.structure_material === "COMMERCIAL_STORAGE" || report.structure_material === "COMMERCIAL_STEEL"}
-                >
-                  <span className="tactical-btn-icon icon-concrete"><i className="fa-solid fa-building" /></span>
-                  <span className="tactical-btn-text">Storage / Flammable goods</span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-              </div>
-            </div>}
-
-            {situationChoices.density && <div className="tactical-group">
-              <div className="tactical-group-header">
-                <span className="tactical-label">Nearby houses:</span>
-                <span className={`tactical-select-guide ${report.house_density || report.reported_house_density ? "is-done" : ""}`}>
-                  {report.house_density || report.reported_house_density ? "✓ Napili" : "Pumili ng 1"}
-                </span>
-              </div>
-              <div className="tactical-grid-3">
-                <button
-                  type="button"
-                  className={`tactical-btn ${report.house_density === "ISOLATED_FAR" || report.reported_house_density === "ISOLATED_FAR" || report.house_density === "ISOLATED" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("houseDensity", "ISOLATED_FAR")}
-                  aria-pressed={report.house_density === "ISOLATED_FAR" || report.reported_house_density === "ISOLATED_FAR" || report.house_density === "ISOLATED"}
-                >
-                  <span className="tactical-btn-icon icon-spaced"><i className="fa-solid fa-house" /></span>
-                  <span className="tactical-btn-text">Far apart</span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className={`tactical-btn ${report.house_density === "MODERATE_SPACING" || report.reported_house_density === "MODERATE_SPACING" || report.house_density === "MODERATE" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("houseDensity", "MODERATE_SPACING")}
-                  aria-pressed={report.house_density === "MODERATE_SPACING" || report.reported_house_density === "MODERATE_SPACING" || report.house_density === "MODERATE"}
-                >
-                  <span className="tactical-btn-icon icon-semi"><i className="fa-solid fa-house-chimney-window" /></span>
-                  <span className="tactical-btn-text">Some spacing</span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className={`tactical-btn ${report.house_density === "PACKED_MAGKAKADIKIT" || report.reported_house_density === "PACKED_MAGKAKADIKIT" || report.house_density === "HIGH_DENSITY" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("houseDensity", "PACKED_MAGKAKADIKIT")}
-                  aria-pressed={report.house_density === "PACKED_MAGKAKADIKIT" || report.reported_house_density === "PACKED_MAGKAKADIKIT" || report.house_density === "HIGH_DENSITY"}
-                >
-                  <span className="tactical-btn-icon icon-packed"><i className="fa-solid fa-city" /></span>
-                  <span className="tactical-btn-text">Houses are close together</span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-              </div>
-            </div>}
-
-            {situationChoices.route && <div className="tactical-group">
-              <div className="tactical-group-header">
-                <span className="tactical-label">Road access for fire trucks:</span>
-                <span className={`tactical-select-guide ${report.route_accessibility ? "is-done" : ""}`}>
-                  {report.route_accessibility ? "✓ Napili" : "Pumili ng 1"}
-                </span>
-              </div>
-              <div className="tactical-grid-2">
-                <button
-                  type="button"
-                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === "WIDE_ROAD" ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("routeAccessibility", "WIDE_ROAD")}
-                  aria-pressed={report.route_accessibility === "WIDE_ROAD"}
-                >
-                  <span className="tactical-btn-icon icon-truck"><i className="fa-solid fa-truck-fast" /></span>
-                  <span className="tactical-btn-content">
-                    <strong>Wide road</strong>
-                    <small>Fire truck can pass</small>
-                  </span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className={`tactical-btn tactical-btn-stacked ${report.route_accessibility === situationChoices.route ? "is-selected" : ""}`}
-                  onClick={() => updateTacticalDetail("routeAccessibility", situationChoices.route!)}
-                  aria-pressed={report.route_accessibility === situationChoices.route}
-                >
-                  <span className="tactical-btn-icon icon-alley"><i className="fa-solid fa-person-walking" /></span>
-                  <span className="tactical-btn-content">
-                    <strong>{situationChoices.route === "NARROW_STREET" ? "Narrow street" : situationChoices.route === "INTERIOR_ALLEY_ESKINITA" ? "Narrow alley" : "Difficult road access"}</strong>
-                    <small>{situationChoices.route === "NARROW_STREET" ? "Fire trucks may have difficulty passing" : situationChoices.route === "INTERIOR_ALLEY_ESKINITA" ? "A fire truck may not fit" : "Road is blocked or ends before the fire"}</small>
-                  </span>
-                  <span className="tactical-radio-dot" aria-hidden="true" />
-                </button>
-              </div>
-            </div>}
-
-            {savedFeedback && <span className="tactical-saved-pill">{savedFeedback}</span>}
-          </section>}
         </div>
 
         <div className="resident-grid-col">

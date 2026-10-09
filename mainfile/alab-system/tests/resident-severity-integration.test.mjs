@@ -98,14 +98,14 @@ test("resident report markup contains 1-tap quick pills and hides weather from r
   assert.match(content, /Narrow alley or interior road/);
 });
 
-test("resident report status contains AHP severity badge and Phase 2 tactical enrichment", () => {
+test("resident report status contains AHP severity badge and asks for scene details only in the form", () => {
   const status = read("app/_components/resident-report-status.tsx");
+  const page = read("app/resident/report-fire/page.tsx");
 
   assert.match(status, /severity-pill/);
-  assert.match(status, /tactical-enrichment-card/);
-  assert.match(status, /updateTacticalDetail/);
   assert.match(status, /fetch\(`\/api\/resident\/fire-reports\/\$\{reportId\}`, \{/);
-  assert.match(status, /method:\s*"PATCH"/);
+  assert.doesNotMatch(status, /tactical-enrichment-card|updateTacticalDetail/);
+  assert.match(page, /form\.set\('structureMaterial', selectedMaterial\)/);
 });
 
 test("municipal incident detail displays the AHP severity badge and localized incident site weather", () => {
@@ -148,12 +148,13 @@ test("validateTacticalDetailsUpdate and validateFireReportInput normalize alias 
   assert.equal(normalizedFromAliases.routeAccessibility, "WIDE_ROAD");
 });
 
-test("resident report status contains canonical enums matching initial report submission without disappearing", () => {
+test("the report form sends the canonical scene enums the report detail reads", () => {
   const status = read("app/_components/resident-report-status.tsx");
+  const content = read("app/_content/resident-report-fire-content.ts");
 
-  assert.match(status, /PACKED_MAGKAKADIKIT/);
-  assert.match(status, /situationChoices\.route/);
-  assert.match(status, /MIXED_SEMI_CONCRETE/);
-  assert.match(status, /COMMERCIAL_STORAGE/);
+  assert.match(content, /PACKED_MAGKAKADIKIT/);
+  assert.match(content, /LIGHT_MATERIALS/);
+  assert.match(content, /MIXED_SEMI_CONCRETE/);
+  assert.match(content, /COMMERCIAL_STORAGE/);
   assert.match(status, /reported_house_density/);
 });
