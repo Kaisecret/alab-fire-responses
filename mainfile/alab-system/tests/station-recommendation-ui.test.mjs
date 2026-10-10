@@ -39,6 +39,14 @@ test("moderate danger shows only the nearest station's single-truck recommendati
   assert.equal((html.match(/class="mbfp-nearest-badge"/g) ?? []).length, 1);
 });
 
+test("a one-station town sees its truck recommendation follow the danger level", () => {
+  const hamtic = [{ id: "hamtic", stationName: "Hamtic Fire Station", latitude: 10.7, longitude: 121.98, activePersonnelCount: 1, serviceableTruckCount: 2 }];
+  assert.match(render("HIGH", hamtic), /HIGH danger · 2 trucks from 1 station/);
+  assert.match(render("CRITICAL", hamtic), /Recommend 2 trucks/);
+  assert.match(render("MODERATE", hamtic), /MODERATE danger · 1 truck from 1 station/);
+  assert.match(render("LOW", hamtic), /LOW danger · Crew verification/);
+});
+
 test("low danger describes crew verification rather than a zero-truck dispatch", () => {
   const html = render("LOW");
   assert.match(html, /Crew verification/);

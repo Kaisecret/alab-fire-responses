@@ -30,6 +30,14 @@ test("a town with two or more stations names the nearest one", () => {
   assert.equal(buildMobileDecisionSupport(fire, [sanJose, sanAngel], "hamtic-main").recommendedStation, null);
 });
 
+test("the station named on the phone follows the Level of Danger, as on the municipal screen", () => {
+  const stations = [{ ...sanJose, serviceableTruckCount: 3 }, { ...sanAngel, serviceableTruckCount: 0 }];
+  // A low-danger fire needs a crew to check it, so the nearest staffed station goes even without a truck.
+  assert.equal(buildMobileDecisionSupport({ ...fire, level: "LOW" }, stations, "sj-main").recommendedStation?.name, "San Angel Fire Sub-Station");
+  // Higher danger needs a truck, so the nearest station that has one is named.
+  assert.equal(buildMobileDecisionSupport({ ...fire, level: "HIGH" }, stations, "sj-main").recommendedStation?.name, "San Jose Fire Station");
+});
+
 test("an empty or placeholder description is not shown anywhere", () => {
   assert.equal(reportDescription("No description provided."), null);
   assert.equal(reportDescription("  "), null);

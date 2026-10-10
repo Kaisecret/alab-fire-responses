@@ -81,10 +81,11 @@ export function buildMobileDecisionSupport(
     factors: report.factors,
   }).slice(0, MAX_ACTIONS).map((action) => action.title);
 
-  // A crew summoned from another town is not choosing among these stations.
+  // A crew summoned from another town is not choosing among these stations,
+  // and a town with one station has none to choose.
   const ownTown = assignedStationId !== null && stations.some((station) => station.id === assignedStationId);
-  const recommended = ownTown
-    ? rankStationsForIncident(report, stations)?.find((station) => station.recommended) ?? null
+  const recommended = ownTown && stations.length > 1
+    ? rankStationsForIncident({ ...report, calculatedSeverity: report.level }, stations)?.find((station) => station.recommended) ?? null
     : null;
 
   return {

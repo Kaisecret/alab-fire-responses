@@ -23,9 +23,25 @@ test("a nearer station with nobody on duty is skipped for the recommendation", (
   assert.equal(ranked.find((station) => station.recommended).id, "main");
 });
 
-test("a municipality with one station gets no ranking", () => {
-  assert.equal(rankStationsForIncident(fire, [sanJose]), null);
+test("a municipality with no station gets no ranking", () => {
   assert.equal(rankStationsForIncident(fire, []), null);
+});
+
+// Most towns have one station, such as Hamtic with two serviceable trucks.
+const hamtic = { id: "hamtic", stationName: "Hamtic Fire Station", latitude: 10.7, longitude: 121.98, activePersonnelCount: 1, serviceableTruckCount: 2 };
+
+test("a one-station town gets its truck recommendation by danger level", () => {
+  for (const [calculatedSeverity, trucks] of [["LOW", 0], ["MODERATE", 1], ["HIGH", 2], ["CRITICAL", 2], [null, 1]]) {
+    const ranked = rankStationsForIncident({ ...fire, calculatedSeverity }, [hamtic]);
+    assert.deepEqual(ranked.map((s) => [s.id, s.recommended, s.recommendedTruckCount]), [["hamtic", true, trucks]], String(calculatedSeverity));
+  }
+});
+
+test("a one-station town needs no distance to be recommended, but still needs a crew", () => {
+  const unlocated = rankStationsForIncident({ latitude: Number.NaN, longitude: 121.9, calculatedSeverity: "HIGH" }, [hamtic]);
+  assert.deepEqual([unlocated[0].recommended, unlocated[0].recommendedTruckCount], [true, 2]);
+  const unstaffed = rankStationsForIncident({ ...fire, calculatedSeverity: "HIGH" }, [{ ...hamtic, activePersonnelCount: 0 }]);
+  assert.deepEqual([unstaffed[0].recommended, unstaffed[0].recommendedTruckCount], [false, 0]);
 });
 
 test("no station is recommended when nobody is on duty anywhere", () => {

@@ -1,12 +1,13 @@
 import { distanceMeters } from "../intermunicipality/proximity.ts";
 
-// Which of a municipality's own stations is nearest the fire. Only a
-// municipality with two or more stations has a choice to make; one station is
-// dispatched by the button itself. Distance is straight-line from the report's
-// GPS point, since road distance is not known. The recommendation is the
-// nearest staffed station for low/moderate/high danger, and all staffed local
-// stations for critical danger. Truck quantities use the serviceable inventory;
-// the officer confirms availability and decides what to dispatch.
+// Which of a municipality's own stations should go, and with how many trucks.
+// Distance is straight-line from the report's GPS point, since road distance
+// is not known. The recommendation is the nearest staffed station for
+// low/moderate/high danger, and all staffed local stations for critical
+// danger. A town with one station has no station to choose, but its truck
+// quantity still follows the Level of Danger. Truck quantities use the
+// serviceable inventory; the officer confirms availability and decides what
+// to dispatch.
 
 export type NearestStationCandidate = {
   id: string;
@@ -42,7 +43,7 @@ export function rankStationsForIncident<S extends NearestStationCandidate>(
   incident: { latitude: number; longitude: number; calculatedSeverity?: "LOW" | "MODERATE" | "HIGH" | "CRITICAL" | null },
   stations: readonly S[],
 ): RankedStation<S>[] | null {
-  if (stations.length < 2) return null;
+  if (stations.length === 0) return null;
   const located = usable(incident.latitude, incident.longitude);
   const ranked = stations
     .map((station, index) => ({
@@ -57,7 +58,8 @@ export function rankStationsForIncident<S extends NearestStationCandidate>(
   const allStations = incident.calculatedSeverity === "CRITICAL";
   const eligible = (station: S) => station.activePersonnelCount > 0
     && (crewOnly || station.serviceableTruckCount == null || station.serviceableTruckCount > 0);
-  const recommendedId = ranked.find((entry) => entry.distance !== null && eligible(entry.station))?.station.id;
+  // A lone station is not compared with any other, so it needs no distance.
+  const recommendedId = ranked.find((entry) => (entry.distance !== null || ranked.length === 1) && eligible(entry.station))?.station.id;
   return ranked.map(({ station, distance }) => {
     const recommended = allStations ? eligible(station) : station.id === recommendedId;
     const recommendedTruckCount = !recommended || crewOnly ? 0
