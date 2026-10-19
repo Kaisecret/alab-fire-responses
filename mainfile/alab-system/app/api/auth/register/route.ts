@@ -86,9 +86,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please complete all required registration fields." }, { status: 400 });
   }
 
-  let front: File; let selfie: File; let back: File | null;
-  try { front = image(form, "frontId")!; back = image(form, "backId")!; selfie = image(form, "selfie")!; } catch {
-    return NextResponse.json({ error: "Upload the front and back of your ID and take a clear selfie before submitting." }, { status: 400 });
+  if (["selfie", "selfieRight", "selfieLeft"].some(key => !form.has(key))) {
+    return NextResponse.json({ error: "Capture your front, right-side and left-side selfie photos before submitting.", code: "SELFIE_VIEWS_REQUIRED" }, { status: 400 });
+  }
+  let front: File; let selfie: File; let selfieRight: File; let selfieLeft: File; let back: File;
+  try { front = image(form, "frontId")!; back = image(form, "backId")!; selfie = image(form, "selfie")!; selfieRight = image(form, "selfieRight")!; selfieLeft = image(form, "selfieLeft")!; } catch {
+    return NextResponse.json({ error: "Upload the front and back of your ID and capture clear front, right-side and left-side selfies before submitting." }, { status: 400 });
   }
 
   // The ID must have passed the scan for this exact image and this name. The
@@ -106,9 +109,12 @@ export async function POST(request: Request) {
   const faceToken = form.get("faceVerificationToken");
   const faceProof = form.getAll("faceVerificationToken").length === 1 && typeof faceToken === "string" ? readFaceVerification(faceToken, secret) : null;
   const selfieSha256 = evidenceSha256(Buffer.from(await selfie.arrayBuffer()));
+  const selfieRightSha256 = evidenceSha256(Buffer.from(await selfieRight.arrayBuffer()));
+  const selfieLeftSha256 = evidenceSha256(Buffer.from(await selfieLeft.arrayBuffer()));
   if (!faceProof || faceProof.sha256 !== frontSha256 || faceProof.backSha256 !== backSha256
-      || faceProof.selfieSha256 !== selfieSha256 || faceProof.name !== registeredNameKey(firstName, lastName)) {
-    return NextResponse.json({ error: "Confirm a selfie that matches your verified ID before creating your account. Go back and retake your selfie.", code: "FACE_NOT_VERIFIED" }, { status: 400 });
+      || faceProof.selfieSha256 !== selfieSha256 || faceProof.selfieRightSha256 !== selfieRightSha256
+      || faceProof.selfieLeftSha256 !== selfieLeftSha256 || faceProof.name !== registeredNameKey(firstName, lastName)) {
+    return NextResponse.json({ error: "Confirm your three selfie photos with your verified ID before creating your account. Go back and retake your selfies.", code: "FACE_NOT_VERIFIED" }, { status: 400 });
   }
   const automaticallyApproved = process.env.RESIDENT_AUTO_APPROVAL_ENABLED === "true";
   const accountStatus = automaticallyApproved ? "ACTIVE" : "PENDING_REVIEW";
@@ -132,7 +138,7 @@ export async function POST(request: Request) {
   let uploadedKeys: string[] = [];
 
   try {
-    const evidence = await uploadIdentityEvidence({ applicationId, reference: applicationReference, submittedAt: now, front, back, selfie });
+    const evidence = await uploadIdentityEvidence({ applicationId, reference: applicationReference, submittedAt: now, front, back, selfie, selfieRight, selfieLeft });
     uploadedKeys = evidence.uploadedKeys;
     const passwordHash = pendingPasswordHash || await hashPassword(password);
     await withTransaction(async (client) => {

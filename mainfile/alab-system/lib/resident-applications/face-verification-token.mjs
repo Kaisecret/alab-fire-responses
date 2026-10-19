@@ -27,7 +27,11 @@ function validComparison(data) {
 }
 
 function signature(payload, secret) {
-  return createHmac("sha256", secret).update(`resident-face-verification:v1:${payload}`).digest("base64url");
+  return createHmac("sha256", secret).update(`resident-face-verification:v2:${payload}`).digest("base64url");
+}
+
+function validSelfieBindings(data) {
+  return SHA256.test(data.selfieSha256) && SHA256.test(data.selfieRightSha256) && SHA256.test(data.selfieLeftSha256);
 }
 
 /** Hash the original uploaded bytes, before decoding or resizing. */
@@ -44,9 +48,9 @@ export function readBoundIdVerification(token, secret, now = Date.now()) {
 }
 
 /** Only a successful server comparison may be signed. Never pass browser scores here. */
-export function signFaceVerification({ sha256, backSha256, selfieSha256, name, score, threshold }, secret, now = Date.now()) {
-  const data = { v: 1, sha256, backSha256, selfieSha256, name, score, threshold, iat: now, exp: now + LIFETIME_MS };
-  if (!validSecret(secret) || !validBindings(data) || !SHA256.test(selfieSha256)
+export function signFaceVerification({ sha256, backSha256, selfieSha256, selfieRightSha256, selfieLeftSha256, name, score, threshold }, secret, now = Date.now()) {
+  const data = { v: 2, sha256, backSha256, selfieSha256, selfieRightSha256, selfieLeftSha256, name, score, threshold, iat: now, exp: now + LIFETIME_MS };
+  if (!validSecret(secret) || !validBindings(data) || !validSelfieBindings(data)
       || !validComparison(data) || !Number.isSafeInteger(now)) throw new Error("INVALID_FACE_PROOF");
   const payload = Buffer.from(JSON.stringify(data)).toString("base64url");
   return `${payload}.${signature(payload, secret)}`;
@@ -63,7 +67,7 @@ export function readFaceVerification(token, secret, now = Date.now()) {
     const decoded = Buffer.from(payload, "base64url");
     if (decoded.toString("base64url") !== payload) return null;
     const data = JSON.parse(decoded.toString("utf8"));
-    if (data?.v !== 1 || !validBindings(data) || !SHA256.test(data.selfieSha256) || !validComparison(data)) return null;
+    if (data?.v !== 2 || !validBindings(data) || !validSelfieBindings(data) || !validComparison(data)) return null;
     if (!Number.isSafeInteger(data.iat) || !Number.isSafeInteger(data.exp) || data.iat > now
         || data.exp <= now || data.exp - data.iat !== LIFETIME_MS) return null;
     return data;

@@ -7,6 +7,8 @@ function evidence() {
     frontId: new File(['front'], 'front.jpg', { type: 'image/jpeg' }),
     backId: new File(['back'], 'back.jpg', { type: 'image/jpeg' }),
     selfie: new File(['selfie'], 'selfie.jpg', { type: 'image/jpeg' }),
+    selfieRight: new File(['right'], 'right.jpg', { type: 'image/jpeg' }),
+    selfieLeft: new File(['left'], 'left.jpg', { type: 'image/jpeg' }),
     idVerificationToken: 'signed-id-proof',
   };
 }
@@ -24,6 +26,8 @@ test('submits the exact confirmed photos and only returns proof for those same i
       assert.equal(await options.body.get('frontId').text(), 'front');
       assert.equal(await options.body.get('backId').text(), 'back');
       assert.equal(await options.body.get('selfie').text(), 'selfie');
+      assert.equal(await options.body.get('selfieRight').text(), 'right');
+      assert.equal(await options.body.get('selfieLeft').text(), 'left');
       assert.equal(options.body.get('idVerificationToken'), 'signed-id-proof');
       return success('server-face-proof');
     },
@@ -32,8 +36,21 @@ test('submits the exact confirmed photos and only returns proof for those same i
   assert.equal(controller.getToken(input), 'server-face-proof');
   assert.equal(controller.getToken({ ...input, frontId: new File(['different'], 'front.jpg') }), null);
   assert.equal(controller.getToken({ ...input, selfie: new File(['different'], 'selfie.jpg') }), null);
+  assert.equal(controller.getToken({ ...input, selfieRight: new File(['different'], 'right.jpg') }), null);
+  assert.equal(controller.getToken({ ...input, selfieLeft: new File(['different'], 'left.jpg') }), null);
   assert.equal(controller.getToken({ ...input, idVerificationToken: 'new-id-proof' }), null);
   assert.deepEqual(states.map((state) => state.status), ['checking', 'verified']);
+});
+
+test('a missing side view never sends an incomplete capture set to face checking', async () => {
+  let requests = 0;
+  const controller = createFaceCheckController({ request: async () => { requests++; return success('unexpected-proof'); } });
+  for (const key of ['selfieRight', 'selfieLeft']) {
+    const input = evidence(); delete input[key];
+    assert.equal(await controller.verify(input), false);
+    assert.equal(controller.getToken(input), null);
+    assert.equal(requests, 0);
+  }
 });
 
 test('a mismatch removes earlier proof and exposes the service retry guidance', async () => {

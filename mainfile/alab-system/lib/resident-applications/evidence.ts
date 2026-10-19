@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import type Sharp from "sharp";
 
 import { watermarkImage, watermarkTime } from "../media/watermark";
+import { composeSelfieContactSheet } from "./selfie-contact-sheet.mjs";
 
 // sharp ships a platform-specific native binary. A static import makes a
 // failure to load it (a missing linux-x64 libvips in the deployed bundle,
@@ -148,14 +149,25 @@ export async function uploadIdentityEvidence(input: {
   front: File;
   back: File | null;
   selfie: File;
+  selfieRight?: File;
+  selfieLeft?: File;
 }): Promise<IdentityEvidence> {
   const uploadedKeys: string[] = [];
   try {
+    const hasRight = input.selfieRight !== undefined;
+    const hasLeft = input.selfieLeft !== undefined;
+    if (hasRight !== hasLeft) throw new Error("SELFIE_VIEWS_REQUIRED");
+    // Signup keeps all three captures in the existing private selfie asset.
+    // Correction resubmissions with neither side retain their original selfie.
+    // Compose before uploading anything, so invalid side views leave no assets.
+    const selfieFile = hasRight && hasLeft
+      ? await composeSelfieContactSheet({ selfie: input.selfie, selfieRight: input.selfieRight, selfieLeft: input.selfieLeft }, await loadSharp())
+      : input.selfie;
     const front = await processAsset(input.applicationId, "front", input.front, input.reference, input.submittedAt, uploadedKeys);
     const back = input.back
       ? await processAsset(input.applicationId, "back", input.back, input.reference, input.submittedAt, uploadedKeys)
       : null;
-    const selfie = await processAsset(input.applicationId, "selfie", input.selfie, input.reference, input.submittedAt, uploadedKeys);
+    const selfie = await processAsset(input.applicationId, "selfie", selfieFile, input.reference, input.submittedAt, uploadedKeys);
     return { front, back, selfie, uploadedKeys };
   } catch (error) {
     await removeIdentityEvidence(uploadedKeys);

@@ -1,9 +1,10 @@
-/** @typedef {{ frontId: File, backId: File, selfie: File, idVerificationToken: string }} FaceEvidence */
+/** @typedef {{ frontId: File, backId: File, selfie: File, selfieRight: File, selfieLeft: File, idVerificationToken: string }} FaceEvidence */
 /** @typedef {{ status: 'idle'|'checking'|'verified'|'failed', code?: string, message?: string }} FaceCheckState */
 
 function sameEvidence(a, b) {
   return Boolean(a && b && a.frontId === b.frontId && a.backId === b.backId
-    && a.selfie === b.selfie && a.idVerificationToken === b.idVerificationToken);
+    && a.selfie === b.selfie && a.selfieRight === b.selfieRight && a.selfieLeft === b.selfieLeft
+    && a.idVerificationToken === b.idVerificationToken);
 }
 
 /**
@@ -45,8 +46,9 @@ export function createFaceCheckController({ request = fetch, onState = () => {} 
       clear();
       const job = generation;
       if (!(input?.frontId instanceof File) || !(input?.backId instanceof File)
-        || !(input?.selfie instanceof File) || !input.idVerificationToken) {
-        onState({ status: 'failed', code: 'EVIDENCE_REQUIRED', message: 'Verify both sides of your ID and confirm your selfie first.' });
+        || !(input?.selfie instanceof File) || !(input?.selfieRight instanceof File)
+        || !(input?.selfieLeft instanceof File) || !input.idVerificationToken) {
+        onState({ status: 'failed', code: 'EVIDENCE_REQUIRED', message: 'Verify both sides of your ID and capture your front, right and left views first.' });
         return false;
       }
       const controller = new AbortController();
@@ -57,6 +59,8 @@ export function createFaceCheckController({ request = fetch, onState = () => {} 
       body.set('frontId', input.frontId);
       body.set('backId', input.backId);
       body.set('selfie', input.selfie);
+      body.set('selfieRight', input.selfieRight);
+      body.set('selfieLeft', input.selfieLeft);
       body.set('idVerificationToken', input.idVerificationToken);
       try {
         const response = await request('/api/auth/register/face-check', { method: 'POST', body, signal: controller.signal });

@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Unmodified, checksum-verified upstream MediaPipe browser runtime only.
+    "public/models/selfie-guidance/**/vision_bundle.js",
+    "public/models/selfie-guidance/**/wasm/**",
   ]),
 ]);
 

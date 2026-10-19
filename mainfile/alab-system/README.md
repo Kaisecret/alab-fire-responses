@@ -27,6 +27,14 @@ To learn more about Next.js, take a look at the following resources:
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
+## Resident signup verification
+
+Signup keeps six steps: personal details, address, both ID sides, guided selfie, account security, and phone verification. A successful ID check opens the selfie step automatically. The selfie camera uses a pinned, locally served MediaPipe Face Landmarker to check centering, face size, head direction and a continuous steady hold before capturing front, right and left views. Inference runs in the browser; frames are not sent to MediaPipe or Gemini. Each photo is confirmed before use and can be retaken separately.
+
+The server requires all three photos and compares only the front selfie with the ID portrait using the bundled OpenCV YuNet/SFace models. Signed verification proofs bind both ID images and all three selfie source files. Registration still requires phone OTP. The three confirmed views are stored as a labelled contact sheet in the existing private evidence bucket; no database migration is needed. Existing resident correction submissions retain their single-selfie capture.
+
+Position and head-turn checks are capture guidance, not certified anti-spoofing or proof that an ID is genuine. Face matching can reject genuine matches or accept incorrect ones; evaluate it with a consented test set before real use. No personal photographs are included in automated tests. Model provenance and licenses are recorded beside the bundled model assets.
+
 ## BFP mobile app production connection
 
 The Flutter BFP responder app uses the deployed ALAB API, not a direct Supabase database connection. Keep `DATABASE_URL` and a 32+-character `AUTH_SECRET` configured only in the Vercel project environment. Never place either value, a Supabase secret key, or a service-role key in the Flutter app.

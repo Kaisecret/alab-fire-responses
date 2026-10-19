@@ -6,13 +6,14 @@ import { signIdVerification } from "../lib/resident-applications/id-verification
 
 const SECRET = "resident-face-test-secret-with-at-least-32-characters";
 const now = Date.UTC(2026, 9, 19);
-const evidence = { sha256: "a".repeat(64), backSha256: "b".repeat(64), selfieSha256: "c".repeat(64), name: "juan|dela cruz", score: 0.75, threshold: 0.363 };
+const evidence = { sha256: "a".repeat(64), backSha256: "b".repeat(64), selfieSha256: "c".repeat(64), selfieRightSha256: "d".repeat(64), selfieLeftSha256: "e".repeat(64), name: "juan|dela cruz", score: 0.75, threshold: 0.363 };
 const modulePath = "../lib/resident-applications/face-verification-token.mjs";
 
 test("face proofs bind every image, name and server comparison and expire after 30 minutes", async () => {
   const { signFaceVerification, readFaceVerification } = await import(modulePath);
   const token = signFaceVerification(evidence, SECRET, now);
   const proof = readFaceVerification(token, SECRET, now + 29 * 60_000);
+  assert.equal(proof.v, 2);
   for (const [key, value] of Object.entries(evidence)) assert.equal(proof[key], value);
   assert.equal(readFaceVerification(token, SECRET, now + 30 * 60_000), null);
   assert.equal(readFaceVerification(token, "a-different-secret-of-at-least-32-characters", now), null);
@@ -20,7 +21,7 @@ test("face proofs bind every image, name and server comparison and expire after 
   assert.equal(readFaceVerification(` ${token}`, SECRET, now), null);
   assert.equal(readFaceVerification(token, "short", now), null);
   const [encoded, signature] = token.split(".");
-  for (const field of ["sha256", "backSha256", "selfieSha256", "name", "score", "threshold"]) {
+  for (const field of ["sha256", "backSha256", "selfieSha256", "selfieRightSha256", "selfieLeftSha256", "name", "score", "threshold"]) {
     const data = JSON.parse(Buffer.from(encoded, "base64url").toString());
     data[field] = typeof data[field] === "number" ? 0 : "changed";
     assert.equal(readFaceVerification(`${Buffer.from(JSON.stringify(data)).toString("base64url")}.${signature}`, SECRET, now), null, field);
@@ -29,7 +30,7 @@ test("face proofs bind every image, name and server comparison and expire after 
 
 test("invalid payloads and cross-purpose signatures cannot create a face pass", async () => {
   const { signFaceVerification, readFaceVerification } = await import(modulePath);
-  for (const change of [{ score: NaN }, { score: 0.2 }, { threshold: Infinity }, { selfieSha256: "bad" }, { name: "|" }, { backSha256: null }]) {
+  for (const change of [{ score: NaN }, { score: 0.2 }, { threshold: Infinity }, { selfieSha256: "bad" }, { selfieRightSha256: undefined }, { selfieLeftSha256: "bad" }, { name: "|" }, { backSha256: null }]) {
     assert.throws(() => signFaceVerification({ ...evidence, ...change }, SECRET, now));
   }
   assert.throws(() => signFaceVerification(evidence, "short", now));
@@ -39,6 +40,16 @@ test("invalid payloads and cross-purpose signatures cannot create a face pass", 
   assert.equal(readFaceVerification(`${payload}.${idSignature}`, SECRET, now), null);
   const idToken = signIdVerification({ ...evidence, firstName: "Juan", lastName: "Dela Cruz" }, SECRET, now);
   assert.equal(readFaceVerification(idToken, SECRET, now), null);
+});
+
+test("single-view v1 proofs cannot authorize the three-view signup", async () => {
+  const { readFaceVerification } = await import(modulePath);
+  const singleView = { ...evidence }; delete singleView.selfieRightSha256; delete singleView.selfieLeftSha256;
+  const payload = Buffer.from(JSON.stringify({ v: 1, ...singleView, iat: now, exp: now + 30 * 60_000 })).toString("base64url");
+  const signature = createHmac("sha256", SECRET).update(`resident-face-verification:v1:${payload}`).digest("base64url");
+  assert.equal(readFaceVerification(`${payload}.${signature}`, SECRET, now), null);
+  const v2Signature = createHmac("sha256", SECRET).update(`resident-face-verification:v2:${payload}`).digest("base64url");
+  assert.equal(readFaceVerification(`${payload}.${v2Signature}`, SECRET, now), null);
 });
 
 test("only a current complete strictly parsed ID proof can authorize comparison", async () => {

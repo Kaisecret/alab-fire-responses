@@ -8,6 +8,10 @@ import { antiqueBarangays } from "../_content/antique-barangays";
 import { composeResidentAddress } from "../../lib/resident-applications/compose-address.mjs";
 import { shrinkPhoto } from "../_lib/shrink-photo";
 import { createFaceCheckController } from "../../lib/resident-applications/face-check-client.mjs";
+import { createSelfieViewCollection, SELFIE_VIEWS } from "../../lib/resident-applications/selfie-views-client.mjs";
+import { startSelfieGuidance } from "../../lib/resident-applications/selfie-guidance";
+
+type SelfieView = "front" | "right" | "left";
 
 const visibleEye = `
   <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
@@ -57,6 +61,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     let selfieTaken = false;
     let pendingSelfieBlob: Blob | null = null;
     let selfieFile: File | null = null;
+    const selfieViews = createSelfieViewCollection();
+    const selfieUrls = new Map<SelfieView, string>();
     let disposed = false;
     let faceMatchState: "idle" | "checking" | "verified" | "failed" = "idle";
 
@@ -131,11 +137,17 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const retakeSelfieBtn = root.querySelector<HTMLButtonElement>("#retakeSelfie");
     const useSelfieBtn = root.querySelector<HTMLButtonElement>("#useSelfie");
     const selfieReviewActions = root.querySelector<HTMLElement>("#selfieReviewActions");
+    const selfieCameraHeading = root.querySelector<HTMLElement>("#selfieCameraHeading");
+    const selfieCameraProgress = root.querySelector<HTMLElement>("#selfieCameraProgress");
+    const selfieCameraRetry = root.querySelector<HTMLButtonElement>("#selfieCameraRetry");
+    const selfieCount = root.querySelector<HTMLElement>("#selfieCount");
+    const selfieMain = root.querySelector<HTMLElement>("#selfieMain");
     let selfieStream: MediaStream | null = null;
 
     function currentFaceEvidence() {
-      return frontFile && backFile && selfieFile && idVerificationToken
-        ? { frontId: frontFile, backId: backFile, selfie: selfieFile, idVerificationToken }
+      const views = selfieViews.evidence();
+      return frontFile && backFile && views && idVerificationToken
+        ? { frontId: frontFile, backId: backFile, ...views, idVerificationToken }
         : null;
     }
 
@@ -768,39 +780,68 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     dropzoneBack?.addEventListener("click", handleDropzoneClick);
 
     function showSelfieCaptured() {
-      selfieTaken = true;
-      selfieSection?.classList.add("has-capture");
-      selfieCapture?.classList.add("has-capture");
-      if (selfieCapture) {
-        const textArea = selfieCapture.querySelector(".selfie-text");
-        if (textArea) {
-          textArea.innerHTML = `
-            <span class="selfie-done">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #22c55e;">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-              Selfie captured successfully
-            </span>
-            <span class="selfie-hint">Click again to retake</span>
-          `;
+      selfieTaken = selfieViews.count() === 3;
+      selfieFile = selfieViews.get("front");
+      selfieSection?.classList.toggle("has-capture", selfieTaken);
+      selfieCapture?.classList.toggle("has-capture", selfieTaken);
+      if (selfieCount) selfieCount.textContent = `${selfieViews.count()} of 3 photos captured`;
+      if (selfieMain) selfieMain.textContent = selfieTaken ? "Three views captured" : "Continue guided selfie";
+      for (const view of SELFIE_VIEWS) {
+        const image = root?.querySelector<HTMLImageElement>(`#selfieThumb${view.label}`);
+        const retake = root?.querySelector<HTMLButtonElement>(`#retakeSelfie${view.label}`);
+        if (image && selfieUrls.has(view.key)) {
+          image.src = selfieUrls.get(view.key)!;
+          image.hidden = false;
         }
+        if (retake) retake.disabled = !selfieViews.get(view.key);
       }
+      updateContinueState();
     }
 
+    let activeSelfieView: SelfieView = "front";
+    let cameraAttempt = 0;
+    let captureBusy = false;
+    let confirmationBusy = false;
+    let guidanceReady = false;
+    let guidanceController: AbortController | null = null;
+    let guidanceSession: { stop: () => void } | null = null;
+    let pendingSelfieUrl: string | null = null;
+    let previousBodyOverflow: string | null = null;
+
+    const releaseGuidance = () => {
+      guidanceController?.abort();
+      guidanceController = null;
+      guidanceSession?.stop();
+      guidanceSession = null;
+      guidanceReady = false;
+    };
+    const releasePreviewUrl = () => {
+      if (pendingSelfieUrl) URL.revokeObjectURL(pendingSelfieUrl);
+      pendingSelfieUrl = null;
+    };
     const resetSelfieCameraUi = () => {
+      releasePreviewUrl();
+      pendingSelfieBlob = null;
+      captureBusy = false;
+      confirmationBusy = false;
       if (selfieVideo) selfieVideo.hidden = false;
       if (selfiePreview) {
         selfiePreview.hidden = true;
         selfiePreview.removeAttribute("src");
       }
       selfieFaceGuide?.removeAttribute("hidden");
-      if (selfieGuidance) selfieGuidance.textContent = "Use good lighting and make sure your face is clearly visible.";
-      if (captureSelfieBtn) captureSelfieBtn.hidden = false;
+      selfieFaceGuide?.classList.remove("ready");
+      selfieFaceGuide?.style.setProperty("--capture-progress", "0%");
+      if (selfieGuidance) selfieGuidance.textContent = "Opening camera…";
+      if (captureSelfieBtn) { captureSelfieBtn.hidden = false; captureSelfieBtn.disabled = true; }
+      if (useSelfieBtn) useSelfieBtn.disabled = false;
+      if (selfieCameraRetry) selfieCameraRetry.hidden = true;
       if (selfieReviewActions) selfieReviewActions.hidden = true;
     };
 
     const stopSelfieCamera = () => {
+      cameraAttempt++;
+      releaseGuidance();
       selfieStream?.getTracks().forEach((track) => track.stop());
       selfieStream = null;
       if (selfieVideo) selfieVideo.srcObject = null;
@@ -808,9 +849,15 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       selfieCameraPanel?.setAttribute("aria-hidden", "true");
       selfieCapture?.setAttribute("aria-expanded", "false");
       resetSelfieCameraUi();
+      if (previousBodyOverflow !== null) {
+        root.ownerDocument.body.style.overflow = previousBodyOverflow;
+        previousBodyOverflow = null;
+        if (!disposed) selfieCapture?.focus();
+      }
     };
 
     const showSelfieReview = (dataUrl: string) => {
+      releaseGuidance();
       selfieStream?.getTracks().forEach((track) => track.stop());
       selfieStream = null;
       if (selfieVideo) {
@@ -822,30 +869,67 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         selfiePreview.hidden = false;
       }
       selfieFaceGuide?.setAttribute("hidden", "true");
-      if (selfieGuidance) selfieGuidance.textContent = "Does this photo clearly show your face?";
+      if (selfieGuidance) selfieGuidance.textContent = "Is your face clear? Confirm this photo or take it again.";
       if (captureSelfieBtn) captureSelfieBtn.hidden = true;
       if (selfieReviewActions) selfieReviewActions.hidden = false;
     };
 
-    const startSelfieCamera = async () => {
+    const startSelfieCamera = async (view: SelfieView = selfieViews.nextMissing() ?? "front") => {
+      stopSelfieCamera();
+      activeSelfieView = view;
+      const attempt = cameraAttempt;
       if (!navigator.mediaDevices?.getUserMedia || !selfieVideo) {
-        window.alert("Camera access is not supported by this browser.");
+        formStatus.textContent = "Camera access is not supported by this browser. Try a recent Chrome, Safari or Edge browser.";
         return;
       }
-
+      const pose = SELFIE_VIEWS.find(item => item.key === view)!;
       try {
         resetSelfieCameraUi();
+        if (selfieCameraHeading) selfieCameraHeading.textContent = pose.heading;
+        if (selfieCameraProgress) selfieCameraProgress.textContent = `${SELFIE_VIEWS.findIndex(item => item.key === view) + 1} / 3 · ${pose.label} view`;
         selfieCameraPanel?.classList.add("active");
         selfieCameraPanel?.setAttribute("aria-hidden", "false");
         selfieCapture?.setAttribute("aria-expanded", "true");
-        selfieStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "user" } },
+        previousBodyOverflow = root.ownerDocument.body.style.overflow;
+        root.ownerDocument.body.style.overflow = "hidden";
+        cancelSelfieBtn?.focus();
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "user" }, width: { ideal: 1280 }, height: { ideal: 960 } },
           audio: false,
         });
-        selfieVideo.srcObject = selfieStream;
+        if (disposed || attempt !== cameraAttempt) { stream.getTracks().forEach(track => track.stop()); return; }
+        selfieStream = stream;
+        selfieVideo.srcObject = stream;
+        await selfieVideo.play();
+        if (disposed || attempt !== cameraAttempt) return;
+        if (selfieGuidance) selfieGuidance.textContent = "Preparing face guidance…";
+        if (!selfieFaceGuide) throw new Error("Missing face guide");
+        guidanceController = new AbortController();
+        const session = await startSelfieGuidance({
+          video: selfieVideo, guide: selfieFaceGuide, view, signal: guidanceController.signal,
+          onUpdate: (state) => {
+            if (disposed || attempt !== cameraAttempt || captureBusy || pendingSelfieBlob) return;
+            guidanceReady = state.ready;
+            if (selfieGuidance) selfieGuidance.textContent = state.message;
+            if (state.code === "unavailable" && selfieCameraRetry) selfieCameraRetry.hidden = false;
+            selfieFaceGuide.classList.toggle("ready", state.ready);
+            selfieFaceGuide.style.setProperty("--capture-progress", `${Math.round(state.progress * 100)}%`);
+            // Manual capture uses the same sustained-position gate as auto capture.
+            if (captureSelfieBtn) captureSelfieBtn.disabled = !state.ready || state.progress < 1;
+          },
+          onReady: () => {
+            if (!disposed && attempt === cameraAttempt && !captureBusy && !pendingSelfieBlob) handleCaptureSelfie();
+          },
+        });
+        if (disposed || attempt !== cameraAttempt || pendingSelfieBlob) session.stop();
+        else guidanceSession = session;
       } catch {
-        stopSelfieCamera();
-        window.alert("Unable to open the camera. Please allow camera access and try again.");
+        if (disposed || attempt !== cameraAttempt) return;
+        releaseGuidance();
+        selfieStream?.getTracks().forEach(track => track.stop()); selfieStream = null;
+        selfieVideo.srcObject = null;
+        if (selfieGuidance) selfieGuidance.textContent = "We couldn’t start face guidance. Allow camera access, check your connection and try again.";
+        if (selfieCameraRetry) selfieCameraRetry.hidden = false;
       }
     };
 
@@ -854,53 +938,87 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     };
 
     const handleCaptureSelfie = () => {
-      if (!selfieStream || !selfieVideo || selfieVideo.videoWidth === 0) {
-        window.alert("Please wait for the camera preview before taking the selfie.");
-        return;
-      }
-
+      if (!guidanceReady || captureSelfieBtn?.disabled || captureBusy || pendingSelfieBlob
+        || !selfieStream || !selfieVideo || selfieVideo.readyState < 2 || !selfieVideo.videoWidth || !selfieVideo.videoHeight) return;
+      const attempt = cameraAttempt;
+      captureBusy = true;
+      if (captureSelfieBtn) captureSelfieBtn.disabled = true;
       const frame = root.ownerDocument.createElement("canvas");
-      frame.width = selfieVideo.videoWidth;
-      frame.height = selfieVideo.videoHeight;
+      const scale = Math.min(1, 1280 / Math.max(selfieVideo.videoWidth, selfieVideo.videoHeight));
+      frame.width = Math.round(selfieVideo.videoWidth * scale);
+      frame.height = Math.round(selfieVideo.videoHeight * scale);
       frame.getContext("2d")?.drawImage(selfieVideo, 0, 0, frame.width, frame.height);
       frame.toBlob((blob) => {
+        if (disposed || attempt !== cameraAttempt) return;
         if (!blob) {
-          window.alert("Unable to capture the selfie. Please try again.");
+          captureBusy = false;
+          void startSelfieCamera(activeSelfieView);
           return;
         }
         pendingSelfieBlob = blob;
-        showSelfieReview(URL.createObjectURL(blob));
-      }, "image/jpeg", 0.92);
+        pendingSelfieUrl = URL.createObjectURL(blob);
+        showSelfieReview(pendingSelfieUrl);
+      }, "image/jpeg", 0.88);
     };
 
     const handleUseSelfie = async () => {
-      if (!pendingSelfieBlob) {
-        window.alert("Take a clear selfie before continuing.");
-        return;
-      }
+      if (!pendingSelfieBlob || confirmationBusy) return;
+      const attempt = cameraAttempt;
+      const view = activeSelfieView;
+      confirmationBusy = true;
       if (useSelfieBtn) useSelfieBtn.disabled = true;
-      faceCheckController.invalidate();
       try {
-        const confirmed = await shrinkPhoto(new File([pendingSelfieBlob], `resident-selfie-${Date.now()}.jpg`, { type: "image/jpeg" }), { maxSize: 1280, maxBytes: 800 * 1024 });
-        if (disposed) return;
-        selfieFile = confirmed;
+        const confirmed = await shrinkPhoto(new File([pendingSelfieBlob], `resident-selfie-${view}-${Date.now()}.jpg`, { type: "image/jpeg" }), { maxSize: 1280, maxBytes: 350 * 1024 });
+        if (disposed || attempt !== cameraAttempt) return;
+        if (confirmed.size > 350 * 1024) throw new Error("PHOTO_TOO_LARGE");
+        faceCheckController.invalidate();
+        selfieViews.set(view, confirmed);
+        const previous = selfieUrls.get(view);
+        if (previous) URL.revokeObjectURL(previous);
+        selfieUrls.set(view, URL.createObjectURL(confirmed));
         stopSelfieCamera();
         showSelfieCaptured();
-        await verifyConfirmedSelfie();
+        const next = selfieViews.nextMissing();
+        if (next) await startSelfieCamera(next);
+        else await verifyConfirmedSelfie();
+      } catch {
+        if (!disposed && attempt === cameraAttempt && selfieGuidance) selfieGuidance.textContent = "Unable to prepare this photo. Please retake it.";
       } finally {
-        if (useSelfieBtn) useSelfieBtn.disabled = false;
+        if (attempt === cameraAttempt) {
+          confirmationBusy = false;
+          if (useSelfieBtn) useSelfieBtn.disabled = false;
+        }
       }
     };
 
     const handleRetakeSelfie = async () => {
-      await startSelfieCamera();
+      await startSelfieCamera(activeSelfieView);
     };
+
+    const viewRetakeHandlers = SELFIE_VIEWS.map(view => {
+      const button = root.querySelector<HTMLButtonElement>(`#retakeSelfie${view.label}`);
+      const handler = () => { if (selfieViews.get(view.key)) void startSelfieCamera(view.key); };
+      button?.addEventListener("click", handler);
+      return () => button?.removeEventListener("click", handler);
+    });
+    const handleCameraKey = (event: KeyboardEvent) => {
+      if (!selfieCameraPanel?.classList.contains("active")) return;
+      if (event.key === "Escape") { event.preventDefault(); stopSelfieCamera(); }
+      if (event.key === "Tab") {
+        const buttons = Array.from(selfieCameraPanel.querySelectorAll<HTMLButtonElement>("button")).filter(button => !button.hidden && !button.disabled && button.getClientRects().length > 0);
+        const first = buttons[0], last = buttons.at(-1);
+        if (event.shiftKey && root.ownerDocument.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && root.ownerDocument.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
+    selfieCameraPanel?.addEventListener("keydown", handleCameraKey);
 
     selfieCapture?.addEventListener("click", handleSelfieClick);
     captureSelfieBtn?.addEventListener("click", handleCaptureSelfie);
     cancelSelfieBtn?.addEventListener("click", stopSelfieCamera);
     retakeSelfieBtn?.addEventListener("click", handleRetakeSelfie);
     useSelfieBtn?.addEventListener("click", handleUseSelfie);
+    selfieCameraRetry?.addEventListener("click", handleRetakeSelfie);
 
     // Password toggle handler factory
     function makeToggle(field: HTMLInputElement | null, btn: HTMLButtonElement | null) {
@@ -1105,7 +1223,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         completeButton.textContent = "Creating your account…";
         status.textContent = "";
         try {
-          if (!frontFile || !backFile || !selfieFile) throw new Error("MISSING_EVIDENCE");
+          const views = selfieViews.evidence();
+          if (!frontFile || !backFile || !views) throw new Error("MISSING_EVIDENCE");
           if (!idVerificationToken) {
             completeButton.disabled = false;
             completeButton.textContent = "Create my account";
@@ -1126,7 +1245,9 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
           registration.set("faceVerificationToken", faceVerificationToken);
           registration.set("frontId", frontFile);
           registration.set("backId", backFile);
-          registration.set("selfie", selfieFile);
+          registration.set("selfie", views.selfie);
+          registration.set("selfieRight", views.selfieRight);
+          registration.set("selfieLeft", views.selfieLeft);
           const register = await fetch("/api/auth/register", { method: "POST", body: registration });
           if (!register.ok) {
             const failed = await register.json() as { error?: string; code?: string };
@@ -1333,7 +1454,13 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       cancelSelfieBtn?.removeEventListener("click", stopSelfieCamera);
       retakeSelfieBtn?.removeEventListener("click", handleRetakeSelfie);
       useSelfieBtn?.removeEventListener("click", handleUseSelfie);
+      selfieCameraRetry?.removeEventListener("click", handleRetakeSelfie);
+      selfieCameraPanel?.removeEventListener("keydown", handleCameraKey);
+      viewRetakeHandlers.forEach(remove => remove());
       stopSelfieCamera();
+      selfieUrls.forEach(url => URL.revokeObjectURL(url));
+      selfieUrls.clear();
+      selfieViews.clear();
       cleanupDragFront?.();
       cleanupDragBack?.();
     };

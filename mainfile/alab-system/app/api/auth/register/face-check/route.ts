@@ -75,17 +75,22 @@ export async function POST(request: Request) {
   const idProof = form.getAll("idVerificationToken").length === 1 && typeof token === "string"
     ? readBoundIdVerification(token, secret) : null;
   if (!idProof) return fail("ID_NOT_VERIFIED", "Verify both sides of your ID before confirming your selfie.", 400);
+  if (["selfie", "selfieRight", "selfieLeft"].some(key => !form.has(key))) {
+    return fail("SELFIE_VIEWS_REQUIRED", "Capture your front, right-side and left-side selfie photos before confirming.", 400);
+  }
   if (!allowCheck(request)) return fail("TOO_MANY_CHECKS", "Too many selfie checks. Please wait a few minutes and try again.", 429);
 
   let sharp: typeof Sharp;
   try { sharp = (await import("sharp")).default; } catch {
     return fail("SERVICE_UNAVAILABLE", "Selfie checking is not available right now. Please try again shortly.", 503);
   }
-  let front: Buffer; let back: Buffer; let selfie: Buffer;
+  let front: Buffer; let back: Buffer; let selfie: Buffer; let selfieRight: Buffer; let selfieLeft: Buffer;
   try {
     front = await imageBytes(form, "frontId", sharp);
     back = await imageBytes(form, "backId", sharp);
     selfie = await imageBytes(form, "selfie", sharp);
+    selfieRight = await imageBytes(form, "selfieRight", sharp);
+    selfieLeft = await imageBytes(form, "selfieLeft", sharp);
   } catch {
     return fail("INVALID_IMAGE", "Use clear JPG, PNG or WebP photos up to 6 MB and 5000 pixels per side. Upload your ID or retake your selfie again.", 400);
   }
@@ -94,10 +99,12 @@ export async function POST(request: Request) {
   if (idProof.sha256 !== sha256 || idProof.backSha256 !== backSha256) return fail("ID_NOT_VERIFIED", "Your ID photos changed. Verify both sides of your ID again before confirming your selfie.", 400);
 
   try {
+    // Only the front-facing capture is compared. Side views are validated
+    // evidence; collecting them does not establish pose or certified liveness.
     const outcome = await compareResidentFaces(front, selfie);
     if (!outcome.ok) return fail(outcome.code, outcome.message, /^(FACE_)?SERVICE_(UNAVAILABLE|BUSY)$/.test(outcome.code) ? 503 : 422);
     // The signer rejects non-finite, out-of-range or below-threshold results.
-    const faceToken = signFaceVerification({ sha256, backSha256, selfieSha256: evidenceSha256(selfie), name: idProof.name, score: outcome.score, threshold: outcome.threshold }, secret);
+    const faceToken = signFaceVerification({ sha256, backSha256, selfieSha256: evidenceSha256(selfie), selfieRightSha256: evidenceSha256(selfieRight), selfieLeftSha256: evidenceSha256(selfieLeft), name: idProof.name, score: outcome.score, threshold: outcome.threshold }, secret);
     return NextResponse.json({ verified: true, token: faceToken });
   } catch {
     return fail("SERVICE_UNAVAILABLE", "Selfie checking is not available right now. Please try again shortly.", 503);

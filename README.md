@@ -41,6 +41,8 @@ ALAB addresses these information and coordination problems by bringing reporting
 
 Each user receives access according to their role and authorized responsibilities.
 
+Resident signup checks the front and back of an ID, then guides three camera photos: front, right and left. The camera checks face position and captures after a steady hold. The server compares the front selfie with the ID portrait and requires phone OTP verification. See [signup implementation notes](mainfile/alab-system/README.md#resident-signup-verification) for the components and limits.
+
 ## How does the response workflow work?
 
 1. A resident submits a fire report with the available location and incident details. Authorized BFP personnel can also record incidents received by phone.

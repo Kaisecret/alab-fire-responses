@@ -1,0 +1,224 @@
+import type { FaceLandmarker } from "@mediapipe/tasks-vision";
+import { createSelfieGuidanceGate } from "./selfie-guidance-math.mjs";
+
+export type SelfieGuidanceState = { ready: boolean; progress: number; message: string; code: string };
+type Landmark = { x: number; y: number; z: number };
+type Runtime = { detect(canvas: HTMLCanvasElement, timestamp: number): Promise<Landmark[][]>; close(): void };
+type GuidanceOptions = {
+  video: HTMLVideoElement;
+  guide: HTMLElement;
+  view: "front" | "right" | "left";
+  onUpdate(state: SelfieGuidanceState): void;
+  onReady(): void;
+  signal?: AbortSignal;
+};
+
+const ASSET_ROOT = "/models/selfie-guidance/mediapipe-1.1.1-face-landmarker-1";
+const abortError = () => new DOMException("Selfie guidance stopped.", "AbortError");
+const checkAborted = (signal: AbortSignal) => { if (signal.aborted) throw abortError(); };
+
+async function createWorkerRuntime(signal: AbortSignal): Promise<Runtime> {
+  checkAborted(signal);
+  const worker = new Worker(`${ASSET_ROOT}/worker.js`);
+  let closed = false;
+  let pending: { resolve(faces: Landmark[][]): void; reject(error: Error): void; timeout: number } | null = null;
+  let readyResolve: (() => void) | null = null;
+  let readyReject: ((error: Error) => void) | null = null;
+  const ready = new Promise<void>((resolve, reject) => { readyResolve = resolve; readyReject = reject; });
+  const timeout = window.setTimeout(() => fail(new Error("Face guidance took too long to load.")), 25_000);
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    window.clearTimeout(timeout);
+    signal.removeEventListener("abort", close);
+    worker.onmessage = null;
+    worker.onerror = null;
+    worker.terminate();
+    readyReject?.(abortError());
+    readyReject = null;
+    if (pending) window.clearTimeout(pending.timeout);
+    pending?.reject(abortError());
+    pending = null;
+  };
+  const fail = (error: Error) => {
+    readyReject?.(error);
+    readyReject = null;
+    if (pending) window.clearTimeout(pending.timeout);
+    pending?.reject(error);
+    pending = null;
+    close();
+  };
+  signal.addEventListener("abort", close, { once: true });
+  worker.onerror = () => fail(new Error("Face guidance worker is unavailable."));
+  worker.onmessage = (event: MessageEvent) => {
+    if (closed) return;
+    const data = event.data;
+    if (data?.type === "ready") {
+      window.clearTimeout(timeout);
+      readyReject = null;
+      readyResolve?.();
+      readyResolve = null;
+    } else if (data?.type === "result") {
+      const request = pending;
+      pending = null;
+      if (request) window.clearTimeout(request.timeout);
+      request?.resolve(data.faces);
+    } else if (data?.type === "error") {
+      fail(new Error("Face guidance could not process the camera."));
+    }
+  };
+  try {
+    worker.postMessage({ type: "init" });
+    await ready;
+    checkAborted(signal);
+  } catch (error) {
+    close();
+    throw error;
+  }
+  return {
+    async detect(canvas, timestamp) {
+      if (closed || pending) throw abortError();
+      const bitmap = await createImageBitmap(canvas);
+      if (closed) { bitmap.close(); throw abortError(); }
+      return new Promise<Landmark[][]>((resolve, reject) => {
+        pending = {
+          resolve, reject,
+          timeout: window.setTimeout(() => fail(new Error("Face guidance inference timed out.")), 10_000),
+        };
+        try {
+          worker.postMessage({ type: "frame", bitmap, timestamp }, [bitmap]);
+        } catch (error) {
+          bitmap.close();
+          if (pending) window.clearTimeout(pending.timeout);
+          pending = null;
+          reject(error);
+        }
+      });
+    },
+    close,
+  };
+}
+
+async function createCpuRuntime(signal: AbortSignal): Promise<Runtime> {
+  const { FaceLandmarker, FilesetResolver } = await import("@mediapipe/tasks-vision");
+  checkAborted(signal);
+  const files = await FilesetResolver.forVisionTasks(`${ASSET_ROOT}/wasm`);
+  checkAborted(signal);
+  const task: FaceLandmarker = await FaceLandmarker.createFromOptions(files, {
+    baseOptions: { modelAssetPath: `${ASSET_ROOT}/face_landmarker.task`, delegate: "CPU" },
+    runningMode: "VIDEO",
+    numFaces: 2,
+    minFaceDetectionConfidence: 0.65,
+    minFacePresenceConfidence: 0.65,
+    minTrackingConfidence: 0.65,
+    outputFaceBlendshapes: false,
+    outputFacialTransformationMatrixes: false,
+  });
+  if (signal.aborted) { task.close(); throw abortError(); }
+  let closed = false;
+  return {
+    async detect(canvas, timestamp) {
+      if (closed) throw abortError();
+      return task.detectForVideo(canvas, timestamp).faceLandmarks;
+    },
+    close() { if (!closed) { closed = true; task.close(); } },
+  };
+}
+
+async function createRuntime(signal: AbortSignal): Promise<Runtime> {
+  if (typeof Worker !== "undefined" && typeof OffscreenCanvas !== "undefined" && typeof createImageBitmap === "function") {
+    try { return await createWorkerRuntime(signal); }
+    catch { checkAborted(signal); }
+  }
+  return createCpuRuntime(signal);
+}
+
+/**
+ * Starts local pose/centering guidance for ONE requested view. All frames stay
+ * in memory; only bundled same-origin model/runtime assets are fetched. A private
+ * worker does CPU inference where supported, with a throttled CPU fallback.
+ * progress is [0, 1] for a continuous 900ms hold with at least four stable
+ * detections, never a timer-only pose.
+ * onReady fires once and releases inference. The caller owns the camera stream.
+ */
+export async function startSelfieGuidance({ video, guide, view, onUpdate, onReady, signal }: GuidanceOptions): Promise<{ stop(): void }> {
+  if (typeof window === "undefined" || typeof document === "undefined") throw new Error("Selfie guidance needs a browser.");
+  if (signal?.aborted) throw abortError();
+  const abort = new AbortController();
+  let stopped = false;
+  let runtime: Runtime | null = null;
+  let timer: number | undefined;
+  let canvas: HTMLCanvasElement | null = null;
+  let gate: ReturnType<typeof createSelfieGuidanceGate> | null = null;
+  function stop() {
+    if (stopped) return;
+    stopped = true;
+    abort.abort();
+    signal?.removeEventListener("abort", stop);
+    if (timer !== undefined) window.clearTimeout(timer);
+    gate?.stop();
+    runtime?.close();
+    if (canvas) { canvas.width = 0; canvas.height = 0; }
+  }
+  signal?.addEventListener("abort", stop, { once: true });
+  try {
+    onUpdate({ ready: false, progress: 0, code: "loading", message: "Preparing face guidance on this device..." });
+    runtime = await createRuntime(abort.signal);
+    if (stopped) { runtime.close(); throw abortError(); }
+    canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context) throw new Error("This browser cannot prepare the camera image.");
+    gate = createSelfieGuidanceGate({ view, onUpdate, onReady, onStop: stop });
+    let lastVideoTime = -1;
+    const layout = (faces: Landmark[][]) => ({
+      faces,
+      videoWidth: video.videoWidth,
+      videoHeight: video.videoHeight,
+      videoRect: video.getBoundingClientRect(),
+      guideRect: guide.getBoundingClientRect(),
+      mirrored: true,
+    });
+    const cameraReady = () => document.visibilityState !== "hidden" && !video.paused && !video.ended && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0;
+    const tick = async () => {
+      if (stopped || !canvas || !runtime || !gate) return;
+      try {
+        if (!cameraReady()) {
+          gate.sample({ ...layout([]), videoWidth: 0 }, performance.now());
+        } else if (video.currentTime !== lastVideoTime) {
+          lastVideoTime = video.currentTime;
+          const inputWidth = video.videoWidth;
+          const inputHeight = video.videoHeight;
+          const scale = Math.min(1, 640 / Math.max(inputWidth, inputHeight));
+          const width = Math.max(1, Math.round(inputWidth * scale));
+          const height = Math.max(1, Math.round(inputHeight * scale));
+          if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+          // drawImage does not apply the <video>'s CSS scaleX(-1).
+          context.drawImage(video, 0, 0, width, height);
+          const faces = await runtime.detect(canvas, performance.now());
+          if (!stopped) {
+            // A worker result may return after backgrounding, pausing, or a
+            // camera orientation change. Never use that stale frame to capture.
+            if (!cameraReady() || video.videoWidth !== inputWidth || video.videoHeight !== inputHeight) {
+              gate.sample({ ...layout([]), videoWidth: 0 }, performance.now());
+            } else {
+              gate.sample(layout(faces), performance.now());
+            }
+          }
+        }
+      } catch {
+        if (!stopped) {
+          onUpdate({ ready: false, progress: 0, code: "unavailable", message: "Face guidance stopped. Reopen the camera to try again." });
+          stop();
+        }
+      } finally {
+        // Schedule only after inference settles: <= 5.6fps, one frame in flight.
+        if (!stopped) timer = window.setTimeout(tick, 180);
+      }
+    };
+    timer = window.setTimeout(tick, 0);
+    return { stop };
+  } catch (error) {
+    stop();
+    throw error;
+  }
+}

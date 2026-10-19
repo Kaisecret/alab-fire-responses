@@ -1060,6 +1060,21 @@ export const signupStyles = `
         }
 
         /* Selfie / Camera section */
+        .selfie-view-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8rem; margin: 1rem 0 0; }
+        .selfie-view { display: grid; justify-items: center; gap: 0.4rem; font-size: 0.8rem; color: #334155; }
+        .selfie-view-photo { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 1; max-width: 7rem; overflow: hidden; border-radius: 50% 50% 44% 44%; background: #f1f5f9; border: 1px solid #e2e8f0; color: #94a3b8; font-size: 1.2rem; }
+        .selfie-view-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .selfie-view button { border: 0; background: transparent; color: var(--primary-red); padding: 0.45rem; min-height: 2.75rem; font: inherit; font-weight: 700; cursor: pointer; }
+        .selfie-view button:disabled { color: #94a3b8; cursor: default; }
+        .selfie-count { margin: 0.8rem 0; color: #475569; font-size: 0.78rem; text-align: center; }
+        .selfie-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+        .selfie-camera-heading h3 { margin: 0.4rem 0 0; font-size: 1.2rem; color: white; }
+        #selfieCameraProgress { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #d1d5db; }
+        .selfie-camera-panel button:focus-visible, .selfie-view button:focus-visible { outline: 3px solid #60a5fa; outline-offset: 4px; }
+        .selfie-camera-panel [hidden], .selfie-view [hidden] { display: none !important; }
+        .capture-selfie-btn:disabled { opacity: 0.45; cursor: default; }
+        .selfie-face-guide.ready { border-color: #4ade80; }
+        .selfie-face-guide::after { content: ''; position: absolute; inset: -5px; padding: 4px; border-radius: inherit; background: conic-gradient(#4ade80 var(--capture-progress, 0%), transparent 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; }
         .selfie-section {
             border: 1.5px solid #e2e8f0;
             border-radius: 12px;
@@ -1223,6 +1238,7 @@ export const signupStyles = `
             object-fit: cover;
             object-position: center;
             background: #111827;
+            transform: scaleX(-1);
         }
 
         .selfie-face-guide {
@@ -1655,7 +1671,7 @@ export const signupMarkup = `<main class="signup-container">
 
                 <!-- STEP 4: Selfie comparison -->
                 <div class="step-panel" id="step4">
-                    <p class="verification-intro">Your ID is checked. Take a selfie in good lighting with your whole face visible so we can compare it with your ID photo.</p>
+                    <p class="verification-intro">Your ID is checked. We’ll guide you through three photos: front, right and left. Find good lighting and remove anything covering your face.</p>
                     <!-- Take Selfie -->
                     <div class="selfie-section" id="selfieSection">
                         <div class="upload-header">
@@ -1665,9 +1681,15 @@ export const signupMarkup = `<main class="signup-container">
                                     <circle cx="12" cy="13" r="3"/>
                                 </svg>
                             </div>
-                            <span class="upload-title">Take Selfie</span>
+                            <span class="upload-title">Guided selfie</span>
                         </div>
-                        <button type="button" class="selfie-capture-area" id="selfieCapture">
+                        <div class="selfie-view-list" aria-label="Your three selfie photos">
+                            <div class="selfie-view"><div class="selfie-view-photo"><span aria-hidden="true">1</span><img id="selfieThumbFront" hidden alt="Your front view"></div><strong>Front</strong><button type="button" id="retakeSelfieFront" disabled>Retake<span class="selfie-sr-only"> front view</span></button></div>
+                            <div class="selfie-view"><div class="selfie-view-photo"><span aria-hidden="true">2</span><img id="selfieThumbRight" hidden alt="Your right view"></div><strong>Right</strong><button type="button" id="retakeSelfieRight" disabled>Retake<span class="selfie-sr-only"> right view</span></button></div>
+                            <div class="selfie-view"><div class="selfie-view-photo"><span aria-hidden="true">3</span><img id="selfieThumbLeft" hidden alt="Your left view"></div><strong>Left</strong><button type="button" id="retakeSelfieLeft" disabled>Retake<span class="selfie-sr-only"> left view</span></button></div>
+                        </div>
+                        <p class="selfie-count" id="selfieCount" role="status">0 of 3 photos captured</p>
+                        <button type="button" class="selfie-capture-area" id="selfieCapture" aria-haspopup="dialog" aria-expanded="false">
                             <div class="camera-icon-circle">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
@@ -1675,24 +1697,25 @@ export const signupMarkup = `<main class="signup-container">
                                 </svg>
                             </div>
                             <div class="selfie-text">
-                                <span class="selfie-main">Click to open camera and take a selfie</span>
-                                <span class="selfie-hint">Ensure your face is clearly visible</span>
+                                <span class="selfie-main" id="selfieMain">Start guided selfie</span>
+                                <span class="selfie-hint">Hold steady — each photo captures automatically</span>
                             </div>
                         </button>
-                        <div class="selfie-camera-panel" id="selfieCameraPanel" role="dialog" aria-modal="true" aria-label="Take a verification selfie" aria-hidden="true">
+                        <div class="selfie-camera-panel" id="selfieCameraPanel" role="dialog" aria-modal="true" aria-labelledby="selfieCameraHeading" aria-describedby="selfieCameraGuidance" aria-hidden="true">
                             <div class="selfie-camera-card">
                                 <button type="button" class="selfie-camera-close" id="cancelSelfie" aria-label="Close camera">&times;</button>
-                                <p class="selfie-camera-heading">Center your face in the guide</p>
+                                <div class="selfie-camera-heading"><span id="selfieCameraProgress">1 / 3 · Front view</span><h3 id="selfieCameraHeading">Look straight ahead</h3></div>
                                 <div class="selfie-camera-stage">
                                     <video id="selfieVideo" autoplay playsinline muted></video>
                                     <img id="selfiePreview" hidden alt="Your captured verification selfie">
-                                    <div class="selfie-face-guide" aria-hidden="true"></div>
+                                    <div class="selfie-face-guide" id="selfieFaceGuide" aria-hidden="true"></div>
                                     <div class="selfie-camera-footer">
-                                        <p class="selfie-camera-guidance" id="selfieCameraGuidance">Use good lighting and make sure your face is clearly visible.</p>
-                                        <button type="button" class="capture-selfie-btn" id="captureSelfie" aria-label="Capture selfie"></button>
+                                        <p class="selfie-camera-guidance" id="selfieCameraGuidance" role="status">Center your face in the oval. We’ll capture when you hold steady.</p>
+                                        <button type="button" class="capture-selfie-btn" id="captureSelfie" aria-label="Capture selfie when ready" disabled></button>
+                                        <button type="button" class="retake-selfie-btn" id="selfieCameraRetry" hidden>Try again</button>
                                         <div class="selfie-review-actions" id="selfieReviewActions" hidden>
                                             <button type="button" class="retake-selfie-btn" id="retakeSelfie">Retake</button>
-                                            <button type="button" class="use-selfie-btn" id="useSelfie">Use this selfie</button>
+                                            <button type="button" class="use-selfie-btn" id="useSelfie">Use this photo</button>
                                         </div>
                                     </div>
                                 </div>
