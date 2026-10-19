@@ -61,6 +61,12 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // These upstream bytes are pinned and checksum-verified. Cache them
+      // across camera visits; the ALAB worker and manifest stay revalidated.
+      ...["vision_bundle.js", "face_landmarker.task", "wasm/:file"].map((file) => ({
+        source: `/models/selfie-guidance/mediapipe-1.1.1-face-landmarker-1/${file}`,
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      })),
       {
         source: "/images/:path*",
         headers: [

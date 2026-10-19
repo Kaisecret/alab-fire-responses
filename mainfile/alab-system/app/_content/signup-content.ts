@@ -1073,6 +1073,9 @@ export const signupStyles = `
         .selfie-camera-panel button:focus-visible, .selfie-view button:focus-visible { outline: 3px solid #60a5fa; outline-offset: 4px; }
         .selfie-camera-panel [hidden], .selfie-view [hidden] { display: none !important; }
         .capture-selfie-btn:disabled { opacity: 0.45; cursor: default; }
+        .selfie-camera-panel[data-guidance="loading"] .capture-selfie-btn::after { background: transparent; border: 3px solid white; border-right-color: transparent; box-sizing: border-box; animation: selfie-model-loading .9s linear infinite; }
+        @keyframes selfie-model-loading { to { transform: scale(.65) rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) { .selfie-camera-panel[data-guidance="loading"] .capture-selfie-btn::after { animation: none; transform: scale(.65); } }
         .selfie-face-guide.ready { border-color: #4ade80; }
         .selfie-face-guide::after { content: ''; position: absolute; inset: -5px; padding: 4px; border-radius: inherit; background: conic-gradient(#4ade80 var(--capture-progress, 0%), transparent 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; }
         .selfie-camera-phases { display: flex; justify-content: center; gap: .5rem; margin-top: .85rem; }

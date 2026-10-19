@@ -28,11 +28,9 @@ async function createWorkerRuntime(signal: AbortSignal): Promise<Runtime> {
   let readyResolve: (() => void) | null = null;
   let readyReject: ((error: Error) => void) | null = null;
   const ready = new Promise<void>((resolve, reject) => { readyResolve = resolve; readyReject = reject; });
-  const timeout = window.setTimeout(() => fail(new Error("Face guidance took too long to load.")), 25_000);
   const close = () => {
     if (closed) return;
     closed = true;
-    window.clearTimeout(timeout);
     signal.removeEventListener("abort", close);
     worker.onmessage = null;
     worker.onerror = null;
@@ -57,7 +55,6 @@ async function createWorkerRuntime(signal: AbortSignal): Promise<Runtime> {
     if (closed) return;
     const data = event.data;
     if (data?.type === "ready") {
-      window.clearTimeout(timeout);
       readyReject = null;
       readyResolve?.();
       readyResolve = null;
@@ -133,11 +130,48 @@ async function createCpuRuntime(signal: AbortSignal): Promise<Runtime> {
 }
 
 async function createRuntime(signal: AbortSignal): Promise<Runtime> {
-  if (typeof Worker !== "undefined" && typeof OffscreenCanvas !== "undefined" && typeof createImageBitmap === "function") {
-    try { return await createWorkerRuntime(signal); }
-    catch { checkAborted(signal); }
+  checkAborted(signal);
+  const loadingAbort = new AbortController();
+  const expiresAt = performance.now() + 90_000;
+  let timedOut = false;
+  let initialized: Runtime | null = null;
+  const cancel = () => { loadingAbort.abort(); initialized?.close(); };
+  const expire = () => { timedOut = true; cancel(); };
+  const timeout = window.setTimeout(expire, 90_000);
+  signal.addEventListener("abort", cancel, { once: true });
+  try {
+    const initialize = async () => {
+      if (typeof Worker !== "undefined" && typeof OffscreenCanvas !== "undefined" && typeof createImageBitmap === "function") {
+        try { return await createWorkerRuntime(loadingAbort.signal); }
+        catch {
+          // A deadline or owner cancellation must not restart the same model
+          // download/compile on the main thread. Explicit worker failures may
+          // fall back using only the time left in this initialization budget.
+          checkAborted(loadingAbort.signal);
+        }
+      }
+      return createCpuRuntime(loadingAbort.signal);
+    };
+    const initialization = initialize().then((model) => {
+      initialized = model;
+      // A synchronous compile can postpone the timer callback. Also close a
+      // model that resolves after cancellation while its caller has moved on.
+      if (performance.now() >= expiresAt) expire();
+      if (loadingAbort.signal.aborted) { model.close(); throw abortError(); }
+      return model;
+    });
+    return await untilAborted(initialization, loadingAbort.signal);
+  } catch (error) {
+    if (timedOut) {
+      const timeoutError = new Error("Face guidance took too long to load. Reopen the camera to try again.");
+      timeoutError.name = "SelfieGuidanceInitializationTimeoutError";
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+    signal.removeEventListener("abort", cancel);
   }
-  return createCpuRuntime(signal);
 }
 
 /** Wait cancellation never cancels a runtime that belongs to an open dialog. */

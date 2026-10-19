@@ -62,6 +62,12 @@ call `close()` on cancel, unmount, navigation, error, or final capture; close
 aborts initialization and terminates the worker/closes the CPU task. No global
 model or camera-frame cache is kept. The standalone `startSelfieGuidance` API
 still releases everything when that one view stops or completes.
+Worker startup and any explicit worker-failure CPU fallback share one 90-second
+initialization budget. A slow healthy worker keeps loading within that budget;
+expiry fails with a retry message instead of restarting the model on the main
+thread. Owner cancellation rejects immediately, and any CPU task finishing after
+cancellation or expiry is closed. Per-view abort retains the owner's pending
+initialization and its original deadline for the next view.
 
 The [FaceMesh source documentation](https://github.com/google-ai-edge/mediapipe/blob/master/docs/solutions/face_mesh.md#multi_face_landmarks)
 specifies x/y image normalization, z increasing away from the camera, and z's

@@ -19,7 +19,7 @@ function centeredMesh(yaw = 0) {
   return points;
 }
 
-function harness({ failWorker = false, deferredInit = false, fallbackInferenceMs = 0 } = {}) {
+function harness({ failWorker = false, deferredInit = false, deferredCpuInit = false, fallbackInferenceMs = 0 } = {}) {
   const code = ts.transpileModule(readFileSync(sourceUrl, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   let clock = 0;
   let nextTimer = 0;
@@ -27,7 +27,7 @@ function harness({ failWorker = false, deferredInit = false, fallbackInferenceMs
   const workers = [];
   const canvas = { width: 0, height: 0, getContext: () => ({ drawImage() {} }) };
   const fakeWindow = {
-    setTimeout(fn, delay) { const id = ++nextTimer; timers.set(id, { fn, delay }); return id; },
+    setTimeout(fn, delay) { const id = ++nextTimer; timers.set(id, { fn, delay, dueAt: clock + delay }); return id; },
     clearTimeout(id) { timers.delete(id); },
   };
   class FakeWorker {
@@ -45,10 +45,12 @@ function harness({ failWorker = false, deferredInit = false, fallbackInferenceMs
     respond(faces = []) { this.onmessage?.({ data: { type: "result", faces } }); }
   }
   const fallbackTask = { closed: false, close() { this.closed = true; }, detectForVideo() { clock += fallbackInferenceMs; return { faceLandmarks: [] }; } };
+  let finishCpuInit;
+  const cpuTask = new Promise((resolve) => { finishCpuInit = () => resolve(fallbackTask); });
   const options = [];
   const mediapipe = {
     FilesetResolver: { forVisionTasks: async (url) => ({ wasmLoaderPath: url }) },
-    FaceLandmarker: { createFromOptions: async (_fileset, value) => { options.push(value); return fallbackTask; } },
+    FaceLandmarker: { createFromOptions: async (_fileset, value) => { options.push(value); return deferredCpuInit ? cpuTask : fallbackTask; } },
   };
   const exported = {};
   const document = { createElement: () => canvas, visibilityState: "visible" };
@@ -70,8 +72,163 @@ function harness({ failWorker = false, deferredInit = false, fallbackInferenceMs
     scheduled[1].fn();
     await new Promise((resolve) => setImmediate(resolve));
   }
-  return { start: exported.startSelfieGuidance, createSession: exported.createSelfieGuidanceSession, args, updates, workers, canvas, timers, tick, options, fallbackTask, document, setClock(now) { clock = now; }, get readyCount() { return readyCount; } };
+  async function advance(now) {
+    clock = now;
+    for (;;) {
+      const due = [...timers.entries()].find(([, value]) => value.dueAt <= clock);
+      if (!due) break;
+      timers.delete(due[0]);
+      due[1].fn();
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+  }
+  return { start: exported.startSelfieGuidance, createSession: exported.createSelfieGuidanceSession, args, updates, workers, canvas, timers, tick, advance, finishCpuInit, options, fallbackTask, document, setClock(now) { clock = now; }, get readyCount() { return readyCount; } };
 }
+
+test("a healthy cold worker can finish after 47 seconds without being killed or starting a second model", async () => {
+  const runtime = harness({ deferredInit: true });
+  const owner = runtime.createSession();
+  const starting = owner.start(runtime.args);
+  try {
+    await runtime.advance(47_450);
+    assert.equal(runtime.workers[0].terminated, false);
+    assert.equal(runtime.options.length, 0, "slow download must not trigger a CPU reload");
+    runtime.workers[0].onmessage({ data: { type: "ready" } });
+    const handle = await starting;
+    assert.equal(runtime.workers.length, 1);
+    handle.stop();
+  } finally { owner.close(); await starting.catch(() => {}); }
+});
+
+test("the overall initialization budget expires at 90 seconds without retrying CPU", async () => {
+  const runtime = harness({ deferredInit: true });
+  const owner = runtime.createSession();
+  const starting = owner.start(runtime.args);
+  const rejection = assert.rejects(starting, (error) => error.name === "SelfieGuidanceInitializationTimeoutError");
+  void rejection.catch(() => {});
+  await runtime.advance(90_000);
+  await rejection;
+  assert.equal(runtime.workers[0].terminated, true);
+  assert.equal(runtime.options.length, 0);
+  assert.equal(runtime.timers.size, 0);
+  assert.equal(runtime.readyCount, 0);
+  owner.close();
+});
+
+test("an explicit worker failure can finish CPU fallback within the same remaining budget", async () => {
+  const runtime = harness({ deferredInit: true, deferredCpuInit: true });
+  const owner = runtime.createSession();
+  const starting = owner.start(runtime.args);
+  await runtime.advance(20_000);
+  runtime.workers[0].onmessage({ data: { type: "error" } });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(runtime.options.length, 1);
+  await runtime.advance(85_000);
+  runtime.finishCpuInit();
+  const handle = await starting;
+  assert.equal(runtime.workers[0].terminated, true);
+  assert.equal(runtime.fallbackTask.closed, false);
+  assert.equal([...runtime.timers.values()].filter((timer) => timer.delay > 1000).length, 0);
+  handle.stop();
+  owner.close();
+  assert.equal(runtime.fallbackTask.closed, true);
+});
+
+test("CPU fallback shares the original deadline and closes a task that finishes after expiry", async () => {
+  const runtime = harness({ deferredInit: true, deferredCpuInit: true });
+  const owner = runtime.createSession();
+  const starting = owner.start(runtime.args);
+  // Ensure the old implementation can fail this test without leaving a pending
+  // initialization rejection unobserved when the owner is closed in cleanup.
+  void starting.catch(() => {});
+  try {
+    await runtime.advance(20_000);
+    runtime.workers[0].onmessage({ data: { type: "error" } });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(runtime.options.length, 1);
+    assert.ok([...runtime.timers.values()].some((timer) => timer.dueAt === 90_000), "fallback retains the original total deadline");
+    const rejection = assert.rejects(starting, (error) => error.name === "SelfieGuidanceInitializationTimeoutError");
+    void rejection.catch(() => {});
+    await runtime.advance(90_000);
+    await rejection;
+    const count = runtime.updates.length;
+    runtime.finishCpuInit();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(runtime.fallbackTask.closed, true);
+    assert.equal(runtime.updates.length, count);
+    assert.equal(runtime.timers.size, 0);
+  } finally { owner.close(); runtime.finishCpuInit(); await starting.catch(() => {}); }
+});
+
+test("owner cancellation during CPU initialization rejects immediately and closes its late task", async () => {
+  const runtime = harness({ failWorker: true, deferredCpuInit: true });
+  const owner = runtime.createSession();
+  const starting = owner.start(runtime.args);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(runtime.options.length, 1);
+  const rejection = assert.rejects(starting, { name: "AbortError" });
+  owner.close();
+  await rejection;
+  const count = runtime.updates.length;
+  runtime.finishCpuInit();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(runtime.fallbackTask.closed, true);
+  assert.equal(runtime.updates.length, count);
+  assert.equal(runtime.timers.size, 0);
+});
+
+test("owner cancellation across asynchronous CPU ownership handoffs never leaks the created task", async () => {
+  for (let delay = 0; delay < 12; delay++) {
+    const runtime = harness({ failWorker: true, deferredCpuInit: true });
+    const owner = runtime.createSession();
+    const starting = owner.start(runtime.args);
+    void starting.catch(() => {});
+    await new Promise((resolve) => setImmediate(resolve));
+    runtime.finishCpuInit();
+    const cancel = (remaining) => remaining > 0 ? queueMicrotask(() => cancel(remaining - 1)) : owner.close();
+    cancel(delay);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(runtime.fallbackTask.closed, true, `CPU task is released at cancellation ordering ${delay}`);
+    assert.equal(runtime.timers.size, 0);
+  }
+});
+
+test("per-view abort retains the same cold worker and original owner initialization budget", async () => {
+  const runtime = harness({ deferredInit: true });
+  const owner = runtime.createSession();
+  const abort = new AbortController();
+  const first = owner.start({ ...runtime.args, signal: abort.signal });
+  await runtime.advance(20_000);
+  const rejected = assert.rejects(first, { name: "AbortError" });
+  abort.abort();
+  await rejected;
+  const second = owner.start({ ...runtime.args, view: "left" });
+  try {
+    await runtime.advance(47_450);
+    assert.equal(runtime.workers[0].terminated, false);
+    assert.equal(runtime.options.length, 0);
+    assert.equal(runtime.workers.length, 1);
+    runtime.workers[0].onmessage({ data: { type: "ready" } });
+    const handle = await second;
+    handle.stop();
+  } finally { owner.close(); await second.catch(() => {}); }
+});
+
+test("a delayed event loop cannot accept CPU initialization that already exceeded the total budget", async () => {
+  const runtime = harness({ failWorker: true, deferredCpuInit: true });
+  const owner = runtime.createSession();
+  const starting = owner.start(runtime.args);
+  await new Promise((resolve) => setImmediate(resolve));
+  const rejected = assert.rejects(starting, (error) => error.name === "SelfieGuidanceInitializationTimeoutError");
+  void rejected.catch(() => {});
+  // A synchronous compile can delay the timer callback; elapsed time still wins.
+  runtime.setClock(92_000);
+  runtime.finishCpuInit();
+  await rejected;
+  assert.equal(runtime.fallbackTask.closed, true);
+  assert.equal(runtime.timers.size, 0);
+  owner.close();
+});
 
 test("worker inference has one in-flight small frame and stop cancels timers, worker and callbacks", async () => {
   const runtime = harness();

@@ -823,6 +823,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       if (selfieCueTitle && selfieCueTitle.textContent !== cue.title) selfieCueTitle.textContent = cue.title;
       if (selfieCueDetail && selfieCueDetail.textContent !== cue.detail) selfieCueDetail.textContent = cue.detail;
       selfieFaceGuide?.setAttribute("data-feedback", cue.kind);
+      selfieCameraPanel?.setAttribute("data-guidance", state.code === "loading" ? "loading" : "active");
     };
 
     const releaseGuidance = () => {

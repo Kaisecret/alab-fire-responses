@@ -19,3 +19,11 @@ One dialog owns one lazily initialized detector through all three confirmed view
 The first broad run used a direct Node command that triggered the test suite's explicit database-only failure outside npm. The corrected standard command produced the passing result above. No production database was used to resolve that configuration issue.
 
 This update improves capture guidance. Face-match accuracy and certified liveness are not established by these synthetic tests. Server-side identity comparison, its matching threshold, evidence binding, OTP and private storage were not changed.
+
+## Loading follow-up
+
+Live checks found healthy cold model loads taking 45–77 seconds over the test connection, while the existing 25-second worker deadline would stop and restart initialization on the main thread. A warm load in the same browser took 725ms. These observations describe that connection and test device, not a guaranteed load time.
+
+Initialization now shares one 90-second budget across the worker and any explicit worker-error fallback. Budget expiry asks for a retry without starting CPU initialization again. Cancellation and late-created task cleanup remain bounded. The UI shows an indeterminate loading ring. Only checksum-pinned versioned vendor JS, WASM and model bytes receive immutable caching; ALAB's worker and manifest remain revalidated.
+
+The standard full-suite result above precedes this bounded follow-up. Its final focused run passed all 55 camera, pose, cue and loading tests; the production build and scoped ESLint passed. A real-model production-build browser check confirmed the cache headers, retained worker revalidation and zero faces on blank cold/warm frames. Independent review found no Important issue. No vendor bytes, pose rules, match threshold or signup steps changed in the follow-up.
