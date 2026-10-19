@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build && node scripts/verify-evidence-runtime.mjs",
+    "build": "next build && node scripts/verify-evidence-runtime.mjs && node scripts/verify-face-runtime.mjs",
     "start": "next start",
     "bootstrap:provincial-bfp": "node scripts/bootstrap-provincial-bfp.mjs",
     "gis:import-buildings": "node scripts/import-open-buildings.mjs",
@@ -20,6 +20,7 @@
     "leaflet": "^1.9.4",
     "next": "16.2.12",
     "nodemailer": "10.0.3",
+    "onnxruntime-node": "1.23.2",
     "pdfkit": "0.20.2",
     "pg": "8.16.3",
     "react": "19.2.4",

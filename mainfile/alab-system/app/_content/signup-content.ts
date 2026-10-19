@@ -1006,6 +1006,13 @@ export const signupStyles = `
             transform: none;
         }
 
+        .verification-intro {
+            margin: 0 0 1rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
         .id-accepted-note {
             margin: 0 0 0.8rem;
             padding: 0.65rem 0.8rem;
@@ -1422,9 +1429,9 @@ export const signupMarkup = `<main class="signup-container">
                         <img src="/images/Logo.webp" alt="ALAB Logo" class="logo-icon" loading="eager" decoding="async">
                     </a>
                 </div>
-                <div class="step-indicator" id="stepIndicator">Step 1 of 5</div>
+                <div class="step-indicator" id="stepIndicator">Step 1 of 6</div>
                 <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill" style="width: 20%;"></div>
+                    <div class="progress-fill" id="progressFill" style="width: 16.6667%;"></div>
                 </div>
                 <h1 id="stepTitle">Personal Information</h1>
                 <p class="subtitle" id="stepSubtitle">Create your resident account to get started.</p>
@@ -1584,8 +1591,9 @@ export const signupMarkup = `<main class="signup-container">
                     <button type="button" class="btn-back" id="backToStep1">Back</button>
                 </div>
 
-                <!-- STEP 3: Identity Verification -->
+                <!-- STEP 3: Front and back ID verification -->
                 <div class="step-panel" id="step3">
+                    <p class="verification-intro" id="idAutoAdvanceNote">Upload both sides of the same ID. Once both photos are verified, we will automatically open the selfie step.</p>
                     <p class="id-accepted-note" id="idAcceptedNote"><strong>Government IDs only:</strong> PhilSys ID or ePhilID, passport, driver's license, UMID, PRC, SSS, GSIS, postal, voter's, senior citizen, PWD, TIN, OFW or IBP ID, or seafarer's record book. School and student IDs are not accepted. The name on the ID must match the name you entered.</p>
 
                     <!-- Upload Front of Valid ID -->
@@ -1636,6 +1644,18 @@ export const signupMarkup = `<main class="signup-container">
                         <div class="id-scan" id="idScanBackStatus" role="status" aria-live="polite" hidden></div>
                     </div>
 
+                    <button type="button" class="btn-continue" id="toStep4" disabled>
+                        Continue to selfie
+                        <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="btn-back" id="backToStep2">Back</button>
+                </div>
+
+                <!-- STEP 4: Selfie comparison -->
+                <div class="step-panel" id="step4">
+                    <p class="verification-intro">Your ID is checked. Take a selfie in good lighting with your whole face visible so we can compare it with your ID photo.</p>
                     <!-- Take Selfie -->
                     <div class="selfie-section" id="selfieSection">
                         <div class="upload-header">
@@ -1680,18 +1700,18 @@ export const signupMarkup = `<main class="signup-container">
                         </div>
                     </div>
 
-                    <button type="button" class="btn-continue" id="toStep4">
-                        Continue
+                    <button type="button" class="btn-continue" id="toStep5" disabled>
+                        Continue to account
                         <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
                         </svg>
                     </button>
 
-                    <button type="button" class="btn-back" id="backToStep2">Back</button>
+                    <button type="button" class="btn-back" id="backToStep3">Back to ID photos</button>
                 </div>
 
-                <!-- STEP 4: Account Security -->
-                <div class="step-panel" id="step4">
+                <!-- STEP 5: Account Security -->
+                <div class="step-panel" id="step5">
                     <div class="form-group">
                         <div class="input-wrapper">
                             <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1741,18 +1761,18 @@ export const signupMarkup = `<main class="signup-container">
                         </div>
                     </div>
 
-                    <button type="button" class="btn-continue" id="toStep5">
+                    <button type="button" class="btn-continue" id="toStep6">
                         Continue
                         <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
                         </svg>
                     </button>
 
-                    <button type="button" class="btn-back" id="backToStep3">Back</button>
+                    <button type="button" class="btn-back" id="backToStep4">Back</button>
                 </div>
 
-                <!-- STEP 5: Review & Confirm -->
-                <div class="step-panel" id="step5">
+                <!-- STEP 6: Review & Confirm -->
+                <div class="step-panel" id="step6">
                     <div class="review-section" id="reviewContent" style="background: #f8fafc; border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; border: 1.5px solid #e2e8f0;">
                         <!-- Populated by JS -->
                     </div>
@@ -1771,7 +1791,7 @@ export const signupMarkup = `<main class="signup-container">
                         </svg>
                     </button>
 
-                    <button type="button" class="btn-back" id="backToStep4">Back</button>
+                    <button type="button" class="btn-back" id="backToStep5">Back</button>
                 </div>
             </form>
         </section>

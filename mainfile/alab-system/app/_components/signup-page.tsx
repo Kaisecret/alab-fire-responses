@@ -7,6 +7,7 @@ import { residentAuthFontStyles } from "../_content/resident-auth-font";
 import { antiqueBarangays } from "../_content/antique-barangays";
 import { composeResidentAddress } from "../../lib/resident-applications/compose-address.mjs";
 import { shrinkPhoto } from "../_lib/shrink-photo";
+import { createFaceCheckController } from "../../lib/resident-applications/face-check-client.mjs";
 
 const visibleEye = `
   <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
@@ -20,7 +21,7 @@ const hiddenEye = `
   <circle cx="12" cy="12" r="3"/>
 `;
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 const RESEND_COOLDOWN_SECONDS = 60;
 
 type SignupPageProps = {
@@ -30,7 +31,8 @@ type SignupPageProps = {
 const STEP_CONFIG = [
   { title: "Personal Information", subtitle: "Create your resident account to get started." },
   { title: "Address Information", subtitle: "Tell us where you are located in Antique." },
-  { title: "Identity Verification", subtitle: "Upload your identification details for account verification." },
+  { title: "Upload your ID", subtitle: "Add the front and back of the same valid ID." },
+  { title: "Take your selfie", subtitle: "Match a clear selfie with the photo on your verified ID." },
   { title: "Account Security", subtitle: "Set up your login credentials." },
   // The panel below this header changes from code entry to a verified summary,
   // so the subtitle must read correctly in both states rather than instructing
@@ -47,6 +49,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
 
     let currentStep = 1;
     let isStartingVerification = false;
+    let stopOtpCountdown: (() => void) | null = null;
 
     // Track uploaded files for verification step
     let frontFile: File | null = null;
@@ -54,6 +57,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     let selfieTaken = false;
     let pendingSelfieBlob: Blob | null = null;
     let selfieFile: File | null = null;
+    let disposed = false;
+    let faceMatchState: "idle" | "checking" | "verified" | "failed" = "idle";
 
     // ID verification: the front of the ID is scanned on upload, and only a
     // server-signed token for this exact file and name lets registration save.
@@ -79,17 +84,23 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       root.querySelector<HTMLElement>("#step3"),
       root.querySelector<HTMLElement>("#step4"),
       root.querySelector<HTMLElement>("#step5"),
+      root.querySelector<HTMLElement>("#step6"),
     ];
+    // Keep the original review controls when OTP temporarily replaces this
+    // panel, so Back/editing or a renewed identity check can restore them.
+    const reviewPanelNodes = Array.from(panels[5]?.childNodes ?? []);
 
     // Navigation buttons
     const toStep2 = root.querySelector<HTMLButtonElement>("#toStep2");
     const toStep3 = root.querySelector<HTMLButtonElement>("#toStep3");
     const toStep4 = root.querySelector<HTMLButtonElement>("#toStep4");
     const toStep5 = root.querySelector<HTMLButtonElement>("#toStep5");
+    const toStep6 = root.querySelector<HTMLButtonElement>("#toStep6");
     const backToStep1 = root.querySelector<HTMLButtonElement>("#backToStep1");
     const backToStep2 = root.querySelector<HTMLButtonElement>("#backToStep2");
     const backToStep3 = root.querySelector<HTMLButtonElement>("#backToStep3");
     const backToStep4 = root.querySelector<HTMLButtonElement>("#backToStep4");
+    const backToStep5 = root.querySelector<HTMLButtonElement>("#backToStep5");
 
     // Password toggles
     const togglePass1 = root.querySelector<HTMLButtonElement>("#togglePass1");
@@ -121,6 +132,45 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const useSelfieBtn = root.querySelector<HTMLButtonElement>("#useSelfie");
     const selfieReviewActions = root.querySelector<HTMLElement>("#selfieReviewActions");
     let selfieStream: MediaStream | null = null;
+
+    function currentFaceEvidence() {
+      return frontFile && backFile && selfieFile && idVerificationToken
+        ? { frontId: frontFile, backId: backFile, selfie: selfieFile, idVerificationToken }
+        : null;
+    }
+
+    const faceCheckController = createFaceCheckController({
+      onState: (state) => {
+        faceMatchState = state.status;
+        const hint = selfieCapture?.querySelector<HTMLElement>(".selfie-hint");
+        if (state.status === "idle") {
+          formStatus.style.color = "#b91c1c";
+          if (hint && selfieTaken) hint.textContent = "Confirm your selfie against your ID again";
+        } else {
+          formStatus.style.color = state.status === "verified" ? "#15803d"
+            : state.status === "checking" ? "#475569" : "#b91c1c";
+          formStatus.textContent = state.message ?? "";
+          if (hint) hint.textContent = state.status === "verified"
+            ? "Face matches your ID photo · Click again to retake"
+            : state.status === "checking" ? "Comparing with your ID photo…" : "Face not verified · Click to retake";
+        }
+        if (state.code === "ID_NOT_VERIFIED") {
+          resetIdVerification();
+          idScanState = "failed";
+          if (currentStep >= 4) goToStep(3);
+          renderSide("front", "failed", "ID needs checking", state.message ?? "Verify both sides of your ID again.", {
+            label: "Try again", onClick: () => void scanFrontId(),
+          });
+        }
+        updateContinueState();
+      },
+    });
+
+    async function verifyConfirmedSelfie() {
+      const input = currentFaceEvidence();
+      if (!input || disposed) return false;
+      return faceCheckController.verify(input);
+    }
 
     // Success overlay
     const successOverlay = root.ownerDocument.querySelector<HTMLElement>("#successOverlay") ??
@@ -251,6 +301,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     void loadGooglePrefill();
 
     function goToStep(step: number) {
+      if (step !== 6) stopOtpCountdown?.();
+      formStatus.style.color = "#b91c1c";
       currentStep = step;
       saveDraft();
       panels.forEach((p, i) => {
@@ -262,10 +314,16 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       if (progressFill) progressFill.style.width = `${(step / TOTAL_STEPS) * 100}%`;
       if (stepTitle) stepTitle.textContent = STEP_CONFIG[step - 1].title;
       if (stepSubtitle) stepSubtitle.textContent = STEP_CONFIG[step - 1].subtitle;
+      stepTitle?.setAttribute("tabindex", "-1");
+      stepTitle?.focus({ preventScroll: true });
+      const formWrapper = root?.querySelector<HTMLElement>(".signup-form-wrapper");
+      if (formWrapper) formWrapper.scrollTop = 0;
+      if (step !== 4 && selfieCameraPanel?.classList.contains("active")) stopSelfieCamera();
       if (step === 3 && frontFile && idScanState === "idle") void scanFrontId();
 
-      // Populate review on step 5
-      if (step === 5 && reviewContent) {
+      // Populate review on step 6.
+      if (step === 6 && reviewContent) {
+        if (!panels[5]?.contains(reviewContent)) panels[5]?.replaceChildren(...reviewPanelNodes);
         const formRoot = root!;
         const getValue = (id: string) => {
           const el = formRoot.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`#${id}`);
@@ -360,8 +418,12 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     function updateContinueState() {
       if (idAcceptedNote) idAcceptedNote.hidden = Boolean(idVerificationToken);
       if (toStep4) {
-        toStep4.disabled = !idVerificationToken;
-        toStep4.title = idVerificationToken ? "" : "Verify both sides of your ID to continue";
+        toStep4.disabled = !frontFile || !backFile || !idVerificationToken;
+        toStep4.title = idVerificationToken ? "" : "Both sides of your ID must pass verification first";
+      }
+      if (toStep5) {
+        toStep5.disabled = !faceCheckController.getToken(currentFaceEvidence());
+        toStep5.title = toStep5.disabled ? "Confirm a selfie that matches your ID photo to continue" : "";
       }
     }
 
@@ -403,6 +465,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       idScanController?.abort();
       idScanController = null;
       idVerificationToken = null;
+      faceCheckController.invalidate();
       idScanState = "idle";
       renderSide("front", null);
       renderSide("back", null);
@@ -414,16 +477,28 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const preparingSides = new Map<"front" | "back", File>();
 
     async function scanFrontId() {
+      if (disposed) return;
       if (preparingSides.size > 0) return; // the last photo to finish preparing starts the check
       if (!frontFile) {
         resetIdVerification();
         if (backFile) renderSide("back", "info", "Upload the front first", "Both sides are checked together.");
         return;
       }
+      if (!backFile) {
+        idScanController?.abort();
+        idVerificationToken = null;
+        faceCheckController.invalidate();
+        idScanState = "idle";
+        renderSide("front", "info", "Front photo ready", "Upload the back so we can check both sides together.");
+        renderSide("back", "info", "Add the back of your ID", "Use the back of the same card.");
+        updateContinueState();
+        return;
+      }
       const firstName = nameValue("firstName");
       const lastName = nameValue("lastName");
       idScanController?.abort();
       idVerificationToken = null;
+      faceCheckController.invalidate();
       updateContinueState();
       if (!firstName || !lastName) {
         idScanState = "failed";
@@ -456,15 +531,23 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
           result.message = "This photo is too large to send. Take a new, closer photo of your ID and upload it again.";
         }
         // A newer file or name may have replaced this scan while it ran.
-        if (controller.signal.aborted || scannedFront !== frontFile || scannedBack !== backFile) return;
+        if (disposed || controller.signal.aborted || scannedFront !== frontFile || scannedBack !== backFile) return;
         const nameLine = result.detectedName ? `Name on ID: ${result.detectedName}` : "Your ID matches your name.";
-        if (response.ok && result.verified && result.token) {
+        if (response.ok && result.verified === true && typeof result.token === "string" && result.token.length > 0 && result.token.length <= 4000) {
           idVerificationToken = result.token;
           idScanState = "verified";
           renderSide("front", "verified", "ID verified", nameLine);
           renderSide("back", "verified", "Back verified", "Same card as the front.");
           if (formStatus.textContent?.includes("ID")) formStatus.textContent = "";
           updateContinueState();
+          // Only the current successful pair can advance the visible ID step.
+          // Returning with Back leaves the photos available for review/replacing.
+          if (currentStep === 3) {
+            goToStep(4);
+            formStatus.style.color = "#15803d";
+            formStatus.textContent = "Both sides of your ID are verified. Take your selfie to continue.";
+          }
+          if (selfieTaken && selfieFile) void verifyConfirmedSelfie();
           return;
         }
         const code = result.code ?? "";
@@ -639,12 +722,13 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     async function prepareIdSide(side: "front" | "back", picked: File) {
       idScanController?.abort();
       idVerificationToken = null;
+      faceCheckController.invalidate();
       idScanState = "scanning";
       preparingSides.set(side, picked);
       updateContinueState();
       renderSide(side, "scanning", "Preparing your photo…", "Making it ready for a quick check.");
       const small = await shrinkPhoto(picked);
-      if (preparingSides.get(side) !== picked) return; // replaced or removed meanwhile
+      if (disposed || preparingSides.get(side) !== picked) return; // replaced, removed or unmounted meanwhile
       preparingSides.delete(side);
       if ((side === "front" ? frontFile : backFile) !== picked) return;
       if (side === "front") frontFile = small;
@@ -794,9 +878,18 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         window.alert("Take a clear selfie before continuing.");
         return;
       }
-      selfieFile = await shrinkPhoto(new File([pendingSelfieBlob], `resident-selfie-${Date.now()}.jpg`, { type: "image/jpeg" }), { maxSize: 1280, maxBytes: 800 * 1024 });
-      stopSelfieCamera();
-      showSelfieCaptured();
+      if (useSelfieBtn) useSelfieBtn.disabled = true;
+      faceCheckController.invalidate();
+      try {
+        const confirmed = await shrinkPhoto(new File([pendingSelfieBlob], `resident-selfie-${Date.now()}.jpg`, { type: "image/jpeg" }), { maxSize: 1280, maxBytes: 800 * 1024 });
+        if (disposed) return;
+        selfieFile = confirmed;
+        stopSelfieCamera();
+        showSelfieCaptured();
+        await verifyConfirmedSelfie();
+      } finally {
+        if (useSelfieBtn) useSelfieBtn.disabled = false;
+      }
     };
 
     const handleRetakeSelfie = async () => {
@@ -899,13 +992,13 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     };
     const handleToStep3 = () => {
       formStatus.textContent = "";
-      if (validateStep(panels[1])) goToStep(3);
+      if (validateStep(panels[1])) goToStep(frontFile && backFile && idVerificationToken ? 4 : 3);
     };
     const handleToStep4 = () => {
       formStatus.textContent = "";
       if (!validateStep(panels[2])) return;
-      if (!frontFile || !backFile || !selfieTaken) {
-        formStatus.textContent = "Upload the front and back of your valid ID and capture a selfie before continuing.";
+      if (!frontFile || !backFile) {
+        formStatus.textContent = "Upload the front and back of your valid ID before continuing.";
         return;
       }
       if (!idVerificationToken) {
@@ -920,17 +1013,33 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     };
     const handleToStep5 = () => {
       formStatus.textContent = "";
-      if (!validateStep(panels[3])) return;
+      if (!idVerificationToken) {
+        goToStep(3);
+        formStatus.textContent = "Verify both sides of your ID before taking your selfie.";
+        return;
+      }
+      if (!selfieTaken || !faceCheckController.getToken(currentFaceEvidence())) {
+        formStatus.textContent = faceMatchState === "checking"
+          ? "Please wait while we compare your selfie with your ID."
+          : "Confirm a selfie that matches your ID photo before continuing.";
+        return;
+      }
+      goToStep(5);
+    };
+    const handleToStep6 = () => {
+      formStatus.textContent = "";
+      if (!validateStep(panels[4])) return;
       if (passwordField?.value !== confirmField?.value) {
         formStatus.textContent = "Passwords do not match.";
         return;
       }
-      goToStep(5);
+      goToStep(6);
     };
     const handleBackToStep1 = () => goToStep(1);
     const handleBackToStep2 = () => goToStep(2);
     const handleBackToStep3 = () => goToStep(3);
     const handleBackToStep4 = () => goToStep(4);
+    const handleBackToStep5 = () => goToStep(5);
 
     const validateRegistration = () => {
       for (const [index, panel] of panels.entries()) {
@@ -948,7 +1057,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       }
 
       if (!selfieTaken) {
-        goToStep(3);
+        goToStep(4);
         formStatus.textContent = "Take and confirm your selfie to continue.";
         return false;
       }
@@ -959,8 +1068,16 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         return false;
       }
 
-      if (!passwordField || passwordField.value !== confirmField?.value) {
+      if (!faceCheckController.getToken(currentFaceEvidence())) {
         goToStep(4);
+        formStatus.textContent = faceMatchState === "checking"
+          ? "Please wait while we compare your selfie with your ID."
+          : "Confirm a selfie that matches your ID photo to continue.";
+        return false;
+      }
+
+      if (!passwordField || passwordField.value !== confirmField?.value) {
+        goToStep(5);
         formStatus.textContent = "Passwords do not match.";
         confirmField?.focus();
         return false;
@@ -968,7 +1085,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
 
       const termsCheck = root.querySelector<HTMLInputElement>("#termsCheck");
       if (!termsCheck?.checked) {
-        goToStep(5);
+        goToStep(6);
         formStatus.textContent = "Please agree to the Terms of Service and Privacy Policy.";
         termsCheck?.focus();
         return false;
@@ -978,7 +1095,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     };
 
     const showAccountConfirmation = (verificationId: string) => {
-      const panel = panels[4];
+      const panel = panels[5];
       if (!panel) return;
       panel.innerHTML = `<section style="display:grid;gap:1.15rem;padding:clamp(.25rem,1vw,.75rem) 0;text-align:center"><div style="margin:auto;display:grid;place-items:center;width:4.2rem;height:4.2rem;border-radius:1.35rem;background:linear-gradient(135deg,#16a34a,#15803d);box-shadow:0 .9rem 1.8rem rgba(22,163,74,.22);color:#fff;font-size:1.65rem">✓</div><div><h3 style="margin:0;color:#166534;font-size:1.45rem">Phone verified</h3><p style="margin:.5rem auto 0;max-width:27rem;color:#475569;line-height:1.55">Your phone is confirmed. Review your details, then create your resident account.</p></div><div style="display:grid;gap:.55rem;padding:1rem;border:1px solid #dcfce7;border-radius:1rem;background:#f0fdf4;text-align:left;color:#334155;font-size:.9rem"><span><strong>Name:</strong> ${root.querySelector<HTMLInputElement>("#firstName")?.value ?? ""} ${root.querySelector<HTMLInputElement>("#lastName")?.value ?? ""}</span><span><strong>Username:</strong> ${root.querySelector<HTMLInputElement>("#username")?.value ?? ""}</span><span><strong>Phone:</strong> ${root.querySelector<HTMLInputElement>("#phone")?.value ?? ""}</span></div><p id="accountConfirmationStatus" role="alert" style="min-height:1.3rem;margin:0;color:#b91c1c;font-size:.86rem;font-weight:700"></p><button id="completeAccountButton" type="button" style="width:100%;border:0;border-radius:.85rem;padding:1rem;background:linear-gradient(135deg,#ef2d1d,#b91c1c);box-shadow:0 .7rem 1.4rem rgba(220,38,38,.22);color:#fff;font-weight:800;cursor:pointer">Create my account</button></section>`;
       const completeButton = panel.querySelector<HTMLButtonElement>("#completeAccountButton")!;
@@ -995,16 +1112,34 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
             status.textContent = "Your ID must be verified first. Go back to Identity Verification.";
             return;
           }
+          const faceVerificationToken = faceCheckController.getToken(currentFaceEvidence());
+          if (!faceVerificationToken) {
+            completeButton.disabled = false;
+            completeButton.textContent = "Create my account";
+            goToStep(4);
+            formStatus.textContent = "Confirm a selfie that matches your ID photo to continue.";
+            return;
+          }
           const registration = new FormData();
           registration.set("verificationId", verificationId);
           registration.set("idVerificationToken", idVerificationToken);
+          registration.set("faceVerificationToken", faceVerificationToken);
           registration.set("frontId", frontFile);
           registration.set("backId", backFile);
           registration.set("selfie", selfieFile);
           const register = await fetch("/api/auth/register", { method: "POST", body: registration });
           if (!register.ok) {
             const failed = await register.json() as { error?: string; code?: string };
-            if (failed.code === "ID_NOT_VERIFIED") resetIdVerification();
+            if (failed.code === "ID_NOT_VERIFIED") {
+              resetIdVerification();
+              goToStep(3);
+              formStatus.textContent = failed.error ?? "Please verify both sides of your ID again.";
+            }
+            if (failed.code === "FACE_NOT_VERIFIED") {
+              faceCheckController.invalidate();
+              goToStep(4);
+              formStatus.textContent = failed.error ?? "Please confirm your selfie again.";
+            }
             completeButton.disabled = false;
             completeButton.textContent = "Create my account";
             status.textContent = failed.error ?? "Unable to create your account.";
@@ -1021,10 +1156,10 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     };
 
     const showOtpPanel = (verificationId: string, phone: string) => {
-      const panel = panels[4];
+      const panel = panels[5];
       if (!panel) return;
-      currentStep = 5;
-      goToStep(5);
+      currentStep = 6;
+      goToStep(6);
       panel.innerHTML = `<section style="display:grid;gap:1.15rem;padding:clamp(.25rem,1vw,.75rem) 0;text-align:center"><div style="margin:auto;display:grid;place-items:center;width:4.2rem;height:4.2rem;border-radius:1.35rem;background:linear-gradient(135deg,#ef2d1d,#b91c1c);box-shadow:0 .9rem 1.8rem rgba(220,38,38,.25);color:#fff;font-size:1.65rem">✦</div><div><h3 style="margin:0;color:#7f1d1d;font-size:1.35rem">Enter your verification code</h3><p style="margin:.5rem auto 0;max-width:25rem;color:#475569;line-height:1.55">We sent a six-digit code to <strong>${phone.replace(/.(?=.{4})/g, "•")}</strong>. It expires in 5 minutes.</p></div><div id="otpDigits" style="display:flex;justify-content:center;gap:clamp(.28rem,1vw,.55rem);margin:.35rem 0">${Array.from({ length: 6 }, (_, i) => `<input aria-label="Verification code digit ${i + 1}" inputmode="numeric" autocomplete="one-time-code" maxlength="1" style="width:clamp(2.4rem,10vw,3rem);height:3.35rem;border:2px solid #fecaca;border-radius:.85rem;text-align:center;font-size:1.4rem;font-weight:800;outline-color:#dc2626">`).join("")}</div><p id="otpStatus" role="alert" style="min-height:1.3rem;margin:0;color:#b91c1c;font-size:.86rem;font-weight:700"></p><button id="verifyOtpButton" type="button" style="width:100%;border:0;border-radius:.85rem;padding:1rem;background:linear-gradient(135deg,#ef2d1d,#b91c1c);box-shadow:0 .7rem 1.4rem rgba(220,38,38,.22);color:#fff;font-weight:800;cursor:pointer">Verify & Continue</button><button id="resendOtpButton" type="button" disabled style="border:0;background:none;color:#94a3b8;font-weight:750;cursor:not-allowed">Resend code in 01:00</button><button id="editSignupDetails" type="button" style="border:0;background:none;color:#b91c1c;font-weight:700;cursor:pointer">Back and edit details</button></section>`;
       const inputs = Array.from(panel.querySelectorAll<HTMLInputElement>("#otpDigits input"));
       const status = panel.querySelector<HTMLElement>("#otpStatus")!;
@@ -1041,6 +1176,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         resendButton.style.cursor = secondsRemaining > 0 ? "not-allowed" : "pointer";
       };
       let resendTimer: number | undefined;
+      stopOtpCountdown?.();
+      stopOtpCountdown = () => window.clearInterval(resendTimer);
       const startResendCountdown = () => {
         window.clearInterval(resendTimer);
         secondsRemaining = RESEND_COOLDOWN_SECONDS;
@@ -1056,7 +1193,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       };
       startResendCountdown();
       inputs.forEach((input, index) => input.addEventListener("input", () => { input.value = input.value.replace(/\D/g, "").slice(0, 1); if (input.value) inputs[index + 1]?.focus(); }));
-      panel.querySelector<HTMLButtonElement>("#editSignupDetails")!.onclick = () => { window.clearInterval(resendTimer); goToStep(4); };
+      panel.querySelector<HTMLButtonElement>("#editSignupDetails")!.onclick = () => { window.clearInterval(resendTimer); goToStep(5); };
       const requestOtp = async () => {
         const value = (id: string) => root.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`#${id}`)?.value ?? "";
         const response = await fetch("/api/auth/register/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ firstName: value("firstName"), lastName: value("lastName"), email: value("email"), phone: value("phone"), municipality: value("municipality"), barangay: value("barangay"), address: currentAddress(), username: value("username"), password: passwordField?.value, frontDocumentName: frontFile?.name, backDocumentName: backFile?.name, selfieCaptured: selfieTaken, termsAccepted: true }) });
@@ -1126,9 +1263,11 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         formStatus.textContent = "Unable to reach the registration service. Please try again.";
       } finally {
         isStartingVerification = false;
-        if (submitButton?.isConnected && submitButtonMarkup) {
+        // OTP temporarily detaches the review controls. Reset the retained
+        // button too, so Back/edit can restore a usable submission button.
+        if (submitButton) {
           submitButton.disabled = false;
-          submitButton.innerHTML = submitButtonMarkup;
+          if (submitButtonMarkup !== undefined) submitButton.innerHTML = submitButtonMarkup;
         }
       }
     };
@@ -1143,10 +1282,12 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     toStep4?.addEventListener("click", handleToStep4);
     updateContinueState();
     toStep5?.addEventListener("click", handleToStep5);
+    toStep6?.addEventListener("click", handleToStep6);
     backToStep1?.addEventListener("click", handleBackToStep1);
     backToStep2?.addEventListener("click", handleBackToStep2);
     backToStep3?.addEventListener("click", handleBackToStep3);
     backToStep4?.addEventListener("click", handleBackToStep4);
+    backToStep5?.addEventListener("click", handleBackToStep5);
     togglePass1?.addEventListener("click", handleToggle1);
     togglePass2?.addEventListener("click", handleToggle2);
     passwordField?.addEventListener("input", handlePasswordInput);
@@ -1155,16 +1296,21 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     restoreDraft();
 
     return () => {
+      disposed = true;
+      stopOtpCountdown?.();
+      faceCheckController.dispose();
       form?.removeEventListener("input", saveDraft);
       form?.removeEventListener("change", saveDraft);
       toStep2?.removeEventListener("click", handleToStep2);
       toStep3?.removeEventListener("click", handleToStep3);
       toStep4?.removeEventListener("click", handleToStep4);
       toStep5?.removeEventListener("click", handleToStep5);
+      toStep6?.removeEventListener("click", handleToStep6);
       backToStep1?.removeEventListener("click", handleBackToStep1);
       backToStep2?.removeEventListener("click", handleBackToStep2);
       backToStep3?.removeEventListener("click", handleBackToStep3);
       backToStep4?.removeEventListener("click", handleBackToStep4);
+      backToStep5?.removeEventListener("click", handleBackToStep5);
       togglePass1?.removeEventListener("click", handleToggle1);
       togglePass2?.removeEventListener("click", handleToggle2);
       passwordField?.removeEventListener("input", handlePasswordInput);

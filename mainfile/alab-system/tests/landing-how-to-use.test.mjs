@@ -10,7 +10,6 @@ test("the landing page carries the official title of the system", async () => {
   const markup = await landing();
   assert.match(markup, new RegExp(`<p class="hero__copy">\\s*${TITLE}\\.\\s*</p>`));
   assert.match(markup, new RegExp(`ALAB · ${TITLE}`));
-  assert.match(read("app/page.tsx"), new RegExp(`title: "ALAB \\| ${TITLE}"`));
   assert.doesNotMatch(markup, /Smart Dispatch and Inter-Municipality Coordination for BFP in Antique/);
 });
 

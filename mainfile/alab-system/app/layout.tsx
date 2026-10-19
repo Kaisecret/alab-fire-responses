@@ -4,12 +4,15 @@ import { AssetCacheWarmer } from "./_components/asset-cache-warmer";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.alabfireresponse.dev"),
   title: {
     default: "ALAB | Provincial Fire Response",
     template: "%s | ALAB",
   },
   description:
     "ALAB connects communities and the Bureau of Fire Protection through fast, coordinated emergency response across Antique.",
+  robots: { index: false, follow: false },
+  verification: { google: process.env.GOOGLE_SITE_VERIFICATION },
   icons: {
     icon: "/images/FAVICON.webp",
   },

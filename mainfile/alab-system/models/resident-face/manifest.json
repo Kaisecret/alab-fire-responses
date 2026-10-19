@@ -1,0 +1,29 @@
+{
+  "upstream": "https://github.com/opencv/opencv_zoo",
+  "revision": "47534e27c9851bb1128ccc0102f1145e27f23f98",
+  "models": [
+    {
+      "file": "face_detection_yunet_2023mar.onnx",
+      "source": "models/face_detection_yunet/face_detection_yunet_2023mar.onnx",
+      "bytes": 232589,
+      "sha256": "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4",
+      "license": "MIT",
+      "licenseFile": "LICENSE-YuNet.txt"
+    },
+    {
+      "file": "face_recognition_sface_2021dec.onnx",
+      "source": "models/face_recognition_sface/face_recognition_sface_2021dec.onnx",
+      "bytes": 38696353,
+      "sha256": "0ba9fbfa01b5270c96627c4ef784da859931e02f04419c829e83484087c34e79",
+      "license": "Apache-2.0",
+      "licenseFile": "LICENSE-SFace.txt"
+    }
+  ],
+  "references": {
+    "detector": "https://github.com/opencv/opencv/blob/4.13.0/modules/objdetect/src/face_detect.cpp",
+    "recognizer": "https://github.com/opencv/opencv/blob/4.13.0/modules/objdetect/src/face_recognize.cpp",
+    "threshold": "https://docs.opencv.org/4.13.0/d0/dd4/tutorial_dnn_face.html"
+  },
+  "cosineThreshold": 0.363,
+  "thresholdBasis": "OpenCV SFace LFW reference operating point; requires evaluation on consenting deployment participants, not a probability of identity."
+}

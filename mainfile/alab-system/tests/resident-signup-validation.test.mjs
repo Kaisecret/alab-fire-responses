@@ -30,7 +30,7 @@ test("resident signup blocks an invalid username on the account-security step", 
   assert.match(register, /Username must contain 3 to 30 letters, numbers, dots, underscores, or hyphens\./);
 });
 
-test("resident signup uses step five for polished OTP verification and a one-minute resend countdown", () => {
+test("resident signup uses step six for polished OTP verification and a one-minute resend countdown", () => {
   const component = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");
 
   assert.match(component, /Verify your phone/);
@@ -38,7 +38,7 @@ test("resident signup uses step five for polished OTP verification and a one-min
   assert.match(component, /const RESEND_COOLDOWN_SECONDS = 60/);
   assert.match(component, /Resend code in/);
   assert.match(component, /Resend code/);
-  assert.match(component, /currentStep = 5/);
+  assert.match(component, /currentStep = 6/);
   assert.match(component, /window\.location\.assign\("\/resident\/application"\)/);
 });
 
@@ -62,13 +62,13 @@ test("resident signup prevents duplicate first-code requests while the request i
 
 test("resident signup sends one OTP only after account details are confirmed", () => {
   const component = readFileSync(join(appRoot, "app", "_components", "signup-page.tsx"), "utf8");
-  const stepFourContinue = component.slice(
-    component.indexOf("const handleToStep5"),
+  const accountContinue = component.slice(
+    component.indexOf("const handleToStep6"),
     component.indexOf("const handleBackToStep1"),
   );
 
-  assert.match(stepFourContinue, /goToStep\(5\)/);
-  assert.doesNotMatch(stepFourContinue, /\/api\/auth\/register\/start/);
+  assert.match(accountContinue, /goToStep\(6\)/);
+  assert.doesNotMatch(accountContinue, /\/api\/auth\/register\/start/);
   assert.match(component, /const showAccountConfirmation = \(verificationId: string\) =>/);
   const verificationHandler = component.slice(
     component.indexOf("verifyButton.onclick"),

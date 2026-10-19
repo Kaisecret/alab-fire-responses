@@ -17,7 +17,8 @@ test("resident registration persists account, profile, address, and verification
   assert.match(register, /insert into resident_addresses/i);
   assert.match(register, /insert into resident_verifications/i);
   assert.match(register, /hashPassword/);
-  assert.match(register, /'PENDING_REVIEW'/);
+  // Pending and automatic approval are exercised through the actual handler in
+  // resident-face-registration.test.mjs rather than requiring a SQL literal.
   assert.match(register, /RESIDENT_APPLICANT_COOKIE/);
 });
 

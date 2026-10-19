@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import { NextResponse } from "next/server";
 
@@ -14,7 +14,7 @@ import { getGoogleSignupPrefill, GOOGLE_SIGNUP_PREFILL_COOKIE } from "../../../.
 import { removeIdentityEvidence, uploadIdentityEvidence } from "../../../../lib/resident-applications/evidence";
 import { createAccountNotifications, listMunicipalNotificationRecipients } from "../../../../lib/notifications/service";
 import { registeredNameKey } from "../../../../lib/resident-applications/id-name-match.mjs";
-import { readIdVerification } from "../../../../lib/resident-applications/id-verification-token.mjs";
+import { evidenceSha256, readBoundIdVerification as readIdVerification, readFaceVerification } from "../../../../lib/resident-applications/face-verification-token.mjs";
 
 export const runtime = "nodejs";
 
@@ -29,13 +29,17 @@ function clean(value: unknown, maxLength: number) {
 }
 
 function image(form: FormData, key: string, required = true) {
+  if (form.getAll(key).length !== 1) throw new Error(`INVALID_${key.toUpperCase()}`);
   const value = form.get(key);
-  if (value instanceof File && value.size > 0) return value;
+  if (value instanceof File && value.size > 0 && value.size <= 6 * 1024 * 1024
+      && ["image/jpeg", "image/png", "image/webp"].includes(value.type)) return value;
   if (required) throw new Error(`MISSING_${key.toUpperCase()}`);
   return null;
 }
 
 export async function POST(request: Request) {
+  const secret = process.env.AUTH_SECRET ?? "";
+  if (secret.length < 32) return NextResponse.json({ error: "Registration is not available right now." }, { status: 503 });
   let form: FormData;
   try { form = await request.formData(); } catch {
     return NextResponse.json({ error: "Invalid registration data." }, { status: 400 });
@@ -90,13 +94,25 @@ export async function POST(request: Request) {
   // The ID must have passed the scan for this exact image and this name. The
   // token is signed on the server, so the browser cannot skip the check, swap
   // the photo afterwards, or change the name once verified.
-  const idProof = readIdVerification(clean(form.get("idVerificationToken"), 4000), process.env.AUTH_SECRET ?? "");
-  const frontSha256 = createHash("sha256").update(Buffer.from(await front.arrayBuffer())).digest("hex");
-  const backSha256 = createHash("sha256").update(Buffer.from(await back.arrayBuffer())).digest("hex");
+  const idToken = form.get("idVerificationToken");
+  const idProof = form.getAll("idVerificationToken").length === 1 && typeof idToken === "string" ? readIdVerification(idToken, secret) : null;
+  const frontSha256 = evidenceSha256(Buffer.from(await front.arrayBuffer()));
+  const backSha256 = evidenceSha256(Buffer.from(await back.arrayBuffer()));
   if (!idProof || idProof.sha256 !== frontSha256 || idProof.backSha256 !== backSha256
       || idProof.name !== registeredNameKey(firstName, lastName)) {
     return NextResponse.json({ error: "Your ID must pass verification before you can register. Go back and upload your ID again.", code: "ID_NOT_VERIFIED" }, { status: 400 });
   }
+
+  const faceToken = form.get("faceVerificationToken");
+  const faceProof = form.getAll("faceVerificationToken").length === 1 && typeof faceToken === "string" ? readFaceVerification(faceToken, secret) : null;
+  const selfieSha256 = evidenceSha256(Buffer.from(await selfie.arrayBuffer()));
+  if (!faceProof || faceProof.sha256 !== frontSha256 || faceProof.backSha256 !== backSha256
+      || faceProof.selfieSha256 !== selfieSha256 || faceProof.name !== registeredNameKey(firstName, lastName)) {
+    return NextResponse.json({ error: "Confirm a selfie that matches your verified ID before creating your account. Go back and retake your selfie.", code: "FACE_NOT_VERIFIED" }, { status: 400 });
+  }
+  const automaticallyApproved = process.env.RESIDENT_AUTO_APPROVAL_ENABLED === "true";
+  const accountStatus = automaticallyApproved ? "ACTIVE" : "PENDING_REVIEW";
+  const verificationStatus = automaticallyApproved ? "VERIFIED" : "PENDING";
 
   const duplicate = await getDatabase().query("select 1 from users where (email is not null and lower(email) = nullif($1, '')) or lower(username) = lower($2) or phone = $3 limit 1", [email, username, phone]);
   if (duplicate.rowCount) return NextResponse.json({ error: "That email, username, or phone is already registered." }, { status: 409 });
@@ -122,8 +138,8 @@ export async function POST(request: Request) {
     await withTransaction(async (client) => {
       await client.query(
         `insert into users (id, email, username, password_hash, phone, google_subject, role, account_status, terms_accepted_at, created_at, updated_at)
-         values ($1, $2, $3, $4, $5, $6, 'RESIDENT', 'PENDING_REVIEW', $7, $7, $7)`,
-        [userId, email || null, username, passwordHash, phone, googlePrefill?.subject ?? null, now],
+         values ($1, $2, $3, $4, $5, $6, 'RESIDENT', $7, $8, $8, $8)`,
+        [userId, email || null, username, passwordHash, phone, googlePrefill?.subject ?? null, accountStatus, now],
       );
       await client.query(`insert into resident_profiles (id, user_id, first_name, last_name, created_at, updated_at) values ($1,$2,$3,$4,$5,$5)`, [profileId, userId, firstName, lastName, now]);
       await client.query(
@@ -137,21 +153,35 @@ export async function POST(request: Request) {
            front_review_document_key, back_review_document_key, selfie_review_document_key,
            front_document_sha256, back_document_sha256,
            selfie_sha256, front_document_mime_type, back_document_mime_type, selfie_mime_type,
-           front_document_size_bytes, back_document_size_bytes, selfie_size_bytes, status, submitted_at, created_at, updated_at)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'PENDING',$19,$19,$19)`,
+           front_document_size_bytes, back_document_size_bytes, selfie_size_bytes, status, submitted_at, created_at, updated_at,
+           reviewed_by_user_id, reviewed_at)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$20,$20,null,$21)`,
         [applicationId, profileId, applicationReference, evidence.front.originalKey, evidence.back?.originalKey ?? null,
           evidence.selfie.originalKey, evidence.front.reviewKey, evidence.back?.reviewKey ?? null,
           evidence.selfie.reviewKey, evidence.front.sha256, evidence.back?.sha256 ?? null,
           evidence.selfie.sha256, evidence.front.mimeType, evidence.back?.mimeType ?? null,
           evidence.selfie.mimeType, evidence.front.sizeBytes, evidence.back?.sizeBytes ?? null,
-          evidence.selfie.sizeBytes, now],
+          evidence.selfie.sizeBytes, verificationStatus, now, automaticallyApproved ? now : null],
       );
       await client.query(
         `insert into resident_verification_events (verification_id, resident_profile_id, event_type, metadata, created_at)
          values ($1,$2,'SUBMITTED',$3::jsonb,$4)`,
         [applicationId, profileId, JSON.stringify({ municipalityId: locality.rows[0].municipality_id }), now],
       );
-      await createAccountNotifications(client, {
+      if (automaticallyApproved) {
+        await client.query(
+          `insert into resident_verification_events (verification_id, resident_profile_id, actor_user_id, event_type, metadata, created_at)
+           values ($1,$2,$3,'APPROVED',$4::jsonb,$5)`,
+          [applicationId, profileId, null, JSON.stringify({ municipalityId: locality.rows[0].municipality_id, method: "automatic_face_match", score: faceProof.score, threshold: faceProof.threshold }), now],
+        );
+        await createAccountNotifications(client, {
+          recipientUserIds: [userId], actorUserId: null,
+          eventType: "RESIDENT_APPLICATION_APPROVED", category: "APPLICATION",
+          title: "Application approved", summary: "Your resident account is ready.",
+          actionHref: "/resident/login", entityType: "resident_verification", entityId: applicationId,
+          dedupeKey: `resident-application:${applicationId}:approved`, createdAt: now,
+        });
+      } else await createAccountNotifications(client, {
         recipientUserIds: await listMunicipalNotificationRecipients(client, locality.rows[0].municipality_id),
         actorUserId: userId,
         eventType: "RESIDENT_APPLICATION_SUBMITTED", category: "APPLICATION",
@@ -162,7 +192,7 @@ export async function POST(request: Request) {
       await client.query(`insert into notification_preferences (id, resident_profile_id, created_at, updated_at) values ($1,$2,$3,$3)`, [randomUUID(), profileId, now]);
     });
 
-    const response = NextResponse.json({ application: { reference: applicationReference, status: "PENDING", municipality }, redirectTo: "/resident/application" }, { status: 201 });
+    const response = NextResponse.json({ application: { reference: applicationReference, status: verificationStatus, municipality }, redirectTo: "/resident/application" }, { status: 201 });
     response.cookies.set(RESIDENT_APPLICANT_COOKIE, createResidentApplicantSession(userId, username), residentApplicantCookie);
     response.cookies.set(RESIDENT_SESSION_COOKIE, "", { ...residentApplicantCookie, maxAge: 0, expires: new Date(0) });
     response.cookies.set(GOOGLE_SIGNUP_PREFILL_COOKIE, "", { ...residentApplicantCookie, maxAge: 0, expires: new Date(0) });
