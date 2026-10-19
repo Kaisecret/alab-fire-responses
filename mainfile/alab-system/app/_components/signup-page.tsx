@@ -9,7 +9,8 @@ import { composeResidentAddress } from "../../lib/resident-applications/compose-
 import { shrinkPhoto } from "../_lib/shrink-photo";
 import { createFaceCheckController } from "../../lib/resident-applications/face-check-client.mjs";
 import { createSelfieViewCollection, SELFIE_VIEWS } from "../../lib/resident-applications/selfie-views-client.mjs";
-import { startSelfieGuidance } from "../../lib/resident-applications/selfie-guidance";
+import { createSelfieGuidanceSession } from "../../lib/resident-applications/selfie-guidance";
+import { selfieGuidanceCue } from "../../lib/resident-applications/selfie-guidance-cues.mjs";
 
 type SelfieView = "front" | "right" | "left";
 
@@ -140,6 +141,9 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const selfieCameraHeading = root.querySelector<HTMLElement>("#selfieCameraHeading");
     const selfieCameraProgress = root.querySelector<HTMLElement>("#selfieCameraProgress");
     const selfieCameraRetry = root.querySelector<HTMLButtonElement>("#selfieCameraRetry");
+    const selfieDirectionCue = root.querySelector<HTMLElement>("#selfieDirectionCue");
+    const selfieCueTitle = root.querySelector<HTMLElement>("#selfieCueTitle");
+    const selfieCueDetail = root.querySelector<HTMLElement>("#selfieCueDetail");
     const selfieCount = root.querySelector<HTMLElement>("#selfieCount");
     const selfieMain = root.querySelector<HTMLElement>("#selfieMain");
     let selfieStream: MediaStream | null = null;
@@ -805,8 +809,21 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     let guidanceReady = false;
     let guidanceController: AbortController | null = null;
     let guidanceSession: { stop: () => void } | null = null;
+    let guidanceOwner: ReturnType<typeof createSelfieGuidanceSession> | null = null;
     let pendingSelfieUrl: string | null = null;
     let previousBodyOverflow: string | null = null;
+
+    const renderSelfieCue = (state: { code: string; direction?: string; progress?: number }) => {
+      const cue = selfieGuidanceCue(state, activeSelfieView);
+      if (selfieDirectionCue) {
+        selfieDirectionCue.hidden = cue.direction === "none";
+        selfieDirectionCue.setAttribute("data-direction", cue.direction);
+        selfieDirectionCue.setAttribute("data-kind", cue.kind);
+      }
+      if (selfieCueTitle && selfieCueTitle.textContent !== cue.title) selfieCueTitle.textContent = cue.title;
+      if (selfieCueDetail && selfieCueDetail.textContent !== cue.detail) selfieCueDetail.textContent = cue.detail;
+      selfieFaceGuide?.setAttribute("data-feedback", cue.kind);
+    };
 
     const releaseGuidance = () => {
       guidanceController?.abort();
@@ -832,6 +849,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       selfieFaceGuide?.removeAttribute("hidden");
       selfieFaceGuide?.classList.remove("ready");
       selfieFaceGuide?.style.setProperty("--capture-progress", "0%");
+      renderSelfieCue({ code: "loading" });
       if (selfieGuidance) selfieGuidance.textContent = "Opening camera…";
       if (captureSelfieBtn) { captureSelfieBtn.hidden = false; captureSelfieBtn.disabled = true; }
       if (useSelfieBtn) useSelfieBtn.disabled = false;
@@ -839,9 +857,10 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       if (selfieReviewActions) selfieReviewActions.hidden = true;
     };
 
-    const stopSelfieCamera = () => {
+    const closeSelfieCamera = (keepDetector = false) => {
       cameraAttempt++;
       releaseGuidance();
+      if (!keepDetector) { guidanceOwner?.close(); guidanceOwner = null; }
       selfieStream?.getTracks().forEach((track) => track.stop());
       selfieStream = null;
       if (selfieVideo) selfieVideo.srcObject = null;
@@ -855,6 +874,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         if (!disposed) selfieCapture?.focus();
       }
     };
+    const stopSelfieCamera = () => closeSelfieCamera();
 
     const showSelfieReview = (dataUrl: string) => {
       releaseGuidance();
@@ -869,13 +889,14 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         selfiePreview.hidden = false;
       }
       selfieFaceGuide?.setAttribute("hidden", "true");
+      renderSelfieCue({ code: "review" });
       if (selfieGuidance) selfieGuidance.textContent = "Is your face clear? Confirm this photo or take it again.";
       if (captureSelfieBtn) captureSelfieBtn.hidden = true;
       if (selfieReviewActions) selfieReviewActions.hidden = false;
     };
 
     const startSelfieCamera = async (view: SelfieView = selfieViews.nextMissing() ?? "front") => {
-      stopSelfieCamera();
+      closeSelfieCamera(true);
       activeSelfieView = view;
       const attempt = cameraAttempt;
       if (!navigator.mediaDevices?.getUserMedia || !selfieVideo) {
@@ -887,6 +908,10 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         resetSelfieCameraUi();
         if (selfieCameraHeading) selfieCameraHeading.textContent = pose.heading;
         if (selfieCameraProgress) selfieCameraProgress.textContent = `${SELFIE_VIEWS.findIndex(item => item.key === view) + 1} / 3 · ${pose.label} view`;
+        for (const phase of SELFIE_VIEWS) {
+          const node = root.querySelector<HTMLElement>(`#selfiePhase${phase.label}`);
+          node?.setAttribute("data-state", phase.key === view ? "active" : selfieViews.get(phase.key) ? "done" : "pending");
+        }
         selfieCameraPanel?.classList.add("active");
         selfieCameraPanel?.setAttribute("aria-hidden", "false");
         selfieCapture?.setAttribute("aria-expanded", "true");
@@ -905,13 +930,18 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         if (selfieGuidance) selfieGuidance.textContent = "Preparing face guidance…";
         if (!selfieFaceGuide) throw new Error("Missing face guide");
         guidanceController = new AbortController();
-        const session = await startSelfieGuidance({
+        guidanceOwner ??= createSelfieGuidanceSession();
+        const session = await guidanceOwner.start({
           video: selfieVideo, guide: selfieFaceGuide, view, signal: guidanceController.signal,
           onUpdate: (state) => {
             if (disposed || attempt !== cameraAttempt || captureBusy || pendingSelfieBlob) return;
             guidanceReady = state.ready;
-            if (selfieGuidance) selfieGuidance.textContent = state.message;
-            if (state.code === "unavailable" && selfieCameraRetry) selfieCameraRetry.hidden = false;
+            if (selfieGuidance && selfieGuidance.textContent !== state.message) selfieGuidance.textContent = state.message;
+            renderSelfieCue(state);
+            if (state.code === "unavailable") {
+              guidanceOwner?.close(); guidanceOwner = null;
+              if (selfieCameraRetry) selfieCameraRetry.hidden = false;
+            }
             selfieFaceGuide.classList.toggle("ready", state.ready);
             selfieFaceGuide.style.setProperty("--capture-progress", `${Math.round(state.progress * 100)}%`);
             // Manual capture uses the same sustained-position gate as auto capture.
@@ -926,9 +956,11 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       } catch {
         if (disposed || attempt !== cameraAttempt) return;
         releaseGuidance();
+        guidanceOwner?.close(); guidanceOwner = null;
         selfieStream?.getTracks().forEach(track => track.stop()); selfieStream = null;
         selfieVideo.srcObject = null;
         if (selfieGuidance) selfieGuidance.textContent = "We couldn’t start face guidance. Allow camera access, check your connection and try again.";
+        renderSelfieCue({ code: "unavailable" });
         if (selfieCameraRetry) selfieCameraRetry.hidden = false;
       }
     };
@@ -976,9 +1008,9 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         const previous = selfieUrls.get(view);
         if (previous) URL.revokeObjectURL(previous);
         selfieUrls.set(view, URL.createObjectURL(confirmed));
-        stopSelfieCamera();
-        showSelfieCaptured();
         const next = selfieViews.nextMissing();
+        closeSelfieCamera(Boolean(next));
+        showSelfieCaptured();
         if (next) await startSelfieCamera(next);
         else await verifyConfirmedSelfie();
       } catch {

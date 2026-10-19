@@ -15,12 +15,14 @@ function face({ x = 0.5, y = 0.5, width = 0.32, height = 0.5, yaw = 0, roll = 0 
     points[index] = { x: x + Math.cos(theta) * width / 2, y: y + Math.sin(theta) * height / 2, z: 0 };
   });
   // Eye corners in MediaPipe topology: 33 = subject right, 263 = subject left.
-  const eyeSpan = width * 0.62;
   const eyeY = y - height * 0.13;
-  const eyeRise = Math.tan(roll * Math.PI / 180) * eyeSpan;
-  const depth = Math.tan(yaw * Math.PI / 180) * eyeSpan;
-  points[33] = { x: x - eyeSpan / 2, y: eyeY - eyeRise / 2, z: depth / 2 };
-  points[263] = { x: x + eyeSpan / 2, y: eyeY + eyeRise / 2, z: -depth / 2 };
+  for (const [right, left, ratio] of [[33, 263, 0.62], [133, 362, 0.26], [159, 386, 0.45]]) {
+    const eyeSpan = width * ratio;
+    const eyeRise = Math.tan(roll * Math.PI / 180) * eyeSpan;
+    const depth = Math.tan(yaw * Math.PI / 180) * eyeSpan;
+    points[right] = { x: x - eyeSpan / 2, y: eyeY - eyeRise / 2, z: depth / 2 };
+    points[left] = { x: x + eyeSpan / 2, y: eyeY + eyeRise / 2, z: -depth / 2 };
+  }
   points[1] = { x, y, z: -0.06 };
   return points;
 }
@@ -49,7 +51,7 @@ test("one centered frontal face is acceptable, absent and additional faces are r
 test("small, large, off-center, oval-outside and cropped faces cannot become ready", () => {
   assert.equal(evaluateSelfieGeometry(frame([face({ width: 0.15, height: 0.23 })]), "front").code, "too-small");
   assert.equal(evaluateSelfieGeometry(frame([face({ width: 0.49, height: 0.73 })]), "front").code, "too-large");
-  assert.equal(evaluateSelfieGeometry(frame([face({ x: 0.56 })]), "front").code, "off-center");
+  assert.equal(evaluateSelfieGeometry(frame([face({ x: 0.58 })]), "front").code, "off-center");
   const outside = face();
   outside[338] = { x: 0.72, y: 0.24, z: 0 };
   assert.equal(evaluateSelfieGeometry(frame([outside]), "front").code, "outside-guide");
@@ -125,7 +127,7 @@ test("movement inside the accepted area restarts stability, and explicit stop si
   const { controller, updates, events } = gate();
   controller.sample(frame(), 0);
   controller.sample(frame(), 180);
-  controller.sample(frame([face({ x: 0.52 })]), 360);
+  controller.sample(frame([face({ x: 0.54 })]), 360);
   assert.equal(updates.at(-1).progress, 0);
   controller.stop();
   const count = updates.length;
@@ -158,4 +160,65 @@ test("slow inference completes after four stable samples while two or three fram
   assert.ok(sparse.updates.at(-1).progress < 1);
   sparse.controller.sample(frame(), 2850);
   assert.deepEqual(sparse.events, ["ready", "stop"]);
+});
+
+test("a modest side turn may shift slightly while the whole face still fits the oval", () => {
+  for (const yaw of [24, -24]) {
+    const result = evaluateSelfieGeometry(frame([face({ x: 0.55, yaw })]), yaw > 0 ? "right" : "left");
+    assert.equal(result.acceptable, true);
+  }
+});
+
+test("median eye-pair pose resists one noisy landmark without accepting the wrong anatomical turn", () => {
+  const correct = face({ yaw: 24 });
+  correct[33].z += 0.12;
+  assert.equal(evaluateSelfieGeometry(frame([correct]), "right").acceptable, true);
+  assert.equal(evaluateSelfieGeometry(frame([correct]), "left").acceptable, false);
+  const frontal = face();
+  frontal[33].z += 0.12;
+  assert.equal(evaluateSelfieGeometry(frame([frontal]), "right").acceptable, false);
+  assert.equal(evaluateSelfieGeometry(frame([frontal]), "front").acceptable, true);
+});
+
+test("missing or malformed extra eye geometry cannot fall back to a single noisy pair", () => {
+  for (const invalid of [null, { x: 0.5, y: 0.4, z: Number.NaN }, { x: 0.8, y: 0.4, z: 0 }]) {
+    const points = face({ yaw: 24 });
+    points[133] = invalid;
+    assert.equal(evaluateSelfieGeometry(frame([points]), "right").acceptable, false);
+  }
+});
+
+test("direction cues describe preview movement while side labels remain anatomical", () => {
+  const cases = [
+    [{ x: 0.58 }, "front", "right"],
+    [{ x: 0.42 }, "front", "left"],
+    [{ y: 0.6 }, "front", "up"],
+    [{ y: 0.4 }, "front", "down"],
+    [{ width: 0.15, height: 0.23 }, "front", "closer"],
+    [{ width: 0.49, height: 0.73 }, "front", "farther"],
+    [{}, "right", "right"],
+    [{}, "left", "left"],
+    [{ yaw: 24 }, "front", "left"],
+    [{ yaw: -24 }, "front", "right"],
+    [{ yaw: 45 }, "right", "left"],
+    [{ yaw: -45 }, "left", "right"],
+  ];
+  for (const [options, view, direction] of cases) assert.equal(evaluateSelfieGeometry(frame([face(options)]), view).direction, direction);
+  const holding = gate("right");
+  holding.controller.sample(frame([face({ yaw: 24 })]), 0);
+  assert.equal(holding.updates.at(-1).direction, "hold");
+  holding.controller.stop();
+});
+
+test("small in-oval landmark jitter can finish a side hold without hiding disappearance or wrong turns", () => {
+  const { controller, events } = gate("right");
+  for (const [index, x] of [0.5, 0.52, 0.49, 0.515, 0.5, 0.505].entries()) controller.sample(frame([face({ x, yaw: 24 })]), index * 180);
+  assert.deepEqual(events, ["ready", "stop"]);
+  for (const interrupted of [frame([]), frame([face({ yaw: -24 })]), frame([face({ yaw: 24 }), face()])]) {
+    const invalid = gate("right");
+    for (const now of [0, 180, 360, 540, 720]) invalid.controller.sample(frame([face({ yaw: 24 })]), now);
+    invalid.controller.sample(interrupted, 900);
+    assert.equal(invalid.events.length, 0);
+    assert.equal(invalid.updates.at(-1).progress, 0);
+  }
 });

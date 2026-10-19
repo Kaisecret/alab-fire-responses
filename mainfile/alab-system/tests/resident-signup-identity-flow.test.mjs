@@ -4,6 +4,7 @@ import test from 'node:test';
 import ts from 'typescript';
 import { createFaceCheckController } from '../lib/resident-applications/face-check-client.mjs';
 import { createSelfieViewCollection, SELFIE_VIEWS } from '../lib/resident-applications/selfie-views-client.mjs';
+import { selfieGuidanceCue } from '../lib/resident-applications/selfie-guidance-cues.mjs';
 
 const markupSource = readFileSync(new URL('../app/_content/signup-content.ts', import.meta.url), 'utf8');
 const markup = markupSource.match(/export const signupMarkup = `([\s\S]*)`;\s*$/)?.[1];
@@ -20,7 +21,7 @@ const deferred = () => { let resolve; const promise = new Promise(done => { reso
 function mount({ check = async () => Response.json({ verified: true, token: 'signed-id' }), face = async () => Response.json({ verified: true, token: 'signed-face' }),
   camera = async () => ({ getTracks: () => [{ stop() {} }] }),
   encode = callback => callback(new Blob(['camera-frame'], { type: 'image/jpeg' })), shrink = async file => file } = {}) {
-  const nodes = new Map(); const requests = []; const intervals = new Set(); const guidance = [];
+  const nodes = new Map(); const requests = []; const intervals = new Set(); const guidance = []; const guidanceSessions = [];
   let cleanup; let redirected;
   const document = {
     body: { style: { overflow: '' } },
@@ -116,7 +117,16 @@ function mount({ check = async () => Response.json({ verified: true, token: 'sig
     if (name.endsWith('/shrink-photo')) return { shrinkPhoto: shrink };
     if (name.endsWith('/face-check-client.mjs')) return { createFaceCheckController: options => createFaceCheckController({ ...options, request: fetch }) };
     if (name.endsWith('/selfie-views-client.mjs')) return { createSelfieViewCollection, SELFIE_VIEWS };
-    if (name.endsWith('/selfie-guidance')) return { startSelfieGuidance: async options => { guidance.push(options); return { stop() {} }; } };
+    if (name.endsWith('/selfie-guidance-cues.mjs')) return { selfieGuidanceCue };
+    if (name.endsWith('/selfie-guidance')) return {
+      startSelfieGuidance: async options => { guidance.push(options); return { stop() {} }; },
+      createSelfieGuidanceSession: () => {
+        const session = { closed: false, starts: 0,
+          async start(options) { assert.equal(session.closed, false); session.starts++; guidance.push(options); return { stop() {} }; },
+          close() { session.closed = true; },
+        }; guidanceSessions.push(session); return session;
+      },
+    };
     throw new Error(`Unexpected dependency: ${name}`);
   };
   new Function('require', 'exports', 'document', 'window', 'sessionStorage', 'fetch', 'navigator', compiled)(require, exports, document, window,
@@ -124,7 +134,7 @@ function mount({ check = async () => Response.json({ verified: true, token: 'sig
     { mediaDevices: { getUserMedia: camera } });
   exports.SignupPage({ fontVariableClassName: '' });
   return {
-    nodes, requests, document, guidance,
+    nodes, requests, document, guidance, guidanceSessions,
     ready: async () => { guidance.at(-1).onUpdate({ ready: true, progress: 1, message: 'Hold steady', code: 'READY' }); guidance.at(-1).onReady(); await flush(); },
     active: () => [...nodes.values()].filter(node => /^step\d+$/.test(node.id) && node.classList.contains('active')).map(node => node.id),
     click: id => nodes.get(id).emit('click'),
@@ -281,6 +291,34 @@ test('capture requires guidance readiness and all three confirmed views before c
   }
   const body = h.requests.find(r => r.url.endsWith('/face-check')).options.body;
   assert.match(body.get('selfie').name, /front/); assert.match(body.get('selfieRight').name, /right/); assert.match(body.get('selfieLeft').name, /left/);
+});
+
+test('live arrows distinguish framing movements, head turns and holding, then disappear in review', async t => {
+  const h = mount(); t.after(h.cleanup);
+  await h.click('selfieCapture');
+  h.guidance.at(-1).onUpdate({ ready: false, progress: 0, code: 'off-center', direction: 'left', message: 'Move left.' });
+  assert.equal(h.nodes.get('selfieDirectionCue').attrs.get('data-direction'), 'left');
+  assert.match(h.nodes.get('selfieCueTitle').textContent, /Move/);
+  h.guidance.at(-1).onUpdate({ ready: false, progress: .3, code: 'hold', direction: 'hold', message: 'Hold still.' });
+  assert.equal(h.nodes.get('selfieDirectionCue').attrs.get('data-direction'), 'hold');
+  await h.ready();
+  assert.equal(h.nodes.get('selfieDirectionCue').hidden, true);
+  await h.click('useSelfie');
+  assert.equal(h.nodes.get('selfiePhaseFront').attrs.get('data-state'), 'done');
+  assert.equal(h.nodes.get('selfiePhaseRight').attrs.get('data-state'), 'active');
+  h.guidance.at(-1).onUpdate({ ready: false, progress: 0, code: 'turn-right', direction: 'right', message: 'Turn right.' });
+  assert.equal(h.nodes.get('selfieDirectionCue').attrs.get('data-direction'), 'right');
+  assert.match(h.nodes.get('selfieCueTitle').textContent, /Turn/);
+});
+
+test('the camera reuses one detector through all three views and releases it after completion or cancel', async t => {
+  const h = mount(); t.after(h.cleanup); await openIds(h); await h.upload('fileFront'); await h.upload('fileBack');
+  await h.click('selfieCapture'); await h.ready();
+  assert.equal(h.guidanceSessions.length, 1); assert.equal(h.guidanceSessions[0].closed, false, 'review keeps the model warm');
+  await h.click('useSelfie'); await h.ready(); await h.click('useSelfie'); await h.ready(); await h.click('useSelfie');
+  assert.equal(h.guidanceSessions.length, 1); assert.equal(h.guidanceSessions[0].starts, 3); assert.equal(h.guidanceSessions[0].closed, true);
+  await h.click('retakeSelfieFront'); await h.click('cancelSelfie');
+  assert.equal(h.guidanceSessions.length, 2); assert.equal(h.guidanceSessions[1].closed, true);
 });
 
 test('a cancelled retake preserves confirmed photos; replacing one view preserves the other two', async t => {
