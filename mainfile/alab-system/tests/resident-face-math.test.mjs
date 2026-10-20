@@ -31,6 +31,17 @@ test("selection refuses no faces, multiple faces, and landmarks outside the actu
   assert.throws(() => selectSingleFace([{ ...face, box: [15, 20, 0, 90] }], "ID", 112, 112), { code: "ID_FACE_UNCLEAR" });
 });
 
+test("an ID's small ghost portrait is ignored, but similar faces on an ID or any second face in a selfie still fail", () => {
+  const ghost = { box: [70, 70, 30, 34], landmarks: template, score: 0.95 };
+  assert.deepEqual(selectSingleFace([ghost, face], "ID", 112, 112), face, "the main portrait is used whatever the detection order");
+  assert.deepEqual(selectSingleFace([face, ghost, { ...ghost, box: [5, 5, 20, 22] }], "ID", 112, 112), face);
+  const similar = { ...face, box: [60, 20, 50, 60] };
+  assert.throws(() => selectSingleFace([face, similar], "ID", 112, 112), { code: "ID_MULTIPLE_FACES" });
+  assert.throws(() => selectSingleFace([face, ghost], "SELFIE", 112, 112), { code: "SELFIE_MULTIPLE_FACES" });
+  const cutOffMain = { ...face, landmarks: [[112, 50], ...template.slice(1)] };
+  assert.throws(() => selectSingleFace([cutOffMain, ghost], "ID", 112, 112), { code: "ID_FACE_UNCLEAR" }, "a cut-off main portrait never falls back to the ghost");
+});
+
 function predictions() {
   const result = {};
   for (const stride of [8, 16, 32]) {

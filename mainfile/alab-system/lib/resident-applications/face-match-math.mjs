@@ -64,11 +64,23 @@ export function decodeYuNet(outputs, width, height, scoreThreshold = 0.9, nmsThr
   return kept;
 }
 
+// Many IDs (passports, newer national cards) also print a small "ghost" copy of
+// the holder's portrait. On the ID only, the largest face is used when every
+// other face is at most this fraction of its width and height. Faces of similar
+// size still fail, and a selfie must always contain exactly one face.
+const ID_GHOST_MAX_RATIO = 0.5;
+
 export function selectSingleFace(faces, side, width, height) {
   const label = side === "ID" ? "ID photo" : "selfie";
   if (faces.length === 0) throw new FaceInputError(`${side}_FACE_NOT_FOUND`, `No clear face was found in the ${label}. Please take a clearer photo.`);
-  if (faces.length !== 1) throw new FaceInputError(`${side}_MULTIPLE_FACES`, `More than one face was found in the ${label}. Please use a photo showing only your face.`);
-  const face = faces[0];
+  let face = faces[0];
+  if (faces.length !== 1) {
+    const [largest, ...others] = [...faces].sort((a, b) => b.box[2] * b.box[3] - a.box[2] * a.box[3]);
+    const ghostsOnly = side === "ID" && others.every((other) => other.box[2] <= largest.box[2] * ID_GHOST_MAX_RATIO
+      && other.box[3] <= largest.box[3] * ID_GHOST_MAX_RATIO);
+    if (!ghostsOnly) throw new FaceInputError(`${side}_MULTIPLE_FACES`, `More than one face was found in the ${label}. Please use a photo showing only your face.`);
+    face = largest;
+  }
   if (face.box.length !== 4 || !face.box.every(Number.isFinite) || face.box[2] < 16 || face.box[3] < 16
     || face.landmarks.length !== 5 || !face.landmarks.every((p) => p.length === 2 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && p[0] >= 0 && p[0] < width && p[1] >= 0 && p[1] < height)) {
     throw new FaceInputError(`${side}_FACE_UNCLEAR`, `The face in the ${label} is too small or cut off. Please take a closer, clearer photo.`);
