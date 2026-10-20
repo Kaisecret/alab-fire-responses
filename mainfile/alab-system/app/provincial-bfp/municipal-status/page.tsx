@@ -1196,12 +1196,8 @@ export default function MunicipalStatusPage() {
                 >
                   <span className="pbfp-link-icon amber"><i className="fa-solid fa-id-card" /></span>
                   <span className="pbfp-link-text">
-                    <span>Resident Applications</span>
-                    <span className={`pbfp-link-count ${selectedMunicipality.pendingApplicationCount > 0 ? 'pending' : ''}`}>
-                      {selectedMunicipality.pendingApplicationCount > 0
-                        ? `${selectedMunicipality.pendingApplicationCount} awaiting review`
-                        : 'Nothing awaiting review'}
-                    </span>
+                    <span>Verified Users</span>
+                    <span className="pbfp-link-count">View verified residents</span>
                   </span>
                   <i className="fa-solid fa-arrow-right" />
                 </Link>

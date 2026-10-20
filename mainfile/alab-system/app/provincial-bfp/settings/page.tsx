@@ -26,6 +26,7 @@ type ProvinceCounts = {
   totalStations: number;
   totalPersonnel: number;
   totalResidents: number;
+  verifiedResidents: number;
   pendingApplications: number;
   updatedAt: string;
 };
@@ -830,8 +831,7 @@ export default function ProvincialSettingsPage() {
                     { icon: 'fa-city', label: 'Municipalities', value: counts.totalMunicipalities, due: false },
                     { icon: 'fa-building-shield', label: 'Stations', value: counts.totalStations, due: false },
                     { icon: 'fa-user-group', label: 'Personnel', value: counts.totalPersonnel, due: false },
-                    { icon: 'fa-house-user', label: 'Residents', value: counts.totalResidents, due: false },
-                    { icon: 'fa-user-check', label: 'Awaiting review', value: counts.pendingApplications, due: counts.pendingApplications > 0 },
+                    { icon: 'fa-user-check', label: 'Verified Users', value: counts.verifiedResidents, due: false },
                   ].map((row) => (
                     <div className="pset__row" key={row.label}>
                       <span className="pset__row-inner">
@@ -849,7 +849,7 @@ export default function ProvincialSettingsPage() {
               )}
 
               <Link href="/provincial-bfp/resident-applications" className="pset__link" style={{ marginTop: 4 }}>
-                <i className="fa-solid fa-user-check" aria-hidden="true" /> Review applications
+                <i className="fa-solid fa-user-check" aria-hidden="true" /> View verified users
               </Link>
             </div>
           </section>

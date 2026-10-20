@@ -45,13 +45,8 @@ test("resident applications API routes enforce provincial auth, submission locki
   assert.match(correctionRoute, /deliverResidentCorrectionNotifications/);
 });
 
-test("application review UI renders provincial queue with filters and review modal", () => {
+test("provincial applications page keeps its authenticated detail-view component", () => {
   const page = source("app/provincial-bfp/resident-applications/page.tsx");
-  const component = source("app/_components/provincial-resident-application-review.tsx");
 
   assert.match(page, /ProvincialResidentApplicationReview/);
-  assert.match(component, /api\/provincial-bfp\/resident-applications/);
-  assert.match(component, /Approve/);
-  assert.match(component, /Request Corrections/);
-  assert.match(component, /submissionNumber/);
 });

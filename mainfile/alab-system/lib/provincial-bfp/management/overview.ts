@@ -14,6 +14,7 @@ export type ManagementSummary = {
   totalStations: number;
   totalPersonnel: number;
   totalResidents: number;
+  verifiedResidents: number;
   pendingApplications: number;
   totalReports: number;
   activeIncidents: number;
@@ -210,6 +211,19 @@ export async function getManagementSummary(
         where sm.id is not null ${filters?.municipalityId ? "" : "or (ra.id is null and not exists (select 1 from resident_addresses known_address join municipalities known_municipality on known_municipality.id = known_address.municipality_id where known_address.resident_profile_id = rp.id and known_municipality.province <> 'Antique'))"}
       ) as "totalResidents",
       (
+        select count(distinct rp.id)::int
+        from resident_profiles rp
+        join users u on u.id = rp.user_id and u.role = 'RESIDENT' and u.account_status = 'ACTIVE'
+        join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
+        join scoped_municipalities sm on sm.id = ra.municipality_id
+        join lateral (
+          select rv.status from resident_verifications rv
+          where rv.resident_profile_id = rp.id
+          order by rv.submitted_at desc, rv.created_at desc, rv.id desc
+          limit 1
+        ) latest on latest.status = 'VERIFIED'
+      ) as "verifiedResidents",
+      (
         select count(distinct rv.id)::int
         from resident_verifications rv
         join resident_profiles rp on rp.id = rv.resident_profile_id
@@ -247,6 +261,7 @@ export async function getManagementSummary(
     totalStations: Number(row?.totalStations ?? 0),
     totalPersonnel: Number(row?.totalPersonnel ?? 0),
     totalResidents: Number(row?.totalResidents ?? 0),
+    verifiedResidents: Number(row?.verifiedResidents ?? 0),
     pendingApplications: Number(row?.pendingApplications ?? 0),
     totalReports: Number(row?.totalReports ?? 0),
     activeIncidents: Number(row?.activeIncidents ?? 0),

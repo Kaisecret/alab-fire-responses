@@ -193,15 +193,23 @@ test("automatic activation writes real schema statuses and an unassigned approva
   const metadata = approved.values.find(value => typeof value === "string" && value.startsWith("{"));
   assert.deepEqual(JSON.parse(metadata), { municipalityId: "municipality", method: "automatic_face_match", score: 0.8, threshold: 0.363 });
   assert.equal(route.municipalRecipients, 0); assert.equal(route.notices.length, 1); assert.equal(route.notices[0].eventType, "RESIDENT_APPLICATION_APPROVED"); assert.equal(route.notices[0].actorUserId, null);
+  assert.equal(route.notices[0].title, "Account verified");
   assert.equal(response.cookies.values[0][0], "applicant"); assert.equal(response.cookies.values[0][1], "applicant-session");
 });
 
-test("disabled automatic approval retains pending review and ignores browser activation flags", async () => {
-  const f = await fixture(); const route = registrationRoute(f, { auto: false }); const data = f.form(); data.set("autoApprove", "true"); data.set("accountStatus", "ACTIVE");
-  const response = await route.POST(request(data)); assert.equal(response.status, 201); assert.equal((await response.json()).application.status, "PENDING");
-  assert.ok(route.queries.find(q => /insert into users/.test(q.sql)).values.includes("PENDING_REVIEW"));
-  assert.ok(route.queries.find(q => /insert into resident_verifications\s/.test(q.sql)).values.includes("PENDING"));
-  assert.equal(route.queries.some(q => /APPROVED/.test(q.sql)), false); assert.equal(route.notices[0].eventType, "RESIDENT_APPLICATION_SUBMITTED");
+test("verified signup always activates despite a false or missing old rollout flag and ignores browser status flags", async () => {
+  const f = await fixture();
+  for (const oldFlag of ["false", undefined]) {
+    const route = registrationRoute(f, { auto: false });
+    if (oldFlag === undefined) delete process.env.RESIDENT_AUTO_APPROVAL_ENABLED;
+    const data = f.form(); data.set("autoApprove", "false"); data.set("accountStatus", "PENDING_REVIEW");
+    const response = await route.POST(request(data)); assert.equal(response.status, 201); assert.equal((await response.json()).application.status, "VERIFIED");
+    assert.ok(route.queries.find(q => /insert into users/.test(q.sql)).values.includes("ACTIVE"));
+    assert.ok(route.queries.find(q => /insert into resident_verifications\s/.test(q.sql)).values.includes("VERIFIED"));
+    assert.equal(route.queries.some(q => /APPROVED/.test(q.sql)), true);
+    assert.equal(route.municipalRecipients, 0); assert.equal(route.notices.length, 1);
+    assert.equal(route.notices[0].eventType, "RESIDENT_APPLICATION_APPROVED"); assert.equal(route.notices[0].title, "Account verified");
+  }
 });
 
 test("registration keeps OTP gating and cleans uploaded evidence after a failed transaction", async () => {

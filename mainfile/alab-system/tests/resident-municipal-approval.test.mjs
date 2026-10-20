@@ -72,10 +72,12 @@ test("resident application detail still loads when the evidence module is unavai
   assert.match(service, /try\s*\{\s*const \{ createIdentityEvidenceSignedUrl \} = await import\("\.\/evidence"\)/);
 });
 
-test("registration creates a pending applicant and never creates a resident session", () => {
+test("verified registration creates an active account and returns applicant status access before sign-in", () => {
   const registration = source("app/api/auth/register/route.ts");
   assert.match(registration, /request\.formData\(\)/);
-  assert.match(registration, /PENDING_REVIEW/);
+  assert.match(registration, /"ACTIVE"/);
+  assert.match(registration, /"VERIFIED"/);
+  assert.doesNotMatch(registration, /RESIDENT_AUTO_APPROVAL_ENABLED|PENDING_REVIEW/);
   assert.match(registration, /createResidentApplicantSession/);
   assert.match(registration, /resident_verification_events/);
   assert.doesNotMatch(registration, /createResidentSession/);
@@ -142,16 +144,18 @@ test("application detail and review actions resolve stale ids to the resident's 
   assert.match(lockedApplicationBlock, /order by rv\.submitted_at desc, rv\.created_at desc/i);
 });
 
-test("resident and municipal approval screens use real APIs and correct review language", () => {
+test("the municipal directory uses real APIs and verified language while legacy applicant recovery remains available", () => {
   const municipal = source("app/municipal-bfp/verification-queue/page.tsx");
   const applicant = source("app/resident/application/page.tsx");
   const statusApi = source("app/api/resident/application-status/route.ts");
 
-  assert.match(source("app/_components/municipal-bfp-layout.tsx"), /Resident Applications/);
+  assert.match(source("app/_components/municipal-bfp-layout.tsx"), /Verified Users/);
   assert.match(municipal, /api\/municipal-bfp\/resident-applications/);
-  assert.match(municipal, /Request corrections/);
+  assert.match(municipal, /Verified Users/);
+  assert.doesNotMatch(municipal, /Request corrections|Under Review|Needs Correction/);
   assert.doesNotMatch(municipal, /VR-2025-0152/);
   assert.match(applicant, /Under review/);
   assert.match(applicant, /Changes requested/);
+  assert.match(applicant, /Account verified/);
   assert.match(statusApi, /verifyResidentApplicantSession/);
 });

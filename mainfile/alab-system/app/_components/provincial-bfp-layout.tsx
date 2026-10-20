@@ -111,7 +111,7 @@ const navigationGroups: NavGroup[] = [
     groupTitle: 'COMMUNITY & RESIDENTS',
     items: [
       {
-        label: 'Resident Applications',
+        label: 'Verified Users',
         href: '/provincial-bfp/resident-applications',
         icon: 'fa-solid fa-user-check',
       },

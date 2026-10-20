@@ -4,7 +4,7 @@ import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { NotificationBell } from './notifications/notification-bell';
 import { MunicipalIncidentAlarm } from './municipal-incident-alarm';
 import { MunicipalBackupAlarm } from './municipal-backup-alarm';
@@ -34,7 +34,7 @@ const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Dashboard', href: '/municipal-bfp', icon: 'custom-dashboard-grid', exact: true },
       { label: 'Active Incidents', href: '/municipal-bfp/active-incidents', icon: 'fa-solid fa-fire', badgeType: 'red' },
-      { label: 'Resident Applications', href: '/municipal-bfp/verification-queue', icon: 'fa-solid fa-id-card' },
+      { label: 'Verified Users', href: '/municipal-bfp/verification-queue', icon: 'fa-solid fa-id-card' },
     ],
   },
   {
@@ -1127,6 +1127,9 @@ const layoutStyles = `
 `;
 
 const MUNICIPAL_IDENTITY_KEY = 'alab_municipal_identity';
+const subscribeToHydration = () => () => {};
+const clientHydrated = () => true;
+const serverHydrated = () => false;
 
 type MunicipalUserIdentity = {
   displayName: string;
@@ -1168,6 +1171,7 @@ function MunicipalShellSkeleton() {
 }
 
 export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) {
+  const hydrated = useSyncExternalStore(subscribeToHydration, clientHydrated, serverHydrated);
   const pathname = usePathname();
   const hasCommandHeader = pathname === '/municipal-bfp' || pathname === '/municipal-bfp/' || pathname === '/municipal-bfp/gis-map' || pathname === '/municipal-bfp/active-incidents' || pathname === '/municipal-bfp/firetrucks' || pathname === '/municipal-bfp/incident-reports';
   // The sidebar badge shows the real queue depth, not a fixed number.
@@ -1178,7 +1182,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [identity, setIdentity] = useState<MunicipalUserIdentity | null>(() => {
+  const [cachedIdentity, setIdentity] = useState<MunicipalUserIdentity | null>(() => {
     if (typeof window === 'undefined') return null;
     try {
       const stored = sessionStorage.getItem(MUNICIPAL_IDENTITY_KEY);
@@ -1187,6 +1191,9 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
       return null;
     }
   });
+  // Cached identity becomes visible after the initial client render matches
+  // the server shell. It still avoids waiting for /me on subsequent visits.
+  const identity = hydrated ? cachedIdentity : null;
 
   const isAuthenticationPage = pathname === '/municipal-bfp/login' || pathname === '/municipal-bfp/change-password';
 
@@ -1267,7 +1274,7 @@ export function MunicipalBfpLayout({ children }: { children: React.ReactNode }) 
     if (path.startsWith('/municipal-bfp/active-incidents')) return 'Active Incidents';
     if (path.startsWith('/municipal-bfp/incident-reports')) return 'Incident Reports';
     if (path.startsWith('/municipal-bfp/gis-map')) return 'GIS Map';
-    if (path.startsWith('/municipal-bfp/verification-queue') || path.startsWith('/municipal-bfp/resident-applications')) return 'Resident Applications';
+    if (path.startsWith('/municipal-bfp/verification-queue') || path.startsWith('/municipal-bfp/resident-applications')) return 'Verified Users';
     if (path.startsWith('/municipal-bfp/stations')) return 'Fire Stations';
     if (path.startsWith('/municipal-bfp/firetrucks')) return 'Firetrucks';
     if (path.startsWith('/municipal-bfp/water-sources')) return 'Water Sources';

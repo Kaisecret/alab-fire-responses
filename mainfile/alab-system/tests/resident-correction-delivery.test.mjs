@@ -120,15 +120,10 @@ test("provider failure does not turn a saved correction into an API failure", ()
   assert.match(source(deliveryServicePath), /Promise\.allSettled/);
 });
 
-test("municipal reviewer sees saved correction and per-channel delivery feedback", () => {
+test("the verified-user directory exposes no manual corrections or delivery workflow", () => {
   const page = source("app/municipal-bfp/verification-queue/page.tsx");
-  assert.match(page, /Correction request saved/);
-  assert.match(page, /SMS sent/);
-  assert.match(page, /Email sent/);
-  assert.match(page, /SMS queued for a scheduled retry/);
-  assert.match(page, /SMS could not be sent/);
-  assert.match(page, /SMS delivery could not be confirmed/);
-  assert.match(page, /Email is not configured/);
+  assert.match(page, /Verified Users/);
+  assert.doesNotMatch(page, /Correction request saved|request-corrections|SMS sent|Email sent/);
 });
 
 test("correction delivery falls back safely when the queue migration is not yet applied", () => {

@@ -326,8 +326,8 @@ export default function ResidentApplicationPage() {
               <div className="approval-symbol" aria-hidden="true">{needsChanges ? "!" : isApproved ? "✓" : "·"}</div>
               <div>
                 <p className="eyebrow">{application.reference}</p>
-                <h1>{needsChanges ? tx("Changes requested") : isApproved ? tx("Application approved") : tx("Under review")}</h1>
-                <p>{needsChanges ? tx("Please correct the items identified by your Municipal BFP and resubmit.") : isApproved ? tx("Your identity is approved. You can now sign in to the resident application.") : tx("Your application is safely queued with {municipality} Municipal BFP.").replace("{municipality}", application.municipality)}</p>
+                <h1>{needsChanges ? tx("Changes requested") : isApproved ? tx("Account verified") : tx("Under review")}</h1>
+                <p>{needsChanges ? tx("Please correct the items identified by your Municipal BFP and resubmit.") : isApproved ? tx("Your identity is verified and your account is ready. You can now sign in.") : tx("Your application is safely queued with {municipality} Municipal BFP.").replace("{municipality}", application.municipality)}</p>
               </div>
             </div>
 

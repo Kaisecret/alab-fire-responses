@@ -138,6 +138,7 @@ export type ManagedApplication = {
   email: string;
   phone: string;
   username: string;
+  accountStatus: "PENDING_REVIEW" | "ACTIVE" | "SUSPENDED";
   municipalityId: string;
   municipalityName: string;
   barangayId: string;

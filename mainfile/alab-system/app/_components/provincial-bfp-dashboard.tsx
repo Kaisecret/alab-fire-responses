@@ -15,6 +15,7 @@ type ManagementSummaryData = {
   totalStations: number;
   totalPersonnel: number;
   totalResidents: number;
+  verifiedResidents: number;
   pendingApplications: number;
   totalReports: number;
   activeIncidents: number;
@@ -637,7 +638,7 @@ export function ProvincialBfpDashboard() {
             { key: "incidents", icon: "fa-fire-flame-curved", tone: "red", badge: "Priority", value: <FastNumber value={activeIncidentCount} />, label: "Active Province Incidents", description: backupCount > 0 ? `${backupCount} backup request${backupCount > 1 ? "s" : ""} awaiting an alarm` : `Live operations · ${openAssistanceCount} aid requests`, href: "/provincial-bfp/incidents", loading: incidentFeedLoading },
             { key: "stations", icon: "fa-building", tone: "amber", badge: `${summary?.totalMunicipalities ?? "—"} LGUs`, value: summary ? <FastNumber value={summary.totalStations} /> : "—", label: "Municipal Fire Stations", description: "Station directory", href: "/provincial-bfp/firetrucks-stations?view=stations", loading: !summary && !summaryError },
             { key: "personnel", icon: "fa-user-shield", tone: "blue", badge: "Officers & Staff", value: summary ? <FastNumber value={summary.totalPersonnel} /> : "—", label: "BFP Personnel Roster", description: "Personnel registry", href: "/provincial-bfp/responders", loading: !summary && !summaryError },
-            { key: "residents", icon: "fa-id-card", tone: "violet", badge: `${summary?.pendingApplications ?? "—"} Pending`, value: summary ? <FastNumber value={summary.totalResidents} /> : "—", label: "Resident Applications", description: "Verification queue", href: "/provincial-bfp/resident-applications", loading: !summary && !summaryError },
+            { key: "residents", icon: "fa-id-card", tone: "violet", badge: "Verified", value: summary ? <FastNumber value={summary.verifiedResidents} /> : "—", label: "Verified Users", description: "Resident directory", href: "/provincial-bfp/resident-applications", loading: !summary && !summaryError },
           ]}
         />
 

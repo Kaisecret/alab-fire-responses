@@ -21,7 +21,8 @@ test('registry pages contain seven distinct rows while metrics count all matchin
       create table resident_addresses(resident_profile_id int,municipality_id int,barangay_id int,complete_address text,is_primary boolean);
       insert into resident_addresses select n,1,1,'Address '||n,true from generate_series(1,15)n;
       create table resident_verifications(id int, resident_profile_id int, application_reference text, status text, submission_number int, rejection_reason text, submitted_at timestamptz, created_at timestamptz, reviewed_at timestamptz, reviewed_by_user_id int);
-      insert into resident_verifications select n,n,'APP-'||n,case when n<=8 then 'PENDING' when n<=12 then 'VERIFIED' else 'CHANGES_REQUESTED' end,1,null,now()-n*interval '1 minute',now(),null,null from generate_series(1,15)n;
+      insert into resident_verifications select n,n,'APP-'||n,'VERIFIED',2,null,now()-n*interval '1 minute',now(),null,null from generate_series(1,15)n;
+      insert into resident_verifications select n+100,n,'OLD-'||n,'PENDING',1,null,now()-interval '1 day',now()-interval '1 day',null,null from generate_series(1,15)n;
       create table municipal_bfp_stations(id int,municipality_id int,station_name text,status text,latitude numeric,longitude numeric,created_at timestamptz default now(),updated_at timestamptz default now());
       insert into municipal_bfp_stations(id,municipality_id,station_name,status,latitude,longitude) select n,1,'Station '||lpad(n::text,2,'0'),case when n<=10 then 'ACTIVE' else 'INACTIVE' end,11,122 from generate_series(1,15)n;
       insert into municipal_bfp_stations(id,municipality_id,station_name,status) values(16,2,'Outside station','ACTIVE');
@@ -40,7 +41,7 @@ test('registry pages contain seven distinct rows while metrics count all matchin
     };
     const actor = { userId: 'test', role: 'PROVINCIAL_BFP', province: 'Antique' };
     for (const [file, fn, metrics, idKey] of [
-      ['applications', 'listManagedApplications', { pending: 8, verified: 4, changes: 3 }, 'id'],
+      ['applications', 'listManagedApplications', { pending: 0, verified: 15, changes: 0 }, 'id'],
       ['personnel', 'listManagedPersonnel', { assigned: 12, admins: 5, active: 10 }, 'userId'],
       ['stations', 'listManagedStations', { active: 10, municipalities: 1, personnel: 12 }, 'id'],
     ]) {
@@ -58,7 +59,7 @@ test('registry pages contain seven distinct rows while metrics count all matchin
     }
     const applications = loadServerModule('lib/provincial-bfp/management/applications.ts', dependencies);
     const pending = await applications.listManagedApplications(actor, { page: 1, pageSize: 7, status: 'PENDING' });
-    assert.equal(pending.total, 8);
-    assert.deepEqual(pending.metrics, { pending: 8, verified: 0, changes: 0 });
+    assert.equal(pending.total, 0);
+    assert.deepEqual(pending.metrics, { pending: 0, verified: 0, changes: 0 });
   } finally { await db.close(); }
 });

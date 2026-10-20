@@ -2,7 +2,7 @@
 
 import { municipalTabFetch as fetch } from "../../../lib/auth/municipal-tab-fetch";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MunicipalStatCards } from "../../_components/municipal-stat-cards";
 
@@ -10,11 +10,11 @@ type Summary = {
   id: string;
   reference: string;
   status: string;
+  accountStatus: string;
   submittedAt: string;
-  correctionReason: string | null;
   firstName: string;
   lastName: string;
-  email: string;
+  email: string | null;
   phone: string;
   barangay: string;
   address: string;
@@ -35,64 +35,85 @@ type Detail = Summary & {
   }[];
 };
 
-type DeliveryResult = {
-  channel: "SMS" | "EMAIL";
-  status: "SENT" | "FAILED" | "NOT_CONFIGURED" | "QUEUED" | "UNCONFIRMED";
-  tracking?: "UNAVAILABLE";
-};
+const isVerifiedResident = (resident: Summary) => resident.status === "VERIFIED" && resident.accountStatus === "ACTIVE";
 
 export default function VerificationQueuePage() {
   const [mounted, setMounted] = useState(false);
   const [applications, setApplications] = useState<Summary[]>([]);
   const [municipality, setMunicipality] = useState("");
-  const [filter, setFilter] = useState<"ALL" | "PENDING" | "CHANGES_REQUESTED" | "VERIFIED">("PENDING");
   const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [correctionMode, setCorrectionMode] = useState(false);
-  const [reason, setReason] = useState("");
   const [zoomImage, setZoomImage] = useState<{ url: string; label: string } | null>(null);
+  const loadVersion = useRef(0);
+  const loadController = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setMounted(true), 0);
     return () => window.clearTimeout(timer);
   }, []);
 
+  const cancelLoad = useCallback(() => {
+    loadVersion.current++;
+    loadController.current?.abort();
+  }, []);
+
   const load = useCallback(async () => {
+    loadController.current?.abort();
+    const controller = new AbortController();
+    loadController.current = controller;
+    const version = ++loadVersion.current;
     setLoading(true);
+    setError("");
     try {
-      const response = await fetch("/api/municipal-bfp/resident-applications", { cache: "no-store" });
+      const response = await fetch("/api/municipal-bfp/resident-applications?status=VERIFIED", { cache: "no-store", signal: controller.signal });
       const result = (await response.json()) as {
         applications?: Summary[];
         municipality?: string;
         error?: string;
       };
-      setLoading(false);
+      if (controller.signal.aborted || version !== loadVersion.current) return;
       if (!response.ok) {
-        setError(result.error ?? "Unable to load resident applications.");
+        setApplications([]);
+        setSelected(null);
+        setError(result.error ?? "Unable to load verified users.");
         return;
       }
-      setApplications(result.applications ?? []);
+      const residents = (result.applications ?? []).filter(isVerifiedResident);
+      setApplications(residents);
+      setSelected((current) => current && !residents.some((resident) => resident.id === current.id) ? null : current);
       setMunicipality(result.municipality ?? "");
       setError("");
     } catch {
-      setLoading(false);
-      setError("Network error: Unable to connect to verification queue.");
+      if (controller.signal.aborted || version !== loadVersion.current) return;
+      setApplications([]);
+      setSelected(null);
+      setError("Network error: Unable to load verified users.");
+    } finally {
+      if (!controller.signal.aborted && version === loadVersion.current) {
+        setLoading(false);
+        if (loadController.current === controller) loadController.current = null;
+      }
     }
   }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(timer);
-  }, [load]);
+    const refreshIfVisible = () => { if (document.visibilityState === "visible") void load(); };
+    const interval = window.setInterval(refreshIfVisible, 60_000);
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      cancelLoad();
+    };
+  }, [load, cancelLoad]);
 
   const visible = useMemo(() => {
     return applications.filter((item) => {
-      const matchesFilter = filter === "ALL" || item.status === filter;
-      if (!matchesFilter) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
       return (
@@ -101,83 +122,31 @@ export default function VerificationQueuePage() {
         item.reference.toLowerCase().includes(q) ||
         item.barangay.toLowerCase().includes(q) ||
         item.phone.toLowerCase().includes(q) ||
-        item.email.toLowerCase().includes(q)
+        (item.email ?? "").toLowerCase().includes(q)
       );
     });
-  }, [applications, filter, searchQuery]);
-
-  const pendingCount = applications.filter((item) => item.status === "PENDING").length;
-  const correctionsCount = applications.filter((item) => item.status === "CHANGES_REQUESTED").length;
-  const verifiedCount = applications.filter((item) => item.status === "VERIFIED").length;
+  }, [applications, searchQuery]);
 
   async function openApplication(id: string) {
     setWorking(true);
     setError("");
-    setNotice("");
+    setSelected(null);
     try {
       const response = await fetch(`/api/municipal-bfp/resident-applications/${id}`, { cache: "no-store" });
       const result = (await response.json()) as { application?: Detail; error?: string };
       setWorking(false);
       if (!response.ok || !result.application) {
-        setError(result.error ?? "Unable to open this application.");
+        setError(result.error ?? "Unable to open this resident's details.");
+        return;
+      }
+      if (!isVerifiedResident(result.application)) {
+        setError("This resident is no longer verified and active. Refresh the directory.");
         return;
       }
       setSelected(result.application);
-      setReason("");
-      setCorrectionMode(false);
     } catch {
       setWorking(false);
-      setError("Network error: Unable to load application dossier.");
-    }
-  }
-
-  async function decide(action: "approve" | "request-corrections") {
-    if (!selected) return;
-    setWorking(true);
-    setError("");
-    try {
-      const response = await fetch(`/api/municipal-bfp/resident-applications/${selected.id}/${action}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: action === "request-corrections" ? JSON.stringify({ reason }) : undefined,
-      });
-      const result = (await response.json()) as { error?: string; delivery?: DeliveryResult[] };
-      setWorking(false);
-      if (!response.ok) {
-        setError(result.error ?? "Unable to save this review.");
-        return;
-      }
-      setSelected(null);
-      setCorrectionMode(false);
-      if (action === "request-corrections") {
-        const deliveryStatus = (channel: DeliveryResult["channel"]) =>
-          result.delivery?.find((item) => item.channel === channel)?.status;
-        const smsStatus = deliveryStatus("SMS");
-        const emailStatus = deliveryStatus("EMAIL");
-        const smsMessage = smsStatus === "SENT"
-          ? "SMS sent."
-          : smsStatus === "NOT_CONFIGURED"
-            ? "SMS is not configured."
-            : smsStatus === "QUEUED" ? "SMS queued for a scheduled retry."
-              : smsStatus === "FAILED" ? "SMS could not be sent."
-                : "SMS delivery could not be confirmed.";
-        const emailMessage = emailStatus === "SENT"
-          ? "Email sent."
-          : emailStatus === "NOT_CONFIGURED"
-            ? "Email is not configured."
-            : emailStatus === "QUEUED" ? "Email queued for a scheduled retry."
-              : emailStatus === "FAILED" ? "Email could not be sent."
-                : "Email delivery could not be confirmed.";
-        const trackingMessage = result.delivery?.some(item => item.tracking === "UNAVAILABLE")
-          ? " Delivery tracking is temporarily unavailable." : "";
-        setNotice(`Correction request saved. ${smsMessage} ${emailMessage}${trackingMessage}`);
-      } else {
-        setNotice("Resident application approved.");
-      }
-      await load();
-    } catch {
-      setWorking(false);
-      setError("Network error: Failed to record decision.");
+      setError("Network error: Unable to load resident details.");
     }
   }
 
@@ -206,7 +175,7 @@ export default function VerificationQueuePage() {
             className="vq-refresh-btn"
             onClick={() => void load()}
             disabled={loading}
-            title="Refresh verification queue"
+            title="Refresh verified users"
           >
             <i className={`fa-solid fa-arrows-rotate ${loading ? "fa-spin" : ""}`} />
             <span>{loading ? "Refreshing…" : "Refresh"}</span>
@@ -234,91 +203,31 @@ export default function VerificationQueuePage() {
         </div>
       )}
 
-      {notice && (
-        <div className="vq-alert-banner success" role="status">
-          <div className="vq-alert-icon">
-            <i className="fa-solid fa-circle-check" />
-          </div>
-          <div className="vq-alert-text">
-            <strong>Review saved:</strong> {notice}
-          </div>
-          <button
-            type="button"
-            className="vq-alert-close"
-            onClick={() => setNotice("")}
-            aria-label="Dismiss confirmation"
-          >
-            <i className="fa-solid fa-xmark" />
-          </button>
+      <section className="vq-directory-overview" aria-label="Verified user directory">
+        <MunicipalStatCards
+          label="Verified resident total"
+          columns={1}
+          items={[
+            { key: "verified", icon: "fa-circle-check", tone: "emerald", value: applications.length, label: "Verified users", badge: "Verified", description: "Active residents in your municipality", loading },
+          ]}
+        />
+        <div className="vq-directory-copy">
+          <h1>Verified Users</h1>
+          <p>Active residents automatically verified after government ID and face checks, followed by OTP verification.</p>
+          <span><i className="fa-solid fa-shield-halved" aria-hidden="true" /> Read-only resident directory</span>
         </div>
-      )}
+      </section>
 
-      <MunicipalStatCards
-        label="Application totals"
-        items={[
-          { key: "pending", icon: "fa-clock", tone: "amber", value: pendingCount, label: "To review", badge: "Pending", description: "Awaiting application review", onClick: () => setFilter("PENDING"), active: filter === "PENDING" },
-          { key: "corrections", icon: "fa-triangle-exclamation", tone: "red", value: correctionsCount, label: "Corrections", badge: "Changes", description: "Applications needing updates", onClick: () => setFilter("CHANGES_REQUESTED"), active: filter === "CHANGES_REQUESTED" },
-          { key: "verified", icon: "fa-circle-check", tone: "emerald", value: verifiedCount, label: "Approved", badge: "Verified", description: "Approved resident applications", onClick: () => setFilter("VERIFIED"), active: filter === "VERIFIED" },
-          { key: "total", icon: "fa-id-card", tone: "blue", value: applications.length, label: "All submissions", badge: "Total", description: "All resident applications", onClick: () => setFilter("ALL"), active: filter === "ALL" },
-        ]}
-      />
-
-      {/* FILTER TABS & SEARCH TOOLBAR */}
+      {/* DIRECTORY COUNT & SEARCH TOOLBAR */}
       <section className="vq-toolbar">
-        <div className="vq-filter-pills" role="tablist" aria-label="Filter applications">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === "PENDING"}
-            className={`vq-pill ${filter === "PENDING" ? "active" : ""}`}
-            onClick={() => setFilter("PENDING")}
-          >
-            <span className="vq-pill-dot pending" />
-            <span>Under Review</span>
-            <span className="vq-pill-badge">{pendingCount}</span>
-          </button>
-
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === "CHANGES_REQUESTED"}
-            className={`vq-pill ${filter === "CHANGES_REQUESTED" ? "active" : ""}`}
-            onClick={() => setFilter("CHANGES_REQUESTED")}
-          >
-            <span className="vq-pill-dot corrections" />
-            <span>Needs Correction</span>
-            <span className="vq-pill-badge">{correctionsCount}</span>
-          </button>
-
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === "VERIFIED"}
-            className={`vq-pill ${filter === "VERIFIED" ? "active" : ""}`}
-            onClick={() => setFilter("VERIFIED")}
-          >
-            <span className="vq-pill-dot approved" />
-            <span>Approved</span>
-            <span className="vq-pill-badge">{verifiedCount}</span>
-          </button>
-
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === "ALL"}
-            className={`vq-pill ${filter === "ALL" ? "active" : ""}`}
-            onClick={() => setFilter("ALL")}
-          >
-            <span>All</span>
-            <span className="vq-pill-badge">{applications.length}</span>
-          </button>
-        </div>
+        <span className="vq-directory-count" aria-live="polite">{visible.length} verified {visible.length === 1 ? "user" : "users"}{searchQuery.trim() ? " matching your search" : ""}</span>
 
         {/* SEARCH BOX */}
         <div className="vq-search-box">
           <i className="fa-solid fa-magnifying-glass" />
           <input
             type="text"
+            aria-label="Search verified users"
             placeholder="Search by name, reference, barangay, or phone…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -342,23 +251,21 @@ export default function VerificationQueuePage() {
         {loading && applications.length === 0 && (
           <div className="vq-loading-state">
             <div className="vq-spinner" />
-            <span>Loading verification roster…</span>
+            <span>Loading verified users…</span>
           </div>
         )}
 
         {/* EMPTY STATE */}
-        {!loading && visible.length === 0 && (
+        {!loading && !error && visible.length === 0 && (
           <div className="vq-empty-state">
             <div className="vq-empty-icon-wrap">
               <i className="fa-solid fa-folder-open" />
             </div>
-            <h3>No applications in this view</h3>
+            <h3>{searchQuery.trim() ? "No verified users found" : "No verified users yet"}</h3>
             <p>
               {searchQuery
-                ? `No submissions found matching “${searchQuery}”. Try clearing your search term.`
-                : `There are currently no resident applications matching this filter for ${
-                    municipality || "your municipality"
-                  }.`}
+                ? `No verified users match “${searchQuery}”. Try clearing your search term.`
+                : `Residents in ${municipality || "your municipality"} appear here automatically after passing ID and face checks and completing OTP verification.`}
             </p>
             {searchQuery ? (
               <button
@@ -368,14 +275,6 @@ export default function VerificationQueuePage() {
               >
                 Clear Search
               </button>
-            ) : filter !== "ALL" ? (
-              <button
-                type="button"
-                className="vq-empty-action"
-                onClick={() => setFilter("ALL")}
-              >
-                View All Applications
-              </button>
             ) : null}
           </div>
         )}
@@ -383,14 +282,11 @@ export default function VerificationQueuePage() {
         {/* DATA ROWS */}
         {visible.map((item) => {
           const initials = `${item.firstName?.[0] || ""}${item.lastName?.[0] || ""}`.toUpperCase();
-          const isPending = item.status === "PENDING";
-          const isChanges = item.status === "CHANGES_REQUESTED";
-          const isApproved = item.status === "VERIFIED";
 
           return (
             <article className="vq-row" key={item.id}>
               {/* MONOGRAM AVATAR */}
-              <div className={`vq-avatar ${isApproved ? "verified" : isChanges ? "changes" : "pending"}`}>
+              <div className="vq-avatar verified">
                 <span>{initials || "RA"}</span>
               </div>
 
@@ -398,12 +294,10 @@ export default function VerificationQueuePage() {
               <div className="vq-cell-main">
                 <div className="vq-status-row">
                   <span
-                    className={`vq-status-tag ${
-                      isPending ? "pending" : isChanges ? "changes" : "approved"
-                    }`}
+                    className="vq-status-tag verified"
                   >
                     <span className="vq-status-pulse" />
-                    {isPending ? "Under Review" : isChanges ? "Changes Requested" : "Approved"}
+                    Verified
                   </span>
                   <span className="vq-ref-tag">{item.reference}</span>
                 </div>
@@ -453,7 +347,7 @@ export default function VerificationQueuePage() {
                   className="vq-review-btn"
                   onClick={() => void openApplication(item.id)}
                 >
-                  <span>Review Application</span>
+                  <span>View details</span>
                   <i className="fa-solid fa-arrow-right" />
                 </button>
               </div>
@@ -466,7 +360,7 @@ export default function VerificationQueuePage() {
       {working && (
         <div className="vq-toast" aria-live="polite">
           <i className="fa-solid fa-circle-notch fa-spin" />
-          <span>Processing verification…</span>
+          <span>Loading resident details…</span>
         </div>
       )}
 
@@ -492,21 +386,9 @@ export default function VerificationQueuePage() {
               <div className="vq-modal-header-info">
                 <div className="vq-modal-kicker">
                   <span className="vq-modal-ref">{selected.reference}</span>
-                  <span
-                    className={`vq-status-tag ${
-                      selected.status === "PENDING"
-                        ? "pending"
-                        : selected.status === "CHANGES_REQUESTED"
-                        ? "changes"
-                        : "approved"
-                    }`}
-                  >
+                  <span className="vq-status-tag verified">
                     <span className="vq-status-pulse" />
-                    {selected.status === "PENDING"
-                      ? "Under Review"
-                      : selected.status === "CHANGES_REQUESTED"
-                      ? "Changes Requested"
-                      : "Approved"}
+                    Verified
                   </span>
                 </div>
                 <h2 id="dossier-title" className="vq-modal-title">
@@ -543,7 +425,7 @@ export default function VerificationQueuePage() {
               {/* IDENTITY QUICK FACTS */}
               <div className="vq-dossier-section">
                 <h3 className="vq-dossier-heading">
-                  <i className="fa-solid fa-id-badge" /> Applicant Dossier Information
+                  <i className="fa-solid fa-id-badge" /> Resident Information
                 </h3>
                 <div className="vq-facts-grid">
                   <div className="vq-fact-item">
@@ -573,7 +455,7 @@ export default function VerificationQueuePage() {
                       <i className="fa-solid fa-shield-halved" /> Official Identity Evidence
                     </h3>
                     <p className="vq-evidence-subtitle">
-                      Confidential review copies. Click on any document image to expand full-size.
+                      Confidential official copies. Click on any document image to expand full-size.
                     </p>
                   </div>
                 </div>
@@ -602,13 +484,13 @@ export default function VerificationQueuePage() {
                     }
                   />
                   <EvidenceCard
-                    label="Applicant Live Selfie"
+                    label="Resident Live Selfie"
                     url={selected.evidence?.selfieUrl ?? null}
                     onZoom={() =>
                       selected.evidence?.selfieUrl &&
                       setZoomImage({
                         url: selected.evidence.selfieUrl,
-                        label: "Applicant Live Selfie",
+                        label: "Resident Live Selfie",
                       })
                     }
                   />
@@ -627,7 +509,7 @@ export default function VerificationQueuePage() {
                         <span className="vq-timeline-node" />
                         <div className="vq-timeline-content">
                           <div className="vq-timeline-title">
-                            <strong>{event.type.replaceAll("_", " ")}</strong>
+                            <strong>{event.type === "APPROVED" ? "Verified" : event.type.replaceAll("_", " ")}</strong>
                             <small>
                               {new Date(event.createdAt).toLocaleString("en-PH", {
                                 dateStyle: "medium",
@@ -643,99 +525,7 @@ export default function VerificationQueuePage() {
                 </div>
               )}
 
-              {/* CORRECTION MODE DRAWER */}
-              {correctionMode && (
-                <div className="vq-correction-box">
-                  <div className="vq-correction-header">
-                    <i className="fa-solid fa-pen-to-square" />
-                    <strong>Request Corrections from Resident</strong>
-                  </div>
-                  <p className="vq-correction-help">
-                    Specify what the resident needs to correct or re-upload. They will receive this guidance immediately.
-                  </p>
-                  <textarea
-                    className="vq-correction-textarea"
-                    value={reason}
-                    onChange={(event) => setReason(event.target.value)}
-                    minLength={10}
-                    maxLength={1000}
-                    placeholder="E.g., The front ID image is blurry and the expiration date is unreadable. Please upload a clear photo showing all four corners."
-                    autoFocus
-                  />
-                  <div className="vq-correction-meta">
-                    <span className={reason.trim().length < 10 ? "text-muted" : "text-valid"}>
-                      {reason.trim().length} / 10 min characters
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
-
-            {/* MODAL FOOTER ACTIONS */}
-            {selected.status === "PENDING" && (
-              <footer className="vq-modal-footer">
-                {correctionMode ? (
-                  <>
-                    <button
-                      type="button"
-                      className="vq-btn-cancel"
-                      onClick={() => setCorrectionMode(false)}
-                      disabled={working}
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="button"
-                      className="vq-btn-danger"
-                      disabled={reason.trim().length < 10 || working}
-                      onClick={() => void decide("request-corrections")}
-                    >
-                      {working ? (
-                        <>
-                          <i className="fa-solid fa-circle-notch fa-spin" />
-                          <span>Submitting Request…</span>
-                        </>
-                      ) : (
-                        <>
-                          <i className="fa-solid fa-paper-plane" />
-                          <span>Send Correction Notice</span>
-                        </>
-                      )}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      className="vq-btn-secondary"
-                      onClick={() => setCorrectionMode(true)}
-                      disabled={working}
-                    >
-                      <i className="fa-solid fa-pen" />
-                      <span>Request corrections</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="vq-btn-approve"
-                      disabled={working}
-                      onClick={() => void decide("approve")}
-                    >
-                      {working ? (
-                        <>
-                          <i className="fa-solid fa-circle-notch fa-spin" />
-                          <span>Approving…</span>
-                        </>
-                      ) : (
-                        <>
-                          <i className="fa-solid fa-check" />
-                          <span>Approve Resident Clearance</span>
-                        </>
-                      )}
-                    </button>
-                  </>
-                )}
-              </footer>
-            )}
           </section>
         </div>,
         document.body
@@ -833,6 +623,44 @@ const styles = `
     gap: 1rem;
     flex-wrap: wrap;
     padding-bottom: 0.15rem;
+  }
+
+  .vq-directory-overview {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .vq-directory-copy h1 {
+    margin: 0 0 0.45rem;
+    color: #0F172A;
+    font-size: clamp(1.65rem, 2.2vw, 2rem);
+    font-weight: 850;
+    letter-spacing: -0.025em;
+  }
+
+  .vq-directory-copy p {
+    margin: 0 0 0.7rem;
+    max-width: 620px;
+    color: #64748B;
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  .vq-directory-copy > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #047857;
+    font-size: 0.76rem;
+    font-weight: 750;
+  }
+
+  .vq-directory-count {
+    color: #475569;
+    font-size: 0.85rem;
+    font-weight: 750;
   }
 
   .vq-kicker {
@@ -1193,7 +1021,7 @@ const styles = `
     border: 1px solid #FECACA;
   }
 
-  .vq-status-tag.approved {
+  .vq-status-tag.verified {
     background: #ECFDF5;
     color: #047857;
     border: 1px solid #A7F3D0;
@@ -1809,171 +1637,6 @@ const styles = `
     border: 1px solid #FECACA;
   }
 
-  /* Correction Box */
-  .vq-correction-box {
-    background: #FFFBEB;
-    border: 1.5px solid #FDE68A;
-    border-radius: 12px;
-    padding: 1.25rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-
-  .vq-correction-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #B45309;
-    font-size: 0.9rem;
-    font-weight: 800;
-  }
-
-  .vq-correction-help {
-    margin: 0;
-    font-size: 0.8rem;
-    color: #78350F;
-    line-height: 1.4;
-  }
-
-  .vq-correction-textarea {
-    width: 100%;
-    min-height: 95px;
-    padding: 0.8rem;
-    border-radius: 8px;
-    border: 1px solid #FCD34D;
-    background: #FFFFFF;
-    font-size: 0.88rem;
-    color: #0F172A;
-    font-family: inherit;
-    resize: vertical;
-    outline: none;
-    box-sizing: border-box;
-  }
-
-  .vq-correction-textarea:focus {
-    border-color: #D97706;
-    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
-  }
-
-  .vq-correction-meta {
-    display: flex;
-    justify-content: flex-end;
-    font-size: 0.72rem;
-    font-weight: 700;
-  }
-
-  .vq-correction-meta .text-muted {
-    color: #92400E;
-  }
-
-  .vq-correction-meta .text-valid {
-    color: #047857;
-  }
-
-  /* Modal Footer */
-  .vq-modal-footer {
-    padding: 1.25rem 1.8rem;
-    border-top: 1px solid #F1F5F9;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 0.85rem;
-    background: #FAFAFA;
-  }
-
-  .vq-btn-cancel,
-  .vq-btn-secondary {
-    padding: 0.75rem 1.4rem;
-    border-radius: 10px;
-    font-size: 0.85rem;
-    font-weight: 750;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: inherit;
-  }
-
-  .vq-btn-cancel {
-    background: #FFFFFF;
-    border: 1px solid #CBD5E1;
-    color: #475569;
-  }
-
-  .vq-btn-cancel:hover:not(:disabled) {
-    background: #F8FAFC;
-    color: #0F172A;
-  }
-
-  .vq-btn-secondary {
-    background: #FFFFFF;
-    border: 1px solid #CBD5E1;
-    color: #334155;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .vq-btn-secondary:hover:not(:disabled) {
-    background: #FFFBEB;
-    border-color: #FCD34D;
-    color: #B45309;
-  }
-
-  .vq-btn-danger {
-    padding: 0.75rem 1.5rem;
-    border-radius: 10px;
-    background: #DC2626;
-    color: #FFFFFF;
-    border: none;
-    font-size: 0.85rem;
-    font-weight: 750;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
-  }
-
-  .vq-btn-danger:hover:not(:disabled) {
-    background: #B91C1C;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
-  }
-
-  .vq-btn-danger:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-
-  .vq-btn-approve {
-    padding: 0.75rem 1.6rem;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-    color: #FFFFFF;
-    border: none;
-    font-size: 0.85rem;
-    font-weight: 750;
-    cursor: pointer;
-    transition: all 0.18s;
-    font-family: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
-  }
-
-  .vq-btn-approve:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
-  }
-
-  .vq-btn-approve:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
   /* ================= FULL-SCREEN ZOOM OVERLAY ================= */
   .vq-zoom-overlay {
     position: fixed;
@@ -2074,6 +1737,10 @@ const styles = `
   }
 
   @media (max-width: 768px) {
+    .vq-directory-overview {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
     .vq-page {
       padding: 1rem;
     }

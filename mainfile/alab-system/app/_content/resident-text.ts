@@ -84,6 +84,8 @@ const rows: Array<[string, string, string]> = [
   ["Return to resident login", "Bumalik sa resident login", "Balik sa resident login"],
   ["Changes requested", "May hinihinging pagbabago", "May ginapangayo nga pagbag-o"],
   ["Application approved", "Aprubado ang aplikasyon", "Aprobado ang aplikasyon"],
+  ["Account verified", "Beripikado na ang account", "Beripikado na ang account"],
+  ["Your identity is verified and your account is ready. You can now sign in.", "Beripikado na ang iyong pagkakakilanlan at handa na ang iyong account. Maaari ka nang mag-sign in.", "Beripikado na ang imo pagkakilala kag handa na ang imo account. Mahimo ka na mag-sign in."],
   ["Under review", "Sinusuri pa", "Ginausisa pa"],
   ["Please correct the items identified by your Municipal BFP and resubmit.", "Pakiwasto ang mga bagay na tinukoy ng iyong Municipal BFP at ipasa ulit.", "Palihog tadlonga ang mga butang nga ginpakita sang imo Municipal BFP kag ipasa liwat."],
   ["Your identity is approved. You can now sign in to the resident application.", "Aprubado na ang iyong pagkakakilanlan. Maaari ka nang mag-sign in sa resident application.", "Aprobado na ang imo pagkakilala. Mahimo ka na mag-sign in sa resident application."],

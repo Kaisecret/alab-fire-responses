@@ -116,6 +116,7 @@ const reviewStyles = `
   }
 
   /* KPI Summary Stats */
+  .par-container .par-verified-stats { grid-template-columns: minmax(0, 1fr); }
 
 
 
@@ -200,7 +201,7 @@ const reviewStyles = `
 
   .par-filters-row {
     display: grid;
-    grid-template-columns: minmax(220px, 1.2fr) minmax(180px, 0.9fr) minmax(260px, 1.6fr);
+    grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.6fr);
     gap: 1rem;
     align-items: end;
   }
@@ -982,141 +983,6 @@ const reviewStyles = `
     color: #9A3412;
   }
 
-  /* Review Actions Deck */
-  .par-actions-deck {
-    background: var(--slate-50);
-    border: 1px solid var(--slate-200);
-    border-radius: 14px;
-    padding: 1.25rem 1.35rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.15rem;
-  }
-
-  .par-actions-heading {
-    font-size: 0.875rem;
-    font-weight: 800;
-    color: var(--navy-900);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .par-actions-heading i {
-    color: var(--red-600);
-  }
-
-  .par-btn-approve {
-    width: 100%;
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    color: #FFFFFF;
-    border: none;
-    padding: 0.8rem 1.25rem;
-    border-radius: 10px;
-    font: inherit;
-    font-size: 0.875rem;
-    font-weight: 800;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
-    transition: all 0.15s ease;
-  }
-
-  .par-btn-approve:hover:not(:disabled) {
-    background: linear-gradient(135deg, #047857 0%, #065F46 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(5, 150, 105, 0.35);
-  }
-
-  .par-btn-approve:disabled {
-    opacity: 0.65;
-    cursor: wait;
-  }
-
-  .par-corrections-box {
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-    background: #FFFFFF;
-    border: 1px solid var(--slate-200);
-    border-radius: 10px;
-    padding: 1rem;
-  }
-
-  .par-preset-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  .par-chip {
-    background: var(--slate-100);
-    border: 1px solid var(--slate-200);
-    border-radius: 9999px;
-    padding: 3px 9px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--navy-700);
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .par-chip:hover {
-    background: #FEE2E2;
-    border-color: #FECACA;
-    color: var(--red-600);
-  }
-
-  .par-textarea {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0.75rem 0.85rem;
-    border-radius: 8px;
-    border: 1px solid #CBD5E1;
-    font: inherit;
-    font-size: 0.825rem;
-    color: var(--navy-900);
-    resize: vertical;
-    outline: none;
-    transition: all 0.15s ease;
-  }
-
-  .par-textarea:focus {
-    border-color: var(--amber-600);
-    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12);
-  }
-
-  .par-btn-corrections {
-    background: var(--amber-600);
-    color: #FFFFFF;
-    border: none;
-    padding: 0.75rem 1.25rem;
-    border-radius: 8px;
-    font: inherit;
-    font-size: 0.825rem;
-    font-weight: 800;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    transition: all 0.15s ease;
-  }
-
-  .par-btn-corrections:hover:not(:disabled) {
-    background: #B45309;
-    transform: translateY(-1px);
-  }
-
-  .par-btn-corrections:disabled {
-    background: #CBD5E1;
-    cursor: not-allowed;
-  }
-
-  /* Verified Processed Banner */
   .par-verified-banner {
     background: #ECFDF5;
     border: 1px solid #A7F3D0;
@@ -1176,9 +1042,8 @@ const reviewStyles = `
 
 export function ProvincialResidentApplicationReview({ initialMunicipalityId = '' }: ApplicationReviewProps) {
   const {
-    items: applications,
+    items: applicationRecords,
     total,
-    metrics,
     page,
     pageSize,
     setPage,
@@ -1190,15 +1055,23 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
     refresh: fetchApplications,
   } = useProvincialManagementList<ManagedApplication>({
     endpoint: '/api/provincial-bfp/resident-applications',
-    initialFilters: { municipalityId: initialMunicipalityId, pageSize: 7 },
+    initialFilters: { municipalityId: initialMunicipalityId, status: 'VERIFIED', pageSize: 7 },
   });
 
   const municipalityFilter = filters.municipalityId || '';
   const setMunicipalityFilter = (value: string) => setFilter('municipalityId', value);
-  const statusFilter = filters.status || '';
-  const setStatusFilter = (value: string) => setFilter('status', value);
   const search = filters.search || '';
   const setSearch = (value: string) => setFilter('search', value);
+
+  // Old bookmarks can restore queue statuses; normalize them before the list's
+  // debounced request and filter every render while that state is reconciled.
+  useEffect(() => {
+    if (filters.status !== 'VERIFIED') setFilter('status', 'VERIFIED');
+  }, [filters.status, setFilter]);
+  const applications = useMemo(() => applicationRecords.filter(
+    application => application.status === 'VERIFIED' && application.accountStatus === 'ACTIVE'
+  ), [applicationRecords]);
+  const verifiedFilters = { ...filters, status: 'VERIFIED' };
 
   // Review Dossier State
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
@@ -1209,25 +1082,9 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
   // Lightbox Photo Inspection
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  // Action states
-  const [isApproving, setIsApproving] = useState(false);
-  const [isRejecting, setIsRejecting] = useState(false);
-  const [correctionReason, setCorrectionReason] = useState('');
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
-
   const detailController = useRef<AbortController | null>(null);
-  const operation = useRef<{ payload: string; requestId: string } | null>(null);
-
   useEffect(() => () => detailController.current?.abort(), []);
-
-  const operationId = (payload: string) => {
-    if (operation.current?.payload !== payload) {
-      operation.current = { payload, requestId: crypto.randomUUID() };
-    }
-    return operation.current.requestId;
-  };
 
   const loadDossier = async (id: string) => {
     detailController.current?.abort();
@@ -1237,9 +1094,6 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
     setSelectedAppId(id);
     setDossierLoading(true);
     setDossierError(null);
-    setActionSuccess(null);
-    setActionError(null);
-    setCorrectionReason('');
     setLightboxIndex(null);
 
     try {
@@ -1252,7 +1106,11 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
         throw new Error(data.error || 'Failed to load application dossier');
       }
       const data = await res.json();
-      if (!controller.signal.aborted) setDossier(data.application);
+      if (controller.signal.aborted) return;
+      if (data.application?.status !== 'VERIFIED' || data.application?.accountStatus !== 'ACTIVE') {
+        throw new Error('This resident is no longer an active verified user. Refresh the list to see current records.');
+      }
+      setDossier(data.application);
     } catch (err: unknown) {
       if (!controller.signal.aborted) {
         setDossierError(err instanceof Error ? err.message : 'Error fetching application dossier');
@@ -1262,94 +1120,13 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
     }
   };
 
-  const handleApprove = async () => {
-    if (!dossier) return;
-    if (!window.confirm(`Are you sure you want to APPROVE ${dossier.firstName} ${dossier.lastName}'s resident application?`)) {
-      return;
-    }
-
-    setIsApproving(true);
-    setActionError(null);
-    setActionSuccess(null);
-
-    try {
-      const res = await fetch(`/api/provincial-bfp/resident-applications/${dossier.id}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          expectedSubmissionNumber: dossier.submissionNumber,
-          requestId: operationId(`${dossier.id}:${dossier.submissionNumber}:approve`),
-          reason: 'Verified and approved by Provincial BFP Command',
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || 'Approval failed');
-      }
-
-      await loadDossier(dossier.id);
-      setActionSuccess('Application approval saved successfully.');
-      fetchApplications();
-    } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Unable to approve application');
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
-  const handleRequestCorrections = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!dossier) return;
-    if (correctionReason.trim().length < 10) {
-      setActionError('Correction reason must be at least 10 characters detailing what needs to be changed.');
-      return;
-    }
-
-    setIsRejecting(true);
-    setActionError(null);
-    setActionSuccess(null);
-
-    try {
-      const res = await fetch(`/api/provincial-bfp/resident-applications/${dossier.id}/request-corrections`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          expectedSubmissionNumber: dossier.submissionNumber,
-          requestId: operationId(`${dossier.id}:${dossier.submissionNumber}:corrections:${correctionReason.trim()}`),
-          message: correctionReason.trim(),
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || 'Requesting corrections failed');
-      }
-
-      await loadDossier(dossier.id);
-      const deliveries = Array.isArray(data.delivery) ? (data.delivery as Array<{ channel: string; status: string }>) : [];
-      setActionSuccess(
-        `Correction request saved. ${
-          deliveries.length
-            ? deliveries.map((item) => `${item.channel}: ${item.status.replaceAll('_', ' ').toLowerCase()}`).join('; ')
-            : 'Notification delivery is queued.'
-        }`
-      );
-      fetchApplications();
-    } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Unable to request corrections');
-    } finally {
-      setIsRejecting(false);
-    }
-  };
-
   const handleCopy = (text: string) => {
     navigator.clipboard?.writeText(text);
     setCopiedText(text);
     setTimeout(() => setCopiedText(null), 2000);
   };
 
-  // Close modal via useManagementDialog (locked when approving/rejecting or lightbox open)
+  // Keep the resident details dialog open while its evidence lightbox is active.
   useManagementDialog(
     !!selectedAppId,
     () => {
@@ -1359,7 +1136,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
         setSelectedAppId(null);
       }
     },
-    isApproving || isRejecting || lightboxIndex !== null
+    lightboxIndex !== null
   );
 
   // Evidence photos list for Lightbox
@@ -1368,52 +1145,12 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
     return [dossier.evidence.frontUrl, dossier.evidence.backUrl, dossier.evidence.selfieUrl].filter(Boolean) as string[];
   }, [dossier]);
 
-  // Quick preset chips for corrections
-  const correctionPresets = [
-    'The submitted ID photo is blurry and illegible. Please upload a clear photo.',
-    'The back of the government ID is missing. Please upload the back side.',
-    'The selfie verification photo is unclear or does not match the ID photo.',
-    'The government ID appears to be expired. Please upload a valid, unexpired ID.',
-    'Residential address details require clarification or matching utility proof.',
-  ];
-
-  const applyPreset = (preset: string) => {
-    setCorrectionReason(preset);
-  };
-
-  // Status Badge Helper
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return (
-          <span className="par-status-pill par-status-pill--pending">
-            <span className="par-status-dot" />
-            Pending Review
-          </span>
-        );
-      case 'VERIFIED':
-        return (
-          <span className="par-status-pill par-status-pill--verified">
-            <span className="par-status-dot" />
-            Verified
-          </span>
-        );
-      case 'CHANGES_REQUESTED':
-        return (
-          <span className="par-status-pill par-status-pill--changes">
-            <span className="par-status-dot" />
-            Changes Requested
-          </span>
-        );
-      default:
-        return (
-          <span className="par-status-pill" style={{ background: '#E2E8F0', color: '#475569' }}>
-            <span className="par-status-dot" />
-            {status}
-          </span>
-        );
-    }
-  };
+  const getStatusBadge = () => (
+    <span className="par-status-pill par-status-pill--verified">
+      <span className="par-status-dot" />
+      Verified
+    </span>
+  );
 
   const getInitials = (first: string, last: string) => {
     const f = first ? first.trim()[0].toUpperCase() : '';
@@ -1448,45 +1185,38 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
   };
 
   // Active filters count
-  const activeFiltersCount = [municipalityFilter, statusFilter && statusFilter !== 'ALL', search].filter(Boolean).length;
+  const activeFiltersCount = [municipalityFilter, search, filters.from, filters.to].filter(Boolean).length;
 
   const clearAllFilters = () => {
-    setFilters({});
+    setFilters({ status: 'VERIFIED' });
     setPage(1);
   };
 
-  // Stat counts based on loaded queue
-  const pendingCount = applications.filter((a) => a.status === 'PENDING').length;
-  const verifiedCount = applications.filter((a) => a.status === 'VERIFIED').length;
-  const changesCount = applications.filter((a) => a.status === 'CHANGES_REQUESTED').length;
-
   return (
-    <section className="par-container" aria-label="Provincial Resident Applications Review">
+    <section className="par-container" aria-label="Provincial Verified Users">
       <style>{reviewStyles}</style>
-      <FireCommandHeader slotId="provincial-fire-command-header" title="Resident Applications Review" icon="fa-user-check" />
+      <FireCommandHeader slotId="provincial-fire-command-header" title="Verified Users" icon="fa-user-check" />
 
-      {/* KPI Stats Bar */}
       <StatCards
-        label="Application summary metrics"
+        label="Verified user summary"
+        className="par-verified-stats"
+        columns={1}
         items={[
-          { key: "all", icon: "fa-folder-open", tone: "slate", badge: "All", value: total, label: "Total Applications", description: "All submissions", onClick: () => { setStatusFilter('ALL'); setPage(1); }, active: !statusFilter || statusFilter === 'ALL', loading: loading && applications.length === 0 },
-          { key: "pending", icon: "fa-clock-rotate-left", tone: "amber", badge: "Pending", value: metrics.pending ?? pendingCount, label: "Pending Review", description: "Awaiting review", onClick: () => { setStatusFilter('PENDING'); setPage(1); }, active: statusFilter === 'PENDING', loading: loading && applications.length === 0 },
-          { key: "verified", icon: "fa-circle-check", tone: "emerald", badge: "Verified", value: metrics.verified ?? verifiedCount, label: "Verified Accounts", description: "Approved residents", onClick: () => { setStatusFilter('VERIFIED'); setPage(1); }, active: statusFilter === 'VERIFIED', loading: loading && applications.length === 0 },
-          { key: "changes", icon: "fa-triangle-exclamation", tone: "red", badge: "Changes", value: metrics.changes ?? changesCount, label: "Changes Requested", description: "Needs resident update", onClick: () => { setStatusFilter('CHANGES_REQUESTED'); setPage(1); }, active: statusFilter === 'CHANGES_REQUESTED', loading: loading && applications.length === 0 },
+          { key: "verified", icon: "fa-circle-check", tone: "emerald", badge: "Verified", value: total, label: "Verified Users", description: "Active resident accounts", loading: loading && applications.length === 0 },
         ]}
       />
 
       {/* Filter Console */}
-      <section className="par-filter-console" aria-label="Queue Filter Console">
+      <section className="par-filter-console" aria-label="Verified User Filters">
         <div className="par-filter-top">
           <div className="par-filter-title">
             <i className="fa-solid fa-sliders" />
-            <span>Filter Resident Applications</span>
+            <span>Filter Verified Users</span>
           </div>
 
           <div className="par-filter-right">
             <span className="par-count-pill">
-              Showing <strong>{applications.length}</strong> of <strong>{total}</strong> applications
+              Showing <strong>{applications.length}</strong> of <strong>{total}</strong> verified users
             </span>
             <button
               type="button"
@@ -1506,27 +1236,8 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
           </div>
 
           <div className="par-field">
-            <label htmlFor="par-status-select">
-              <i className="fa-solid fa-tag" /> Status
-            </label>
-            <select
-              id="par-status-select"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="PENDING">Pending Review</option>
-              <option value="CHANGES_REQUESTED">Changes Requested</option>
-              <option value="VERIFIED">Verified</option>
-            </select>
-          </div>
-
-          <div className="par-field">
             <label htmlFor="par-search-input">
-              <i className="fa-solid fa-magnifying-glass" /> Search Applicant
+              <i className="fa-solid fa-magnifying-glass" /> Search Resident
             </label>
             <div className="par-search-wrap">
               <i className="fa-solid fa-magnifying-glass par-search-icon" aria-hidden="true" />
@@ -1558,18 +1269,22 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
 
       {/* Main Applications Table */}
       <div className="par-records-card">
-        <ProvincialTableToolbar title="Resident applications">
-          <ProvincialManagementToolbar exportOnly dataset="APPLICATIONS" filters={filters} onFilterChange={() => {}} />
+        <ProvincialTableToolbar title="Verified users">
+          <button type="button" className="par-btn-refresh" onClick={fetchApplications} disabled={loading}>
+            <i className={`fa-solid fa-arrows-rotate${loading ? ' fa-spin' : ''}`} aria-hidden="true" />
+            Refresh
+          </button>
+          <ProvincialManagementToolbar exportOnly dataset="APPLICATIONS" filters={verifiedFilters} onFilterChange={() => {}} />
         </ProvincialTableToolbar>
         {error && (
           <div style={{ padding: '1rem 1.25rem', background: '#FEE2E2', color: '#991B1B', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <i className="fa-solid fa-triangle-exclamation" />
-            <span><strong>Queue Sync Error:</strong> {error}</span>
+            <span><strong>Record Sync Error:</strong> {error}</span>
           </div>
         )}
 
         {loading && applications.length === 0 ? (
-          <div aria-label="Loading applications">
+          <div aria-label="Loading verified users">
             {[0, 1, 2, 3, 4].map((i) => (
               <div key={i} className="par-skeleton-row">
                 <span className="par-skeleton-bar" style={{ width: '80%' }} />
@@ -1587,8 +1302,8 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
             <div className="par-state-icon">
               <i className="fa-solid fa-file-excel" />
             </div>
-            <div className="par-state-title">No Resident Applications Found</div>
-            <div>Try adjusting or clearing your municipality, status, or search filters to find records.</div>
+            <div className="par-state-title">No Verified Users Found</div>
+            <div>Try adjusting or clearing your municipality or search filters to find verified users.</div>
           </div>
         ) : (
           <div className="par-table-wrap">
@@ -1596,12 +1311,12 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
               <thead>
                 <tr>
                   <th>Reference</th>
-                  <th>Applicant</th>
+                  <th>Resident</th>
                   <th>Municipality / Barangay</th>
                   <th>Subm #</th>
                   <th>Status</th>
                   <th>Submitted At</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th style={{ textAlign: 'right' }}>Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -1664,7 +1379,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                       <span className="par-subm-badge">v{app.submissionNumber}</span>
                     </td>
 
-                    <td>{getStatusBadge(app.status)}</td>
+                    <td>{getStatusBadge()}</td>
 
                     <td style={{ color: '#64748B', whiteSpace: 'nowrap' }}>
                       {formatDateTime(app.submittedAt)}
@@ -1677,7 +1392,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                         className="par-btn-review"
                       >
                         <i className="fa-solid fa-folder-open" />
-                        <span>Review Dossier</span>
+                        <span>View Details</span>
                       </button>
                     </td>
                   </tr>
@@ -1702,7 +1417,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
           data-management-dialog
           className="par-modal-backdrop"
           onClick={(e) => {
-            if (e.target === e.currentTarget && !isApproving && !isRejecting && lightboxIndex === null) {
+            if (e.target === e.currentTarget && lightboxIndex === null) {
               setSelectedAppId(null);
             }
           }}
@@ -1729,7 +1444,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                     >
                       <i className={copiedText === dossier.reference ? 'fa-solid fa-check' : 'fa-regular fa-copy'} />
                     </button>
-                    {getStatusBadge(dossier.status)}
+                    {getStatusBadge()}
                     <span className="par-subm-badge">
                       <i className="fa-solid fa-layer-group" />
                       Submission #{dossier.submissionNumber}
@@ -1740,7 +1455,6 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
 
               <button
                 aria-label="Close application"
-                disabled={isApproving || isRejecting}
                 onClick={() => setSelectedAppId(null)}
                 className="par-close-btn"
                 title="Close dossier (Esc)"
@@ -1760,20 +1474,6 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                 </div>
               ) : dossier ? (
                 <>
-                  {/* Action Alerts */}
-                  {actionSuccess && (
-                    <div style={{ padding: '0.9rem 1.25rem', background: '#D1FAE5', color: '#065F46', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <i className="fa-solid fa-circle-check" />
-                      <span>{actionSuccess}</span>
-                    </div>
-                  )}
-                  {actionError && (
-                    <div style={{ padding: '0.9rem 1.25rem', background: '#FEE2E2', color: '#991B1B', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <i className="fa-solid fa-triangle-exclamation" />
-                      <span>{actionError}</span>
-                    </div>
-                  )}
-
                   {/* Resident Details Card */}
                   <div className="par-profile-card">
                     <div className="par-profile-card-header">
@@ -1963,7 +1663,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
 
                       <div className="par-timeline">
                         {dossier.events.map((ev, idx) => {
-                          const isApproved = ev.eventType.includes('APPROVED');
+                          const isVerified = ev.eventType.includes('APPROVE') || ev.eventType.includes('VERIFIED');
                           const isChanges = ev.eventType.includes('CHANGES_REQUESTED');
                           const isResubmitted = ev.eventType.includes('RESUBMITTED');
 
@@ -1971,7 +1671,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                             <div key={idx} className="par-timeline-item">
                               <div
                                 className={`par-timeline-node ${
-                                  isApproved
+                                  isVerified
                                     ? 'par-timeline-node--approved'
                                     : isChanges
                                     ? 'par-timeline-node--corrections'
@@ -1982,7 +1682,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                               >
                                 <i
                                   className={
-                                    isApproved
+                                    isVerified
                                       ? 'fa-solid fa-check'
                                       : isChanges
                                       ? 'fa-solid fa-exclamation'
@@ -1996,7 +1696,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                               <div className="par-timeline-header">
                                 <span
                                   className={`par-timeline-badge ${
-                                    isApproved
+                                    isVerified
                                       ? 'par-timeline-badge--approved'
                                       : isChanges
                                       ? 'par-timeline-badge--corrections'
@@ -2005,7 +1705,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                                       : ''
                                   }`}
                                 >
-                                  {ev.eventType.replace(/_/g, ' ')}
+                                  {ev.eventType.replace(/APPROVED?/g, 'VERIFIED').replace(/_/g, ' ')}
                                 </span>
                                 <span className="par-timeline-time">{formatDateTime(ev.createdAt)}</span>
                               </div>
@@ -2026,94 +1726,13 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                     </div>
                   )}
 
-                  {/* Review Actions Section */}
-                  {dossier.status === 'PENDING' ? (
-                    <div className="par-actions-deck">
-                      <div className="par-actions-heading">
-                        <i className="fa-solid fa-gavel" />
-                        <span>Provincial Command Review Decisions</span>
-                      </div>
-
-                      {/* Approve Button */}
-                      <div>
-                        <button
-                          type="button"
-                          onClick={handleApprove}
-                          disabled={isApproving || isRejecting}
-                          className="par-btn-approve"
-                        >
-                          <i className={isApproving ? 'fa-solid fa-arrows-rotate fa-spin' : 'fa-solid fa-circle-check'} />
-                          <span>{isApproving ? 'Verifying & Approving…' : '✓ Approve Resident Application'}</span>
-                        </button>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#94A3B8', fontSize: '0.75rem', fontWeight: 800 }}>
-                        <span style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
-                        <span>OR REQUEST CORRECTIONS</span>
-                        <span style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
-                      </div>
-
-                      {/* Request Corrections Form */}
-                      <form onSubmit={handleRequestCorrections} className="par-corrections-box">
-                        <label style={{ fontSize: '0.8rem', fontWeight: 800, color: '#334155' }}>
-                          Request Corrections from Resident
-                        </label>
-
-                        {/* Preset Chips */}
-                        <div className="par-preset-chips">
-                          {correctionPresets.map((preset, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              className="par-chip"
-                              onClick={() => applyPreset(preset)}
-                            >
-                              + {preset.split('.')[0]}
-                            </button>
-                          ))}
-                        </div>
-
-                        <textarea
-                          rows={3}
-                          className="par-textarea"
-                          placeholder="Detail specifically what needs clarification or re-upload (e.g., 'The ID photo is blurry and illegible. Please upload a clear photo of your primary ID')..."
-                          value={correctionReason}
-                          onChange={(e) => setCorrectionReason(e.target.value)}
-                        />
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.72rem', color: correctionReason.trim().length >= 10 ? '#059669' : '#94A3B8' }}>
-                            {correctionReason.trim().length}/10 characters minimum
-                          </span>
-
-                          <button
-                            type="submit"
-                            disabled={isApproving || isRejecting || correctionReason.trim().length < 10}
-                            className="par-btn-corrections"
-                          >
-                            <i className={isRejecting ? 'fa-solid fa-arrows-rotate fa-spin' : 'fa-solid fa-paper-plane'} />
-                            <span>{isRejecting ? 'Sending Correction Notice…' : 'Request Corrections'}</span>
-                          </button>
-                        </div>
-                      </form>
+                  <div className="par-verified-banner">
+                    <i className="fa-solid fa-certificate" />
+                    <div className="par-banner-content">
+                      <strong>Verified resident with an active account</strong>
+                      <span>Identity and phone verification are complete. This resident can use ALAB across Antique.</span>
                     </div>
-                  ) : (
-                    <div className="par-verified-banner">
-                      <i className={dossier.status === 'VERIFIED' ? 'fa-solid fa-certificate' : 'fa-solid fa-circle-info'} />
-                      <div className="par-banner-content">
-                        <strong>Official BFP Dossier Status: {dossier.status}</strong>
-                        <span>
-                          This application has already been processed by Provincial Command.
-                          {dossier.status === 'VERIFIED' && ' Resident credentials are active and verified across Antique jurisdiction.'}
-                        </span>
-                        {dossier.correctionReason && (
-                          <div style={{ marginTop: 8, padding: '8px 12px', background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 8, color: '#C2410C', fontSize: '0.78rem' }}>
-                            <strong>Active Correction Request:</strong> {dossier.correctionReason}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </>
               ) : null}
             </div>

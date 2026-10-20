@@ -20,8 +20,16 @@ export async function listManagedApplications(
   assertManagementActor(actor);
 
   const db = getDatabase();
-  const whereClauses: string[] = ["m.province = 'Antique'", "u.role = 'RESIDENT'"];
+  const whereClauses: string[] = ["m.province = 'Antique'", "u.role = 'RESIDENT'", "u.account_status = 'ACTIVE'", "rv.status = 'VERIFIED'"];
   const values: unknown[] = [];
+  // Choose the latest submission before filtering its status, date or
+  // reference so a historical pass cannot hide a newer pending submission.
+  const latestVerificationJoin = `join lateral (
+    select latest.* from resident_verifications latest
+     where latest.resident_profile_id = rp.id
+     order by latest.submitted_at desc, latest.created_at desc, latest.id desc
+     limit 1
+  ) rv on true`;
 
   if (filters.municipalityId) {
     values.push(filters.municipalityId);
@@ -62,11 +70,11 @@ export async function listManagedApplications(
               count(*) filter (where rv.status = 'PENDING')::text as pending,
               count(*) filter (where rv.status = 'VERIFIED')::text as verified,
               count(*) filter (where rv.status = 'CHANGES_REQUESTED')::text as changes
-       from resident_verifications rv
-       join resident_profiles rp on rp.id = rv.resident_profile_id
+       from resident_profiles rp
        join users u on u.id = rp.user_id
        join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
        join municipalities m on m.id = ra.municipality_id
+       ${latestVerificationJoin}
      ${whereSql}`,
     values,
   );
@@ -88,6 +96,7 @@ export async function listManagedApplications(
     email: string;
     phone: string;
     username: string;
+    accountStatus: ManagedApplication["accountStatus"];
     municipalityId: string;
     municipalityName: string;
     barangayId: string;
@@ -109,6 +118,7 @@ export async function listManagedApplications(
             u.email,
             u.phone,
             u.username,
+            u.account_status as "accountStatus",
             ra.municipality_id as "municipalityId",
             m.name as "municipalityName",
             ra.barangay_id as "barangayId",
@@ -120,14 +130,14 @@ export async function listManagedApplications(
             rv.submitted_at as "submittedAt",
             rv.reviewed_at as "reviewedAt",
             rv.reviewed_by_user_id as "reviewedByUserId"
-       from resident_verifications rv
-       join resident_profiles rp on rp.id = rv.resident_profile_id
+       from resident_profiles rp
        join users u on u.id = rp.user_id
        join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
        join municipalities m on m.id = ra.municipality_id
        join barangays b on b.id = ra.barangay_id
+       ${latestVerificationJoin}
      ${whereSql}
-      order by rv.submitted_at desc, rv.created_at desc
+      order by rv.submitted_at desc, rv.created_at desc, rv.id desc
       limit $${limitIdx} offset $${offsetIdx}`,
     values,
   );
@@ -142,6 +152,7 @@ export async function listManagedApplications(
     email: row.email,
     phone: row.phone,
     username: row.username,
+    accountStatus: row.accountStatus,
     municipalityId: row.municipalityId,
     municipalityName: row.municipalityName,
     barangayId: row.barangayId,
@@ -188,6 +199,7 @@ export async function getManagedApplication(
     email: string;
     phone: string;
     username: string;
+    accountStatus: ManagedApplication["accountStatus"];
     municipalityId: string;
     municipalityName: string;
     barangayId: string;
@@ -218,6 +230,7 @@ export async function getManagedApplication(
               u.email,
               u.phone,
               u.username,
+              u.account_status as "accountStatus",
               ra.municipality_id as "municipalityId",
               m.name as "municipalityName",
               ra.barangay_id as "barangayId",
@@ -236,9 +249,13 @@ export async function getManagedApplication(
          join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
          join municipalities m on m.id = ra.municipality_id
          join barangays b on b.id = ra.barangay_id
-        where (rv.id::text = $1 or rv.application_reference = $1)
+        where rv.resident_profile_id = (
+          select resident_profile_id from resident_verifications
+           where id::text = $1 or application_reference = $1 limit 1
+        )
           and m.province = 'Antique'
           and u.role = 'RESIDENT'
+        order by rv.submitted_at desc, rv.created_at desc, rv.id desc
         limit 1`,
       [applicationId],
     );
@@ -320,6 +337,7 @@ export async function getManagedApplication(
     email: app.email,
     phone: app.phone,
     username: app.username,
+    accountStatus: app.accountStatus,
     municipalityId: app.municipalityId,
     municipalityName: app.municipalityName,
     barangayId: app.barangayId,

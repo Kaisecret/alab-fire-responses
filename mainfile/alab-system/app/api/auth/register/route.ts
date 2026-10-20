@@ -12,7 +12,7 @@ import {
 } from "../../../../lib/auth/session";
 import { getGoogleSignupPrefill, GOOGLE_SIGNUP_PREFILL_COOKIE } from "../../../../lib/auth/google-signup-prefill";
 import { removeIdentityEvidence, uploadIdentityEvidence } from "../../../../lib/resident-applications/evidence";
-import { createAccountNotifications, listMunicipalNotificationRecipients } from "../../../../lib/notifications/service";
+import { createAccountNotifications } from "../../../../lib/notifications/service";
 import { registeredNameKey } from "../../../../lib/resident-applications/id-name-match.mjs";
 import { evidenceSha256, readBoundIdVerification as readIdVerification, readFaceVerification } from "../../../../lib/resident-applications/face-verification-token.mjs";
 
@@ -116,9 +116,10 @@ export async function POST(request: Request) {
       || faceProof.selfieLeftSha256 !== selfieLeftSha256 || faceProof.name !== registeredNameKey(firstName, lastName)) {
     return NextResponse.json({ error: "Confirm your three selfie photos with your verified ID before creating your account. Go back and retake your selfies.", code: "FACE_NOT_VERIFIED" }, { status: 400 });
   }
-  const automaticallyApproved = process.env.RESIDENT_AUTO_APPROVAL_ENABLED === "true";
-  const accountStatus = automaticallyApproved ? "ACTIVE" : "PENDING_REVIEW";
-  const verificationStatus = automaticallyApproved ? "VERIFIED" : "PENDING";
+  // A completed OTP and valid image-bound ID/face proofs make the new
+  // account ready immediately; no municipal or provincial approval follows.
+  const accountStatus = "ACTIVE";
+  const verificationStatus = "VERIFIED";
 
   const duplicate = await getDatabase().query("select 1 from users where (email is not null and lower(email) = nullif($1, '')) or lower(username) = lower($2) or phone = $3 limit 1", [email, username, phone]);
   if (duplicate.rowCount) return NextResponse.json({ error: "That email, username, or phone is already registered." }, { status: 409 });
@@ -167,33 +168,24 @@ export async function POST(request: Request) {
           evidence.selfie.reviewKey, evidence.front.sha256, evidence.back?.sha256 ?? null,
           evidence.selfie.sha256, evidence.front.mimeType, evidence.back?.mimeType ?? null,
           evidence.selfie.mimeType, evidence.front.sizeBytes, evidence.back?.sizeBytes ?? null,
-          evidence.selfie.sizeBytes, verificationStatus, now, automaticallyApproved ? now : null],
+          evidence.selfie.sizeBytes, verificationStatus, now, now],
       );
       await client.query(
         `insert into resident_verification_events (verification_id, resident_profile_id, event_type, metadata, created_at)
          values ($1,$2,'SUBMITTED',$3::jsonb,$4)`,
         [applicationId, profileId, JSON.stringify({ municipalityId: locality.rows[0].municipality_id }), now],
       );
-      if (automaticallyApproved) {
-        await client.query(
-          `insert into resident_verification_events (verification_id, resident_profile_id, actor_user_id, event_type, metadata, created_at)
-           values ($1,$2,$3,'APPROVED',$4::jsonb,$5)`,
-          [applicationId, profileId, null, JSON.stringify({ municipalityId: locality.rows[0].municipality_id, method: "automatic_face_match", score: faceProof.score, threshold: faceProof.threshold }), now],
-        );
-        await createAccountNotifications(client, {
-          recipientUserIds: [userId], actorUserId: null,
-          eventType: "RESIDENT_APPLICATION_APPROVED", category: "APPLICATION",
-          title: "Application approved", summary: "Your resident account is ready.",
-          actionHref: "/resident/login", entityType: "resident_verification", entityId: applicationId,
-          dedupeKey: `resident-application:${applicationId}:approved`, createdAt: now,
-        });
-      } else await createAccountNotifications(client, {
-        recipientUserIds: await listMunicipalNotificationRecipients(client, locality.rows[0].municipality_id),
-        actorUserId: userId,
-        eventType: "RESIDENT_APPLICATION_SUBMITTED", category: "APPLICATION",
-        title: "New resident application", summary: `${applicationReference} · ${barangay}`,
-        actionHref: "/municipal-bfp/verification-queue", entityType: "resident_verification", entityId: applicationId,
-        context: { reference: applicationReference }, dedupeKey: `resident-application:${applicationId}:submitted`, createdAt: now,
+      await client.query(
+        `insert into resident_verification_events (verification_id, resident_profile_id, actor_user_id, event_type, metadata, created_at)
+         values ($1,$2,$3,'APPROVED',$4::jsonb,$5)`,
+        [applicationId, profileId, null, JSON.stringify({ municipalityId: locality.rows[0].municipality_id, method: "automatic_face_match", score: faceProof.score, threshold: faceProof.threshold }), now],
+      );
+      await createAccountNotifications(client, {
+        recipientUserIds: [userId], actorUserId: null,
+        eventType: "RESIDENT_APPLICATION_APPROVED", category: "APPLICATION",
+        title: "Account verified", summary: "Your resident account is ready to sign in.",
+        actionHref: "/resident/login", entityType: "resident_verification", entityId: applicationId,
+        dedupeKey: `resident-application:${applicationId}:approved`, createdAt: now,
       });
       await client.query(`insert into notification_preferences (id, resident_profile_id, created_at, updated_at) values ($1,$2,$3,$3)`, [randomUUID(), profileId, now]);
     });

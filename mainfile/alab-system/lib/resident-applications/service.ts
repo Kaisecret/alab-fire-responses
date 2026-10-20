@@ -34,18 +34,23 @@ export async function getMunicipalReviewer(request: NextRequest) {
 
 export async function listResidentApplications(municipalityId: string) {
   const result = await getDatabase().query(
-    `select distinct on (rv.resident_profile_id)
-            rv.id, rv.application_reference as "reference", rv.status, rv.submitted_at as "submittedAt",
+    `select rv.id, rv.application_reference as "reference", rv.status, rv.submitted_at as "submittedAt",
             rv.rejection_reason as "correctionReason", rp.first_name as "firstName", rp.last_name as "lastName",
             u.email, u.phone, u.account_status as "accountStatus", b.name as barangay,
             ra.complete_address as address
-       from resident_verifications rv
-       join resident_profiles rp on rp.id = rv.resident_profile_id
+       from resident_profiles rp
        join users u on u.id = rp.user_id
        join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
        join barangays b on b.id = ra.barangay_id
+       join lateral (
+         select latest.* from resident_verifications latest
+          where latest.resident_profile_id = rp.id
+          order by latest.submitted_at desc, latest.created_at desc, latest.id desc
+          limit 1
+       ) rv on true
       where ra.municipality_id = $1 and u.role = 'RESIDENT'
-      order by rv.resident_profile_id, rv.submitted_at desc, rv.created_at desc`,
+        and u.account_status = 'ACTIVE' and rv.status = 'VERIFIED'
+      order by rv.submitted_at desc, rv.created_at desc, rv.id desc`,
     [municipalityId],
   );
   return result.rows;
@@ -54,7 +59,7 @@ export async function listResidentApplications(municipalityId: string) {
 export async function getResidentApplication(municipalityId: string, applicationId: string) {
   type ResidentApplicationRow = {
     id: string; reference: string; status: string; submittedAt: Date; correctionReason: string | null;
-    firstName: string; lastName: string; email: string; phone: string; username: string;
+    firstName: string; lastName: string; email: string; phone: string; username: string; accountStatus: string;
     municipality: string; barangay: string; address: string; frontReviewKey: string | null;
     legacyFrontKey: string | null; backReviewKey: string | null; legacyBackKey: string | null;
     selfieReviewKey: string | null; legacySelfieKey: string | null;
@@ -69,7 +74,7 @@ export async function getResidentApplication(municipalityId: string, application
   const queryApplication = (evidenceColumns: string) => getDatabase().query<ResidentApplicationRow>(
     `select rv.id, rv.application_reference as reference, rv.status, rv.submitted_at as "submittedAt",
             rv.rejection_reason as "correctionReason", rp.first_name as "firstName", rp.last_name as "lastName",
-            u.email, u.phone, u.username, m.name as municipality, b.name as barangay, ra.complete_address as address,
+            u.email, u.phone, u.username, u.account_status as "accountStatus", m.name as municipality, b.name as barangay, ra.complete_address as address,
             ${evidenceColumns}
        from resident_verifications rv
        join resident_profiles rp on rp.id = rv.resident_profile_id
@@ -80,7 +85,7 @@ export async function getResidentApplication(municipalityId: string, application
       where ra.municipality_id = $2 and u.role = 'RESIDENT' and rv.resident_profile_id = (
         select resident_profile_id from resident_verifications where id::text = $1 or application_reference = $1 limit 1
       )
-      order by rv.submitted_at desc, rv.created_at desc
+      order by rv.submitted_at desc, rv.created_at desc, rv.id desc
       limit 1`,
     [applicationId, municipalityId],
   );
