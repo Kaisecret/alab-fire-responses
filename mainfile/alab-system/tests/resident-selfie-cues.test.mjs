@@ -33,3 +33,10 @@ test('arrows stop during holding, loading, missing faces and review; unknown dir
   assert.equal(selfieGuidanceCue({ code: 'off-center', direction: 'invalid' }, 'front').direction, 'center');
   assert.equal(selfieGuidanceCue({ code: 'face-front', direction: 'left' }, 'front').direction, 'left');
 });
+
+test('side-view guidance never asks the resident to position inside an oval', () => {
+  for (const view of ['left', 'right']) for (const code of ['loading', 'no-face', 'too-small', 'too-large', 'clipped', 'outside-guide', 'off-center', 'hold']) {
+    const cue = selfieGuidanceCue({ code, direction: 'left' }, view);
+    assert.doesNotMatch(`${cue.title} ${cue.detail}`, /oval/i);
+  }
+});

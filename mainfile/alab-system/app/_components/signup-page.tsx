@@ -140,6 +140,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const selfieReviewActions = root.querySelector<HTMLElement>("#selfieReviewActions");
     const selfieCameraHeading = root.querySelector<HTMLElement>("#selfieCameraHeading");
     const selfieCameraProgress = root.querySelector<HTMLElement>("#selfieCameraProgress");
+    const selfieHoldProgress = root.querySelector<HTMLElement>("#selfieHoldProgress");
     const selfieCameraRetry = root.querySelector<HTMLButtonElement>("#selfieCameraRetry");
     const selfieDirectionCue = root.querySelector<HTMLElement>("#selfieDirectionCue");
     const selfieCueTitle = root.querySelector<HTMLElement>("#selfieCueTitle");
@@ -823,7 +824,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       if (selfieCueTitle && selfieCueTitle.textContent !== cue.title) selfieCueTitle.textContent = cue.title;
       if (selfieCueDetail && selfieCueDetail.textContent !== cue.detail) selfieCueDetail.textContent = cue.detail;
       selfieFaceGuide?.setAttribute("data-feedback", cue.kind);
-      selfieCameraPanel?.setAttribute("data-guidance", state.code === "loading" ? "loading" : "active");
+      selfieCameraPanel?.setAttribute("data-guidance", state.code === "loading" ? "loading" : state.code === "review" ? "review" : "active");
     };
 
     const releaseGuidance = () => {
@@ -847,9 +848,11 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         selfiePreview.hidden = true;
         selfiePreview.removeAttribute("src");
       }
-      selfieFaceGuide?.removeAttribute("hidden");
+      if (activeSelfieView === "front") selfieFaceGuide?.removeAttribute("hidden");
+      else selfieFaceGuide?.setAttribute("hidden", "true");
       selfieFaceGuide?.classList.remove("ready");
       selfieFaceGuide?.style.setProperty("--capture-progress", "0%");
+      selfieHoldProgress?.style.setProperty("--capture-progress", "0%");
       renderSelfieCue({ code: "loading" });
       if (selfieGuidance) selfieGuidance.textContent = "Opening camera…";
       if (captureSelfieBtn) { captureSelfieBtn.hidden = false; captureSelfieBtn.disabled = true; }
@@ -899,6 +902,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const startSelfieCamera = async (view: SelfieView = selfieViews.nextMissing() ?? "front") => {
       closeSelfieCamera(true);
       activeSelfieView = view;
+      selfieCameraPanel?.setAttribute("data-view", view);
       const attempt = cameraAttempt;
       if (!navigator.mediaDevices?.getUserMedia || !selfieVideo) {
         formStatus.textContent = "Camera access is not supported by this browser. Try a recent Chrome, Safari or Edge browser.";
@@ -945,6 +949,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
             }
             selfieFaceGuide.classList.toggle("ready", state.ready);
             selfieFaceGuide.style.setProperty("--capture-progress", `${Math.round(state.progress * 100)}%`);
+            selfieHoldProgress?.style.setProperty("--capture-progress", `${Math.round(state.progress * 100)}%`);
             // Manual capture uses the same sustained-position gate as auto capture.
             if (captureSelfieBtn) captureSelfieBtn.disabled = !state.ready || state.progress < 1;
           },

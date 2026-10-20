@@ -222,3 +222,71 @@ test("small in-oval landmark jitter can finish a side hold without hiding disapp
     assert.equal(invalid.updates.at(-1).progress, 0);
   }
 });
+
+test("side views accept a fully visible face outside the oval and require no guide layout", () => {
+  for (const [view, yaw, x] of [["right", 24, 0.23], ["left", -24, 0.77]]) {
+    const points = face({ x, y: 0.4, yaw });
+    for (const guide of [guideRect, { left: 0, top: 0, width: 0, height: 0 }, undefined]) {
+      assert.equal(evaluateSelfieGeometry(frame([points], { guideRect: guide }), view).acceptable, true);
+    }
+    assert.equal(evaluateSelfieGeometry(frame([points]), "front").code, "off-center");
+    assert.equal(evaluateSelfieGeometry(frame([points], { guideRect: undefined }), "front").code, "camera-pending");
+  }
+});
+
+test("side framing accepts usable faces near every corner and large faces while front framing keeps its limits", () => {
+  for (const x of [0.13, 0.87]) {
+    for (const y of [0.15, 0.85]) {
+      assert.equal(evaluateSelfieGeometry(frame([face({ x, y, width: 0.2, height: 0.25, yaw: 24 })]), "right").acceptable, true);
+    }
+  }
+  assert.equal(evaluateSelfieGeometry(frame([face({ width: 0.74, height: 0.88, yaw: 24 })]), "right").acceptable, true);
+  assert.equal(evaluateSelfieGeometry(frame([face({ width: 0.74, height: 0.88 })]), "front").code, "too-large");
+});
+
+test("side minimum size uses actual inference pixels rather than CSS preview size or oval size", () => {
+  assert.equal(evaluateSelfieGeometry(frame([face({ x: 0.2, width: 0.16, height: 0.2, yaw: 24 })]), "right").acceptable, true);
+  for (const options of [{ width: 0.159, height: 0.2 }, { width: 0.16, height: 0.199 }]) {
+    const rejected = evaluateSelfieGeometry(frame([face({ ...options, yaw: 24 })]), "right");
+    assert.equal(rejected.code, "too-small");
+    assert.doesNotMatch(rejected.message, /oval/i);
+  }
+  const fullHd = { videoWidth: 1920, videoHeight: 1080, videoRect: { left: 0, top: 0, width: 1920, height: 1080 }, guideRect: undefined };
+  assert.equal(evaluateSelfieGeometry(frame([face({ width: 0.1, height: 0.23, yaw: 24 })], fullHd), "right").acceptable, true);
+  const enlargedPreview = { ...fullHd, videoRect: { left: 0, top: 0, width: 3840, height: 2160 } };
+  assert.equal(evaluateSelfieGeometry(frame([face({ width: 0.09, height: 0.3, yaw: 24 })], enlargedPreview), "right").code, "too-small");
+  assert.equal(evaluateSelfieGeometry(frame([face({ width: 0.14, height: 0.2, yaw: 24 })], enlargedPreview), "right").code, "too-small");
+});
+
+test("side views still reject absent, extra, partial, crop-hidden, malformed and wrong-pose faces", () => {
+  const noGuide = { guideRect: undefined };
+  const absent = evaluateSelfieGeometry(frame([], noGuide), "right");
+  assert.equal(absent.code, "no-face");
+  assert.doesNotMatch(absent.message, /oval/i);
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24 }), face()], noGuide), "right").code, "multiple-faces");
+  assert.equal(evaluateSelfieGeometry(frame([face({ x: 0.05, yaw: 24 })], noGuide), "right").code, "clipped");
+  assert.equal(evaluateSelfieGeometry(frame([face({ x: 0.3, yaw: 24 })], { ...noGuide, videoWidth: 1600, videoHeight: 900 }), "right").code, "clipped");
+  for (const yaw of [0, -24, 45]) assert.equal(evaluateSelfieGeometry(frame([face({ x: 0.23, yaw })], noGuide), "right").acceptable, false);
+  const malformed = face({ x: 0.23, yaw: 24 });
+  malformed[133].z = Number.NaN;
+  assert.equal(evaluateSelfieGeometry(frame([malformed], noGuide), "right").acceptable, false);
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24 })], { ...noGuide, videoRect: { ...videoRect, width: 0 } }), "right").code, "camera-pending");
+});
+
+test("an off-center side face captures only after a stable correct-pose hold and movement still resets", () => {
+  const noGuide = { guideRect: undefined };
+  const valid = (x = 0.23, yaw = 24) => frame([face({ x, yaw })], noGuide);
+  const stable = gate("right");
+  for (const now of [0, 180, 360, 540, 720]) stable.controller.sample(valid(), now);
+  assert.equal(stable.events.length, 0);
+  stable.controller.sample(valid(), 900);
+  assert.deepEqual(stable.events, ["ready", "stop"]);
+  const moving = gate("right");
+  for (const now of [0, 180, 360]) moving.controller.sample(valid(), now);
+  moving.controller.sample(valid(0.32), 540);
+  assert.equal(moving.updates.at(-1).progress, 0);
+  moving.controller.sample(valid(0.32, 0), 720);
+  assert.equal(moving.updates.at(-1).progress, 0);
+  assert.equal(moving.events.length, 0);
+  moving.controller.stop();
+});

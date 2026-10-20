@@ -31,35 +31,54 @@ export function mapLandmarkToPreview(point, { videoWidth, videoHeight, videoRect
  */
 export function evaluateSelfieGeometry(frame, view) {
   const { faces, videoWidth, videoHeight, videoRect, guideRect } = frame;
-  if (!validRect(videoRect) || !validRect(guideRect) || !Number.isFinite(videoWidth) || !Number.isFinite(videoHeight) || videoWidth <= 0 || videoHeight <= 0) {
+  const sideView = view === "right" || view === "left";
+  if (!validRect(videoRect) || (!sideView && !validRect(guideRect)) || !Number.isFinite(videoWidth) || !Number.isFinite(videoHeight) || videoWidth <= 0 || videoHeight <= 0) {
     return reject("camera-pending", "Waiting for the camera preview...");
   }
-  if (!Array.isArray(faces) || faces.length === 0) return reject("no-face", "Center your face in the oval.", "center");
+  if (!Array.isArray(faces) || faces.length === 0) return reject("no-face", sideView ? "Keep your whole face visible in the camera." : "Center your face in the oval.", "center");
   if (faces.length !== 1) return reject("multiple-faces", "Only one person should be in view.", "center");
   const face = faces[0];
   if (!Array.isArray(face) || [...FACE_OVAL, 33, 263, 1].some((index) => !face[index] || ![face[index].x, face[index].y, face[index].z].every(Number.isFinite))) {
     return reject("no-face", "Keep your whole face visible in good light.");
   }
   const contour = FACE_OVAL.map((index) => mapLandmarkToPreview(face[index], frame));
-  if (FACE_OVAL.some((index) => face[index].x < 0.01 || face[index].x > 0.99 || face[index].y < 0.01 || face[index].y > 0.99) || contour.some((point) => point.x <= videoRect.left + 2 || point.x >= videoRect.left + videoRect.width - 2 || point.y <= videoRect.top + 2 || point.y >= videoRect.top + videoRect.height - 2)) {
+  const sourceMargin = sideView ? 0 : 0.01;
+  const previewMargin = sideView ? 0 : 2;
+  if (FACE_OVAL.some((index) => face[index].x < sourceMargin || face[index].x > 1 - sourceMargin || face[index].y < sourceMargin || face[index].y > 1 - sourceMargin) || contour.some((point) => point.x <= videoRect.left + previewMargin || point.x >= videoRect.left + videoRect.width - previewMargin || point.y <= videoRect.top + previewMargin || point.y >= videoRect.top + videoRect.height - previewMargin)) {
     return reject("clipped", "Move back so your whole face is visible.", "farther");
   }
   const minX = Math.min(...contour.map((p) => p.x));
   const maxX = Math.max(...contour.map((p) => p.x));
   const minY = Math.min(...contour.map((p) => p.y));
   const maxY = Math.max(...contour.map((p) => p.y));
-  const width = (maxX - minX) / guideRect.width;
-  const height = (maxY - minY) / guideRect.height;
-  if (width < 0.5 || height < 0.55) return reject("too-small", "Move a little closer to fill the oval.", "closer");
-  if (width > 0.92 || height > 0.92) return reject("too-large", "Move a little farther from the camera.", "farther");
-  const centerX = ((minX + maxX) / 2 - guideRect.left - guideRect.width / 2) / (guideRect.width / 2);
-  const centerY = ((minY + maxY) / 2 - guideRect.top - guideRect.height / 2) / (guideRect.height / 2);
-  if (Math.abs(centerX) > 0.24 || Math.abs(centerY) > 0.24) {
-    const direction = Math.abs(centerX) > Math.abs(centerY) ? (centerX > 0 ? "left" : "right") : (centerY > 0 ? "up" : "down");
-    return reject("off-center", `Center your face: move ${direction} in the preview.`, direction);
-  }
-  if (contour.some((p) => ((p.x - guideRect.left - guideRect.width / 2) / (guideRect.width / 2)) ** 2 + ((p.y - guideRect.top - guideRect.height / 2) / (guideRect.height / 2)) ** 2 > 1)) {
-    return reject("outside-guide", "Keep your whole face inside the oval.", "center");
+  // Side views use the full visible preview. The oval has no role in their
+  // positioning, size limits, or hold coordinates and may be hidden entirely.
+  const reference = sideView ? videoRect : guideRect;
+  const width = (maxX - minX) / reference.width;
+  const height = (maxY - minY) / reference.height;
+  const centerX = ((minX + maxX) / 2 - reference.left - reference.width / 2) / (reference.width / 2);
+  const centerY = ((minY + maxY) / 2 - reference.top - reference.height / 2) / (reference.height / 2);
+  if (sideView) {
+    // Undo CSS cover scaling before measuring the face in the actual small
+    // inference image. A large CSS preview must not magnify an unusably tiny
+    // camera face into acceptance. Match the runtime's rounded canvas size.
+    const inferenceScale = Math.min(1, 640 / Math.max(videoWidth, videoHeight));
+    const coverScale = Math.max(videoRect.width / videoWidth, videoRect.height / videoHeight);
+    const inferenceWidth = Math.round(videoWidth * inferenceScale);
+    const inferenceHeight = Math.round(videoHeight * inferenceScale);
+    const faceWidthPixels = (maxX - minX) * inferenceWidth / (videoWidth * coverScale);
+    const faceHeightPixels = (maxY - minY) * inferenceHeight / (videoHeight * coverScale);
+    if (faceWidthPixels + 0.000001 < 64 || faceHeightPixels + 0.000001 < 80) return reject("too-small", "Move a little closer so your face is clear.", "closer");
+  } else {
+    if (width < 0.5 || height < 0.55) return reject("too-small", "Move a little closer to fill the oval.", "closer");
+    if (width > 0.92 || height > 0.92) return reject("too-large", "Move a little farther from the camera.", "farther");
+    if (Math.abs(centerX) > 0.24 || Math.abs(centerY) > 0.24) {
+      const direction = Math.abs(centerX) > Math.abs(centerY) ? (centerX > 0 ? "left" : "right") : (centerY > 0 ? "up" : "down");
+      return reject("off-center", `Center your face: move ${direction} in the preview.`, direction);
+    }
+    if (contour.some((p) => ((p.x - guideRect.left - guideRect.width / 2) / (guideRect.width / 2)) ** 2 + ((p.y - guideRect.top - guideRect.height / 2) / (guideRect.height / 2)) ** 2 > 1)) {
+      return reject("outside-guide", "Keep your whole face inside the oval.", "center");
+    }
   }
   const rightEye = face[33];
   const leftEye = face[263];

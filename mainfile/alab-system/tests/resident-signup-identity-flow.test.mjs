@@ -314,10 +314,19 @@ test('live arrows distinguish framing movements, head turns and holding, then di
 test('the camera reuses one detector through all three views and releases it after completion or cancel', async t => {
   const h = mount(); t.after(h.cleanup); await openIds(h); await h.upload('fileFront'); await h.upload('fileBack');
   await h.click('selfieCapture'); await h.ready();
+  assert.equal(h.nodes.get('selfieFaceGuide').attrs.has('hidden'), true, 'the oval is hidden in captured-photo review');
   assert.equal(h.guidanceSessions.length, 1); assert.equal(h.guidanceSessions[0].closed, false, 'review keeps the model warm');
-  await h.click('useSelfie'); await h.ready(); await h.click('useSelfie'); await h.ready(); await h.click('useSelfie');
+  await h.click('useSelfie');
+  assert.equal(h.nodes.get('selfieCameraPanel').attrs.get('data-view'), 'right');
+  assert.equal(h.nodes.get('selfieFaceGuide').attrs.has('hidden'), true, 'right view has no oval');
+  await h.ready(); await h.click('useSelfie');
+  assert.equal(h.nodes.get('selfieCameraPanel').attrs.get('data-view'), 'left');
+  assert.equal(h.nodes.get('selfieFaceGuide').attrs.has('hidden'), true, 'left view has no oval');
+  await h.ready(); await h.click('useSelfie');
   assert.equal(h.guidanceSessions.length, 1); assert.equal(h.guidanceSessions[0].starts, 3); assert.equal(h.guidanceSessions[0].closed, true);
-  await h.click('retakeSelfieFront'); await h.click('cancelSelfie');
+  await h.click('retakeSelfieFront');
+  assert.equal(h.nodes.get('selfieFaceGuide').attrs.has('hidden'), false, 'front retake restores the centering guide');
+  await h.click('cancelSelfie');
   assert.equal(h.guidanceSessions.length, 2); assert.equal(h.guidanceSessions[1].closed, true);
 });
 

@@ -85,6 +85,25 @@ function harness({ failWorker = false, deferredInit = false, deferredCpuInit = f
   return { start: exported.startSelfieGuidance, createSession: exported.createSelfieGuidanceSession, args, updates, workers, canvas, timers, tick, advance, finishCpuInit, options, fallbackTask, document, setClock(now) { clock = now; }, get readyCount() { return readyCount; } };
 }
 
+test("side capture runs with a hidden guide and accepts a stable face away from the frame center", async () => {
+  const runtime = harness();
+  runtime.args.video.videoWidth = 400;
+  runtime.args.video.videoHeight = 400;
+  runtime.args.guide.getBoundingClientRect = () => ({ left: 0, top: 0, width: 0, height: 0 });
+  const points = centeredMesh(24).map((point) => ({ x: 0.25 + (point.x - 0.5) * 0.6, y: 0.33 + (point.y - 0.5) * 0.6, z: point.z * 0.6 }));
+  const handle = await runtime.start({ ...runtime.args, view: "right" });
+  for (const now of [0, 180, 360, 540, 720, 900]) {
+    runtime.args.video.currentTime++;
+    await runtime.tick(now);
+    runtime.workers[0].respond([points]);
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  assert.equal(runtime.readyCount, 1);
+  assert.equal(runtime.updates.at(-1).ready, true);
+  assert.equal(runtime.workers[0].terminated, true);
+  handle.stop();
+});
+
 test("a healthy cold worker can finish after 47 seconds without being killed or starting a second model", async () => {
   const runtime = harness({ deferredInit: true });
   const owner = runtime.createSession();

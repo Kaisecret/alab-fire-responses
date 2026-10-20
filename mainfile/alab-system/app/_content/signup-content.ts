@@ -1085,6 +1085,13 @@ export const signupStyles = `
         .selfie-camera-phases [data-state="active"]::before { background: #fff; }
         .selfie-camera-phases [data-state="done"] { color: #bbf7d0; }
         .selfie-camera-phases [data-state="done"]::before { background: #4ade80; }
+        .selfie-side-note { color: #e2e8f0; font-size: .75rem; line-height: 1.4; margin: .85rem -1rem 0; font-weight: 500; }
+        .selfie-camera-hold { width: min(100%, 14rem); height: .25rem; background: rgba(255,255,255,.2); border-radius: 1rem; margin: .7rem auto 0; overflow: hidden; }
+        .selfie-camera-hold span { display: block; width: var(--capture-progress, 0%); height: 100%; background: #4ade80; transition: width .1s linear; }
+        .selfie-camera-panel[data-view="front"] .selfie-side-note,
+        .selfie-camera-panel[data-view="front"] .selfie-camera-hold,
+        .selfie-camera-panel[data-guidance="review"] .selfie-side-note,
+        .selfie-camera-panel[data-guidance="review"] .selfie-camera-hold { display: none; }
         .selfie-direction-cue { display: flex; align-items: center; gap: .85rem; width: min(100%, 24rem); padding: .7rem .9rem; border: 1px solid rgba(255,255,255,.18); border-radius: 1rem; background: rgba(11,17,28,.82); text-align: left; pointer-events: none; }
         .selfie-cue-symbol { display: grid; place-items: center; flex: 0 0 3rem; width: 3rem; height: 3rem; border-radius: 50%; background: rgba(255,255,255,.1); color: white; }
         .selfie-cue-symbol svg { width: 2.25rem; height: 2.25rem; display: none; }
@@ -1745,7 +1752,7 @@ export const signupMarkup = `<main class="signup-container">
                         <div class="selfie-camera-panel" id="selfieCameraPanel" role="dialog" aria-modal="true" aria-labelledby="selfieCameraHeading" aria-describedby="selfieCameraGuidance" aria-hidden="true">
                             <div class="selfie-camera-card">
                                 <button type="button" class="selfie-camera-close" id="cancelSelfie" aria-label="Close camera">&times;</button>
-                                <div class="selfie-camera-heading"><span id="selfieCameraProgress">1 / 3 · Front view</span><h3 id="selfieCameraHeading">Look straight ahead</h3><div class="selfie-camera-phases" aria-hidden="true"><span id="selfiePhaseFront" data-state="active">Front</span><span id="selfiePhaseRight" data-state="pending">Right</span><span id="selfiePhaseLeft" data-state="pending">Left</span></div></div>
+                                <div class="selfie-camera-heading"><span id="selfieCameraProgress">1 / 3 · Front view</span><h3 id="selfieCameraHeading">Look straight ahead</h3><div class="selfie-camera-phases" aria-hidden="true"><span id="selfiePhaseFront" data-state="active">Front</span><span id="selfiePhaseRight" data-state="pending">Right</span><span id="selfiePhaseLeft" data-state="pending">Left</span></div><p class="selfie-side-note">Your face can be anywhere in view. Turn gently.</p><div class="selfie-camera-hold" id="selfieHoldProgress" aria-hidden="true"><span></span></div></div>
                                 <div class="selfie-camera-stage">
                                     <video id="selfieVideo" autoplay playsinline muted></video>
                                     <img id="selfiePreview" hidden alt="Your captured verification selfie">
