@@ -34,6 +34,15 @@ test('arrows stop during holding, loading, missing faces and review; unknown dir
   assert.equal(selfieGuidanceCue({ code: 'face-front', direction: 'left' }, 'front').direction, 'left');
 });
 
+test('a dark room asks for better light without an arrow', () => {
+  for (const view of ['front', 'right', 'left']) {
+    const cue = selfieGuidanceCue({ code: 'too-dark' }, view);
+    assert.equal(cue.kind, 'light');
+    assert.ok(!['left', 'right', 'up', 'down'].includes(cue.direction));
+    assert.match(cue.title, /light/i);
+  }
+});
+
 test('side-view guidance never asks the resident to position inside an oval', () => {
   for (const view of ['left', 'right']) for (const code of ['loading', 'no-face', 'too-small', 'too-large', 'clipped', 'outside-guide', 'off-center', 'hold']) {
     const cue = selfieGuidanceCue({ code, direction: 'left' }, view);

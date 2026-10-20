@@ -1,5 +1,20 @@
 /** @typedef {{ frontId: File, backId: File, selfie: File, selfieRight: File, selfieLeft: File, idVerificationToken: string }} FaceEvidence */
-/** @typedef {{ status: 'idle'|'checking'|'verified'|'failed', code?: string, message?: string }} FaceCheckState */
+/** @typedef {{ status: 'idle'|'checking'|'verified'|'failed', code?: string, message?: string, retryable?: boolean }} FaceCheckState */
+
+// Failures where the same photos can be sent again without retaking them.
+const RETRYABLE_CODES = new Set(['SERVICE_UNAVAILABLE', 'FACE_SERVICE_UNAVAILABLE', 'FACE_SERVICE_BUSY', 'TIMEOUT', 'TOO_MANY_CHECKS']);
+const NETWORK_MESSAGE = 'Your photos did not reach our server. Check your internet connection and try again. You do not need to retake them.';
+const SERVICE_MESSAGE = 'Selfie checking is not available right now. Try again in a moment. You do not need to retake your photos.';
+
+/** @param {number} ms @param {AbortSignal} signal */
+function pause(ms, signal) {
+  return new Promise((resolve) => {
+    if (signal.aborted) return resolve(undefined);
+    const timer = setTimeout(done, ms);
+    function done() { clearTimeout(timer); signal.removeEventListener('abort', done); resolve(undefined); }
+    signal.addEventListener('abort', done, { once: true });
+  });
+}
 
 function sameEvidence(a, b) {
   return Boolean(a && b && a.frontId === b.frontId && a.backId === b.backId
@@ -10,9 +25,11 @@ function sameEvidence(a, b) {
 /**
  * Owns a single face check for the current confirmed photos. The server still
  * validates every binding; this prevents an obsolete response updating the UI.
- * @param {{ request?: typeof fetch, onState?: (state: FaceCheckState) => void }} options
+ * A dropped connection or an unavailable server is retried once with the same
+ * photos before the resident sees an error.
+ * @param {{ request?: typeof fetch, onState?: (state: FaceCheckState) => void, retryDelayMs?: number }} options
  */
-export function createFaceCheckController({ request = fetch, onState = () => {} } = {}) {
+export function createFaceCheckController({ request = fetch, onState = () => {}, retryDelayMs = 1500 } = {}) {
   let generation = 0;
   let disposed = false;
   let activeRequest = null;
@@ -63,7 +80,21 @@ export function createFaceCheckController({ request = fetch, onState = () => {} 
       body.set('selfieLeft', input.selfieLeft);
       body.set('idVerificationToken', input.idVerificationToken);
       try {
-        const response = await request('/api/auth/register/face-check', { method: 'POST', body, signal: controller.signal });
+        let response;
+        for (let attempt = 1; ; attempt++) {
+          try {
+            response = await request('/api/auth/register/face-check', { method: 'POST', body, signal: controller.signal });
+            if (attempt < 2 && [502, 503, 504].includes(response.status) && !controller.signal.aborted) {
+              await pause(retryDelayMs, controller.signal);
+              if (!controller.signal.aborted) continue;
+            }
+            break;
+          } catch (error) {
+            if (attempt >= 2 || controller.signal.aborted) throw error;
+            await pause(retryDelayMs, controller.signal);
+            if (controller.signal.aborted) throw error;
+          }
+        }
         const result = await response.json().catch(() => ({}));
         if (disposed || job !== generation) return false;
         if (response.ok && result.verified === true && typeof result.token === 'string'
@@ -73,13 +104,17 @@ export function createFaceCheckController({ request = fetch, onState = () => {} 
           onState({ status: 'verified', message: 'Your selfie matches the photo on your ID.' });
           return true;
         }
-        onState({ status: 'failed', code: typeof result.code === 'string' ? result.code : 'FACE_NOT_VERIFIED',
-          message: typeof result.message === 'string' ? result.message : 'We could not compare your selfie with your ID. Please try again.' });
+        // Platform errors (crashes, gateway timeouts) carry no JSON code.
+        const code = typeof result.code === 'string' ? result.code : response.status >= 500 ? 'SERVICE_UNAVAILABLE' : 'FACE_NOT_VERIFIED';
+        const retryable = RETRYABLE_CODES.has(code);
+        onState({ status: 'failed', code, retryable,
+          message: typeof result.message === 'string' ? result.message
+            : retryable ? SERVICE_MESSAGE : 'We could not compare your selfie with your ID. Please try again.' });
         return false;
       } catch {
         if (disposed || job !== generation) return false;
-        onState({ status: 'failed', code: controller.signal.aborted ? 'TIMEOUT' : 'SERVICE_UNAVAILABLE',
-          message: controller.signal.aborted ? 'Face comparison took too long. Please try again.' : 'Unable to reach face verification. Please try again.' });
+        onState({ status: 'failed', code: controller.signal.aborted ? 'TIMEOUT' : 'NETWORK_ERROR', retryable: true,
+          message: controller.signal.aborted ? 'Face comparison took too long. Try again. You do not need to retake your photos.' : NETWORK_MESSAGE });
         return false;
       } finally {
         clearTimeout(timeout);

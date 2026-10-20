@@ -1114,6 +1114,21 @@ export const signupStyles = `
         .selfie-direction-cue:not([hidden]) ~ .selfie-camera-guidance { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
         @keyframes selfie-arrow-nudge { 0%,100% { transform: translateX(-2px); } 50% { transform: translateX(3px); } }
         @media (prefers-reduced-motion: reduce) { .selfie-cue-symbol svg { animation: none !important; } }
+        .selfie-direction-cue[data-kind="light"] .selfie-cue-light { display: block; }
+        .selfie-direction-cue[data-kind="light"] { border-color: rgba(250,204,21,.45); }
+        .selfie-direction-cue[data-kind="light"] .selfie-cue-symbol { color: #fde047; background: rgba(250,204,21,.14); }
+        /* Large chevrons on the side of the preview show which way to turn. */
+        .selfie-turn-arrows { position: absolute; top: 44%; z-index: 1; display: none; align-items: center; gap: .15rem; transform: translateY(-50%); pointer-events: none; filter: drop-shadow(0 .15rem .5rem rgba(0,0,0,.6)); }
+        .selfie-camera-panel[data-turn="right"] .selfie-turn-arrows { display: flex; right: 1rem; }
+        .selfie-camera-panel[data-turn="left"] .selfie-turn-arrows { display: flex; left: 1rem; flex-direction: row-reverse; }
+        .selfie-camera-panel[data-guidance="review"] .selfie-turn-arrows { display: none; }
+        .selfie-turn-arrows span { width: 1.9rem; height: 1.9rem; border-top: .5rem solid #fff; border-right: .5rem solid #fff; border-radius: .25rem; transform: rotate(45deg); opacity: .25; animation: selfie-turn-chevron 1.1s ease-in-out infinite; }
+        .selfie-camera-panel[data-turn="left"] .selfie-turn-arrows span { transform: rotate(-135deg); }
+        .selfie-turn-arrows span:nth-child(2) { animation-delay: .15s; }
+        .selfie-turn-arrows span:nth-child(3) { animation-delay: .3s; }
+        @keyframes selfie-turn-chevron { 0%,100% { opacity: .25; } 40% { opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) { .selfie-turn-arrows span { animation: none; opacity: .95; } }
+        .selfie-capture-flash { position: absolute; inset: 0; z-index: 1; background: #fff; opacity: 0; pointer-events: none; }
         @media (max-height: 600px) {
             .selfie-camera-phases { margin-top: .4rem; }
             .selfie-direction-cue { padding: .45rem .65rem; }
@@ -1746,17 +1761,19 @@ export const signupMarkup = `<main class="signup-container">
                             </div>
                             <div class="selfie-text">
                                 <span class="selfie-main" id="selfieMain">Start guided selfie</span>
-                                <span class="selfie-hint">Hold steady — each photo captures automatically</span>
+                                <span class="selfie-hint">Front, right, then left · each photo captures automatically</span>
                             </div>
                         </button>
                         <div class="selfie-camera-panel" id="selfieCameraPanel" role="dialog" aria-modal="true" aria-labelledby="selfieCameraHeading" aria-describedby="selfieCameraGuidance" aria-hidden="true">
                             <div class="selfie-camera-card">
                                 <button type="button" class="selfie-camera-close" id="cancelSelfie" aria-label="Close camera">&times;</button>
-                                <div class="selfie-camera-heading"><span id="selfieCameraProgress">1 / 3 · Front view</span><h3 id="selfieCameraHeading">Look straight ahead</h3><div class="selfie-camera-phases" aria-hidden="true"><span id="selfiePhaseFront" data-state="active">Front</span><span id="selfiePhaseRight" data-state="pending">Right</span><span id="selfiePhaseLeft" data-state="pending">Left</span></div><p class="selfie-side-note">Your face can be anywhere in view. Turn gently.</p><div class="selfie-camera-hold" id="selfieHoldProgress" aria-hidden="true"><span></span></div></div>
+                                <div class="selfie-camera-heading"><span id="selfieCameraProgress">1 / 3 · Front view</span><h3 id="selfieCameraHeading">Look straight ahead</h3><div class="selfie-camera-phases" aria-hidden="true"><span id="selfiePhaseFront" data-state="active">Front</span><span id="selfiePhaseRight" data-state="pending">Right</span><span id="selfiePhaseLeft" data-state="pending">Left</span></div><p class="selfie-side-note">Follow the arrows. A small turn is enough.</p><div class="selfie-camera-hold" id="selfieHoldProgress" aria-hidden="true"><span></span></div></div>
                                 <div class="selfie-camera-stage">
                                     <video id="selfieVideo" autoplay playsinline muted></video>
                                     <img id="selfiePreview" hidden alt="Your captured verification selfie">
                                     <div class="selfie-face-guide" id="selfieFaceGuide" aria-hidden="true"></div>
+                                    <div class="selfie-turn-arrows" aria-hidden="true"><span></span><span></span><span></span></div>
+                                    <div class="selfie-capture-flash" id="selfieCaptureFlash" aria-hidden="true"></div>
                                     <div class="selfie-camera-footer">
                                     <div class="selfie-direction-cue" id="selfieDirectionCue" data-direction="center" data-kind="center" aria-hidden="true">
                                         <span class="selfie-cue-symbol">
@@ -1764,6 +1781,7 @@ export const signupMarkup = `<main class="signup-container">
                                             <svg class="selfie-cue-arrow" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 24h32M30 14l10 10-10 10"/></svg>
                                             <svg class="selfie-cue-face" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 19C12 8 36 8 36 19v9c0 15-24 15-24 0Z"/><path d="M18 23h.1M30 23h.1M20 32q4 3 8 0"/><path class="selfie-cue-focus" d="M4 13V5h8M36 5h8v8M44 35v8h-8M12 43H4v-8"/></svg>
                                             <svg class="selfie-cue-check" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m12 24 8 8 17-18"/></svg>
+                                            <svg class="selfie-cue-light" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="24" cy="24" r="8"/><path d="M24 5v5M24 38v5M5 24h5M38 24h5M10.6 10.6l3.5 3.5M33.9 33.9l3.5 3.5M37.4 10.6l-3.5 3.5M14.1 33.9l-3.5 3.5"/></svg>
                                         </span>
                                         <div class="selfie-cue-copy"><strong id="selfieCueTitle">Look at the camera</strong><span id="selfieCueDetail">Bring your face into the oval in good light.</span></div>
                                     </div>

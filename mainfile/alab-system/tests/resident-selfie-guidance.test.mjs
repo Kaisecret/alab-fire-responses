@@ -216,8 +216,8 @@ test("small in-oval landmark jitter can finish a side hold without hiding disapp
   assert.deepEqual(events, ["ready", "stop"]);
   for (const interrupted of [frame([]), frame([face({ yaw: -24 })]), frame([face({ yaw: 24 }), face()])]) {
     const invalid = gate("right");
-    for (const now of [0, 180, 360, 540, 720]) invalid.controller.sample(frame([face({ yaw: 24 })]), now);
-    invalid.controller.sample(interrupted, 900);
+    for (const now of [0, 180, 360, 540]) invalid.controller.sample(frame([face({ yaw: 24 })]), now);
+    invalid.controller.sample(interrupted, 720);
     assert.equal(invalid.events.length, 0);
     assert.equal(invalid.updates.at(-1).progress, 0);
   }
@@ -277,9 +277,9 @@ test("an off-center side face captures only after a stable correct-pose hold and
   const noGuide = { guideRect: undefined };
   const valid = (x = 0.23, yaw = 24) => frame([face({ x, yaw })], noGuide);
   const stable = gate("right");
-  for (const now of [0, 180, 360, 540, 720]) stable.controller.sample(valid(), now);
+  for (const now of [0, 180, 360, 540]) stable.controller.sample(valid(), now);
   assert.equal(stable.events.length, 0);
-  stable.controller.sample(valid(), 900);
+  stable.controller.sample(valid(), 720);
   assert.deepEqual(stable.events, ["ready", "stop"]);
   const moving = gate("right");
   for (const now of [0, 180, 360]) moving.controller.sample(valid(), now);
@@ -289,4 +289,53 @@ test("an off-center side face captures only after a stable correct-pose hold and
   assert.equal(moving.updates.at(-1).progress, 0);
   assert.equal(moving.events.length, 0);
   moving.controller.stop();
+});
+
+test("side views hold for 600 ms with three samples while the front photo keeps its 900 ms hold", () => {
+  const side = gate("right");
+  for (const now of [0, 200, 400]) side.controller.sample(frame([face({ yaw: 24 })]), now);
+  assert.equal(side.events.length, 0);
+  side.controller.sample(frame([face({ yaw: 24 })]), 600);
+  assert.deepEqual(side.events, ["ready", "stop"]);
+  const sparse = gate("left");
+  for (const now of [0, 700]) sparse.controller.sample(frame([face({ yaw: -24 })]), now);
+  assert.equal(sparse.events.length, 0, "two samples never complete a side hold");
+  const front = gate();
+  for (const now of [0, 200, 400, 600]) front.controller.sample(frame(), now);
+  assert.equal(front.events.length, 0);
+  front.controller.sample(frame(), 900);
+  assert.deepEqual(front.events, ["ready", "stop"]);
+});
+
+test("side views accept a wider natural turn and head tilt; the front photo stays strict", () => {
+  for (const yaw of [13, 38]) {
+    assert.equal(evaluateSelfieGeometry(frame([face({ yaw })]), "right").acceptable, true);
+    assert.equal(evaluateSelfieGeometry(frame([face({ yaw: -yaw })]), "left").acceptable, true);
+  }
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 10 })]), "right").code, "turn-right");
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 42 })]), "right").code, "turn-back");
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24, roll: 12 })]), "right").acceptable, true);
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24, roll: 16 })]), "right").code, "head-level");
+  assert.equal(evaluateSelfieGeometry(frame([face({ roll: 12 })]), "front").code, "head-level");
+});
+
+test("side holds tolerate small yaw wobble but a real pose change still restarts", () => {
+  const wobble = gate("right");
+  for (const [index, yaw] of [24, 30, 25, 31].entries()) wobble.controller.sample(frame([face({ yaw })]), index * 200);
+  assert.deepEqual(wobble.events, ["ready", "stop"]);
+  const changed = gate("right");
+  for (const [index, yaw] of [16, 16, 30].entries()) changed.controller.sample(frame([face({ yaw })]), index * 200);
+  assert.equal(changed.updates.at(-1).progress, 0);
+});
+
+test("a dark camera image explains a missing face; a lit empty frame does not", () => {
+  for (const view of ["front", "right"]) {
+    const dark = evaluateSelfieGeometry(frame([], { brightness: 0.08 }), view);
+    assert.equal(dark.code, "too-dark");
+    assert.doesNotMatch(dark.message, /oval/i);
+    assert.equal(evaluateSelfieGeometry(frame([], { brightness: 0.5 }), view).code, "no-face");
+    assert.equal(evaluateSelfieGeometry(frame([], { brightness: Number.NaN }), view).code, "no-face");
+  }
+  const lit = face({ yaw: 24 });
+  assert.equal(evaluateSelfieGeometry(frame([lit], { brightness: 0.05 }), "right").acceptable, true, "a found face is never rejected for darkness");
 });

@@ -21,8 +21,9 @@ export function selfieGuidanceCue(state, view) {
   if (state.code === 'loading' || state.code === 'camera-pending') return cue('none', 'wait', 'Getting ready', side ? 'Keep your face in the camera view.' : 'Keep your face inside the oval.');
   if (state.code === 'outside-guide') return cue('farther', 'distance', side ? 'Keep your whole face in view' : 'Fit your face inside the oval', 'Move back a little so every edge stays visible.');
   if (state.code === 'review' || state.code === 'unavailable') return cue('none', 'wait', '', '');
+  if (state.code === 'too-dark') return cue('center', 'light', 'Find better light', 'Face a lamp or window so the camera can see your face.');
   if (state.code === 'multiple-faces') return cue('center', 'center', 'Only you in the frame', 'Ask anyone beside you to move out of view.');
   if (state.code === 'head-level') return cue('center', 'center', 'Keep your head level', 'Relax your chin and keep your eyes level.');
-  return side ? cue('center', 'center', 'Keep your face in view', 'Any position is fine. Use good lighting.')
+  return side ? cue('center', 'center', 'Show your whole face', 'Hold the phone at eye level, about an arm away, in good light.')
     : cue('center', 'center', 'Look at the camera', 'Bring your face into the oval in good light.');
 }

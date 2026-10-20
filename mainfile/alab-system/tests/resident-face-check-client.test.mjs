@@ -114,6 +114,75 @@ test('a network or malformed service response cannot produce a verification proo
   assert.equal(states.at(-1).status, 'failed');
 });
 
+test('one dropped connection is retried with the same photos before showing an error', async () => {
+  const input = evidence();
+  const states = [];
+  const bodies = [];
+  let calls = 0;
+  const controller = createFaceCheckController({
+    retryDelayMs: 1,
+    onState: (state) => states.push(state),
+    request: async (_url, options) => { bodies.push(options.body); if (++calls === 1) throw new TypeError('Failed to fetch'); return success('proof'); },
+  });
+  assert.equal(await controller.verify(input), true);
+  assert.equal(calls, 2);
+  assert.equal(bodies[0], bodies[1]);
+  assert.deepEqual(states.map((state) => state.status), ['checking', 'verified']);
+});
+
+test('a lasting connection failure is retryable and explains that no retake is needed', async () => {
+  const states = [];
+  let calls = 0;
+  const controller = createFaceCheckController({ retryDelayMs: 1, onState: (state) => states.push(state), request: async () => { calls++; throw new TypeError('Failed to fetch'); } });
+  assert.equal(await controller.verify(evidence()), false);
+  assert.equal(calls, 2);
+  assert.equal(states.at(-1).code, 'NETWORK_ERROR');
+  assert.equal(states.at(-1).retryable, true);
+  assert.match(states.at(-1).message, /internet connection/);
+  assert.match(states.at(-1).message, /do not need to retake/);
+});
+
+test('platform 5xx responses are retried once and then reported as a retryable outage', async () => {
+  const states = [];
+  let calls = 0;
+  const controller = createFaceCheckController({ retryDelayMs: 1, onState: (state) => states.push(state),
+    request: async () => { calls++; return new Response('An error occurred', { status: 504 }); } });
+  assert.equal(await controller.verify(evidence()), false);
+  assert.equal(calls, 2);
+  assert.equal(states.at(-1).code, 'SERVICE_UNAVAILABLE');
+  assert.equal(states.at(-1).retryable, true);
+  let crashed = 0;
+  const crash = createFaceCheckController({ retryDelayMs: 1, onState: (state) => states.push(state),
+    request: async () => { crashed++; return new Response('FUNCTION_INVOCATION_FAILED', { status: 500 }); } });
+  assert.equal(await crash.verify(evidence()), false);
+  assert.equal(crashed, 1, 'a 500 is not retried automatically');
+  assert.equal(states.at(-1).retryable, true);
+});
+
+test('face mismatches and unreadable photos are never retryable without a retake', async () => {
+  for (const code of ['FACE_MISMATCH', 'SELFIE_FACE_UNCLEAR', 'INVALID_IMAGE']) {
+    const states = [];
+    let calls = 0;
+    const controller = createFaceCheckController({ retryDelayMs: 1, onState: (state) => states.push(state),
+      request: async () => { calls++; return Response.json({ verified: false, code, message: 'Retake.' }, { status: 422 }); } });
+    await controller.verify(evidence());
+    assert.equal(calls, 1);
+    assert.equal(states.at(-1).retryable, false);
+  }
+});
+
+test('invalidating during the retry pause sends nothing more and reports nothing', async () => {
+  const states = [];
+  let calls = 0;
+  const controller = createFaceCheckController({ retryDelayMs: 50, onState: (state) => states.push(state), request: async () => { calls++; throw new TypeError('Failed to fetch'); } });
+  const running = controller.verify(evidence());
+  await new Promise((done) => setTimeout(done, 5));
+  controller.invalidate();
+  assert.equal(await running, false);
+  assert.equal(calls, 1);
+  assert.deepEqual(states.map((state) => state.status), ['checking', 'idle']);
+});
+
 test('unmounting aborts work and stops callbacks from updating an obsolete form', async () => {
   const states = [];
   let resolve;

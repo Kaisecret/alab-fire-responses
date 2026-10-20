@@ -6,6 +6,19 @@ const validRect = (rect) => rect && [rect.left, rect.top, rect.width, rect.heigh
 /** @param {string} code @param {string} message @param {GuidanceDirection} [direction] */
 const reject = (code, message, direction) => ({ acceptable: false, code, message, direction });
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+// Side turns are a coarse liveness cue. People tilt and wobble while turning,
+// so side views allow a wider pose window and steadier-hold tolerance than the
+// front photo, which is the one compared with the ID.
+const SIDE_YAW_MIN = 12;
+const SIDE_YAW_MAX = 40;
+const MAX_ROLL = { front: 8, side: 14 };
+// Mean luma (0-1) of the camera image below which "no face" is most likely
+// caused by a dark room rather than framing.
+const DARK_BRIGHTNESS = 0.2;
+const HOLD = {
+  front: { ms: 900, samples: 4, shift: 0.11, scale: 0.08, yaw: 5, roll: 4 },
+  side: { ms: 600, samples: 3, shift: 0.11, scale: 0.1, yaw: 8, roll: 6 },
+};
 
 /** CSS object-fit: cover at object-position: center, then scaleX(-1). */
 export function mapLandmarkToPreview(point, { videoWidth, videoHeight, videoRect, mirrored = true }) {
@@ -35,7 +48,10 @@ export function evaluateSelfieGeometry(frame, view) {
   if (!validRect(videoRect) || (!sideView && !validRect(guideRect)) || !Number.isFinite(videoWidth) || !Number.isFinite(videoHeight) || videoWidth <= 0 || videoHeight <= 0) {
     return reject("camera-pending", "Waiting for the camera preview...");
   }
-  if (!Array.isArray(faces) || faces.length === 0) return reject("no-face", sideView ? "Keep your whole face visible in the camera." : "Center your face in the oval.", "center");
+  if (!Array.isArray(faces) || faces.length === 0) {
+    if (Number.isFinite(frame.brightness) && frame.brightness < DARK_BRIGHTNESS) return reject("too-dark", "It is too dark to see your face. Face a lamp or window.", "center");
+    return reject("no-face", sideView ? "Keep your whole face visible in the camera." : "Center your face in the oval.", "center");
+  }
   if (faces.length !== 1) return reject("multiple-faces", "Only one person should be in view.", "center");
   const face = faces[0];
   if (!Array.isArray(face) || [...FACE_OVAL, 33, 263, 1].some((index) => !face[index] || ![face[index].x, face[index].y, face[index].z].every(Number.isFinite))) {
@@ -96,15 +112,15 @@ export function evaluateSelfieGeometry(frame, view) {
   if (eyePairs.length !== 3) return reject("no-face", "Keep both eyes clearly visible in good light.", "center");
   const roll = median(eyePairs.map((pair) => pair.roll));
   const yaw = median(eyePairs.map((pair) => pair.yaw));
-  if (Math.abs(roll) > 8) return reject("head-level", "Keep your head upright and your eyes level.", "center");
+  if (Math.abs(roll) > (sideView ? MAX_ROLL.side : MAX_ROLL.front)) return reject("head-level", "Keep your head upright and your eyes level.", "center");
   const noseBelowEyes = (face[1].y - (rightEye.y + leftEye.y) / 2) / (Math.max(...FACE_OVAL.map((i) => face[i].y)) - Math.min(...FACE_OVAL.map((i) => face[i].y)));
   if (noseBelowEyes < 0.06 || noseBelowEyes > 0.35) return reject("head-level", "Keep your chin level with the camera.");
   if (view === "front") {
     if (Math.abs(yaw) > 10) return reject("face-front", "Look straight at the camera.", yaw > 0 ? "left" : "right");
   } else if (view === "right" || view === "left") {
     const directedYaw = view === "right" ? yaw : -yaw;
-    if (directedYaw < 15) return reject(`turn-${view}`, `Slowly turn your head to your ${view}.`, view);
-    if (directedYaw > 35) return reject("turn-back", "Turn back a little; keep both eyes visible.", view === "right" ? "left" : "right");
+    if (directedYaw < SIDE_YAW_MIN) return reject(`turn-${view}`, `Slowly turn your head to your ${view}.`, view);
+    if (directedYaw > SIDE_YAW_MAX) return reject("turn-back", "Turn back a little; keep both eyes visible.", view === "right" ? "left" : "right");
   } else {
     return reject("face-front", "Choose a valid camera view.");
   }
@@ -116,6 +132,7 @@ export function evaluateSelfieGeometry(frame, view) {
  * @param {{view:'front'|'right'|'left', onUpdate:(state:{ready:boolean,progress:number,code:string,message:string,direction?:GuidanceDirection})=>void,onReady:()=>void,onStop?:()=>void}} options
  */
 export function createSelfieGuidanceGate({ view, onUpdate, onReady, onStop = () => {} }) {
+  const hold = view === "front" ? HOLD.front : HOLD.side;
   let active = true;
   let startedAt = null;
   let lastAt = null;
@@ -142,7 +159,7 @@ export function createSelfieGuidanceGate({ view, onUpdate, onReady, onStop = () 
         return;
       }
       const current = result.geometry;
-      const moved = anchor && (Math.abs(current.centerX - anchor.centerX) > 0.11 || Math.abs(current.centerY - anchor.centerY) > 0.11 || Math.abs(current.width / anchor.width - 1) > 0.08 || Math.abs(current.height / anchor.height - 1) > 0.08 || Math.abs(current.yaw - anchor.yaw) > 5 || Math.abs(current.roll - anchor.roll) > 4);
+      const moved = anchor && (Math.abs(current.centerX - anchor.centerX) > hold.shift || Math.abs(current.centerY - anchor.centerY) > hold.shift || Math.abs(current.width / anchor.width - 1) > hold.scale || Math.abs(current.height / anchor.height - 1) > hold.scale || Math.abs(current.yaw - anchor.yaw) > hold.yaw || Math.abs(current.roll - anchor.roll) > hold.roll);
       if (startedAt === null || lastAt === null || now <= lastAt || now - lastAt > 1000 || moved) {
         startedAt = now;
         anchor = current;
@@ -153,7 +170,7 @@ export function createSelfieGuidanceGate({ view, onUpdate, onReady, onStop = () 
       lastAt = now;
       // Tolerate slower devices while requiring repeated positive observations;
       // two widely spaced detections cannot complete a hold by elapsed time alone.
-      const progress = Math.min(stableSamples >= 4 ? 1 : 0.99, Math.max(0, (now - startedAt) / 900));
+      const progress = Math.min(stableSamples >= hold.samples ? 1 : 0.99, Math.max(0, (now - startedAt) / hold.ms));
       if (progress < 1) {
         onUpdate({ ready: false, progress, code: "hold", message: moved ? "Hold your position steady..." : "Hold still...", direction: "hold" });
         return;

@@ -15,9 +15,10 @@ self.onmessage = async ({ data }) => {
         baseOptions: { modelAssetPath: `${root}face_landmarker.task`, delegate: "CPU" },
         runningMode: "VIDEO",
         numFaces: 2,
-        minFaceDetectionConfidence: 0.65,
-        minFacePresenceConfidence: 0.65,
-        minTrackingConfidence: 0.65,
+        // MediaPipe defaults. Higher values lose track of a turned head.
+        minFaceDetectionConfidence: 0.5,
+        minFacePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5,
         outputFaceBlendshapes: false,
         outputFacialTransformationMatrixes: false,
       });

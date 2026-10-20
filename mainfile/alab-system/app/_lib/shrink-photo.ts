@@ -2,6 +2,11 @@
 // 4.5 MB per request, and an ID check sends both sides at once, so photos are
 // made smaller in the browser first: upright, at most `maxSize` pixels on the
 // longest side, re-encoded as JPEG until they fit `maxBytes`.
+//
+// The result is always held in memory. A picked file still points at the
+// phone's storage, and Android can revoke or change it while the resident
+// takes their selfie. A later upload of that file then fails in the browser as
+// a network error ("Failed to fetch") before reaching the server.
 
 type ShrinkOptions = { maxSize?: number; maxBytes?: number };
 
@@ -25,26 +30,35 @@ async function decode(file: Blob): Promise<ImageBitmap | HTMLImageElement> {
   }
 }
 
+/** The same bytes, detached from the picked file on disk. */
+async function inMemory(file: File): Promise<File> {
+  try {
+    return new File([await file.arrayBuffer()], file.name, { type: file.type, lastModified: file.lastModified });
+  } catch {
+    return file;
+  }
+}
+
 function encode(canvas: HTMLCanvasElement, quality: number) {
   return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
 }
 
-/** A smaller JPEG copy of the photo, or the photo itself when it cannot be read. */
+/** A smaller JPEG copy of the photo, or an in-memory copy of the original bytes. */
 export async function shrinkPhoto(file: File, { maxSize = 2000, maxBytes = 1.4 * 1024 * 1024 }: ShrinkOptions = {}): Promise<File> {
   if (typeof document === "undefined") return file;
   let source: ImageBitmap | HTMLImageElement;
   try {
     source = await decode(file);
   } catch {
-    return file;
+    return inMemory(file);
   }
   const width = "naturalWidth" in source ? source.naturalWidth : source.width;
   const height = "naturalHeight" in source ? source.naturalHeight : source.height;
-  if (!width || !height) return file;
+  if (!width || !height) return inMemory(file);
   // Already small enough: keep the original bytes untouched.
   if (file.size <= maxBytes && Math.max(width, height) <= maxSize) {
     if ("close" in source) source.close();
-    return file;
+    return inMemory(file);
   }
 
   const name = `${file.name.replace(/\.[^.]+$/, "") || "photo"}.jpg`;
@@ -66,6 +80,6 @@ export async function shrinkPhoto(file: File, { maxSize = 2000, maxBytes = 1.4 *
     if (blob.size <= maxBytes) break;
   }
   if ("close" in source) source.close();
-  if (!best || best.size >= file.size) return file;
+  if (!best || best.size >= file.size) return inMemory(file);
   return new File([best], name, { type: "image/jpeg", lastModified: Date.now() });
 }

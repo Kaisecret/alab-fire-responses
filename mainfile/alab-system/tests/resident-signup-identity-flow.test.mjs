@@ -21,6 +21,7 @@ const deferred = () => { let resolve; const promise = new Promise(done => { reso
 function mount({ check = async () => Response.json({ verified: true, token: 'signed-id' }), face = async () => Response.json({ verified: true, token: 'signed-face' }),
   camera = async () => ({ getTracks: () => [{ stop() {} }] }),
   encode = callback => callback(new Blob(['camera-frame'], { type: 'image/jpeg' })), shrink = async file => file } = {}) {
+  let cameraRequests = 0;
   const nodes = new Map(); const requests = []; const intervals = new Set(); const guidance = []; const guidanceSessions = [];
   let cleanup; let redirected;
   const document = {
@@ -131,10 +132,10 @@ function mount({ check = async () => Response.json({ verified: true, token: 'sig
   };
   new Function('require', 'exports', 'document', 'window', 'sessionStorage', 'fetch', 'navigator', compiled)(require, exports, document, window,
     { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) }, fetch,
-    { mediaDevices: { getUserMedia: camera } });
+    { mediaDevices: { getUserMedia: (...args) => { cameraRequests++; return camera(...args); } } });
   exports.SignupPage({ fontVariableClassName: '' });
   return {
-    nodes, requests, document, guidance, guidanceSessions,
+    nodes, requests, document, guidance, guidanceSessions, get cameraRequests() { return cameraRequests; },
     ready: async () => { guidance.at(-1).onUpdate({ ready: true, progress: 1, message: 'Hold steady', code: 'READY' }); guidance.at(-1).onReady(); await flush(); },
     active: () => [...nodes.values()].filter(node => /^step\d+$/.test(node.id) && node.classList.contains('active')).map(node => node.id),
     click: id => nodes.get(id).emit('click'),
@@ -146,9 +147,10 @@ function mount({ check = async () => Response.json({ verified: true, token: 'sig
 }
 
 async function openIds(h) { await h.click('toStep2'); await h.click('toStep3'); assert.deepEqual(h.active(), ['step3']); }
+// Only the front photo has a review step; side views save themselves.
 async function captureViews(h, count = 3) {
   await h.click('selfieCapture');
-  for (let i = 0; i < count; i++) { await h.ready(); await h.click('useSelfie'); }
+  for (let i = 0; i < count; i++) { await h.ready(); if (i === 0) await h.click('useSelfie'); }
 }
 
 test('six signup panels keep ID photos, selfie, security and review separate', () => {
@@ -268,12 +270,11 @@ test('OTP verification still creates an account using the bound ID and face proo
 test('a delayed selfie expiry clears evidence without pulling someone forward after Back', async t => {
   const pending = deferred(); const h = mount({ face: () => pending.promise }); t.after(h.cleanup);
   await openIds(h); await h.upload('fileFront'); await h.upload('fileBack');
-  await captureViews(h, 2); await h.ready();
-  const confirming = h.click('useSelfie'); await flush();
+  await captureViews(h, 2); await h.ready(); // the left view saves itself and starts the check
   await h.click('backToStep3'); await h.click('backToStep2'); await h.click('backToStep1');
   assert.deepEqual(h.active(), ['step1']);
   pending.resolve(Response.json({ verified: false, code: 'ID_NOT_VERIFIED', message: 'Verify your ID again.' }, { status: 400 }));
-  await confirming; assert.deepEqual(h.active(), ['step1']);
+  await flush(); assert.deepEqual(h.active(), ['step1']);
   assert.equal(h.nodes.get('toStep4').disabled, true);
 });
 
@@ -370,4 +371,92 @@ test('cancelled photo preparation cannot replace a confirmed view', async t => {
   assert.equal(h.nodes.get('retakeSelfieFront').disabled, true);
   assert.equal(h.nodes.get('selfieCount').textContent, undefined);
   assert.equal(h.nodes.get('selfieCameraPanel').classList.contains('active'), false);
+});
+
+test('side views save without a review tap and one camera stream serves all three views', async t => {
+  const h = mount(); t.after(h.cleanup); await openIds(h); await h.upload('fileFront'); await h.upload('fileBack');
+  await h.click('selfieCapture'); await h.ready();
+  assert.equal(h.nodes.get('selfieReviewActions').hidden, false, 'the front photo is reviewed');
+  await h.click('useSelfie');
+  assert.equal(h.guidance.at(-1).view, 'right');
+  await h.ready();
+  assert.equal(h.guidance.at(-1).view, 'left', 'the right view saved itself');
+  assert.equal(h.nodes.get('selfieReviewActions').hidden, true);
+  await h.ready();
+  assert.equal(h.nodes.get('selfieCount').textContent, '3 of 3 photos captured');
+  assert.equal(h.requests.filter(r => r.url.endsWith('/face-check')).length, 1);
+  assert.equal(h.cameraRequests, 1, 'the camera opens once for all three views');
+  assert.equal(h.nodes.get('selfieCameraPanel').classList.contains('active'), false);
+});
+
+test('turn cues show large side arrows only while a head turn is needed', async t => {
+  const h = mount(); t.after(h.cleanup);
+  await h.click('selfieCapture'); await h.ready(); await h.click('useSelfie');
+  const panel = h.nodes.get('selfieCameraPanel');
+  h.guidance.at(-1).onUpdate({ ready: false, progress: 0, code: 'turn-right', direction: 'right', message: 'Turn right.' });
+  assert.equal(panel.attrs.get('data-turn'), 'right');
+  h.guidance.at(-1).onUpdate({ ready: false, progress: .4, code: 'hold', direction: 'hold', message: 'Hold still.' });
+  assert.equal(panel.attrs.get('data-turn'), 'none');
+  h.guidance.at(-1).onUpdate({ ready: false, progress: 0, code: 'turn-back', direction: 'left', message: 'Turn back.' });
+  assert.equal(panel.attrs.get('data-turn'), 'left');
+  h.guidance.at(-1).onUpdate({ ready: false, progress: 0, code: 'off-center', direction: 'left', message: 'Move left.' });
+  assert.equal(panel.attrs.get('data-turn'), 'none', 'moving the phone is not a head turn');
+});
+
+test('a connection failure keeps the photos and Continue checks them again', async t => {
+  let calls = 0;
+  const h = mount({ face: async () => { calls++; if (calls <= 2) throw new TypeError('Failed to fetch'); return Response.json({ verified: true, token: 'signed-face' }); } });
+  t.after(h.cleanup); await openIds(h); await h.upload('fileFront'); await h.upload('fileBack');
+  await captureViews(h);
+  await new Promise(done => setTimeout(done, 1700)); await flush();
+  assert.equal(calls, 2, 'one automatic retry before showing the error');
+  assert.deepEqual(h.active(), ['step4']);
+  assert.equal(h.nodes.get('toStep5').disabled, false, 'Continue retries instead of forcing a retake');
+  const camerasBefore = h.cameraRequests;
+  await h.click('toStep5');
+  assert.equal(calls, 3);
+  assert.deepEqual(h.active(), ['step5']);
+  assert.equal(h.cameraRequests, camerasBefore, 'no photo is retaken');
+  const sent = h.requests.filter(r => r.url.endsWith('/face-check'));
+  assert.equal(sent.at(-1).options.body.get('selfie'), sent[0].options.body.get('selfie'));
+});
+
+test('tapping the selfie card after a connection failure checks the same photos without opening the camera', async t => {
+  let calls = 0;
+  const h = mount({ face: async () => { calls++; if (calls <= 2) throw new TypeError('Failed to fetch'); return Response.json({ verified: true, token: 'signed-face' }); } });
+  t.after(h.cleanup); await openIds(h); await h.upload('fileFront'); await h.upload('fileBack');
+  await captureViews(h);
+  await new Promise(done => setTimeout(done, 1700)); await flush();
+  const sessions = h.guidance.length;
+  await h.click('selfieCapture');
+  assert.equal(calls, 3);
+  assert.equal(h.guidance.length, sessions, 'the camera stays closed');
+  assert.equal(h.nodes.get('selfieCameraPanel').classList.contains('active'), false);
+  assert.equal(h.nodes.get('toStep5').disabled, false);
+});
+
+test('a face mismatch still requires a retake and keeps Continue blocked', async t => {
+  const h = mount({ face: async () => Response.json({ verified: false, code: 'FACE_MISMATCH', message: 'Retake your selfie.' }, { status: 422 }) });
+  t.after(h.cleanup); await openIds(h); await h.upload('fileFront'); await h.upload('fileBack');
+  await captureViews(h);
+  assert.equal(h.nodes.get('toStep5').disabled, true);
+  await h.click('selfieCapture');
+  assert.equal(h.nodes.get('selfieCameraPanel').classList.contains('active'), true, 'the card reopens the camera to retake');
+});
+
+test('a side photo that cannot be prepared reopens that view instead of freezing the camera', async t => {
+  let failRight = true;
+  const h = mount({ shrink: async file => {
+    if (failRight && file.name.includes('resident-selfie-right')) { failRight = false; throw new Error('encode'); }
+    return file;
+  } });
+  t.after(h.cleanup);
+  await h.click('selfieCapture'); await h.ready(); await h.click('useSelfie');
+  const starts = h.guidance.length;
+  await h.ready();
+  assert.equal(h.guidance.length, starts + 1);
+  assert.equal(h.guidance.at(-1).view, 'right', 'the same view starts again');
+  assert.equal(h.nodes.get('retakeSelfieRight').disabled, true);
+  await h.ready();
+  assert.equal(h.guidance.at(-1).view, 'left');
 });

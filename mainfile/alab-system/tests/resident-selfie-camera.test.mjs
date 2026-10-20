@@ -16,7 +16,7 @@ test("resident selfie uses a dedicated camera dialog and confirms before complet
   assert.match(markup, /id="useSelfie"/);
   assert.match(markup, /@media \(max-width: 950px\)[\s\S]*\.selfie-camera-panel[\s\S]*inset: 0/);
   assert.match(component, /navigator\.mediaDevices\.getUserMedia/);
-  assert.match(component, /const handleSelfieClick = async \(\) => \{\s*await startSelfieCamera\(\);\s*\};/);
+  assert.match(component, /const handleSelfieClick = async \(\) => \{[\s\S]*?if \(selfieTaken && faceRetryable\) \{\s*await verifyConfirmedSelfie\(\);\s*return;\s*\}\s*await startSelfieCamera\(\);\s*\};/);
   assert.match(component, /const handleCaptureSelfie = \(\) => \{[\s\S]*showSelfieReview\(/);
   assert.match(component, /const handleUseSelfie = async \(\) => \{[\s\S]*showSelfieCaptured\(\)/);
   assert.match(component, /const handleRetakeSelfie = async \(\) => \{/);

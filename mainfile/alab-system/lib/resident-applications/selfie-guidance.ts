@@ -4,7 +4,7 @@ import { createSelfieGuidanceGate } from "./selfie-guidance-math.mjs";
 export type SelfieGuidanceDirection = "left" | "right" | "up" | "down" | "closer" | "farther" | "center" | "hold";
 export type SelfieGuidanceState = { ready: boolean; progress: number; message: string; code: string; direction?: SelfieGuidanceDirection };
 export type SelfieGuidanceHandle = { stop(): void };
-export type SelfieGuidanceSession = { start(options: SelfieGuidanceOptions): Promise<SelfieGuidanceHandle>; close(): void };
+export type SelfieGuidanceSession = { start(options: SelfieGuidanceOptions): Promise<SelfieGuidanceHandle>; preload(): void; close(): void };
 type Landmark = { x: number; y: number; z: number };
 type Runtime = { detect(canvas: HTMLCanvasElement, timestamp: number): Promise<Landmark[][]>; close(): void; frameIntervalMs: number; minimumIdleMs: number };
 export type SelfieGuidanceOptions = {
@@ -17,6 +17,21 @@ export type SelfieGuidanceOptions = {
 };
 
 const ASSET_ROOT = "/models/selfie-guidance/mediapipe-1.1.1-face-landmarker-1";
+const BRIGHTNESS_INTERVAL_MS = 1000;
+
+/** Mean luma (0-1) of a small centre patch, or undefined when unreadable. */
+function centreBrightness(context: CanvasRenderingContext2D, width: number, height: number): number | undefined {
+  try {
+    const size = Math.max(1, Math.min(96, width, height));
+    const pixels = context.getImageData(Math.floor((width - size) / 2), Math.floor((height - size) / 2), size, size).data;
+    let sum = 0;
+    for (let i = 0; i < pixels.length; i += 16) sum += 0.2126 * pixels[i] + 0.7152 * pixels[i + 1] + 0.0722 * pixels[i + 2];
+    const value = sum / Math.ceil(pixels.length / 16) / 255;
+    return Number.isFinite(value) ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
 const abortError = () => new DOMException("Selfie guidance stopped.", "AbortError");
 const checkAborted = (signal: AbortSignal) => { if (signal.aborted) throw abortError(); };
 
@@ -110,9 +125,9 @@ async function createCpuRuntime(signal: AbortSignal): Promise<Runtime> {
     baseOptions: { modelAssetPath: `${ASSET_ROOT}/face_landmarker.task`, delegate: "CPU" },
     runningMode: "VIDEO",
     numFaces: 2,
-    minFaceDetectionConfidence: 0.65,
-    minFacePresenceConfidence: 0.65,
-    minTrackingConfidence: 0.65,
+    minFaceDetectionConfidence: 0.5,
+    minFacePresenceConfidence: 0.5,
+    minTrackingConfidence: 0.5,
     outputFaceBlendshapes: false,
     outputFacialTransformationMatrixes: false,
   });
@@ -259,8 +274,14 @@ export function createSelfieGuidanceSession(): SelfieGuidanceSession {
       if (!context) throw new Error("This browser cannot prepare the camera image.");
       gate = createSelfieGuidanceGate({ view, onUpdate, onReady, onStop: stop });
       let lastVideoTime = -1;
+      // Brightness only explains a missing face, so it is read at most once a
+      // second and only while no face is found.
+      let faceSeen = true;
+      let brightness: number | undefined;
+      let brightnessAt = -Infinity;
       const layout = (faces: Landmark[][]) => ({
         faces,
+        brightness,
         videoWidth: video.videoWidth,
         videoHeight: video.videoHeight,
         videoRect: video.getBoundingClientRect(),
@@ -284,7 +305,12 @@ export function createSelfieGuidanceSession(): SelfieGuidanceSession {
             if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
             // drawImage does not apply the <video>'s CSS scaleX(-1).
             context.drawImage(video, 0, 0, width, height);
+            if (!faceSeen && tickStarted - brightnessAt >= BRIGHTNESS_INTERVAL_MS) {
+              brightnessAt = tickStarted;
+              brightness = centreBrightness(context, width, height);
+            }
             const faces = await detect(model, canvas, abort.signal);
+            faceSeen = faces.length > 0;
             if (!stopped && !closed) {
               if (!cameraReady() || video.videoWidth !== inputWidth || video.videoHeight !== inputHeight) {
                 gate.sample({ ...layout([]), videoWidth: 0 }, performance.now());
@@ -312,7 +338,9 @@ export function createSelfieGuidanceSession(): SelfieGuidanceSession {
       throw error;
     }
   };
-  return { start, close };
+  // Starts the model download/compile early so the camera opens ready.
+  const preload = () => { if (!closed) void getRuntime().catch(() => {}); };
+  return { start, preload, close };
 }
 
 /** Standalone one-view API: completion, stop, or abort releases its model. */

@@ -66,6 +66,9 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const selfieUrls = new Map<SelfieView, string>();
     let disposed = false;
     let faceMatchState: "idle" | "checking" | "verified" | "failed" = "idle";
+    // True when the last face check failed for a reason the same photos can
+    // be sent again for (connection or server), so no retake is needed.
+    let faceRetryable = false;
 
     // ID verification: the front of the ID is scanned on upload, and only a
     // server-signed token for this exact file and name lets registration save.
@@ -147,6 +150,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const selfieCueDetail = root.querySelector<HTMLElement>("#selfieCueDetail");
     const selfieCount = root.querySelector<HTMLElement>("#selfieCount");
     const selfieMain = root.querySelector<HTMLElement>("#selfieMain");
+    const selfieCaptureFlash = root.querySelector<HTMLElement>("#selfieCaptureFlash");
     let selfieStream: MediaStream | null = null;
 
     function currentFaceEvidence() {
@@ -159,6 +163,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const faceCheckController = createFaceCheckController({
       onState: (state) => {
         faceMatchState = state.status;
+        faceRetryable = state.status === "failed" && state.retryable === true;
         const hint = selfieCapture?.querySelector<HTMLElement>(".selfie-hint");
         if (state.status === "idle") {
           formStatus.style.color = "#b91c1c";
@@ -169,7 +174,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
           formStatus.textContent = state.message ?? "";
           if (hint) hint.textContent = state.status === "verified"
             ? "Face matches your ID photo · Click again to retake"
-            : state.status === "checking" ? "Comparing with your ID photo…" : "Face not verified · Click to retake";
+            : state.status === "checking" ? "Comparing with your ID photo…"
+            : faceRetryable ? "Not checked yet · Tap to try again" : "Face not verified · Click to retake";
         }
         if (state.code === "ID_NOT_VERIFIED") {
           resetIdVerification();
@@ -336,6 +342,10 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       const formWrapper = root?.querySelector<HTMLElement>(".signup-form-wrapper");
       if (formWrapper) formWrapper.scrollTop = 0;
       if (step !== 4 && selfieCameraPanel?.classList.contains("active")) stopSelfieCamera();
+      // Load face guidance while the resident handles their ID, so the camera
+      // opens ready instead of downloading the model first.
+      if (step === 3 || step === 4) warmSelfieGuidance();
+      else releaseWarmSelfieGuidance();
       if (step === 3 && frontFile && idScanState === "idle") void scanFrontId();
 
       // Populate review on step 6.
@@ -439,7 +449,8 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         toStep4.title = idVerificationToken ? "" : "Both sides of your ID must pass verification first";
       }
       if (toStep5) {
-        toStep5.disabled = !faceCheckController.getToken(currentFaceEvidence());
+        // After a connection or server failure, Continue sends the same photos again.
+        toStep5.disabled = !faceCheckController.getToken(currentFaceEvidence()) && !(selfieTaken && faceRetryable);
         toStep5.title = toStep5.disabled ? "Confirm a selfie that matches your ID photo to continue" : "";
       }
     }
@@ -814,8 +825,28 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     let pendingSelfieUrl: string | null = null;
     let previousBodyOverflow: string | null = null;
 
+    function warmSelfieGuidance() {
+      if (disposed || !navigator.mediaDevices?.getUserMedia) return;
+      guidanceOwner ??= createSelfieGuidanceSession();
+      guidanceOwner.preload?.();
+    }
+    function releaseWarmSelfieGuidance() {
+      if (selfieCameraPanel?.classList.contains("active")) return;
+      guidanceOwner?.close();
+      guidanceOwner = null;
+    }
+    // One camera stream serves every view while the dialog stays open, so the
+    // next view starts without asking the camera to open again.
+    function liveSelfieStream() {
+      if (selfieStream?.getTracks().some((track) => track.readyState !== "ended")) return selfieStream;
+      selfieStream?.getTracks().forEach((track) => track.stop());
+      selfieStream = null;
+      return null;
+    }
+
     const renderSelfieCue = (state: { code: string; direction?: string; progress?: number }) => {
       const cue = selfieGuidanceCue(state, activeSelfieView);
+      selfieCameraPanel?.setAttribute("data-turn", cue.kind === "turn" && (cue.direction === "left" || cue.direction === "right") ? cue.direction : "none");
       if (selfieDirectionCue) {
         selfieDirectionCue.hidden = cue.direction === "none";
         selfieDirectionCue.setAttribute("data-direction", cue.direction);
@@ -861,13 +892,15 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       if (selfieReviewActions) selfieReviewActions.hidden = true;
     };
 
-    const closeSelfieCamera = (keepDetector = false) => {
+    const closeSelfieCamera = (keepDetector = false, keepStream = false) => {
       cameraAttempt++;
       releaseGuidance();
       if (!keepDetector) { guidanceOwner?.close(); guidanceOwner = null; }
-      selfieStream?.getTracks().forEach((track) => track.stop());
-      selfieStream = null;
-      if (selfieVideo) selfieVideo.srcObject = null;
+      if (!keepStream) {
+        selfieStream?.getTracks().forEach((track) => track.stop());
+        selfieStream = null;
+        if (selfieVideo) selfieVideo.srcObject = null;
+      }
       selfieCameraPanel?.classList.remove("active");
       selfieCameraPanel?.setAttribute("aria-hidden", "true");
       selfieCapture?.setAttribute("aria-expanded", "false");
@@ -880,14 +913,10 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     };
     const stopSelfieCamera = () => closeSelfieCamera();
 
+    // The camera keeps running behind the review so the next view opens at once.
     const showSelfieReview = (dataUrl: string) => {
       releaseGuidance();
-      selfieStream?.getTracks().forEach((track) => track.stop());
-      selfieStream = null;
-      if (selfieVideo) {
-        selfieVideo.srcObject = null;
-        selfieVideo.hidden = true;
-      }
+      if (selfieVideo) selfieVideo.hidden = true;
       if (selfiePreview) {
         selfiePreview.src = dataUrl;
         selfiePreview.hidden = false;
@@ -900,7 +929,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     };
 
     const startSelfieCamera = async (view: SelfieView = selfieViews.nextMissing() ?? "front") => {
-      closeSelfieCamera(true);
+      closeSelfieCamera(true, true);
       activeSelfieView = view;
       selfieCameraPanel?.setAttribute("data-view", view);
       const attempt = cameraAttempt;
@@ -923,13 +952,16 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         previousBodyOverflow = root.ownerDocument.body.style.overflow;
         root.ownerDocument.body.style.overflow = "hidden";
         cancelSelfieBtn?.focus();
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "user" }, width: { ideal: 1280 }, height: { ideal: 960 } },
-          audio: false,
-        });
-        if (disposed || attempt !== cameraAttempt) { stream.getTracks().forEach(track => track.stop()); return; }
-        selfieStream = stream;
-        selfieVideo.srcObject = stream;
+        let stream = liveSelfieStream();
+        if (!stream) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "user" }, width: { ideal: 1280 }, height: { ideal: 960 } },
+            audio: false,
+          });
+          if (disposed || attempt !== cameraAttempt) { stream.getTracks().forEach(track => track.stop()); return; }
+          selfieStream = stream;
+        }
+        if (selfieVideo.srcObject !== stream) selfieVideo.srcObject = stream;
         await selfieVideo.play();
         if (disposed || attempt !== cameraAttempt) return;
         if (selfieGuidance) selfieGuidance.textContent = "Preparing face guidance…";
@@ -972,6 +1004,11 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     };
 
     const handleSelfieClick = async () => {
+      // A connection or server failure keeps the photos: check them again.
+      if (selfieTaken && faceRetryable) {
+        await verifyConfirmedSelfie();
+        return;
+      }
       await startSelfieCamera();
     };
 
@@ -994,6 +1031,13 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
           return;
         }
         pendingSelfieBlob = blob;
+        selfieCaptureFlash?.animate?.([{ opacity: 0.8 }, { opacity: 0 }], { duration: 450, easing: "ease-out" });
+        // Side views are saved at once; only the front photo, which is
+        // compared with the ID, is shown for review.
+        if (activeSelfieView !== "front") {
+          void handleUseSelfie();
+          return;
+        }
         pendingSelfieUrl = URL.createObjectURL(blob);
         showSelfieReview(pendingSelfieUrl);
       }, "image/jpeg", 0.88);
@@ -1015,12 +1059,16 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
         if (previous) URL.revokeObjectURL(previous);
         selfieUrls.set(view, URL.createObjectURL(confirmed));
         const next = selfieViews.nextMissing();
-        closeSelfieCamera(Boolean(next));
+        closeSelfieCamera(Boolean(next), Boolean(next));
         showSelfieCaptured();
         if (next) await startSelfieCamera(next);
         else await verifyConfirmedSelfie();
       } catch {
-        if (!disposed && attempt === cameraAttempt && selfieGuidance) selfieGuidance.textContent = "Unable to prepare this photo. Please retake it.";
+        if (!disposed && attempt === cameraAttempt) {
+          if (selfieGuidance) selfieGuidance.textContent = "Unable to prepare this photo. Please retake it.";
+          // Side views have no review buttons, so take that view again.
+          if (view !== "front") void startSelfieCamera(view);
+        }
       } finally {
         if (attempt === cameraAttempt) {
           confirmationBusy = false;
@@ -1167,12 +1215,16 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       }
       goToStep(4);
     };
-    const handleToStep5 = () => {
+    const handleToStep5 = async () => {
       formStatus.textContent = "";
       if (!idVerificationToken) {
         goToStep(3);
         formStatus.textContent = "Verify both sides of your ID before taking your selfie.";
         return;
+      }
+      if (selfieTaken && faceRetryable && !faceCheckController.getToken(currentFaceEvidence())) {
+        if (!(await verifyConfirmedSelfie()) || disposed || currentStep !== 4) return;
+        formStatus.textContent = "";
       }
       if (!selfieTaken || !faceCheckController.getToken(currentFaceEvidence())) {
         formStatus.textContent = faceMatchState === "checking"

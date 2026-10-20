@@ -92,7 +92,7 @@ test("side capture runs with a hidden guide and accepts a stable face away from 
   runtime.args.guide.getBoundingClientRect = () => ({ left: 0, top: 0, width: 0, height: 0 });
   const points = centeredMesh(24).map((point) => ({ x: 0.25 + (point.x - 0.5) * 0.6, y: 0.33 + (point.y - 0.5) * 0.6, z: point.z * 0.6 }));
   const handle = await runtime.start({ ...runtime.args, view: "right" });
-  for (const now of [0, 180, 360, 540, 720, 900]) {
+  for (const now of [0, 180, 360, 540, 720]) {
     runtime.args.video.currentTime++;
     await runtime.tick(now);
     runtime.workers[0].respond([points]);
@@ -449,7 +449,8 @@ test("three automatic pose captures share one dialog runtime and owner close sil
   let now = 0;
   for (const [index, [view, yaw]] of [["front", 0], ["right", 24], ["left", -24]].entries()) {
     await session.start({ ...runtime.args, view });
-    for (let step = 0; step <= 5; step++) {
+    // The front hold is 900 ms; side holds finish after 600 ms.
+    for (let step = 0; step <= (view === "front" ? 5 : 4); step++) {
       runtime.args.video.currentTime++;
       await runtime.tick(now);
       runtime.workers[0].respond([centeredMesh(yaw)]);
