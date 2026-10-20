@@ -2,8 +2,8 @@
 /** @type {ReadonlyArray<{key: SelfieView, label: string, heading: string, prompt: string}>} */
 export const SELFIE_VIEWS = Object.freeze([
   { key: 'front', label: 'Front', heading: 'Look straight ahead', prompt: 'Center your face in the oval and look at the camera.' },
-  { key: 'right', label: 'Right', heading: 'Turn slightly to your right', prompt: 'Slowly turn your head to your right while keeping your face inside the oval.' },
-  { key: 'left', label: 'Left', heading: 'Turn slightly to your left', prompt: 'Slowly turn your head to your left while keeping your face inside the oval.' },
+  { key: 'right', label: 'Right', heading: 'Turn your head to the right', prompt: 'Slowly turn your head to your right until the photo is taken.' },
+  { key: 'left', label: 'Left', heading: 'Turn your head to the left', prompt: 'Slowly turn your head to your left until the photo is taken.' },
 ]);
 
 /** Request-local confirmed camera photos; never written to browser storage. */

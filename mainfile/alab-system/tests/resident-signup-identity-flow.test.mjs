@@ -397,8 +397,10 @@ test('turn cues show large side arrows only while a head turn is needed', async 
   assert.equal(panel.attrs.get('data-turn'), 'right');
   h.guidance.at(-1).onUpdate({ ready: false, progress: .4, code: 'hold', direction: 'hold', message: 'Hold still.' });
   assert.equal(panel.attrs.get('data-turn'), 'none');
-  h.guidance.at(-1).onUpdate({ ready: false, progress: 0, code: 'turn-back', direction: 'left', message: 'Turn back.' });
-  assert.equal(panel.attrs.get('data-turn'), 'left');
+  h.guidance.at(-1).onUpdate({ ready: false, progress: 0, code: 'turn-back', direction: 'center', message: 'Turn back.' });
+  assert.equal(panel.attrs.get('data-turn'), 'none', 'turning too far never shows the opposite arrow');
+  h.guidance.at(-1).onUpdate({ ready: false, progress: 0, code: 'wrong-way', direction: 'right', message: 'Other way.' });
+  assert.equal(panel.attrs.get('data-turn'), 'right');
   h.guidance.at(-1).onUpdate({ ready: false, progress: 0, code: 'off-center', direction: 'left', message: 'Move left.' });
   assert.equal(panel.attrs.get('data-turn'), 'none', 'moving the phone is not a head turn');
 });

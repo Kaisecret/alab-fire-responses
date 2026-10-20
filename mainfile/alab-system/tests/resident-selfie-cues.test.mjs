@@ -2,12 +2,17 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { selfieGuidanceCue } from '../lib/resident-applications/selfie-guidance-cues.mjs';
 
-test('turn arrows follow the subject in the mirrored preview and reverse after turning too far', () => {
+test('turn arrows follow the subject in the mirrored preview and only ever point to the requested side', () => {
   assert.equal(selfieGuidanceCue({ code: 'turn-right' }, 'right').direction, 'right');
   assert.equal(selfieGuidanceCue({ code: 'turn-left' }, 'left').direction, 'left');
-  assert.equal(selfieGuidanceCue({ code: 'turn-back' }, 'right').direction, 'left');
-  assert.equal(selfieGuidanceCue({ code: 'turn-back' }, 'left').direction, 'right');
   assert.equal(selfieGuidanceCue({ code: 'turn-right' }, 'right').kind, 'turn');
+  for (const view of ['right', 'left']) {
+    const wrongWay = selfieGuidanceCue({ code: 'wrong-way', direction: view }, view);
+    assert.equal(wrongWay.direction, view); assert.equal(wrongWay.kind, 'turn'); assert.match(wrongWay.title, /Other way/);
+    const tooFar = selfieGuidanceCue({ code: 'turn-back', direction: view === 'right' ? 'left' : 'right' }, view);
+    assert.equal(tooFar.direction, 'center', 'turning too far never shows an opposite arrow');
+    assert.notEqual(tooFar.kind, 'turn');
+  }
 });
 
 test('framing corrections take priority and clearly differ from head turns', () => {

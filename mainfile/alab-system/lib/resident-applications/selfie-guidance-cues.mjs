@@ -8,11 +8,13 @@ export function selfieGuidanceCue(state, view) {
   const side = view === 'left' || view === 'right';
   const cue = (direction, kind, title, detail) => ({ direction, kind, title, detail });
   const screenDirection = ['left', 'right', 'up', 'down'].includes(state.direction) ? state.direction : null;
+  // A side view only ever points toward its own side.
   if (state.code === 'turn-right' || state.code === 'turn-left') {
     const direction = state.code === 'turn-right' ? 'right' : 'left';
-    return cue(direction, 'turn', `Turn your head ${direction}`, 'Follow the arrow. A small turn is enough.');
+    return cue(direction, 'turn', `Turn your head ${direction}`, 'Turn slowly. The photo is taken automatically.');
   }
-  if (state.code === 'turn-back') return cue(view === 'right' ? 'left' : 'right', 'turn', 'Turn back a little', 'Keep both eyes visible to the camera.');
+  if (state.code === 'wrong-way' && side) return cue(view, 'turn', `Other way: turn ${view}`, 'Turn your head toward the arrow.');
+  if (state.code === 'turn-back') return cue('center', 'center', 'Turn back a little', 'Keep both eyes visible to the camera.');
   if (state.code === 'face-front' && screenDirection) return cue(screenDirection, 'turn', 'Look straight ahead', 'Turn gently back toward the camera.');
   if (state.code === 'off-center' && screenDirection) return cue(screenDirection, 'move', `Move a little ${screenDirection}`, side ? 'Keep your whole face in the camera view.' : 'Move your face inside the oval.');
   if (state.code === 'too-small') return cue('closer', 'distance', 'Move a little closer', side ? 'Make your face clear enough to scan.' : 'Let your face fill more of the oval.');

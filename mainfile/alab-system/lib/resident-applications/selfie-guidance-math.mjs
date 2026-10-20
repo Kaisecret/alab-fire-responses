@@ -8,16 +8,22 @@ const reject = (code, message, direction) => ({ acceptable: false, code, message
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 // Side turns are a coarse liveness cue. People tilt and wobble while turning,
 // so side views allow a wider pose window and steadier-hold tolerance than the
-// front photo, which is the one compared with the ID.
-const SIDE_YAW_MIN = 12;
-const SIDE_YAW_MAX = 40;
-const MAX_ROLL = { front: 8, side: 14 };
+// front photo, which is the one compared with the ID. Measured on real phone
+// photos, a natural "turn your head" lands at 55-70 degrees with 10-18 degrees
+// of eye-line tilt, so the window must reach a full profile. A side view never
+// sends the resident the opposite way: only a turn past MediaPipe's reliable
+// range asks them to come back, and that cue has no arrow.
+const SIDE_YAW_MIN = 18;
+const SIDE_YAW_MAX = 75;
+// Turned clearly the other way (not just facing the camera).
+const SIDE_WRONG_WAY = -12;
+const MAX_ROLL = { front: 8, side: 25 };
 // Mean luma (0-1) of the camera image below which "no face" is most likely
 // caused by a dark room rather than framing.
 const DARK_BRIGHTNESS = 0.2;
 const HOLD = {
-  front: { ms: 900, samples: 4, shift: 0.11, scale: 0.08, yaw: 5, roll: 4 },
-  side: { ms: 600, samples: 3, shift: 0.11, scale: 0.1, yaw: 8, roll: 6 },
+  front: { ms: 700, samples: 4, shift: 0.11, scale: 0.08, yaw: 5, roll: 4 },
+  side: { ms: 500, samples: 3, shift: 0.11, scale: 0.1, yaw: 10, roll: 8 },
 };
 
 /** CSS object-fit: cover at object-position: center, then scaleX(-1). */
@@ -119,8 +125,9 @@ export function evaluateSelfieGeometry(frame, view) {
     if (Math.abs(yaw) > 10) return reject("face-front", "Look straight at the camera.", yaw > 0 ? "left" : "right");
   } else if (view === "right" || view === "left") {
     const directedYaw = view === "right" ? yaw : -yaw;
+    if (directedYaw < SIDE_WRONG_WAY) return reject("wrong-way", `Other way: turn your head to your ${view}.`, view);
     if (directedYaw < SIDE_YAW_MIN) return reject(`turn-${view}`, `Slowly turn your head to your ${view}.`, view);
-    if (directedYaw > SIDE_YAW_MAX) return reject("turn-back", "Turn back a little; keep both eyes visible.", view === "right" ? "left" : "right");
+    if (directedYaw > SIDE_YAW_MAX) return reject("turn-back", "Turn back a little so the camera sees your eyes.", "center");
   } else {
     return reject("face-front", "Choose a valid camera view.");
   }

@@ -63,12 +63,12 @@ test("subject right and left yaw use unmirrored geometry and require a modest tu
   for (const mirrored of [true, false]) {
     assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24 })], { mirrored }), "right").acceptable, true);
     assert.equal(evaluateSelfieGeometry(frame([face({ yaw: -24 })], { mirrored }), "left").acceptable, true);
-    assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24 })], { mirrored }), "left").code, "turn-left");
-    assert.equal(evaluateSelfieGeometry(frame([face({ yaw: -24 })], { mirrored }), "right").code, "turn-right");
+    assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24 })], { mirrored }), "left").code, "wrong-way");
+    assert.equal(evaluateSelfieGeometry(frame([face({ yaw: -24 })], { mirrored }), "right").code, "wrong-way");
   }
   assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24 })]), "front").code, "face-front");
   assert.equal(evaluateSelfieGeometry(frame(), "right").code, "turn-right");
-  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 45 })]), "right").code, "turn-back");
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 80 })]), "right").code, "turn-back");
   assert.equal(evaluateSelfieGeometry(frame([face({ roll: 16 })]), "front").code, "head-level");
 });
 
@@ -89,11 +89,11 @@ function gate(view = "front") {
 
 test("continuous stable geometry produces real progress, fires once, and stops", () => {
   const { controller, updates, events } = gate();
-  for (const now of [0, 180, 360, 540, 720]) controller.sample(frame(), now);
+  for (const now of [0, 175, 350, 525]) controller.sample(frame(), now);
   assert.equal(events.length, 0);
   assert.equal(updates.at(-1).ready, false);
   assert.ok(updates.at(-1).progress > 0.7);
-  controller.sample(frame(), 900);
+  controller.sample(frame(), 700);
   assert.deepEqual(events, ["ready", "stop"]);
   assert.equal(updates.at(-1).ready, true);
   assert.equal(updates.at(-1).progress, 1);
@@ -110,9 +110,9 @@ test("face disappearance, second face, wrong pose, and a frame gap reset the hol
     for (const now of [0, 180, 360, 540]) controller.sample(frame(), now);
     controller.sample(interrupted, 720);
     assert.equal(updates.at(-1).progress, 0);
-    for (const now of [900, 1080, 1260, 1440, 1620]) controller.sample(frame(), now);
+    for (const now of [900, 1080, 1260, 1440]) controller.sample(frame(), now);
     assert.equal(events.length, 0);
-    controller.sample(frame(), 1800);
+    controller.sample(frame(), 1620);
     assert.deepEqual(events, ["ready", "stop"]);
   }
   const { controller, updates, events } = gate();
@@ -200,8 +200,10 @@ test("direction cues describe preview movement while side labels remain anatomic
     [{}, "left", "left"],
     [{ yaw: 24 }, "front", "left"],
     [{ yaw: -24 }, "front", "right"],
-    [{ yaw: 45 }, "right", "left"],
-    [{ yaw: -45 }, "left", "right"],
+    [{ yaw: 80 }, "right", "center"],
+    [{ yaw: -80 }, "left", "center"],
+    [{ yaw: -24 }, "right", "right"],
+    [{ yaw: 24 }, "left", "left"],
   ];
   for (const [options, view, direction] of cases) assert.equal(evaluateSelfieGeometry(frame([face(options)]), view).direction, direction);
   const holding = gate("right");
@@ -216,8 +218,8 @@ test("small in-oval landmark jitter can finish a side hold without hiding disapp
   assert.deepEqual(events, ["ready", "stop"]);
   for (const interrupted of [frame([]), frame([face({ yaw: -24 })]), frame([face({ yaw: 24 }), face()])]) {
     const invalid = gate("right");
-    for (const now of [0, 180, 360, 540]) invalid.controller.sample(frame([face({ yaw: 24 })]), now);
-    invalid.controller.sample(interrupted, 720);
+    for (const now of [0, 150, 300, 450]) invalid.controller.sample(frame([face({ yaw: 24 })]), now);
+    invalid.controller.sample(interrupted, 600);
     assert.equal(invalid.events.length, 0);
     assert.equal(invalid.updates.at(-1).progress, 0);
   }
@@ -266,7 +268,7 @@ test("side views still reject absent, extra, partial, crop-hidden, malformed and
   assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24 }), face()], noGuide), "right").code, "multiple-faces");
   assert.equal(evaluateSelfieGeometry(frame([face({ x: 0.05, yaw: 24 })], noGuide), "right").code, "clipped");
   assert.equal(evaluateSelfieGeometry(frame([face({ x: 0.3, yaw: 24 })], { ...noGuide, videoWidth: 1600, videoHeight: 900 }), "right").code, "clipped");
-  for (const yaw of [0, -24, 45]) assert.equal(evaluateSelfieGeometry(frame([face({ x: 0.23, yaw })], noGuide), "right").acceptable, false);
+  for (const yaw of [0, -24, 80]) assert.equal(evaluateSelfieGeometry(frame([face({ x: 0.23, yaw })], noGuide), "right").acceptable, false);
   const malformed = face({ x: 0.23, yaw: 24 });
   malformed[133].z = Number.NaN;
   assert.equal(evaluateSelfieGeometry(frame([malformed], noGuide), "right").acceptable, false);
@@ -277,9 +279,9 @@ test("an off-center side face captures only after a stable correct-pose hold and
   const noGuide = { guideRect: undefined };
   const valid = (x = 0.23, yaw = 24) => frame([face({ x, yaw })], noGuide);
   const stable = gate("right");
-  for (const now of [0, 180, 360, 540]) stable.controller.sample(valid(), now);
+  for (const now of [0, 150, 300, 450]) stable.controller.sample(valid(), now);
   assert.equal(stable.events.length, 0);
-  stable.controller.sample(valid(), 720);
+  stable.controller.sample(valid(), 600);
   assert.deepEqual(stable.events, ["ready", "stop"]);
   const moving = gate("right");
   for (const now of [0, 180, 360]) moving.controller.sample(valid(), now);
@@ -291,11 +293,11 @@ test("an off-center side face captures only after a stable correct-pose hold and
   moving.controller.stop();
 });
 
-test("side views hold for 600 ms with three samples while the front photo keeps its 900 ms hold", () => {
+test("side views hold for 500 ms with three samples while the front photo holds for 700 ms", () => {
   const side = gate("right");
-  for (const now of [0, 200, 400]) side.controller.sample(frame([face({ yaw: 24 })]), now);
+  for (const now of [0, 170, 340]) side.controller.sample(frame([face({ yaw: 24 })]), now);
   assert.equal(side.events.length, 0);
-  side.controller.sample(frame([face({ yaw: 24 })]), 600);
+  side.controller.sample(frame([face({ yaw: 24 })]), 510);
   assert.deepEqual(side.events, ["ready", "stop"]);
   const sparse = gate("left");
   for (const now of [0, 700]) sparse.controller.sample(frame([face({ yaw: -24 })]), now);
@@ -303,20 +305,31 @@ test("side views hold for 600 ms with three samples while the front photo keeps 
   const front = gate();
   for (const now of [0, 200, 400, 600]) front.controller.sample(frame(), now);
   assert.equal(front.events.length, 0);
-  front.controller.sample(frame(), 900);
+  front.controller.sample(frame(), 700);
   assert.deepEqual(front.events, ["ready", "stop"]);
 });
 
-test("side views accept a wider natural turn and head tilt; the front photo stays strict", () => {
-  for (const yaw of [13, 38]) {
+test("side views accept a natural turn up to a full profile with real head tilt; the front photo stays strict", () => {
+  // 56-70 degrees and 10-18 degrees of tilt were measured on real phone profiles.
+  for (const yaw of [20, 56, 70]) {
     assert.equal(evaluateSelfieGeometry(frame([face({ yaw })]), "right").acceptable, true);
     assert.equal(evaluateSelfieGeometry(frame([face({ yaw: -yaw })]), "left").acceptable, true);
   }
-  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 10 })]), "right").code, "turn-right");
-  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 42 })]), "right").code, "turn-back");
-  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24, roll: 12 })]), "right").acceptable, true);
-  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24, roll: 16 })]), "right").code, "head-level");
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 15 })]), "right").code, "turn-right");
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: -5 })]), "right").code, "turn-right", "facing the camera is not the wrong way");
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 80 })]), "right").code, "turn-back");
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 60, roll: 18 })]), "right").acceptable, true);
+  assert.equal(evaluateSelfieGeometry(frame([face({ yaw: 24, roll: 28 })]), "right").code, "head-level");
   assert.equal(evaluateSelfieGeometry(frame([face({ roll: 12 })]), "front").code, "head-level");
+});
+
+test("a side view never points the resident to the opposite side", () => {
+  for (const [view, sign] of [["right", 1], ["left", -1]]) {
+    for (let yaw = -85; yaw <= 85; yaw += 5) {
+      const result = evaluateSelfieGeometry(frame([face({ yaw: yaw * sign })]), view);
+      if (!result.acceptable) assert.ok([view, "center", undefined].includes(result.direction), `${view} at ${yaw}: ${result.code} -> ${result.direction}`);
+    }
+  }
 });
 
 test("side holds tolerate small yaw wobble but a real pose change still restarts", () => {
@@ -324,7 +337,7 @@ test("side holds tolerate small yaw wobble but a real pose change still restarts
   for (const [index, yaw] of [24, 30, 25, 31].entries()) wobble.controller.sample(frame([face({ yaw })]), index * 200);
   assert.deepEqual(wobble.events, ["ready", "stop"]);
   const changed = gate("right");
-  for (const [index, yaw] of [16, 16, 30].entries()) changed.controller.sample(frame([face({ yaw })]), index * 200);
+  for (const [index, yaw] of [20, 20, 34].entries()) changed.controller.sample(frame([face({ yaw })]), index * 200);
   assert.equal(changed.updates.at(-1).progress, 0);
 });
 

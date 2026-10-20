@@ -91,7 +91,7 @@ async function createWorkerRuntime(signal: AbortSignal): Promise<Runtime> {
     throw error;
   }
   return {
-    frameIntervalMs: 120,
+    frameIntervalMs: 90,
     minimumIdleMs: 0,
     async detect(canvas, timestamp) {
       if (closed || pending) throw abortError();
@@ -326,7 +326,7 @@ export function createSelfieGuidanceSession(): SelfieGuidanceSession {
           }
         } finally {
           // Fixed start-to-start budget, never parallel inference. Workers can
-          // react at ~8fps; main-thread fallback keeps a conservative ~4fps.
+          // react at ~11fps; main-thread fallback keeps a conservative ~4fps.
           if (!stopped && !closed) timer = window.setTimeout(tick, Math.max(model.minimumIdleMs, model.frameIntervalMs - (performance.now() - tickStarted)));
         }
       };
