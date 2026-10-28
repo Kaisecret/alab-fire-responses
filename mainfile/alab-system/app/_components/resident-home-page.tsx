@@ -69,10 +69,6 @@ export function ResidentHomePage() {
       if (recentTitle) recentTitle.textContent = dict.recentReportsTitle;
       const viewAll = document.querySelector<HTMLElement>(".recent-card .view-all");
       if (viewAll) viewAll.textContent = dict.viewAllReports;
-      const emergencyBtnTitle = document.querySelector<HTMLElement>(".mobile-emergency-btn h2");
-      if (emergencyBtnTitle) emergencyBtnTitle.textContent = dict.navReportFire.toUpperCase();
-      const emergencyBtnTap = document.querySelector<HTMLElement>(".mobile-emergency-btn .tap-text");
-      if (emergencyBtnTap) emergencyBtnTap.textContent = dict.navReportFire.toUpperCase();
     };
 
     applyHomeLanguage(getStoredLanguage());

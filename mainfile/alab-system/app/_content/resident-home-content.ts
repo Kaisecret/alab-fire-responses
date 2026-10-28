@@ -673,8 +673,9 @@ export const homeStyles = `
         }
 
         .mobile-emergency-btn {
-            width: 12.5rem;
-            height: 12.5rem;
+            width: min(12.5rem, 72vw);
+            height: min(12.5rem, 72vw);
+            flex: 0 0 auto;
             border-radius: 50%;
             background: linear-gradient(145deg, #ef4444 0%, #dc2626 40%, #b91c1c 100%);
             border: 6px solid white;
@@ -684,7 +685,8 @@ export const homeStyles = `
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding-bottom: 0.8rem;
+            gap: 0.55rem;
+            padding: 1.25rem 1.1rem;
             color: white;
             text-decoration: none;
             z-index: 1;
@@ -698,27 +700,23 @@ export const homeStyles = `
         }
 
         .mobile-emergency-btn img {
-            width: 3.8rem;
-            height: 3.8rem;
-            margin-bottom: 0.1rem;
+            width: 3.4rem;
+            height: 3.4rem;
+            flex-shrink: 0;
             object-fit: contain;
             filter: brightness(0) invert(1);
         }
 
-        .mobile-emergency-btn h2 {
-            font-size: 1.4rem;
+        .mobile-emergency-label {
+            display: block;
+            min-width: 0;
+            max-width: 100%;
+            font-size: clamp(1rem, 4.65vw, 1.25rem);
             font-weight: 800;
-            margin-bottom: 0.2rem;
-            letter-spacing: 0.05em;
-        }
-
-        .mobile-emergency-btn .tap-text {
-            background: rgba(255, 255, 255, 0.95);
-            color: var(--primary-red);
-            padding: 0.3rem 0.9rem;
-            border-radius: 2rem;
-            font-size: 0.7rem;
-            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: 0.025em;
+            text-align: center;
+            text-wrap: balance;
         }
 
 
@@ -749,7 +747,24 @@ export const homeStyles = `
             font-weight: 700;
         }
         .status-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.35rem;
+            align-items: start;
             padding: 0.3rem 0;
+        }
+        .status-divider {
+            display: none;
+        }
+        .status-item {
+            min-width: 0;
+        }
+        .status-label {
+            width: 100%;
+            font-size: clamp(0.6rem, 2.5vw, 0.72rem);
+            line-height: 1.3;
+            overflow-wrap: anywhere;
+            text-wrap: balance;
         }
         .status-count {
             font-size: 1.35rem;
@@ -879,9 +894,8 @@ export const homeMarkup = `
                     <div class="radar-ring ring-3"></div>
                 </div>
                 <a href="/resident/report-fire" class="mobile-emergency-btn" aria-label="Report a fire">
-                    <img src="/images/fire logo.webp" alt="Fire Logo" />
-                    <h2>REPORT FIRE</h2>
-                    <div class="tap-text">TAP TO REPORT FIRE</div>
+                    <img src="/images/fire logo.webp" alt="" aria-hidden="true" />
+                    <span class="mobile-emergency-label">REPORT FIRE</span>
                 </a>
                 <div class="safety-first-hint">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>

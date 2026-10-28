@@ -55,6 +55,10 @@ export function translateResidentMarkup(
 ) {
   if (typeof document === "undefined") return;
   const say = (english: string) => translateResidentText(dictionary, english, lang, patterns);
+  const isTranslationOf = (current: string, english: string) =>
+    (["en", "tl", "hil"] as const).some((language) =>
+      current === english.replace(english.trim(), translateResidentText(dictionary, english.trim(), language, patterns)),
+    );
   const walker = document.createTreeWalker(root as Node, NodeFilter.SHOW_TEXT, {
     acceptNode: (node) => {
       const parent = node.parentElement;
@@ -65,7 +69,7 @@ export function translateResidentMarkup(
     const current = node.nodeValue ?? "";
     const remembered = originalText.get(node);
     // A script may have written new English into the node since it was translated.
-    const english = remembered !== undefined && current === remembered.replace(remembered.trim(), say(remembered.trim()))
+    const english = remembered !== undefined && isTranslationOf(current, remembered)
       ? remembered
       : current;
     const key = english.trim();
@@ -79,7 +83,7 @@ export function translateResidentMarkup(
       const current = element.getAttribute(name);
       if (!current) continue;
       const stored = element.getAttribute(`data-en-${name}`);
-      const english = stored !== null && current === say(stored) ? stored : current.trim();
+      const english = stored !== null && isTranslationOf(current, stored) ? stored : current.trim();
       if (!known(dictionary, english, patterns)) continue;
       if (stored !== english) element.setAttribute(`data-en-${name}`, english);
       const next = say(english);
