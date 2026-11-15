@@ -4,6 +4,6 @@ import { FireCommandHeader } from "@/app/_components/fire-command-header";
 export default function ProvincialNotificationsPage() {
   return <>
     <FireCommandHeader slotId="provincial-fire-command-header" title="Notifications" icon="fa-bell" />
-    <NotificationCenter apiPath="/api/provincial-bfp/notifications" showHeading={false} />
+    <NotificationCenter apiPath="/api/provincial-bfp/notifications" showHeading={false} desktopVariant="provincial" />
   </>;
 }

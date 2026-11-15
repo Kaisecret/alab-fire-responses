@@ -26,7 +26,7 @@ export function NotificationCenter({
 }: {
   apiPath: string;
   eyebrow?: string;
-  desktopVariant?: "municipal";
+  desktopVariant?: "municipal" | "provincial";
   showHeading?: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>("ALL");
@@ -38,7 +38,7 @@ export function NotificationCenter({
   }), [filter, notifications]);
 
   return (
-    <section className={`${styles.center} ${desktopVariant === "municipal" ? styles.municipalDesktop : ""}`}>
+    <section className={`${styles.center} ${desktopVariant ? styles.municipalDesktop : ""}`}>
       <header className={styles.centerHeader}>
         {showHeading && <div className={styles.centerHeading}>
           <span className={styles.centerHeaderIcon} aria-hidden="true"><i className="fa-solid fa-bell" /></span>

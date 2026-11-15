@@ -318,11 +318,11 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Municipal command-center desktop only. Resident and all mobile notification
-   layouts intentionally keep their established presentation. */
+/* Municipal and provincial command-center desktop only. Resident and all mobile
+   notification layouts intentionally keep their established presentation. */
 @media (min-width: 761px) {
-  /* The municipal shell owns a descendant reset (`.mbfp-layout *`) with the
-     same specificity as a single CSS-module class.  Keep this compound
+  /* The municipal and provincial shells own a descendant reset (`.mbfp-layout *`,
+     `.pbfp-shell *`) with the same specificity as a single CSS-module class.  Keep this compound
      selector so production CSS ordering cannot erase the page gutters. */
   .center.municipalDesktop {
     max-width: 1440px;
