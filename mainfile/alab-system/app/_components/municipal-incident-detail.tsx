@@ -139,6 +139,36 @@ function clockLabel(iso: string | null): string {
   });
 }
 
+// Scene conditions as the desk reads them. An answer missing from these maps
+// was not reported, and is shown muted.
+const HOUSE_DENSITY_LABELS: Record<string, string> = {
+  PACKED_MAGKAKADIKIT: "Houses are close together",
+  ISOLATED_FAR: "Houses are farther apart",
+  MODERATE_SPACING: "Houses are farther apart",
+};
+const STRUCTURE_MATERIAL_LABELS: Record<string, string> = {
+  LIGHT_WITH_FLAMMABLE: "Light Combustible + Flammable Goods",
+  MIXED_WITH_FLAMMABLE: "Semi-Concrete + Flammable Goods",
+  LIGHT_MATERIALS: "Light Combustible (Kahoy / Bamboo / Nipa)",
+  COMMERCIAL_STORAGE: "Commercial / Flammable Storage",
+  MIXED_SEMI_CONCRETE: "Semi-Concrete",
+  CONCRETE: "Concrete / Semento",
+};
+const ROAD_ACCESS_LABELS: Record<string, string> = {
+  INTERIOR_ALLEY_ESKINITA: "Narrow alley / Restricted access",
+  NARROW_STREET: "Narrow street (one lane)",
+  DEAD_END_OR_BLOCKED: "Dead end or blocked road",
+  WIDE_ROAD: "Wide road (direct access)",
+};
+
+function MetricValue({ value, fallback = "Not reported" }: { value?: string | null; fallback?: string }) {
+  return <strong className={`mbfp-metric-val${value ? "" : " is-empty"}`}>{value || fallback}</strong>;
+}
+
+function DataValue({ value, fallback, measurement = false }: { value?: string | null; fallback: string; measurement?: boolean }) {
+  return <span className={`mbfp-data-value${measurement ? " is-measurement" : ""}${value ? "" : " is-empty"}`}>{value || fallback}</span>;
+}
+
 const detailStyles = `
   /* ========== MUNICIPAL INCIDENT DETAIL STYLES ========== */
   .mbfp-detail-shell {
@@ -383,13 +413,6 @@ const detailStyles = `
   .mbfp-severity-hero-badge.MODERATE { background: #D97706; color: #FFFBEB; border: 1px solid #F59E0B; }
   .mbfp-severity-hero-badge.LOW { background: #047857; color: #ECFDF5; border: 1px solid #10B981; }
 
-  /* The column gap governs the spacing between cards; no extra margin here. */
-  .mbfp-tactical-severity-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
-  }
   .mbfp-severity-tag {
     display: inline-flex;
     align-items: center;
@@ -406,113 +429,107 @@ const detailStyles = `
   .mbfp-severity-tag.MODERATE { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
   .mbfp-severity-tag.LOW { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
 
+  /*
+   * Scene conditions read as one list, not a wall of boxes: a hairline above
+   * each field, and only reported values carry weight so missing answers
+   * recede. The clip hides the hairlines of the first row, which already sit
+   * under the card header's own rule.
+   */
   .mbfp-tactical-metrics-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
-    margin-bottom: 1.5rem;
+    /* First-row padding plus the header margin would double the gap. */
+    margin: -0.6rem 0 1.25rem;
+    clip-path: inset(1px 0 0 0);
   }
   .mbfp-metric-item {
-    padding: 1.15rem 1.25rem;
-    border: 1px solid #E2E8F0;
-    border-radius: 10px;
-    background: #F8FAFC;
-    transition: all 0.15s ease;
+    min-width: 0;
+    padding: 0.85rem 0.75rem 0.1rem 0;
+    border-top: 1px solid #E8EDF3;
   }
-  .mbfp-metric-item.alert-conflagration {
-    border-color: #FECACA;
-    background: #FFFBFB;
-    border-left: 4px solid #DC2626;
-  }
-  .mbfp-metric-item.alert-wind {
-    border-color: #BFDBFE;
-    background: #F8FAFC;
-    border-left: 4px solid #2563EB;
-  }
-  .mbfp-metric-item.alert-route {
-    border-color: #FED7AA;
-    background: #FFFDFB;
-    border-left: 4px solid #EA580C;
-  }
-  /* #64748B on #F8FAFC fell short of 4.5:1; #475569 clears it. */
   .mbfp-metric-label {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.72rem;
+    align-items: flex-start;
+    gap: 0.45rem;
+    font-size: 0.7rem;
     font-weight: 750;
-    color: #475569;
+    color: #64748B;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 0.55rem;
+    margin-bottom: 0.3rem;
     line-height: 1.4;
   }
   .mbfp-metric-label i {
-    font-size: 0.85rem;
-    color: #475569;
+    width: 1rem;
+    margin-top: 0.12rem;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    color: #94A3B8;
+    text-align: center;
   }
   .mbfp-metric-val {
     display: block;
-    font-size: 0.95rem;
-    font-weight: 750;
+    font-size: 1rem;
+    font-weight: 800;
     color: #0F172A;
-    line-height: 1.5;
+    letter-spacing: -0.01em;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
   }
-  .mbfp-metric-item.alert-conflagration .mbfp-metric-val {
-    color: #B91C1C;
+  .mbfp-metric-val.is-empty,
+  .mbfp-data-value.is-empty {
+    color: #64748B;
+    font-weight: 600;
+    letter-spacing: 0;
   }
-  .mbfp-metric-item.alert-route .mbfp-metric-val {
-    color: #9A3412;
-  }
+  /* A hazard colours its own icon and value; nothing else in the row moves. */
+  .mbfp-metric-item.alert-conflagration .mbfp-metric-label i { color: #DC2626; }
+  .mbfp-metric-item.alert-conflagration .mbfp-metric-val { color: #B91C1C; }
+  .mbfp-metric-item.alert-wind .mbfp-metric-label i { color: #2563EB; }
+  .mbfp-metric-item.alert-wind .mbfp-metric-val { color: #1D4ED8; }
+  .mbfp-metric-item.alert-route .mbfp-metric-label i { color: #EA580C; }
+  .mbfp-metric-item.alert-route .mbfp-metric-val { color: #9A3412; }
 
   .mbfp-factors-list {
-    padding: 1.1rem 1.15rem;
-    border-radius: 10px;
+    padding: 1rem 1.15rem;
+    border-radius: 12px;
     background: #FEF2F2;
-    border: 1px solid #FEE2E2;
   }
   .mbfp-factors-title {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 800;
     color: #991B1B;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.6rem;
     line-height: 1.4;
   }
-  /*
-   * Hazards stack one per line rather than wrapping as chips. Each is a full
-   * sentence, and wrapped chips broke them mid-phrase.
-   */
+  /* Hazards stack one per line: each is a full sentence. */
   .mbfp-factors-list ul {
     margin: 0;
     padding: 0;
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
   .mbfp-factors-list li {
     display: flex;
     align-items: flex-start;
     gap: 0.55rem;
-    background: #FFFFFF;
-    border: 1px solid #FECACA;
-    padding: 0.65rem 0.85rem;
-    border-radius: 8px;
-    font-size: 0.82rem;
+    font-size: 0.9rem;
     font-weight: 650;
     color: #7F1D1D;
     line-height: 1.5;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
   .mbfp-factors-list li i {
     color: #DC2626;
     font-size: 0.8rem;
-    margin-top: 0.18rem;
+    margin-top: 0.3rem;
     flex-shrink: 0;
   }
   @media (max-width: 640px) {
@@ -799,57 +816,63 @@ const detailStyles = `
   }
 
   /*
-   * Resident profile grid. A single repeated interval gave every field the
-   * same weight, so the label binds tightly to its value while the cells
-   * themselves separate.
+   * Resident profile: who reported and how to reach them lead the card; the
+   * rest is a quiet list of fields under hairlines, like the danger card.
    */
   .mbfp-profile-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    margin-top: -0.6rem;
+    clip-path: inset(1px 0 0 0);
   }
 
-  /*
-   * Each cell already carries a border and a fill, so the gap between them has
-   * to clear both edges before the grid reads as separate fields.
-   */
   .mbfp-data-cell {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 1.05rem 1.15rem;
+    padding: 0.85rem 0.75rem 0.1rem 0;
+    border-top: 1px solid #E8EDF3;
     display: flex;
     flex-direction: column;
-    gap: 0.45rem;
+    align-items: flex-start;
+    gap: 0.3rem;
     min-width: 0;
   }
   .mbfp-data-cell.mbfp-data-cell--full {
     grid-column: 1 / -1;
   }
 
-  /* #64748B on #F8FAFC misses 4.5:1; #475569 clears it. */
   .mbfp-data-label {
     font-size: 0.7rem;
-    font-weight: 800;
-    color: #475569;
+    font-weight: 750;
+    color: #64748B;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     line-height: 1.4;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.45rem;
   }
 
   .mbfp-data-label i {
+    width: 1rem;
     flex-shrink: 0;
+    font-size: 0.8rem;
+    color: #94A3B8;
+    text-align: center;
   }
 
   .mbfp-data-value {
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     font-weight: 700;
     color: #0F172A;
     line-height: 1.5;
     word-break: break-word;
+  }
+
+  .mbfp-data-cell--lead .mbfp-data-value {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    line-height: 1.35;
   }
 
   /*
@@ -862,19 +885,31 @@ const detailStyles = `
     letter-spacing: 0.01em;
   }
 
+  /* Calling the reporter is the one action in this card, so it looks like one. */
   .mbfp-phone-link {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    color: #2563EB;
+    gap: 0.5rem;
+    margin-top: 0.1rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    font-size: 1rem;
     font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
     text-decoration: none;
-    transition: color 0.18s;
+    transition: background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .mbfp-phone-link:hover {
-    color: #1D4ED8;
-    text-decoration: underline;
+    background: #DBEAFE;
+  }
+
+  .mbfp-phone-link:focus-visible {
+    outline: 2px solid #2563EB;
+    outline-offset: 2px;
   }
 
 
@@ -2522,13 +2557,7 @@ export function MunicipalIncidentDetail({
                     <i className="fa-solid fa-people-roof" />
                     <span>Nearby Houses</span>
                   </div>
-                  <strong className="mbfp-metric-val">
-                    {incident.houseDensity === "PACKED_MAGKAKADIKIT"
-                      ? "Houses are close together"
-                      : incident.houseDensity === "ISOLATED_FAR" || incident.houseDensity === "MODERATE_SPACING"
-                        ? "Houses are farther apart"
-                        : "Not reported"}
-                  </strong>
+                  <MetricValue value={HOUSE_DENSITY_LABELS[incident.houseDensity ?? ""]} />
                 </div>}
 
                 {/* Wind & Weather Telemetry */}
@@ -2537,11 +2566,12 @@ export function MunicipalIncidentDetail({
                     <i className="fa-solid fa-wind" />
                     <span>Weather at Incident Site ({incident.barangay})</span>
                   </div>
-                  <strong className="mbfp-metric-val">
-                    {incident.weatherWindSpeed != null
+                  <MetricValue
+                    value={incident.weatherWindSpeed != null
                       ? `${incident.weatherWindSpeed} km/h (${incident.weatherWindCondition || "Condition unavailable"}) · ${incident.weatherTemperature ?? "--"}°C (${incident.weatherHumidity ?? "--"}% RH)`
-                      : "Weather data unavailable"}
-                  </strong>
+                      : null}
+                    fallback="Weather data unavailable"
+                  />
                 </div>
 
                 {/* Structure material is scored only for building fires. */}
@@ -2550,21 +2580,7 @@ export function MunicipalIncidentDetail({
                     <i className="fa-solid fa-cubes-stacked" />
                     <span>Structure Material</span>
                   </div>
-                  <strong className="mbfp-metric-val">
-                    {incident.structureMaterial === "LIGHT_WITH_FLAMMABLE"
-                      ? "Light Combustible + Flammable Goods"
-                      : incident.structureMaterial === "MIXED_WITH_FLAMMABLE"
-                      ? "Semi-Concrete + Flammable Goods"
-                      : incident.structureMaterial === "LIGHT_MATERIALS"
-                      ? "Light Combustible (Kahoy / Bamboo / Nipa)"
-                      : incident.structureMaterial === "COMMERCIAL_STORAGE"
-                        ? "Commercial / Flammable Storage"
-                        : incident.structureMaterial === "MIXED_SEMI_CONCRETE"
-                          ? "Semi-Concrete"
-                          : incident.structureMaterial === "CONCRETE"
-                            ? "Concrete / Semento"
-                            : "Not reported"}
-                  </strong>
+                  <MetricValue value={STRUCTURE_MATERIAL_LABELS[incident.structureMaterial ?? ""]} />
                 </div>}
 
                 {/* Road access is not part of the rubbish-fire rule. */}
@@ -2573,17 +2589,7 @@ export function MunicipalIncidentDetail({
                     <i className="fa-solid fa-road-barrier" />
                     <span>Road Access</span>
                   </div>
-                  <strong className="mbfp-metric-val">
-                    {incident.routeAccessibility === "INTERIOR_ALLEY_ESKINITA"
-                      ? "Narrow alley / Restricted access"
-                      : incident.routeAccessibility === "NARROW_STREET"
-                        ? "Narrow street (one lane)"
-                        : incident.routeAccessibility === "DEAD_END_OR_BLOCKED"
-                          ? "Dead end or blocked road"
-                        : incident.routeAccessibility === "WIDE_ROAD"
-                          ? "Wide road (direct access)"
-                          : "Not reported"}
-                  </strong>
+                  <MetricValue value={ROAD_ACCESS_LABELS[incident.routeAccessibility ?? ""]} />
                 </div>}
               </div>
 
@@ -2652,30 +2658,33 @@ export function MunicipalIncidentDetail({
 
               {incident.accessScope === "ORIGIN" ? (
                 <div className="mbfp-profile-grid">
-                  <div className="mbfp-data-cell">
+                  <div className="mbfp-data-cell mbfp-data-cell--lead">
                     <span className="mbfp-data-label">
                       <i className="fa-regular fa-user" /> {isPhoneReport ? "Caller name" : "Resident Name"}
                     </span>
-                    <span className="mbfp-data-value">{incident.residentName || (isPhoneReport ? "Anonymous caller" : "Anonymous Resident")}</span>
+                    <DataValue value={incident.residentName} fallback={isPhoneReport ? "Anonymous caller" : "Anonymous Resident"} />
                   </div>
 
                   <div className="mbfp-data-cell">
                     <span className="mbfp-data-label">
                       <i className="fa-solid fa-phone" /> {isPhoneReport ? "Caller contact" : "Direct Contact"}
                     </span>
-                    <span className="mbfp-data-value">
-                      <a href={`tel:${incident.phone}`} className="mbfp-phone-link">
-                        <i className="fa-solid fa-phone-volume" />
-                        <span>{incident.phone || "No phone provided"}</span>
+                    {/* No number: plain text, not a call link to nothing. */}
+                    {incident.phone ? (
+                      <a href={`tel:${incident.phone}`} className="mbfp-phone-link" aria-label={`Call ${incident.phone}`}>
+                        <i className="fa-solid fa-phone-volume" aria-hidden="true" />
+                        <span>{incident.phone}</span>
                       </a>
-                    </span>
+                    ) : (
+                      <DataValue fallback="No phone provided" />
+                    )}
                   </div>
 
                   <div className="mbfp-data-cell">
                     <span className="mbfp-data-label">
                       <i className="fa-regular fa-map" /> {isPhoneReport ? "Reported address" : "Registered Address"}
                     </span>
-                    <span className="mbfp-data-value">{incident.address || "Not specified"}</span>
+                    <DataValue value={incident.address} fallback="Not specified" />
                   </div>
 
                   <div className="mbfp-data-cell">
@@ -2689,7 +2698,7 @@ export function MunicipalIncidentDetail({
                     <span className="mbfp-data-label">
                       <i className="fa-solid fa-signs-post" /> Nearest Landmark
                     </span>
-                    <span className="mbfp-data-value">{incident.landmark || "None provided by caller"}</span>
+                    <DataValue value={incident.landmark} fallback="None provided by caller" />
                   </div>
 
                   <div className="mbfp-data-cell">
@@ -2712,14 +2721,14 @@ export function MunicipalIncidentDetail({
                       <span className="mbfp-data-label">
                         <i className="fa-solid fa-network-wired" /> Public IP address
                       </span>
-                      <span className="mbfp-data-value is-measurement">{incident.reporterIpAddress || "Unavailable"}</span>
+                      <DataValue value={incident.reporterIpAddress} fallback="Unavailable" measurement />
                     </div>
 
                     <div className="mbfp-data-cell mbfp-data-cell--full">
                       <span className="mbfp-data-label">
                         <i className="fa-solid fa-mobile-screen-button" /> Device / browser
                       </span>
-                      <span className="mbfp-data-value">{incident.reporterDeviceSummary || "Unavailable"}</span>
+                      <DataValue value={incident.reporterDeviceSummary} fallback="Unavailable" />
                     </div>
                   </>}
                 </div>
@@ -2745,7 +2754,7 @@ export function MunicipalIncidentDetail({
                     <span className="mbfp-data-label">
                       <i className="fa-solid fa-signs-post" /> Nearest Landmark
                     </span>
-                    <span className="mbfp-data-value">{incident.landmark || "None provided"}</span>
+                    <DataValue value={incident.landmark} fallback="None provided" />
                   </div>
 
                   <div className="mbfp-data-cell">
