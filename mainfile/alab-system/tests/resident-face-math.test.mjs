@@ -7,6 +7,8 @@ import {
   selectSingleFace,
   similarityTransform,
   alignRgbFace,
+  tileStarts,
+  mergeTileFaces,
 } from "../lib/resident-applications/face-match-math.mjs";
 
 // Literal OpenCV FaceRecognizerSF five-point destination, in YuNet order.
@@ -94,4 +96,21 @@ test("alignment samples RGB channels at identity and black-pads outside image bo
   const shifted = alignRgbFace(pixels, 112, 112, template.map(([x, y]) => [x + 100, y]));
   assert.equal(shifted[60 * 112 + 45], 0);
   assert.equal(shifted[2 * 112 * 112 + 60 * 112 + 45], 0);
+});
+
+test("ID search tiles cover every pixel and drop the same face found again in an overlapping tile", () => {
+  assert.deepEqual(tileStarts(500), [0]);
+  assert.deepEqual(tileStarts(640), [0]);
+  assert.deepEqual(tileStarts(1280), [0, 480, 640]);
+  for (const size of [641, 1500, 2048]) {
+    const starts = tileStarts(size);
+    assert.equal(starts[0], 0);
+    assert.equal(starts.at(-1), size - 640);
+    for (let i = 1; i < starts.length; i++) assert.ok(starts[i] - starts[i - 1] <= 480);
+  }
+  const face = (box, score) => ({ box, score, landmarks: [] });
+  const whole = face([600, 100, 120, 150], 0.95);
+  const cut = face([600, 100, 40, 150], 0.91); // the same face cut at a tile edge
+  const ghost = face([1000, 120, 40, 50], 0.92);
+  assert.deepEqual(mergeTileFaces([cut, ghost, whole]), [whole, ghost]);
 });

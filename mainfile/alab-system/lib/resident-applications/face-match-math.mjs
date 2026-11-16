@@ -64,6 +64,33 @@ export function decodeYuNet(outputs, width, height, scoreThreshold = 0.9, nmsThr
   return kept;
 }
 
+// An ID photo usually shows the whole card, so its portrait is small. The ID is
+// also searched at higher resolution in overlapping 640px tiles. The overlap
+// keeps any face up to 160px wide whole inside at least one tile.
+const TILE = 640, TILE_STEP = 480;
+
+export function tileStarts(size) {
+  if (size <= TILE) return [0];
+  const starts = [];
+  for (let start = 0; start < size - TILE; start += TILE_STEP) starts.push(start);
+  return [...starts, size - TILE];
+}
+
+// One face seen by two overlapping tiles: keep the stronger detection. A box
+// mostly inside another one is the same face cut at a tile edge.
+export function mergeTileFaces(faces) {
+  const kept = [];
+  for (const face of [...faces].sort((a, b) => b.score - a.score)) {
+    const [x, y, w, h] = face.box;
+    const duplicate = kept.some(({ box: [kx, ky, kw, kh] }) => {
+      const area = Math.max(0, Math.min(x + w, kx + kw) - Math.max(x, kx)) * Math.max(0, Math.min(y + h, ky + kh) - Math.max(y, ky));
+      return area > 0.5 * Math.min(w * h, kw * kh);
+    });
+    if (!duplicate) kept.push(face);
+  }
+  return kept;
+}
+
 // Many IDs (passports, newer national cards) also print a small "ghost" copy of
 // the holder's portrait. On the ID only, the largest face is used when every
 // other face is at most this fraction of its width and height. Faces of similar

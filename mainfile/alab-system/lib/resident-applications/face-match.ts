@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import type * as Ort from "onnxruntime-node";
-import { alignRgbFace, cosineSimilarity, decodeYuNet, FaceInputError, selectSingleFace } from "./face-match-math.mjs";
+import { alignRgbFace, cosineSimilarity, decodeYuNet, FaceInputError, mergeTileFaces, selectSingleFace, tileStarts } from "./face-match-math.mjs";
 
 export type FaceMatchResult =
   | { ok: true; score: number; threshold: number }
@@ -13,12 +13,21 @@ export type FaceMatchResult =
 // Published SFace LFW cosine operating point, not a probability of identity.
 const THRESHOLD = 0.363;
 const DETECTOR_SIZE = 640;
+// The ID is searched at these longest sides, upright first and then turned, so
+// a whole-card photo or a card photographed sideways still yields its portrait.
+const ID_SEARCH_SIZES = [DETECTOR_SIZE, 1280, 2048];
+const ID_SEARCH_ANGLES = [0, 90, 270, 180];
+// Printed ID portraits score lower than live faces. The looser score is used
+// only when no size or angle has a strict face: used first, it would accept a
+// sideways face with wrong landmarks before the photo is turned upright.
+const STRICT_SCORE = 0.9, ID_LOOSE_SCORE = 0.8;
 const MODEL_FILES = [
   { file: "face_detection_yunet_2023mar.onnx", sha256: "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4" },
   { file: "face_recognition_sface_2021dec.onnx", sha256: "0ba9fbfa01b5270c96627c4ef784da859931e02f04419c829e83484087c34e79" },
 ];
 type Runtime = { ort: typeof Ort; detector: Ort.InferenceSession; recognizer: Ort.InferenceSession };
 type Image = { rgb: Buffer; width: number; height: number };
+type Face = { box: number[]; landmarks: number[][]; score: number };
 let runtimePromise: Promise<Runtime> | undefined;
 let inFlightComparisons = 0;
 
@@ -62,11 +71,13 @@ async function runtime(): Promise<Runtime> {
 async function decodeImage(bytes: Buffer, side: "ID" | "SELFIE"): Promise<Image> {
   try {
     if (!Buffer.isBuffer(bytes) || bytes.length === 0 || bytes.length > 6 * 1024 * 1024) throw new Error("Image size");
-    const image = sharp(bytes, { limitInputPixels: 12_000_000, failOn: "warning" });
+    // Same strictness as the upload check, so a photo it accepted is never refused here.
+    const image = sharp(bytes, { limitInputPixels: 12_000_000, failOn: "error" });
     const metadata = await image.metadata();
     if (!metadata.width || !metadata.height || metadata.width > 5000 || metadata.height > 5000
       || (metadata.pages ?? 1) !== 1 || !["jpeg", "png", "webp"].includes(metadata.format ?? "")) throw new Error("Image format");
-    const decoded = await image.rotate().resize(DETECTOR_SIZE, DETECTOR_SIZE, { fit: "inside", withoutEnlargement: true })
+    const largest = side === "ID" ? ID_SEARCH_SIZES.at(-1)! : DETECTOR_SIZE;
+    const decoded = await image.rotate().resize(largest, largest, { fit: "inside", withoutEnlargement: true })
       .flatten({ background: "white" }).toColourspace("srgb").removeAlpha().raw().toBuffer({ resolveWithObject: true });
     if (decoded.info.channels !== 3) throw new Error("Image channels");
     return { rgb: decoded.data, width: decoded.info.width, height: decoded.info.height };
@@ -76,22 +87,61 @@ async function decodeImage(bytes: Buffer, side: "ID" | "SELFIE"): Promise<Image>
   }
 }
 
-async function embedding(image: Image, side: "ID" | "SELFIE", loaded: Runtime): Promise<Float32Array> {
-  // FaceDetectorYN uses blobFromImage(BGR), scale=1, mean=0, no swapRB.
-  // The pinned ONNX has fixed 640x640 input: pad only its bottom/right in black.
-  const detectorPixels = new Float32Array(3 * DETECTOR_SIZE * DETECTOR_SIZE);
-  for (let y = 0; y < image.height; y++) for (let x = 0; x < image.width; x++) {
-    const src = (y * image.width + x) * 3, dst = y * DETECTOR_SIZE + x;
-    for (let c = 0; c < 3; c++) detectorPixels[c * DETECTOR_SIZE * DETECTOR_SIZE + dst] = image.rgb[src + 2 - c];
+async function resized(image: Image, size: number, angle: number): Promise<Image> {
+  const out = await sharp(image.rgb, { raw: { width: image.width, height: image.height, channels: 3 } })
+    .rotate(angle).resize(size, size, { fit: "inside", withoutEnlargement: true }).raw().toBuffer({ resolveWithObject: true });
+  return { rgb: out.data, width: out.info.width, height: out.info.height };
+}
+
+async function detectFaces(image: Image, loaded: Runtime, minScore: number): Promise<Face[]> {
+  const faces: Face[] = [];
+  for (const top of tileStarts(image.height)) for (const left of tileStarts(image.width)) {
+    // FaceDetectorYN uses blobFromImage(BGR), scale=1, mean=0, no swapRB.
+    // The pinned ONNX has fixed 640x640 input: pad only its bottom/right in black.
+    const pixels = new Float32Array(3 * DETECTOR_SIZE * DETECTOR_SIZE);
+    const rows = Math.min(DETECTOR_SIZE, image.height - top), cols = Math.min(DETECTOR_SIZE, image.width - left);
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const src = ((top + y) * image.width + left + x) * 3, dst = y * DETECTOR_SIZE + x;
+      for (let c = 0; c < 3; c++) pixels[c * DETECTOR_SIZE * DETECTOR_SIZE + dst] = image.rgb[src + 2 - c];
+    }
+    const detections = await loaded.detector.run({
+      [loaded.detector.inputNames[0]]: new loaded.ort.Tensor("float32", pixels, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]),
+    });
+    for (const face of decodeYuNet(detections, DETECTOR_SIZE, DETECTOR_SIZE, minScore) as Face[]) {
+      faces.push({ ...face, box: [face.box[0] + left, face.box[1] + top, face.box[2], face.box[3]],
+        landmarks: face.landmarks.map(([x, y]) => [x + left, y + top]) });
+    }
   }
-  const detections = await loaded.detector.run({
-    [loaded.detector.inputNames[0]]: new loaded.ort.Tensor("float32", detectorPixels, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]),
-  });
-  const faces = decodeYuNet(detections, DETECTOR_SIZE, DETECTOR_SIZE);
-  const face = selectSingleFace(faces, side, image.width, image.height);
+  return mergeTileFaces(faces);
+}
+
+// The selfie is checked once at 640px, as before. The ID stops at the first
+// size and angle where a face is found; larger sizes also give a sharper crop.
+async function findFace(image: Image, side: "ID" | "SELFIE", loaded: Runtime): Promise<{ view: Image; face: Face }> {
+  let loose: { angle: number; size: number; faces: Face[] } | undefined;
+  for (const angle of side === "ID" ? ID_SEARCH_ANGLES : [0]) {
+    let previous = 0;
+    for (const size of side === "ID" ? ID_SEARCH_SIZES : [DETECTOR_SIZE]) {
+      const view = await resized(image, size, angle);
+      const longest = Math.max(view.width, view.height);
+      if (longest <= previous) break; // the photo is smaller than this size
+      previous = longest;
+      const faces = await detectFaces(view, loaded, side === "ID" ? ID_LOOSE_SCORE : STRICT_SCORE);
+      const strict = faces.filter((face) => face.score >= STRICT_SCORE);
+      if (strict.length) return { view, face: selectSingleFace(strict, side, view.width, view.height) };
+      if (faces.length && !loose) loose = { angle, size, faces };
+    }
+  }
+  if (!loose) return selectSingleFace([], side, 0, 0); // throws the "no clear face" error
+  const view = await resized(image, loose.size, loose.angle);
+  return { view, face: selectSingleFace(loose.faces, side, view.width, view.height) };
+}
+
+async function embedding(image: Image, side: "ID" | "SELFIE", loaded: Runtime): Promise<Float32Array> {
+  const { view, face } = await findFace(image, side, loaded);
   let aligned: Float32Array;
   try {
-    aligned = alignRgbFace(image.rgb, image.width, image.height, face.landmarks);
+    aligned = alignRgbFace(view.rgb, view.width, view.height, face.landmarks);
   } catch {
     throw new FaceInputError(`${side}_FACE_UNCLEAR`, `The face in the ${side === "ID" ? "ID photo" : "selfie"} is unclear. Please take a clearer photo.`);
   }
