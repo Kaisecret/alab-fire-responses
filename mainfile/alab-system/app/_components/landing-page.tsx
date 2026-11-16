@@ -86,9 +86,30 @@ export function LandingPage() {
         setMenu(false);
       }
     };
+    // The red underline follows the section being read. The page order differs
+    // from the menu order, so the section that starts lowest above the line wins.
+    const links = Array.from(nav.querySelectorAll<HTMLAnchorElement>('a[href^="#"]'));
+    const syncActive = () => {
+      const line = header.offsetHeight + window.innerHeight * 0.3;
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      let active = links[0];
+      let activeTop = -Infinity;
+      for (const link of links) {
+        const section = link.hash === "#home" ? null : root.querySelector<HTMLElement>(link.hash);
+        const top = section?.getBoundingClientRect().top;
+        if (top === undefined || (!atBottom && top > line)) continue;
+        if (top > activeTop) [active, activeTop] = [link, top];
+      }
+      for (const link of links) {
+        link.classList.toggle("is-active", link === active);
+        if (link === active) link.setAttribute("aria-current", "location");
+        else link.removeAttribute("aria-current");
+      }
+    };
     const syncScroll = () => {
       header.classList.toggle("is-scrolled", window.scrollY > 24);
       scrollTop?.classList.toggle("is-visible", window.scrollY > 400);
+      syncActive();
     };
     const handleScrollTop = () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
