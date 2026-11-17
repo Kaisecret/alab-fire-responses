@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import type { AnalyticsRange, ProvincialAnalytics } from '../../lib/provincial-bfp/analytics';
 import { ProvincialRequestError, requestProvincialJson } from '../../lib/provincial-bfp/client-request';
 import { FireCommandHeader } from './fire-command-header';
-import { DangerDonut, Heatmap, HEAT_RAMP, MunicipalityArrivalRows, StageSteps, TrendBars, bucketLabel, formatMinutes } from './provincial-analytics-charts';
+import { DangerDonut, Heatmap, HEAT_RAMP, StageSteps, TrendBars, bucketLabel, formatMinutes } from './provincial-analytics-charts';
 import styles from './provincial-analytics.module.css';
 
 const RANGES: Array<{ value: AnalyticsRange; label: string; compare: string }> = [
@@ -45,35 +45,35 @@ const CONDITION_ICONS: Record<string, string> = {
 const percent = (value: number | null) => (value == null ? '—' : `${Math.round(value * 100)}%`);
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
-/** The incident count compared with the previous period, for the card badge. */
-function incidentChange(current: number, previous: number) {
-  if (current === previous) return 'Same as before';
-  return `${current > previous ? '▲' : '▼'} ${Math.abs(current - previous)} vs before`;
+/** The incident count compared with the previous period, as a small up/down pill. */
+function incidentDelta(current: number, previous: number, compare: string) {
+  const title = `Compared with ${compare}`;
+  if (current === previous) return { text: '= same', tone: 'flat', title };
+  return { text: `${current > previous ? '▲' : '▼'} ${Math.abs(current - previous)}`, tone: current > previous ? 'up' : 'down', title };
 }
 
-function KpiCard({ tone, icon, badge, badgeTitle, value, unit, label, footer, href }: {
-  tone: 'red' | 'blue' | 'orange' | 'violet'; icon: string; badge: string; badgeTitle?: string;
-  value: React.ReactNode; unit?: string; label: string; footer: string; href?: string;
+function KpiCard({ tone, icon, value, unit, label, note, delta, href }: {
+  tone: 'red' | 'blue' | 'orange' | 'violet'; icon: string; value: React.ReactNode; unit?: string;
+  label: string; note?: string; delta?: { text: string; tone: string; title: string }; href?: string;
 }) {
   const body = (
     <>
       <div className={styles.kpiTop}>
         <span className={styles.kpiChip} aria-hidden="true"><i className={`fa-solid ${icon}`} /></span>
-        <span className={styles.kpiBadge} title={badgeTitle}>{badge}</span>
+        {delta && <span className={`${styles.delta} ${styles[delta.tone]}`} title={delta.title}>{delta.text}</span>}
+        {href && <i className={`fa-solid fa-arrow-right ${styles.kpiGo}`} aria-hidden="true" />}
       </div>
       <div className={styles.kpiValue}>{value}{unit && <small>{unit}</small>}</div>
       <span className={styles.kpiLabel}>{label}</span>
-      <div className={styles.kpiFooter}>
-        <span>{footer}</span>
-        {href && <i className="fa-solid fa-arrow-right" aria-hidden="true" />}
-      </div>
-      <svg className={styles.wave} viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M0 30 C 40 30, 50 8, 90 14 S 150 34, 200 6" fill="none" stroke="currentColor" strokeWidth="2" />
-      </svg>
+      {note && <span className={styles.kpiNote}>{note}</span>}
     </>
   );
   const className = `${styles.kpi} ${styles[tone]}`;
   return href ? <Link href={href} className={className}>{body}</Link> : <div className={className}>{body}</div>;
+}
+
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+  return <div className={styles.stat}><small>{label}</small><b>{value}</b></div>;
 }
 
 function useAnalytics(range: AnalyticsRange, municipalityId: string) {
@@ -143,38 +143,39 @@ export function ProvincialAnalyticsPage() {
     <>
       <FireCommandHeader slotId="provincial-fire-command-header" title="Provincial Fire Response Intelligence & Analytics" icon="fa-chart-pie" />
       <div className={styles.page}>
-        {data && headline ? (
-          <section className={styles.kpis} aria-label="Headline numbers">
-            <KpiCard tone="red" icon="fa-fire" href="/provincial-bfp/incidents"
-              badge={incidentChange(headline.incidents, headline.previousIncidents)} badgeTitle={`Compared with ${compare}`}
-              value={headline.incidents} label="Fire incidents"
-              footer={`${headline.activeNow} active now · ${headline.pendingVerification} pending`} />
-            <KpiCard tone="blue" icon="fa-stopwatch" badge="Report → arrival"
-              value={headline.medianArrivalMinutes ?? '—'} unit={headline.medianArrivalMinutes != null ? 'min' : undefined}
-              label="Median response time" footer={plural(headline.arrivalsMeasured, 'arrival') + ' recorded'} />
-            <KpiCard tone="orange" icon="fa-triangle-exclamation" badge="Level of Danger"
-              value={headline.highDangerShare == null ? '—' : Math.round(headline.highDangerShare * 100)} unit={headline.highDangerShare != null ? '%' : undefined}
-              label="High & critical danger" footer={`${headline.highDangerIncidents} of ${plural(headline.incidents, 'incident')}`} />
-            <KpiCard tone="violet" icon="fa-ban" badge="Verification"
-              value={headline.falseReportShare == null ? '—' : Math.round(headline.falseReportShare * 100)} unit={headline.falseReportShare != null ? '%' : undefined}
-              label="False or rejected reports" footer={`${headline.falseReports} of ${plural(headline.uniqueReports, 'report')}`} />
-          </section>
-        ) : loading && <div className={styles.kpis}>{[0, 1, 2, 3].map((key) => <div key={key} className={styles.skeleton} />)}</div>}
-
-        <div className={styles.filters}>
+        <div className={styles.toolbar}>
           <div className={styles.segment} role="group" aria-label="Period">
             {RANGES.map((item) => (
               <button key={item.value} type="button" aria-pressed={range === item.value} onClick={() => setRange(item.value)}>{item.label}</button>
             ))}
           </div>
           <label className={styles.select}>
-            <span>Municipality</span>
+            <i className="fa-solid fa-location-dot" aria-hidden="true" />
+            <span className={styles.srOnly}>Municipality</span>
             <select value={municipalityId} onChange={(event) => setMunicipalityId(event.target.value)}>
               <option value="">All municipalities</option>
               {data?.allMunicipalities.map((municipality) => <option key={municipality.id} value={municipality.id}>{municipality.name}</option>)}
             </select>
           </label>
         </div>
+
+        {data && headline ? (
+          <section className={styles.kpis} aria-label="Headline numbers">
+            <KpiCard tone="red" icon="fa-fire" href="/provincial-bfp/incidents"
+              delta={incidentDelta(headline.incidents, headline.previousIncidents, compare)}
+              value={headline.incidents} label="Fire incidents"
+              note={`${headline.activeNow} active · ${headline.pendingVerification} pending`} />
+            <KpiCard tone="blue" icon="fa-stopwatch"
+              value={headline.medianArrivalMinutes ?? '—'} unit={headline.medianArrivalMinutes != null ? 'min' : undefined}
+              label="Median response" note={plural(headline.arrivalsMeasured, 'arrival')} />
+            <KpiCard tone="orange" icon="fa-triangle-exclamation"
+              value={headline.highDangerShare == null ? '—' : Math.round(headline.highDangerShare * 100)} unit={headline.highDangerShare != null ? '%' : undefined}
+              label="High & critical" note={`${headline.highDangerIncidents} of ${headline.incidents}`} />
+            <KpiCard tone="violet" icon="fa-ban"
+              value={headline.falseReportShare == null ? '—' : Math.round(headline.falseReportShare * 100)} unit={headline.falseReportShare != null ? '%' : undefined}
+              label="False reports" note={`${headline.falseReports} of ${headline.uniqueReports}`} />
+          </section>
+        ) : loading && <div className={styles.kpis}>{[0, 1, 2, 3].map((key) => <div key={key} className={styles.skeleton} />)}</div>}
 
         {error && (
           <div className={styles.error} role="alert">
@@ -184,98 +185,72 @@ export function ProvincialAnalyticsPage() {
         )}
 
         {!data && loading && (
-          <>
-            <div className={styles.grid21}><div className={styles.skeleton} style={{ height: 320 }} /><div className={styles.skeleton} style={{ height: 320 }} /></div>
-          </>
+          <div className={styles.grid21}><div className={styles.skeleton} style={{ height: 320 }} /><div className={styles.skeleton} style={{ height: 320 }} /></div>
         )}
 
         {data && headline && (
           <>
+            <section className={styles.card}>
+              <SectionHead icon="fa-stopwatch" title="Response time" meta="median per step" />
+              {data.responseStages.some((stage) => stage.medianMinutes != null)
+                ? <StageSteps stages={data.responseStages} />
+                : <p className={styles.empty}>No status changes yet.</p>}
+            </section>
+
             <section className={styles.grid21}>
               <div className={styles.card}>
-                <SectionHead icon="fa-stopwatch" title="Response time by stage" tag="Incident timeline" sub="Median minutes each step took, from report to resolution" />
-                {data.responseStages.some((stage) => stage.medianMinutes != null)
-                  ? <StageSteps stages={data.responseStages} />
-                  : <p className={styles.empty}>No status changes were recorded for incidents in this period.</p>}
-                <MunicipalityArrivalRows rows={data.municipalities} />
-              </div>
-              <div className={styles.card}>
-                <SectionHead icon="fa-chart-column" title="Incident trend" sub={`Fire incidents per ${data.bucket} · hover a ${data.bucket} for details`} />
-                {noIncidents ? <p className={styles.empty}>No fire incidents in this period.</p> : <TrendBars points={data.trend} bucket={data.bucket} />}
-                {!noIncidents && (() => {
+                {(() => {
                   const busiest = data.trend.reduce((best, point) => (point.incidents > best.incidents ? point : best), data.trend[0]);
-                  return (
-                    <div className={styles.minis}>
-                      <div className={styles.mini}><small>Busiest {data.bucket}</small><b>{bucketLabel(busiest.bucket, data.bucket, true)} · {busiest.incidents}</b></div>
-                      <div className={styles.mini}><small>Average per {data.bucket}</small><b>{Math.round((headline.incidents / Math.max(data.trend.length, 1)) * 10) / 10}</b></div>
-                    </div>
-                  );
+                  return <SectionHead icon="fa-chart-column" title="Incident trend"
+                    meta={noIncidents || !busiest ? `per ${data.bucket}` : `busiest ${bucketLabel(busiest.bucket, data.bucket, true)} · ${busiest.incidents}`} />;
                 })()}
+                {noIncidents ? <p className={styles.empty}>No fire incidents.</p> : <TrendBars points={data.trend} bucket={data.bucket} />}
               </div>
-            </section>
-
-            <section>
               <div className={styles.card}>
-                <SectionHead icon="fa-map-location-dot" title="Where fires happen" tag="Municipal summary" sub={"Select a row to open that municipality's incident reports"} />
-                {data.municipalities.length === 0 ? <p className={styles.empty}>No fire incidents in this period.</p> : (
-                  <table className={styles.table}>
-                    <thead><tr><th>Municipality</th><th>Incidents</th><th>High &amp; critical</th><th>Median arrival</th><th>Active now</th><th>Assistance asked</th></tr></thead>
-                    <tbody>
-                      {data.municipalities.map((row) => {
-                        const open = () => router.push(`/provincial-bfp/incident-reports?municipalityId=${row.id}`);
-                        const most = Math.max(...data.municipalities.map((item) => item.incidents), 1);
-                        return (
-                          <tr key={row.id} tabIndex={0} onClick={open} onKeyDown={(event) => { if (event.key === 'Enter') open(); }}>
-                            <td className={styles.name}>{row.name}</td>
-                            <td><span className={styles.inbar}><i style={{ width: `${(row.incidents / most) * 7}rem` }} />{row.incidents}</span></td>
-                            <td>{row.highDangerShare != null && row.highDangerShare >= 0.4
-                              ? <span className={styles.pill} style={{ background: '#FEF2F2', color: '#B91C1C' }}><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {percent(row.highDangerShare)}</span>
-                              : percent(row.highDangerShare)}</td>
-                            <td>{formatMinutes(row.medianArrivalMinutes)}</td>
-                            <td>{row.activeNow
-                              ? <span className={styles.pill} style={{ background: '#FFF1F2', color: '#E23632' }}><i className="fa-solid fa-circle" style={{ fontSize: '.45rem' }} aria-hidden="true" /> {row.activeNow} active</span>
-                              : <span className={styles.dash}>—</span>}</td>
-                            <td>{row.assistanceAsked || <span className={styles.dash}>—</span>}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </section>
-
-            <section className={styles.grid21}>
-              <div className={styles.card}>
-                <SectionHead icon="fa-calendar-week" title="When fires happen" sub="Day of week and hour, in Antique time" />
-                {noIncidents ? <p className={styles.empty}>No fire incidents in this period.</p> : (
+                <SectionHead icon="fa-calendar-week" title="When fires happen" meta="Antique time" />
+                {noIncidents ? <p className={styles.empty}>No fire incidents.</p> : (
                   <>
                     <Heatmap cells={data.heatmap} />
                     <div className={styles.scale}>Fewer <div>{HEAT_RAMP.slice(1).map((color) => <i key={color} style={{ background: color }} />)}</div> More</div>
+                    <WhenSummary cells={data.heatmap} />
                   </>
                 )}
-                {!noIncidents && <WhenSummary cells={data.heatmap} />}
               </div>
-              <div className={styles.card}>
-                <SectionHead icon="fa-location-dot" title="Top barangays" sub="Most incidents, by PSA barangay boundary" />
-                {data.barangays.length === 0 ? <p className={styles.empty}>No incidents with a barangay in this period.</p> : (
-                  <div className={styles.ranked}>
-                    {data.barangays.map((row, index) => (
-                      <div key={`${row.municipality}-${row.barangay}`}>
-                        <span className={styles.rank}>{index + 1}</span>
-                        <span>{row.barangay}<em>{row.municipality}</em></span>
-                        <b className={styles.right}>{row.incidents}</b>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            </section>
+
+            <section className={styles.card}>
+              <SectionHead icon="fa-map-location-dot" title="By municipality" meta="click a row to open reports" />
+              {data.municipalities.length === 0 ? <p className={styles.empty}>No fire incidents.</p> : (
+                <table className={styles.table}>
+                  <thead><tr><th>Municipality</th><th>Incidents</th><th>High &amp; critical</th><th>Median arrival</th><th>Active</th><th aria-label="Open" /></tr></thead>
+                  <tbody>
+                    {data.municipalities.map((row) => {
+                      const open = () => router.push(`/provincial-bfp/incident-reports?municipalityId=${row.id}`);
+                      const most = Math.max(...data.municipalities.map((item) => item.incidents), 1);
+                      return (
+                        <tr key={row.id} tabIndex={0} onClick={open} onKeyDown={(event) => { if (event.key === 'Enter') open(); }}>
+                          <td className={styles.name}>{row.name}</td>
+                          <td><span className={styles.inbar}><i style={{ width: `${(row.incidents / most) * 100}%` }} /><b>{row.incidents}</b></span></td>
+                          <td>{row.highDangerShare != null && row.highDangerShare >= 0.4
+                            ? <span className={`${styles.pill} ${styles.pillHot}`}><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {percent(row.highDangerShare)}</span>
+                            : row.highDangerShare == null ? <span className={styles.dash}>—</span> : percent(row.highDangerShare)}</td>
+                          <td>{row.medianArrivalMinutes == null ? <span className={styles.dash}>—</span> : formatMinutes(row.medianArrivalMinutes)}</td>
+                          <td>{row.activeNow
+                            ? <span className={`${styles.pill} ${styles.pillLive}`}><i className={styles.liveDot} aria-hidden="true" /> {row.activeNow}</span>
+                            : <span className={styles.dash}>—</span>}</td>
+                          <td className={styles.go}><i className="fa-solid fa-chevron-right" aria-hidden="true" /></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </section>
 
             <section className={styles.grid11}>
               <div className={styles.card}>
-                <SectionHead icon="fa-shield-halved" title="Level of Danger" tag="AHP + rules" sub="How dangerous reported fires were, and why" />
-                {noIncidents ? <p className={styles.empty}>No fire incidents in this period.</p> : (
+                <SectionHead icon="fa-shield-halved" title="Level of Danger" />
+                {noIncidents ? <p className={styles.empty}>No fire incidents.</p> : (
                   <>
                     {(() => {
                       const rated = data.danger.levels.reduce((sum, level) => sum + level.incidents, 0);
@@ -297,57 +272,72 @@ export function ProvincialAnalyticsPage() {
                         </div>
                       );
                     })()}
-                    <div className={styles.factors}>
-                      <span className={styles.label}>What raised the danger <em>· in {plural(data.danger.highDangerIncidents, 'High or Critical fire')}</em></span>
-                      {data.danger.conditions.length === 0
-                        ? <p className={styles.empty}>No High or Critical incidents in this period.</p>
-                        : data.danger.conditions.map((condition) => (
-                          <div key={condition.key} className={styles.factor}>
+                    {data.danger.conditions.length > 0 && (
+                      <div className={styles.factors}>
+                        <span className={styles.label}>Top danger factors</span>
+                        {data.danger.conditions.map((condition) => (
+                          <div key={condition.key} className={styles.factor} title={condition.criterion}>
                             <span className={styles.factorIcon} aria-hidden="true"><i className={`fa-solid ${CONDITION_ICONS[condition.key] ?? 'fa-circle-info'}`} /></span>
                             <div>
                               <div className={styles.factorHead}>
-                                <span>{condition.label} <em>· {condition.criterion}</em></span>
-                                <b>{condition.incidents} of {data.danger.highDangerIncidents}</b>
+                                <span>{condition.label}</span>
+                                <b>{condition.incidents}/{data.danger.highDangerIncidents}</b>
                               </div>
                               <div className={styles.factorTrack}><div style={{ width: `${condition.share * 100}%` }} /></div>
                             </div>
                           </div>
                         ))}
-                    </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
               <div className={styles.card}>
-                <SectionHead icon="fa-handshake-angle" title="Inter-municipality coordination" sub="Assistance requests, backup calls and alarm levels" />
-                <div className={styles.minis}>
-                  <div className={styles.mini}>
-                    <small>Assistance requests</small><b>{data.coordination.assistanceRequests}</b>
-                    <small>{data.coordination.accepted} accepted · {data.coordination.partiallyAccepted} partial · {data.coordination.rejected} rejected</small>
-                  </div>
-                  <div className={styles.mini}><small>Median time to respond</small><b>{formatMinutes(data.coordination.medianResponseMinutes)}</b></div>
+                <SectionHead icon="fa-handshake-angle" title="Coordination" />
+                <div className={styles.stats}>
+                  <Stat label="Assistance requests" value={data.coordination.assistanceRequests} />
+                  <Stat label="Accepted" value={data.coordination.accepted + data.coordination.partiallyAccepted} />
+                  <Stat label="Median reply" value={formatMinutes(data.coordination.medianResponseMinutes)} />
+                  <Stat label="Backup calls" value={data.coordination.backupCalls} />
                 </div>
-                <span className={styles.label} style={{ marginTop: '.85rem' }}>Alarm levels declared</span>
+                <span className={styles.label}>Alarm levels</span>
                 <div className={styles.alarms}>
                   {data.coordination.alarms.map((alarm) => (
-                    <div key={alarm.level}><small>{['', '', '2nd', '3rd', '4th'][alarm.level]} alarm</small><b>{alarm.declared}</b></div>
+                    <div key={alarm.level} data-level={alarm.level}><b>{alarm.declared}</b><small>{['', '', '2nd', '3rd', '4th'][alarm.level]} alarm</small></div>
                   ))}
                 </div>
-                <p className={styles.sub} style={{ marginTop: '.6rem' }}>
-                  {plural(data.coordination.backupCalls, 'backup call')} from responders · {data.coordination.backupCallsForwarded} forwarded to the province
-                </p>
-                <span className={styles.label} style={{ marginTop: '.85rem' }}>Gave the most help</span>
-                {data.coordination.topHelpers.length === 0 ? <p className={styles.empty}>No assistance was given in this period.</p> : (
-                  <div className={styles.helpers}>
-                    {data.coordination.topHelpers.map((helper) => <div key={helper.name}><span>{helper.name}</span><b>{plural(helper.responses, 'response')}</b></div>)}
-                  </div>
+                {data.coordination.topHelpers.length > 0 && (
+                  <>
+                    <span className={styles.label}>Gave the most help</span>
+                    <div className={styles.helpers}>
+                      {data.coordination.topHelpers.map((helper) => <div key={helper.name}><span>{helper.name}</span><b>{helper.responses}</b></div>)}
+                    </div>
+                  </>
                 )}
               </div>
             </section>
 
-            <section className={styles.grid11}>
+            <section className={styles.grid111}>
               <div className={styles.card}>
-                <SectionHead icon="fa-fire" title="Fire type" sub="One incident can have up to 3 kinds of fire" />
-                {data.fireTypes.counts.length === 0 ? <p className={styles.empty}>No fire incidents in this period.</p> : (
+                <SectionHead icon="fa-location-dot" title="Top barangays" />
+                {data.barangays.length === 0 ? <p className={styles.empty}>No barangay data.</p> : (
+                  <div className={styles.ranked}>
+                    {data.barangays.map((row, index) => (
+                      <div key={`${row.municipality}-${row.barangay}`}>
+                        <span className={styles.rank}>{index + 1}</span>
+                        <span className={styles.rankName}>{row.barangay}<em>{row.municipality}</em>
+                          <i className={styles.rankBar} style={{ width: `${(row.incidents / data.barangays[0].incidents) * 100}%` }} aria-hidden="true" />
+                        </span>
+                        <b className={styles.right}>{row.incidents}</b>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className={styles.card}>
+                <SectionHead icon="fa-fire" title="Fire type"
+                  meta={data.fireTypes.multiType > 0 ? `${data.fireTypes.multiType} with 2+ types` : undefined} />
+                {data.fireTypes.counts.length === 0 ? <p className={styles.empty}>No fire incidents.</p> : (
                   <div className={styles.bars}>
                     {data.fireTypes.counts.map((row) => {
                       const most = data.fireTypes.counts[0].incidents;
@@ -355,44 +345,36 @@ export function ProvincialAnalyticsPage() {
                       return (
                         <div key={row.type} className={styles.bar}>
                           <span>{type.label}</span>
-                          <div style={{ width: `${(row.incidents / most) * 100}%`, background: type.color }} />
+                          <div className={styles.barTrack}><div style={{ width: `${(row.incidents / most) * 100}%`, background: type.color }} /></div>
                           <b>{row.incidents}</b>
                         </div>
                       );
                     })}
                   </div>
                 )}
-                {data.fireTypes.multiType > 0 && (
-                  <p className={styles.note}>
-                    {plural(data.fireTypes.multiType, 'incident')} had more than one fire type
-                    {data.fireTypes.topCombination && `, most often ${data.fireTypes.topCombination.types.map((type) => FIRE_TYPES[type]?.label ?? type).join(' + ')}`}.
-                  </p>
-                )}
               </div>
               <div className={styles.card}>
-                <SectionHead icon="fa-mobile-screen-button" title="How fires are reported" sub="Resident app vs phone calls logged by Municipal BFP" />
-                {data.reporting.app + data.reporting.phone === 0 ? <p className={styles.empty}>No fire incidents in this period.</p> : (
+                <SectionHead icon="fa-mobile-screen-button" title="How fires are reported" />
+                {data.reporting.app + data.reporting.phone === 0 ? <p className={styles.empty}>No fire incidents.</p> : (
                   <>
                     <div className={styles.split} aria-hidden="true">
                       {data.reporting.app > 0 && <div style={{ flex: data.reporting.app, background: 'var(--series-1)' }} />}
                       {data.reporting.phone > 0 && <div style={{ flex: data.reporting.phone, background: 'var(--series-2)' }} />}
                     </div>
-                    <div className={styles.legendRow}><span><i className={styles.swatch} style={{ background: 'var(--series-1)' }} />Resident app</span><b>{data.reporting.app}</b></div>
-                    <div className={styles.legendRow}><span><i className={styles.swatch} style={{ background: 'var(--series-2)' }} />Phone call</span><b>{data.reporting.phone}</b></div>
+                    <div className={styles.legend}>
+                      <span><i className={styles.swatch} style={{ background: 'var(--series-1)' }} />Resident app <b>{data.reporting.app}</b></span>
+                      <span><i className={styles.swatch} style={{ background: 'var(--series-2)' }} />Phone call <b>{data.reporting.phone}</b></span>
+                    </div>
                   </>
                 )}
-                <div className={styles.minis}>
-                  <div className={styles.mini}><small>Reports per incident</small><b>{data.reporting.reportsPerIncident ?? '—'}</b></div>
-                  <div className={styles.mini}><small>App reports with photos</small><b>{percent(data.reporting.photoShare)}</b></div>
-                  <div className={styles.mini}><small>GPS within 50 m</small><b>{percent(data.reporting.preciseGpsShare)}</b></div>
-                  <div className={styles.mini}><small>Median time to verify</small><b>{formatMinutes(data.reporting.medianVerifyMinutes)}</b></div>
+                <div className={styles.stats}>
+                  <Stat label="With photos" value={percent(data.reporting.photoShare)} />
+                  <Stat label="Time to verify" value={formatMinutes(data.reporting.medianVerifyMinutes)} />
                 </div>
               </div>
             </section>
 
-            <p className={styles.footnote}>
-              Analytics summarize recorded data. Verification, dispatch and response decisions stay with BFP personnel.
-            </p>
+            <p className={styles.footnote}>Decision support only. BFP personnel make the final call.</p>
           </>
         )}
       </div>
@@ -400,14 +382,12 @@ export function ProvincialAnalyticsPage() {
   );
 }
 
-function SectionHead({ icon, title, tag, sub }: { icon: string; title: string; tag?: string; sub: string }) {
+function SectionHead({ icon, title, meta }: { icon: string; title: string; meta?: string }) {
   return (
     <header className={styles.head}>
       <span className={styles.icon} aria-hidden="true"><i className={`fa-solid ${icon}`} /></span>
-      <div>
-        <h2>{title}{tag && <span className={styles.tag}>{tag}</span>}</h2>
-        <p className={styles.sub}>{sub}</p>
-      </div>
+      <h2>{title}</h2>
+      {meta && <span className={styles.meta}>{meta}</span>}
     </header>
   );
 }
@@ -423,10 +403,10 @@ function WhenSummary({ cells }: { cells: ProvincialAnalytics['heatmap'] }) {
   const night = byHour.filter((_, hour) => hour >= 22 || hour < 5).reduce((sum, value) => sum + value, 0);
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   return (
-    <div className={`${styles.minis} ${styles.minis3}`}>
-      <div className={styles.mini}><small>Busiest time</small><b>{hourName(start)}–{hourName((start + 3) % 24)}</b></div>
-      <div className={styles.mini}><small>Busiest day</small><b>{days[byDay.indexOf(Math.max(...byDay))]}</b></div>
-      <div className={styles.mini}><small>At night (10 PM–5 AM)</small><b>{percent(total ? night / total : null)}</b></div>
+    <div className={`${styles.stats} ${styles.stats3}`}>
+      <Stat label="Peak hours" value={`${hourName(start)}–${hourName((start + 3) % 24)}`} />
+      <Stat label="Busiest day" value={days[byDay.indexOf(Math.max(...byDay))]} />
+      <Stat label="At night" value={percent(total ? night / total : null)} />
     </div>
   );
 }

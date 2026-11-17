@@ -22,7 +22,7 @@ const STEP_NODES = [
 
 /**
  * The Incident Timeline as steps, with the median minutes each step took
- * between them. The slowest step is marked so the delay stands out.
+ * between them. The slowest step's chip turns red so the delay stands out.
  */
 export function StageSteps({ stages }: { stages: ProvincialAnalytics['responseStages'] }) {
   const measured = stages.filter((stage) => stage.medianMinutes != null);
@@ -34,6 +34,7 @@ export function StageSteps({ stages }: { stages: ProvincialAnalytics['responseSt
         {STEP_NODES.map((node, index) => {
           const reached = index === 0 || stages[index - 1].medianMinutes != null;
           const next = stages[index];
+          const slow = next === slowest && measured.length > 1;
           return (
             <React.Fragment key={node.label}>
               <li className={styles.step}>
@@ -42,9 +43,9 @@ export function StageSteps({ stages }: { stages: ProvincialAnalytics['responseSt
               </li>
               {next && (
                 <li className={`${styles.stepLink} ${next.medianMinutes == null ? styles.stepMissing : ''}`}
-                  aria-label={`${next.label}: ${next.medianMinutes == null ? 'not recorded' : formatMinutes(next.medianMinutes)}`}>
-                  <span className={`${styles.chip} ${next === slowest && measured.length > 1 ? styles.chipSlow : ''}`}>
-                    {next.medianMinutes == null ? 'No data' : formatMinutes(next.medianMinutes)}
+                  aria-label={`${next.label}: ${next.medianMinutes == null ? 'not recorded' : formatMinutes(next.medianMinutes)}${slow ? ', slowest step' : ''}`}>
+                  <span className={`${styles.chip} ${slow ? styles.chipSlow : ''}`} title={slow ? 'Slowest step' : undefined}>
+                    {next.medianMinutes == null ? '—' : formatMinutes(next.medianMinutes)}
                   </span>
                 </li>
               )}
@@ -55,30 +56,10 @@ export function StageSteps({ stages }: { stages: ProvincialAnalytics['responseSt
       {slowest && measured.length > 1 && (
         <p className={styles.slowNote}>
           <i className="fa-solid fa-hourglass-half" aria-hidden="true" />
-          <span>Slowest step: <b>{slowest.label}</b> ({formatMinutes(slowest.medianMinutes)} median)</span>
+          <span>Slowest: <b>{slowest.label}</b> · {formatMinutes(slowest.medianMinutes)}</span>
         </p>
       )}
     </>
-  );
-}
-
-/** Median minutes from report to responder arrival, per municipality. */
-export function MunicipalityArrivalRows({ rows }: { rows: ProvincialAnalytics['municipalities'] }) {
-  const measured = rows.filter((row) => row.medianArrivalMinutes != null)
-    .sort((a, b) => (b.medianArrivalMinutes ?? 0) - (a.medianArrivalMinutes ?? 0));
-  if (!measured.length) return <p className={styles.empty}>No responder arrivals were recorded in this period.</p>;
-  const longest = Math.max(1, ...measured.map((row) => row.medianArrivalMinutes ?? 0));
-  return (
-    <div className={styles.muniRows}>
-      <span className={styles.label}>Report → arrival, by municipality</span>
-      {measured.slice(0, 8).map((row) => (
-        <div key={row.id} className={styles.muniRow}>
-          <span title={row.name}>{row.name}</span>
-          <div className={styles.arrivalTrack}><div style={{ width: `${((row.medianArrivalMinutes ?? 0) / longest) * 100}%` }} /></div>
-          <span className={styles.right}>{formatMinutes(row.medianArrivalMinutes)}</span>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -97,11 +78,11 @@ export function bucketLabel(bucket: string, kind: string, long = false) {
 /** Incidents per bucket as columns, with the average and a hover tooltip. */
 export function TrendBars({ points, bucket }: { points: ProvincialAnalytics['trend']; bucket: string }) {
   const [hover, setHover] = useState<number | null>(null);
-  const width = 470;
+  const width = 640;
   const height = 230;
   const left = 28;
   const right = 8;
-  const top = 22;
+  const top = 18;
   const bottom = 26;
   const max = Math.max(2, ...points.map((point) => point.incidents));
   const step = (width - left - right) / Math.max(points.length, 1);
@@ -109,7 +90,7 @@ export function TrendBars({ points, bucket }: { points: ProvincialAnalytics['tre
   const y = (value: number) => top + (height - top - bottom) * (1 - value / max);
   const average = points.reduce((sum, point) => sum + point.incidents, 0) / Math.max(points.length, 1);
   const ticks = [0, Math.round(max / 2), max];
-  const labelEvery = Math.ceil(points.length / 6);
+  const labelEvery = Math.ceil(points.length / 8);
   const active = hover == null ? null : points[hover];
 
   return (
@@ -145,8 +126,7 @@ export function TrendBars({ points, bucket }: { points: ProvincialAnalytics['tre
         {average > 0 && (
           <>
             <line x1={left} x2={width - right} y1={y(average)} y2={y(average)} stroke="#64748B" strokeDasharray="4 4" />
-            <line x1={left + 4} x2={left + 22} y1={8} y2={8} stroke="#64748B" strokeDasharray="4 4" />
-            <text x={left + 28} y={12} fontSize="10" fontWeight="800" fill="#64748B">Average ({Math.round(average * 10) / 10} per {bucket})</text>
+            <text x={left + 4} y={y(average) - 5} fontSize="10" fontWeight="800" fill="#64748B">avg {Math.round(average * 10) / 10}</text>
           </>
         )}
       </svg>
