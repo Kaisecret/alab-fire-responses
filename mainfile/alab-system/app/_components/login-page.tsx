@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { residentAuthFontStyles } from "../_content/resident-auth-font";
 import { loginMarkup, loginStyles } from "../_content/login-content";
+import { ResidentForgotPassword } from "./resident-forgot-password";
 
 const fireLoaderStyles = `
   /* =====================================================================
@@ -150,6 +151,8 @@ export function LoginPage({
   const rootRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  // The identifier typed so far, while the forgot-password dialog is open.
+  const [forgotFor, setForgotFor] = useState<string | null>(null);
   const lockoutSecondsRef = useRef(0);
   lockoutSecondsRef.current = lockoutSeconds;
 
@@ -406,7 +409,7 @@ export function LoginPage({
 
     const handleForgot = (event: Event) => {
       event.preventDefault();
-      window.alert("Password reset link sent to your email.");
+      setForgotFor((root.querySelector<HTMLInputElement>("#username") || identifier).value.trim());
     };
 
     const handleRegister = (event: Event) => {
@@ -478,6 +481,20 @@ export function LoginPage({
         className={`login-page-root ${fontVariableClassName}`}
         dangerouslySetInnerHTML={{ __html: loginMarkup }}
       />
+      {forgotFor !== null && (
+        <ResidentForgotPassword
+          initialIdentifier={forgotFor}
+          onClose={() => setForgotFor(null)}
+          onDone={(name) => {
+            setForgotFor(null);
+            const root = rootRef.current;
+            const idInput = root?.querySelector<HTMLInputElement>("#username");
+            const pwdInput = root?.querySelector<HTMLInputElement>("#password");
+            if (idInput && name) idInput.value = name;
+            if (pwdInput) { pwdInput.value = ""; pwdInput.focus(); }
+          }}
+        />
+      )}
       {isLoading && (
         <div className="mbfp-fire-loader-overlay">
           <div className="mbfp-fire-loader-stage">

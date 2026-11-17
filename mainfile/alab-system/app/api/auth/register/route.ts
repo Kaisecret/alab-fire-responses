@@ -59,6 +59,7 @@ export async function POST(request: Request) {
     const pending = await getDatabase().query<{ payload: RegistrationPayload }>(
       `select payload from registration_otps
         where id = $1 and consumed_at is not null
+          and coalesce(payload->>'purpose', '') <> 'PASSWORD_RESET'
           and consumed_at > now() - interval '30 minutes'`, [phoneVerificationId],
     );
     if (!pending.rowCount) return NextResponse.json({ error: "Your verification has expired. Please request a new code." }, { status: 400 });
