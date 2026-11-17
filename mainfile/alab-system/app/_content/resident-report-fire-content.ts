@@ -936,6 +936,75 @@ export const reportFireStyles = `
     .btn-primary, .btn-cancel { min-height: 3.25rem; }
   }
   @media (prefers-reduced-motion: reduce) { .report-form-shell, .location-status.is-improving, .location-status.is-locating, .location-map-pulse { animation: none; } }
+
+  /* PC only (1280px and wider). Phones and tablets keep the layouts above. */
+  @media (min-width: 1280px) {
+    .report-page-root { padding-bottom: 3rem; background: radial-gradient(1100px 420px at 50% -170px, #FFE4E0 0%, rgba(255, 228, 224, 0) 72%), #F6F6F7; }
+    .report-page-root .report-form-shell { max-width: 1180px; padding: 2.25rem 2.5rem 1.5rem; }
+    .report-page-root .report-form-heading { margin-bottom: 1.25rem; }
+    .report-page-root .report-eyebrow { font-size: 1.6rem; letter-spacing: .01em; }
+    .report-page-root .report-eyebrow::before { width: 2.4rem; height: 4px; }
+
+    /* Safety reminder as a strong alert strip */
+    .report-page-root .warning-banner { gap: 1.15rem; margin-bottom: 1.5rem; padding: 1.15rem 1.4rem; border: 0; border-radius: 1.25rem; background: linear-gradient(120deg, #A3140F 0%, #D21F12 55%, #EF4136 100%); box-shadow: 0 16px 34px -18px rgba(163, 20, 15, .65); }
+    .report-page-root .warning-banner-icon { width: 3.2rem; height: 3.2rem; flex-basis: 3.2rem; border-radius: 1rem; background: rgba(255, 255, 255, .16); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .3); }
+    .report-page-root .warning-banner h2 { color: #fff; font-size: 1.15rem; }
+    .report-page-root .warning-banner p { color: rgba(255, 255, 255, .9); font-size: .95rem; }
+
+    /* Every step is one card with its title inside */
+    .report-page-root .two-col-grid { gap: 1.5rem; margin-bottom: 1.5rem; }
+    .report-page-root .step-section,
+    .report-page-root .report-detail-grid { margin-bottom: 1.5rem; padding: 1.5rem 1.6rem; border: 1px solid #ECEEF2; border-radius: 1.35rem; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 10px 28px rgba(15, 23, 42, .05); }
+    .report-page-root .two-col-grid > .step-section { display: flex; flex-direction: column; margin-bottom: 0; }
+    .report-page-root .two-col-grid > .step-section > .location-box { flex: 1 1 auto; border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
+    .report-page-root .location-box[data-location-card] .location-details { padding: 0; }
+    .report-page-root .landmark-box { padding: 0; }
+
+    .report-page-root .step-title,
+    .report-page-root .field-label { margin-bottom: 1rem; font-size: .92rem; }
+    .report-page-root .step-number { width: 2rem; height: 2rem; flex-basis: 2rem; font-size: .82rem; }
+    .report-page-root .field-label .step-number { width: 2rem; height: 2rem; flex-basis: 2rem; font-size: .82rem; }
+    .report-page-root .location-status { padding: .4rem .7rem; font-size: .68rem; }
+
+    .report-page-root .location-details h4 { font-size: 1.05rem; }
+    .report-page-root .location-detecting-state,
+    .report-page-root .location-address-row { font-size: .84rem; }
+    .report-page-root .btn-small-outline { min-height: 2.9rem; border-radius: .85rem; font-size: .86rem; }
+    .report-page-root .landmark-name { font-size: 1.02rem; }
+    .report-page-root .landmark-status { font-size: .68rem; }
+    .report-page-root .landmark-input { min-height: 3.1rem; border-radius: .85rem; font-size: .9rem; }
+    .report-page-root .landmark-helper { font-size: .84rem; }
+
+    /* Fire type tiles */
+    .report-page-root .type-multi-note { margin: -.4rem 0 1rem; font-size: .88rem; }
+    .report-page-root .type-grid { gap: 1rem; }
+    .report-page-root .type-btn { min-height: 8.5rem; gap: .8rem; border-radius: 1.15rem; background: #FAFBFC; color: #475569; font-size: .92rem; font-weight: 750; }
+    .report-page-root .type-btn svg { width: 2.2rem; height: 2.2rem; }
+    .report-page-root .type-btn:hover { background: #fff; }
+    .report-page-root .type-btn.selected { background: linear-gradient(145deg, #FFF4F2, #FFFFFF); }
+    .report-page-root .quick-tactical-row { padding: 1.2rem 1.3rem; border-radius: 1.1rem; }
+    .report-page-root .quick-pill-toggle { min-height: 3.6rem; padding: .85rem 1rem; }
+    .report-page-root .quick-pill-body strong { font-size: .9rem; }
+    .report-page-root .quick-pill-body small { font-size: .76rem; }
+
+    /* Photo */
+    .report-page-root .field-helper { font-size: .86rem; }
+    .report-page-root .photo-upload { min-height: 9.5rem; border-radius: 1.1rem; }
+    .report-page-root .photo-upload svg { width: 2.1rem; height: 2.1rem; }
+    .report-page-root .photo-upload strong { font-size: .98rem; }
+    .report-page-root .photo-upload span { font-size: .82rem; }
+    .report-page-root .photo-thumb-item,
+    .report-page-root .photo-add-another-btn { width: 8rem; height: 8rem; }
+
+    /* Send button stays in reach: a floating bar at the bottom of the screen */
+    .report-page-root .form-footer { position: sticky; bottom: 1.25rem; z-index: 20; grid-template-columns: minmax(0, 1fr) 12rem; gap: .85rem; margin-top: .5rem; padding: .85rem; border: 1px solid #ECEEF2; border-radius: 1.25rem; background: rgba(255, 255, 255, .94); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 18px 40px -12px rgba(15, 23, 42, .22); }
+    .report-page-root .btn-primary { min-height: 3.6rem; border-radius: 1rem; font-size: 1rem; font-weight: 850; letter-spacing: .02em; }
+    .report-page-root .btn-cancel { min-height: 3.6rem; border-radius: 1rem; font-size: .92rem; font-weight: 750; }
+    .report-page-root .btn-small-outline { font-weight: 750; }
+    .report-page-root .report-submit-error { font-size: .9rem; }
+    /* The floating bar already shows the send button, so the scroll hint is not needed. */
+    .report-page-root .scroll-down-btn { display: none; }
+  }
 `;
 
 export const reportFireMarkup = `

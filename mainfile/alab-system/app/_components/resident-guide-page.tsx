@@ -5522,4 +5522,79 @@ const residentGuideCSS = `
       font-size: 0.76rem;
     }
   }
+
+  /* PC only (1280px and wider). Phones and tablets keep the layouts above. */
+  @media (min-width: 1280px) {
+    .rg-root { background: radial-gradient(1100px 420px at 50% -170px, #FFE4E0 0%, rgba(255, 228, 224, 0) 72%), #F6F6F7; }
+    .rg-root .rg-main-layout { max-width: 1320px; padding: 2.25rem 2.5rem 3.5rem; }
+
+    .rg-root .rg-top-section { align-items: flex-end; margin-bottom: 1.6rem; }
+    .rg-root .rg-title-area h1 { font-size: 2.1rem; letter-spacing: -0.025em; }
+    .rg-root .rg-title-area p { margin-top: 0.4rem; font-size: 1rem; }
+    .rg-root .rg-search-wrapper { width: 440px; }
+    .rg-root .rg-search-input { padding: 1rem 2.6rem 1rem 3rem; border-color: #ECEEF2; font-size: 0.95rem; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 22px rgba(15, 23, 42, 0.05); }
+
+    .rg-root .rg-categories { gap: 0.7rem; margin-bottom: 1.75rem; }
+    .rg-root .rg-category-pill { padding: 0.7rem 1.3rem; border-color: #ECEEF2; font-size: 0.9rem; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }
+    .rg-root .rg-category-pill:focus-visible { outline: 3px solid rgba(212, 20, 11, 0.3); outline-offset: 2px; }
+
+    .rg-root .rg-content-grid { grid-template-columns: minmax(0, 1fr) 360px; gap: 1.75rem; }
+
+    /* Hero: illustration beside the title, four step cards across the full width */
+    .rg-root .rg-hero-section { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); grid-template-areas: "img title" "img sub" "steps steps"; align-items: center; column-gap: 1.75rem; row-gap: 0; margin-bottom: 1.75rem; padding: 1.75rem 2rem 2rem; border-color: #ECEEF2; border-radius: 1.5rem; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 28px rgba(15, 23, 42, 0.05); }
+    .rg-root .rg-hero-section::before { width: 360px; background: radial-gradient(circle at 20% 30%, #FFE4E0 0%, rgba(255, 228, 224, 0) 70%); }
+    .rg-root .rg-hero-content { display: contents; }
+    .rg-root .rg-hero-img { grid-area: img; width: 9.5rem; }
+    .rg-root .rg-hero-content > h2.rg-desktop-only { grid-area: title; align-self: end; position: relative; z-index: 1; margin-bottom: 0.35rem; font-size: 1.75rem; letter-spacing: -0.02em; }
+    .rg-root .rg-hero-content > p.rg-desktop-only { grid-area: sub; align-self: start; position: relative; z-index: 1; margin-bottom: 0; font-size: 1rem; }
+    .rg-root .rg-steps-row { grid-area: steps; position: relative; z-index: 1; gap: 1rem; margin-top: 1.5rem; }
+    .rg-root .rg-step { padding: 1.15rem 0.8rem 1.05rem; border: 1px solid #EFF1F4; border-radius: 1.15rem; background: #FAFBFC; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease; }
+    .rg-root .rg-step:hover { transform: translateY(-3px); border-color: #FBD0CB; background: #fff; box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08); }
+    .rg-root .rg-step:not(:last-child)::after { display: none; }
+    .rg-root .rg-step-icon-wrapper { width: 4.4rem; height: 4.4rem; margin-bottom: 0.8rem; background: #fff; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08); }
+    .rg-root .rg-step-icon-wrapper img { width: 2.6rem; height: 2.6rem; }
+    .rg-root .rg-step-number { width: 1.6rem; height: 1.6rem; font-size: 0.8rem; }
+    .rg-root .rg-step h3 { margin-bottom: 0.3rem; font-size: 0.98rem; }
+    .rg-root .rg-step p { max-width: none; font-size: 0.82rem; line-height: 1.45; }
+
+    /* Guide cards */
+    .rg-root .rg-cards-grid { gap: 1.25rem; }
+    .rg-root .rg-main-card { padding: 1.5rem; border-color: #ECEEF2; border-radius: 1.35rem; font-family: inherit; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 22px rgba(15, 23, 42, 0.04); }
+    .rg-root .rg-main-card:hover { transform: translateY(-3px); box-shadow: 0 16px 34px rgba(15, 23, 42, 0.09); }
+    .rg-root .rg-main-card:focus-visible,
+    .rg-root .rg-recent-item:focus-visible,
+    .rg-root .rg-step:focus-visible { outline: 3px solid rgba(212, 20, 11, 0.3); outline-offset: 2px; }
+    .rg-root .rg-card-icon-header { gap: 1rem; margin-bottom: 0.9rem; }
+    .rg-root .rg-card-icon { width: 3.3rem; height: 3.3rem; border-radius: 1rem; }
+    .rg-root .rg-card-icon svg { width: 1.6rem; height: 1.6rem; }
+    .rg-root .rg-card-title { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.01em; }
+    .rg-root .rg-card-desc { margin-bottom: 1.35rem; font-size: 0.92rem; line-height: 1.55; }
+    .rg-root .rg-card-footer { padding-top: 1rem; border-top: 1px solid #F1F2F4; font-size: 0.9rem; }
+    .rg-root .rg-card-footer svg { transition: transform 0.2s ease; }
+    .rg-root .rg-main-card:hover .rg-card-footer svg { transform: translateX(4px); }
+
+    /* More guides */
+    .rg-root .rg-recent-section { margin-top: 1.75rem; padding: 1.6rem; border-color: #ECEEF2; border-radius: 1.35rem; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 22px rgba(15, 23, 42, 0.04); }
+    .rg-root .rg-recent-header { margin-bottom: 1.2rem; }
+    .rg-root .rg-recent-title { font-size: 1.15rem; font-weight: 800; }
+    .rg-root .rg-recent-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .rg-root .rg-recent-item { min-width: 0; gap: 1rem; padding: 1rem 1.15rem; border-color: #EFF1F4; border-radius: 1rem; font-family: inherit; }
+    .rg-root .rg-recent-item:hover { background: #FFF8F7; }
+    .rg-root .rg-recent-item-icon { width: 3rem; height: 3rem; border-radius: 0.85rem; }
+    .rg-root .rg-recent-item-title { font-size: 0.96rem; }
+    .rg-root .rg-recent-item-desc { font-size: 0.82rem; }
+
+    /* Sidebar stays in view while reading */
+    .rg-root .rg-sidebar { position: sticky; top: 1.5rem; gap: 1.5rem; }
+    .rg-root .rg-sidebar-card { padding: 1.5rem; border-color: #ECEEF2; border-radius: 1.35rem; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 22px rgba(15, 23, 42, 0.04); }
+    .rg-root .rg-sidebar-title { margin-bottom: 1rem; padding-bottom: 0.9rem; font-size: 1.05rem; font-weight: 800; }
+    .rg-root .rg-reminder-list li { margin-bottom: 0.8rem; padding-left: 1.15rem; font-size: 0.92rem; line-height: 1.5; }
+    .rg-root .rg-reminder-list li::before { top: 0.55rem; width: 6px; height: 6px; }
+    .rg-root .rg-contacts-list { gap: 0.6rem; }
+    .rg-root .rg-contact-item { gap: 0.85rem; padding: 0.7rem 0.75rem; border-radius: 0.9rem; background: #F8F9FB; }
+    .rg-root .rg-contact-icon { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; padding: 0.55rem; border-radius: 0.75rem; background: #fff; color: var(--primary-red); box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08); }
+    .rg-root .rg-contact-label { font-size: 0.88rem; }
+    .rg-root .rg-contact-desc { font-size: 0.76rem; }
+    .rg-root .rg-contact-number { font-size: 0.92rem; white-space: nowrap; }
+  }
 `;

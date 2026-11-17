@@ -160,7 +160,7 @@ export async function createResidentFireReport(userId: string, input: FireReport
       [
         reportId, userId, now, initialStatus,
         linkedIncident
-          ? `This fire was already reported (${linkedIncident.referenceNumber}). Your report and photos were added to it.`
+          ? "Your fire report was received and added to the BFP alert for this fire."
           : "Your fire report was submitted and is pending verification.",
       ],
     );
@@ -342,9 +342,14 @@ export async function listResidentReports(userId: string) {
     id: string; reference_number: string; status: FireReportStatus; fire_type: string; submitted_at: string;
     municipality: string | null; barangay: string | null; calculated_severity: string | null; severity_score: number | null;
   }>(
-    `select fr.id, fr.reference_number, fr.status, fr.fire_type, fr.submitted_at, m.name as municipality, b.name as barangay,
+    // A report that joined another resident's fire lists that fire's status,
+    // so the second reporter sees "Submitted" or "Responding", not a dead end.
+    `select fr.id, fr.reference_number,
+            case when fr.status = 'DUPLICATE' and root.id is not null then root.status else fr.status end as status,
+            fr.fire_type, fr.submitted_at, m.name as municipality, b.name as barangay,
             fr.calculated_severity, fr.severity_score
        from fire_reports fr left join resident_profiles rp on rp.id = fr.resident_profile_id
+       left join fire_reports root on root.id = fr.duplicate_of_report_id
        left join municipalities m on m.id = fr.municipality_id left join barangays b on b.id = fr.barangay_id
       where rp.user_id = $1 or exists (
         select 1 from resident_fire_report_follows follow

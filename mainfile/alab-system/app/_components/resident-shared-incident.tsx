@@ -32,10 +32,10 @@ const TEXT = {
     reportedBy: (n: number) => `Reported by ${n} residents`,
     handling: "BFP is handling this fire",
     waiting: "Waiting for BFP",
-    alreadyReported: "Already reported",
+    received: "Report received",
     otherPhotos: "Photos from other reporters",
-    linkedTitle: "This fire is already reported",
-    linkedBody: "Your photos were added. BFP is on it.",
+    linkedTitle: "Your report was received",
+    linkedBody: "Thank you. Your report and photos were added to the BFP alert for this fire.",
     joinedTitle: (n: number) => n === 1 ? "1 more resident reported this fire" : `${n} more residents reported this fire`,
     joinedBody: "Their photos help BFP see the fire.",
     gotIt: "Got it",
@@ -49,10 +49,10 @@ const TEXT = {
     reportedBy: (n: number) => `Iniulat ng ${n} residente`,
     handling: "Hinahawakan na ito ng BFP",
     waiting: "Hinihintay ang BFP",
-    alreadyReported: "Naiulat na",
+    received: "Natanggap ang ulat",
     otherPhotos: "Larawan ng ibang nag-ulat",
-    linkedTitle: "Naiulat na ang sunog na ito",
-    linkedBody: "Naidagdag ang iyong mga larawan. Kumikilos na ang BFP.",
+    linkedTitle: "Natanggap ang iyong ulat",
+    linkedBody: "Salamat. Naidagdag ang iyong ulat at mga larawan sa alerto ng BFP para sa sunog na ito.",
     joinedTitle: (n: number) => `${n} pang residente ang nag-ulat ng sunog na ito`,
     joinedBody: "Nakatutulong sa BFP ang kanilang mga larawan.",
     gotIt: "Sige",
@@ -66,10 +66,10 @@ const TEXT = {
     reportedBy: (n: number) => `Ginreport sang ${n} ka residente`,
     handling: "Ginaasikaso na ini sang BFP",
     waiting: "Ginahulat ang BFP",
-    alreadyReported: "Naireport na",
+    received: "Nabaton ang report",
     otherPhotos: "Litrato sang iban nga nagreport",
-    linkedTitle: "Naireport na ini nga sunog",
-    linkedBody: "Gin-dugang ang imo mga litrato. Nagahulag na ang BFP.",
+    linkedTitle: "Nabaton ang imo report",
+    linkedBody: "Salamat. Gin-dugang ang imo report kag mga litrato sa alerto sang BFP para sini nga sunog.",
     joinedTitle: (n: number) => `${n} pa ka residente ang nagreport sini nga sunog`,
     joinedBody: "Nagabulig sa BFP ang ila mga litrato.",
     gotIt: "Sige",
@@ -125,7 +125,7 @@ const styles = `
   .rsi-stage:focus-visible, .rsi-thumb:focus-visible, .rsi-arrow:focus-visible, .rsi-btn:focus-visible, .rsi-x:focus-visible { outline:3px solid rgba(37,99,235,.35); outline-offset:2px; }
   @keyframes rsiPhotoIn { from { opacity:0; } to { opacity:1; } }
 
-  /* "Already reported" popup */
+  /* "Report received" popup */
   .rsi-overlay { position:fixed; inset:0; z-index:1200; display:flex; align-items:center; justify-content:center; padding:max(1.25rem, env(safe-area-inset-top)) 1.1rem max(1.25rem, env(safe-area-inset-bottom)); overflow-y:auto; background:rgba(15,23,42,.55); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); animation:rsiFade .2s ease both; }
   .rsi-modal { position:relative; width:100%; max-width:24rem; max-height:calc(100dvh - 2.5rem); margin:auto; padding:1.6rem 1.25rem 1.3rem; overflow-y:auto; border-radius:1.4rem; background:#fff; text-align:center; box-shadow:0 30px 60px -30px rgba(15,23,42,.6); animation:rsiRise .32s cubic-bezier(.16,1,.3,1) both; }
   .rsi-x { position:absolute; top:.75rem; right:.75rem; z-index:2; width:2.1rem; height:2.1rem; border:0; border-radius:50%; background:#F1F5F9; color:#475569; cursor:pointer; }
@@ -256,7 +256,7 @@ export function SharedIncidentCard({ incident, lang }: { incident: SharedInciden
         <strong>{text.reportedBy(incident.reporterCount)}</strong>
         <small>{incident.stage === "REPORTED" ? text.waiting : text.handling}</small>
       </div>
-      {!incident.viewerIsPrimary && <span className="rsi-chip">{text.alreadyReported}</span>}
+      {!incident.viewerIsPrimary && <span className="rsi-chip">{text.received}</span>}
     </div>
     <ol className="rsi-steps">
       {STAGES.map((item, index) => <li key={item.key} className={`rsi-step ${index < current ? "done" : index === current ? "current" : ""}`}>

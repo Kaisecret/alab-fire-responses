@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { RESIDENT_SESSION_COOKIE, verifyResidentSession } from "../../../../../lib/auth/session";
 import { findResidentReport, updateResidentReportTacticalDetails } from "../../../../../lib/fire-reports/service";
 import { getSharedIncident } from "../../../../../lib/fire-reports/duplicates";
+import { getIncidentAlarmStatus } from "../../../../../lib/incidents/alarm-status";
 import { validateTacticalDetailsUpdate } from "../../../../../lib/fire-reports/validation";
 import { getFireReportPhotoUrl } from "../../../../../lib/supabase/server-storage";
 
@@ -17,7 +18,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const report = await findResidentReport(session.userId, id);
     if (!report) return NextResponse.json({ error: "Report not found." }, { status: 404 });
     const photos = await Promise.all(report.photos.map(async (photo) => ({ url: await getFireReportPhotoUrl(photo.storage_key) })));
-    const shared = await getSharedIncident(report.id, report.duplicate_of_report_id).catch(() => null);
+    // The alarm is declared on the report BFP works from, so a joined report reads its fire's level.
+    const [shared, alarm] = await Promise.all([
+      getSharedIncident(report.id, report.duplicate_of_report_id).catch(() => null),
+      getIncidentAlarmStatus(report.duplicate_of_report_id ?? report.id),
+    ]);
     // Other residents are shown only as "Reporter N" with their photos.
     const incident = shared ? {
       primaryReference: shared.primaryReference,
@@ -35,7 +40,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         submittedAt: item.submittedAt,
       }))))).filter((photo) => photo.url),
     } : null;
-    return NextResponse.json({ report: { ...report, photos, incident } }, { headers: { "Cache-Control": "no-store" } });
+    // No level above 1 standing means the 1st alarm: the town's own stations.
+    return NextResponse.json({ report: { ...report, photos, incident, alarm_level: alarm.level ?? 1 } }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Resident report detail failed", error);
     return NextResponse.json({ error: "Unable to load this report." }, { status: 500 });

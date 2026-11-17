@@ -795,6 +795,274 @@ export const homeStyles = `
             display: none;
         }
     }
+
+    /* PC ONLY (1280px and wider). Phones and tablets keep the layouts above. */
+    @media (min-width: 1280px) {
+        .dashboard-page-root {
+            background:
+                radial-gradient(1100px 420px at 50% -160px, #FFE4E0 0%, rgba(255, 228, 224, 0) 72%),
+                #F6F6F7;
+        }
+
+        /* Report button leads; profile and status sit beside it; lists below. */
+        .dashboard-page-root .dashboard-container {
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 2.25rem 2.5rem 3.5rem;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-areas:
+                "hero hero welcome"
+                "hero hero status"
+                "recent recent nearby"
+                "recent recent safety";
+            gap: 1.5rem;
+        }
+
+        .dashboard-page-root .card {
+            padding: 1.6rem;
+            border: 1px solid #ECEEF2;
+            border-radius: 1.4rem;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 28px rgba(15, 23, 42, 0.05);
+        }
+
+        .dashboard-page-root .card-title {
+            font-size: 1.12rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: #0F172A;
+        }
+
+        /* HERO: the emergency action */
+        .dashboard-page-root .emergency-card {
+            grid-area: hero;
+            min-height: 0;
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 2.5rem;
+            padding: 2.5rem 2.75rem;
+            text-align: left;
+            border: 0;
+            color: #fff;
+            background: linear-gradient(125deg, #A3140F 0%, #D21F12 46%, #EF4136 100%);
+            box-shadow: 0 22px 44px -18px rgba(163, 20, 15, 0.6);
+        }
+
+        .dashboard-page-root .emergency-card::before {
+            width: 48%;
+            opacity: 1;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.2) 1.5px, transparent 1.5px);
+            background-size: 18px 18px;
+        }
+
+        .dashboard-page-root .emergency-card::after {
+            content: '';
+            position: absolute;
+            right: -6rem;
+            bottom: -9rem;
+            width: 22rem;
+            height: 22rem;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
+            pointer-events: none;
+        }
+
+        .dashboard-page-root .emergency-icon-wrapper {
+            width: 9.5rem;
+            height: 9.5rem;
+            background: rgba(255, 255, 255, 0.14);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), 0 18px 34px -14px rgba(0, 0, 0, 0.35);
+        }
+
+        .dashboard-page-root .emergency-icon-wrapper img {
+            width: 5.75rem;
+            height: 5.75rem;
+            filter: brightness(0) invert(1);
+        }
+
+        .dashboard-page-root .emergency-card .radar-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.45);
+            opacity: 0;
+            animation: alabHeroPulse 3.2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        .dashboard-page-root .emergency-card .radar-ring.ring-2 { animation-delay: 1.05s; border-style: dashed; }
+        .dashboard-page-root .emergency-card .radar-ring.ring-3 { animation-delay: 2.1s; border-width: 1px; }
+
+        @keyframes alabHeroPulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(1.75); opacity: 0; }
+        }
+
+        .dashboard-page-root .emergency-content {
+            flex: 1;
+            min-width: 0;
+            align-items: flex-start;
+        }
+
+        .dashboard-page-root .emergency-content h2 {
+            order: 0;
+            margin-bottom: 0.6rem;
+            color: #fff;
+            font-size: 2.4rem;
+            font-weight: 850;
+            letter-spacing: -0.025em;
+            line-height: 1.1;
+            text-wrap: balance;
+        }
+
+        .dashboard-page-root .emergency-hint {
+            order: 1;
+            margin: 0 0 1.6rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.02rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        .dashboard-page-root .btn-report-fire {
+            order: 2;
+            min-height: 3.6rem;
+            padding: 1rem 2.4rem;
+            border-radius: 999px;
+            background: #fff;
+            color: #B3170F;
+            font-size: 1.1rem;
+            font-weight: 850;
+            letter-spacing: 0.02em;
+            box-shadow: 0 14px 28px -10px rgba(0, 0, 0, 0.4);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        .dashboard-page-root .btn-report-fire:hover {
+            background: #FFF4F2;
+            transform: translateY(-2px);
+            box-shadow: 0 18px 34px -10px rgba(0, 0, 0, 0.45);
+        }
+
+        .dashboard-page-root .btn-report-fire:focus-visible {
+            outline: 3px solid #fff;
+            outline-offset: 4px;
+        }
+
+        /* WELCOME: compact profile beside the hero */
+        .dashboard-page-root .welcome-card {
+            grid-area: welcome;
+            min-height: 0;
+            gap: 1.1rem;
+        }
+
+        .dashboard-page-root .welcome-center-graphic { display: none; }
+
+        .dashboard-page-root .user-avatar {
+            width: 3.75rem;
+            height: 3.75rem;
+            background: linear-gradient(135deg, #FECACA, #FEE2E2);
+            box-shadow: 0 0 0 4px #FFF1F0;
+        }
+
+        .dashboard-page-root .user-details h2 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.015em;
+            color: #0F172A;
+        }
+
+        .dashboard-page-root .location-info { font-size: 0.92rem; }
+
+        .dashboard-page-root .welcome-footer {
+            padding-top: 0.9rem;
+            font-size: 0.88rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* STATUS: four counts */
+        .dashboard-page-root .status-card { grid-area: status; }
+        .dashboard-page-root .status-card .card-title { margin-bottom: 0.9rem; }
+        .dashboard-page-root .status-grid { align-items: stretch; gap: 0.5rem; }
+        .dashboard-page-root .status-divider { display: none; }
+
+        .dashboard-page-root .status-item {
+            gap: 0.3rem;
+            padding: 0.85rem 0.35rem;
+            border-radius: 1rem;
+            background: #F8FAFC;
+        }
+
+        .dashboard-page-root .status-icon { width: 2.3rem; height: 2.3rem; }
+        .dashboard-page-root .status-count { font-size: 1.9rem; letter-spacing: -0.02em; }
+        .dashboard-page-root .status-label { font-size: 0.74rem; font-weight: 700; color: #475569; }
+
+        /* RECENT REPORTS: wide list */
+        .dashboard-page-root .recent-card { grid-area: recent; }
+        .dashboard-page-root .card-header { margin-bottom: 1.15rem; }
+
+        .dashboard-page-root .view-all {
+            padding: 0.45rem 0.9rem;
+            border-radius: 999px;
+            background: #FFF1F0;
+            font-size: 0.84rem;
+            font-weight: 750;
+            transition: background 0.18s ease;
+        }
+        .dashboard-page-root .view-all:hover { background: #FFE4E0; }
+
+        .dashboard-page-root .report-list { gap: 0.7rem; }
+
+        .dashboard-page-root .report-item {
+            gap: 1rem;
+            padding: 1rem 1.2rem;
+            border-radius: 1rem;
+        }
+
+        .dashboard-page-root .report-id { font-size: 0.95rem; }
+        .dashboard-page-root .report-badge { padding: 0.32rem 0.8rem; font-size: 0.78rem; }
+        .dashboard-page-root .btn-view { min-height: 2.25rem; padding: 0.4rem 1rem; font-size: 0.82rem; }
+        .dashboard-page-root .report-empty { padding: 2.5rem 0; font-size: 0.95rem; }
+
+        /* NEARBY INCIDENT */
+        .dashboard-page-root .nearby-card {
+            grid-area: nearby;
+            min-height: 0;
+            gap: 0.9rem;
+            border-color: #FBD9D5;
+            background: linear-gradient(180deg, #FFF7F6 0%, #FFFFFF 60%);
+        }
+
+        .dashboard-page-root .nearby-content { margin-bottom: 0.4rem; }
+        .dashboard-page-root .nearby-icon { padding: 0.55rem; border-radius: 0.8rem; }
+        .dashboard-page-root .nearby-text { font-size: 0.98rem; }
+
+        .dashboard-page-root .nearby-actions { gap: 0.65rem; }
+
+        .dashboard-page-root .btn-outline,
+        .dashboard-page-root .btn-solid {
+            min-height: 2.75rem;
+            border-radius: 0.8rem;
+            font-size: 0.88rem;
+            font-weight: 750;
+        }
+
+        /* SAFETY REMINDER */
+        .dashboard-page-root .safety-card { grid-area: safety; }
+        .dashboard-page-root .safety-icon { padding: 0.75rem; border-radius: 1rem; }
+        .dashboard-page-root .safety-list { gap: 0.7rem; }
+        .dashboard-page-root .safety-list li { font-size: 0.95rem; line-height: 1.45; }
+
+        .dashboard-page-root .btn-outline:focus-visible,
+        .dashboard-page-root .btn-solid:focus-visible,
+        .dashboard-page-root .btn-view:focus-visible,
+        .dashboard-page-root .view-all:focus-visible {
+            outline: 3px solid rgba(217, 27, 16, 0.35);
+            outline-offset: 2px;
+        }
+    }
+
+    @media (min-width: 1280px) and (prefers-reduced-motion: reduce) {
+        .dashboard-page-root .emergency-card .radar-ring { animation: none; opacity: 0; }
+    }
 `;
 
 export const homeMarkup = `

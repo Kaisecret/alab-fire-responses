@@ -38,6 +38,8 @@ type Report = {
   photos: Array<{ url: string | null }>;
   /** Present when other residents reported the same fire within 50 m. */
   incident?: SharedIncident | null;
+  /** BFP alarm level of the fire, 1 to 4. */
+  alarm_level?: number;
 };
 
 const detailStyles = `
@@ -358,6 +360,18 @@ const detailStyles = `
   .rrs-status-text { min-width:0; }
   .rrs-status h2 { margin:.1rem 0 0; color:#0f172a; font-size:1.12rem; font-weight:800; letter-spacing:-.015em; line-height:1.25; text-wrap:balance; }
   .rrs-status p { margin:.3rem 0 0; color:#334155; font-size:.84rem; line-height:1.45; }
+  .rrs-alarm { --alarm:#334155; --alarm-soft:#F1F5F9; display:flex; align-items:center; gap:.75rem; margin-top:1rem; padding:.75rem .85rem; border:1px solid #E2E8F0; border-radius:.95rem; background:#F8FAFC; }
+  .rrs-alarm.level-2 { --alarm:#B45309; --alarm-soft:#FEF3C7; }
+  .rrs-alarm.level-3 { --alarm:#C2410C; --alarm-soft:#FFEDD5; }
+  .rrs-alarm.level-4 { --alarm:#B91C1C; --alarm-soft:#FEE2E2; }
+  .rrs-alarm-icon { flex:none; width:2.3rem; height:2.3rem; display:grid; place-items:center; border-radius:.75rem; background:var(--alarm-soft); color:var(--alarm); }
+  .rrs-alarm-text { flex:1; min-width:0; }
+  .rrs-alarm small { display:block; color:#64748b; font-size:.66rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
+  .rrs-alarm strong { display:block; color:var(--alarm); font-size:.95rem; font-weight:850; }
+  .rrs-status .rrs-alarm p { margin:.15rem 0 0; font-size:.76rem; }
+  .rrs-alarm-meter { flex:none; display:flex; gap:.2rem; }
+  .rrs-alarm-meter span { width:.45rem; height:1.3rem; border-radius:99px; background:#E2E8F0; }
+  .rrs-alarm-meter span.on { background:var(--alarm); }
   .rrs-live { display:inline-flex; align-items:center; gap:.4rem; margin-top:.5rem; color:#64748b; font-size:.7rem; font-weight:700; font-variant-numeric:tabular-nums; }
   .rrs-live::before { content:''; width:.45rem; height:.45rem; border-radius:50%; background:var(--tone); box-shadow:0 0 0 0 var(--tone); animation:rrsLive 2.4s ease-out infinite; }
   @keyframes rrsLive { 0% { box-shadow:0 0 0 0 color-mix(in srgb, var(--tone) 45%, transparent); } 80%, 100% { box-shadow:0 0 0 .45rem transparent; } }
@@ -549,7 +563,8 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
     );
   }
 
-  const latest = report.history.at(-1);
+  // A report that joined another resident's fire shows that fire's BFP updates.
+  const latest = (followsIncident ? timelineHistory : report.history).at(-1);
   const currentPhoto = photos[activePhotoIndex] ?? photos[0];
   const photoUrl = currentPhoto?.url || "";
   const windSpeed = Number(report.weather_wind_speed) || 0;
@@ -634,6 +649,22 @@ export function ResidentReportStatus({ reportId }: { reportId: string }) {
           </ol>
         )}
 
+        {view.tone !== "stop" && (() => {
+          const alarm = alarmView(report.alarm_level ?? 1, lang);
+          return (
+            <div className={`rrs-alarm level-${alarm.level}`}>
+              <span className="rrs-alarm-icon" aria-hidden="true"><i className="fa-solid fa-bell" /></span>
+              <div className="rrs-alarm-text">
+                <small>{pick("Alarm level", "Lebel sang alarma", "Antas ng alarma")}</small>
+                <strong>{alarm.title}</strong>
+                <p>{alarm.message}</p>
+              </div>
+              <span className="rrs-alarm-meter" role="img" aria-label={`${alarm.level} / 4`}>
+                {[1, 2, 3, 4].map((step) => <span key={step} className={step <= alarm.level ? "on" : ""} />)}
+              </span>
+            </div>
+          );
+        })()}
       </section>
 
       {windSpeed >= 25 && (
@@ -879,11 +910,26 @@ function statusView(status: string, lang: ResidentLanguage): { tone: StatusTone;
     case "REJECTED":
     case "FALSE_REPORT":
       return { tone: "stop", icon: "fa-circle-xmark", title: pick("BFP could not verify this report", "Wala nakumpirma sang BFP ini nga report", "Hindi nakumpirma ng BFP ang ulat na ito"), message: pick("Call BFP or 911 if there is still a fire.", "Tawagi ang BFP ukon 911 kon may sunog pa.", "Tumawag sa BFP o 911 kung may sunog pa.") };
+    // A second resident's report joins the fire BFP already has. It is
+    // accepted like any other; only the merge into one BFP alert is internal.
     case "DUPLICATE":
-      return { tone: "info", icon: "fa-link", title: pick("This fire was already reported", "Nareport na ini nga sunog", "Naiulat na ang sunog na ito"), message: pick("BFP is following the first report.", "Ginasunod sang BFP ang nauna nga report.", "Sinusubaybayan ng BFP ang naunang ulat.") };
+      return { tone: "good", icon: "fa-circle-check", title: pick("Your report was received", "Nabaton ang imo report", "Natanggap ang iyong ulat"), message: keepSafe };
     default:
       return { tone: "wait", icon: "fa-paper-plane", title: pick("Report sent. BFP is checking it.", "Napadala na. Ginacheck na sang BFP.", "Naipadala na. Sinusuri na ng BFP."), message: keepSafe };
   }
+}
+
+/** The BFP alarm level in words a resident understands: who is coming to help. */
+function alarmView(rawLevel: number, lang: ResidentLanguage) {
+  const level = Math.min(4, Math.max(1, Math.round(rawLevel) || 1)) as 1 | 2 | 3 | 4;
+  const pick = (en: string, hil: string, tl: string) => (lang === "en" ? en : lang === "hil" ? hil : tl);
+  const views = {
+    1: { title: pick("1st alarm", "Una nga alarma", "Unang alarma"), message: pick("Fire stations from your town are handling this fire.", "Ang mga estasyon sang bumbero sa inyo banwa ang nagaasikaso sini nga sunog.", "Ang mga istasyon ng bumbero sa inyong bayan ang humahawak sa sunog na ito.") },
+    2: { title: pick("2nd alarm", "Ikaduha nga alarma", "Ikalawang alarma"), message: pick("Nearby towns were called to help.", "Ginpatawag ang malapit nga mga banwa para magbulig.", "Tinawag ang mga kalapit na bayan para tumulong.") },
+    3: { title: pick("3rd alarm", "Ikatlo nga alarma", "Ikatlong alarma"), message: pick("More towns around the fire were called to help.", "Mas madamo pa nga banwa sa palibot ang ginpatawag para magbulig.", "Mas maraming bayan sa paligid ang tinawag para tumulong.") },
+    4: { title: pick("4th alarm", "Ikap-at nga alarma", "Ikaapat na alarma"), message: pick("Every town in Antique was called to help.", "Ginpatawag ang tanan nga banwa sa Antique para magbulig.", "Tinawag ang lahat ng bayan sa Antique para tumulong.") },
+  };
+  return { level, ...views[level] };
 }
 
 const DANGER_ORDER = ["LOW", "MODERATE", "HIGH", "CRITICAL"] as const;
