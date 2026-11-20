@@ -1,4 +1,4 @@
-const RESIDENT_CACHE = "alab-resident-shell-v5";
+const RESIDENT_CACHE = "alab-resident-shell-v6";
 const PRECACHE_URLS = [
   "/resident",
   "/resident/login",
@@ -28,7 +28,7 @@ const PRECACHE_URLS = [
   "/images/WHITE%20LOGO.webp",
   "/images/bg images.webp",
   "/images/bg%20images.webp",
-  "/images/phone.webp",
+  "/images/phone-app.webp",
   "/images/BFPBACK.webp",
   "/images/panay.webp",
   "/images/FAVICON.webp",

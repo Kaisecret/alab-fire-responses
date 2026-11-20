@@ -18,7 +18,7 @@ const STATIC_IMAGE_ASSETS: string[] = [
   "/images/FAVICON.webp",
   // Landing Page Hero & Graphics
   "/images/bg%20images.webp",
-  "/images/phone.webp",
+  "/images/phone-app.webp",
   "/images/BFPBACK.webp",
   "/images/panay.webp",
 ];

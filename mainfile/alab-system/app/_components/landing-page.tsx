@@ -7,6 +7,7 @@ import {
   landingStyles,
 } from "../_content/landing-content";
 import { landingMobileStyles } from "../_content/landing-mobile-styles";
+import { landingLargeStyles } from "../_content/landing-large-styles";
 import { heroEmergencyMarkup, heroEmergencyStyles } from "../_content/emergency-call";
 import { OPEN_BFP_HOTLINES, ResidentOfflineEmergency } from "./resident-offline-emergency";
 import { LandingHowToUse, OPEN_HOW_TO_USE } from "./landing-how-to-use";
@@ -156,7 +157,7 @@ export function LandingPage() {
 
   return (
     <>
-      <style>{`${landingStyles}\n${landingMobileStyles}\n${heroEmergencyStyles}`}</style>
+      <style>{`${landingStyles}\n${landingMobileStyles}\n${landingLargeStyles}\n${heroEmergencyStyles}`}</style>
       <div
         ref={rootRef}
         className="landing-page-root"

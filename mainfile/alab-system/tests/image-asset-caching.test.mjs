@@ -19,7 +19,7 @@ test("resident-sw.js precaches municipal, provincial, resident login and signup 
   assert.match(workerSource, /\/images\/for sign up\.webp/);
   assert.match(workerSource, /\/images\/WHITE LOGO\.webp/);
   assert.match(workerSource, /\/images\/bg images\.webp/);
-  assert.match(workerSource, /\/images\/phone\.webp/);
+  assert.match(workerSource, /\/images\/phone-app\.webp/);
   assert.match(workerSource, /\/images\/BFPBACK\.webp/);
 });
 
@@ -45,5 +45,5 @@ test("municipal, provincial, resident login, and signup pages include image prel
   assert.match(provLogin, /rel="preload"[^>]*\/images\/FOR%20PROVOCIAL%20SIDE\.webp/);
   assert.match(resLogin, /rel="preload"[^>]*\/images\/side%20pic%20for%20login\.webp/);
   assert.match(resSignup, /rel="preload"[^>]*\/images\/for%20sign%20up\.webp/);
-  assert.match(landing, /rel="preload"[^>]*\/images\/phone\.webp/);
+  assert.match(landing, /rel="preload"[^>]*\/images\/phone-app\.webp/);
 });

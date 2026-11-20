@@ -19,6 +19,7 @@ const images = [
   "Logo.webp",
   "panay.webp",
   "phone.webp",
+  "phone-app.webp",
   "side pic for login.webp",
   "step1_calm.webp",
   "step2_exit.webp",
@@ -82,7 +83,7 @@ test("landing content preserves the complete source structure", () => {
   }
 
   assert.match(content, /A GIS-Based Provincial Inter-Municipal Fire Response and Decision Support System for BFP Antique/);
-  assert.equal(content.includes("/images/phone.webp"), true);
+  assert.equal(content.includes("/images/phone-app.webp"), true);
   assert.equal(content.includes("/images/BFPBACK.webp"), true);
   assert.equal(content.includes('url(\\"/images/bg images.webp\\")'), true);
   assert.equal(content.includes('href=\\"/resident/login\\"'), true);

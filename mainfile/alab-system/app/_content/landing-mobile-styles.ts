@@ -203,6 +203,14 @@ export const landingMobileStyles = String.raw`
     .hero__actions .button--secondary {
       background: rgb(255 250 245 / 78%);
     }
+
+    /* Section titles match "Antique Fire Incidents at a Glance" on phones. */
+    .section-intro h2,
+    .connect-copy h2 {
+      font-size: 2.5rem;
+      letter-spacing: -0.05em;
+      line-height: 1.08;
+    }
   }
 
   @media (max-width: 370px) {
