@@ -2,6 +2,25 @@ import type { ResidentTextDictionary, ResidentTextPattern } from "../_lib/reside
 
 /** Resident screen text outside the guide: [English, Tagalog, Hiligaynon]. */
 const rows: Array<[string, string, string]> = [
+  // Profile photo editor
+  ["Change profile photo", "Palitan ang litrato sa profile", "Ilisi ang litrato sa profile"],
+  ["Your profile photo", "Litrato mo sa profile", "Imo litrato sa profile"],
+  ["Close photo editor", "Isara ang pagpili ng litrato", "Isira ang pagpili sang litrato"],
+  ["Take a new photo or choose one from your device.", "Kumuha ng bagong litrato o pumili mula sa iyong device.", "Magkuha sang bag-o nga litrato ukon magpili halin sa imo device."],
+  ["Profile photo preview", "Preview ng litrato sa profile", "Preview sang litrato sa profile"],
+  ["Choose from device", "Pumili mula sa device", "Magpili halin sa device"],
+  ["JPG, PNG, or WebP. Large photos are resized automatically.", "JPG, PNG, o WebP. Awtomatikong pinapaliit ang malalaking litrato.", "JPG, PNG, ukon WebP. Awtomatiko nga ginapagamay ang dalagko nga litrato."],
+  ["Save photo", "I-save ang litrato", "I-save ang litrato"],
+  ["Saving…", "Sine-save…", "Ginasave…"],
+  ["Use default photo", "Gamitin ang default na litrato", "Gamiton ang default nga litrato"],
+  ["Choose a JPG, PNG, or WebP photo smaller than 20 MB.", "Pumili ng JPG, PNG, o WebP na litrato na mas maliit sa 20 MB.", "Magpili sang JPG, PNG, ukon WebP nga litrato nga mas gamay sa 20 MB."],
+  ["Choose a readable JPG, PNG, or WebP photo smaller than 3 MB.", "Pumili ng nababasang JPG, PNG, o WebP na litrato na mas maliit sa 3 MB.", "Magpili sang mabasa nga JPG, PNG, ukon WebP nga litrato nga mas gamay sa 3 MB."],
+  ["Unable to save your photo. Please try again.", "Hindi ma-save ang iyong litrato. Subukan ulit.", "Indi ma-save ang imo litrato. Tilawi liwat."],
+  ["Unable to save your profile photo. Please try again.", "Hindi ma-save ang litrato mo sa profile. Subukan ulit.", "Indi ma-save ang imo litrato sa profile. Tilawi liwat."],
+  ["Unable to remove your profile photo. Please try again.", "Hindi maalis ang litrato mo sa profile. Subukan ulit.", "Indi makuha ang imo litrato sa profile. Tilawi liwat."],
+  ["This photo is too large. Choose a smaller image or take a new photo.", "Masyadong malaki ang litrato. Pumili ng mas maliit o kumuha ng bagong litrato.", "Tama kadako sang litrato. Magpili sang mas gamay ukon magkuha sang bag-o nga litrato."],
+  ["The upload timed out. Please try again.", "Naubos ang oras ng pag-upload. Subukan ulit.", "Naubos ang oras sang pag-upload. Tilawi liwat."],
+  ["Your photo was saved, but the preview could not load. Please reload your profile.", "Na-save ang litrato pero hindi ma-load ang preview. I-reload ang iyong profile.", "Na-save ang litrato pero indi makarga ang preview. I-reload ang imo profile."],
   // Report detail
   ["Loading your fire report…", "Nilo-load ang iyong ulat ng sunog…", "Ginakarga ang imo report sang kalayo…"],
   ["Unable to load report.", "Hindi ma-load ang ulat.", "Indi makarga ang report."],

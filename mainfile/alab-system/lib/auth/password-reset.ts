@@ -18,6 +18,7 @@ const MAX_SENDS_PER_HOUR = 5;
 const MAX_ATTEMPTS = 5;
 
 export type ResetStart = { resetId: string; expiresAt: string; sent: boolean };
+export type ResetChannel = "EMAIL" | "SMS";
 
 async function findResident(client: Queryable, identifier: string) {
   let phones: string[] = [];
@@ -27,8 +28,8 @@ async function findResident(client: Queryable, identifier: string) {
   } catch {
     // Not a mobile number: match on username or email only.
   }
-  const result = await client.query<{ id: string; phone: string | null }>(
-    `select id, phone from users
+  const result = await client.query<{ id: string; phone: string | null; email: string | null }>(
+    `select id, phone, email from users
       where role = 'RESIDENT' and account_status <> 'SUSPENDED'
         and (lower(email) = lower($1) or lower(username) = lower($1)
              or regexp_replace(coalesce(phone, ''), '\\D', '', 'g') = any($2::text[]))
@@ -39,14 +40,14 @@ async function findResident(client: Queryable, identifier: string) {
 }
 
 /**
- * Texts a 6-digit reset code to the mobile number on the resident account the
- * identifier names. The reply has the same shape whether or not the account
- * exists, so the form cannot be used to find out who has an account.
+ * Emails a 6-digit reset code to the address stored on the resident account,
+ * falling back to SMS for accounts without email. The reply has the same shape
+ * whether or not the account exists, so the form cannot reveal account owners.
  */
 export async function startPasswordReset(
   client: Queryable,
   identifier: string,
-  send: (phone: string, code: string) => Promise<unknown>,
+  send: (destination: string, code: string, channel: ResetChannel) => Promise<unknown>,
 ): Promise<ResetStart> {
   const unknown = (): ResetStart => ({
     resetId: randomUUID(),
@@ -58,12 +59,16 @@ export async function startPasswordReset(
   let phone: string | null = null;
   try { phone = user?.phone ? normalizePhilippinePhone(user.phone) : null; } catch { phone = null; }
   if (!user || !phone) return unknown();
+  const email = user.email?.trim();
+  const channel: ResetChannel = email ? "EMAIL" : "SMS";
+  const destination = email || phone;
 
   const latest = (await client.query<{ id: string; expires_at: string | Date; consumed_at: string | Date | null; recent: boolean }>(
     `select id, expires_at, consumed_at, last_sent_at > now() - interval '60 seconds' as recent
        from registration_otps where phone = $1 and payload->>'purpose' = $2
+        and coalesce(payload->>'channel', 'SMS') = $3
       order by last_sent_at desc limit 1`,
-    [phone, RESET_PURPOSE],
+    [phone, RESET_PURPOSE, channel],
   )).rows[0];
   const sends = (await client.query<{ sends: number }>(
     `select count(*)::int as sends from registration_otps
@@ -71,9 +76,9 @@ export async function startPasswordReset(
     [phone, RESET_PURPOSE],
   )).rows[0]?.sends ?? 0;
 
-  if (latest && (latest.recent || sends >= MAX_SENDS_PER_HOUR)) {
-    // Too soon for another text: point the form at the code already sent.
-    const usable = !latest.consumed_at && new Date(latest.expires_at) > new Date();
+  if (latest?.recent || sends >= MAX_SENDS_PER_HOUR) {
+    // Reuse only a code delivered through the currently selected channel.
+    const usable = latest && !latest.consumed_at && new Date(latest.expires_at) > new Date();
     return usable ? { resetId: latest.id, expiresAt: new Date(latest.expires_at).toISOString(), sent: false } : unknown();
   }
 
@@ -88,10 +93,10 @@ export async function startPasswordReset(
   await client.query(
     `insert into registration_otps (id, phone, payload, code_hash, expires_at, last_sent_at)
      values ($1, $2, $3::jsonb, $4, $5, now())`,
-    [resetId, phone, JSON.stringify({ purpose: RESET_PURPOSE, userId: user.id }), hashOtp(phone, code), expiresAt],
+    [resetId, phone, JSON.stringify({ purpose: RESET_PURPOSE, userId: user.id, channel }), hashOtp(phone, code), expiresAt],
   );
   try {
-    await send(phone, code);
+    await send(destination, code, channel);
   } catch (error) {
     await client.query("delete from registration_otps where id = $1", [resetId]);
     throw error;

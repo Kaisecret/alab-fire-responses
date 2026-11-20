@@ -15,6 +15,7 @@ const SCREENS = [
   ["app/_components/resident-report-status.tsx", RESIDENT_TEXT],
   ["app/_components/resident-pwa.tsx", RESIDENT_TEXT],
   ["app/_components/resident-selfie-capture.tsx", RESIDENT_TEXT],
+  ["app/_components/resident-profile-photo-editor.tsx", RESIDENT_TEXT],
   ["app/resident/application/page.tsx", RESIDENT_TEXT],
   ["app/resident/reports/page.tsx", RESIDENT_TEXT],
 ];

@@ -28,6 +28,7 @@ function loadSelfieModule() {
     if (name === "react/jsx-runtime") return { jsx: () => null, jsxs: () => null };
     if (name === "../_lib/resident-text") return { useResidentText: () => (english) => english };
     if (name === "../_content/resident-text") return { RESIDENT_TEXT: {} };
+    if (name === "../_lib/body-scroll-lock") return { lockBodyScroll: () => () => {} };
     throw new Error(`Unexpected dependency: ${name}`);
   }, exports);
   return exports;
@@ -156,7 +157,8 @@ test("camera takes over the full screen and locks background scrolling while ope
   // resident bottom navigation rather than sitting in the form flow.
   assert.match(component, /\.selfie-overlay\{position:fixed;inset:0/);
   assert.match(component, /role="dialog" aria-modal="true"/);
-  assert.match(component, /document\.body\.style\.overflow = "hidden"/);
+  assert.match(component, /lockBodyScroll\(document\.body\)/);
+  assert.match(component, /unlockScroll\(\)/);
   assert.match(component, /event\.key === "Escape"/);
   // The old inline, in-flow camera box is gone.
   assert.doesNotMatch(component, /selfie-video-frame/);

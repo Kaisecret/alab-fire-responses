@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useResidentText } from "../_lib/resident-text";
 import { RESIDENT_TEXT } from "../_content/resident-text";
+import { lockBodyScroll } from "../_lib/body-scroll-lock";
 /*
  * Camera-only selfie capture for resident correction resubmission.
  * Mirrors the capture mechanism in signup-page.tsx (getUserMedia with a
@@ -213,9 +214,8 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
   const overlayOpen = state === "requesting" || state === "live" || state === "captured";
   useEffect(() => {
     if (!overlayOpen) return;
-    const previousOverflow = document.body.style.overflow;
+    const unlockScroll = lockBodyScroll(document.body);
     const opener = openerRef.current;
-    document.body.style.overflow = "hidden";
     closeButtonRef.current?.focus();
     const handleDialogKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -229,7 +229,7 @@ export function ResidentSelfieCapture({ onCapture, disabled }: ResidentSelfieCap
     };
     window.addEventListener("keydown", handleDialogKey);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlockScroll();
       window.removeEventListener("keydown", handleDialogKey);
       if (mountedRef.current) {
         const fallback = rootRef.current?.querySelector<HTMLElement>(".selfie-open-btn,.selfie-retake-btn") ?? null;

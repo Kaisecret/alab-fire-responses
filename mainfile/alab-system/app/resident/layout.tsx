@@ -6,6 +6,7 @@ import { ResidentMobileNavigation, residentMobileNavigationStyles } from "@/app/
 import { NotificationBell } from "@/app/_components/notifications/notification-bell";
 import { ResidentOfflineEmergency } from "@/app/_components/resident-offline-emergency";
 import { useResidentLanguage, type ResidentLanguage } from "@/app/_lib/resident-i18n";
+import { DEFAULT_RESIDENT_PHOTO, useResidentProfilePhoto } from "@/app/_lib/resident-profile-photo";
 
 /* ─────────────────────────────────────────────
    Shared Resident Layout
@@ -355,6 +356,8 @@ function isActive(pathname: string, href: string): boolean {
 
 export default function ResidentLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const isAuth = pathname.startsWith("/resident/login") || pathname.startsWith("/resident/signup");
+  const photoUrl = useResidentProfilePhoto(!isAuth);
   const { lang, t, setLang } = useResidentLanguage();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const logoutFormRef = useRef<HTMLFormElement | null>(null);
@@ -391,7 +394,6 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
   };
 
   /* Don't show shared nav on login/signup */
-  const isAuth = pathname.startsWith("/resident/login") || pathname.startsWith("/resident/signup");
   if (isAuth) return <>{children}<ResidentOfflineEmergency /></>;
 
   const activeKey = navItems.find((n) => isActive(pathname, n.href))?.key ?? "";
@@ -457,8 +459,9 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
             <div className="rl-profile-menu">
               <button className="rl-profile-btn" aria-haspopup="true">
                 <img
-                  src="https://ui-avatars.com/api/?name=Resident&background=1e293b&color=fff&size=150"
+                  src={photoUrl || DEFAULT_RESIDENT_PHOTO}
                   alt="Profile"
+                  onError={event => { if (event.currentTarget.getAttribute("src") !== DEFAULT_RESIDENT_PHOTO) event.currentTarget.src = DEFAULT_RESIDENT_PHOTO; }}
                 />
               </button>
               <div className="rl-profile-dropdown">

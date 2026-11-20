@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
   try {
     const result = await withTransaction((client) => confirmPasswordReset(client, { resetId, code, password: password as string | undefined }));
-    if (!result.ok) return NextResponse.json({ error: "That code is wrong or has expired. Check the text message or request a new code." }, { status: 400 });
+    if (!result.ok) return NextResponse.json({ error: "That code is wrong or has expired. Check your reset message or request a new code." }, { status: 400 });
     return NextResponse.json({ verified: true, reset: Boolean(result.reset) });
   } catch (error) {
     console.error("Password reset confirm failed", error);

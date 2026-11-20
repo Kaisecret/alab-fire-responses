@@ -1,14 +1,28 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { profileStyles, profileMarkup } from "../../_content/resident-profile-content";
 import { getStoredLanguage, setStoredLanguage, applyResidentTranslations, type ResidentLanguage } from "../../_lib/resident-i18n";
 import { watchResidentMarkup } from "../../_lib/resident-text";
 import { RESIDENT_TEXT, RESIDENT_TEXT_PATTERNS } from "../../_content/resident-text";
+import { ResidentProfilePhotoEditor } from "../../_components/resident-profile-photo-editor";
+import { DEFAULT_RESIDENT_PHOTO, useResidentProfilePhoto } from "../../_lib/resident-profile-photo";
 
 export default function ProfilePage() {
   const rootRef = useRef<HTMLDivElement>(null);
+  const [photoEditorOpen, setPhotoEditorOpen] = useState(false);
+  const photoUrl = useResidentProfilePhoto();
+  const closePhotoEditor = useCallback(() => setPhotoEditorOpen(false), []);
+
+  useEffect(() => {
+    const avatar = rootRef.current?.querySelector<HTMLImageElement>(".profile-avatar");
+    if (!avatar) return;
+    avatar.src = photoUrl || DEFAULT_RESIDENT_PHOTO;
+    const fallback = () => { if (avatar.getAttribute("src") !== DEFAULT_RESIDENT_PHOTO) avatar.src = DEFAULT_RESIDENT_PHOTO; };
+    avatar.addEventListener("error", fallback);
+    return () => avatar.removeEventListener("error", fallback);
+  }, [photoUrl]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -149,6 +163,11 @@ export default function ProfilePage() {
     };
     const onClick = (event: Event) => {
       const clicked = event.target as HTMLElement;
+      if (clicked.closest("[data-profile-photo-edit]")) {
+        event.preventDefault();
+        setPhotoEditorOpen(true);
+        return;
+      }
       const toggle = clicked.closest<HTMLButtonElement>("[data-notification-toggle]");
       if (toggle) {
         event.preventDefault();
@@ -286,6 +305,7 @@ export default function ProfilePage() {
     <>
       <style>{profileStyles}</style>
       <div ref={rootRef} dangerouslySetInnerHTML={{ __html: profileMarkup }} />
+      {photoEditorOpen && <ResidentProfilePhotoEditor currentPhoto={photoUrl} onClose={closePhotoEditor} />}
     </>
   );
 }

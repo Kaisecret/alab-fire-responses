@@ -25,6 +25,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     'auth/register/id-check',
     'resident/fire-reports',
     'mobile-bfp/backup-requests',
+    'resident/profile/photo',
   ];
   for (const route of routes) {
     const tracePath = resolve(`.next/server/app/api/${route}/route.js.nft.json`);

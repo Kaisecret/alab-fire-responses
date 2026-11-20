@@ -28,6 +28,7 @@ const nextConfig: NextConfig = {
     "/api/auth/register/id-check": evidenceRuntimeFiles,
     "/api/resident/fire-reports": evidenceRuntimeFiles,
     "/api/mobile-bfp/backup-requests": evidenceRuntimeFiles,
+    "/api/resident/profile/photo": evidenceRuntimeFiles,
   },
   // Keep Vercel's Linux CPU function within its uncompressed bundle limit.
   outputFileTracingExcludes: {

@@ -55,7 +55,7 @@ async function post(url: string, body: unknown) {
   return data;
 }
 
-/** Forgot password: text a 6-digit code to the account's mobile number, then set a new password. */
+/** Recover with a code sent to the account's email, or SMS when no email is saved. */
 export function ResidentForgotPassword({ initialIdentifier, onClose, onDone }: {
   initialIdentifier: string;
   onClose: () => void;
@@ -150,8 +150,8 @@ export function ResidentForgotPassword({ initialIdentifier, onClose, onDone }: {
   };
 
   const titles: Record<Step, [string, string]> = {
-    request: ["Forgot your password?", "Enter your username, email, or mobile number. We will text a 6-digit code to the mobile number on your account."],
-    code: ["Enter the code", "We sent a 6-digit code by text message. It expires in 10 minutes."],
+    request: ["Forgot your password?", "Enter your username, email, or mobile number. We will email a 6-digit code to the address on your account. Accounts without email receive a text message."],
+    code: ["Enter the code", "If the account exists, check its registered email or mobile for your code. It expires in 10 minutes."],
     password: ["Set a new password", "Use at least 8 characters. You will log in with this password."],
     done: ["Password updated", "You can now log in with your new password."],
   };
@@ -233,7 +233,7 @@ export function ResidentForgotPassword({ initialIdentifier, onClose, onDone }: {
             <button type="button" className="rfp-link" disabled={busy || resendIn > 0} onClick={() => void sendCode()}>
               {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
             </button>
-            <p className="rfp-note">No text yet? Check that the username or number you entered is the one on your account.</p>
+            <p className="rfp-note">No code yet? Check your email inbox and Spam folder. If your account has no email, check your text messages.</p>
           </>
         )}
         {step === "request" && <button type="button" className="rfp-link" onClick={onClose}>Back to login</button>}
