@@ -685,6 +685,7 @@ export const reportsStyles = `
         .reports-main-layout {
             display: flex;
             flex-direction: column;
+            align-items: stretch; /* base rule's align-items: start shrinks the list on tablets */
             padding: 0;
             gap: 0;
         }

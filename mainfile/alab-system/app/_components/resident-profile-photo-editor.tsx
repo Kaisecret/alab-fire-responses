@@ -129,4 +129,5 @@ const styles = `
 .rpp-choose{background:#f8fafc;color:#334155;border:1px solid #cbd5e1;margin-bottom:.6rem}.rpp-save{background:#d91b10;color:#fff;border:0;margin-top:.8rem}.rpp-remove{border:0;background:transparent;color:#64748b;margin-top:.3rem}
 .rpp-dialog>p.rpp-hint{font-size:.76rem;margin:.9rem 0 0}.rpp-dialog>p.rpp-error{color:#b91c1c;background:#fef2f2;border-radius:10px;padding:.7rem;margin-top:.8rem}
 .rpp-dialog button:disabled{opacity:.55;cursor:wait}.rpp-dialog button:focus-visible{outline:3px solid #f59e0b;outline-offset:3px}
+@media (max-width:640px){.rpp-backdrop{place-items:end stretch;padding:0}.rpp-dialog{width:100%;max-height:92dvh;padding:1.5rem 1rem calc(1rem + env(safe-area-inset-bottom));border-radius:24px 24px 0 0}}
 `;

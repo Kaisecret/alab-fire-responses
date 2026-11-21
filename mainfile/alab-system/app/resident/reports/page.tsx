@@ -129,7 +129,7 @@ export default function ReportsPage() {
   const closedCount = reports.filter((report) => isClosed(report.status)).length;
 
   return <>
-    <style>{reportsStyles}{liveReportsStyles}</style>
+    <style>{reportsStyles + liveReportsStyles}</style>
     <main className="reports-page-root">
       <div className="reports-main-layout">
         <section className="reports-left-col">

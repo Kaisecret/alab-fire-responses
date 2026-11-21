@@ -161,8 +161,18 @@ export default function ProfilePage() {
       if (name === "pin-security" || name === "privacy-settings") void loadSecurity(dialog);
       if (name === "login-activity") void loadActivity(dialog);
     };
+    // Only a press that starts and ends on the dim backdrop closes, so dragging out of a field keeps typed text.
+    let pressedBackdrop = false;
+    const onPointerDown = (event: Event) => { pressedBackdrop = (event.target as HTMLElement).matches("[data-profile-dialog]"); };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && root.querySelector("[data-profile-dialog]:not([hidden])")) closeDialogs();
+    };
     const onClick = (event: Event) => {
       const clicked = event.target as HTMLElement;
+      if (pressedBackdrop && clicked.matches("[data-profile-dialog]")) {
+        closeDialogs();
+        return;
+      }
       if (clicked.closest("[data-profile-photo-edit]")) {
         event.preventDefault();
         setPhotoEditorOpen(true);
@@ -229,8 +239,10 @@ export default function ProfilePage() {
         if (feedback) feedback.textContent = "Unable to save changes. Please try again.";
       }
     };
+    root.addEventListener("pointerdown", onPointerDown);
     root.addEventListener("click", onClick);
     root.addEventListener("submit", onSubmit);
+    document.addEventListener("keydown", onKeyDown);
 
     const applyProfile = (loadedProfile: Record<string, unknown>) => {
       profile = loadedProfile;
@@ -295,8 +307,10 @@ export default function ProfilePage() {
     return () => {
       stopLanguage();
       closeDialogs();
+      root.removeEventListener("pointerdown", onPointerDown);
       root.removeEventListener("click", onClick);
       root.removeEventListener("submit", onSubmit);
+      document.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("alab:resident-language-changed", onLanguageChange);
     };
   }, []);
