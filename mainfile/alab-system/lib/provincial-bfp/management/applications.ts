@@ -16,7 +16,7 @@ import type {
 export async function listManagedApplications(
   actor: ManagementActor,
   filters: ManagementFilters,
-): Promise<ManagementPage<ManagedApplication>> {
+): Promise<ManagementPage<ManagedApplication> & { topMunicipalities: Array<{ name: string; users: number }> }> {
   assertManagementActor(actor);
 
   const db = getDatabase();
@@ -65,7 +65,15 @@ export async function listManagedApplications(
 
   const whereSql = whereClauses.length > 0 ? `where ${whereClauses.join(" and ")}` : "";
 
-  const countResult = await db.query<{ count: string; pending: string; verified: string; changes: string }>(
+  const offset = (filters.page - 1) * filters.pageSize;
+  const listValues = [...values, filters.pageSize, offset];
+  const limitIdx = values.length + 1;
+  const offsetIdx = values.length + 2;
+
+  // Count, page and ranking are independent, so they run together: one
+  // database round trip instead of three keeps filtering fast.
+  const [countResult, listResult, topResult] = await Promise.all([
+  db.query<{ count: string; pending: string; verified: string; changes: string }>(
     `select count(*)::text as count,
               count(*) filter (where rv.status = 'PENDING')::text as pending,
               count(*) filter (where rv.status = 'VERIFIED')::text as verified,
@@ -77,16 +85,8 @@ export async function listManagedApplications(
        ${latestVerificationJoin}
      ${whereSql}`,
     values,
-  );
-  const total = Number.parseInt(countResult.rows[0]?.count ?? "0", 10);
-
-  const offset = (filters.page - 1) * filters.pageSize;
-  values.push(filters.pageSize);
-  const limitIdx = values.length;
-  values.push(offset);
-  const offsetIdx = values.length;
-
-  const listResult = await db.query<{
+  ),
+  db.query<{
     id: string;
     reference: string;
     residentProfileId: string;
@@ -139,8 +139,23 @@ export async function listManagedApplications(
      ${whereSql}
       order by rv.submitted_at desc, rv.created_at desc, rv.id desc
       limit $${limitIdx} offset $${offsetIdx}`,
-    values,
-  );
+    listValues,
+  ),
+  // Province-wide ranking for the summary cards; page filters do not apply.
+  db.query<{ name: string; users: number }>(
+    `select m.name, count(*)::int as users
+       from resident_profiles rp
+       join users u on u.id = rp.user_id
+       join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary
+       join municipalities m on m.id = ra.municipality_id
+       ${latestVerificationJoin}
+      where m.province = 'Antique' and u.role = 'RESIDENT' and u.account_status = 'ACTIVE' and rv.status = 'VERIFIED'
+      group by m.name
+      order by users desc, m.name
+      limit 3`,
+  ),
+  ]);
+  const total = Number.parseInt(countResult.rows[0]?.count ?? "0", 10);
 
   const items: ManagedApplication[] = listResult.rows.map((row) => ({
     id: row.id,
@@ -179,6 +194,7 @@ export async function listManagedApplications(
       verified: Number(countResult.rows[0]?.verified ?? 0),
       changes: Number(countResult.rows[0]?.changes ?? 0),
     },
+    topMunicipalities: topResult.rows.map((row) => ({ name: row.name, users: Number(row.users) })),
     updatedAt: new Date().toISOString(),
   };
 }

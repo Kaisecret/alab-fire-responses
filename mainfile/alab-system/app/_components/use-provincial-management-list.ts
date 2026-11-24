@@ -17,6 +17,8 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
   const [items, setItems] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
   const [metrics, setMetrics] = useState<Record<string, number>>({});
+  // The whole last response, for page-specific extras such as summary rankings.
+  const [response, setResponse] = useState<Record<string, unknown>>({});
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,13 +94,14 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
         hasRows.current = (records as T[]).length > 0;
         setTotal(body.total || 0);
         setMetrics(body.metrics || {});
+        setResponse(body);
         setUpdatedAt(body.updatedAt || new Date().toISOString());
         const lastPage = Math.max(1, Math.ceil((body.total || 0) / pageSize));
         if (page > lastPage) setPage(lastPage);
       } catch (cause) {
         if (!controller.signal.aborted) {
           if (cause instanceof ProvincialRequestError && (cause.status === 401 || cause.status === 403)) {
-            setItems([]); hasRows.current = false; setTotal(0); setMetrics({}); setUpdatedAt(null);
+            setItems([]); hasRows.current = false; setTotal(0); setMetrics({}); setResponse({}); setUpdatedAt(null);
           }
           setError(cause instanceof Error ? cause.message : "Unable to load records.");
         }
@@ -107,5 +110,5 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
     return () => { controller.abort(); window.clearTimeout(timer); };
   }, [endpoint, filters, page, pageSize, dataKey, ready, revision]);
 
-  return { items, total, metrics, updatedAt, page, pageSize, filters, loading, error, setPage, setPageSize, setFilters, setFilter, refresh };
+  return { items, total, metrics, response, updatedAt, page, pageSize, filters, loading, error, setPage, setPageSize, setFilters, setFilter, refresh };
 }

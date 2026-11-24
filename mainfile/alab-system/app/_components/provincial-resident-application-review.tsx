@@ -116,7 +116,9 @@ const reviewStyles = `
   }
 
   /* KPI Summary Stats */
-  .par-container .par-verified-stats { grid-template-columns: minmax(0, 1fr); }
+  /* Top three municipalities stay on one row down to tablets, then stack. */
+  .par-container .par-verified-stats { grid-template-columns: repeat(var(--mstat-columns, 3), minmax(0, 1fr)); }
+  @media (max-width: 700px) { .par-container .par-verified-stats { grid-template-columns: minmax(0, 1fr); } }
 
 
 
@@ -1040,6 +1042,8 @@ const reviewStyles = `
   }
 `;
 
+const TOP_TONES = ["emerald", "blue", "violet"] as const;
+
 export function ProvincialResidentApplicationReview({ initialMunicipalityId = '' }: ApplicationReviewProps) {
   const {
     items: applicationRecords,
@@ -1053,6 +1057,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
     setFilter,
     setFilters,
     refresh: fetchApplications,
+    response,
   } = useProvincialManagementList<ManagedApplication>({
     endpoint: '/api/provincial-bfp/resident-applications',
     initialFilters: { municipalityId: initialMunicipalityId, status: 'VERIFIED', pageSize: 7 },
@@ -1072,6 +1077,7 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
     application => application.status === 'VERIFIED' && application.accountStatus === 'ACTIVE'
   ), [applicationRecords]);
   const verifiedFilters = { ...filters, status: 'VERIFIED' };
+  const topMunicipalities = (response.topMunicipalities as Array<{ name: string; users: number }> | undefined) ?? [];
 
   // Review Dossier State
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
@@ -1197,14 +1203,23 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
       <style>{reviewStyles}</style>
       <FireCommandHeader slotId="provincial-fire-command-header" title="Verified Users" icon="fa-user-check" />
 
-      <StatCards
-        label="Verified user summary"
-        className="par-verified-stats"
-        columns={1}
-        items={[
-          { key: "verified", icon: "fa-circle-check", tone: "emerald", badge: "Verified", value: total, label: "Verified Users", description: "Active resident accounts", loading: loading && applications.length === 0 },
-        ]}
-      />
+      {(topMunicipalities.length > 0 || loading) && (
+        <StatCards
+          label="Municipalities with the most verified users"
+          className="par-verified-stats"
+          items={(topMunicipalities.length > 0 ? topMunicipalities : [{ name: "", users: 0 }, { name: "", users: 0 }, { name: "", users: 0 }]).map((row, index) => ({
+            key: `top-${index}`,
+            icon: index === 0 ? "fa-trophy" : "fa-location-dot",
+            tone: TOP_TONES[index],
+            badge: `#${index + 1} Most users`,
+            value: row.users,
+            suffix: row.users === 1 ? "user" : "users",
+            label: row.name,
+            description: index === 0 ? "Most verified residents" : index === 1 ? "Second most" : "Third most",
+            loading: loading && topMunicipalities.length === 0,
+          }))}
+        />
+      )}
 
       {/* Filter Console */}
       <section className="par-filter-console" aria-label="Verified User Filters">
@@ -1313,7 +1328,6 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                   <th>Reference</th>
                   <th>Resident</th>
                   <th>Municipality / Barangay</th>
-                  <th>Subm #</th>
                   <th>Status</th>
                   <th>Submitted At</th>
                   <th style={{ textAlign: 'right' }}>Details</th>
@@ -1373,10 +1387,6 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                         </div>
                         <div className="par-brgy-name">{app.barangayName}</div>
                       </div>
-                    </td>
-
-                    <td>
-                      <span className="par-subm-badge">v{app.submissionNumber}</span>
                     </td>
 
                     <td>{getStatusBadge()}</td>
