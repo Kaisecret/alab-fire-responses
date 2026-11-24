@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   getCachedPhotoOrOriginal,
   preloadPhotos,
-  useCachedPhoto,
 } from "../_lib/local-photo-cache";
 import { PhotoLightbox } from "./photo-lightbox";
 import { ProvincialReportDetail } from "./provincial-report-detail";
@@ -53,8 +52,9 @@ const styles = `
   .pap-wrap {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    grid-auto-rows: 1fr;
     gap: 1rem;
-    align-items: start;
+    align-items: stretch;
   }
   @media (max-width: 768px) {
     .pap-wrap { grid-template-columns: minmax(0, 1fr); }
@@ -290,69 +290,51 @@ const styles = `
   }
 
 
-  .pap-reason {
-    margin-top: 0.45rem;
-    border-left: 3px solid #DC2626;
-    background: #F8FAFC;
-    border-top: 1px solid #E2E8F0;
-    border-right: 1px solid #E2E8F0;
-    border-bottom: 1px solid #E2E8F0;
-    border-radius: 8px;
-    padding: 0.45rem 0.7rem;
-    font-size: 0.74rem;
-    color: #334155;
-    line-height: 1.45;
-  }
-
-  .pap-photos {
+  .pap-extra {
     display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+    min-width: 0;
+  }
+  .pap-note {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 10px;
+    background: #F8FAFC;
+    color: #334155;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .pap-note i { flex: none; color: #94A3B8; }
+  .pap-note span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pap-photos-btn {
+    flex: none;
+    display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    flex-wrap: wrap;
-    margin-top: 0.45rem;
+    margin-left: auto;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid #FECACA;
+    border-radius: 10px;
+    background: #FEF2F2;
+    color: #B91C1C;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease;
   }
-  .pap-photo {
-    position: relative;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #CBD5E1;
-    background: #F1F5F9;
-    padding: 0;
-    cursor: zoom-in;
-    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
-  }
-  .pap-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .pap-photo-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #F8FAFC;
-    color: #94A3B8;
-    font-size: 1rem;
-  }
-  .pap-photo::after {
-    content: '\\f00e';
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    color: #FFFFFF;
-    background: rgba(15, 23, 42, 0.45);
-    opacity: 0;
-    font-size: 0.75rem;
-    transition: opacity 0.16s ease;
-  }
-  .pap-photo:hover { transform: translateY(-1.5px); border-color: #94A3B8; box-shadow: 0 4px 12px rgba(15,23,42,0.12); }
-  .pap-photo:hover::after, .pap-photo:focus-visible::after { opacity: 1; }
-  .pap-photo:focus-visible { outline: 2px solid #0F172A; outline-offset: 2px; }
+  .pap-photos-btn:hover { background: #FEE2E2; border-color: #FCA5A5; }
+  .pap-photos-btn:focus-visible { outline: 2px solid #DC2626; outline-offset: 2px; }
 
+  /* Pinned to the bottom so the alarm buttons line up across cards. */
   .pap-declare {
+    margin-top: auto;
     padding-top: 0.7rem;
     border-top: 1px solid #F1F5F9;
   }
@@ -552,45 +534,6 @@ const styles = `
 const STORAGE_CACHE_KEY = "alab_provincial_backup_requests_cache";
 
 /**
- * Thumbnail rendering with persistent local caching to prevent reloading or flickering on refresh.
- */
-function ScenePhotoThumbnail({
-  photo,
-  index,
-  onClick,
-}: {
-  photo: string;
-  index: number;
-  onClick: () => void;
-}) {
-  const cachedUrl = useCachedPhoto(photo);
-  const [failed, setFailed] = useState(false);
-
-  return (
-    <button
-      type="button"
-      className="pap-photo"
-      onClick={onClick}
-      title="View photo"
-    >
-      {cachedUrl && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={cachedUrl}
-          alt={`Scene photograph ${index + 1} from responder`}
-          loading="lazy"
-          decoding="async"
-          onError={() => setFailed(true)}
-        />
-      ) : null}
-      <div className="pap-photo-placeholder">
-        <i className="fa-solid fa-camera" />
-      </div>
-    </button>
-  );
-}
-
-/**
  * Backup requests that have reached the province, and the alarm level it can
  * declare on each. The level is what summons further municipalities, so it is
  * the province's decision alone.
@@ -755,22 +698,24 @@ export function ProvincialAlarmPanel() {
                 </div>
               </div>
 
-              {request.reason && <div className="pap-reason">{request.reason}</div>}
-
-              {request.photos?.length > 0 && (
-                <div className="pap-photos" aria-label={`${request.photos.length} photo${request.photos.length > 1 ? "s" : ""} from the scene`}>
-                  <span className="pap-ask" aria-hidden="true">
-                    <i className="fa-solid fa-camera" />
-                    {request.photos.length}
-                  </span>
-                  {request.photos.map((photo, index) => (
-                    <ScenePhotoThumbnail
-                      key={photo || index}
-                      photo={photo}
-                      index={index}
-                      onClick={() => setViewer({ requestId: request.id, index })}
-                    />
-                  ))}
+              {(request.reason || request.photos?.length > 0) && (
+                <div className="pap-extra">
+                  {request.reason && (
+                    <div className="pap-note" title={request.reason}>
+                      <i className="fa-regular fa-message" aria-hidden="true" />
+                      <span>{request.reason}</span>
+                    </div>
+                  )}
+                  {request.photos?.length > 0 && (
+                    <button
+                      type="button"
+                      className="pap-photos-btn"
+                      onClick={() => setViewer({ requestId: request.id, index: 0 })}
+                    >
+                      <i className="fa-solid fa-images" aria-hidden="true" />
+                      {request.photos.length} photo{request.photos.length > 1 ? "s" : ""}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

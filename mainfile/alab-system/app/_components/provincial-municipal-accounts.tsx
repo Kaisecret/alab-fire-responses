@@ -572,7 +572,6 @@ const pageStyles = `
     gap: 0.75rem;
     background: #FFFBEB;
     border: 1px solid #FDE68A;
-    border-left: 4px solid #D97706;
     border-radius: 10px;
     padding: 0.85rem 1.15rem;
     font-size: 0.85rem;

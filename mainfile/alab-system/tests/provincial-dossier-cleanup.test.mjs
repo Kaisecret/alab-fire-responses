@@ -17,6 +17,15 @@ test("incident dossier keeps short labels and drops filler lines", () => {
   assert.doesNotMatch(detail, /border-left: \dpx solid/, "No colored side stripe");
 });
 
+test("escalated alarm cards share one height and open scene photos only in the viewer", () => {
+  const panel = read("../app/_components/provincial-alarm-panel.tsx");
+  assert.match(panel, /grid-auto-rows: 1fr;/, "Cards in the wall share one height");
+  assert.match(panel, /\.pap-declare \{\n?\s*margin-top: auto;/, "Alarm buttons pinned to the bottom");
+  assert.doesNotMatch(panel, /ScenePhotoThumbnail|className="pap-photo"/, "No inline photo thumbnails");
+  assert.match(panel, /className="pap-photos-btn"\s*\n\s*onClick=\{\(\) => setViewer\(\{ requestId: request\.id, index: 0 \}\)\}/);
+  assert.doesNotMatch(panel, /border-left: \dpx solid/, "No side stripe on the message");
+});
+
 test("verified user identity photos open only in the viewer, which names each photo", () => {
   const review = read("../app/_components/provincial-resident-application-review.tsx");
   const viewer = read("../app/_components/photo-lightbox.tsx");

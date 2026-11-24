@@ -158,21 +158,13 @@ const dashboardStyles = `
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
     border-radius: 14px;
-    padding: 0.95rem 1.1rem 0.85rem 1.25rem;
+    padding: 0.95rem 1.1rem 0.85rem;
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
     transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s;
-  }
-
-  .pbfp-incident-box::before {
-    content: "";
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 4px;
-    background: var(--tone);
   }
 
   .pbfp-incident-box.tone-red { --tone: #E23632; --tone-soft: #FEF2F2; }
