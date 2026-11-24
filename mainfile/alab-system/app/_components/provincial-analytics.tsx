@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import type { AnalyticsRange, ProvincialAnalytics } from '../../lib/provincial-bfp/analytics';
@@ -11,11 +10,11 @@ import { FireCommandHeader } from './fire-command-header';
 import { DangerDonut, Heatmap, HEAT_RAMP, TrendBars, bucketLabel, formatMinutes } from './provincial-analytics-charts';
 import styles from './provincial-analytics.module.css';
 
-const RANGES: Array<{ value: AnalyticsRange; label: string; compare: string }> = [
-  { value: 'today', label: 'Today', compare: 'yesterday' },
-  { value: '7d', label: '7 days', compare: 'previous 7 days' },
-  { value: '30d', label: '30 days', compare: 'previous 30 days' },
-  { value: 'ytd', label: 'Year to date', compare: 'same period last year' },
+const RANGES: Array<{ value: AnalyticsRange; label: string }> = [
+  { value: 'today', label: 'Today' },
+  { value: '7d', label: '7 days' },
+  { value: '30d', label: '30 days' },
+  { value: 'ytd', label: 'Year to date' },
 ];
 
 const FIRE_TYPES: Record<string, { label: string; color: string }> = {
@@ -44,34 +43,6 @@ const CONDITION_ICONS: Record<string, string> = {
 };
 
 const percent = (value: number | null) => (value == null ? '—' : `${Math.round(value * 100)}%`);
-const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
-
-/** The incident count compared with the previous period, as a small up/down pill. */
-function incidentDelta(current: number, previous: number, compare: string) {
-  const title = `Compared with ${compare}`;
-  if (current === previous) return { text: '= same', tone: 'flat', title };
-  return { text: `${current > previous ? '▲' : '▼'} ${Math.abs(current - previous)}`, tone: current > previous ? 'up' : 'down', title };
-}
-
-function KpiCard({ tone, icon, value, unit, label, note, delta, href }: {
-  tone: 'red' | 'blue' | 'orange' | 'violet'; icon: string; value: React.ReactNode; unit?: string;
-  label: string; note?: string; delta?: { text: string; tone: string; title: string }; href?: string;
-}) {
-  const body = (
-    <>
-      <div className={styles.kpiTop}>
-        <span className={styles.kpiChip} aria-hidden="true"><i className={`fa-solid ${icon}`} /></span>
-        {delta && <span className={`${styles.delta} ${styles[delta.tone]}`} title={delta.title}>{delta.text}</span>}
-        {href && <i className={`fa-solid fa-arrow-right ${styles.kpiGo}`} aria-hidden="true" />}
-      </div>
-      <div className={styles.kpiValue}>{value}{unit && <small>{unit}</small>}</div>
-      <span className={styles.kpiLabel}>{label}</span>
-      {note && <span className={styles.kpiNote}>{note}</span>}
-    </>
-  );
-  const className = `${styles.kpi} ${styles[tone]}`;
-  return href ? <Link href={href} className={className}>{body}</Link> : <div className={className}>{body}</div>;
-}
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return <div className={styles.stat}><small>{label}</small><b>{value}</b></div>;
@@ -117,7 +88,6 @@ export function ProvincialAnalyticsPage() {
   const [range, setRange] = useState<AnalyticsRange>('30d');
   const [municipalityId, setMunicipalityId] = useState('');
   const { data, error, loading, refresh } = useAnalytics(range, municipalityId);
-  const compare = RANGES.find((item) => item.value === range)!.compare;
 
   // Restore the filters from a shared or reloaded link.
   useEffect(() => {
@@ -159,24 +129,6 @@ export function ProvincialAnalyticsPage() {
             </select>
           </label>
         </div>
-
-        {data && headline ? (
-          <section className={styles.kpis} aria-label="Headline numbers">
-            <KpiCard tone="red" icon="fa-fire" href="/provincial-bfp/incidents"
-              delta={incidentDelta(headline.incidents, headline.previousIncidents, compare)}
-              value={headline.incidents} label="Fire incidents"
-              note={`${headline.activeNow} active · ${headline.pendingVerification} pending`} />
-            <KpiCard tone="blue" icon="fa-stopwatch"
-              value={headline.medianArrivalMinutes ?? '—'} unit={headline.medianArrivalMinutes != null ? 'min' : undefined}
-              label="Median response" note={plural(headline.arrivalsMeasured, 'arrival')} />
-            <KpiCard tone="orange" icon="fa-triangle-exclamation"
-              value={headline.highDangerShare == null ? '—' : Math.round(headline.highDangerShare * 100)} unit={headline.highDangerShare != null ? '%' : undefined}
-              label="High & critical" note={`${headline.highDangerIncidents} of ${headline.incidents}`} />
-            <KpiCard tone="violet" icon="fa-ban"
-              value={headline.falseReportShare == null ? '—' : Math.round(headline.falseReportShare * 100)} unit={headline.falseReportShare != null ? '%' : undefined}
-              label="False reports" note={`${headline.falseReports} of ${headline.uniqueReports}`} />
-          </section>
-        ) : loading && <div className={styles.kpis}>{[0, 1, 2, 3].map((key) => <div key={key} className={styles.skeleton} />)}</div>}
 
         {error && (
           <div className={styles.error} role="alert">

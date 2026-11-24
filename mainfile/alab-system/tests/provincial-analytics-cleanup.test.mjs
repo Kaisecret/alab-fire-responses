@@ -34,6 +34,8 @@ test("provincial analytics no longer shows the Response time card or the Median 
   assert.doesNotMatch(page, /title="Response time"/);
   assert.doesNotMatch(page, /StageSteps/);
   assert.doesNotMatch(page, /Median arrival/);
+  assert.doesNotMatch(page, /KpiCard|Headline numbers|Median response|False reports/, "Headline number cards are gone");
+  assert.doesNotMatch(css, /\.kpi/);
   assert.doesNotMatch(charts, /StageSteps|Slowest:/);
   assert.doesNotMatch(css, /\.steps|\.slowNote|\.chipSlow/);
   assert.match(page, /fireTypeRows\(data\.fireTypes\.counts, Object\.keys\(FIRE_TYPES\)\)/);

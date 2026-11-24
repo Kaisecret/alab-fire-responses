@@ -48,30 +48,6 @@
 .page .grid11 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.15rem; }
 .page .grid111 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.15rem; }
 
-/* KPI cards: white, one colour accent each */
-.page .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.15rem; }
-.page .kpi { --tone: var(--brand); --tone-soft: #FFF1F0; position: relative; overflow: hidden; display: flex; flex-direction: column; min-width: 0; padding: 1.15rem 1.25rem 1.1rem; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); color: var(--ink); text-decoration: none; transition: transform .18s ease, box-shadow .18s ease; }
-.page .kpi::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--tone); }
-.page a.kpi:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(15, 23, 42, .09); }
-.page a.kpi:focus-visible { outline: 3px solid rgba(226, 54, 50, .3); outline-offset: 2px; }
-.page .red { --tone: #E23632; --tone-soft: #FFF1F0; }
-.page .blue { --tone: #2563EB; --tone-soft: #EFF5FF; }
-.page .orange { --tone: #EA7A12; --tone-soft: #FFF5EA; }
-.page .violet { --tone: #7C4DEB; --tone-soft: #F4F0FF; }
-.page .kpiTop { display: flex; align-items: center; gap: .5rem; margin-bottom: .9rem; }
-.page .kpiChip { flex: none; width: 2.5rem; height: 2.5rem; border-radius: 12px; display: grid; place-items: center; background: var(--tone-soft); color: var(--tone); font-size: 1rem; }
-.page .kpiGo { margin-left: auto; color: var(--faint); font-size: .8rem; transition: transform .18s ease, color .18s ease; }
-.page a.kpi:hover .kpiGo { color: var(--tone); transform: translateX(3px); }
-.page .delta { margin-left: auto; padding: .22rem .55rem; border-radius: 999px; font-size: .72rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.page .delta + .kpiGo { margin-left: .4rem; }
-.page .up { background: #FEF2F2; color: #B91C1C; }
-.page .down { background: #ECFDF3; color: #047857; }
-.page .flat { background: var(--soft); color: var(--muted); }
-.page .kpiValue { font-size: 2.1rem; font-weight: 800; line-height: 1; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
-.page .kpiValue small { margin-left: .2rem; font-size: 1rem; font-weight: 700; color: var(--muted); letter-spacing: 0; }
-.page .kpiLabel { margin-top: .45rem; font-size: .84rem; font-weight: 700; color: var(--ink-2); }
-.page .kpiNote { margin-top: .2rem; font-size: .74rem; font-weight: 600; color: var(--faint); }
-
 /* Small stat tiles */
 .page .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; margin-top: 1rem; }
 .page .stats3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -182,13 +158,11 @@
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 
 @media (max-width: 1180px) {
-  .page .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .page .grid21, .page .grid11, .page .grid111 { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 640px) {
   .page.page { padding: 1rem 1rem 2rem; }
-  .page .kpis { grid-template-columns: minmax(0, 1fr); }
   .page .stats3 { grid-template-columns: minmax(0, 1fr); }
   .page .heat { grid-template-columns: 1.8rem repeat(24, minmax(0, 1fr)); gap: 2px; }
   .page .table { display: block; overflow-x: auto; }
@@ -198,5 +172,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .page .skeleton { animation: none; }
-  .page .kpi, .page .segment button, .page .kpiGo { transition: none; }
+  .page .segment button { transition: none; }
 }
