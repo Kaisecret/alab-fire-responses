@@ -14,6 +14,7 @@ import type { NearbyObserver, AssistanceRequestSummary } from "../../lib/intermu
 import { shouldShowMutualAidBoard, shouldShowStationAssignment } from "../../lib/municipal-bfp/alarm-alert.mjs";
 import { respondFromButton } from "./municipal-dispatch-choice";
 import { buildResponseGuidance } from "../../lib/fire-reports/response-guidance";
+import { describeResidentOrigin } from "../../lib/fire-reports/resident-origin";
 import { formatStationDistance, rankStationsForIncident } from "../../lib/municipal-bfp/nearest-station";
 import type { RankedStation } from "../../lib/municipal-bfp/nearest-station";
 import { MunicipalStationRecommendation } from "./municipal-station-recommendation";
@@ -47,6 +48,9 @@ type Incident = {
   address: string | null;
   barangay: string;
   municipality: string;
+  /** Town of the resident's registered address (null for phone callers). */
+  residentMunicipality?: string | null;
+  residentVerified?: boolean | null;
   stationName: string | null;
   stationLatitude: number | null;
   stationLongitude: number | null;
@@ -905,6 +909,27 @@ const detailStyles = `
 
   .mbfp-phone-link:hover {
     background: #DBEAFE;
+  }
+
+  /* Where the reporter is registered, plus the report town when it differs. */
+  .mbfp-origin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: fit-content;
+    margin-top: 0.35rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: #F1F5F9;
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .mbfp-origin-badge.is-verified {
+    background: #ECFDF5;
+    color: #047857;
   }
 
   .mbfp-phone-link:focus-visible {
@@ -2379,6 +2404,7 @@ export function MunicipalIncidentDetail({
   }
 
   const isPhoneReport = incident.reportSource === "PHONE_CALL";
+  const residentOrigin = describeResidentOrigin(incident.residentMunicipality, incident.municipality, incident.residentVerified);
   const reportedFireTypes = incident.fireTypes?.length ? incident.fireTypes : [incident.fireType];
   const guidance = buildResponseGuidance({
     level: incident.calculatedSeverity,
@@ -2663,6 +2689,12 @@ export function MunicipalIncidentDetail({
                       <i className="fa-regular fa-user" /> {isPhoneReport ? "Caller name" : "Resident Name"}
                     </span>
                     <DataValue value={incident.residentName} fallback={isPhoneReport ? "Anonymous caller" : "Anonymous Resident"} />
+                    {!isPhoneReport && residentOrigin && (
+                      <span className={`mbfp-origin-badge${incident.residentVerified ? " is-verified" : ""}`}>
+                        <i className={incident.residentVerified ? "fa-solid fa-circle-check" : "fa-regular fa-user"} aria-hidden="true" />
+                        {residentOrigin}
+                      </span>
+                    )}
                   </div>
 
                   <div className="mbfp-data-cell">

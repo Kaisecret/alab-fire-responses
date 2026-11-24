@@ -108,10 +108,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                 fr.building_density_source as "buildingDensitySource", fr.building_density_assessed_at as "buildingDensityAssessedAt",
                 rp.id as "residentProfileId", rp.first_name as "firstName", rp.last_name as "lastName", u.email,
                 ra.complete_address as address, b.name as barangay, m.name as municipality,
+                ram.name as "residentMunicipality", rv.status = 'VERIFIED' as "residentVerified",
                 s.station_name as "stationName", s.latitude::float as "stationLatitude", s.longitude::float as "stationLongitude"
            from fire_reports fr
            left join resident_profiles rp on rp.id = fr.resident_profile_id left join users u on u.id = rp.user_id
            left join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary = true
+           left join municipalities ram on ram.id = ra.municipality_id
+           left join lateral (select status from resident_verifications where resident_profile_id = rp.id order by submitted_at desc, created_at desc limit 1) rv on true
            left join barangays b on b.id = fr.barangay_id left join municipalities m on m.id = fr.municipality_id
            left join lateral (
              select station_name, latitude, longitude
@@ -140,10 +143,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                   fr.building_density_source as "buildingDensitySource", fr.building_density_assessed_at as "buildingDensityAssessedAt",
                   rp.id as "residentProfileId", rp.first_name as "firstName", rp.last_name as "lastName", u.email,
                   ra.complete_address as address, b.name as barangay, m.name as municipality,
+                ram.name as "residentMunicipality", rv.status = 'VERIFIED' as "residentVerified",
                   s.station_name as "stationName", s.latitude::float as "stationLatitude", s.longitude::float as "stationLongitude"
              from fire_reports fr
              left join resident_profiles rp on rp.id = fr.resident_profile_id left join users u on u.id = rp.user_id
              left join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary = true
+           left join municipalities ram on ram.id = ra.municipality_id
+           left join lateral (select status from resident_verifications where resident_profile_id = rp.id order by submitted_at desc, created_at desc limit 1) rv on true
              left join barangays b on b.id = fr.barangay_id left join municipalities m on m.id = fr.municipality_id
              left join lateral (
                select station_name, latitude, longitude
@@ -174,10 +180,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                 null::timestamptz as "buildingDensityAssessedAt",
                 rp.id as "residentProfileId", rp.first_name as "firstName", rp.last_name as "lastName", u.email,
                 ra.complete_address as address, b.name as barangay, m.name as municipality,
+                ram.name as "residentMunicipality", rv.status = 'VERIFIED' as "residentVerified",
                 s.station_name as "stationName", s.latitude::float as "stationLatitude", s.longitude::float as "stationLongitude"
            from fire_reports fr
            left join resident_profiles rp on rp.id = fr.resident_profile_id left join users u on u.id = rp.user_id
            left join resident_addresses ra on ra.resident_profile_id = rp.id and ra.is_primary = true
+           left join municipalities ram on ram.id = ra.municipality_id
+           left join lateral (select status from resident_verifications where resident_profile_id = rp.id order by submitted_at desc, created_at desc limit 1) rv on true
            left join barangays b on b.id = fr.barangay_id left join municipalities m on m.id = fr.municipality_id
            left join lateral (
              select station_name, latitude, longitude

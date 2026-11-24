@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import * as nearestStation from "../lib/municipal-bfp/nearest-station.ts";
 import { respondFromButton } from "../app/_components/municipal-dispatch-choice.ts";
 import { buildResponseGuidance } from "../lib/fire-reports/response-guidance.ts";
+import { describeResidentOrigin } from "../lib/fire-reports/resident-origin.ts";
 import { loadServerModule } from "./helpers/load-server-module.mjs";
 
 const stations = [
@@ -84,6 +85,7 @@ test("opening San Jose's station picker preselects all critical recommendations 
     "./intermunicipality-coordination-panel": {}, "./incident-mutual-aid-board": {},
     "./municipal-dispatch-choice": { respondFromButton },
     "../../lib/fire-reports/response-guidance": { buildResponseGuidance },
+    "../../lib/fire-reports/resident-origin": { describeResidentOrigin },
     "../../lib/municipal-bfp/nearest-station": nearestStation,
     "./municipal-station-recommendation": {},
   });
