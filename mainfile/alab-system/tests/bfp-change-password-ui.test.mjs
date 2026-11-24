@@ -6,28 +6,30 @@ import { resolve } from "node:path";
 const root = process.cwd();
 const changePasswordPath = resolve(root, "app/_components/bfp-change-password.tsx");
 
-test("bfp-change-password component matches the login page UI design language", () => {
+test("bfp-change-password is a focused password step, not a copy of the sign-in page", () => {
   assert.ok(existsSync(changePasswordPath), "bfp-change-password.tsx must exist");
   const content = readFileSync(changePasswordPath, "utf-8");
 
-  // Grid background and split card structure
-  assert.match(content, /bfp-auth-page|muni-login-page/, "Should have login-matching page wrapper");
-  assert.match(content, /formunicipallogin\.webp/, "Should include municipal banner artwork");
-  assert.match(content, /WHITE%20LOGO\.webp/, "Should include white ALAB logo on banner");
-  assert.match(content, /fire%20logo\.webp/, "Should include fire logo badge in header");
+  // No sign-in artwork or split login card.
+  assert.doesNotMatch(content, /formunicipallogin\.webp|FOR%20PROVOCIAL%20SIDE\.webp/, "Sign-in banner artwork must not appear");
+  assert.doesNotMatch(content, /bfp-auth-card|bfp-banner-side/, "Split login card must not appear");
+  assert.match(content, /Change your password/, "Clear title");
+  assert.match(content, /Plus Jakarta Sans/, "House font");
 
-  // Typography & less text
-  assert.match(content, /Plus Jakarta Sans/, "Should use Plus Jakarta Sans font");
-  assert.match(content, /Set New Password/, "Should have clean title");
-  assert.doesNotMatch(content, /This is required before you can use the BFP dashboard\. Use at least 12 characters and do not share it\./, "Should eliminate bulky peacetime text");
+  // Labeled fields, reveal toggles, autocomplete hints.
+  for (const id of ["bfp-current-password", "bfp-next-password", "bfp-confirm-password"]) {
+    assert.match(content, new RegExp(`htmlFor="${id}"`), `${id} has a visible label`);
+  }
+  assert.match(content, /showCurrentPassword/);
+  assert.match(content, /showNextPassword/);
+  assert.match(content, /autoComplete="current-password"/);
+  assert.match(content, /autoComplete="new-password"/);
 
-  // Input fields with reveal toggles & icons
-  assert.match(content, /showCurrentPassword/, "Should have toggle for current/temporary password");
-  assert.match(content, /showNextPassword/, "Should have toggle for new password");
-  assert.match(content, /current-password/, "Should support current-password autocomplete");
-  assert.match(content, /new-password/, "Should support new-password autocomplete");
+  // Live requirements gate the submit button.
+  assert.match(content, /const MIN_LENGTH = 12;/);
+  assert.match(content, /Both new passwords match/);
+  assert.match(content, /disabled=\{loading \|\| !ready\}/);
 
-  // Security loader & admin help note
-  assert.match(content, /BfpLoginLoader/, "Should use rotating fire loader when submitting");
-  assert.match(content, /Need access\?|Need assistance\?|Contact your administrator/, "Should provide administrator contact hint");
+  assert.match(content, /BfpLoginLoader/, "Loader while saving");
+  assert.match(content, /Contact your administrator/, "Administrator hint");
 });
