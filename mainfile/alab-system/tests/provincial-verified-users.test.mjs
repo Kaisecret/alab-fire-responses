@@ -123,11 +123,14 @@ test('verified resident details keep evidence inspection and expose no manual de
   const h = mount({ items: [app('verified')] }); t.after(h.cleanup); await h.settle();
   await h.act(() => h.nodes(node => node.props.className === 'par-btn-review')[0].props.onClick());
   assert.match(h.text(), /verified Resident|Verified/);
-  assert.equal(h.nodes(node => node.type === 'img').length, 3);
+  assert.equal(h.nodes(node => node.type === 'img').length, 0, 'Identity photos show only in the viewer');
+  assert.equal(h.nodes(node => node.props.className === 'par-evidence-tile').length, 3, 'Three equal photo tiles');
   assert.doesNotMatch(h.text(), /Approve|Request Corrections|APPROVED|Provincial Command Review Decisions/);
   assert.equal(h.nodes(node => node.type === 'textarea' || node.type === 'form').length, 0);
-  await h.act(() => h.nodes(node => node.props.className === 'par-evidence-img-wrap')[0].props.onClick());
+  await h.act(() => h.nodes(node => node.props.className === 'par-evidence-tile')[1].props.onClick());
   assert.deepEqual(h.child('PhotoLightbox').props.photos, ['/private/front', '/private/back', '/private/selfie']);
+  assert.deepEqual(h.child('PhotoLightbox').props.labels, ['Front of ID', 'Back of ID', 'Selfie with ID']);
+  assert.equal(h.child('PhotoLightbox').props.index, 1, 'The tapped tile opens its own photo');
   await h.act(() => h.child('PhotoLightbox').props.onClose());
   assert.equal(h.child('PhotoLightbox'), undefined);
   assert.ok(h.requests.every(request => request.method === 'GET'));

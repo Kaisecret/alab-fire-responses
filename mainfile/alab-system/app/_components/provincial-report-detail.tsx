@@ -267,26 +267,28 @@ const styles = `
     font-weight: 700;
   }
 
-  /* Key Metrics Grid */
+  /* Key facts: one white card, six equal cells, no boxes inside boxes. */
   .pid-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.1rem 1.25rem;
+    padding: 1.15rem 1.25rem;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
   }
   @media (max-width: 640px) {
     .pid-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding: 1rem;
     }
   }
 
   .pid-fact {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 10px;
-    padding: 0.8rem 0.95rem;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    gap: 0.2rem;
   }
   .pid-fact-label {
     font-size: 0.68rem;
@@ -294,7 +296,6 @@ const styles = `
     color: #64748B;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    margin-bottom: 0.35rem;
     display: flex;
     align-items: center;
     gap: 0.4rem;
@@ -396,11 +397,6 @@ const styles = `
     color: #0F172A;
     font-size: 0.95rem;
   }
-  .pid-reporter-meta {
-    font-size: 0.75rem;
-    color: #64748B;
-    font-weight: 600;
-  }
   .pid-phone-btn {
     display: inline-flex;
     align-items: center;
@@ -425,8 +421,7 @@ const styles = `
   .pid-description {
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
-    border-left: 4px solid #DC2626;
-    border-radius: 0 10px 10px 0;
+    border-radius: 10px;
     padding: 0.9rem 1.15rem;
     font-size: 0.875rem;
     color: #334155;
@@ -489,40 +484,32 @@ const styles = `
   .pid-photo-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(15, 23, 42, 0.75) 0%, transparent 60%);
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    padding: 0.5rem 0.65rem;
+    display: grid;
+    place-items: center;
+    background: rgba(15, 23, 42, 0.35);
     color: #FFFFFF;
-    font-size: 0.75rem;
-    font-weight: 700;
+    font-size: 1.1rem;
+    opacity: 0;
+    transition: opacity 0.18s ease;
   }
-  .pid-zoom-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.68rem;
+  .pid-photo-card:hover .pid-photo-overlay,
+  .pid-photo-card:focus-visible .pid-photo-overlay {
+    opacity: 1;
   }
+  /* Empty sections stay one quiet line instead of a tall dashed box. */
   .pid-empty-box {
-    padding: 1.75rem 1rem;
-    text-align: center;
+    padding: 0.75rem 1rem;
     background: #F8FAFC;
-    border: 1px dashed #CBD5E1;
     border-radius: 10px;
     color: #64748B;
-    font-size: 0.85rem;
+    font-size: 0.84rem;
+    font-weight: 600;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.55rem;
   }
   .pid-empty-box i {
-    font-size: 1.5rem;
+    font-size: 0.95rem;
     color: #94A3B8;
   }
 
@@ -901,10 +888,10 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
     const resp = new Date(responseStartedAt).getTime();
     if (Number.isNaN(start) || Number.isNaN(resp) || resp < start) return null;
     const diffSec = Math.round((resp - start) / 1000);
-    if (diffSec < 60) return `${diffSec}s response latency`;
+    if (diffSec < 60) return `${diffSec}s after report`;
     const mins = Math.floor(diffSec / 60);
     const secs = diffSec % 60;
-    return `${mins}m ${secs}s response latency`;
+    return `${mins}m ${secs}s after report`;
   };
 
   const getStageIcon = (stage: string) => {
@@ -967,7 +954,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
             <div>
               <div className="pid-kicker">
                 <i className="fa-solid fa-shield-halved" />
-                <span>PROVINCIAL INCIDENT DOSSIER</span>
+                <span>Incident report</span>
               </div>
               <div className="pid-title-wrap">
                 <h2 className="pid-title">{report ? report.referenceNumber : 'Loading Report…'}</h2>
@@ -987,8 +974,6 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                 <div className="pid-badges">
                   {getStatusBadge(report.status)}
                   {getSeverityBadge(report.severity)}
-                  <span className="pid-source-pill">{report.fireType === 'VEHICLE' || report.fireType === 'OTHER'
-                    ? 'Rule-based' : report.severityScore == null ? 'Score unavailable' : `${report.severityScore}/100`}</span>
                   <span className="pid-source-pill">
                     <i
                       className={
@@ -997,7 +982,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                           : 'fa-solid fa-phone-volume'
                       }
                     />
-                    <span>{report.reportSource === 'ALAB_APP' ? 'ALAB Resident Mobile' : 'Direct Phone Dispatch'}</span>
+                    <span>{report.reportSource === 'ALAB_APP' ? 'Resident app' : 'Phone call'}</span>
                   </span>
                 </div>
               )}
@@ -1044,99 +1029,33 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
               </div>
             ) : report ? (
               <>
-                {/* Tactical Parameters Bento */}
+                {/* Key facts: one value each, no filler lines. */}
                 <div className="pid-grid">
+                  {[
+                    { icon: 'fa-solid fa-location-dot', label: 'Location', value: report.municipalityName, sub: report.barangay ? `Brgy. ${report.barangay}` : null },
+                    { icon: 'fa-solid fa-fire', label: 'Fire type', value: (report.fireTypes?.length ? report.fireTypes : [report.fireType]).map(getFireTypeLabel).join(' + '), sub: null },
+                    { icon: 'fa-regular fa-clock', label: 'Reported', value: formatPhilippineDateTime(report.submittedAt), sub: null },
+                    { icon: 'fa-solid fa-truck-fast', label: 'Response', value: report.responseStartedAt ? formatPhilippineDateTime(report.responseStartedAt) : 'Not yet', sub: getResponseDelta(report.submittedAt, report.responseStartedAt) },
+                    { icon: 'fa-solid fa-flag-checkered', label: 'Resolved', value: report.resolvedAt ? formatPhilippineDateTime(report.resolvedAt) : 'Ongoing', sub: null },
+                  ].map((fact) => (
+                    <div key={fact.label} className="pid-fact">
+                      <div className="pid-fact-label"><i className={fact.icon} aria-hidden="true" /><span>{fact.label}</span></div>
+                      <div className="pid-fact-value">{fact.value}</div>
+                      {fact.sub && <div className="pid-fact-sub">{fact.sub}</div>}
+                    </div>
+                  ))}
                   <div className="pid-fact">
-                    <div className="pid-fact-label">
-                      <i className="fa-solid fa-location-dot" />
-                      <span>Municipality</span>
-                    </div>
-                    <div>
-                      <div className="pid-fact-value">{report.municipalityName}</div>
-                      <div className="pid-fact-sub">Brgy. {report.barangay}</div>
-                    </div>
-                  </div>
-
-                  <div className="pid-fact">
-                    <div className="pid-fact-label">
-                      <i className="fa-solid fa-fire" />
-                      <span>Classification</span>
-                    </div>
-                    <div>
-                      <div className="pid-fact-value">{(report.fireTypes?.length ? report.fireTypes : [report.fireType]).map(getFireTypeLabel).join(' + ')}</div>
-                      <div className="pid-fact-sub">
-                        {(report.fireTypes?.length ?? 0) > 1 ? `Level set by ${getFireTypeLabel(report.fireType)}` : 'BFP Antique Jurisdiction'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pid-fact">
-                    <div className="pid-fact-label">
-                      <i className="fa-solid fa-crosshairs" />
-                      <span>Coordinates</span>
-                    </div>
-                    <div>
-                      <div className="pid-coords-wrap">
-                        <span className="pid-fact-mono">
-                          {report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}
-                        </span>
-                        <button
-                          type="button"
-                          className="pid-mini-copy"
-                          onClick={() => handleCopy(`${report.latitude.toFixed(5)}, ${report.longitude.toFixed(5)}`, 'coords')}
-                          title="Copy GPS coordinates"
-                        >
-                          <i className={`fa-solid ${copiedField === 'coords' ? 'fa-check' : 'fa-copy'}`} />
-                          {copiedField === 'coords' ? 'Copied' : 'Copy'}
-                        </button>
-                      </div>
-                      <div className="pid-fact-sub">WGS84 Datum</div>
-                    </div>
-                  </div>
-
-                  <div className="pid-fact">
-                    <div className="pid-fact-label">
-                      <i className="fa-regular fa-clock" />
-                      <span>Submitted Time</span>
-                    </div>
-                    <div>
-                      <div className="pid-fact-value" style={{ fontSize: '0.84rem' }}>
-                        {formatPhilippineDateTime(report.submittedAt)}
-                      </div>
-                      <div className="pid-fact-sub">Caller initial report</div>
-                    </div>
-                  </div>
-
-                  <div className="pid-fact">
-                    <div className="pid-fact-label">
-                      <i className="fa-solid fa-truck-fast" />
-                      <span>Response Start</span>
-                    </div>
-                    <div>
-                      <div className="pid-fact-value" style={{ fontSize: '0.84rem' }}>
-                        {report.responseStartedAt ? formatPhilippineDateTime(report.responseStartedAt) : 'Pending response'}
-                      </div>
-                      {getResponseDelta(report.submittedAt, report.responseStartedAt) && (
-                        <div className="pid-delta-badge">
-                          <i className="fa-solid fa-bolt" />
-                          <span>{getResponseDelta(report.submittedAt, report.responseStartedAt)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="pid-fact">
-                    <div className="pid-fact-label">
-                      <i className="fa-solid fa-flag-checkered" />
-                      <span>Resolution Status</span>
-                    </div>
-                    <div>
-                      <div className="pid-fact-value" style={{ fontSize: '0.84rem' }}>
-                        {report.resolvedAt ? formatPhilippineDateTime(report.resolvedAt) : 'Ongoing incident'}
-                      </div>
-                      <div className="pid-fact-sub">
-                        {report.resolvedAt ? 'Incident formally concluded' : 'Active tactical operation'}
-                      </div>
+                    <div className="pid-fact-label"><i className="fa-solid fa-crosshairs" aria-hidden="true" /><span>Coordinates</span></div>
+                    <div className="pid-coords-wrap">
+                      <span className="pid-fact-mono">{report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}</span>
+                      <button
+                        type="button"
+                        className="pid-mini-copy"
+                        onClick={() => handleCopy(`${report.latitude.toFixed(5)}, ${report.longitude.toFixed(5)}`, 'coords')}
+                        aria-label="Copy coordinates"
+                      >
+                        <i className={`fa-solid ${copiedField === 'coords' ? 'fa-check' : 'fa-copy'}`} aria-hidden="true" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1162,9 +1081,8 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                             alt="Fire Logo"
                             style={{ width: 20, height: 20, objectFit: 'contain' }}
                           />
-                          <span>Tactical Ground Reconnaissance Map</span>
+                          <span>Location map</span>
                         </h3>
-                        <span className="pid-count-chip">120m Safety Perimeter</span>
                       </div>
                       <ProvincialIncidentMiniMap
                         latitude={report.latitude}
@@ -1175,12 +1093,12 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                     </div>
                   )}
 
-                {/* Reporter Information Snapshot */}
+                {/* Reporter */}
                 <div className="pid-card">
                   <div className="pid-card-header">
                     <h3 className="pid-card-title">
                       <i className="fa-solid fa-user-shield" />
-                      <span>Reporter Information Snapshot</span>
+                      <span>Reporter</span>
                     </h3>
                   </div>
                   <div className="pid-reporter-box">
@@ -1190,12 +1108,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                       </div>
                       <div>
                         <div className="pid-reporter-name">
-                          {report.reporterNameSnapshot || 'Anonymous Citizen Reporter'}
-                        </div>
-                        <div className="pid-reporter-meta">
-                          {report.reportSource === 'ALAB_APP'
-                            ? 'Verified ALAB Resident Mobile Account'
-                            : 'Direct Telephone Emergency Dispatch'}
+                          {report.reporterNameSnapshot || 'Anonymous'}
                         </div>
                       </div>
                     </div>
@@ -1209,7 +1122,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                         <span>{report.reporterPhoneSnapshot}</span>
                       </a>
                     ) : (
-                      <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>No direct contact number</span>
+                      <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>No phone</span>
                     )}
                   </div>
                 </div>
@@ -1220,7 +1133,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                     <div className="pid-card-header">
                       <h3 className="pid-card-title">
                         <i className="fa-solid fa-align-left" />
-                        <span>Incident Description & Context</span>
+                        <span>Description</span>
                       </h3>
                     </div>
                     <div className="pid-description">{reportDescription(report.description)}</div>
@@ -1232,14 +1145,14 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                   <div className="pid-card-header">
                     <h3 className="pid-card-title">
                       <i className="fa-solid fa-camera" />
-                      <span>Incident Scene Photos</span>
+                      <span>Photos</span>
                     </h3>
-                    <span className="pid-count-chip">Photos ({report.photos.length})</span>
+                    {report.photos.length > 0 && <span className="pid-count-chip">{report.photos.length}</span>}
                   </div>
                   {report.photos.length === 0 ? (
                     <div className="pid-empty-box">
                       <i className="fa-solid fa-images" />
-                      <span>No scene photos attached to this incident report.</span>
+                      <span>No photos</span>
                     </div>
                   ) : (
                     <div className="pid-photos-grid">
@@ -1252,7 +1165,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                             setLightbox({
                               photos: report.photos,
                               index: i,
-                              caption: `Incident Scene Photo ${i + 1} of ${report.photos.length} · ${report.referenceNumber}`,
+                              caption: report.referenceNumber,
                             })
                           }
                           aria-label={`View photo ${i + 1} full size`}
@@ -1274,11 +1187,8 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                             <i className="fa-solid fa-image" />
                             <span>Photo {i + 1}</span>
                           </div>
-                          <div className="pid-photo-overlay">
-                            <span>Photo {i + 1}</span>
-                            <span className="pid-zoom-badge">
-                              <i className="fa-solid fa-magnifying-glass-plus" /> Expand
-                            </span>
+                          <div className="pid-photo-overlay" aria-hidden="true">
+                            <i className="fa-solid fa-expand" />
                           </div>
                         </button>
                       ))}
@@ -1294,7 +1204,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                       <span>Status history</span>
                     </h3>
                     {report.timeline && (
-                      <span className="pid-count-chip">{report.timeline.length} milestones</span>
+                      <span className="pid-count-chip">{report.timeline.length}</span>
                     )}
                   </div>
 
@@ -1339,7 +1249,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                   ) : (
                     <div className="pid-empty-box">
                       <i className="fa-solid fa-clock-rotate-left" />
-                      <span>No status history recorded yet.</span>
+                      <span>No status changes yet</span>
                     </div>
                   )}
                 </section>
@@ -1349,15 +1259,15 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                   <div className="pid-card-header">
                     <h3 className="pid-card-title">
                       <i className="fa-solid fa-truck-droplet" />
-                      <span>Municipal Dispatches & Responding Units</span>
+                      <span>Dispatches</span>
                     </h3>
-                    <span className="pid-count-chip">Dispatches ({report.dispatches.length})</span>
+                    {report.dispatches.length > 0 && <span className="pid-count-chip">{report.dispatches.length}</span>}
                   </div>
 
                   {report.dispatches.length === 0 ? (
                     <div className="pid-empty-box">
                       <i className="fa-solid fa-truck-droplet" />
-                      <span>No station dispatches initiated for this incident yet.</span>
+                      <span>No dispatch yet</span>
                     </div>
                   ) : (
                     <div className="pid-dispatches-list">
@@ -1366,7 +1276,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                           <div className="pid-dispatch-header">
                             <div className="pid-unit-title">
                               <i className="fa-solid fa-fire-extinguisher" style={{ color: '#DC2626' }} />
-                              <span>Dispatch Unit #{d.id.slice(0, 8)}</span>
+                              <span>{(d.stations || []).map((station) => station.stationName).join(', ') || 'Dispatch'}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span className="pid-unit-time">
@@ -1387,28 +1297,8 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                             </div>
                           </div>
 
-                          {/* Stations involved */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748B' }}>
-                              Stations:
-                            </span>
-                            {(d.stations || []).length > 0 ? (
-                              (d.stations || []).map((s) => (
-                                <span key={s.stationId} className="pid-station-tag">
-                                  <i className="fa-solid fa-building-shield" style={{ color: '#DC2626' }} />
-                                  <span>{s.stationName}</span>
-                                </span>
-                              ))
-                            ) : (
-                              <span style={{ fontSize: '0.78rem', color: '#94A3B8' }}>None assigned</span>
-                            )}
-                          </div>
-
                           {/* Responders involved */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748B' }}>
-                              Responders ({(d.recipients || []).length}):
-                            </span>
                             {(d.recipients || []).length > 0 ? (
                               <div className="pid-responders-list">
                                 {(d.recipients || []).map((r) => (
@@ -1422,7 +1312,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                                 ))}
                               </div>
                             ) : (
-                              <span style={{ fontSize: '0.78rem', color: '#94A3B8' }}>None</span>
+                              <span style={{ fontSize: '0.78rem', color: '#94A3B8' }}>No responders yet</span>
                             )}
                           </div>
                         </div>
@@ -1437,7 +1327,7 @@ export function ProvincialReportDetail({ reportId, onClose }: ProvincialReportDe
                     <div className="pid-card-header">
                       <h3 className="pid-card-title">
                         <i className="fa-solid fa-handshake-angle" />
-                        <span>Mutual Aid Assistance Requests</span>
+                        <span>Mutual aid</span>
                       </h3>
                       <span className="pid-count-chip">{report.assistance.length}</span>
                     </div>

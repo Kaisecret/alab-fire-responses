@@ -790,96 +790,54 @@ const reviewStyles = `
     gap: 1rem;
   }
 
-  .par-evidence-card {
-    background: #FFFFFF;
-    border: 1px solid var(--slate-200);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  /* Three identical tiles; the photo itself opens in the viewer. */
+  .par-evidence-grid { grid-auto-rows: 1fr; }
+  .par-evidence-tile {
     display: flex;
     flex-direction: column;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  .par-evidence-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
-    border-color: #CBD5E1;
-  }
-
-  .par-evidence-header {
-    padding: 0.6rem 0.85rem;
-    background: var(--slate-50);
-    border-bottom: 1px solid var(--slate-200);
-    font-size: 0.72rem;
-    font-weight: 800;
-    color: var(--navy-700);
-    display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 148px;
+    height: 100%;
+    padding: 1.1rem 0.85rem;
+    border: 1px solid var(--slate-200);
+    border-radius: 14px;
+    background: #FFFFFF;
+    color: var(--navy-700);
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
   }
-
-  .par-evidence-header span {
-    display: flex;
+  .par-evidence-tile:hover:not(:disabled) { border-color: #FCA5A5; box-shadow: 0 8px 20px rgba(220, 38, 38, 0.1); transform: translateY(-2px); }
+  .par-evidence-tile:focus-visible { outline: 3px solid rgba(220, 38, 38, 0.35); outline-offset: 2px; }
+  .par-evidence-tile:disabled { cursor: default; background: var(--slate-50); border-style: dashed; }
+  .par-evidence-tile-icon {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: #FEF2F2;
+    color: #DC2626;
+    font-size: 1.15rem;
+  }
+  .par-evidence-tile:disabled .par-evidence-tile-icon { background: var(--slate-200); color: var(--slate-400); }
+  .par-evidence-tile-label { font-size: 0.86rem; font-weight: 800; color: #0F172A; }
+  .par-evidence-tile-action {
+    display: inline-flex;
     align-items: center;
     gap: 0.35rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    background: #FEF2F2;
+    color: #B91C1C;
+    font-size: 0.74rem;
+    font-weight: 800;
   }
-
-  .par-evidence-img-wrap {
-    position: relative;
-    height: 150px;
-    background: #0F172A;
-    cursor: pointer;
-    overflow: hidden;
-  }
-
-  .par-evidence-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.25s ease;
-  }
-
-  .par-evidence-card:hover .par-evidence-img {
-    transform: scale(1.04);
-  }
-
-  .par-evidence-hover-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.5);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    color: #FFFFFF;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    font-size: 0.75rem;
-    font-weight: 700;
-  }
-
-  .par-evidence-img-wrap:hover .par-evidence-hover-overlay {
-    opacity: 1;
-  }
-
-  .par-evidence-empty {
-    height: 150px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    background: var(--slate-50);
-    border: 2px dashed var(--slate-200);
-    color: var(--slate-400);
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 1rem;
-    text-align: center;
-  }
+  .par-evidence-tile:disabled .par-evidence-tile-action { background: transparent; color: var(--slate-400); }
 
   /* Timeline */
   .par-timeline {
@@ -975,13 +933,11 @@ const reviewStyles = `
     font-size: 0.78rem;
     color: var(--navy-800);
     line-height: 1.4;
-    border-left: 3px solid #CBD5E1;
   }
 
   .par-timeline-note--alert {
     background: #FFF7ED;
     border-color: #FED7AA;
-    border-left-color: #EA580C;
     color: #9A3412;
   }
 
@@ -1020,7 +976,11 @@ const reviewStyles = `
       grid-template-columns: 1fr;
     }
     .par-evidence-grid {
-      grid-template-columns: 1fr;
+      gap: 0.6rem;
+    }
+    .par-evidence-tile {
+      min-height: 120px;
+      padding: 0.85rem 0.4rem;
     }
     .par-profile-grid {
       grid-template-columns: 1fr;
@@ -1146,10 +1106,13 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
   );
 
   // Evidence photos list for Lightbox
-  const evidencePhotos = useMemo(() => {
-    if (!dossier?.evidence) return [];
-    return [dossier.evidence.frontUrl, dossier.evidence.backUrl, dossier.evidence.selfieUrl].filter(Boolean) as string[];
-  }, [dossier]);
+  const evidenceItems = [
+    { key: "front", label: "Front of ID", icon: "fa-id-card", url: dossier?.evidence?.frontUrl ?? null },
+    { key: "back", label: "Back of ID", icon: "fa-id-card-clip", url: dossier?.evidence?.backUrl ?? null },
+    { key: "selfie", label: "Selfie with ID", icon: "fa-camera", url: dossier?.evidence?.selfieUrl ?? null },
+  ];
+  const uploadedEvidence = evidenceItems.filter((item) => item.url);
+  const evidencePhotos = uploadedEvidence.map((item) => item.url as string);
 
   const getStatusBadge = () => (
     <span className="par-status-pill par-status-pill--verified">
@@ -1532,132 +1495,31 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
                     </div>
                   </div>
 
-                  {/* Government ID & Selfie Evidence */}
+                  {/* Government ID & Selfie Evidence: equal tiles; photos open only in the viewer. */}
                   <div>
                     <div className="par-section-heading">
                       <div className="par-section-heading-left">
-                        <i className="fa-solid fa-camera-viewfinder" />
-                        <span>Identity Verification Evidence</span>
+                        <i className="fa-solid fa-camera" />
+                        <span>Identity photos</span>
                       </div>
-                      <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>
-                        Click any photo to inspect full-screen
-                      </span>
                     </div>
 
                     <div className="par-evidence-grid">
-                      {/* Front ID */}
-                      <div className="par-evidence-card">
-                        <div className="par-evidence-header">
-                          <span>
-                            <i className="fa-solid fa-id-card" /> Front Government ID
+                      {evidenceItems.map((item) => (
+                        <button
+                          key={item.key}
+                          type="button"
+                          className="par-evidence-tile"
+                          disabled={!item.url}
+                          onClick={() => setLightboxIndex(Math.max(0, evidencePhotos.indexOf(item.url!)))}
+                        >
+                          <span className="par-evidence-tile-icon"><i className={`fa-solid ${item.icon}`} aria-hidden="true" /></span>
+                          <span className="par-evidence-tile-label">{item.label}</span>
+                          <span className="par-evidence-tile-action">
+                            {item.url ? <><i className="fa-solid fa-eye" aria-hidden="true" /> View photo</> : "Not uploaded"}
                           </span>
-                          {dossier.evidence?.frontUrl ? (
-                            <span style={{ color: '#059669', fontSize: '0.68rem' }}>Uploaded</span>
-                          ) : (
-                            <span style={{ color: '#94A3B8', fontSize: '0.68rem' }}>Missing</span>
-                          )}
-                        </div>
-                        {dossier.evidence?.frontUrl ? (
-                          <div
-                            className="par-evidence-img-wrap"
-                            onClick={() => {
-                              const idx = evidencePhotos.indexOf(dossier.evidence!.frontUrl!);
-                              setLightboxIndex(idx >= 0 ? idx : 0);
-                            }}
-                          >
-                            <img
-                              src={dossier.evidence.frontUrl}
-                              alt="Front Government ID"
-                              className="par-evidence-img"
-                            />
-                            <div className="par-evidence-hover-overlay">
-                              <i className="fa-solid fa-magnifying-glass-plus" style={{ fontSize: '1.25rem' }} />
-                              <span>Inspect in Lightbox</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="par-evidence-empty">
-                            <i className="fa-solid fa-image-slash" style={{ fontSize: '1.5rem' }} />
-                            <span>No front ID uploaded</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Back ID */}
-                      <div className="par-evidence-card">
-                        <div className="par-evidence-header">
-                          <span>
-                            <i className="fa-solid fa-id-card-clip" /> Back Government ID
-                          </span>
-                          {dossier.evidence?.backUrl ? (
-                            <span style={{ color: '#059669', fontSize: '0.68rem' }}>Uploaded</span>
-                          ) : (
-                            <span style={{ color: '#94A3B8', fontSize: '0.68rem' }}>Missing</span>
-                          )}
-                        </div>
-                        {dossier.evidence?.backUrl ? (
-                          <div
-                            className="par-evidence-img-wrap"
-                            onClick={() => {
-                              const idx = evidencePhotos.indexOf(dossier.evidence!.backUrl!);
-                              setLightboxIndex(idx >= 0 ? idx : 0);
-                            }}
-                          >
-                            <img
-                              src={dossier.evidence.backUrl}
-                              alt="Back Government ID"
-                              className="par-evidence-img"
-                            />
-                            <div className="par-evidence-hover-overlay">
-                              <i className="fa-solid fa-magnifying-glass-plus" style={{ fontSize: '1.25rem' }} />
-                              <span>Inspect in Lightbox</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="par-evidence-empty">
-                            <i className="fa-solid fa-image-slash" style={{ fontSize: '1.5rem' }} />
-                            <span>No back ID uploaded</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Selfie */}
-                      <div className="par-evidence-card">
-                        <div className="par-evidence-header">
-                          <span>
-                            <i className="fa-solid fa-camera-rotate" /> Selfie with ID
-                          </span>
-                          {dossier.evidence?.selfieUrl ? (
-                            <span style={{ color: '#059669', fontSize: '0.68rem' }}>Uploaded</span>
-                          ) : (
-                            <span style={{ color: '#94A3B8', fontSize: '0.68rem' }}>Missing</span>
-                          )}
-                        </div>
-                        {dossier.evidence?.selfieUrl ? (
-                          <div
-                            className="par-evidence-img-wrap"
-                            onClick={() => {
-                              const idx = evidencePhotos.indexOf(dossier.evidence!.selfieUrl!);
-                              setLightboxIndex(idx >= 0 ? idx : 0);
-                            }}
-                          >
-                            <img
-                              src={dossier.evidence.selfieUrl}
-                              alt="Selfie with ID"
-                              className="par-evidence-img"
-                            />
-                            <div className="par-evidence-hover-overlay">
-                              <i className="fa-solid fa-magnifying-glass-plus" style={{ fontSize: '1.25rem' }} />
-                              <span>Inspect in Lightbox</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="par-evidence-empty">
-                            <i className="fa-solid fa-image-slash" style={{ fontSize: '1.5rem' }} />
-                            <span>No selfie uploaded</span>
-                          </div>
-                        )}
-                      </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
 
@@ -1757,7 +1619,8 @@ export function ProvincialResidentApplicationReview({ initialMunicipalityId = ''
           index={lightboxIndex}
           onIndexChange={setLightboxIndex}
           onClose={() => setLightboxIndex(null)}
-          caption={dossier ? `Verification Evidence — ${dossier.firstName} ${dossier.lastName} (${dossier.reference})` : undefined}
+          labels={uploadedEvidence.map((item) => item.label)}
+          caption={dossier ? `${dossier.firstName} ${dossier.lastName} · ${dossier.reference}` : undefined}
         />
       )}
     </section>

@@ -82,7 +82,7 @@ test("the report shows the ground, not a pair of numbers", () => {
   const map = source("app/_components/provincial-incident-mini-map.tsx");
 
   assert.match(detail, /<ProvincialIncidentMiniMap/);
-  assert.match(detail, /Tactical Ground Reconnaissance Map/);
+  assert.match(detail, /Location map/);
   // Coordinates stay, on the map itself, rather than standing in for it.
   assert.match(map, /pmm-coords/);
   assert.match(map, /tileLayer/);
