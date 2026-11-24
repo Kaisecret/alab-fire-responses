@@ -130,7 +130,8 @@ export const landingMobileStyles = String.raw`
       z-index: 3;
       top: 0;
       bottom: auto;
-      left: clamp(-2.2rem, -5vw, -1rem);
+      /* The picture has ~7% clear space on its left, so the phone frame lines up with the text edge. */
+      left: max(0rem, calc(var(--page-pad) - 3vw));
       width: clamp(9.5rem, 42vw, 16rem);
       filter: drop-shadow(0 1.4rem 1.8rem rgb(46 19 12 / 26%));
     }
@@ -250,7 +251,7 @@ export const landingMobileStyles = String.raw`
     .phone {
       top: 0;
       bottom: auto;
-      left: -1.2rem;
+      left: 0.25rem;
       width: 9rem;
     }
 
