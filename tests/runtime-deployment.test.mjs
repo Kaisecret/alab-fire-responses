@@ -15,7 +15,7 @@ test("the Next.js application is committed as regular files, not a gitlink", () 
   assert.match(stagedEntry, /^100644 /);
 });
 
-test("the repository root exposes Railway build and start commands", async () => {
+test("the repository root exposes application build and start commands", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8"));
   const appPackageJson = JSON.parse(
     await readFile(`${APP_DIRECTORY}/package.json`, "utf8"),
@@ -53,7 +53,7 @@ test("the standalone app lockfile installs Next beside the app", async () => {
   }
 });
 
-test("Railway postinstall avoids strict nested ci for platform optional packages", async () => {
+test("postinstall avoids strict nested ci for platform optional packages", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8"));
 
   assert.equal(packageJson.scripts.postinstall.includes("npm ci"), false);
@@ -63,7 +63,7 @@ test("Railway postinstall avoids strict nested ci for platform optional packages
   );
 });
 
-test("the production launcher forwards Railway's host and port", async () => {
+test("the production launcher forwards the runtime host and port", async () => {
   const launcher = await readFile("scripts/start.mjs", "utf8");
 
   assert.match(launcher, /process\.env\.PORT/);
@@ -72,16 +72,4 @@ test("the production launcher forwards Railway's host and port", async () => {
   assert.match(launcher, /process\.execPath/);
   assert.match(launcher, /next\/dist\/bin\/next/);
   assert.doesNotMatch(launcher, /npm\.cmd/);
-});
-
-test("Railway configuration uses the root commands and health check", async () => {
-  const railway = JSON.parse(await readFile("railway.json", "utf8"));
-
-  assert.equal(railway.build.builder, "RAILPACK");
-  assert.equal(railway.build.buildCommand, "npm run build");
-  assert.equal(railway.deploy.startCommand, "npm start");
-  assert.equal(
-    railway.deploy.healthcheckPath,
-    "/api/health/database",
-  );
 });

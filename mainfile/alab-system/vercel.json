@@ -5,5 +5,5 @@
     { "path": "/api/cron/backup-escalations", "schedule": "1 0 * * *" }
   ],
   "installCommand": "ONNXRUNTIME_NODE_INSTALL=skip npm install --include=optional",
-  "ignoreCommand": "[ -n \"$VERCEL_GIT_PREVIOUS_SHA\" ] && git diff --quiet \"$VERCEL_GIT_PREVIOUS_SHA\" HEAD -- ."
+  "ignoreCommand": "node scripts/vercel-ignore-build.mjs"
 }
