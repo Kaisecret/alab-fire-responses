@@ -11,58 +11,6 @@ export function formatMinutes(minutes: number | null) {
   return `${minutes} min`;
 }
 
-const STEP_NODES = [
-  { label: 'Reported', icon: 'fa-bell' },
-  { label: 'Verified', icon: 'fa-circle-check' },
-  { label: 'Dispatched', icon: 'fa-truck' },
-  { label: 'Arrived', icon: 'fa-location-dot' },
-  { label: 'Under control', icon: 'fa-fire-extinguisher' },
-  { label: 'Resolved', icon: 'fa-flag-checkered' },
-];
-
-/**
- * The Incident Timeline as steps, with the median minutes each step took
- * between them. The slowest step's chip turns red so the delay stands out.
- */
-export function StageSteps({ stages }: { stages: ProvincialAnalytics['responseStages'] }) {
-  const measured = stages.filter((stage) => stage.medianMinutes != null);
-  const slowest = measured.reduce<(typeof stages)[number] | null>(
-    (worst, stage) => (worst == null || (stage.medianMinutes ?? 0) > (worst.medianMinutes ?? 0) ? stage : worst), null);
-  return (
-    <>
-      <ol className={styles.steps}>
-        {STEP_NODES.map((node, index) => {
-          const reached = index === 0 || stages[index - 1].medianMinutes != null;
-          const next = stages[index];
-          const slow = next === slowest && measured.length > 1;
-          return (
-            <React.Fragment key={node.label}>
-              <li className={styles.step}>
-                <span className={`${styles.stepDot} ${reached ? '' : styles.stepMuted}`} aria-hidden="true"><i className={`fa-solid ${node.icon}`} /></span>
-                <span>{node.label}</span>
-              </li>
-              {next && (
-                <li className={`${styles.stepLink} ${next.medianMinutes == null ? styles.stepMissing : ''}`}
-                  aria-label={`${next.label}: ${next.medianMinutes == null ? 'not recorded' : formatMinutes(next.medianMinutes)}${slow ? ', slowest step' : ''}`}>
-                  <span className={`${styles.chip} ${slow ? styles.chipSlow : ''}`} title={slow ? 'Slowest step' : undefined}>
-                    {next.medianMinutes == null ? '—' : formatMinutes(next.medianMinutes)}
-                  </span>
-                </li>
-              )}
-            </React.Fragment>
-          );
-        })}
-      </ol>
-      {slowest && measured.length > 1 && (
-        <p className={styles.slowNote}>
-          <i className="fa-solid fa-hourglass-half" aria-hidden="true" />
-          <span>Slowest: <b>{slowest.label}</b> · {formatMinutes(slowest.medianMinutes)}</span>
-        </p>
-      )}
-    </>
-  );
-}
-
 export function bucketLabel(bucket: string, kind: string, long = false) {
   if (kind === 'hour') {
     const hour = Number(bucket.slice(11, 13));

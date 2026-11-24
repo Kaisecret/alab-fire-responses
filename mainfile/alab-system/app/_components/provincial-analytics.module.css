@@ -151,20 +151,6 @@
 .page .helpers div { display: flex; justify-content: space-between; font-size: .84rem; font-weight: 700; color: var(--ink-2); padding: .55rem .8rem; background: var(--wash); border-radius: 12px; }
 .page .helpers b { color: var(--ink); }
 
-/* Response steps */
-.page .steps { display: flex; align-items: flex-start; list-style: none; margin: 0; padding: 1.9rem 0 .25rem; }
-.page .step { flex: none; width: 4.75rem; display: flex; flex-direction: column; align-items: center; gap: .5rem; text-align: center; font-size: .74rem; font-weight: 700; line-height: 1.25; color: var(--ink-2); }
-.page .stepDot { width: 2.75rem; height: 2.75rem; border-radius: 50%; display: grid; place-items: center; background: #0F172A; color: #fff; font-size: .92rem; box-shadow: 0 0 0 5px #EEF2F7; }
-.page .stepMuted { background: #EEF2F7; color: var(--faint); box-shadow: none; }
-.page .stepLink { position: relative; flex: 1; min-width: 1.5rem; height: 2.75rem; }
-.page .stepLink::before { content: ''; position: absolute; left: -.9rem; right: -.9rem; top: 50%; border-top: 2px solid #CBD5E1; }
-.page .stepMissing::before { border-top-style: dashed; border-color: #E2E8F0; }
-.page .chip { position: absolute; left: 50%; bottom: calc(50% + .5rem); transform: translateX(-50%); background: #fff; border: 1px solid var(--border); border-radius: 999px; padding: .2rem .6rem; font-size: .76rem; font-weight: 800; color: var(--ink); white-space: nowrap; box-shadow: 0 2px 8px rgba(15, 23, 42, .06); }
-.page .stepMissing .chip { border-color: transparent; background: transparent; color: var(--faint); box-shadow: none; }
-.page .chipSlow { background: #FEF2F2; border-color: #FECACA; color: #B91C1C; }
-.page .slowNote { display: inline-flex; align-items: center; gap: .45rem; margin: 1.1rem 0 0; padding: .4rem .8rem; border-radius: 999px; background: #FEF2F2; color: #991B1B; font-size: .76rem; font-weight: 600; }
-.page .slowNote b { font-weight: 800; }
-
 /* Level of Danger */
 .page .dangerTop { display: grid; grid-template-columns: 8.75rem minmax(0, 1fr); gap: 1.25rem; align-items: center; }
 .page .donut { position: relative; width: 8.75rem; height: 8.75rem; }

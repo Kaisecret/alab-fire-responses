@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import type { AnalyticsRange, ProvincialAnalytics } from '../../lib/provincial-bfp/analytics';
+import { fireTypeRows } from '../../lib/provincial-bfp/fire-type-rows';
 import { ProvincialRequestError, requestProvincialJson } from '../../lib/provincial-bfp/client-request';
 import { FireCommandHeader } from './fire-command-header';
-import { DangerDonut, Heatmap, HEAT_RAMP, StageSteps, TrendBars, bucketLabel, formatMinutes } from './provincial-analytics-charts';
+import { DangerDonut, Heatmap, HEAT_RAMP, TrendBars, bucketLabel, formatMinutes } from './provincial-analytics-charts';
 import styles from './provincial-analytics.module.css';
 
 const RANGES: Array<{ value: AnalyticsRange; label: string; compare: string }> = [
@@ -190,13 +191,6 @@ export function ProvincialAnalyticsPage() {
 
         {data && headline && (
           <>
-            <section className={styles.card}>
-              <SectionHead icon="fa-stopwatch" title="Response time" meta="median per step" />
-              {data.responseStages.some((stage) => stage.medianMinutes != null)
-                ? <StageSteps stages={data.responseStages} />
-                : <p className={styles.empty}>No status changes yet.</p>}
-            </section>
-
             <section className={styles.grid21}>
               <div className={styles.card}>
                 {(() => {
@@ -222,7 +216,7 @@ export function ProvincialAnalyticsPage() {
               <SectionHead icon="fa-map-location-dot" title="By municipality" meta="click a row to open reports" />
               {data.municipalities.length === 0 ? <p className={styles.empty}>No fire incidents.</p> : (
                 <table className={styles.table}>
-                  <thead><tr><th>Municipality</th><th>Incidents</th><th>High &amp; critical</th><th>Median arrival</th><th>Active</th><th aria-label="Open" /></tr></thead>
+                  <thead><tr><th>Municipality</th><th>Incidents</th><th>High &amp; critical</th><th>Active</th><th aria-label="Open" /></tr></thead>
                   <tbody>
                     {data.municipalities.map((row) => {
                       const open = () => router.push(`/provincial-bfp/incident-reports?municipalityId=${row.id}`);
@@ -234,7 +228,6 @@ export function ProvincialAnalyticsPage() {
                           <td>{row.highDangerShare != null && row.highDangerShare >= 0.4
                             ? <span className={`${styles.pill} ${styles.pillHot}`}><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {percent(row.highDangerShare)}</span>
                             : row.highDangerShare == null ? <span className={styles.dash}>—</span> : percent(row.highDangerShare)}</td>
-                          <td>{row.medianArrivalMinutes == null ? <span className={styles.dash}>—</span> : formatMinutes(row.medianArrivalMinutes)}</td>
                           <td>{row.activeNow
                             ? <span className={`${styles.pill} ${styles.pillLive}`}><i className={styles.liveDot} aria-hidden="true" /> {row.activeNow}</span>
                             : <span className={styles.dash}>—</span>}</td>
@@ -339,8 +332,8 @@ export function ProvincialAnalyticsPage() {
                   meta={data.fireTypes.multiType > 0 ? `${data.fireTypes.multiType} with 2+ types` : undefined} />
                 {data.fireTypes.counts.length === 0 ? <p className={styles.empty}>No fire incidents.</p> : (
                   <div className={styles.bars}>
-                    {data.fireTypes.counts.map((row) => {
-                      const most = data.fireTypes.counts[0].incidents;
+                    {fireTypeRows(data.fireTypes.counts, Object.keys(FIRE_TYPES)).map((row, _index, rows) => {
+                      const most = Math.max(rows[0].incidents, 1);
                       const type = FIRE_TYPES[row.type] ?? { label: row.type, color: 'var(--faint)' };
                       return (
                         <div key={row.type} className={styles.bar}>
