@@ -3,7 +3,7 @@
 Based on [pbakaus/impeccable](https://github.com/pbakaus/impeccable).
 
 ## 1. Product Context
-- **Product**: ALAB (GIS-Based Provincial & Municipal Fire Response and Decision Support System).
+- **Product**: ALAB (A GIS-Based Provincial Inter-Municipal Fire Response and Decision Support System for BFP Antique).
 - **Core Audiences**: Provincial BFP Marshals, Municipal BFP Station Commanders, Dispatchers, and Field Responders.
 - **Design Lane**: **Product Mode** (High-craft mission-critical command center, fast-glance status indicators, zero latency, high-density tactical grids).
 

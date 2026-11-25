@@ -11,6 +11,7 @@ import { createFaceCheckController } from "../../lib/resident-applications/face-
 import { createSelfieViewCollection, SELFIE_VIEWS } from "../../lib/resident-applications/selfie-views-client.mjs";
 import { createSelfieGuidanceSession } from "../../lib/resident-applications/selfie-guidance";
 import { selfieGuidanceCue } from "../../lib/resident-applications/selfie-guidance-cues.mjs";
+import { idFrameCrop } from "../../lib/resident-applications/id-frame-crop.mjs";
 
 type SelfieView = "front" | "right" | "left";
 
@@ -36,7 +37,7 @@ type SignupPageProps = {
 const STEP_CONFIG = [
   { title: "Personal Information", subtitle: "Create your resident account to get started." },
   { title: "Address Information", subtitle: "Tell us where you are located in Antique." },
-  { title: "Upload your ID", subtitle: "Add the front and back of the same valid ID." },
+  { title: "Scan your ID", subtitle: "Take a photo or upload the front and back of the same valid ID." },
   { title: "Take your selfie", subtitle: "Match a clear selfie with the photo on your verified ID." },
   { title: "Account Security", subtitle: "Set up your login credentials." },
   // The panel below this header changes from code entry to a verified summary,
@@ -461,6 +462,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       dropzone?.classList.toggle("id-failed", look === "failed");
       section?.classList.toggle("id-verified", look === "verified");
       dropzone?.classList.toggle("id-verified", look === "verified");
+      section?.classList.toggle("id-scanning", look === "scanning");
       if (!status) return;
       status.replaceChildren();
       status.hidden = !look;
@@ -501,6 +503,13 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     }
 
     const chooseFile = (side: "front" | "back") => () => sideParts[side].input?.click();
+    // Keeps Tab focus inside an open camera dialog.
+    const trapDialogTab = (panel: HTMLElement, event: KeyboardEvent) => {
+      const buttons = Array.from(panel.querySelectorAll<HTMLButtonElement>("button")).filter(button => !button.hidden && !button.disabled && button.getClientRects().length > 0);
+      const first = buttons[0], last = buttons.at(-1);
+      if (event.shiftKey && root.ownerDocument.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && root.ownerDocument.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
     // Photos still being made smaller; they are never sent until ready.
     const preparingSides = new Map<"front" | "back", File>();
 
@@ -623,42 +632,34 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     lastNameInput?.addEventListener("input", handleNameChange);
 
     // --- File upload helpers ---
+    // The chosen photo is shown in the card so the resident can check it is readable.
+    const idThumbUrls = new Map<HTMLElement, string>();
     function updateDropzoneUI(dropzone: HTMLElement | null, section: HTMLElement | null, file: File | null) {
       if (!dropzone) return;
-      const cloudIcon = dropzone.querySelector<HTMLElement>(".upload-cloud-icon");
-      const uploadText = dropzone.querySelector<HTMLElement>(".upload-text");
-      const hints = dropzone.querySelectorAll<HTMLElement>(".upload-hint");
-      const existingPreview = dropzone.querySelector<HTMLElement>(".file-preview");
+      dropzone.querySelector<HTMLElement>(".file-preview")?.remove();
+      const previousUrl = idThumbUrls.get(dropzone);
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
+      idThumbUrls.delete(dropzone);
+      dropzone.classList.toggle("has-file", Boolean(file));
+      section?.classList.toggle("has-file", Boolean(file));
+      if (!file) return;
 
-      if (file) {
-        // Show file name
-        if (cloudIcon) cloudIcon.style.display = "none";
-        if (uploadText) uploadText.style.display = "none";
-        hints.forEach((h) => (h.style.display = "none"));
-        if (existingPreview) existingPreview.remove();
-
-        const preview = document.createElement("div");
-        preview.className = "file-preview";
-        preview.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-          <span>${file.name}</span>
-          <button type="button" class="remove-file" title="Remove file">&times;</button>
-        `;
-        dropzone.appendChild(preview);
-        dropzone.classList.add("has-file");
-        section?.classList.add("has-file");
-      } else {
-        // Reset
-        if (cloudIcon) cloudIcon.style.display = "";
-        if (uploadText) uploadText.style.display = "";
-        hints.forEach((h) => (h.style.display = ""));
-        if (existingPreview) existingPreview.remove();
-        dropzone.classList.remove("has-file");
-        section?.classList.remove("has-file");
-      }
+      const url = URL.createObjectURL(file);
+      idThumbUrls.set(dropzone, url);
+      const preview = document.createElement("div");
+      preview.className = "file-preview";
+      preview.innerHTML = `
+        <img class="id-thumb" src="${url}" alt="${dropzone === dropzoneBack ? "Back" : "Front"} of your ID">
+        <span class="id-file-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+          <span class="id-file-name"></span>
+          <button type="button" class="remove-file" title="Remove photo" aria-label="Remove photo">&times;</button>
+        </span>
+      `;
+      // The file name is set as text, never as HTML.
+      const name = preview.querySelector<HTMLElement>(".id-file-name");
+      if (name) name.textContent = file.name;
+      dropzone.appendChild(preview);
     }
 
     function handleFileSelect(
@@ -737,7 +738,10 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
           if (frontFile) void scanFrontId();
           else resetIdVerification();
         }
+        return;
       }
+      // Clicking the photo area opens the file picker, as the old upload box did.
+      chooseFile(e.currentTarget === dropzoneBack ? "back" : "front")();
     }
 
     // Setup drag-and-drop
@@ -794,6 +798,174 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     fileBackInput?.addEventListener("change", handleBackFileChange);
     dropzoneFront?.addEventListener("click", handleDropzoneClick);
     dropzoneBack?.addEventListener("click", handleDropzoneClick);
+
+    // --- Guided ID camera ---
+    // A camera photo is put into the same file input as an upload, so it goes
+    // through the same size check, shrinking and ID scan.
+    const idCameraPanel = root.querySelector<HTMLElement>("#idCameraPanel");
+    const idCameraVideo = root.querySelector<HTMLVideoElement>("#idCameraVideo");
+    const idCameraPreview = root.querySelector<HTMLImageElement>("#idCameraPreview");
+    const idCameraFrame = root.querySelector<HTMLElement>("#idCameraFrame");
+    const idCameraFlash = root.querySelector<HTMLElement>("#idCameraFlash");
+    const idCameraSide = root.querySelector<HTMLElement>("#idCameraSide");
+    const idCameraHint = root.querySelector<HTMLElement>("#idCameraHint");
+    const idCameraReview = root.querySelector<HTMLElement>("#idCameraReview");
+    const idCameraError = root.querySelector<HTMLElement>("#idCameraError");
+    const captureIdBtn = root.querySelector<HTMLButtonElement>("#captureIdPhoto");
+    const closeIdCameraBtn = root.querySelector<HTMLButtonElement>("#closeIdCamera");
+    const retakeIdBtn = root.querySelector<HTMLButtonElement>("#retakeIdPhoto");
+    const useIdBtn = root.querySelector<HTMLButtonElement>("#useIdPhoto");
+    const retryIdCameraBtn = root.querySelector<HTMLButtonElement>("#retryIdCamera");
+    const uploadIdInsteadBtn = root.querySelector<HTMLButtonElement>("#uploadIdInstead");
+    const idSideButtons = {
+      front: { scan: root.querySelector<HTMLButtonElement>("#scanFrontBtn"), upload: root.querySelector<HTMLButtonElement>("#uploadFrontBtn") },
+      back: { scan: root.querySelector<HTMLButtonElement>("#scanBackBtn"), upload: root.querySelector<HTMLButtonElement>("#uploadBackBtn") },
+    };
+    let idCameraStream: MediaStream | null = null;
+    let idCameraSideKey: "front" | "back" = "front";
+    let idCameraShot: Blob | null = null;
+    let idCameraShotUrl: string | null = null;
+    let idCameraAttempt = 0;
+    let idCameraOverflow: string | null = null;
+
+    const setIdCameraState = (state: "loading" | "live" | "review" | "error", hint: string) => {
+      idCameraPanel?.setAttribute("data-state", state);
+      if (idCameraHint) idCameraHint.textContent = hint;
+      if (idCameraVideo) idCameraVideo.hidden = state === "review";
+      if (idCameraPreview) idCameraPreview.hidden = state !== "review";
+      if (captureIdBtn) {
+        captureIdBtn.hidden = state === "review" || state === "error";
+        captureIdBtn.disabled = state !== "live";
+      }
+      if (idCameraReview) idCameraReview.hidden = state !== "review";
+      if (idCameraError) idCameraError.hidden = state !== "error";
+    };
+    const clearIdCameraShot = () => {
+      if (idCameraShotUrl) URL.revokeObjectURL(idCameraShotUrl);
+      idCameraShotUrl = null;
+      idCameraShot = null;
+      idCameraPreview?.removeAttribute("src");
+    };
+    const closeIdCamera = () => {
+      idCameraAttempt++;
+      idCameraStream?.getTracks().forEach((track) => track.stop());
+      idCameraStream = null;
+      if (idCameraVideo) idCameraVideo.srcObject = null;
+      clearIdCameraShot();
+      idCameraPanel?.classList.remove("active");
+      idCameraPanel?.setAttribute("aria-hidden", "true");
+      if (idCameraOverflow !== null) {
+        root.ownerDocument.body.style.overflow = idCameraOverflow;
+        idCameraOverflow = null;
+        if (!disposed) idSideButtons[idCameraSideKey].scan?.focus();
+      }
+    };
+    const startIdCamera = async () => {
+      const attempt = ++idCameraAttempt;
+      clearIdCameraShot();
+      setIdCameraState("loading", "Opening camera…");
+      if (!navigator.mediaDevices?.getUserMedia || !idCameraVideo) {
+        setIdCameraState("error", "This browser cannot open the camera. Upload a photo instead.");
+        return;
+      }
+      try {
+        if (!idCameraStream?.getTracks().some((track) => track.readyState === "live")) {
+          idCameraStream?.getTracks().forEach((track) => track.stop());
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+            audio: false,
+          });
+          if (disposed || attempt !== idCameraAttempt) { stream.getTracks().forEach((track) => track.stop()); return; }
+          idCameraStream = stream;
+        }
+        if (idCameraVideo.srcObject !== idCameraStream) idCameraVideo.srcObject = idCameraStream;
+        await idCameraVideo.play();
+        if (disposed || attempt !== idCameraAttempt) return;
+        setIdCameraState("live", "Fit the whole card inside the frame, then tap the button.");
+      } catch (error) {
+        if (disposed || attempt !== idCameraAttempt) return;
+        const reason = error instanceof DOMException ? error.name : "";
+        setIdCameraState("error", reason === "NotAllowedError"
+          ? "Camera access is blocked. Allow it in your browser settings, or upload a photo instead."
+          : reason === "NotFoundError" ? "No camera was found. Upload a photo instead."
+          : "The camera could not start. Try again, or upload a photo instead.");
+      }
+    };
+    const openIdCamera = (side: "front" | "back") => {
+      idCameraSideKey = side;
+      if (idCameraSide) idCameraSide.textContent = side === "front" ? "Front of ID" : "Back of ID";
+      idCameraPanel?.classList.add("active");
+      idCameraPanel?.setAttribute("aria-hidden", "false");
+      if (idCameraOverflow === null) {
+        idCameraOverflow = root.ownerDocument.body.style.overflow;
+        root.ownerDocument.body.style.overflow = "hidden";
+      }
+      closeIdCameraBtn?.focus();
+      void startIdCamera();
+    };
+    const handleCaptureId = () => {
+      const video = idCameraVideo;
+      if (!video || !idCameraStream || captureIdBtn?.disabled || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
+      const attempt = idCameraAttempt;
+      if (captureIdBtn) captureIdBtn.disabled = true;
+      // Keep only what is inside the frame, so the card fills the photo.
+      const crop = idFrameCrop(video.getBoundingClientRect(), idCameraFrame?.getBoundingClientRect() ?? { left: 0, top: 0, width: 0, height: 0 }, video.videoWidth, video.videoHeight);
+      const scale = Math.min(1, 1600 / Math.max(crop.width, crop.height));
+      const canvas = root.ownerDocument.createElement("canvas");
+      canvas.width = Math.round(crop.width * scale);
+      canvas.height = Math.round(crop.height * scale);
+      canvas.getContext("2d")?.drawImage(video, crop.x, crop.y, crop.width, crop.height, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (disposed || attempt !== idCameraAttempt) return;
+        if (!blob) {
+          setIdCameraState("live", "That photo did not save. Please take it again.");
+          return;
+        }
+        idCameraShot = blob;
+        idCameraShotUrl = URL.createObjectURL(blob);
+        if (idCameraPreview) idCameraPreview.src = idCameraShotUrl;
+        idCameraFlash?.animate?.([{ opacity: 0.8 }, { opacity: 0 }], { duration: 450, easing: "ease-out" });
+        setIdCameraState("review", "Is all the text sharp and easy to read?");
+      }, "image/jpeg", 0.92);
+    };
+    const handleUseIdPhoto = () => {
+      const input = sideParts[idCameraSideKey].input;
+      if (!idCameraShot || !input) return;
+      const file = new File([idCameraShot], `id-${idCameraSideKey}-camera.jpg`, { type: "image/jpeg", lastModified: Date.now() });
+      closeIdCamera();
+      const files = new DataTransfer();
+      files.items.add(file);
+      input.files = files.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    const handleUploadIdInstead = () => {
+      const side = idCameraSideKey;
+      closeIdCamera();
+      chooseFile(side)();
+    };
+    const handleRetryIdCamera = () => { void startIdCamera(); };
+    const handleIdCameraKey = (event: KeyboardEvent) => {
+      if (!idCameraPanel?.classList.contains("active")) return;
+      if (event.key === "Escape") { event.preventDefault(); closeIdCamera(); }
+      if (event.key === "Tab") trapDialogTab(idCameraPanel, event);
+    };
+    const idSideHandlers = (["front", "back"] as const).map((side) => {
+      const scan = () => openIdCamera(side);
+      const upload = chooseFile(side);
+      idSideButtons[side].scan?.addEventListener("click", scan);
+      idSideButtons[side].upload?.addEventListener("click", upload);
+      return () => {
+        idSideButtons[side].scan?.removeEventListener("click", scan);
+        idSideButtons[side].upload?.removeEventListener("click", upload);
+      };
+    });
+    captureIdBtn?.addEventListener("click", handleCaptureId);
+    closeIdCameraBtn?.addEventListener("click", closeIdCamera);
+    retakeIdBtn?.addEventListener("click", handleRetryIdCamera);
+    retryIdCameraBtn?.addEventListener("click", handleRetryIdCamera);
+    useIdBtn?.addEventListener("click", handleUseIdPhoto);
+    uploadIdInsteadBtn?.addEventListener("click", handleUploadIdInstead);
+    idCameraPanel?.addEventListener("keydown", handleIdCameraKey);
 
     function showSelfieCaptured() {
       selfieTaken = selfieViews.count() === 3;
@@ -1090,12 +1262,7 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
     const handleCameraKey = (event: KeyboardEvent) => {
       if (!selfieCameraPanel?.classList.contains("active")) return;
       if (event.key === "Escape") { event.preventDefault(); stopSelfieCamera(); }
-      if (event.key === "Tab") {
-        const buttons = Array.from(selfieCameraPanel.querySelectorAll<HTMLButtonElement>("button")).filter(button => !button.hidden && !button.disabled && button.getClientRects().length > 0);
-        const first = buttons[0], last = buttons.at(-1);
-        if (event.shiftKey && root.ownerDocument.activeElement === first) { event.preventDefault(); last?.focus(); }
-        else if (!event.shiftKey && root.ownerDocument.activeElement === last) { event.preventDefault(); first?.focus(); }
-      }
+      if (event.key === "Tab") trapDialogTab(selfieCameraPanel, event);
     };
     selfieCameraPanel?.addEventListener("keydown", handleCameraKey);
 
@@ -1553,6 +1720,17 @@ export function SignupPage({ fontVariableClassName }: SignupPageProps) {
       selfieViews.clear();
       cleanupDragFront?.();
       cleanupDragBack?.();
+      idSideHandlers.forEach(remove => remove());
+      captureIdBtn?.removeEventListener("click", handleCaptureId);
+      closeIdCameraBtn?.removeEventListener("click", closeIdCamera);
+      retakeIdBtn?.removeEventListener("click", handleRetryIdCamera);
+      retryIdCameraBtn?.removeEventListener("click", handleRetryIdCamera);
+      useIdBtn?.removeEventListener("click", handleUseIdPhoto);
+      uploadIdInsteadBtn?.removeEventListener("click", handleUploadIdInstead);
+      idCameraPanel?.removeEventListener("keydown", handleIdCameraKey);
+      closeIdCamera();
+      idThumbUrls.forEach(url => URL.revokeObjectURL(url));
+      idThumbUrls.clear();
     };
   }, []);
 

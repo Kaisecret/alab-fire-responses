@@ -6,6 +6,7 @@ import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { MunicipalStatCards } from "./municipal-stat-cards";
+import { parseStationPosition, StationLocationPicker } from "./station-location-picker";
 
 type Station = {
   id: string;
@@ -66,6 +67,8 @@ export function MunicipalStationsManager() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [stationName, setStationName] = useState("");
   const [headName, setHeadName] = useState("");
+  const [stationLatitude, setStationLatitude] = useState("");
+  const [stationLongitude, setStationLongitude] = useState("");
   const [modalError, setModalError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -401,6 +404,11 @@ export function MunicipalStationsManager() {
 
   const submitAdd = async (event: FormEvent) => {
     event.preventDefault();
+    const position = parseStationPosition(stationLatitude, stationLongitude);
+    if (!position) {
+      setModalError("Place the station pin on the map or enter its latitude and longitude.");
+      return;
+    }
     setSaving(true);
     setModalError("");
 
@@ -412,7 +420,7 @@ export function MunicipalStationsManager() {
       const response = await fetch("/api/municipal-bfp/stations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stationName: formattedName }),
+        body: JSON.stringify({ stationName: formattedName, latitude: position[0], longitude: position[1] }),
       });
 
       const result = (await response.json()) as { error?: string; station?: Station };
@@ -426,6 +434,8 @@ export function MunicipalStationsManager() {
       // Reset form and close modal
       setStationName("");
       setHeadName("");
+      setStationLatitude("");
+      setStationLongitude("");
       setIsAddModalOpen(false);
       void load();
     } catch {
@@ -1162,7 +1172,7 @@ export function MunicipalStationsManager() {
           role="presentation"
         >
           <div
-            className="mbfp-modal-content"
+            className="mbfp-modal-content mbfp-add-station-modal"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -1173,7 +1183,7 @@ export function MunicipalStationsManager() {
                 <h2 id="add-station-title">
                   <i className="fa-solid fa-building-shield" /> Add Station
                 </h2>
-                <p>Register a fire station and assign its station head.</p>
+                <p>Register a fire station, assign its head and pin it on the map.</p>
               </div>
               <button
                 type="button"
@@ -1232,6 +1242,15 @@ export function MunicipalStationsManager() {
                     />
                   </div>
                 </div>
+
+                <StationLocationPicker
+                  latitude={stationLatitude}
+                  longitude={stationLongitude}
+                  setLatitude={setStationLatitude}
+                  setLongitude={setStationLongitude}
+                  stations={stations}
+                  disabled={saving}
+                />
               </div>
 
               <div className="mbfp-modal-footer">
@@ -2384,6 +2403,25 @@ const pageStyles = `
 
   .mbfp-modal-content.confirm-modal {
     width: min(100%, 450px);
+  }
+
+  /* The location map makes this dialog tall: header and footer stay, the body scrolls. */
+  .mbfp-add-station-modal {
+    max-height: calc(100dvh - 3rem);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mbfp-add-station-modal form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .mbfp-add-station-modal .mbfp-modal-body {
+    overflow-y: auto;
+    gap: 1.25rem;
   }
 
   .mbfp-modal-header {

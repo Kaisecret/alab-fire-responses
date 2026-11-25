@@ -44,10 +44,11 @@ test("every How to Use trigger opens the same dialog", async () => {
   assert.match(page, /<LandingHowToUse \/>/);
 });
 
-test("How to Use shows a video slot, the resident steps, and sign-up and login links", async () => {
+test("How to Use plays the tutorial video and shows the resident steps and sign-up and login links", async () => {
   const dialog = read("app/_components/landing-how-to-use.tsx");
-  const { HOW_TO_USE_STEPS, HOW_TO_USE_VIDEO_SRC } = await import("../app/_components/landing-how-to-use-content.ts");
-  assert.equal(HOW_TO_USE_VIDEO_SRC, "", "no video yet: the dialog shows its placeholder");
+  const { HOW_TO_USE_STEPS, HOW_TO_USE_YOUTUBE_ID } = await import("../app/_components/landing-how-to-use-content.ts");
+  // https://youtu.be/2CF_jjupUbU ("ALAB tutorial")
+  assert.equal(HOW_TO_USE_YOUTUBE_ID, "2CF_jjupUbU");
   assert.deepEqual(HOW_TO_USE_STEPS.map((step) => step.title), [
     "Create your resident account",
     "Wait for Municipal BFP approval",
@@ -56,8 +57,12 @@ test("How to Use shows a video slot, the resident steps, and sign-up and login l
   ]);
   assert.match(dialog, /role="dialog"/);
   assert.match(dialog, /aria-modal="true"/);
-  assert.match(dialog, /Video coming soon/);
-  assert.match(dialog, /<video[^>]*src=\{HOW_TO_USE_VIDEO_SRC\}/);
+  // The player loads only after Play, and closing the dialog unmounts it.
+  assert.match(dialog, /youtube-nocookie\.com\/embed\/\$\{HOW_TO_USE_YOUTUBE_ID\}/);
+  assert.match(dialog, /\{playing \? \(\s*<iframe/);
+  assert.match(dialog, /allowFullScreen/);
+  assert.match(dialog, /aria-label="Play the ALAB tutorial video"/);
+  assert.doesNotMatch(dialog, /Video coming soon/);
   assert.match(dialog, /href="\/resident\/signup"/);
   assert.match(dialog, /href="\/resident\/login"/);
   assert.match(dialog, /event\.key === "Escape"/);

@@ -61,3 +61,18 @@ test("municipal website exposes station setup before personnel account issuance"
   assert.match(personnel, /stations\.length === 0/);
   assert.match(personnel, /temporaryPassword/);
 });
+
+test("Add Station asks for a map pin and sends its coordinates to the stations API", () => {
+  const manager = source("app/_components/municipal-stations-manager.tsx");
+  const picker = source("app/_components/station-location-picker.tsx");
+  const service = source("lib/municipal-bfp/stations.ts");
+
+  assert.match(manager, /<StationLocationPicker/);
+  assert.match(manager, /latitude: position\[0\], longitude: position\[1\]/);
+  // The picker accepts the same Philippine range the service validates, so a set pin never bounces.
+  assert.match(service, /coordinate\(raw\.latitude, 4, 22\)/);
+  assert.match(service, /coordinate\(raw\.longitude, 116, 127\)/);
+  assert.match(picker, /lat >= 4 && lat <= 22 && lng >= 116 && lng <= 127/);
+  assert.match(picker, /draggable: true/);
+  assert.match(picker, /navigator\.geolocation/);
+});

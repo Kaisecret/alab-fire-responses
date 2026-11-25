@@ -694,10 +694,11 @@ export const signupStyles = `
         /* Upload / Verification Section */
         .upload-section {
             border: 1.5px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 1rem 1.2rem;
-            margin-bottom: 0.8rem;
-            transition: all 0.2s ease;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            background: #ffffff;
+            transition: border-color 0.2s ease, background 0.2s ease;
         }
 
         .upload-section:hover {
@@ -726,7 +727,7 @@ export const signupStyles = `
             width: 2rem;
             height: 2rem;
             background: rgba(217, 27, 16, 0.1);
-            border-radius: 6px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -752,20 +753,29 @@ export const signupStyles = `
             margin-left: 0.3rem;
         }
 
+        .upload-header .id-side-step {
+            margin-left: auto;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #64748b;
+            font-size: 0.7rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        /* ID photo area, shaped like a scanner bed with red corner marks */
         .upload-dropzone {
-            border: 2px dashed #cbd5e1;
-            border-radius: 10px;
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 0.3rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background: #fafbfc;
-            min-height: 4.5rem;
             position: relative;
+            display: grid;
+            place-items: center;
+            height: 9.5rem;
+            overflow: hidden;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 12px;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
         }
 
         .upload-dropzone:hover {
@@ -782,7 +792,7 @@ export const signupStyles = `
         .upload-dropzone.has-file {
             border-color: #cbd5e1;
             border-style: solid;
-            background: #fafbfc;
+            background: #f1f5f9;
         }
 
         .upload-dropzone.has-file.id-verified {
@@ -790,22 +800,47 @@ export const signupStyles = `
             background: rgba(34, 197, 94, 0.04);
         }
 
-        .upload-dropzone .upload-cloud-icon {
-            width: 2rem;
-            height: 2rem;
+        .id-corner {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border: 3px solid var(--primary-red);
+            pointer-events: none;
+        }
+
+        .id-corner.tl { top: 10px; left: 10px; border-right: 0; border-bottom: 0; border-top-left-radius: 6px; }
+        .id-corner.tr { top: 10px; right: 10px; border-left: 0; border-bottom: 0; border-top-right-radius: 6px; }
+        .id-corner.bl { bottom: 10px; left: 10px; border-right: 0; border-top: 0; border-bottom-left-radius: 6px; }
+        .id-corner.br { bottom: 10px; right: 10px; border-left: 0; border-top: 0; border-bottom-right-radius: 6px; }
+
+        .id-empty {
+            display: grid;
+            justify-items: center;
+            gap: 4px;
+            padding: 12px 32px;
+            text-align: center;
+        }
+
+        .upload-dropzone.has-file .id-empty,
+        .upload-dropzone.has-file > .id-corner {
+            display: none;
+        }
+
+        .id-card-art {
+            width: 5.25rem;
+            height: auto;
+            margin-bottom: 4px;
             color: var(--primary-red);
-            opacity: 0.7;
         }
 
         .upload-dropzone .upload-text {
             font-size: 0.82rem;
             color: var(--text-muted);
             font-weight: 500;
-            text-align: center;
         }
 
         .upload-dropzone .upload-text strong {
-            color: var(--primary-red);
+            color: var(--text-dark);
             font-weight: 700;
         }
 
@@ -815,41 +850,312 @@ export const signupStyles = `
             font-weight: 500;
         }
 
+        /* Chosen photo fills the area so the resident can check it is readable */
         .upload-dropzone .file-preview {
+            position: absolute;
+            inset: 0;
+        }
+
+        .upload-dropzone .id-thumb {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .upload-dropzone .id-file-chip {
+            position: absolute;
+            left: 8px;
+            bottom: 8px;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.82rem;
+            gap: 6px;
+            max-width: calc(100% - 16px);
+            padding: 4px 4px 4px 12px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.82);
+            color: #ffffff;
+            font-size: 0.74rem;
             font-weight: 600;
-            color: var(--text-muted);
+        }
+
+        .upload-dropzone .id-file-name {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .upload-dropzone .file-preview svg {
             display: none;
-            width: 1.2rem;
-            height: 1.2rem;
-            color: #22c55e;
+            width: 1rem;
+            height: 1rem;
+            flex-shrink: 0;
         }
 
         .upload-dropzone .file-preview .remove-file {
-            margin-left: 0.3rem;
-            color: #ef4444;
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 1rem;
-            background: none;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            width: 26px;
+            height: 26px;
+            padding: 0;
             border: none;
-            padding: 0 0.2rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
+            cursor: pointer;
+            font: inherit;
+            font-size: 1.05rem;
+            font-weight: 700;
             line-height: 1;
-            transition: transform 0.15s ease;
+            transition: background 0.15s ease;
         }
 
         .upload-dropzone .file-preview .remove-file:hover {
-            transform: scale(1.2);
+            background: #ef4444;
         }
 
-        .upload-dropzone input[type="file"] {
+        .upload-dropzone .file-preview .remove-file:focus-visible {
+            outline: 2px solid #ffffff;
+            outline-offset: 2px;
+        }
+
+        /* A red line sweeps the photo while the ID is being checked */
+        .upload-section.id-scanning .upload-dropzone.has-file::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-red);
+            box-shadow: 0 0 12px 3px rgba(217, 27, 16, 0.55);
+            animation: idDropSweep 1.6s ease-in-out infinite alternate;
+        }
+
+        @keyframes idDropSweep {
+            to { top: calc(100% - 2px); }
+        }
+
+        .id-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .id-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 44px;
+            padding: 8px 12px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            background: #ffffff;
+            color: var(--text-dark);
+            font: inherit;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+        }
+
+        .id-action:hover {
+            border-color: var(--primary-red);
+            color: var(--primary-red);
+        }
+
+        .id-action.primary {
+            border-color: var(--primary-red);
+            background: var(--primary-red);
+            color: #ffffff;
+        }
+
+        .id-action.primary:hover {
+            border-color: var(--primary-red-hover);
+            background: var(--primary-red-hover);
+            color: #ffffff;
+        }
+
+        /* Once a photo is in, Continue is the main action, so both buttons go quiet. */
+        .upload-section.has-file .id-action.primary {
+            border-color: #e2e8f0;
+            background: #ffffff;
+            color: var(--text-dark);
+        }
+
+        .upload-section.has-file .id-action.primary:hover {
+            border-color: var(--primary-red);
+            color: var(--primary-red);
+        }
+
+        .id-action:focus-visible {
+            outline: 2px solid var(--primary-red);
+            outline-offset: 2px;
+        }
+
+        .id-action svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .id-action .when-file,
+        .upload-section.has-file .id-action .when-empty {
             display: none;
+        }
+
+        .upload-section.has-file .id-action .when-file {
+            display: inline;
+        }
+
+        @media (max-width: 360px) {
+            .id-actions { grid-template-columns: 1fr; }
+        }
+
+        /* Guided ID camera (shares the selfie dialog shell) */
+        .selfie-camera-card.id-camera-card {
+            width: min(100%, 40rem);
+        }
+
+        .id-camera-side {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 999px;
+            background: var(--primary-red);
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-shadow: none;
+        }
+
+        .id-camera-stage {
+            position: relative;
+            height: min(80svh, 36rem);
+            overflow: hidden;
+            background: #0b111c;
+        }
+
+        .id-camera-stage video,
+        .id-camera-stage img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #0b111c;
+        }
+
+        .id-camera-stage img {
+            object-fit: contain;
+        }
+
+        .id-camera-frame {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            width: min(86%, 30rem, 74svh);
+            aspect-ratio: 1.586;
+            transform: translate(-50%, -50%);
+            border: 1.5px solid rgba(255, 255, 255, 0.5);
+            border-radius: 14px;
+            box-shadow: 0 0 0 100vmax rgba(8, 12, 20, 0.58);
+            pointer-events: none;
+        }
+
+        .id-camera-frame .id-corner {
+            width: 30px;
+            height: 30px;
+            border-width: 4px;
+            border-color: #ffffff;
+        }
+
+        .id-camera-frame .id-corner.tl { top: -3px; left: -3px; border-top-left-radius: 14px; }
+        .id-camera-frame .id-corner.tr { top: -3px; right: -3px; border-top-right-radius: 14px; }
+        .id-camera-frame .id-corner.bl { bottom: -3px; left: -3px; border-bottom-left-radius: 14px; }
+        .id-camera-frame .id-corner.br { bottom: -3px; right: -3px; border-bottom-right-radius: 14px; }
+
+        .id-camera-line {
+            position: absolute;
+            top: 8%;
+            left: 6%;
+            right: 6%;
+            height: 2px;
+            border-radius: 2px;
+            background: #f87171;
+            box-shadow: 0 0 12px 3px rgba(217, 27, 16, 0.7);
+            animation: idCameraSweep 2.2s ease-in-out infinite alternate;
+        }
+
+        @keyframes idCameraSweep {
+            to { top: 92%; }
+        }
+
+        .id-camera-footer {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            display: grid;
+            justify-items: center;
+            gap: 12px;
+            padding: 16px 16px 24px;
+        }
+
+        .id-camera-tips {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .id-camera-tips li {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 650;
+        }
+
+        .id-camera-tips svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .id-camera-hint {
+            max-width: 20rem;
+            margin: 0;
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 0.8rem;
+            font-weight: 600;
+            line-height: 1.4;
+            text-align: center;
+        }
+
+        .id-camera-panel[data-state="review"] .id-camera-frame,
+        .id-camera-panel[data-state="review"] .id-camera-tips,
+        .id-camera-panel[data-state="error"] .id-camera-frame,
+        .id-camera-panel[data-state="error"] .id-camera-tips {
+            display: none;
+        }
+
+        .id-camera-panel[data-state="loading"] .id-camera-line,
+        .id-camera-panel[data-state="error"] .id-camera-stage video {
+            visibility: hidden;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .id-camera-line,
+            .upload-section.id-scanning .upload-dropzone.has-file::after { animation: none; }
         }
 
         /* Address built from the dropdowns */
@@ -1038,13 +1344,13 @@ export const signupStyles = `
             background: #ffffff;
         }
 
-        .upload-dropzone.id-failed .file-preview {
-            color: #b91c1c;
+        .upload-dropzone.id-failed .id-file-chip {
+            background: #b91c1c;
         }
 
         /* The tick means "verified", so it waits for the scan to pass. */
-        .upload-dropzone.id-verified .file-preview {
-            color: #16a34a;
+        .upload-dropzone.id-verified .id-file-chip {
+            background: #15803d;
         }
 
         .upload-dropzone.id-verified .file-preview svg {
@@ -1461,7 +1767,8 @@ export const signupStyles = `
 
             .selfie-camera-stage,
             .selfie-camera-stage video,
-            .selfie-camera-stage img {
+            .selfie-camera-stage img,
+            .id-camera-stage {
                 height: 100svh !important;
                 max-height: none !important;
             }
@@ -1675,55 +1982,117 @@ export const signupMarkup = `<main class="signup-container">
 
                 <!-- STEP 3: Front and back ID verification -->
                 <div class="step-panel" id="step3">
-                    <p class="verification-intro" id="idAutoAdvanceNote">Upload both sides of the same ID. Once both photos are verified, we will automatically open the selfie step.</p>
+                    <p class="verification-intro" id="idAutoAdvanceNote">Scan or upload both sides of the same ID. Once both photos are verified, the selfie step opens on its own.</p>
                     <p class="id-accepted-note" id="idAcceptedNote"><strong>Government IDs only:</strong> PhilSys ID or ePhilID, passport, driver's license, UMID, PRC, SSS, GSIS, postal, voter's, senior citizen, PWD, TIN, OFW or IBP ID, or seafarer's record book. School and student IDs are not accepted. The name on the ID must match the name you entered.</p>
 
-                    <!-- Upload Front of Valid ID -->
+                    <!-- Front of Valid ID -->
                     <div class="upload-section" id="uploadFrontSection">
                         <div class="upload-header">
                             <div class="upload-icon-badge">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <rect x="2" y="4" width="20" height="16" rx="2"/>
-                                    <path d="M7 15h0M2 9.5h20"/>
+                                    <circle cx="8" cy="11" r="2"/><path d="M5 16c.6-1.6 5.4-1.6 6 0M14 9h5M14 13h4"/>
                                 </svg>
                             </div>
-                            <span class="upload-title">Upload Front of Valid ID</span>
+                            <span class="upload-title">Front of valid ID</span>
+                            <span class="id-side-step">1 of 2</span>
                         </div>
-                        <label class="upload-dropzone" id="dropzoneFront">
-                            <svg class="upload-cloud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="17 8 12 3 7 8"/>
-                                <line x1="12" y1="3" x2="12" y2="15"/>
-                            </svg>
-                            <span class="upload-text"><strong>Click to upload</strong> or drag and drop</span>
-                            <span class="upload-hint">JPG, PNG, or WebP (Max. 15MB)</span>
-                            <input type="file" id="fileFront" accept="image/jpeg,image/png,image/webp">
-                        </label>
+                        <div class="upload-dropzone" id="dropzoneFront">
+                            <span class="id-corner tl" aria-hidden="true"></span><span class="id-corner tr" aria-hidden="true"></span><span class="id-corner bl" aria-hidden="true"></span><span class="id-corner br" aria-hidden="true"></span>
+                            <div class="id-empty">
+                                <svg class="id-card-art" viewBox="0 0 120 76" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
+                                    <rect x="2" y="2" width="116" height="72" rx="9" stroke-width="2.5"/>
+                                    <rect x="12" y="15" width="30" height="40" rx="5" fill="currentColor" fill-opacity=".12" stroke="none"/>
+                                    <circle cx="27" cy="29" r="6" stroke-width="2"/>
+                                    <path d="M18 48c2-6 16-6 18 0" stroke-width="2"/>
+                                    <path d="M52 22h48M52 33h36M52 44h44M52 59h24" stroke-width="3" stroke-opacity=".45"/>
+                                </svg>
+                                <span class="upload-text"><strong>Photo side of your ID</strong></span>
+                                <span class="upload-hint">Drop a photo here · JPG, PNG or WebP, up to 15 MB</span>
+                            </div>
+                        </div>
+                        <input type="file" id="fileFront" accept="image/jpeg,image/png,image/webp" hidden>
+                        <div class="id-actions">
+                            <button type="button" class="id-action primary" id="scanFrontBtn" aria-haspopup="dialog">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                                <span class="when-empty">Scan ID</span><span class="when-file">Scan again</span>
+                            </button>
+                            <button type="button" class="id-action" id="uploadFrontBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/></svg>
+                                <span class="when-empty">Upload photo</span><span class="when-file">Replace photo</span>
+                            </button>
+                        </div>
                         <div class="id-scan" id="idScanStatus" role="status" aria-live="polite" hidden></div>
                     </div>
 
-                    <!-- Upload Back of Valid ID -->
+                    <!-- Back of Valid ID -->
                     <div class="upload-section" id="uploadBackSection">
                         <div class="upload-header">
                             <div class="upload-icon-badge">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <rect x="2" y="4" width="20" height="16" rx="2"/>
-                                    <path d="M7 15h0M2 9.5h20"/>
+                                    <path d="M2 9h20M6 14h6M15 13v3M17.5 13v3"/>
                                 </svg>
                             </div>
-                            <span class="upload-title">Upload Back of Valid ID</span>
+                            <span class="upload-title">Back of valid ID</span>
+                            <span class="id-side-step">2 of 2</span>
                         </div>
-                        <label class="upload-dropzone" id="dropzoneBack">
-                            <svg class="upload-cloud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="17 8 12 3 7 8"/>
-                                <line x1="12" y1="3" x2="12" y2="15"/>
-                            </svg>
-                            <span class="upload-text"><strong>Click to upload</strong> or drag and drop</span>
-                            <span class="upload-hint">JPG, PNG, or WebP (Max. 15MB)</span>
-                            <input type="file" id="fileBack" accept="image/jpeg,image/png,image/webp">
-                        </label>
+                        <div class="upload-dropzone" id="dropzoneBack">
+                            <span class="id-corner tl" aria-hidden="true"></span><span class="id-corner tr" aria-hidden="true"></span><span class="id-corner bl" aria-hidden="true"></span><span class="id-corner br" aria-hidden="true"></span>
+                            <div class="id-empty">
+                                <svg class="id-card-art" viewBox="0 0 120 76" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
+                                    <rect x="2" y="2" width="116" height="72" rx="9" stroke-width="2.5"/>
+                                    <rect x="3" y="13" width="114" height="11" fill="currentColor" fill-opacity=".14" stroke="none"/>
+                                    <path d="M12 38h52M12 48h40M12 58h28" stroke-width="3" stroke-opacity=".45"/>
+                                    <path d="M82 36v24M86 36v24M91 36v24M95 36v24M100 36v24M104 36v24M108 36v24" stroke-width="2"/>
+                                </svg>
+                                <span class="upload-text"><strong>Back of the same ID</strong></span>
+                                <span class="upload-hint">Drop a photo here · JPG, PNG or WebP, up to 15 MB</span>
+                            </div>
+                        </div>
+                        <input type="file" id="fileBack" accept="image/jpeg,image/png,image/webp" hidden>
+                        <div class="id-actions">
+                            <button type="button" class="id-action primary" id="scanBackBtn" aria-haspopup="dialog">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                                <span class="when-empty">Scan ID</span><span class="when-file">Scan again</span>
+                            </button>
+                            <button type="button" class="id-action" id="uploadBackBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/></svg>
+                                <span class="when-empty">Upload photo</span><span class="when-file">Replace photo</span>
+                            </button>
+                        </div>
                         <div class="id-scan" id="idScanBackStatus" role="status" aria-live="polite" hidden></div>
+                    </div>
+
+                    <!-- Guided ID camera: the photo goes through the same check as an upload -->
+                    <div class="selfie-camera-panel id-camera-panel" id="idCameraPanel" role="dialog" aria-modal="true" aria-labelledby="idCameraHeading" aria-describedby="idCameraHint" aria-hidden="true" data-state="loading">
+                        <div class="selfie-camera-card id-camera-card">
+                            <button type="button" class="selfie-camera-close" id="closeIdCamera" aria-label="Close camera">&times;</button>
+                            <div class="selfie-camera-heading"><span class="id-camera-side" id="idCameraSide">Front of ID</span><h3 id="idCameraHeading">Fit your ID inside the frame</h3></div>
+                            <div class="id-camera-stage">
+                                <video id="idCameraVideo" autoplay playsinline muted></video>
+                                <img id="idCameraPreview" hidden alt="Captured photo of your ID">
+                                <div class="id-camera-frame" id="idCameraFrame" aria-hidden="true"><span class="id-corner tl"></span><span class="id-corner tr"></span><span class="id-corner bl"></span><span class="id-corner br"></span><i class="id-camera-line"></i></div>
+                                <div class="selfie-capture-flash" id="idCameraFlash" aria-hidden="true"></div>
+                                <div class="id-camera-footer">
+                                    <ul class="id-camera-tips" aria-label="Tips for a clear photo">
+                                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Bright light</li>
+                                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>No glare</li>
+                                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"/></svg>All 4 corners</li>
+                                    </ul>
+                                    <p class="id-camera-hint" id="idCameraHint" role="status">Opening camera…</p>
+                                    <button type="button" class="capture-selfie-btn" id="captureIdPhoto" aria-label="Take photo of your ID" disabled></button>
+                                    <div class="selfie-review-actions" id="idCameraReview" hidden>
+                                        <button type="button" class="retake-selfie-btn" id="retakeIdPhoto">Retake</button>
+                                        <button type="button" class="use-selfie-btn" id="useIdPhoto">Use this photo</button>
+                                    </div>
+                                    <div class="selfie-review-actions" id="idCameraError" hidden>
+                                        <button type="button" class="retake-selfie-btn" id="retryIdCamera">Try again</button>
+                                        <button type="button" class="use-selfie-btn" id="uploadIdInstead">Upload photo</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <button type="button" class="btn-continue" id="toStep4" disabled>

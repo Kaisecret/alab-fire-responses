@@ -9,7 +9,7 @@ const script = join(process.cwd(), "scripts", "watermark-legacy-photos.mjs");
 
 test("the production deploy watermarks old photos after the release migrations", () => {
   const { buildCommand } = JSON.parse(readFileSync("vercel.json", "utf8"));
-  assert.equal(buildCommand, "node scripts/apply-command-migration.mjs && node scripts/watermark-legacy-photos.mjs && npm run build");
+  assert.equal(buildCommand, "node scripts/apply-resident-profile-migrations.mjs && node scripts/apply-command-migration.mjs && node scripts/watermark-legacy-photos.mjs && npm run build");
 });
 
 test("a deploy without storage credentials skips the job instead of failing the build", () => {

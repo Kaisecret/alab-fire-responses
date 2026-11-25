@@ -5,6 +5,7 @@ import ts from 'typescript';
 import { createFaceCheckController } from '../lib/resident-applications/face-check-client.mjs';
 import { createSelfieViewCollection, SELFIE_VIEWS } from '../lib/resident-applications/selfie-views-client.mjs';
 import { selfieGuidanceCue } from '../lib/resident-applications/selfie-guidance-cues.mjs';
+import { idFrameCrop } from '../lib/resident-applications/id-frame-crop.mjs';
 
 const markupSource = readFileSync(new URL('../app/_content/signup-content.ts', import.meta.url), 'utf8');
 const markup = markupSource.match(/export const signupMarkup = `([\s\S]*)`;\s*$/)?.[1];
@@ -119,6 +120,7 @@ function mount({ check = async () => Response.json({ verified: true, token: 'sig
     if (name.endsWith('/face-check-client.mjs')) return { createFaceCheckController: options => createFaceCheckController({ ...options, request: fetch }) };
     if (name.endsWith('/selfie-views-client.mjs')) return { createSelfieViewCollection, SELFIE_VIEWS };
     if (name.endsWith('/selfie-guidance-cues.mjs')) return { selfieGuidanceCue };
+    if (name.endsWith('/id-frame-crop.mjs')) return { idFrameCrop };
     if (name.endsWith('/selfie-guidance')) return {
       startSelfieGuidance: async options => { guidance.push(options); return { stop() {} }; },
       createSelfieGuidanceSession: () => {

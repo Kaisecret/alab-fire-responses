@@ -1,9 +1,8 @@
 // What the landing page's "How to use" dialog shows a resident.
 //
-// To add the how-to video: put the file at public/videos/how-to-use.mp4 and
-// set HOW_TO_USE_VIDEO_SRC to "/videos/how-to-use.mp4". Until then the dialog
-// shows a "Video coming soon" placeholder in the video frame.
-export const HOW_TO_USE_VIDEO_SRC = "";
+// The tutorial video is on YouTube ("ALAB tutorial"). To swap it, change the
+// id: it is the part after youtu.be/ in the share link.
+export const HOW_TO_USE_YOUTUBE_ID = "2CF_jjupUbU";
 
 export const HOW_TO_USE_STEPS = [
   {
