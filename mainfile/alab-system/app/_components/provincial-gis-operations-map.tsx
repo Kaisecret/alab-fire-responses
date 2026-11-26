@@ -237,14 +237,6 @@ const styles = `
   /* 4 KPI Stat Cards (Pastel Gradient Style matching Provincial Incidents) */
   .mbfp-ops-stats { min-width: 0; margin-bottom: 0.85rem; }
 
-  .is-active
-  .is-resolved
-  .is-stations
-  .is-sites
-
-
-
-
   /* Segmented Controls & Layer Toggles (Clean Crisp White) */
   .mbfp-ops-controls {
     display: flex;

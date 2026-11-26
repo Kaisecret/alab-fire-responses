@@ -9,6 +9,7 @@ import {
 import { landingMobileStyles } from "../_content/landing-mobile-styles";
 import { landingLargeStyles } from "../_content/landing-large-styles";
 import { heroEmergencyMarkup, heroEmergencyStyles } from "../_content/emergency-call";
+import { teamMarkup, teamStyles } from "../_content/landing-team";
 import { OPEN_BFP_HOTLINES, ResidentOfflineEmergency } from "./resident-offline-emergency";
 import { LandingHowToUse, OPEN_HOW_TO_USE } from "./landing-how-to-use";
 
@@ -18,7 +19,10 @@ const viewIncidentsButton = '<a class="button button--secondary" href="#incident
 const markup = (() => {
   const start = landingMarkup.indexOf(viewIncidentsButton);
   const end = start < 0 ? -1 : landingMarkup.indexOf("</a>", start);
-  return end < 0 ? landingMarkup : `${landingMarkup.slice(0, start)}${heroEmergencyMarkup}${landingMarkup.slice(end + 4)}`;
+  const withCall = end < 0 ? landingMarkup : `${landingMarkup.slice(0, start)}${heroEmergencyMarkup}${landingMarkup.slice(end + 4)}`;
+  // The team section is the last one inside .landing-content, just before </main>.
+  const contentEnd = withCall.lastIndexOf("</div>", withCall.indexOf("</main>"));
+  return contentEnd < 0 ? withCall : `${withCall.slice(0, contentEnd)}${teamMarkup}${withCall.slice(contentEnd)}`;
 })();
 
 export function LandingPage() {
@@ -157,7 +161,7 @@ export function LandingPage() {
 
   return (
     <>
-      <style>{`${landingStyles}\n${landingMobileStyles}\n${landingLargeStyles}\n${heroEmergencyStyles}`}</style>
+      <style>{`${landingStyles}\n${landingMobileStyles}\n${landingLargeStyles}\n${heroEmergencyStyles}\n${teamStyles}`}</style>
       <div
         ref={rootRef}
         className="landing-page-root"
