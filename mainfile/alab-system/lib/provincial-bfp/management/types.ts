@@ -37,6 +37,8 @@ export type ReportFilters = ManagementFilters & {
   reportSource?: "ALAB_APP" | "PHONE_CALL";
   fireType?: string;
   severity?: string;
+  /** The Reports page lists only finished incidents (RESOLVED or CLOSED). */
+  completedOnly?: boolean;
 };
 
 export type MunicipalitySummary = {

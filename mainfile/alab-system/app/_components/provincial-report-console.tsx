@@ -122,7 +122,8 @@ export function ProvincialReportConsole() {
   const [from, setFrom] = useState(() => readParam("from"));
   const [to, setTo] = useState(() => readParam("to"));
   const [municipalityId, setMunicipalityId] = useState(() => readParam("municipalityId"));
-  const [status, setStatus] = useState(() => readParam("status"));
+  // Reports list finished incidents only, so an older link's other status falls back to all of them.
+  const [status, setStatus] = useState(() => (RESOLVED_STATUSES.includes(readParam("status")) ? readParam("status") : ""));
   const [fireType, setFireType] = useState(() => readParam("fireType"));
   const [severity, setSeverity] = useState(() => readParam("severity"));
   const [reportSource, setReportSource] = useState(() => readParam("reportSource"));
@@ -185,7 +186,7 @@ export function ProvincialReportConsole() {
       setLoading(!hasLoaded.current);
       setError(null);
 
-      const shared = new URLSearchParams();
+      const shared = new URLSearchParams({ completedOnly: "true" });
       if (dates.from) shared.set("from", dates.from);
       if (dates.to) shared.set("to", dates.to);
       if (municipalityId) shared.set("municipalityId", municipalityId);
@@ -291,6 +292,7 @@ export function ProvincialReportConsole() {
     severity: severity || undefined,
     reportSource: reportSource || undefined,
     search: search || undefined,
+    completedOnly: true,
   }), [page, pageSize, municipalityId, dates, status, fireType, severity, reportSource, search]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -514,18 +516,9 @@ export function ProvincialReportConsole() {
             onChange={(event) => { setStatus(event.target.value); setPage(1); }}
             style={selectStyle}
           >
-            <option value="">All Statuses</option>
-            <option value="CONFIRMED">Confirmed</option>
-            <option value="RESPONDING">Responding</option>
-            <option value="FIRETRUCK_DISPATCHED">Dispatched</option>
-            <option value="RESPONDER_ARRIVED">Arrived On Scene</option>
-            <option value="UNDER_CONTROL">Under Control</option>
+            <option value="">All Completed</option>
             <option value="RESOLVED">Resolved</option>
             <option value="CLOSED">Closed</option>
-            <option value="UNDER_VERIFICATION">Under Verification</option>
-            <option value="FALSE_REPORT">False Report</option>
-            <option value="DUPLICATE">Duplicate</option>
-            <option value="REJECTED">Rejected</option>
           </select>
 
           <button

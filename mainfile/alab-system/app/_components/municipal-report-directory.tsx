@@ -83,7 +83,9 @@ export function MunicipalReportDirectory() {
   });
   const [status, setStatus] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      return new URLSearchParams(window.location.search).get("status") || "";
+      // Reports list finished incidents only, so an older link's other status falls back to all of them.
+      const fromUrl = new URLSearchParams(window.location.search).get("status") || "";
+      return fromUrl === "RESOLVED" || fromUrl === "CLOSED" ? fromUrl : "";
     }
     return "";
   });
@@ -731,18 +733,9 @@ export function MunicipalReportDirectory() {
               cursor: "pointer",
             }}
           >
-            <option value="">All Statuses</option>
-            <option value="CONFIRMED">Confirmed</option>
-            <option value="RESPONDING">Responding</option>
-            <option value="FIRETRUCK_DISPATCHED">Dispatched</option>
-            <option value="RESPONDER_ARRIVED">Arrived On Scene</option>
-            <option value="UNDER_CONTROL">Under Control</option>
+            <option value="">All Completed</option>
             <option value="RESOLVED">Resolved</option>
             <option value="CLOSED">Closed</option>
-            <option value="UNDER_VERIFICATION">Under Verification</option>
-            <option value="FALSE_REPORT">False Report</option>
-            <option value="DUPLICATE">Duplicate</option>
-            <option value="REJECTED">Rejected</option>
           </select>
 
           {/* More filters button */}

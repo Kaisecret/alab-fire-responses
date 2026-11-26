@@ -86,6 +86,7 @@ test("clusterProvincialIncidents groups coincident coordinates and counts active
       Fragment: () => null,
     },
     "leaflet/dist/leaflet.css": {},
+    "next/navigation": { useSearchParams: () => new URLSearchParams() },
     "./fire-command-header": {},
     "./municipal-stat-cards": { StatCards: () => null, MunicipalStatCards: () => null },
     "../../lib/water-sources/map-positions": mapPositions,
@@ -180,6 +181,7 @@ test("provincial GIS loads the province-wide water-source registry and honors di
       Fragment: () => null,
     },
     "leaflet/dist/leaflet.css": {},
+    "next/navigation": { useSearchParams: () => new URLSearchParams() },
     "./fire-command-header": {},
     "./municipal-stat-cards": { StatCards: () => null, MunicipalStatCards: () => null },
     "../../lib/water-sources/map-positions": mapPositions,
@@ -218,4 +220,10 @@ test("provincial GIS loads the province-wide water-source registry and honors di
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, "/api/provincial-bfp/water-sources");
   assert.equal(calls[0].init.cache, "no-store");
+
+  // A registry card link renders this page before the browser URL changes, so the
+  // map must read the Next.js search params, not window.location.
+  const source = readFileSync("app/_components/provincial-gis-operations-map.tsx", "utf8");
+  assert.match(source, /const searchParams = useSearchParams\(\);/);
+  assert.doesNotMatch(source, /window\.location\.search/);
 });

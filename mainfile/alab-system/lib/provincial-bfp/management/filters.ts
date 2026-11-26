@@ -106,15 +106,21 @@ export function parseReportFilters(
   if (fireType && !["HOUSE_BUILDING", "GRASS", "FOREST", "VEHICLE", "OTHER"].includes(fireType)) throw new Error("INVALID_FIRE_TYPE");
   if (severity && !["LOW", "MODERATE", "HIGH", "CRITICAL", "UNKNOWN"].includes(severity)) throw new Error("INVALID_SEVERITY");
   if (base.status && !["SUBMITTED", "UNDER_VERIFICATION", "CONFIRMED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "NEEDS_MORE_INFO", "CLOSED", "PENDING_VERIFICATION", "VERIFIED", "RESPONDING", "FIRETRUCK_DISPATCHED", "RESPONDER_ARRIVED", "UNDER_CONTROL", "RESOLVED"].includes(base.status)) throw new Error("INVALID_REPORT_STATUS");
-
+  // Query strings carry "true"; JSON export bodies may carry a real boolean.
+  const completedRaw = rawParams instanceof URLSearchParams ? rawParams.get("completedOnly") : rawParams.completedOnly;
+  const completedOnly = completedRaw === true || completedRaw === "true";
 
   return {
     ...base,
     reportSource,
     fireType,
     severity,
+    ...(completedOnly ? { completedOnly } : {}),
   };
 }
+
+/** Finished incidents, the only ones the Reports pages list. */
+export const COMPLETED_REPORT_STATUSES = ["RESOLVED", "CLOSED"] as const;
 
 // Date-only inputs represent whole Philippine calendar days. Timestamp inputs
 // preserve their explicit timezone and exact endpoint.
@@ -134,6 +140,7 @@ export function reportWhere(filters: ReportFilters): { clauses: string[]; values
   ]) {
     if (value) { values.push(value); clauses.push(`${column} = $${values.length}`); }
   }
+  if (filters.completedOnly) clauses.push(`fr.status in (${COMPLETED_REPORT_STATUSES.map((s) => `'${s}'`).join(", ")})`);
   if (filters.stationId) {
     values.push(filters.stationId);
     clauses.push(`exists (select 1 from incident_dispatches fd join incident_dispatch_stations fs on fs.dispatch_id = fd.id where fd.fire_report_id = fr.id and fs.station_id = $${values.length})`);

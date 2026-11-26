@@ -21,6 +21,7 @@ export type ProvincialExportFilters = {
   severity?: string;
   reportSource?: string;
   search?: string;
+  completedOnly?: boolean;
 };
 
 interface ProvincialReportExportDialogProps {

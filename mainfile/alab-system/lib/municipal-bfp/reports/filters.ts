@@ -16,24 +16,6 @@ const ALLOWED_PERIODS = new Set<MunicipalReportPeriod>([
 const ALLOWED_REPORT_SOURCES = new Set(["ALAB_APP", "PHONE_CALL"]);
 const ALLOWED_FIRE_TYPES = new Set(["HOUSE_BUILDING", "GRASS", "FOREST", "VEHICLE", "OTHER"]);
 const ALLOWED_SEVERITIES = new Set(["LOW", "MODERATE", "HIGH", "CRITICAL", "UNKNOWN"]);
-const ALLOWED_STATUSES = new Set([
-  "SUBMITTED",
-  "PENDING_VERIFICATION",
-  "UNDER_VERIFICATION",
-  "VERIFIED",
-  "CONFIRMED",
-  "RESPONDING",
-  "FIRETRUCK_DISPATCHED",
-  "RESPONDER_ARRIVED",
-  "UNDER_CONTROL",
-  "RESOLVED",
-  "REJECTED",
-  "FALSE_REPORT",
-  "DUPLICATE",
-  "NEEDS_MORE_INFO",
-  "CLOSED",
-]);
-
 export const CONFIRMED_STATUSES = [
   "CONFIRMED",
   "VERIFIED",
@@ -239,7 +221,8 @@ export function parseMunicipalReportFilters(
   const barangayId = parseUuid(getParam(rawParams, "barangayId"));
   const search = cleanString(getParam(rawParams, "search"), 100);
   const status = cleanString(getParam(rawParams, "status"), 50);
-  if (status && !ALLOWED_STATUSES.has(status)) {
+  // Reports list finished incidents only, so only those statuses can narrow it.
+  if (status && !(RESOLVED_STATUSES as readonly string[]).includes(status)) {
     throw new Error("INVALID_REPORT_STATUS");
   }
 
@@ -301,6 +284,8 @@ export function municipalReportWhere(
     )
   )`];
   const values: unknown[] = [municipalityId];
+  // The Reports page, its summary and its exports cover finished incidents only.
+  clauses.push(`fr.status in (${RESOLVED_STATUSES.map((s) => `'${s}'`).join(", ")})`);
 
   for (const [value, column] of [
     [filters.barangayId, "fr.barangay_id"],

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { FireCommandHeader } from "./fire-command-header";
 import "leaflet/dist/leaflet.css";
 
@@ -259,9 +260,15 @@ const styles = `
     gap: 0.65rem;
     flex-wrap: wrap;
   }
+  /* Every control in the row shares one height so both rows line up. */
+  .mbfp-ops-segmented, .mbfp-ops-mode-switch, .pbfp-jump-select, .pbfp-btn-reset-view, .mbfp-ops-layer-toggle {
+    box-sizing: border-box;
+    height: 2.75rem;
+  }
   .mbfp-ops-segmented {
     display: inline-flex;
-    padding: 0.22rem;
+    align-items: stretch;
+    padding: 0.25rem;
     border: 1px solid #d7e3f1;
     border-radius: 10px;
     background: #ffffff;
@@ -269,7 +276,7 @@ const styles = `
     gap: 0.15rem;
   }
   .mbfp-ops-segment {
-    padding: 0.42rem 0.95rem;
+    padding: 0 1rem;
     border: 0;
     border-radius: 8px;
     background: transparent;
@@ -294,21 +301,20 @@ const styles = `
   .mbfp-ops-mode-switch {
     display: inline-flex;
     gap: 0.2rem;
-    padding: 0.28rem;
-    border: 1px solid #cbd9e8;
-    border-radius: 12px;
+    padding: 0.25rem;
+    border: 1px solid #d7e3f1;
+    border-radius: 10px;
     background: #ffffff;
-    box-shadow: 0 5px 14px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
   }
   .mbfp-ops-mode-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.48rem;
-    min-height: 2.55rem;
-    padding: 0.55rem 1rem;
+    padding: 0 1rem;
     border: 0;
-    border-radius: 9px;
+    border-radius: 8px;
     background: transparent;
     color: #52627a;
     font: inherit;
@@ -333,7 +339,7 @@ const styles = `
     flex-wrap: wrap;
   }
   .pbfp-jump-select {
-    padding: 0.45rem 0.85rem;
+    padding: 0 0.85rem;
     border: 1px solid #d7e3f1;
     border-radius: 10px;
     background: #ffffff;
@@ -352,7 +358,7 @@ const styles = `
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.45rem 0.85rem;
+    padding: 0 0.85rem;
     border: 1px solid #d7e3f1;
     border-radius: 10px;
     background: #ffffff;
@@ -372,7 +378,7 @@ const styles = `
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.45rem 0.85rem;
+    padding: 0 0.85rem;
     border: 1px solid #d7e3f1;
     border-radius: 10px;
     background: #ffffff;
@@ -399,6 +405,8 @@ const styles = `
   /* Map Shell */
   .mbfp-ops-map-shell {
     position: relative;
+    /* Keeps Leaflet's z-index 400+ panes inside the map, under the top bar's notification popover. */
+    isolation: isolate;
     overflow: hidden;
     min-height: min(680px, calc(100dvh - 230px));
     border: 1px solid #d7e3f1;
@@ -1067,10 +1075,9 @@ function drawIncidents(
 }
 
 export function ProvincialGisOperationsMap() {
-  const searchParams = useMemo(
-    () => new URLSearchParams(typeof window === "undefined" ? "" : window.location.search),
-    [],
-  );
+  // useSearchParams, not window.location: on a client-side link from the water-source
+  // registry this page renders before the browser URL changes, so the old query was read.
+  const searchParams = useSearchParams();
   const waterSourceId = searchParams.get("waterSource") ?? "";
   const { incidents, loading, checking, error, lastCheckedAt } = useProvincialIncidentFeed({
     includeHistory: true,

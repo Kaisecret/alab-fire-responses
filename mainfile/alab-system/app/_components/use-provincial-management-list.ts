@@ -29,7 +29,7 @@ export function useProvincialManagementList<T>({ endpoint, initialFilters = {}, 
   useEffect(() => {
     const restore = () => {
       const params = new URLSearchParams(window.location.search);
-      const restored: Record<string, string | number | undefined> = { ...defaults.current };
+      const restored: Record<string, unknown> = { ...defaults.current };
       for (const key of filterKeys) if (params.has(key)) restored[key] = params.get(key) || undefined;
       updateFilters(restored as Filters);
       const requestedPage = Number(params.get("page") || 1);
