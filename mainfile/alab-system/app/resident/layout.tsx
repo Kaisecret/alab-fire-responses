@@ -382,9 +382,6 @@ export default function ResidentLayout({ children }: { children: ReactNode }) {
   };
 
   const confirmLogout = () => {
-    try {
-      localStorage.removeItem("alab_resident_logged_in");
-    } catch {}
     logoutFormRef.current?.submit();
   };
 

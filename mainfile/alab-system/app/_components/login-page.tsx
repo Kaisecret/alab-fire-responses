@@ -207,11 +207,10 @@ export function LoginPage({
 
     if (!password || !identifier || !toggle || !eye || !form) return;
 
+    // The proxy already sends a signed-in resident from this page to /resident, so reaching it
+    // means the session is gone. Redirecting on a leftover browser flag looped with the proxy.
     try {
-      if (localStorage.getItem("alab_resident_logged_in") === "true" || document.cookie.includes("alab_resident_session")) {
-        window.location.replace("/resident");
-        return;
-      }
+      localStorage.removeItem("alab_resident_logged_in");
     } catch {}
 
     const submitButton = form.querySelector<HTMLButtonElement>("button[type='submit']");
@@ -386,7 +385,6 @@ export function LoginPage({
 
         try {
           localStorage.removeItem("alab_resident_login_lockout");
-          localStorage.setItem("alab_resident_logged_in", "true");
         } catch {}
         window.location.assign("/resident");
       } catch {
