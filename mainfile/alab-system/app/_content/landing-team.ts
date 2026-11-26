@@ -29,7 +29,7 @@ export const teamMarkup = `
         <div class="section-shell">
           <header class="section-intro team-intro reveal">
             <p class="section-kicker">The developers</p>
-            <h2 id="team-title">Meet the ALAB Developers</h2>
+            <h2 id="team-title">Meet the <span class="team-brand">ALAB</span> Developers</h2>
             <p>St. Anthony&rsquo;s College, Antique, Philippines</p>
           </header>
           <ul class="team-grid reveal">${MEMBERS.map(card).join("")}
@@ -44,6 +44,7 @@ export const teamStyles = `
     .team-intro .section-kicker { justify-content: center; }
     .team-intro .section-kicker::after { width: 2.4rem; height: 0.15rem; border-radius: 999px; background: currentColor; content: ""; }
     .team-intro h2, .team-intro > p:last-child { margin-inline: auto; }
+    .team-intro .team-brand { color: var(--landing-red); }
     .team-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.25rem; align-items: center; margin: 0; padding: 0; list-style: none; }
     .team-card { display: flex; min-width: 0; flex-direction: column; align-items: center; padding: 1.75rem 1rem 1.5rem; border: 1px solid var(--landing-line); border-radius: 1.5rem; background: #fff; box-shadow: 0 0.75rem 2rem rgb(16 34 44 / 6%); text-align: center; }
     .team-card img { width: 7.5rem; height: 7.5rem; border: 0.3rem solid #fff; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px rgb(217 27 16 / 22%), 0 0.5rem 1.25rem rgb(16 34 44 / 12%); }

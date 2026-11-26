@@ -137,6 +137,29 @@ test('acknowledgment persists, new incidents re-alert, stale acknowledgment fail
   }finally{await db.close();}
 });
 
+test('a resolved incident leaving a still-active group keeps the acknowledgment; cleared records only return at three again',async()=>{
+  const {db,api,report}=await fixture();
+  try{
+    for(const n of [100,101,102,103])await report(n,{status:'RESPONDING'});
+    const [alert]=await api.listProvincialBarangayAlerts();
+    await api.acknowledgeProvincialBarangayAlert(alert.id,alert.incidentIds,officer);
+    await db.query("update fire_reports set status='RESOLVED' where id=$1",[id(103)]);
+    const [shrunk]=await api.listProvincialBarangayAlerts();
+    assert.equal(shrunk.incidentCount,3);
+    assert.ok(shrunk.acknowledgedAt,'nothing new to read when an incident is resolved');
+
+    // Records cleared by an administrator (the alert table emptied) are not invented again below three.
+    await db.query("update fire_reports set status='RESOLVED' where id=any($1::uuid[])",[[id(101),id(102)]]);
+    await db.query('delete from provincial_barangay_alerts');
+    assert.equal((await api.listProvincialBarangayAlerts()).length,0);
+    assert.equal((await db.query('select count(*)::int as count from provincial_barangay_alerts')).rows[0].count,0);
+    await report(104);await report(105);
+    const [again]=await api.listProvincialBarangayAlerts();
+    assert.equal(again.incidentCount,3);
+    assert.equal(again.acknowledgedAt,null,'a new group of three rings again');
+  }finally{await db.close();}
+});
+
 test('province assigns nearby mutual aid atomically, retries create no competing command, and undispached/invalid recipients fail',async()=>{
   const {db,api,report,notifications,queries}=await fixture();
   try{
