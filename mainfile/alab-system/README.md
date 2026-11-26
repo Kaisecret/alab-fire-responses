@@ -41,7 +41,7 @@ The Flutter BFP responder app uses the deployed ALAB API, not a direct Supabase 
 
 Resident correction notices use the existing PhilSMS account and Gmail/Google Workspace through Nodemailer. Configure these values only in the Vercel project environment:
 
-- `IPROGSMS_API_TOKEN` — iProgSMS API token for registration OTP and password reset codes.
+- `IPROGSMS_API_TOKEN` — iProgSMS API token for registration OTP and password reset codes. Changing it needs a deploy with a code change under `mainfile/alab-system`, because the ignored-build step skips plain redeploys.
 - `PHILSMS_API_TOKEN` — PhilSMS bearer token, used only for correction notices.
 - `PHILSMS_SENDER_ID` — approved PhilSMS sender ID, used only for correction notices.
 - `GMAIL_USER` — `regalakhing@sac.edu.ph`. Emails display the sender name **ALAB**, using this actual address.
