@@ -4,7 +4,7 @@ import { checkLoginRateLimit, recordLoginFailure } from "../../../../../lib/auth
 import { RESET_CODE_MINUTES, startPasswordReset } from "../../../../../lib/auth/password-reset";
 import { withTransaction } from "../../../../../lib/db";
 import { sendGmailEmail } from "../../../../../lib/email/gmail";
-import { sendPhilSmsMessage } from "../../../../../lib/sms/philsms";
+import { sendIprogSmsMessage } from "../../../../../lib/sms/iprogsms";
 
 export const runtime = "nodejs";
 
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
           text,
           html: `<p>Your ALAB password reset code is:</p><p style="font-size:28px;font-weight:bold;letter-spacing:4px">${code}</p><p>It expires in ${RESET_CODE_MINUTES} minutes. Never share this code.</p><p>If you did not request this, you can ignore this email.</p>`,
         })
-        : sendPhilSmsMessage({ phone: destination, message: text });
+        : sendIprogSmsMessage({ phone: destination, message: text });
     }));
     if (result.sent) console.info("Password reset code accepted for delivery");
     return NextResponse.json({ resetId: result.resetId, expiresAt: result.expiresAt });
@@ -48,8 +48,8 @@ export async function POST(request: Request) {
       console.error("Password reset email delivery failed", { reason: error.message });
       return NextResponse.json({ error: "We could not send the reset email. Please try again in a minute." }, { status: 502 });
     }
-    if (error instanceof Error && error.message === "PHILSMS_NOT_CONFIGURED") return NextResponse.json({ error: "Text messages are not set up yet. Please contact your Municipal BFP." }, { status: 503 });
-    if (error instanceof Error && error.message.startsWith("PHILSMS_")) return NextResponse.json({ error: "We could not send the text message. Please try again in a minute." }, { status: 502 });
+    if (error instanceof Error && error.message === "IPROGSMS_NOT_CONFIGURED") return NextResponse.json({ error: "Text messages are not set up yet. Please contact your Municipal BFP." }, { status: 503 });
+    if (error instanceof Error && error.message.startsWith("IPROGSMS_")) return NextResponse.json({ error: "We could not send the text message. Please try again in a minute." }, { status: 502 });
     console.error("Password reset start failed", error);
     return NextResponse.json({ error: "Unable to send the reset code. Please try again." }, { status: 500 });
   }

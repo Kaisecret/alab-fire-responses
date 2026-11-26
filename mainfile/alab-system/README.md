@@ -41,8 +41,9 @@ The Flutter BFP responder app uses the deployed ALAB API, not a direct Supabase 
 
 Resident correction notices use the existing PhilSMS account and Gmail/Google Workspace through Nodemailer. Configure these values only in the Vercel project environment:
 
-- `PHILSMS_API_TOKEN` — PhilSMS bearer token.
-- `PHILSMS_SENDER_ID` — approved PhilSMS sender ID.
+- `IPROGSMS_API_TOKEN` — iProgSMS API token for registration OTP and password reset codes.
+- `PHILSMS_API_TOKEN` — PhilSMS bearer token, used only for correction notices.
+- `PHILSMS_SENDER_ID` — approved PhilSMS sender ID, used only for correction notices.
 - `GMAIL_USER` — `regalakhing@sac.edu.ph`. Emails display the sender name **ALAB**, using this actual address.
 - `GMAIL_APP_PASSWORD` — Google app password for that account (not its regular login password). Enable 2-Step Verification and create it at https://myaccount.google.com/apppasswords. School administrators may restrict app passwords; if unavailable, contact the school administrator.
 - `NEXT_PUBLIC_APP_URL` — public ALAB origin used for the resident application link.
@@ -52,7 +53,7 @@ Apply `supabase/migrations/20260910090000_add_resident_notification_deliveries.s
 
 No purchased sending domain or Resend credentials are needed for the active Gmail integration. Set the Gmail variables in Production and redeploy. Replies go to the configured school email address. Gmail account limits and school sending policies still apply.
 
-Resident forgot password also uses these Gmail variables. Codes go to the email stored on the resident account, even when the resident enters a username or mobile number. Residents without an email keep SMS recovery through PhilSMS. The code expires after ten minutes and can be used only once; requests have a one-minute cooldown and a five-send hourly limit. The public response does not reveal whether an account exists. Changing Gmail environment variables requires a new Vercel deployment.
+Resident forgot password also uses these Gmail variables. Codes go to the email stored on the resident account, even when the resident enters a username or mobile number. Residents without an email keep SMS recovery through iProgSMS. The code expires after ten minutes and can be used only once; requests have a one-minute cooldown and a five-send hourly limit. The public response does not reveal whether an account exists. Changing Gmail environment variables requires a new Vercel deployment.
 
 Resident profile photos use the existing server-only Supabase storage credentials (`NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SECRET_KEY`, or the legacy service role key). The authenticated `/api/resident/profile/photo` endpoint creates the private `resident-profile-photos` bucket on first upload; no database migration is needed. Photos are decoded, oriented, resized to at most 1024 pixels, stripped of metadata, and saved only under the signed-in resident's ID. The profile and navigation avatar update together. File selection and the existing camera capture both require a successful save before replacing the displayed photo.
 

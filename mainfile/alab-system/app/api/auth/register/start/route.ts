@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { hashPassword } from "../../../../../lib/auth/password";
 import { createOtpCode, hashOtp, normalizePhilippinePhone } from "../../../../../lib/auth/registration-otp";
 import { withTransaction } from "../../../../../lib/db";
-import { sendPhilSmsOtp } from "../../../../../lib/sms/philsms";
+import { sendIprogSmsOtp } from "../../../../../lib/sms/iprogsms";
 import { getGoogleSignupPrefill } from "../../../../../lib/auth/google-signup-prefill";
 
 export const runtime = "nodejs";
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       await client.query("insert into registration_otps (id, phone, payload, code_hash, expires_at, last_sent_at) values ($1,$2,$3,$4,$5,now())", [id, phone, payload, hashOtp(phone, code), expiresAt]);
     });
     otpStored = true;
-    await sendPhilSmsOtp({ phone, code });
+    await sendIprogSmsOtp({ phone, code });
     return NextResponse.json({ verificationId: id, expiresAt: expiresAt.toISOString() });
   } catch (error) {
     if (otpStored) {
@@ -47,8 +47,9 @@ export async function POST(request: Request) {
     }
     if (error instanceof Error && error.message === "DUPLICATE") return NextResponse.json({ error: "That email, username, or phone is already registered." }, { status: 409 });
     if (error instanceof Error && error.message === "OTP_RESEND_COOLDOWN") return NextResponse.json({ error: "Please wait one minute before requesting another code." }, { status: 429 });
-    if (error instanceof Error && error.message === "PHILSMS_NOT_CONFIGURED") return NextResponse.json({ error: "SMS verification is not configured yet." }, { status: 503 });
-    if (error instanceof Error && error.message.startsWith("PHILSMS_DELIVERY_FAILED")) return NextResponse.json({ error: "PhilSMS could not accept this OTP. Check the Vercel runtime log for the provider reason." }, { status: 502 });
+    if (error instanceof Error && error.message.startsWith("IPROGSMS_")) console.error("OTP SMS delivery failed", { reason: error.message });
+    if (error instanceof Error && error.message === "IPROGSMS_NOT_CONFIGURED") return NextResponse.json({ error: "SMS verification is not configured yet." }, { status: 503 });
+    if (error instanceof Error && error.message.startsWith("IPROGSMS_DELIVERY_FAILED")) return NextResponse.json({ error: "iProgSMS could not accept this OTP. Check the Vercel runtime log for the provider reason." }, { status: 502 });
     console.error("OTP start failed", error);
     return NextResponse.json({ error: "Unable to send the verification code." }, { status: 500 });
   }

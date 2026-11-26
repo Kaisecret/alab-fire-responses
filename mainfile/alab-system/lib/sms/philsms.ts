@@ -1,7 +1,5 @@
 import { normalizePhilippinePhone } from "../auth/registration-otp.ts";
 
-type PhilSmsOtp = { phone: string; code: string };
-
 export async function sendPhilSmsMessage({ phone, message }: { phone: string; message: string }) {
   const token = process.env.PHILSMS_API_TOKEN;
   const senderId = process.env.PHILSMS_SENDER_ID;
@@ -26,11 +24,4 @@ export async function sendPhilSmsMessage({ phone, message }: { phone: string; me
     throw new Error(`PHILSMS_DELIVERY_FAILED: ${detail}`);
   }
   return { providerId: result.data?.message_id ? String(result.data.message_id) : null };
-}
-
-export async function sendPhilSmsOtp({ phone, code }: PhilSmsOtp) {
-  return sendPhilSmsMessage({
-    phone,
-    message: `Your ALAB verification code is ${code}. It expires in 5 minutes.`,
-  });
 }
