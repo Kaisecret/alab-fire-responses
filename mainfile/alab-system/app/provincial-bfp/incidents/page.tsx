@@ -763,18 +763,20 @@ function ProvincialIncidentsContent() {
               </button>
             </div>
 
-            <Link href="/provincial-bfp/gis-map" className="pbfp-btn-gis">
-              <i className="fa-solid fa-map-location-dot" /> Open GIS View
-            </Link>
-            <div className="pbfp-search-box">
-              <i className="fa-solid fa-magnifying-glass" />
-              <input
-                type="text"
-                className="pbfp-search-input"
-                placeholder="Search municipality, code, or type..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+              <Link href="/provincial-bfp/gis-map" className="pbfp-btn-gis">
+                <i className="fa-solid fa-map-location-dot" /> Open GIS View
+              </Link>
+              <div className="pbfp-search-box">
+                <i className="fa-solid fa-magnifying-glass" />
+                <input
+                  type="text"
+                  className="pbfp-search-input"
+                  placeholder="Search municipality, code, or type..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 

@@ -393,6 +393,20 @@ const styles = `
     accent-color: #2563eb;
     cursor: pointer;
   }
+  .mbfp-ops-layer-toggle { font-family: inherit; }
+  .mbfp-ops-layer-toggle.is-water i { color: #0891b2; }
+  .mbfp-ops-layer-toggle.is-off { background: #f1f5f9; color: #94a3b8; }
+  .mbfp-ops-layer-toggle.is-off i { color: #94a3b8; }
+  .mbfp-ops-layer-toggle:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+  .mbfp-ops-layer-state {
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 0.66rem;
+    font-weight: 800;
+  }
+  .mbfp-ops-layer-toggle.is-off .mbfp-ops-layer-state { background: #e2e8f0; color: #64748b; }
 
   /* Map Shell */
   .mbfp-ops-map-shell {
@@ -1099,6 +1113,7 @@ export function ProvincialGisOperationsMap() {
   const [selectedWaterSource, setSelectedWaterSource] = useState<WaterSource | null>(null);
   const [view, setView] = useState<MapView>("ALL");
   const [showStations, setShowStations] = useState(true);
+  const [showWaterSources, setShowWaterSources] = useState(true);
   const [mapMode, setMapMode] = useState<MapContentMode>(() => resolveProvincialMapMode(searchParams));
 
   const onSelectRef = useRef<(cluster: IncidentCluster) => void>((cluster) => {
@@ -1236,8 +1251,10 @@ export function ProvincialGisOperationsMap() {
     const map = mapRef.current;
     if (!L || !map || !mapReady) return;
     if (!waterSourceLayerRef.current) waterSourceLayerRef.current = L.layerGroup().addTo(map);
-    if (mapMode === "WATER_SOURCES") {
-      const frameView = !waterSourcesLoading && waterViewRef.current !== waterSourceId;
+    if (mapMode !== "WATER_SOURCES") waterViewRef.current = null;
+    if (mapMode === "WATER_SOURCES" || showWaterSources) {
+      // Only the water-source view reframes the map; on the incident map the pins are an overlay.
+      const frameView = mapMode === "WATER_SOURCES" && !waterSourcesLoading && waterViewRef.current !== waterSourceId;
       drawWaterSources(
         L,
         map,
@@ -1251,9 +1268,8 @@ export function ProvincialGisOperationsMap() {
       if (!map.hasLayer(waterSourceLayerRef.current)) waterSourceLayerRef.current.addTo(map);
     } else {
       map.removeLayer(waterSourceLayerRef.current);
-      waterViewRef.current = null;
     }
-  }, [mapMode, mapReady, waterSourceId, waterSourceMapGroups, waterSourcesLoading]);
+  }, [mapMode, mapReady, showWaterSources, waterSourceId, waterSourceMapGroups, waterSourcesLoading]);
 
   // Mount Leaflet map with clean OpenStreetMap tiles
   useEffect(() => {
@@ -1439,15 +1455,32 @@ export function ProvincialGisOperationsMap() {
               <span>Full Province</span>
             </button>
 
-            {mapMode === "INCIDENTS" && <label className="mbfp-ops-layer-toggle">
-              <input
-                type="checkbox"
-                checked={showStations}
-                onChange={(e) => setShowStations(e.target.checked)}
-              />
-              <i className="fa-solid fa-truck-fast" aria-hidden="true" />
-              Stations and coverage
-            </label>}
+            {mapMode === "INCIDENTS" && <>
+              <button
+                type="button"
+                className={`mbfp-ops-layer-toggle${showStations ? "" : " is-off"}`}
+                onClick={() => setShowStations((on) => !on)}
+                aria-pressed={showStations}
+              >
+                <i className="fa-solid fa-truck-fast" aria-hidden="true" />
+                Stations and coverage
+                <span className="mbfp-ops-layer-state">{showStations ? "ON" : "OFF"}</span>
+              </button>
+              <button
+                type="button"
+                className={`mbfp-ops-layer-toggle is-water${showWaterSources ? "" : " is-off"}`}
+                onClick={() => {
+                  pendingWaterSourceRef.current = null;
+                  setSelectedWaterSource(null);
+                  setShowWaterSources((on) => !on);
+                }}
+                aria-pressed={showWaterSources}
+              >
+                <i className="fa-solid fa-droplet" aria-hidden="true" />
+                Water sources
+                <span className="mbfp-ops-layer-state">{showWaterSources ? "ON" : "OFF"}</span>
+              </button>
+            </>}
           </div>
         </div>
 
@@ -1477,7 +1510,7 @@ export function ProvincialGisOperationsMap() {
                 Station · {STATION_COVERAGE_METERS / 1000} km reach
               </span>
             )}
-            {mapMode === "WATER_SOURCES" && <span className="mbfp-ops-legend-row">
+            {(mapMode === "WATER_SOURCES" || showWaterSources) && <span className="mbfp-ops-legend-row">
               <i className="mbfp-ops-key key-water-source" aria-hidden="true" />
               Hydrant or water source
             </span>}
@@ -1673,7 +1706,7 @@ export function ProvincialGisOperationsMap() {
           </section>
         </div>
       )}
-      {mapMode === "WATER_SOURCES" && selectedWaterSource && selectedWaterSourceGroup && (
+      {(mapMode === "WATER_SOURCES" || showWaterSources) && selectedWaterSource && selectedWaterSourceGroup && (
         <WaterSourceMapPopup
           key={selectedWaterSourceGroup.point.join(",")}
           leafletRef={leafletRef}
