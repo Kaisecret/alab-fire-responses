@@ -14,6 +14,7 @@ import { groupWaterSourceMapMarkers, type WaterSourceMapGroup } from "../../lib/
 import { MunicipalStatCards } from "./municipal-stat-cards";
 import { FireCommandHeader } from "./fire-command-header";
 import { flyToWaterSource, WaterSourceMapPopup } from "./water-source-map-popup";
+import { readMapOff } from "./map-visibility";
 
 const DEFAULT_MAP_CENTER: [number, number] = [10.75, 121.94];
 const TERMINAL_STATUSES = new Set(["RESOLVED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "CLOSED"]);
@@ -279,7 +280,9 @@ export function MunicipalGisOperationsMap() {
         const response = await fetch("/api/municipal-bfp/stations", { cache: "no-store", signal: controller.signal });
         if (!response.ok) return;
         const body = await response.json();
-        if (!controller.signal.aborted) setStations(Array.isArray(body.stations) ? body.stations : []);
+        // Stations whose trucks were all switched off on the Fire trucks cards stay off the map.
+        const off = readMapOff().stations;
+        if (!controller.signal.aborted) setStations((Array.isArray(body.stations) ? body.stations as StationMarker[] : []).filter((station) => !off.includes(station.id)));
       } catch {
         // A map without its stations is still a map of the incidents.
       }
@@ -291,7 +294,11 @@ export function MunicipalGisOperationsMap() {
     const controller = new AbortController();
     fetch("/api/municipal-bfp/water-sources", { cache: "no-store", signal: controller.signal })
       .then(async (response) => response.ok ? response.json() : Promise.reject(new Error("Water source layer unavailable")))
-      .then((body) => { if (!controller.signal.aborted) setWaterSources(Array.isArray(body.sources) ? body.sources : []); })
+      .then((body) => {
+        // Sources switched off on the Water sources cards stay off the map.
+        const off = readMapOff().water;
+        if (!controller.signal.aborted) setWaterSources((Array.isArray(body.sources) ? body.sources as WaterSource[] : []).filter((source) => !off.includes(source.id)));
+      })
       .catch(() => { /* Incident operations remain usable without the supporting layer. */ });
     return () => controller.abort();
   }, []);
@@ -328,10 +335,14 @@ export function MunicipalGisOperationsMap() {
   useEffect(() => {
     let disposed = false;
     let map: import("leaflet").Map | null = null;
+    let resizeObserver: ResizeObserver | null = null;
     void (async () => {
       const L = await import("leaflet");
       if (disposed || !mapElement.current) return;
       map = L.map(mapElement.current, { zoomControl: false, attributionControl: true }).setView(DEFAULT_MAP_CENTER, 10);
+      // The map box changes size after mount (cards load, sidebar toggles); without this Leaflet keeps the old size and leaves grey tiles.
+      resizeObserver = new ResizeObserver(() => map?.invalidateSize({ pan: false }));
+      resizeObserver.observe(mapElement.current);
       L.control.zoom({ position: "bottomright" }).addTo(map);
       map.on("moveend", () => {
         const pending = pendingWaterSourceRef.current;
@@ -343,14 +354,12 @@ export function MunicipalGisOperationsMap() {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
         maxZoom: 19,
         keepBuffer: 4,
-        updateWhenIdle: true,
-        updateWhenZooming: false,
       }).addTo(map);
       const incidentLayer = L.layerGroup();
       leafletRef.current = L; mapRef.current = map; layerRef.current = incidentLayer;
       setMapReady(true);
     })();
-    return () => { disposed = true; incidentViewRef.current = null; waterViewRef.current = null; layerRef.current = null; densityLayerRef.current = null; stationLayerRef.current = null; waterSourceLayerRef.current = null; leafletRef.current = null; mapRef.current = null; map?.remove(); };
+    return () => { disposed = true; resizeObserver?.disconnect(); incidentViewRef.current = null; waterViewRef.current = null; layerRef.current = null; densityLayerRef.current = null; stationLayerRef.current = null; waterSourceLayerRef.current = null; leafletRef.current = null; mapRef.current = null; map?.remove(); };
   }, []);
 
   useEffect(() => {

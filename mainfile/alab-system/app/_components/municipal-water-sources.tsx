@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
 import type { MunicipalWaterSourceRegistry, WaterSource } from "../../lib/water-sources/types";
 import { MunicipalStatCards } from "./municipal-stat-cards";
+import { MapSwitch, mapSwitchStyles, readMapOff, writeMapOff } from "./map-visibility";
 
 function DialogField({ id, label, icon, wide, children }: { id: string; label: string; icon: string; wide?: boolean; children: ReactNode }) {
   return (
@@ -96,6 +97,10 @@ const styles = `
     .water-dialog__actions > * { width:100%; justify-content:center; }
   }
   @media (prefers-reduced-motion:reduce) { .water-registry__card, .water-registry__button { transition:none; } .water-registry__button:hover:not(:disabled) { transform:none; } }
+  .water-registry__card { position:relative; }
+  .water-registry__card-head { padding-right:5.6rem; }
+  .water-registry__card.is-map-off .water-registry__card-main { opacity:.6; }
+  ${mapSwitchStyles}
 `;
 
 const emptyForm = { sourceKind: "FIRE_HYDRANT", quantity: "1", exactLocation: "", latitude: "", longitude: "", typeColor: "Wet barrel" };
@@ -114,7 +119,15 @@ export function MunicipalWaterSources() {
   const [editForm, setEditForm] = useState({ exactLocation: "", quantity: "1", typeColor: "" });
   const [editError, setEditError] = useState("");
   const [updating, setUpdating] = useState(false);
+  // Cards render only after the fetch, so reading storage here cannot mismatch the server HTML.
+  const [waterOff, setWaterOff] = useState<string[]>(() => readMapOff().water);
   const dialogRef = useRef<HTMLElement | null>(null);
+
+  function toggleWaterOnMap(sourceId: string) {
+    const next = waterOff.includes(sourceId) ? waterOff.filter((id) => id !== sourceId) : [...waterOff, sourceId];
+    setWaterOff(next);
+    writeMapOff({ water: next });
+  }
   const openerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -249,7 +262,7 @@ export function MunicipalWaterSources() {
         { key: "units", icon: "fa-layer-group", tone: "emerald", value: registry?.summary.totalQuantity ?? 0, label: "Total units", badge: "Total", description: "Units across all recorded locations", loading },
       ]} />
       <div className="water-registry__toolbar"><input className="water-registry__search" aria-label="Search water sources" placeholder="Search location, type, or color" value={query} onChange={(event) => setQuery(event.target.value)} /><div className="water-registry__toolbar-end"><span className="water-registry__count">Showing {sources.length} location{sources.length === 1 ? "" : "s"}</span><button className="water-registry__button" type="button" onClick={() => setOpen(true)}><i className="fa-solid fa-plus" aria-hidden="true" /> Add fire hydrant or water source</button></div></div>
-      {loading ? <div className="water-registry__state">Loading municipal water sources…</div> : loadError ? <div className="water-registry__state"><p>{loadError}</p><button className="water-registry__button" type="button" onClick={() => void retryLoad()}>Retry</button></div> : sources.length === 0 ? <div className="water-registry__state">No matching water sources were found.</div> : <section className="water-registry__grid" aria-label="Municipal water sources">{sources.map((source) => <div className="water-registry__card" key={source.id}><Link className="water-registry__card-main" href={`/municipal-bfp/gis-map?layer=water-sources&waterSource=${source.id}`} aria-label={`View ${source.exactLocation} on map`}><div className="water-registry__card-head"><span className="water-registry__icon"><i className={source.sourceKind === "FIRE_HYDRANT" ? "fa-solid fa-fire-extinguisher" : "fa-solid fa-droplet"} /></span><div><p className="water-registry__card-title">{source.exactLocation}</p><p className="water-registry__kind">{labelFor(source)}</p></div></div><div className="water-registry__card-body"><div className="water-registry__row"><span>Type / color</span><strong>{source.typeColor}</strong></div><div className="water-registry__row"><span>Quantity</span><strong>{source.quantity}</strong></div><div className="water-registry__row"><span>Coordinates</span><strong>{source.latitude.toFixed(7)}, {source.longitude.toFixed(7)}</strong></div><span className="water-registry__origin">{source.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</span></div><span className="water-registry__map-cue"><i className="fa-solid fa-map-location-dot" /> Go to map</span></Link><button type="button" className="water-registry__edit" onClick={() => openDetails(source)} aria-label={`Edit ${source.exactLocation}`}><i className="fa-solid fa-pen-to-square" /> Edit water source</button></div>)}</section>}
+      {loading ? <div className="water-registry__state">Loading municipal water sources…</div> : loadError ? <div className="water-registry__state"><p>{loadError}</p><button className="water-registry__button" type="button" onClick={() => void retryLoad()}>Retry</button></div> : sources.length === 0 ? <div className="water-registry__state">No matching water sources were found.</div> : <section className="water-registry__grid" aria-label="Municipal water sources">{sources.map((source) => <div className={`water-registry__card${waterOff.includes(source.id) ? " is-map-off" : ""}`} key={source.id}><MapSwitch on={!waterOff.includes(source.id)} label={source.exactLocation} onToggle={() => toggleWaterOnMap(source.id)} /><Link className="water-registry__card-main" href={`/municipal-bfp/gis-map?layer=water-sources&waterSource=${source.id}`} aria-label={`View ${source.exactLocation} on map`}><div className="water-registry__card-head"><span className="water-registry__icon"><i className={source.sourceKind === "FIRE_HYDRANT" ? "fa-solid fa-fire-extinguisher" : "fa-solid fa-droplet"} /></span><div><p className="water-registry__card-title">{source.exactLocation}</p><p className="water-registry__kind">{labelFor(source)}</p></div></div><div className="water-registry__card-body"><div className="water-registry__row"><span>Type / color</span><strong>{source.typeColor}</strong></div><div className="water-registry__row"><span>Quantity</span><strong>{source.quantity}</strong></div><div className="water-registry__row"><span>Coordinates</span><strong>{source.latitude.toFixed(7)}, {source.longitude.toFixed(7)}</strong></div><span className="water-registry__origin">{source.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</span></div><span className="water-registry__map-cue"><i className="fa-solid fa-map-location-dot" /> Go to map</span></Link><button type="button" className="water-registry__edit" onClick={() => openDetails(source)} aria-label={`Edit ${source.exactLocation}`}><i className="fa-solid fa-pen-to-square" /> Edit water source</button></div>)}</section>}
     </main>
     {open && createPortal(
       <div className="water-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setOpen(false); }}>

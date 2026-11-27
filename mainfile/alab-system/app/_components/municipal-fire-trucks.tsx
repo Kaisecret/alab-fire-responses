@@ -9,6 +9,7 @@ import { FireTruckCard, fireTruckCardStyles } from "./fire-truck-card";
 import { FireTruckDetailsDialog, fireTruckDialogStyles } from "./fire-truck-details-dialog";
 import { MunicipalStatCards } from "./municipal-stat-cards";
 import { FireCommandHeader } from "./fire-command-header";
+import { MapSwitch, mapSwitchStyles, readMapOff, writeMapOff } from "./map-visibility";
 
 const styles = `
   .truck-registry { padding:1.5rem clamp(1rem,2vw,2rem) 3rem; color:#172033; font-family:'Plus Jakarta Sans',sans-serif; }
@@ -22,6 +23,10 @@ const styles = `
   .truck-registry__state { padding:3rem 1rem; border:1px dashed #d0d5dd; border-radius:12px; background:#fff; color:#667085; text-align:center; }
   .truck-registry__button { min-height:44px; margin-top:.75rem; padding:.7rem 1rem; border:0; border-radius:9px; background:#b42318; color:#fff; font:inherit; font-size:.82rem; font-weight:800; cursor:pointer; }
   @media (max-width:760px) { .truck-registry__toolbar { flex-direction:column; align-items:stretch; } }
+  .truck-registry__slot { position:relative; }
+  .truck-registry__slot .truck-card__head { padding-right:5.6rem; }
+  .truck-registry__slot.is-map-off .truck-card { opacity:.6; }
+  ${mapSwitchStyles}
   ${fireTruckCardStyles}
   ${fireTruckDialogStyles}
 `;
@@ -42,6 +47,18 @@ export function MunicipalFireTrucks() {
   const [stationId, setStationId] = useState("ALL");
   const [selectedTruck, setSelectedTruck] = useState<FireTruck | null>(null);
   const closeDetails = useCallback(() => setSelectedTruck(null), []);
+  // Cards render only after the fetch, so reading storage here cannot mismatch the server HTML.
+  const [trucksOff, setTrucksOff] = useState<string[]>(() => readMapOff().trucks);
+
+  function toggleTruckOnMap(truckId: string) {
+    const next = trucksOff.includes(truckId) ? trucksOff.filter((id) => id !== truckId) : [...trucksOff, truckId];
+    setTrucksOff(next);
+    const trucks = registry?.trucks ?? [];
+    // A station pin leaves the map only when every truck at that station is off.
+    const stations = [...new Set(trucks.map((truck) => truck.stationId))]
+      .filter((id) => trucks.filter((truck) => truck.stationId === id).every((truck) => next.includes(truck.id)));
+    writeMapOff({ trucks: next, stations });
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -102,7 +119,13 @@ export function MunicipalFireTrucks() {
       {loading ? <div className="truck-registry__state">Loading fire trucks…</div>
         : loadError ? <div className="truck-registry__state"><p>{loadError}</p><button className="truck-registry__button" type="button" onClick={() => void retryLoad()}>Retry</button></div>
         : visibleCount === 0 ? <div className="truck-registry__state">{registry?.trucks.length ? "No fire trucks match your search." : "No fire trucks are recorded for your municipality yet. Provincial BFP adds them to the inventory."}</div>
-        : <div className="truck-grid">{visibleTrucks.map((truck) => <FireTruckCard key={truck.id} truck={truck} onOpen={setSelectedTruck} />)}</div>}
+        : <div className="truck-grid">{visibleTrucks.map((truck) => {
+          const on = !trucksOff.includes(truck.id);
+          return <div key={truck.id} className={`truck-registry__slot${on ? "" : " is-map-off"}`}>
+            <FireTruckCard truck={truck} onOpen={setSelectedTruck} />
+            <MapSwitch on={on} label={truck.make} onToggle={() => toggleTruckOnMap(truck.id)} />
+          </div>;
+        })}</div>}
     </main>
     <FireTruckDetailsDialog truck={selectedTruck} onClose={closeDetails} pageSelector="main.truck-registry" />
   </>;
