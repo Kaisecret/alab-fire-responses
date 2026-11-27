@@ -133,11 +133,28 @@ test("provincial create records the truck and an audit event", async () => {
   assert.deepEqual(queries[2].params.slice(0, 3), ["truck-1", hamticId, "provincial-1"]);
 });
 
-test("municipal fire truck route is read-only and provincial route can add", () => {
+test("municipal status change accepts only Ready or Under maintenance, inside its own municipality", async () => {
+  const queries = [];
+  const service = loadService({
+    query: async (sql, params) => {
+      queries.push({ sql, params });
+      return { rows: [] };
+    },
+  });
+  await assert.rejects(service.updateMunicipalFireTruckStatus(hamticId, stationId, "FOR_BER"), (error) => error.name === "FireTruckValidationError");
+  await assert.rejects(service.updateMunicipalFireTruckStatus(hamticId, "not-a-uuid", "SERVICEABLE"), (error) => error.name === "FireTruckValidationError");
+  assert.equal(queries.length, 0);
+  assert.equal(await service.updateMunicipalFireTruckStatus(hamticId, stationId, "UNSERVICEABLE"), null);
+  assert.match(queries[0].sql, /where id = \$1 and municipality_id = \$2/);
+  assert.deepEqual(queries[0].params, [stationId, hamticId, "UNSERVICEABLE"]);
+});
+
+test("municipal fire truck route can only change status and provincial route can add", () => {
   const municipal = readFileSync("app/api/municipal-bfp/fire-trucks/route.ts", "utf8");
   const provincial = readFileSync("app/api/provincial-bfp/fire-trucks/route.ts", "utf8");
   assert.match(municipal, /export async function GET/);
-  assert.doesNotMatch(municipal, /export async function (POST|PATCH|PUT|DELETE)/);
+  assert.match(municipal, /export async function PATCH[\s\S]*requireMunicipalAdmin[\s\S]*updateMunicipalFireTruckStatus/);
+  assert.doesNotMatch(municipal, /export async function (POST|PUT|DELETE)/);
   assert.match(provincial, /export async function POST/);
   assert.match(provincial, /requireProvincialBfp/);
 });

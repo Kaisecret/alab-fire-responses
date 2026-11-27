@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -52,6 +53,14 @@ export const fireTruckDialogStyles = `
   .truck-dialog__remarks { margin-top:1rem; padding:.8rem .9rem; border-left:3px solid #b42318; border-radius:0 9px 9px 0; background:#fff5f5; color:#7a271a; font-size:.82rem; line-height:1.5; }
   .truck-dialog__remarks span { display:block; margin-bottom:.2rem; color:#b42318; font-size:.66rem; font-weight:850; letter-spacing:.06em; text-transform:uppercase; }
   .truck-dialog__origin { display:inline-flex; align-items:center; gap:.45rem; margin-top:1rem; padding:.42rem .65rem; border-radius:8px; background:#f2f4f7; color:#475467; font-size:.72rem; font-weight:750; }
+  .truck-dialog__readiness { margin-top:1rem; padding:.85rem .9rem; border:1px solid #e1e8f0; border-radius:12px; }
+  .truck-dialog__readiness > span { display:block; margin-bottom:.55rem; color:#64748b; font-size:.64rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
+  .truck-dialog__readiness-options { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+  .truck-dialog__readiness-options button { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; min-height:44px; padding:.55rem .7rem; border:1px solid #d0d5dd; border-radius:10px; background:#fff; color:#344054; font:inherit; font-size:.8rem; font-weight:800; cursor:pointer; }
+  .truck-dialog__readiness-options button:disabled { cursor:wait; opacity:.7; }
+  .truck-dialog__readiness-options button.is-ready[aria-pressed="true"] { border-color:#067647; background:#ecfdf3; color:#067647; }
+  .truck-dialog__readiness-options button.is-maintenance[aria-pressed="true"] { border-color:#475467; background:#f2f4f7; color:#344054; }
+  .truck-dialog__readiness p { margin:.5rem 0 0; color:#b42318; font-size:.75rem; font-weight:700; }
   .truck-status { display:inline-flex; align-items:center; gap:.3rem; width:max-content; padding:.24rem .55rem; border-radius:999px; font-size:.68rem; font-weight:800; }
   .truck-status::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
   .truck-status.is-serviceable { background:#ecfdf3; color:#067647; }
@@ -83,17 +92,37 @@ function FactCard({ icon, tone, label, value, note, wide }: { icon: string; tone
   );
 }
 
+export type FireTruckReadiness = "SERVICEABLE" | "UNSERVICEABLE";
+
 export function FireTruckDetailsDialog({
   truck,
   onClose,
   pageSelector,
+  onReadinessChange,
 }: {
   truck: FireTruck | null;
   onClose: () => void;
   pageSelector: string;
+  /** Municipal BFP only: shows Ready / Under maintenance buttons. Rejects with a message to show. */
+  onReadinessChange?: (status: FireTruckReadiness) => Promise<void>;
 }) {
   useDialogFocus(Boolean(truck), "truck-details-title", onClose, pageSelector);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   if (!truck || typeof document === "undefined") return null;
+
+  async function changeReadiness(status: FireTruckReadiness) {
+    if (!onReadinessChange || saving) return;
+    setSaving(true);
+    setSaveError("");
+    try {
+      await onReadinessChange(status);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Unable to update the fire truck status.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const down = truck.operationalStatus !== "SERVICEABLE";
   const exact = truck.acquiredOn && truck.acquiredPrecision;
@@ -128,6 +157,20 @@ export function FireTruckDetailsDialog({
               <small>Water capacity</small>
             </div>
           </section>
+          {onReadinessChange && (
+            <div className="truck-dialog__readiness" role="group" aria-label="Fire truck status">
+              <span>Fire truck status</span>
+              <div className="truck-dialog__readiness-options">
+                <button type="button" className="is-ready" aria-pressed={truck.operationalStatus === "SERVICEABLE"} disabled={saving} onClick={() => void changeReadiness("SERVICEABLE")}>
+                  <i className="fa-solid fa-circle-check" aria-hidden="true" /> Ready
+                </button>
+                <button type="button" className="is-maintenance" aria-pressed={truck.operationalStatus === "UNSERVICEABLE"} disabled={saving} onClick={() => void changeReadiness("UNSERVICEABLE")}>
+                  <i className="fa-solid fa-screwdriver-wrench" aria-hidden="true" /> Under maintenance
+                </button>
+              </div>
+              {saveError && <p role="alert">{saveError}</p>}
+            </div>
+          )}
           <div className="truck-dialog__facts">
             <FactCard icon="fa-building-shield" tone="red" label="Station" value={truck.stationName} wide />
             <FactCard icon="fa-location-dot" tone="blue" label="Municipality" value={truck.municipalityName} note={truck.incomeClass ? `${truck.incomeClass} class municipality` : undefined} />

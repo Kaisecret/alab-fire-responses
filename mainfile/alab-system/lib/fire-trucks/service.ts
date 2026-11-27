@@ -193,6 +193,29 @@ export async function listMunicipalFireTrucks(
   };
 }
 
+/** Municipal BFP marks its own truck Ready (SERVICEABLE) or Under maintenance (UNSERVICEABLE). */
+export async function updateMunicipalFireTruckStatus(
+  municipalityId: string,
+  truckId: unknown,
+  status: unknown,
+): Promise<FireTruck | null> {
+  if (typeof truckId !== "string" || !uuidPattern.test(truckId)) throw new FireTruckValidationError({ truckId: "Choose a fire truck." });
+  if (status !== "SERVICEABLE" && status !== "UNSERVICEABLE") throw new FireTruckValidationError({ operationalStatus: "Choose Ready or Under maintenance." });
+  const updated = await getDatabase().query<FireTruck>(
+    `with truck as (
+       update fire_trucks set operational_status = $3, updated_at = now()
+        where id = $1 and municipality_id = $2
+        returning *
+     )
+     select ${fireTruckColumns}
+       from truck
+       join municipalities municipality on municipality.id = truck.municipality_id
+       join municipal_bfp_stations station on station.id = truck.station_id`,
+    [truckId, municipalityId, status],
+  );
+  return updated.rows[0] ?? null;
+}
+
 export async function listProvincialFireTrucks(): Promise<ProvincialFireTruckRegistry> {
   const database = getDatabase();
   const [municipalities, stations, trucks] = await Promise.all([

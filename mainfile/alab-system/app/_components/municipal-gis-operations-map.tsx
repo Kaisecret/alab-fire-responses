@@ -14,7 +14,7 @@ import { groupWaterSourceMapMarkers, type WaterSourceMapGroup } from "../../lib/
 import { MunicipalStatCards } from "./municipal-stat-cards";
 import { FireCommandHeader } from "./fire-command-header";
 import { flyToWaterSource, WaterSourceMapPopup } from "./water-source-map-popup";
-import { readMapOff } from "./map-visibility";
+import { readWaterSourcesUnderMaintenance } from "../_lib/water-source-maintenance";
 
 const DEFAULT_MAP_CENTER: [number, number] = [10.75, 121.94];
 const TERMINAL_STATUSES = new Set(["RESOLVED", "REJECTED", "FALSE_REPORT", "DUPLICATE", "CLOSED"]);
@@ -280,9 +280,7 @@ export function MunicipalGisOperationsMap() {
         const response = await fetch("/api/municipal-bfp/stations", { cache: "no-store", signal: controller.signal });
         if (!response.ok) return;
         const body = await response.json();
-        // Stations whose trucks were all switched off on the Fire trucks cards stay off the map.
-        const off = readMapOff().stations;
-        if (!controller.signal.aborted) setStations((Array.isArray(body.stations) ? body.stations as StationMarker[] : []).filter((station) => !off.includes(station.id)));
+        if (!controller.signal.aborted) setStations(Array.isArray(body.stations) ? body.stations : []);
       } catch {
         // A map without its stations is still a map of the incidents.
       }
@@ -295,8 +293,8 @@ export function MunicipalGisOperationsMap() {
     fetch("/api/municipal-bfp/water-sources", { cache: "no-store", signal: controller.signal })
       .then(async (response) => response.ok ? response.json() : Promise.reject(new Error("Water source layer unavailable")))
       .then((body) => {
-        // Sources switched off on the Water sources cards stay off the map.
-        const off = readMapOff().water;
+        // Sources marked Under maintenance on the Water sources tab are left off the map.
+        const off = readWaterSourcesUnderMaintenance();
         if (!controller.signal.aborted) setWaterSources((Array.isArray(body.sources) ? body.sources as WaterSource[] : []).filter((source) => !off.includes(source.id)));
       })
       .catch(() => { /* Incident operations remain usable without the supporting layer. */ });

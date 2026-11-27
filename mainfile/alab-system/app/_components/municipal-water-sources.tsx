@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { municipalTabFetch as fetch } from "../../lib/auth/municipal-tab-fetch";
 import type { MunicipalWaterSourceRegistry, WaterSource } from "../../lib/water-sources/types";
 import { MunicipalStatCards } from "./municipal-stat-cards";
-import { MapSwitch, mapSwitchStyles, readMapOff, writeMapOff } from "./map-visibility";
+import { readWaterSourcesUnderMaintenance, writeWaterSourcesUnderMaintenance } from "../_lib/water-source-maintenance";
 
 function DialogField({ id, label, icon, wide, children }: { id: string; label: string; icon: string; wide?: boolean; children: ReactNode }) {
   return (
@@ -97,10 +97,17 @@ const styles = `
     .water-dialog__actions > * { width:100%; justify-content:center; }
   }
   @media (prefers-reduced-motion:reduce) { .water-registry__card, .water-registry__button { transition:none; } .water-registry__button:hover:not(:disabled) { transform:none; } }
-  .water-registry__card { position:relative; }
-  .water-registry__card-head { padding-right:5.6rem; }
-  .water-registry__card.is-map-off .water-registry__card-main { opacity:.6; }
-  ${mapSwitchStyles}
+  .water-registry__card.is-down .water-registry__card-head { background:linear-gradient(135deg,#475467 0%,#667085 100%); }
+  .water-registry__status { display:inline-flex; align-items:center; gap:.3rem; width:max-content; padding:.24rem .55rem; border-radius:999px; background:#ecfdf3; color:#067647; font-size:.68rem; font-weight:800; }
+  .water-registry__status::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .water-registry__status.is-down { background:#f2f4f7; color:#475467; }
+  .water-dialog__readiness { margin:.9rem 1.25rem 0; padding:.85rem .9rem; border:1px solid #e4e7ec; border-radius:12px; }
+  .water-dialog__readiness > span { display:block; margin-bottom:.55rem; color:#667085; font-size:.64rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
+  .water-dialog__readiness-options { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+  .water-dialog__readiness-options button { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; min-height:44px; padding:.55rem .7rem; border:1px solid #d0d5dd; border-radius:10px; background:#fff; color:#344054; font:inherit; font-size:.8rem; font-weight:800; cursor:pointer; }
+  .water-dialog__readiness-options button:focus-visible { outline:3px solid rgba(37,99,235,.35); outline-offset:2px; }
+  .water-dialog__readiness-options button.is-ready[aria-pressed="true"] { border-color:#067647; background:#ecfdf3; color:#067647; }
+  .water-dialog__readiness-options button.is-maintenance[aria-pressed="true"] { border-color:#475467; background:#f2f4f7; color:#344054; }
 `;
 
 const emptyForm = { sourceKind: "FIRE_HYDRANT", quantity: "1", exactLocation: "", latitude: "", longitude: "", typeColor: "Wet barrel" };
@@ -120,13 +127,13 @@ export function MunicipalWaterSources() {
   const [editError, setEditError] = useState("");
   const [updating, setUpdating] = useState(false);
   // Cards render only after the fetch, so reading storage here cannot mismatch the server HTML.
-  const [waterOff, setWaterOff] = useState<string[]>(() => readMapOff().water);
+  const [underMaintenance, setUnderMaintenance] = useState<string[]>(readWaterSourcesUnderMaintenance);
   const dialogRef = useRef<HTMLElement | null>(null);
 
-  function toggleWaterOnMap(sourceId: string) {
-    const next = waterOff.includes(sourceId) ? waterOff.filter((id) => id !== sourceId) : [...waterOff, sourceId];
-    setWaterOff(next);
-    writeMapOff({ water: next });
+  function setMaintenance(sourceId: string, down: boolean) {
+    const next = down ? [...new Set([...underMaintenance, sourceId])] : underMaintenance.filter((id) => id !== sourceId);
+    setUnderMaintenance(next);
+    writeWaterSourcesUnderMaintenance(next);
   }
   const openerRef = useRef<HTMLElement | null>(null);
 
@@ -262,7 +269,7 @@ export function MunicipalWaterSources() {
         { key: "units", icon: "fa-layer-group", tone: "emerald", value: registry?.summary.totalQuantity ?? 0, label: "Total units", badge: "Total", description: "Units across all recorded locations", loading },
       ]} />
       <div className="water-registry__toolbar"><input className="water-registry__search" aria-label="Search water sources" placeholder="Search location, type, or color" value={query} onChange={(event) => setQuery(event.target.value)} /><div className="water-registry__toolbar-end"><span className="water-registry__count">Showing {sources.length} location{sources.length === 1 ? "" : "s"}</span><button className="water-registry__button" type="button" onClick={() => setOpen(true)}><i className="fa-solid fa-plus" aria-hidden="true" /> Add fire hydrant or water source</button></div></div>
-      {loading ? <div className="water-registry__state">Loading municipal water sources…</div> : loadError ? <div className="water-registry__state"><p>{loadError}</p><button className="water-registry__button" type="button" onClick={() => void retryLoad()}>Retry</button></div> : sources.length === 0 ? <div className="water-registry__state">No matching water sources were found.</div> : <section className="water-registry__grid" aria-label="Municipal water sources">{sources.map((source) => <div className={`water-registry__card${waterOff.includes(source.id) ? " is-map-off" : ""}`} key={source.id}><MapSwitch on={!waterOff.includes(source.id)} label={source.exactLocation} onToggle={() => toggleWaterOnMap(source.id)} /><Link className="water-registry__card-main" href={`/municipal-bfp/gis-map?layer=water-sources&waterSource=${source.id}`} aria-label={`View ${source.exactLocation} on map`}><div className="water-registry__card-head"><span className="water-registry__icon"><i className={source.sourceKind === "FIRE_HYDRANT" ? "fa-solid fa-fire-extinguisher" : "fa-solid fa-droplet"} /></span><div><p className="water-registry__card-title">{source.exactLocation}</p><p className="water-registry__kind">{labelFor(source)}</p></div></div><div className="water-registry__card-body"><div className="water-registry__row"><span>Type / color</span><strong>{source.typeColor}</strong></div><div className="water-registry__row"><span>Quantity</span><strong>{source.quantity}</strong></div><div className="water-registry__row"><span>Coordinates</span><strong>{source.latitude.toFixed(7)}, {source.longitude.toFixed(7)}</strong></div><span className="water-registry__origin">{source.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</span></div><span className="water-registry__map-cue"><i className="fa-solid fa-map-location-dot" /> Go to map</span></Link><button type="button" className="water-registry__edit" onClick={() => openDetails(source)} aria-label={`Edit ${source.exactLocation}`}><i className="fa-solid fa-pen-to-square" /> Edit water source</button></div>)}</section>}
+      {loading ? <div className="water-registry__state">Loading municipal water sources…</div> : loadError ? <div className="water-registry__state"><p>{loadError}</p><button className="water-registry__button" type="button" onClick={() => void retryLoad()}>Retry</button></div> : sources.length === 0 ? <div className="water-registry__state">No matching water sources were found.</div> : <section className="water-registry__grid" aria-label="Municipal water sources">{sources.map((source) => <div className={`water-registry__card${underMaintenance.includes(source.id) ? " is-down" : ""}`} key={source.id}><Link className="water-registry__card-main" href={`/municipal-bfp/gis-map?layer=water-sources&waterSource=${source.id}`} aria-label={`View ${source.exactLocation} on map`}><div className="water-registry__card-head"><span className="water-registry__icon"><i className={source.sourceKind === "FIRE_HYDRANT" ? "fa-solid fa-fire-extinguisher" : "fa-solid fa-droplet"} /></span><div><p className="water-registry__card-title">{source.exactLocation}</p><p className="water-registry__kind">{labelFor(source)}</p></div></div><div className="water-registry__card-body"><div className="water-registry__row"><span>Type / color</span><strong>{source.typeColor}</strong></div><div className="water-registry__row"><span>Quantity</span><strong>{source.quantity}</strong></div><div className="water-registry__row"><span>Coordinates</span><strong>{source.latitude.toFixed(7)}, {source.longitude.toFixed(7)}</strong></div><span className="water-registry__origin">{source.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</span><span className={`water-registry__status${underMaintenance.includes(source.id) ? " is-down" : ""}`}>{underMaintenance.includes(source.id) ? "Under maintenance" : "Ready"}</span></div><span className="water-registry__map-cue"><i className="fa-solid fa-map-location-dot" /> Go to map</span></Link><button type="button" className="water-registry__edit" onClick={() => openDetails(source)} aria-label={`Edit ${source.exactLocation}`}><i className="fa-solid fa-pen-to-square" /> Edit water source</button></div>)}</section>}
     </main>
     {open && createPortal(
       <div className="water-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setOpen(false); }}>
@@ -316,6 +323,13 @@ export function MunicipalWaterSources() {
           <div className="water-dialog__summary">
             <div className="water-dialog__fact"><i className="fa-solid fa-crosshairs" aria-hidden="true" /><div><span>Coordinates</span><strong>{selectedSource.latitude.toFixed(7)}, {selectedSource.longitude.toFixed(7)}</strong></div></div>
             <div className="water-dialog__fact"><i className="fa-solid fa-file-lines" aria-hidden="true" /><div><span>Record source</span><strong>{selectedSource.recordOrigin === "BFP_LOCATOR_CHART_2018" ? "BFP locator chart · 2018" : "Municipal entry"}</strong></div></div>
+          </div>
+          <div className="water-dialog__readiness" role="group" aria-label={`${labelFor(selectedSource)} status`}>
+            <span>{labelFor(selectedSource)} status</span>
+            <div className="water-dialog__readiness-options">
+              <button type="button" className="is-ready" aria-pressed={!underMaintenance.includes(selectedSource.id)} onClick={() => setMaintenance(selectedSource.id, false)}><i className="fa-solid fa-circle-check" aria-hidden="true" /> Ready</button>
+              <button type="button" className="is-maintenance" aria-pressed={underMaintenance.includes(selectedSource.id)} onClick={() => setMaintenance(selectedSource.id, true)}><i className="fa-solid fa-screwdriver-wrench" aria-hidden="true" /> Under maintenance</button>
+            </div>
           </div>
           <form onSubmit={submitEdit}>
             <div className="water-dialog__grid">
